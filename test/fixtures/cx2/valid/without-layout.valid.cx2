@@ -1,0 +1,402 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "nodes",
+        "elementCount": 20,
+        "version": "1.0",
+        "idCounter": 19,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 30,
+        "version": "1.0",
+        "idCounter": 29,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "v": {
+          "n": "node1"
+        }
+      },
+      {
+        "id": 1,
+        "v": {
+          "n": "node2"
+        }
+      },
+      {
+        "id": 2,
+        "v": {
+          "n": "node3"
+        }
+      },
+      {
+        "id": 3,
+        "v": {
+          "n": "node4"
+        }
+      },
+      {
+        "id": 4,
+        "v": {
+          "n": "node5"
+        }
+      },
+      {
+        "id": 5,
+        "v": {
+          "n": "node6"
+        }
+      },
+      {
+        "id": 6,
+        "v": {
+          "n": "node7"
+        }
+      },
+      {
+        "id": 7,
+        "v": {
+          "n": "node8"
+        }
+      },
+      {
+        "id": 8,
+        "v": {
+          "n": "node9"
+        }
+      },
+      {
+        "id": 9,
+        "v": {
+          "n": "node10"
+        }
+      },
+      {
+        "id": 10,
+        "v": {
+          "n": "node11"
+        }
+      },
+      {
+        "id": 11,
+        "v": {
+          "n": "node12"
+        }
+      },
+      {
+        "id": 12,
+        "v": {
+          "n": "node13"
+        }
+      },
+      {
+        "id": 13,
+        "v": {
+          "n": "node14"
+        }
+      },
+      {
+        "id": 14,
+        "v": {
+          "n": "node15"
+        }
+      },
+      {
+        "id": 15,
+        "v": {
+          "n": "node16"
+        }
+      },
+      {
+        "id": 16,
+        "v": {
+          "n": "node17"
+        }
+      },
+      {
+        "id": 17,
+        "v": {
+          "n": "node18"
+        }
+      },
+      {
+        "id": 18,
+        "v": {
+          "n": "node19"
+        }
+      },
+      {
+        "id": 19,
+        "v": {
+          "n": "node20"
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "interacts"
+        }
+      },
+      {
+        "id": 1,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "interaction": "binds"
+        }
+      },
+      {
+        "id": 2,
+        "s": 2,
+        "t": 3,
+        "v": {
+          "interaction": "regulates"
+        }
+      },
+      {
+        "id": 3,
+        "s": 3,
+        "t": 4,
+        "v": {
+          "interaction": "activates"
+        }
+      },
+      {
+        "id": 4,
+        "s": 4,
+        "t": 5,
+        "v": {
+          "interaction": "inhibits"
+        }
+      },
+      {
+        "id": 5,
+        "s": 5,
+        "t": 6,
+        "v": {
+          "interaction": "interacts"
+        }
+      },
+      {
+        "id": 6,
+        "s": 6,
+        "t": 7,
+        "v": {
+          "interaction": "binds"
+        }
+      },
+      {
+        "id": 7,
+        "s": 7,
+        "t": 8,
+        "v": {
+          "interaction": "regulates"
+        }
+      },
+      {
+        "id": 8,
+        "s": 8,
+        "t": 9,
+        "v": {
+          "interaction": "activates"
+        }
+      },
+      {
+        "id": 9,
+        "s": 9,
+        "t": 10,
+        "v": {
+          "interaction": "inhibits"
+        }
+      },
+      {
+        "id": 10,
+        "s": 10,
+        "t": 11,
+        "v": {
+          "interaction": "interacts"
+        }
+      },
+      {
+        "id": 11,
+        "s": 11,
+        "t": 12,
+        "v": {
+          "interaction": "binds"
+        }
+      },
+      {
+        "id": 12,
+        "s": 12,
+        "t": 13,
+        "v": {
+          "interaction": "regulates"
+        }
+      },
+      {
+        "id": 13,
+        "s": 13,
+        "t": 14,
+        "v": {
+          "interaction": "activates"
+        }
+      },
+      {
+        "id": 14,
+        "s": 14,
+        "t": 15,
+        "v": {
+          "interaction": "inhibits"
+        }
+      },
+      {
+        "id": 15,
+        "s": 15,
+        "t": 16,
+        "v": {
+          "interaction": "interacts"
+        }
+      },
+      {
+        "id": 16,
+        "s": 16,
+        "t": 17,
+        "v": {
+          "interaction": "binds"
+        }
+      },
+      {
+        "id": 17,
+        "s": 17,
+        "t": 18,
+        "v": {
+          "interaction": "regulates"
+        }
+      },
+      {
+        "id": 18,
+        "s": 18,
+        "t": 19,
+        "v": {
+          "interaction": "activates"
+        }
+      },
+      {
+        "id": 19,
+        "s": 19,
+        "t": 0,
+        "v": {
+          "interaction": "inhibits"
+        }
+      },
+      {
+        "id": 20,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "interacts"
+        }
+      },
+      {
+        "id": 21,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "interaction": "binds"
+        }
+      },
+      {
+        "id": 22,
+        "s": 2,
+        "t": 3,
+        "v": {
+          "interaction": "regulates"
+        }
+      },
+      {
+        "id": 23,
+        "s": 3,
+        "t": 4,
+        "v": {
+          "interaction": "activates"
+        }
+      },
+      {
+        "id": 24,
+        "s": 4,
+        "t": 5,
+        "v": {
+          "interaction": "inhibits"
+        }
+      },
+      {
+        "id": 25,
+        "s": 5,
+        "t": 6,
+        "v": {
+          "interaction": "interacts"
+        }
+      },
+      {
+        "id": 26,
+        "s": 6,
+        "t": 7,
+        "v": {
+          "interaction": "binds"
+        }
+      },
+      {
+        "id": 27,
+        "s": 7,
+        "t": 8,
+        "v": {
+          "interaction": "regulates"
+        }
+      },
+      {
+        "id": 28,
+        "s": 8,
+        "t": 9,
+        "v": {
+          "interaction": "activates"
+        }
+      },
+      {
+        "id": 29,
+        "s": 9,
+        "t": 10,
+        "v": {
+          "interaction": "inhibits"
+        }
+      }
+    ]
+  }
+]

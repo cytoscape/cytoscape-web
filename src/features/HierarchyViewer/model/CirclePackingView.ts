@@ -1,5 +1,6 @@
-import { NetworkView } from '../../../models/ViewModel'
 import { HierarchyNode } from 'd3-hierarchy'
+
+import { NetworkView } from '../../../models/ViewModel'
 
 export interface CirclePackingView extends NetworkView {
   /*

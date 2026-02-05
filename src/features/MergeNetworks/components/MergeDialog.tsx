@@ -1,88 +1,91 @@
+import './MergeDialog.css'
+
 import {
-  ArrowForward as ArrowForwardIcon,
   ArrowBack as ArrowBackIcon,
-  ArrowUpward as ArrowUpwardIcon,
   ArrowDownward as ArrowDownwardIcon,
+  ArrowForward as ArrowForwardIcon,
+  ArrowUpward as ArrowUpwardIcon,
   ExpandMore as ExpandMoreIcon,
-  Star as StarIcon,
-  Info as InfoIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
+  Info as InfoIcon,
+  Star as StarIcon,
 } from '@mui/icons-material'
-import React, { useContext, useEffect, useState } from 'react'
-import { UnionIcon, DifferenceIcon, IntersectionIcon } from './Icon'
 import ReportGmailerrorredIcon from '@mui/icons-material/ReportGmailerrorred'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  IconButton,
   List,
   ListItem,
   ListItemText,
   ListSubheader,
   Paper,
-  FormControlLabel,
-  Checkbox,
+  Radio,
+  RadioGroup,
+  TextField,
+  ToggleButton,
   ToggleButtonGroup,
   Tooltip,
-  ToggleButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  TextField,
-  IconButton,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  Radio,
+  Typography,
 } from '@mui/material'
-import './MergeDialog.css'
+import React, { useContext, useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
+
+import { AppConfigContext } from '../../../AppConfigContext'
+import { putNetworkSummaryToDb } from '../../../data/db'
+import { logUi } from '../../../debug'
+import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useLoadCyNetwork } from '../../../data/hooks/useLoadCyNetwork'
+import { IdType } from '../../../models/IdType'
+import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import { Column } from '../../../models/TableModel'
+import { ConfirmationDialog } from '../../ConfirmationDialog'
 import {
   MergeType,
   NetworkRecord,
-  TableView,
   Pair,
+  TableView,
 } from '../models/DataInterfaceForMerge'
-import useMatchingColumnsStore from '../store/matchingColumnStore'
-import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
-import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
-import useNetMatchingTableStore from '../store/netMatchingTableStore'
-import useMergeToolTipStore from '../store/mergeToolTip'
-import { Column } from '../../../models/TableModel'
-import { IdType } from '../../../models/IdType'
-import { getModelsFromCacheOrNdex } from '../../../store/getModelsFromCacheOrNdex'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { useCredentialStore } from '../../../store/CredentialStore'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { useViewModelStore } from '../../../store/ViewModelStore'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
 import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView'
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
-import { useLayoutStore } from '../../../store/LayoutStore'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
-import { MatchingTableComp } from './MatchingTableComp'
-import { MatchingColumnTable } from './MatchingColumnTable'
+import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
+import useMatchingColumnsStore from '../store/matchingColumnStore'
+import useMergeToolTipStore from '../store/mergeToolTip'
+import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 import {
   checkDuplication,
   findPairIndex,
   getNetTableFromSummary,
   sortListAlphabetically,
-} from '../utils/helper-functions'
-import { ConfirmationDialog } from '../../../components/Util/ConfirmationDialog'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { NdexNetworkSummary } from '../../../models/NetworkSummaryModel'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import useNodesDuplicationStore from '../store/nodesDuplicationStore'
-import { logUi } from '../../../debug'
-import { useUrlNavigation } from '../../../store/hooks/useUrlNavigation/useUrlNavigation'
-import { putNetworkSummaryToDb } from '../../../store/persist/db'
+} from '../utils/mergeNetworkUtil'
+import { DifferenceIcon, IntersectionIcon, UnionIcon } from './Icon'
+import { MatchingColumnTable } from './MatchingColumnTable'
+import { MatchingTableComp } from './MatchingTableComp'
 
 interface MergeDialogProps {
   open: boolean
@@ -102,7 +105,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const [tableView, setTableView] = useState(TableView.node) // Current table view
   const [errorMessage, setErrorMessage] = useState('') // Error message to display
   const [showError, setShowError] = useState(false) // Flag to show the error message panel
-  const { ndexBaseUrl } = useContext(AppConfigContext) // Base URL for the NDEx server
   const [mergeOpType, setMergeOpType] = useState(MergeType.union) // Type of merge operation
   const [mergeWithinNetwork, setMergeWithinNetwork] = useState(true) // Flag to indicate whether to merge within the same network
   const [mergeOnlyNodes, setMergeOnlyNodes] = useState(false) // Flag to indicate whether to ignore type conflicts
@@ -227,6 +229,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
     networkId: IdType,
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
+
+  const getFunction = useRendererFunctionStore((state) => state.getFunction)
 
   // Functions to select networks to merge or undo the selection
   const handleSelectAvailable = (uuid: string) => {
@@ -497,14 +501,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
   )
+  const loadCyNetwork = useLoadCyNetwork()
   //utility function to load network by id
   const loadNetworkById = async (networkId: IdType) => {
     const currentToken = await getToken()
-    const res = await getModelsFromCacheOrNdex(
-      networkId,
-      ndexBaseUrl,
-      currentToken,
-    )
+    const res = await loadCyNetwork(networkId, currentToken)
     const { network, nodeTable, edgeTable, visualStyle } = res
     const summary = netSummaries[networkId]
     const netTable = getNetTableFromSummary(summary)
@@ -520,12 +521,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const handleMerge = async (): Promise<void> => {
     try {
       const newNetworkId = uuidv4()
-      const summaryRecord: Record<IdType, NdexNetworkSummary> =
-        Object.fromEntries(
-          Object.entries(netSummaries).filter(([id]) =>
-            toMergeNetworksList.some((pair) => pair[1] === id),
-          ),
-        )
+      const summaryRecord: Record<IdType, NetworkSummary> = Object.fromEntries(
+        Object.entries(netSummaries).filter(([id]) =>
+          toMergeNetworksList.some((pair) => pair[1] === id),
+        ),
+      )
       const [newNetworkWithView, networkSummary] =
         await createMergedNetworkWithView(
           [...toMergeNetworksList.map((i) => i[1])],
@@ -554,21 +554,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         newNetworkWithView.edgeTable,
       )
       setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
-      const newSummary = { ...networkSummary, hasLayout: true }
+      const newSummary = { ...networkSummary, hasLayout: false }
       await putNetworkSummaryToDb(newSummary)
       addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network
-      setIsRunning(true)
-      engine.apply(
-        newNetworkWithView.network.nodes,
-        newNetworkWithView.network.edges,
-        (positionMap) => {
-          updateNodePositions(newNetworkId, positionMap)
-          updateSummary(newNetworkId, newSummary)
-          setIsRunning(false)
-        },
-        defaultLayout,
-      )
       setCurrentNetworkId(newNetworkId)
       navigateToNetwork({
         workspaceId: workspace.id,
@@ -586,6 +575,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
   return (
     <Dialog
+      data-testid="merge-dialog"
       onKeyDown={(e) => {
         e.stopPropagation()
       }}
@@ -613,6 +603,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           onClose={() => setTooltipOpen(false)}
         >
           <IconButton
+            data-testid="merge-dialog-fullscreen-button"
             onClick={handleFullScreenToggle}
             onMouseEnter={() => setTooltipOpen(true)}
             onMouseLeave={() => setTooltipOpen(false)}
@@ -625,12 +616,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       <DialogContent sx={{ paddingTop: 0 }}>
         <Box className="toggleButtonGroup">
           <ToggleButtonGroup
+            data-testid="merge-dialog-operation-type"
             value={mergeOpType}
             exclusive
             onChange={handleMergeTypeChange}
             aria-label="text alignment"
           >
             <ToggleButton
+              data-testid="merge-dialog-union-button"
               className="toggleButton"
               classes={{ selected: 'selected' }}
               value={MergeType.union}
@@ -639,6 +632,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               <UnionIcon /> Union
             </ToggleButton>
             <ToggleButton
+              data-testid="merge-dialog-intersection-button"
               className="toggleButton"
               classes={{ selected: 'selected' }}
               value={MergeType.intersection}
@@ -647,6 +641,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               <IntersectionIcon /> Intersection
             </ToggleButton>
             <ToggleButton
+              data-testid="merge-dialog-difference-button"
               className="toggleButton"
               classes={{ selected: 'selected' }}
               value={MergeType.difference}
@@ -867,10 +862,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               sx={{ color: 'orange' }}
             />
             <Typography sx={{ color: 'orange' }}>
-              Some nodes have duplicate values under the 'Matching Column'.
-              Hover over the warning icon or check 'Advanced Options' for
-              details. Enabling 'Merge nodes/edges in the same network' might
-              also be an option.
+              Some nodes have duplicate values under the &apos;Matching
+              Column&apos;. Hover over the warning icon or check &apos;Advanced
+              Options&apos; for details. Enabling &apos;Merge nodes/edges in the
+              same network&apos; might also be an option.
             </Typography>
           </Box>
         )}
@@ -983,17 +978,24 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         onConfirm={() => setShowError(false)}
       />
       <DialogActions>
-        <Button onClick={handleClose} color="primary">
+        <Button
+          data-testid="merge-dialog-cancel-button"
+          onClick={handleClose}
+          color="primary"
+        >
           Cancel
         </Button>
         {mergeTooltipIsOpen ? (
           <Tooltip title={mergeTooltipText} placement="top" arrow>
             <span>
-              <Button disabled={true}>Merge</Button>
+              <Button data-testid="merge-dialog-merge-button" disabled={true}>
+                Merge
+              </Button>
             </span>
           </Tooltip>
         ) : (
           <Button
+            data-testid="merge-dialog-merge-button"
             onClick={handleMerge}
             sx={{
               color: '#FFFFFF',

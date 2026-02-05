@@ -3,13 +3,13 @@
  *
  * All public functions should be accessed through the NetworkFn object
  */
-import * as NetworkFn from './impl/CyNetwork'
+import * as NetworkFn from './impl/networkImpl'
 
-export { Network } from './Network'
+export { NetworkAttributes } from '../TableModel/NetworkAttributes'
 export { Edge } from './Edge'
-export { Node } from './Node'
 export { GraphObject } from './GraphObject'
 export { GraphObjectType } from './GraphObjectType'
-export { NetworkAttributes } from '../TableModel/NetworkAttributes'
+export { Network } from './Network'
+export { Node } from './Node'
 
 export { NetworkFn as default }

@@ -1,0 +1,145 @@
+graph TB
+    %% Core Models
+    IdType[IdType<br/>Core identifier]
+    
+    %% Network Models
+    Network[Network]
+    Node[Node]
+    Edge[Edge]
+    GraphObject[GraphObject]
+    
+    %% View Models
+    NetworkView[NetworkView]
+    NodeView[NodeView]
+    EdgeView[EdgeView]
+    View[View]
+    
+    %% Visual Style Models
+    VisualStyle[VisualStyle]
+    VisualProperty[VisualProperty]
+    VisualMappingFunction[VisualMappingFunction]
+    
+    %% Table Models
+    Table[Table]
+    Column[Column]
+    ValueType[ValueType]
+    
+    
+    %% Workspace Models
+    Workspace[Workspace]
+    
+    %% App Models
+    CyApp[CyApp]
+    ServiceApp[ServiceApp]
+    ServiceAppTask[ServiceAppTask]
+    
+    %% Layout Models
+    LayoutEngine[LayoutEngine]
+    LayoutAlgorithm[LayoutAlgorithm]
+    
+    %% Filter Models
+    Filter[Filter]
+    FilterConfig[FilterConfig]
+    
+    %% Renderer Models
+    Renderer[Renderer]
+    ViewPort[ViewPort]
+    
+    %% Property Models
+    Property[Property]
+    NumberRange[NumberRange]
+    DiscreteRange[DiscreteRange]
+    
+    %% Cx Models
+    NiceCx[NiceCx]
+    CxDescriptor[CxDescriptor]
+    
+    %% Relationships - Network Layer
+    Network --> Node
+    Network --> Edge
+    Node --> GraphObject
+    Edge --> GraphObject
+    GraphObject --> IdType
+    
+    %% Relationships - View Layer
+    NetworkView --> View
+    NetworkView --> NodeView
+    NetworkView --> EdgeView
+    NetworkView --> IdType
+    NodeView --> View
+    EdgeView --> View
+    
+    %% Relationships - Visual Style Layer
+    VisualStyle --> VisualProperty
+    VisualProperty --> VisualMappingFunction
+    VisualProperty --> Property
+    
+    %% Relationships - Table Layer
+    Table --> Column
+    Column --> ValueType
+    
+    
+    %% Relationships - Workspace
+    Workspace --> IdType
+    Workspace --> Network
+    
+    %% Relationships - Apps
+    ServiceApp --> ServiceAppTask
+    CyApp --> ServiceApp
+    
+    %% Relationships - Layout
+    LayoutEngine --> LayoutAlgorithm
+    
+    %% Relationships - Filters
+    Filter --> FilterConfig
+    Filter --> Property
+    
+    %% Relationships - Renderer
+    Renderer --> ViewPort
+    Renderer --> NetworkView
+    
+    %% Relationships - Cx Import/Export
+    NiceCx --> CxDescriptor
+    NiceCx --> Network
+    %% Styling for thicker edges
+    linkStyle 0 stroke-width:3px
+    linkStyle 1 stroke-width:3px
+    linkStyle 2 stroke-width:3px
+    linkStyle 3 stroke-width:3px
+    linkStyle 4 stroke-width:3px
+    linkStyle 5 stroke-width:3px
+    linkStyle 6 stroke-width:3px
+    linkStyle 7 stroke-width:3px
+    linkStyle 8 stroke-width:3px
+    linkStyle 9 stroke-width:3px
+    linkStyle 10 stroke-width:3px
+    linkStyle 11 stroke-width:3px
+    linkStyle 12 stroke-width:3px
+    linkStyle 13 stroke-width:3px
+    linkStyle 14 stroke-width:3px
+    linkStyle 15 stroke-width:3px
+    linkStyle 16 stroke-width:3px
+    linkStyle 17 stroke-width:3px
+    linkStyle 18 stroke-width:3px
+    linkStyle 19 stroke-width:3px
+    linkStyle 20 stroke-width:3px
+    linkStyle 21 stroke-width:3px
+    linkStyle 22 stroke-width:3px
+    linkStyle 23 stroke-width:3px
+    linkStyle 24 stroke-width:3px
+    linkStyle 25 stroke-width:3px
+    linkStyle 26 stroke-width:3px
+
+    
+    %% Styling
+    classDef coreModel fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef networkModel fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef viewModel fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef styleModel fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef tableModel fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    
+    class IdType coreModel
+    class Network,Node,Edge,GraphObject networkModel
+    class NetworkView,NodeView,EdgeView,View viewModel
+    class VisualStyle,VisualProperty,VisualMappingFunction styleModel
+    class Table,Column,ValueType tableModel

@@ -1,7 +1,8 @@
 import { TextInput } from '@mantine/core'
-import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
+import debounce from 'lodash/debounce'
 import { useState } from 'react'
-import { debounce } from 'lodash'
+
+import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
 
 export const NetworkNameInput = () => {
   const name = useCreateNetworkFromTableStore((state) => state.name)
@@ -15,6 +16,7 @@ export const NetworkNameInput = () => {
 
   return (
     <TextInput
+      data-testid="create-network-from-table-name-input"
       value={value}
       onChange={(event) => {
         setValue(event.currentTarget.value)

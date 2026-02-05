@@ -38,7 +38,8 @@ describe('createNetworkFromTableData', () => {
 
     const result = createNetworkFromTableData(rows, columns, 'test')
 
-    expect(result.summary).toEqual({ type: 'localfile', name: 'localfile' })
+    expect(result.summary.name).toBe('test')
+    expect(result.summary.isNdex).toBe(false)
     expect(result.nodeTable.columns).toEqual([
       { name: 'name', type: ValueTypeName.String },
     ])
@@ -75,7 +76,8 @@ describe('createNetworkFromTableData', () => {
 
     const result = createNetworkFromTableData(rows, columns, 'test')
 
-    expect(result.summary).toEqual({ type: 'localfile', name: 'localfile' })
+    expect(result.summary.name).toBe('test')
+    expect(result.summary.isNdex).toBe(false)
     expect(result.nodeTable.columns).toEqual([
       { name: 'name', type: ValueTypeName.String },
     ])

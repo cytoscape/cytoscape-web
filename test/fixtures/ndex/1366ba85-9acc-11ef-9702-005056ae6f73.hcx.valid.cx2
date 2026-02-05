@@ -1,0 +1,6317 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "edgeBypasses",
+        "elementCount": 1
+      },
+      {
+        "name": "nodeBypasses",
+        "elementCount": 50
+      },
+      {
+        "name": "nodes",
+        "elementCount": 70
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 87
+      },
+      {
+        "name": "visualProperties",
+        "elementCount": 1
+      },
+      {
+        "name": "visualEditorProperties",
+        "elementCount": 1
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "nodes": {
+          "Proteins": {
+            "d": "string"
+          },
+          "Category": {
+            "d": "string"
+          },
+          "name": {
+            "d": "string"
+          },
+          "__system_size": {
+            "d": "integer"
+          },
+          "95% prediction interval (nm)": {
+            "d": "string"
+          },
+          "__isKnown": {
+            "d": "integer"
+          },
+          "Number of proteins": {
+            "d": "integer"
+          },
+          "selected": {
+            "d": "boolean"
+          },
+          "Annotation": {
+            "d": "string"
+          },
+          "Predicted diameter (nm)": {
+            "d": "integer"
+          },
+          "HCX::members": {
+            "d": "list_of_integer"
+          },
+          "assembly_id": {
+            "d": "string"
+          },
+          "CD_MemberList": {
+            "d": "string"
+          },
+          "CD_MemberList_Size": {
+            "d": "integer"
+          },
+          "CD_MemberList_LogSize": {
+            "d": "double"
+          }
+        },
+        "networkAttributes": {
+          "shared name": {
+            "d": "string"
+          },
+          "reference": {
+            "d": "string"
+          },
+          "rightsHolder": {
+            "d": "string"
+          },
+          "__Annotations": {
+            "d": "list_of_string"
+          },
+          "author": {
+            "d": "string"
+          },
+          "rights": {
+            "d": "string"
+          },
+          "name": {
+            "d": "string"
+          },
+          "description": {
+            "d": "string"
+          },
+          "version": {
+            "d": "string"
+          },
+          "selected": {
+            "d": "boolean"
+          },
+          "ndexSchema": {
+            "d": "string"
+          },
+          "HCX::modelFileCount": {
+            "d": "integer"
+          },
+          "HCX::interactionNetworkName": {
+            "d": "string"
+          },
+          "HCX::interactionNetworkUUID": {
+            "d": "string"
+          }
+        },
+        "edges": {
+          "shared name": {
+            "d": "string"
+          },
+          "Is_Tree_Edge": {
+            "d": "string"
+          },
+          "shared interaction": {
+            "d": "string"
+          },
+          "name": {
+            "d": "string"
+          },
+          "interaction": {
+            "d": "string"
+          },
+          "selected": {
+            "d": "boolean"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "reference": "Yue Qin, Edward L. Huttlin, Casper F. Winsnes, Maya L. Gosztyla, Ludivine Wacheul, Marcus R. Kelly, Steven M. Blue, Fan Zheng, Michael Chen, Leah V. Schaffer, Katherine Licon, Anna Bäckström, Laura Pontano Vaites, John J. Lee, Wei Ouyang, Sophie N. Liu, Tian Zhang, Erica Silva, Jisoo Park, Adriana Pitea, Jason F. Kreisberg, Steven P. Gygi, Jianzhu Ma, J. Wade Harper, Gene W. Yeo, Denis L. J. Lafontaine, Emma Lundberg, Trey Ideker<br><strong>A multi-scale map of cell structure fusing protein images and interactions</strong><br><i>Nature 600, 536–542 (2021).</i>, (2021)<br><a href=\"http://doi.org/10.1038/s41586-021-04115-9\"  target=\"_blank\">10.1038/s41586-021-04115-9</a>",
+        "rightsHolder": "Yue Qin",
+        "author": "Yue Qin",
+        "rights": "MIT license (MIT)",
+        "name": "Multi-Scale Integrated Cell (MuSIC) v1",
+        "description": "<div><br/></div><div>Two central approaches for mapping cellular structure – protein fluorescent imaging and protein biophysical association – each generate extensive datasets but of distinct qualities and resolutions that are typically treated separately. The MuSIC map is designed to address this challenge, by integrating immunofluorescent images in the Human Protein Atlas with ongoing affinity purification experiments from the BioPlex resource. The result is a unified hierarchical map of eukaryotic cell architecture. In the MuSIC hierarchy, nodes represent systems and arrows indicate containment of the lower system by the upper. Node color indicates known (gold) or putative novel (purple) systems. The size of each circle is based on the number of proteins in the system. The relative height of each system in the layout is determined based on the predicted diameter of the system in MuSIC.<br/></div>",
+        "version": "1.0",
+        "ndexSchema": "hierarchy_v0.1",
+        "HCX::modelFileCount": 2,
+        "HCX::interactionNetworkUUID": "135ecb43-9acc-11ef-9702-005056ae6f73"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 127,
+        "x": -872.5791230541014,
+        "y": -412.1495917886891,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, MRPS31, MRPS9, RPL6, RPS13, HNRNPC, RBBP6, NOC2L, RPL28, RPL11, IMMT, AGK, MCAT, METTL17, MRPS11, NAT8L, NDUFA1, NDUFA10, NDUFA7, NDUFA9, NDUFAF2, NMNAT3, POLRMT, SUCLA2, TIMM50, TMLHE, TOMM40, URB2, YARS2",
+          "Category": "Known system",
+          "name": "Subgroup of metabolic organelles",
+          "95% prediction interval (nm)": "[844, 2928]",
+          "__system_size": 41,
+          "__isKnown": 1,
+          "Number of proteins": 41,
+          "Annotation": "Subgroup of metabolic organelles",
+          "Predicted diameter (nm)": 1572,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            454,
+            32,
+            75,
+            278,
+            39,
+            12,
+            33,
+            206,
+            243,
+            177,
+            415,
+            295,
+            26,
+            196,
+            304,
+            477,
+            147,
+            123,
+            64,
+            294,
+            450,
+            345,
+            150,
+            40,
+            146,
+            392,
+            220,
+            292
+          ],
+          "assembly_id": "775",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A MRPS31 MRPS9 RPL6 RPS13 HNRNPC RBBP6 NOC2L RPL28 RPL11 IMMT AGK MCAT METTL17 MRPS11 NAT8L NDUFA1 NDUFA10 NDUFA7 NDUFA9 NDUFAF2 NMNAT3 POLRMT SUCLA2 TIMM50 TMLHE TOMM40 URB2 YARS2",
+          "CD_MemberList_Size": 41,
+          "CD_MemberList_LogSize": 3.713572066704308
+        }
+      },
+      {
+        "id": 126,
+        "x": -995.5040220124689,
+        "y": -432.17219834107976,
+        "v": {
+          "Proteins": "ANKRD46, CHST10, CLPTM1, DGCR2, DISP1, DNAJC18, FAM69B, FZD8, GABRA5, KCNB2, KCNQ2, MCOLN2, MCOLN3, MFSD10, PDE3B, POMT1, SLC41A3, XKR8",
+          "Category": "Putative system",
+          "name": "Ion transmembrane transport system",
+          "95% prediction interval (nm)": "[893, 3100]",
+          "__system_size": 18,
+          "__isKnown": 0,
+          "Number of proteins": 18,
+          "Annotation": "Ion transmembrane transport system",
+          "Predicted diameter (nm)": 1664,
+          "HCX::members": [
+            398,
+            550,
+            322,
+            227,
+            492,
+            461,
+            154,
+            442,
+            151,
+            175,
+            475,
+            363,
+            486,
+            451,
+            495,
+            557,
+            493,
+            511
+          ],
+          "assembly_id": "763",
+          "CD_MemberList": "ANKRD46 CHST10 CLPTM1 DGCR2 DISP1 DNAJC18 FAM69B FZD8 GABRA5 KCNB2 KCNQ2 MCOLN2 MCOLN3 MFSD10 PDE3B POMT1 SLC41A3 XKR8",
+          "CD_MemberList_Size": 18,
+          "CD_MemberList_LogSize": 2.8903717578961645
+        }
+      },
+      {
+        "id": 125,
+        "x": -995.4662489942094,
+        "y": -627.5861198783413,
+        "v": {
+          "Proteins": "ACVR1, AGPAT4, C15orf61, CACNA2D2, GPR180, IGFBP2, IMMT, LMF2, NAT14, PCDH19, PEX10, SH3GL2, SLC35F2, TESC, TMEM177, ANKRD46, CHST10, CLPTM1, DGCR2, DISP1, DNAJC18, FAM69B, FZD8, GABRA5, KCNB2, KCNQ2, MCOLN2, MCOLN3, MFSD10, PDE3B, POMT1, SLC41A3, XKR8",
+          "Category": "Putative system",
+          "name": "Transmembrane transport systems",
+          "95% prediction interval (nm)": "[2023, 7021]",
+          "__system_size": 33,
+          "__isKnown": 0,
+          "Number of proteins": 33,
+          "Annotation": "Transmembrane transport systems",
+          "Predicted diameter (nm)": 3769,
+          "HCX::members": [
+            460,
+            176,
+            435,
+            152,
+            153,
+            128,
+            177,
+            13,
+            478,
+            524,
+            14,
+            15,
+            449,
+            470,
+            54,
+            398,
+            550,
+            322,
+            227,
+            492,
+            461,
+            154,
+            442,
+            151,
+            175,
+            475,
+            363,
+            486,
+            451,
+            495,
+            557,
+            493,
+            511
+          ],
+          "assembly_id": "774",
+          "CD_MemberList": "ACVR1 AGPAT4 C15orf61 CACNA2D2 GPR180 IGFBP2 IMMT LMF2 NAT14 PCDH19 PEX10 SH3GL2 SLC35F2 TESC TMEM177 ANKRD46 CHST10 CLPTM1 DGCR2 DISP1 DNAJC18 FAM69B FZD8 GABRA5 KCNB2 KCNQ2 MCOLN2 MCOLN3 MFSD10 PDE3B POMT1 SLC41A3 XKR8",
+          "CD_MemberList_Size": 33,
+          "CD_MemberList_LogSize": 3.4965075614664802
+        }
+      },
+      {
+        "id": 124,
+        "x": -327.19618430478266,
+        "y": -148.33296175146094,
+        "v": {
+          "Proteins": "RPL13A, DHX15, SNRNP70, RNPC3, NAA38, RPL7L1",
+          "Category": "Putative system",
+          "name": "RNA processing complex 2",
+          "95% prediction interval (nm)": "[90, 314]",
+          "__system_size": 6,
+          "__isKnown": 0,
+          "Number of proteins": 6,
+          "Annotation": "RNA processing complex 2",
+          "Predicted diameter (nm)": 169,
+          "HCX::members": [
+            257,
+            70,
+            29,
+            136,
+            219,
+            31
+          ],
+          "assembly_id": "732",
+          "CD_MemberList": "RPL13A DHX15 SNRNP70 RNPC3 NAA38 RPL7L1",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 123,
+        "x": -327.24849773556656,
+        "y": -248.39732638604198,
+        "v": {
+          "Proteins": "RPL13A, KRI1, CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, RPS3A, ZNF45, SRRM1, U2AF2, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, CD2BP2, GEMIN4, SAFB2, HNRNPC, RBBP6, RRS1, RPL7L1, COIL, SF3A2, PRKRIP1",
+          "Category": "Known system",
+          "name": "RNA processing complex family",
+          "95% prediction interval (nm)": "[257, 892]",
+          "__system_size": 32,
+          "__isKnown": 1,
+          "Number of proteins": 32,
+          "Annotation": "RNA processing complex family",
+          "Predicted diameter (nm)": 479,
+          "HCX::members": [
+            257,
+            184,
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            46,
+            45,
+            91,
+            82,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            326,
+            251,
+            437,
+            39,
+            12,
+            24,
+            31,
+            181,
+            167,
+            298
+          ],
+          "assembly_id": "773",
+          "CD_MemberList": "RPL13A KRI1 CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC RPS3A ZNF45 SRRM1 U2AF2 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 CD2BP2 GEMIN4 SAFB2 HNRNPC RBBP6 RRS1 RPL7L1 COIL SF3A2 PRKRIP1",
+          "CD_MemberList_Size": 32,
+          "CD_MemberList_LogSize": 3.4657359027997265
+        }
+      },
+      {
+        "id": 122,
+        "x": -192.94229263034998,
+        "y": -387.75065708865316,
+        "v": {
+          "Proteins": "RPL13A, KRI1, CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, CD2BP2, GEMIN4, SAFB2, HNRNPC, SFMBT2, AKAP17A, RBBP6, ZRANB2, RRS1, NOC2L, RPL7L1, COIL, SF3A2, PRKRIP1, CASC3, HIRIP3, NOP56, NOS1AP, PRPF31",
+          "Category": "Putative system",
+          "name": "Nuclear splicing speckle",
+          "95% prediction interval (nm)": "[649, 2252]",
+          "__system_size": 42,
+          "__isKnown": 0,
+          "Number of proteins": 42,
+          "Annotation": "Nuclear splicing speckle",
+          "Predicted diameter (nm)": 1209,
+          "HCX::members": [
+            257,
+            184,
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            106,
+            46,
+            45,
+            91,
+            82,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            326,
+            251,
+            437,
+            39,
+            93,
+            205,
+            12,
+            648,
+            24,
+            33,
+            31,
+            181,
+            167,
+            298,
+            122,
+            198,
+            59,
+            474,
+            334
+          ],
+          "assembly_id": "772",
+          "CD_MemberList": "RPL13A KRI1 CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC RPL18 RPS3A ZNF45 SRRM1 U2AF2 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 CD2BP2 GEMIN4 SAFB2 HNRNPC SFMBT2 AKAP17A RBBP6 ZRANB2 RRS1 NOC2L RPL7L1 COIL SF3A2 PRKRIP1 CASC3 HIRIP3 NOP56 NOS1AP PRPF31",
+          "CD_MemberList_Size": 42,
+          "CD_MemberList_LogSize": 3.7376696182833684
+        }
+      },
+      {
+        "id": 121,
+        "x": -786.2877336576903,
+        "y": 8.49449158683055,
+        "v": {
+          "Proteins": "RPL13A, RPL7A, DHX15, RPS3A, RPS13, PRR3",
+          "Category": "Putative system",
+          "name": "Ribosomal complex 4",
+          "95% prediction interval (nm)": "[47, 164]",
+          "__system_size": 6,
+          "__isKnown": 0,
+          "Number of proteins": 6,
+          "Annotation": "Ribosomal complex 4",
+          "Predicted diameter (nm)": 88,
+          "HCX::members": [
+            257,
+            17,
+            70,
+            46,
+            278,
+            635
+          ],
+          "assembly_id": "735",
+          "CD_MemberList": "RPL13A RPL7A DHX15 RPS3A RPS13 PRR3",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 120,
+        "x": -746.685466887793,
+        "y": -124.3845722210797,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, DHX15, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, MRPS31, MRPS9, RPL6, RPS13, RRS1, NOC2L, NVL, REXO4, RPL7L1, RPL28, RPL11, PRR3, LIN28B",
+          "Category": "Known system",
+          "name": "Ribosome",
+          "95% prediction interval (nm)": "[86, 299]",
+          "__system_size": 27,
+          "__isKnown": 1,
+          "Number of proteins": 27,
+          "Annotation": "Ribosome",
+          "Predicted diameter (nm)": 160,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            70,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            454,
+            32,
+            75,
+            278,
+            24,
+            33,
+            19,
+            102,
+            31,
+            206,
+            243,
+            635,
+            639
+          ],
+          "assembly_id": "771",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 DHX15 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A MRPS31 MRPS9 RPL6 RPS13 RRS1 NOC2L NVL REXO4 RPL7L1 RPL28 RPL11 PRR3 LIN28B",
+          "CD_MemberList_Size": 27,
+          "CD_MemberList_LogSize": 3.295836866004329
+        }
+      },
+      {
+        "id": 119,
+        "x": -246.50144479068214,
+        "y": -211.7905198925719,
+        "v": {
+          "Proteins": "CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, RPS3A, SRRM1, U2AF2, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, CD2BP2, GEMIN4, SAFB2, HNRNPC, RRS1, COIL, SF3A2, PRKRIP1",
+          "Category": "Known system",
+          "name": "RNA splicing complex family",
+          "95% prediction interval (nm)": "[191, 662]",
+          "__system_size": 27,
+          "__isKnown": 1,
+          "Number of proteins": 27,
+          "Annotation": "RNA splicing complex family",
+          "Predicted diameter (nm)": 355,
+          "HCX::members": [
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            46,
+            91,
+            82,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            326,
+            251,
+            437,
+            39,
+            24,
+            181,
+            167,
+            298
+          ],
+          "assembly_id": "770",
+          "CD_MemberList": "CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC RPS3A SRRM1 U2AF2 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 CD2BP2 GEMIN4 SAFB2 HNRNPC RRS1 COIL SF3A2 PRKRIP1",
+          "CD_MemberList_Size": 27,
+          "CD_MemberList_LogSize": 3.295836866004329
+        }
+      },
+      {
+        "id": 118,
+        "x": -30.13891834221165,
+        "y": -313.98371935699225,
+        "v": {
+          "Proteins": "HNRNPU, TAF6L, CHEK1, CTR9, EAF1, GTF2B, HIRA, HUS1B, NCAPD3, ORC3, RIF1, SFPQ, SUZ12, XRCC6",
+          "Category": "Putative system",
+          "name": "Chromatin regulation assembly",
+          "95% prediction interval (nm)": "[421, 1462]",
+          "__system_size": 14,
+          "__isKnown": 0,
+          "Number of proteins": 14,
+          "Annotation": "Chromatin regulation assembly",
+          "Predicted diameter (nm)": 785,
+          "HCX::members": [
+            74,
+            172,
+            253,
+            5,
+            180,
+            3,
+            159,
+            300,
+            367,
+            274,
+            38,
+            108,
+            11,
+            27
+          ],
+          "assembly_id": "758",
+          "CD_MemberList": "HNRNPU TAF6L CHEK1 CTR9 EAF1 GTF2B HIRA HUS1B NCAPD3 ORC3 RIF1 SFPQ SUZ12 XRCC6",
+          "CD_MemberList_Size": 14,
+          "CD_MemberList_LogSize": 2.6390573296152584
+        }
+      },
+      {
+        "id": 117,
+        "x": -30.365731061612347,
+        "y": -365.9248927938127,
+        "v": {
+          "Proteins": "HNRNPU, HNRNPC, TAF6L, DAXX, ORC2, POLD1, SMARCAL1, TRIM28, CHEK1, CTR9, EAF1, GTF2B, HIRA, HUS1B, NCAPD3, ORC3, RIF1, SFPQ, SUZ12, XRCC6",
+          "Category": "Putative system",
+          "name": "Nucleoplasm 2",
+          "95% prediction interval (nm)": "[473, 1643]",
+          "__system_size": 20,
+          "__isKnown": 0,
+          "Number of proteins": 20,
+          "Annotation": "Nucleoplasm 2",
+          "Predicted diameter (nm)": 882,
+          "HCX::members": [
+            74,
+            39,
+            172,
+            222,
+            21,
+            25,
+            163,
+            118,
+            253,
+            5,
+            180,
+            3,
+            159,
+            300,
+            367,
+            274,
+            38,
+            108,
+            11,
+            27
+          ],
+          "assembly_id": "767",
+          "CD_MemberList": "HNRNPU HNRNPC TAF6L DAXX ORC2 POLD1 SMARCAL1 TRIM28 CHEK1 CTR9 EAF1 GTF2B HIRA HUS1B NCAPD3 ORC3 RIF1 SFPQ SUZ12 XRCC6",
+          "CD_MemberList_Size": 20,
+          "CD_MemberList_LogSize": 2.995732273553991
+        }
+      },
+      {
+        "id": 116,
+        "x": -872.8434000498303,
+        "y": 243.61657048503557,
+        "v": {
+          "Proteins": "RPL19, RPL27A, MRPL19, RPL38, RPL11",
+          "Category": "Putative system",
+          "name": "Large ribosomal subunit subcomplex 2",
+          "95% prediction interval (nm)": "[3, 12]",
+          "__system_size": 5,
+          "__isKnown": 0,
+          "Number of proteins": 5,
+          "Annotation": "Large ribosomal subunit subcomplex 2",
+          "Predicted diameter (nm)": 6,
+          "HCX::members": [
+            275,
+            22,
+            94,
+            92,
+            243
+          ],
+          "assembly_id": "728",
+          "CD_MemberList": "RPL19 RPL27A MRPL19 RPL38 RPL11",
+          "CD_MemberList_Size": 5,
+          "CD_MemberList_LogSize": 1.6094379124341003
+        }
+      },
+      {
+        "id": 115,
+        "x": -872.704158941921,
+        "y": -15.567752723855406,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, MRPS31, MRPS9, RPL6, RPS13, NOC2L, RPL28, RPL11",
+          "Category": "Known system",
+          "name": "Ribosomal subunit",
+          "95% prediction interval (nm)": "[52, 179]",
+          "__system_size": 20,
+          "__isKnown": 1,
+          "Number of proteins": 20,
+          "Annotation": "Ribosomal subunit",
+          "Predicted diameter (nm)": 96,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            454,
+            32,
+            75,
+            278,
+            33,
+            206,
+            243
+          ],
+          "assembly_id": "766",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A MRPS31 MRPS9 RPL6 RPS13 NOC2L RPL28 RPL11",
+          "CD_MemberList_Size": 20,
+          "CD_MemberList_LogSize": 2.995732273553991
+        }
+      },
+      {
+        "id": 114,
+        "x": 55.314575603022305,
+        "y": -313.8165835618547,
+        "v": {
+          "Proteins": "ING4, JAZF1, DMAP1, ING3, MORF4L1, RUVBL2, MYC, SRRM1, HNRNPU, INO80C, SIN3B, TAF5L, FAM120C, SATB1, EHMT2, TAF11, DR1, SULT1C4, TAF6L",
+          "Category": "Known system",
+          "name": "Nucleoplasm 1",
+          "95% prediction interval (nm)": "[409, 1421]",
+          "__system_size": 19,
+          "__isKnown": 1,
+          "Number of proteins": 19,
+          "Annotation": "Nucleoplasm 1",
+          "Predicted diameter (nm)": 763,
+          "HCX::members": [
+            200,
+            400,
+            73,
+            269,
+            188,
+            202,
+            258,
+            91,
+            74,
+            8,
+            234,
+            4,
+            197,
+            166,
+            7,
+            71,
+            366,
+            573,
+            172
+          ],
+          "assembly_id": "765",
+          "CD_MemberList": "ING4 JAZF1 DMAP1 ING3 MORF4L1 RUVBL2 MYC SRRM1 HNRNPU INO80C SIN3B TAF5L FAM120C SATB1 EHMT2 TAF11 DR1 SULT1C4 TAF6L",
+          "CD_MemberList_Size": 19,
+          "CD_MemberList_LogSize": 2.9444389791664403
+        }
+      },
+      {
+        "id": 113,
+        "x": -156.25395394597854,
+        "y": 122.89897160900583,
+        "v": {
+          "Proteins": "CCDC12, SNRNP70, SRRM1, RNPC3, SNRPA1, SF3A2",
+          "Category": "Putative system",
+          "name": "RNA splicing complex 2",
+          "95% prediction interval (nm)": "[25, 86]",
+          "__system_size": 6,
+          "__isKnown": 0,
+          "Number of proteins": 6,
+          "Annotation": "RNA splicing complex 2",
+          "Predicted diameter (nm)": 46,
+          "HCX::members": [
+            606,
+            29,
+            91,
+            136,
+            182,
+            167
+          ],
+          "assembly_id": "741",
+          "CD_MemberList": "CCDC12 SNRNP70 SRRM1 RNPC3 SNRPA1 SF3A2",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 112,
+        "x": -196.7182165852413,
+        "y": -149.89667746825504,
+        "v": {
+          "Proteins": "CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, SRRM1, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, SRRM2, SRSF10, CD2BP2, GEMIN4, HNRNPC, COIL, SF3A2",
+          "Category": "Known system",
+          "name": "RNA splicing via transesterification reactions",
+          "95% prediction interval (nm)": "[92, 320]",
+          "__system_size": 20,
+          "__isKnown": 1,
+          "Number of proteins": 20,
+          "Annotation": "RNA splicing via transesterification reactions",
+          "Predicted diameter (nm)": 172,
+          "HCX::members": [
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            91,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            141,
+            297,
+            326,
+            251,
+            39,
+            181,
+            167
+          ],
+          "assembly_id": "764",
+          "CD_MemberList": "CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC SRRM1 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 SRRM2 SRSF10 CD2BP2 GEMIN4 HNRNPC COIL SF3A2",
+          "CD_MemberList_Size": 20,
+          "CD_MemberList_LogSize": 2.995732273553991
+        }
+      },
+      {
+        "id": 111,
+        "x": -566.4327626686356,
+        "y": 217.34599210687543,
+        "v": {
+          "Proteins": "RPL13A, RPL18, RPS3A, NOC2L",
+          "Category": "Putative system",
+          "name": "Ribosomal complex 2",
+          "95% prediction interval (nm)": "[5, 18]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Ribosomal complex 2",
+          "Predicted diameter (nm)": 10,
+          "HCX::members": [
+            257,
+            106,
+            46,
+            33
+          ],
+          "assembly_id": "724",
+          "CD_MemberList": "RPL13A RPL18 RPS3A NOC2L",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 110,
+        "x": -504.24223326711495,
+        "y": 98.22240183731833,
+        "v": {
+          "Proteins": "RPL19, RPS13, RPL7L1, LIN28B",
+          "Category": "Putative system",
+          "name": "Polysomal ribosome complex",
+          "95% prediction interval (nm)": "[31, 109]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Polysomal ribosome complex",
+          "Predicted diameter (nm)": 58,
+          "HCX::members": [
+            275,
+            278,
+            31,
+            639
+          ],
+          "assembly_id": "716",
+          "CD_MemberList": "RPL19 RPS13 RPL7L1 LIN28B",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 109,
+        "x": -506.01664106680386,
+        "y": -44.504107135728766,
+        "v": {
+          "Proteins": "RPL13A, RPL27A, KRI1, NVL, RPL7L1, DHX37, NOL12, ZNF771",
+          "Category": "Putative system",
+          "name": "Ribosome biogenesis subcomplex",
+          "95% prediction interval (nm)": "[59, 204]",
+          "__system_size": 8,
+          "__isKnown": 0,
+          "Number of proteins": 8,
+          "Annotation": "Ribosome biogenesis subcomplex",
+          "Predicted diameter (nm)": 109,
+          "HCX::members": [
+            257,
+            22,
+            184,
+            19,
+            31,
+            90,
+            35,
+            77
+          ],
+          "assembly_id": "749",
+          "CD_MemberList": "RPL13A RPL27A KRI1 NVL RPL7L1 DHX37 NOL12 ZNF771",
+          "CD_MemberList_Size": 8,
+          "CD_MemberList_LogSize": 2.0794415416798357
+        }
+      },
+      {
+        "id": 108,
+        "x": -696.8399374869115,
+        "y": 33.89667474347294,
+        "v": {
+          "Proteins": "RPL13A, KRI1, RPS13, NOC2L, NVL, REXO4, RPL7L1",
+          "Category": "Putative system",
+          "name": "Pre-rRNA processing assembly (PRRPA)",
+          "95% prediction interval (nm)": "[43, 151]",
+          "__system_size": 7,
+          "__isKnown": 0,
+          "Number of proteins": 7,
+          "Annotation": "Pre-rRNA processing assembly (PRRPA)",
+          "Predicted diameter (nm)": 81,
+          "HCX::members": [
+            257,
+            184,
+            278,
+            33,
+            19,
+            102,
+            31
+          ],
+          "assembly_id": "742",
+          "CD_MemberList": "RPL13A KRI1 RPS13 NOC2L NVL REXO4 RPL7L1",
+          "CD_MemberList_Size": 7,
+          "CD_MemberList_LogSize": 1.9459101490553132
+        }
+      },
+      {
+        "id": 107,
+        "x": -566.5262321497682,
+        "y": -80.56335943737274,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, MRPL19, RPL18, RPS3A, MRPS9, RPL6, RPS13, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, LIN28B",
+          "Category": "Known system",
+          "name": "Ribosome biogenesis assembly",
+          "95% prediction interval (nm)": "[66, 229]",
+          "__system_size": 21,
+          "__isKnown": 1,
+          "Number of proteins": 21,
+          "Annotation": "Ribosome biogenesis assembly",
+          "Predicted diameter (nm)": 123,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            94,
+            106,
+            46,
+            32,
+            75,
+            278,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            639
+          ],
+          "assembly_id": "762",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 MRPL19 RPL18 RPS3A MRPS9 RPL6 RPS13 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 LIN28B",
+          "CD_MemberList_Size": 21,
+          "CD_MemberList_LogSize": 3.044522437723423
+        }
+      },
+      {
+        "id": 106,
+        "x": -72.06320476253343,
+        "y": -194.60210682865937,
+        "v": {
+          "Proteins": "SNRPB2, SNRPC, SRRM1, U2AF2, DHX8, CDC40, HNRNPU, RNPS1, SRRM2, SRSF10, SAFB2, HNRNPC, AKAP17A, RBBP6, ZRANB2",
+          "Category": "Known system",
+          "name": "Spliceosomal complex family",
+          "95% prediction interval (nm)": "[142, 492]",
+          "__system_size": 15,
+          "__isKnown": 1,
+          "Number of proteins": 15,
+          "Annotation": "Spliceosomal complex family",
+          "Predicted diameter (nm)": 264,
+          "HCX::members": [
+            353,
+            157,
+            91,
+            82,
+            369,
+            95,
+            74,
+            83,
+            141,
+            297,
+            437,
+            39,
+            205,
+            12,
+            648
+          ],
+          "assembly_id": "761",
+          "CD_MemberList": "SNRPB2 SNRPC SRRM1 U2AF2 DHX8 CDC40 HNRNPU RNPS1 SRRM2 SRSF10 SAFB2 HNRNPC AKAP17A RBBP6 ZRANB2",
+          "CD_MemberList_Size": 15,
+          "CD_MemberList_LogSize": 2.70805020110221
+        }
+      },
+      {
+        "id": 105,
+        "x": 105.73657483654577,
+        "y": -257.7520406556546,
+        "v": {
+          "Proteins": "ING4, JAZF1, DMAP1, ING3, MORF4L1, RUVBL2, MYC, SRRM1, INO80C, SIN3B, TAF5L, FAM120C, SATB1, EHMT2, TAF11",
+          "Category": "Putative system",
+          "name": "Chromosome organization complex family",
+          "95% prediction interval (nm)": "[313, 1085]",
+          "__system_size": 15,
+          "__isKnown": 0,
+          "Number of proteins": 15,
+          "Annotation": "Chromosome organization complex family",
+          "Predicted diameter (nm)": 583,
+          "HCX::members": [
+            200,
+            400,
+            73,
+            269,
+            188,
+            202,
+            258,
+            91,
+            8,
+            234,
+            4,
+            197,
+            166,
+            7,
+            71
+          ],
+          "assembly_id": "760",
+          "CD_MemberList": "ING4 JAZF1 DMAP1 ING3 MORF4L1 RUVBL2 MYC SRRM1 INO80C SIN3B TAF5L FAM120C SATB1 EHMT2 TAF11",
+          "CD_MemberList_Size": 15,
+          "CD_MemberList_LogSize": 2.70805020110221
+        }
+      },
+      {
+        "id": 104,
+        "x": 104.88589517616884,
+        "y": -305.5784121802813,
+        "v": {
+          "Proteins": "SIN3B, FAM120C, BCORL1, CASP8AP2, E2F3, EHMT2, SFMBT2, ZNF296",
+          "Category": "Putative system",
+          "name": "Negative regulation of RNA biosynthetic process",
+          "95% prediction interval (nm)": "[359, 1244]",
+          "__system_size": 8,
+          "__isKnown": 0,
+          "Number of proteins": 8,
+          "Annotation": "Negative regulation of RNA biosynthetic process",
+          "Predicted diameter (nm)": 668,
+          "HCX::members": [
+            234,
+            197,
+            625,
+            20,
+            111,
+            7,
+            93,
+            402
+          ],
+          "assembly_id": "748",
+          "CD_MemberList": "SIN3B FAM120C BCORL1 CASP8AP2 E2F3 EHMT2 SFMBT2 ZNF296",
+          "CD_MemberList_Size": 8,
+          "CD_MemberList_LogSize": 2.0794415416798357
+        }
+      },
+      {
+        "id": 103,
+        "x": 105.17597226665082,
+        "y": -384.44259853917583,
+        "v": {
+          "Proteins": "JAZF1, MORF4L1, SIN3B, FAM120C, BCL11A, FBRSL1, NASP, SHPRH, BCORL1, CASP8AP2, E2F3, EHMT2, SFMBT2, ZNF296",
+          "Category": "Putative system",
+          "name": "Nuclear transcriptional speckle",
+          "95% prediction interval (nm)": "[682, 2366]",
+          "__system_size": 14,
+          "__isKnown": 0,
+          "Number of proteins": 14,
+          "Annotation": "Nuclear transcriptional speckle",
+          "Predicted diameter (nm)": 1270,
+          "HCX::members": [
+            400,
+            188,
+            234,
+            197,
+            263,
+            651,
+            47,
+            194,
+            625,
+            20,
+            111,
+            7,
+            93,
+            402
+          ],
+          "assembly_id": "759",
+          "CD_MemberList": "JAZF1 MORF4L1 SIN3B FAM120C BCL11A FBRSL1 NASP SHPRH BCORL1 CASP8AP2 E2F3 EHMT2 SFMBT2 ZNF296",
+          "CD_MemberList_Size": 14,
+          "CD_MemberList_LogSize": 2.6390573296152584
+        }
+      },
+      {
+        "id": 102,
+        "x": 27.9467436702345,
+        "y": -174.31563427475447,
+        "v": {
+          "Proteins": "JAZF1, DMAP1, MORF4L1, SRRM1, FAM120C, SATB1",
+          "Category": "Putative system",
+          "name": "Chromatin regulation complex",
+          "95% prediction interval (nm)": "[113, 393]",
+          "__system_size": 6,
+          "__isKnown": 0,
+          "Number of proteins": 6,
+          "Annotation": "Chromatin regulation complex",
+          "Predicted diameter (nm)": 211,
+          "HCX::members": [
+            400,
+            73,
+            188,
+            91,
+            197,
+            166
+          ],
+          "assembly_id": "733",
+          "CD_MemberList": "JAZF1 DMAP1 MORF4L1 SRRM1 FAM120C SATB1",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 101,
+        "x": 105.4094546867102,
+        "y": -194.98851294594036,
+        "v": {
+          "Proteins": "ING4, JAZF1, DMAP1, ING3, MORF4L1, RUVBL2, MYC, SRRM1, INO80C, SIN3B, TAF5L, FAM120C, SATB1",
+          "Category": "Known system",
+          "name": "Chromatin organization complex family",
+          "95% prediction interval (nm)": "[150, 520]",
+          "__system_size": 13,
+          "__isKnown": 1,
+          "Number of proteins": 13,
+          "Annotation": "Chromatin organization complex family",
+          "Predicted diameter (nm)": 279,
+          "HCX::members": [
+            200,
+            400,
+            73,
+            269,
+            188,
+            202,
+            258,
+            91,
+            8,
+            234,
+            4,
+            197,
+            166
+          ],
+          "assembly_id": "755",
+          "CD_MemberList": "ING4 JAZF1 DMAP1 ING3 MORF4L1 RUVBL2 MYC SRRM1 INO80C SIN3B TAF5L FAM120C SATB1",
+          "CD_MemberList_Size": 13,
+          "CD_MemberList_LogSize": 2.5649493574615367
+        }
+      },
+      {
+        "id": 100,
+        "x": -101.04568205351242,
+        "y": 97.93240459867508,
+        "v": {
+          "Proteins": "SNRPB2, SRRM1, DHX8, CDC40, HNRNPC",
+          "Category": "Known system",
+          "name": "Catalytic step 2 spliceosome",
+          "95% prediction interval (nm)": "[31, 109]",
+          "__system_size": 5,
+          "__isKnown": 1,
+          "Number of proteins": 5,
+          "Annotation": "Catalytic step 2 spliceosome",
+          "Predicted diameter (nm)": 59,
+          "HCX::members": [
+            353,
+            91,
+            369,
+            95,
+            39
+          ],
+          "assembly_id": "731",
+          "CD_MemberList": "SNRPB2 SRRM1 DHX8 CDC40 HNRNPC",
+          "CD_MemberList_Size": 5,
+          "CD_MemberList_LogSize": 1.6094379124341003
+        }
+      },
+      {
+        "id": 99,
+        "x": -72.1724776489963,
+        "y": -119.82567323991411,
+        "v": {
+          "Proteins": "SNRPB2, SNRPC, SRRM1, U2AF2, DHX8, CDC40, HNRNPU, RNPS1, SRRM2, SRSF10, SAFB2, HNRNPC",
+          "Category": "Known system",
+          "name": "Subgroup of spliceosomal complex family",
+          "95% prediction interval (nm)": "[85, 295]",
+          "__system_size": 12,
+          "__isKnown": 1,
+          "Number of proteins": 12,
+          "Annotation": "Subgroup of spliceosomal complex family",
+          "Predicted diameter (nm)": 158,
+          "HCX::members": [
+            353,
+            157,
+            91,
+            82,
+            369,
+            95,
+            74,
+            83,
+            141,
+            297,
+            437,
+            39
+          ],
+          "assembly_id": "754",
+          "CD_MemberList": "SNRPB2 SNRPC SRRM1 U2AF2 DHX8 CDC40 HNRNPU RNPS1 SRRM2 SRSF10 SAFB2 HNRNPC",
+          "CD_MemberList_Size": 12,
+          "CD_MemberList_LogSize": 2.4849066497880004
+        }
+      },
+      {
+        "id": 98,
+        "x": -285.95041524407014,
+        "y": 69.9997449226107,
+        "v": {
+          "Proteins": "CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, SRRM1, CDC40, SNRPA1, CD2BP2, GEMIN4",
+          "Category": "Known system",
+          "name": "Small nuclear ribonucleoprotein complex family",
+          "95% prediction interval (nm)": "[39, 134]",
+          "__system_size": 11,
+          "__isKnown": 1,
+          "Number of proteins": 11,
+          "Annotation": "Small nuclear ribonucleoprotein complex family",
+          "Predicted diameter (nm)": 72,
+          "HCX::members": [
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            91,
+            95,
+            182,
+            326,
+            251
+          ],
+          "assembly_id": "753",
+          "CD_MemberList": "CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC SRRM1 CDC40 SNRPA1 CD2BP2 GEMIN4",
+          "CD_MemberList_Size": 11,
+          "CD_MemberList_LogSize": 2.3978952727983707
+        }
+      },
+      {
+        "id": 97,
+        "x": -703.3991263154448,
+        "y": 218.22087036689615,
+        "v": {
+          "Proteins": "RPL19, RPL27A, RPL18, RPS13",
+          "Category": "Putative system",
+          "name": "Ribosomal complex 1",
+          "95% prediction interval (nm)": "[5, 17]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Ribosomal complex 1",
+          "Predicted diameter (nm)": 9,
+          "HCX::members": [
+            275,
+            22,
+            106,
+            278
+          ],
+          "assembly_id": "723",
+          "CD_MemberList": "RPL19 RPL27A RPL18 RPS13",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 96,
+        "x": -846.9027966978936,
+        "y": 211.29134666871428,
+        "v": {
+          "Proteins": "RPL13A, RPL18, MRPS9, RPS13",
+          "Category": "Putative system",
+          "name": "Ribosomal complex 3",
+          "95% prediction interval (nm)": "[6, 22]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Ribosomal complex 3",
+          "Predicted diameter (nm)": 12,
+          "HCX::members": [
+            257,
+            106,
+            32,
+            278
+          ],
+          "assembly_id": "722",
+          "CD_MemberList": "RPL13A RPL18 MRPS9 RPS13",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 95,
+        "x": -786.4457647794727,
+        "y": 191.69533584636955,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, MRPL19, RPL18, RPS3A, MRPS9, RPL6, RPS13",
+          "Category": "Known system",
+          "name": "Cotranslational protein targeting to membrane system",
+          "95% prediction interval (nm)": "[9, 30]",
+          "__system_size": 11,
+          "__isKnown": 1,
+          "Number of proteins": 11,
+          "Annotation": "Cotranslational protein targeting to membrane system",
+          "Predicted diameter (nm)": 16,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            94,
+            106,
+            46,
+            32,
+            75,
+            278
+          ],
+          "assembly_id": "752",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A MRPL19 RPL18 RPS3A MRPS9 RPL6 RPS13",
+          "CD_MemberList_Size": 11,
+          "CD_MemberList_LogSize": 2.3978952727983707
+        }
+      },
+      {
+        "id": 94,
+        "x": -285.8276220709706,
+        "y": 122.89611448764455,
+        "v": {
+          "Proteins": "CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, SRRM1, CDC40, SNRPA1",
+          "Category": "Known system",
+          "name": "Pre-catalytic spliceosome",
+          "95% prediction interval (nm)": "[26, 90]",
+          "__system_size": 9,
+          "__isKnown": 1,
+          "Number of proteins": 9,
+          "Annotation": "Pre-catalytic spliceosome",
+          "Predicted diameter (nm)": 48,
+          "HCX::members": [
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            91,
+            95,
+            182
+          ],
+          "assembly_id": "751",
+          "CD_MemberList": "CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC SRRM1 CDC40 SNRPA1",
+          "CD_MemberList_Size": 9,
+          "CD_MemberList_LogSize": 2.1972245773362196
+        }
+      },
+      {
+        "id": 93,
+        "x": -1.4956283608196643,
+        "y": 112.91786367086958,
+        "v": {
+          "Proteins": "U2AF2, RNPS1, SRRM2, SRSF10",
+          "Category": "Putative system",
+          "name": "Splicing regulatory complex",
+          "95% prediction interval (nm)": "[29, 100]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Splicing regulatory complex",
+          "Predicted diameter (nm)": 54,
+          "HCX::members": [
+            82,
+            83,
+            141,
+            297
+          ],
+          "assembly_id": "719",
+          "CD_MemberList": "U2AF2 RNPS1 SRRM2 SRSF10",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 92,
+        "x": -1.4834502965819705,
+        "y": -35.37933988484222,
+        "v": {
+          "Proteins": "SNRPC, SRRM1, U2AF2, CDC40, HNRNPU, RNPS1, SRRM2, SRSF10",
+          "Category": "Putative system",
+          "name": "U2-type spliceosomal complex family",
+          "95% prediction interval (nm)": "[56, 194]",
+          "__system_size": 8,
+          "__isKnown": 0,
+          "Number of proteins": 8,
+          "Annotation": "U2-type spliceosomal complex family",
+          "Predicted diameter (nm)": 104,
+          "HCX::members": [
+            157,
+            91,
+            82,
+            95,
+            74,
+            83,
+            141,
+            297
+          ],
+          "assembly_id": "750",
+          "CD_MemberList": "SNRPC SRRM1 U2AF2 CDC40 HNRNPU RNPS1 SRRM2 SRSF10",
+          "CD_MemberList_Size": 8,
+          "CD_MemberList_LogSize": 2.0794415416798357
+        }
+      },
+      {
+        "id": 91,
+        "x": -238.95324269472394,
+        "y": 147.22731513521174,
+        "v": {
+          "Proteins": "CCDC12, SNRPB2, CDC40, SNRPA1",
+          "Category": "Known system",
+          "name": "U2 snRNP",
+          "95% prediction interval (nm)": "[17, 61]",
+          "__system_size": 4,
+          "__isKnown": 1,
+          "Number of proteins": 4,
+          "Annotation": "U2 snRNP",
+          "Predicted diameter (nm)": 33,
+          "HCX::members": [
+            606,
+            353,
+            95,
+            182
+          ],
+          "assembly_id": "721",
+          "CD_MemberList": "CCDC12 SNRPB2 CDC40 SNRPA1",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 90,
+        "x": -189.98819160317575,
+        "y": 89.48676267099545,
+        "v": {
+          "Proteins": "SNRPB2, CDC40, EXO1, NAA38",
+          "Category": "Putative system",
+          "name": "Pre-mRNA splicing complex 1",
+          "95% prediction interval (nm)": "[34, 119]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Pre-mRNA splicing complex 1",
+          "Predicted diameter (nm)": 64,
+          "HCX::members": [
+            353,
+            95,
+            101,
+            219
+          ],
+          "assembly_id": "717",
+          "CD_MemberList": "SNRPB2 CDC40 EXO1 NAA38",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 89,
+        "x": -211.31572026624704,
+        "y": 32.96778334397473,
+        "v": {
+          "Proteins": "CCDC12, SNRPB2, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1",
+          "Category": "Known system",
+          "name": "RNA splicing complex 1",
+          "95% prediction interval (nm)": "[44, 153]",
+          "__system_size": 8,
+          "__isKnown": 1,
+          "Number of proteins": 8,
+          "Annotation": "RNA splicing complex 1",
+          "Predicted diameter (nm)": 82,
+          "HCX::members": [
+            606,
+            353,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182
+          ],
+          "assembly_id": "747",
+          "CD_MemberList": "CCDC12 SNRPB2 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1",
+          "CD_MemberList_Size": 8,
+          "CD_MemberList_LogSize": 2.0794415416798357
+        }
+      },
+      {
+        "id": 88,
+        "x": -433.9747501729579,
+        "y": -147.56903765945216,
+        "v": {
+          "Proteins": "SCAND1, ZNF232, ZNF446, ZNF500, ZSCAN16, ZSCAN18, ZNF215, ZNF444",
+          "Category": "Putative system",
+          "name": "Transcriptional regulation complex family",
+          "95% prediction interval (nm)": "[90, 312]",
+          "__system_size": 8,
+          "__isKnown": 0,
+          "Number of proteins": 8,
+          "Annotation": "Transcriptional regulation complex family",
+          "Predicted diameter (nm)": 168,
+          "HCX::members": [
+            396,
+            615,
+            394,
+            616,
+            395,
+            605,
+            564,
+            455
+          ],
+          "assembly_id": "746",
+          "CD_MemberList": "SCAND1 ZNF232 ZNF446 ZNF500 ZSCAN16 ZSCAN18 ZNF215 ZNF444",
+          "CD_MemberList_Size": 8,
+          "CD_MemberList_LogSize": 2.0794415416798357
+        }
+      },
+      {
+        "id": 87,
+        "x": -922.2263553150239,
+        "y": 244.1803557391919,
+        "v": {
+          "Proteins": "RPS18, MRPS14, RPL38",
+          "Category": "Putative system",
+          "name": "Ribosomal complex 6",
+          "95% prediction interval (nm)": "[4, 13]",
+          "__system_size": 3,
+          "__isKnown": 0,
+          "Number of proteins": 3,
+          "Annotation": "Ribosomal complex 6",
+          "Predicted diameter (nm)": 7,
+          "HCX::members": [
+            189,
+            125,
+            92
+          ],
+          "assembly_id": "725",
+          "CD_MemberList": "RPS18 MRPS14 RPL38",
+          "CD_MemberList_Size": 3,
+          "CD_MemberList_LogSize": 1.0986122886681098
+        }
+      },
+      {
+        "id": 86,
+        "x": -922.2234686928043,
+        "y": 184.86681565862068,
+        "v": {
+          "Proteins": "RPS18, RPL19, RPL27A, MRPS14, RPL38, MRPS31, MRPS9",
+          "Category": "Putative system",
+          "name": "Mito-cyto ribosomal cluster",
+          "95% prediction interval (nm)": "[11, 38]",
+          "__system_size": 7,
+          "__isKnown": 0,
+          "Number of proteins": 7,
+          "Annotation": "Mito-cyto ribosomal cluster",
+          "Predicted diameter (nm)": 20,
+          "HCX::members": [
+            189,
+            275,
+            22,
+            125,
+            92,
+            454,
+            32
+          ],
+          "assembly_id": "745",
+          "CD_MemberList": "RPS18 RPL19 RPL27A MRPS14 RPL38 MRPS31 MRPS9",
+          "CD_MemberList_Size": 7,
+          "CD_MemberList_LogSize": 1.9459101490553132
+        }
+      },
+      {
+        "id": 85,
+        "x": -349.38812168637725,
+        "y": 70.76497718499476,
+        "v": {
+          "Proteins": "SNRNP70, RPS3A, SRRM1, U2AF2",
+          "Category": "Putative system",
+          "name": "RNA splicing complex 3",
+          "95% prediction interval (nm)": "[38, 133]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "RNA splicing complex 3",
+          "Predicted diameter (nm)": 71,
+          "HCX::members": [
+            29,
+            46,
+            91,
+            82
+          ],
+          "assembly_id": "718",
+          "CD_MemberList": "SNRNP70 RPS3A SRRM1 U2AF2",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 84,
+        "x": -392.80114176546033,
+        "y": -75.26974340831485,
+        "v": {
+          "Proteins": "RPL13A, DHX15, SNRNP70, RPS3A, ZNF45, SRRM1, U2AF2",
+          "Category": "Putative system",
+          "name": "RNA processing complex 1",
+          "95% prediction interval (nm)": "[63, 220]",
+          "__system_size": 7,
+          "__isKnown": 0,
+          "Number of proteins": 7,
+          "Annotation": "RNA processing complex 1",
+          "Predicted diameter (nm)": 118,
+          "HCX::members": [
+            257,
+            70,
+            29,
+            46,
+            45,
+            91,
+            82
+          ],
+          "assembly_id": "744",
+          "CD_MemberList": "RPL13A DHX15 SNRNP70 RPS3A ZNF45 SRRM1 U2AF2",
+          "CD_MemberList_Size": 7,
+          "CD_MemberList_LogSize": 1.9459101490553132
+        }
+      },
+      {
+        "id": 83,
+        "x": 105.63772211224381,
+        "y": 147.17140074451441,
+        "v": {
+          "Proteins": "ING4, JAZF1, DMAP1, ING3, MORF4L1, RUVBL2, MYC",
+          "Category": "Known system",
+          "name": "Histone acetyltransferase complex family",
+          "95% prediction interval (nm)": "[17, 59]",
+          "__system_size": 7,
+          "__isKnown": 1,
+          "Number of proteins": 7,
+          "Annotation": "Histone acetyltransferase complex family",
+          "Predicted diameter (nm)": 31,
+          "HCX::members": [
+            200,
+            400,
+            73,
+            269,
+            188,
+            202,
+            258
+          ],
+          "assembly_id": "743",
+          "CD_MemberList": "ING4 JAZF1 DMAP1 ING3 MORF4L1 RUVBL2 MYC",
+          "CD_MemberList_Size": 7,
+          "CD_MemberList_LogSize": 1.9459101490553132
+        }
+      },
+      {
+        "id": 82,
+        "x": -785.8684014094374,
+        "y": 252.4701312576635,
+        "v": {
+          "Proteins": "RPL13A, RPL19, RPL27A, RPL7A, RPL18, RPS3A",
+          "Category": "Known system",
+          "name": "Large ribosomal subunit subcomplex 4",
+          "95% prediction interval (nm)": "[3, 10]",
+          "__system_size": 6,
+          "__isKnown": 1,
+          "Number of proteins": 6,
+          "Annotation": "Large ribosomal subunit subcomplex 4",
+          "Predicted diameter (nm)": 5,
+          "HCX::members": [
+            257,
+            275,
+            22,
+            17,
+            106,
+            46
+          ],
+          "assembly_id": "740",
+          "CD_MemberList": "RPL13A RPL19 RPL27A RPL7A RPL18 RPS3A",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 81,
+        "x": -994.8294977846056,
+        "y": 248.75725527999077,
+        "v": {
+          "Proteins": "RPL27A, MRPL19, MRPL20, RPL38",
+          "Category": "Putative system",
+          "name": "Large ribosomal subunit subcomplex 1",
+          "95% prediction interval (nm)": "[3, 10]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Large ribosomal subunit subcomplex 1",
+          "Predicted diameter (nm)": 5,
+          "HCX::members": [
+            22,
+            94,
+            28,
+            92
+          ],
+          "assembly_id": "714",
+          "CD_MemberList": "RPL27A MRPL19 MRPL20 RPL38",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 80,
+        "x": -995.0487908405636,
+        "y": 146.95265000813367,
+        "v": {
+          "Proteins": "RPL27A, MRPL46, MRPS14, MRPL19, MRPL20, RPL38",
+          "Category": "Known system",
+          "name": "Mitochondrial large ribosomal subunit",
+          "95% prediction interval (nm)": "[17, 61]",
+          "__system_size": 6,
+          "__isKnown": 1,
+          "Number of proteins": 6,
+          "Annotation": "Mitochondrial large ribosomal subunit",
+          "Predicted diameter (nm)": 33,
+          "HCX::members": [
+            22,
+            429,
+            125,
+            94,
+            28,
+            92
+          ],
+          "assembly_id": "739",
+          "CD_MemberList": "RPL27A MRPL46 MRPS14 MRPL19 MRPL20 RPL38",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 79,
+        "x": 105.12570098031091,
+        "y": 184.32818734970232,
+        "v": {
+          "Proteins": "DMAP1, ING3, MORF4L1, RUVBL2",
+          "Category": "Known system",
+          "name": "NuA4 histone acetyltransferase complex",
+          "95% prediction interval (nm)": "[11, 39]",
+          "__system_size": 4,
+          "__isKnown": 1,
+          "Number of proteins": 4,
+          "Annotation": "NuA4 histone acetyltransferase complex",
+          "Predicted diameter (nm)": 21,
+          "HCX::members": [
+            73,
+            269,
+            188,
+            202
+          ],
+          "assembly_id": "727",
+          "CD_MemberList": "DMAP1 ING3 MORF4L1 RUVBL2",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 77,
+        "x": -362.88760761949084,
+        "y": 224.37913467997907,
+        "v": {
+          "Proteins": "GEMIN7, SNRNP70, SNRPB2, SNRPC",
+          "Category": "Known system",
+          "name": "U1 snRNP",
+          "95% prediction interval (nm)": "[4, 15]",
+          "__system_size": 4,
+          "__isKnown": 1,
+          "Number of proteins": 4,
+          "Annotation": "U1 snRNP",
+          "Predicted diameter (nm)": 8,
+          "HCX::members": [
+            327,
+            29,
+            353,
+            157
+          ],
+          "assembly_id": "726",
+          "CD_MemberList": "GEMIN7 SNRNP70 SNRPB2 SNRPC",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 76,
+        "x": -362.86616405928964,
+        "y": 164.34734727054186,
+        "v": {
+          "Proteins": "CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC",
+          "Category": "Known system",
+          "name": "Pre-catalytic spliceosome subcomplex 1",
+          "95% prediction interval (nm)": "[15, 52]",
+          "__system_size": 6,
+          "__isKnown": 1,
+          "Number of proteins": 6,
+          "Annotation": "Pre-catalytic spliceosome subcomplex 1",
+          "Predicted diameter (nm)": 28,
+          "HCX::members": [
+            606,
+            70,
+            327,
+            29,
+            353,
+            157
+          ],
+          "assembly_id": "737",
+          "CD_MemberList": "CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 75,
+        "x": -642.3292156112074,
+        "y": 218.33369137181273,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1",
+          "Category": "Putative system",
+          "name": "Ribosomal complex 5",
+          "95% prediction interval (nm)": "[5, 18]",
+          "__system_size": 6,
+          "__isKnown": 0,
+          "Number of proteins": 6,
+          "Annotation": "Ribosomal complex 5",
+          "Predicted diameter (nm)": 9,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184
+          ],
+          "assembly_id": "736",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 74,
+        "x": -434.0001138037254,
+        "y": 4.069746147188854,
+        "v": {
+          "Proteins": "ZNF446, ZNF500, ZSCAN16, ZSCAN18",
+          "Category": "Putative system",
+          "name": "Zinc finger protein complex",
+          "95% prediction interval (nm)": "[48, 167]",
+          "__system_size": 4,
+          "__isKnown": 0,
+          "Number of proteins": 4,
+          "Annotation": "Zinc finger protein complex",
+          "Predicted diameter (nm)": 90,
+          "HCX::members": [
+            394,
+            616,
+            395,
+            605
+          ],
+          "assembly_id": "715",
+          "CD_MemberList": "ZNF446 ZNF500 ZSCAN16 ZSCAN18",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 73,
+        "x": -434.0290241634152,
+        "y": -32.73165166304259,
+        "v": {
+          "Proteins": "SCAND1, ZNF232, ZNF446, ZNF500, ZSCAN16, ZSCAN18",
+          "Category": "Putative system",
+          "name": "Transcriptional regulation complexes",
+          "95% prediction interval (nm)": "[54, 187]",
+          "__system_size": 6,
+          "__isKnown": 0,
+          "Number of proteins": 6,
+          "Annotation": "Transcriptional regulation complexes",
+          "Predicted diameter (nm)": 101,
+          "HCX::members": [
+            396,
+            615,
+            394,
+            616,
+            395,
+            605
+          ],
+          "assembly_id": "734",
+          "CD_MemberList": "SCAND1 ZNF232 ZNF446 ZNF500 ZSCAN16 ZSCAN18",
+          "CD_MemberList_Size": 6,
+          "CD_MemberList_LogSize": 1.791759469228055
+        }
+      },
+      {
+        "id": 72,
+        "x": -692.4487018485859,
+        "y": 269.8826390249373,
+        "v": {
+          "Proteins": "RPL13A, RPL19, RPL27A, RPL7A",
+          "Category": "Known system",
+          "name": "Large ribosomal subunit subcomplex 3",
+          "95% prediction interval (nm)": "[2, 8]",
+          "__system_size": 4,
+          "__isKnown": 1,
+          "Number of proteins": 4,
+          "Annotation": "Large ribosomal subunit subcomplex 3",
+          "Predicted diameter (nm)": 4,
+          "HCX::members": [
+            257,
+            275,
+            22,
+            17
+          ],
+          "assembly_id": "720",
+          "CD_MemberList": "RPL13A RPL19 RPL27A RPL7A",
+          "CD_MemberList_Size": 4,
+          "CD_MemberList_LogSize": 1.3862943611198906
+        }
+      },
+      {
+        "id": 142,
+        "x": -113.45685041412436,
+        "y": -365.55553199518175,
+        "v": {
+          "Proteins": "HNRNPU, HNRNPC, SATB1, DAXX, CHEK1, CTR9, HIRA, NCAPD3, RIF1, SFPQ, SUZ12, XRCC6, TERF1, TRIM27, DDB1, DDX11, NOLC1, PRR14, SMARCC2, UHRF1, XPO1",
+          "Category": "Putative system",
+          "name": "Nuclear body",
+          "95% prediction interval (nm)": "[507, 1759]",
+          "__system_size": 21,
+          "__isKnown": 0,
+          "Number of proteins": 21,
+          "Annotation": "Nuclear body",
+          "Predicted diameter (nm)": 944,
+          "HCX::members": [
+            74,
+            39,
+            166,
+            222,
+            253,
+            5,
+            159,
+            367,
+            38,
+            108,
+            11,
+            27,
+            2,
+            30,
+            331,
+            55,
+            135,
+            431,
+            162,
+            18,
+            1
+          ],
+          "assembly_id": "768",
+          "CD_MemberList": "HNRNPU HNRNPC SATB1 DAXX CHEK1 CTR9 HIRA NCAPD3 RIF1 SFPQ SUZ12 XRCC6 TERF1 TRIM27 DDB1 DDX11 NOLC1 PRR14 SMARCC2 UHRF1 XPO1",
+          "CD_MemberList_Size": 21,
+          "CD_MemberList_LogSize": 3.044522437723423
+        }
+      },
+      {
+        "id": 141,
+        "x": -576.3513164470429,
+        "y": -386.87189957948567,
+        "v": {
+          "Proteins": "RPS18, BCL11A, NASP, SHPRH, EHMT2, RPL7L1, DAXX, XRCC6, SS18L2, GON4L, MMS22L, PARP1, TIPIN",
+          "Category": "Putative system",
+          "name": "DNA metabolic assembly",
+          "95% prediction interval (nm)": "[667, 2314]",
+          "__system_size": 13,
+          "__isKnown": 0,
+          "Number of proteins": 13,
+          "Annotation": "DNA metabolic assembly",
+          "Predicted diameter (nm)": 1242,
+          "HCX::members": [
+            189,
+            263,
+            47,
+            194,
+            7,
+            31,
+            222,
+            27,
+            504,
+            43,
+            299,
+            87,
+            161
+          ],
+          "assembly_id": "756",
+          "CD_MemberList": "RPS18 BCL11A NASP SHPRH EHMT2 RPL7L1 DAXX XRCC6 SS18L2 GON4L MMS22L PARP1 TIPIN",
+          "CD_MemberList_Size": 13,
+          "CD_MemberList_LogSize": 2.5649493574615367
+        }
+      },
+      {
+        "id": 140,
+        "x": -239.79841444955818,
+        "y": -688.5437362529123,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, SCAND1, ZNF232, ZNF446, ZNF500, ZSCAN16, ZSCAN18, KRI1, CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, ING4, JAZF1, DMAP1, ING3, MORF4L1, RUVBL2, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, MYC, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, ZNF215, ZNF444, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, RPS13, CD2BP2, GEMIN4, SAFB2, HNRNPC, INO80C, SIN3B, TAF5L, FAM120C, SATB1, BCL11A, FBRSL1, NASP, SHPRH, BCORL1, CASP8AP2, E2F3, EHMT2, SFMBT2, ZNF296, TAF11, AKAP17A, RBBP6, ZRANB2, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, COIL, SF3A2, DR1, SULT1C4, TAF6L, RPL28, RPL11, DAXX, ORC2, POLD1, SMARCAL1, TRIM28, CHEK1, CTR9, EAF1, GTF2B, HIRA, HUS1B, NCAPD3, ORC3, RIF1, SFPQ, SUZ12, XRCC6, PRR3, YTHDC2, ZNF689, PRKRIP1, CASC3, HIRIP3, NOP56, NOS1AP, PRPF31, SH3GL2, MCAT, METTL17, MRPS11, TMLHE, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, RRP7A, ZBTB24, MRPL34, ZC3H10, TERF1, TRIM27, GTF2H4, NSD1, POP7, RBMS1, RFC1, SS18L2, WDR18, ZNF420, GON4L, MMS22L, PARP1, TIPIN, DDB1, DDX11, NOLC1, PRR14, SMARCC2, UHRF1, XPO1, SMARCD2, SCML1, SYMPK, SMAD9, ZNF576, CLASRP, C12orf43, FOXP2, ZNF143, RFXAP, LMX1B, PEF1, LMNB1, ANAPC7, FKBP5, KDM5C, RAVER1, ZNF398, PSMD3, IMP3, FBXL3, PAPLN, BCCIP, C19orf44, KLHL15, CREB5, POLR3E, ZNF580, DCUN1D5, MAD2L2, SUPT4H1, LENG1, ZNF524, FKBPL, JMJD6, HSF2, ZNF281, ZNF829, POLR3H, SYN2, KRBA1, VHL, ARAF, PHF8, HOXD10, PAF1, PNPLA2, MTBP, DLX4, NAF1, CENPT, YDJC, NSMCE4A, PRDM16, SETD7, JMY, NCOR1, POLE, DACH1, PNRC1, ZNF571, SENP3, CDKN2B, CYLD, SMYD3, HEY2, TNRC6C, ARIH2, ZMYM4, ZMYM3, SALL1, C5orf24, AURKB, USF1, TBKBP1, TWIST2, ZNF32, ANKRD54, MAN2C1, KLHDC9, EIF3B, CXXC1, DEAF1, MAU2, DIEXF, ZNF207, RRN3, RARB, NCOA2, ZCCHC12, NUP214, CCDC106, POLR2D, CAMTA2, BRD7, ZNF331, ARID4B, KLF16, PIK3AP1, HLX, DDB2, CDO1, WBP11, PIN1, FIZ1, NPAS1, SOX2, L3MBTL3, GTF2F1, IAH1, MTF2, ZNF212, GPS2, SKI, C7orf25, HOXD4, ZNF280B, NUP85, BAP1, HIC2, OAZ3, EYA3, FIGN, NCAPH2, ZNF593, KDELC1, TRMT11, BCL7A, NUB1, ALKBH2, PITX2, SPTBN4, RAD51C, LYSMD1, SUGP2, DVL2, RUNX1T1, DDX17, IRF2BP1, CCNDBP1, ZBTB40, PDIK1L, PATZ1, IPO11, ZNF629, CAMKMT, SRRT, MAZ, TDP2, POT1, C1orf52, CDKN2A, ZBTB10, PRDM6, GSC, HEY1, COL2A1, THAP3, SOS2, ORC6, DBF4B, BCOR, HOXB7, GTF3C6, RANBP17, HEATR1, UTP18, NSUN5, ZIC2, RNF220, NXF1, ACVR2B, SNAPC4, ZDBF2, TRIM65, HOXC9, CC2D1B, UBE2M, NUP98, FBXO7, FAM122A, LENG8, HIVEP1, MAD2L1BP, FANCL, MLST8, EID1, SEC31B, SALL2, MECOM, WDR26, ZNF579, SNAPC2, ZNF414, HDAC10, MED25, ZNF460, CIR1, NUP133, APBB1",
+          "Category": "Known system",
+          "name": "Nucleus",
+          "95% prediction interval (nm)": "[2902, 10070]",
+          "__system_size": 350,
+          "__isKnown": 1,
+          "Number of proteins": 350,
+          "Annotation": "Nucleus",
+          "Predicted diameter (nm)": 5405,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            396,
+            615,
+            394,
+            616,
+            395,
+            605,
+            184,
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            200,
+            400,
+            73,
+            269,
+            188,
+            202,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            258,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            564,
+            455,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            278,
+            326,
+            251,
+            437,
+            39,
+            8,
+            234,
+            4,
+            197,
+            166,
+            263,
+            651,
+            47,
+            194,
+            625,
+            20,
+            111,
+            7,
+            93,
+            402,
+            71,
+            205,
+            12,
+            648,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            181,
+            167,
+            366,
+            573,
+            172,
+            206,
+            243,
+            222,
+            21,
+            25,
+            163,
+            118,
+            253,
+            5,
+            180,
+            3,
+            159,
+            300,
+            367,
+            274,
+            38,
+            108,
+            11,
+            27,
+            635,
+            131,
+            62,
+            298,
+            122,
+            198,
+            59,
+            474,
+            334,
+            15,
+            295,
+            26,
+            196,
+            146,
+            220,
+            292,
+            632,
+            72,
+            639,
+            69,
+            218,
+            16,
+            221,
+            2,
+            30,
+            10,
+            336,
+            61,
+            133,
+            186,
+            504,
+            68,
+            41,
+            43,
+            299,
+            87,
+            161,
+            331,
+            55,
+            135,
+            431,
+            162,
+            18,
+            1,
+            190,
+            465,
+            434,
+            286,
+            361,
+            640,
+            642,
+            633,
+            308,
+            173,
+            381,
+            223,
+            170,
+            266,
+            342,
+            86,
+            250,
+            217,
+            318,
+            142,
+            469,
+            407,
+            244,
+            634,
+            23,
+            248,
+            340,
+            279,
+            519,
+            48,
+            514,
+            602,
+            561,
+            191,
+            215,
+            85,
+            316,
+            387,
+            371,
+            433,
+            641,
+            249,
+            201,
+            311,
+            654,
+            165,
+            168,
+            441,
+            410,
+            88,
+            423,
+            630,
+            138,
+            386,
+            134,
+            0,
+            65,
+            60,
+            403,
+            185,
+            280,
+            34,
+            96,
+            36,
+            380,
+            267,
+            491,
+            100,
+            409,
+            379,
+            112,
+            619,
+            307,
+            343,
+            636,
+            301,
+            540,
+            211,
+            507,
+            618,
+            406,
+            277,
+            139,
+            51,
+            137,
+            376,
+            212,
+            245,
+            422,
+            312,
+            254,
+            603,
+            9,
+            365,
+            411,
+            242,
+            265,
+            502,
+            463,
+            459,
+            328,
+            107,
+            375,
+            370,
+            105,
+            503,
+            425,
+            627,
+            216,
+            624,
+            424,
+            617,
+            458,
+            79,
+            628,
+            378,
+            99,
+            408,
+            364,
+            140,
+            404,
+            256,
+            479,
+            302,
+            187,
+            246,
+            631,
+            637,
+            420,
+            347,
+            517,
+            109,
+            63,
+            609,
+            604,
+            276,
+            485,
+            255,
+            445,
+            360,
+            476,
+            468,
+            273,
+            438,
+            130,
+            384,
+            104,
+            529,
+            204,
+            233,
+            644,
+            67,
+            629,
+            447,
+            78,
+            262,
+            325,
+            645,
+            119,
+            452,
+            306,
+            446,
+            296,
+            247,
+            49,
+            164,
+            207,
+            80,
+            66,
+            352,
+            158,
+            282,
+            97,
+            622,
+            652,
+            626,
+            179,
+            76,
+            203,
+            341,
+            623,
+            649,
+            466,
+            412,
+            155,
+            272,
+            382,
+            330,
+            183,
+            98,
+            368,
+            419,
+            335,
+            484,
+            199,
+            426,
+            224,
+            89,
+            160,
+            42
+          ],
+          "assembly_id": "Cluster_1",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A SCAND1 ZNF232 ZNF446 ZNF500 ZSCAN16 ZSCAN18 KRI1 CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC ING4 JAZF1 DMAP1 ING3 MORF4L1 RUVBL2 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A MYC ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 ZNF215 ZNF444 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 RPS13 CD2BP2 GEMIN4 SAFB2 HNRNPC INO80C SIN3B TAF5L FAM120C SATB1 BCL11A FBRSL1 NASP SHPRH BCORL1 CASP8AP2 E2F3 EHMT2 SFMBT2 ZNF296 TAF11 AKAP17A RBBP6 ZRANB2 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 COIL SF3A2 DR1 SULT1C4 TAF6L RPL28 RPL11 DAXX ORC2 POLD1 SMARCAL1 TRIM28 CHEK1 CTR9 EAF1 GTF2B HIRA HUS1B NCAPD3 ORC3 RIF1 SFPQ SUZ12 XRCC6 PRR3 YTHDC2 ZNF689 PRKRIP1 CASC3 HIRIP3 NOP56 NOS1AP PRPF31 SH3GL2 MCAT METTL17 MRPS11 TMLHE URB2 YARS2 C19orf53 ZCCHC9 LIN28B RRP7A ZBTB24 MRPL34 ZC3H10 TERF1 TRIM27 GTF2H4 NSD1 POP7 RBMS1 RFC1 SS18L2 WDR18 ZNF420 GON4L MMS22L PARP1 TIPIN DDB1 DDX11 NOLC1 PRR14 SMARCC2 UHRF1 XPO1 SMARCD2 SCML1 SYMPK SMAD9 ZNF576 CLASRP C12orf43 FOXP2 ZNF143 RFXAP LMX1B PEF1 LMNB1 ANAPC7 FKBP5 KDM5C RAVER1 ZNF398 PSMD3 IMP3 FBXL3 PAPLN BCCIP C19orf44 KLHL15 CREB5 POLR3E ZNF580 DCUN1D5 MAD2L2 SUPT4H1 LENG1 ZNF524 FKBPL JMJD6 HSF2 ZNF281 ZNF829 POLR3H SYN2 KRBA1 VHL ARAF PHF8 HOXD10 PAF1 PNPLA2 MTBP DLX4 NAF1 CENPT YDJC NSMCE4A PRDM16 SETD7 JMY NCOR1 POLE DACH1 PNRC1 ZNF571 SENP3 CDKN2B CYLD SMYD3 HEY2 TNRC6C ARIH2 ZMYM4 ZMYM3 SALL1 C5orf24 AURKB USF1 TBKBP1 TWIST2 ZNF32 ANKRD54 MAN2C1 KLHDC9 EIF3B CXXC1 DEAF1 MAU2 DIEXF ZNF207 RRN3 RARB NCOA2 ZCCHC12 NUP214 CCDC106 POLR2D CAMTA2 BRD7 ZNF331 ARID4B KLF16 PIK3AP1 HLX DDB2 CDO1 WBP11 PIN1 FIZ1 NPAS1 SOX2 L3MBTL3 GTF2F1 IAH1 MTF2 ZNF212 GPS2 SKI C7orf25 HOXD4 ZNF280B NUP85 BAP1 HIC2 OAZ3 EYA3 FIGN NCAPH2 ZNF593 KDELC1 TRMT11 BCL7A NUB1 ALKBH2 PITX2 SPTBN4 RAD51C LYSMD1 SUGP2 DVL2 RUNX1T1 DDX17 IRF2BP1 CCNDBP1 ZBTB40 PDIK1L PATZ1 IPO11 ZNF629 CAMKMT SRRT MAZ TDP2 POT1 C1orf52 CDKN2A ZBTB10 PRDM6 GSC HEY1 COL2A1 THAP3 SOS2 ORC6 DBF4B BCOR HOXB7 GTF3C6 RANBP17 HEATR1 UTP18 NSUN5 ZIC2 RNF220 NXF1 ACVR2B SNAPC4 ZDBF2 TRIM65 HOXC9 CC2D1B UBE2M NUP98 FBXO7 FAM122A LENG8 HIVEP1 MAD2L1BP FANCL MLST8 EID1 SEC31B SALL2 MECOM WDR26 ZNF579 SNAPC2 ZNF414 HDAC10 MED25 ZNF460 CIR1 NUP133 APBB1",
+          "CD_MemberList_Size": 350,
+          "CD_MemberList_LogSize": 5.857933154483459
+        }
+      },
+      {
+        "id": 139,
+        "x": -665.7964608148628,
+        "y": -748.0743304801632,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, SCAND1, ZNF232, ZNF446, ZNF500, ZSCAN16, ZSCAN18, KRI1, DHX15, SNRNP70, RUVBL2, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, ZNF215, ZNF444, HNRNPU, SRSF10, RPS13, HNRNPC, SHPRH, RBBP6, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, RPL28, RPL11, PRR3, YTHDC2, ZNF689, CASC3, NOP56, NOS1AP, ACVR1, AGPAT4, C15orf61, CACNA2D2, GPR180, IGFBP2, IMMT, LMF2, NAT14, PCDH19, PEX10, SH3GL2, SLC35F2, TESC, TMEM177, ANKRD46, CHST10, CLPTM1, DGCR2, DISP1, DNAJC18, FAM69B, FZD8, GABRA5, KCNB2, KCNQ2, MCOLN2, MCOLN3, MFSD10, PDE3B, POMT1, SLC41A3, XKR8, AGK, MCAT, METTL17, MRPS11, NAT8L, NDUFA1, NDUFA10, NDUFA7, NDUFA9, NDUFAF2, NMNAT3, POLRMT, SUCLA2, TIMM50, TMLHE, TOMM40, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, CLASP2, INSIG1, PCDH17, SREBF2, TOR1A, MFF, UQCRQ, CA5B, ECHDC2, TIMM13, VARS2, RRP7A, ZBTB24, AARS2, ADAT3, IBA57, KLHL29, LRP2, PSMG4, TRMU, MRPL34, ZC3H10, CBX6, DTNB, EEF1G, EFHD1, EXOSC8, PICK1, RANGAP1, TERF1, TRABD, TRIM27, USP54, WIPF3, SLC35D3, CAND2, FAM160A2, ARHGAP8, PRKCQ, CSPG5, GDE1, EIF3D, ANAPC5, COCH, ULBP1, SCIN, CSNK1G2, CNNM2, SLC35F1, LRRC34, EGFL8, PDXDC1, COLEC12, COMMD4, LINGO1, EFNB3, FBXL14, RTN1, BPNT1, SYPL2, PUSL1, ZNF747, CES3, SLC6A15, WASF2, GTSE1, WRAP73, SHB, HOXD13, TRAPPC5, ISOC2, DOCK4, LBR, ZNF416, ARMC5, TMEM186, PODXL2, COL4A2, PRKAA2, UCK1, CHAC2, FOXN4, NAMPT, RAB5C, TIAL1, FUZ, TMEM102, CNOT10, HOXB5, SLC2A12, ZNF586, FAM198A, CTU2, CCDC130, C11orf74, CRY1, SDC2, UNC45A, ANTXR1, ZNF620, VRK3, LRRC28, EPN1, MTOR, SBF1, STRN4, HLA-DPB1, PRPSAP1, TMEM222, FAM189B, CUEDC2, SLC25A17, SEPHS2, RC3H2, NOSIP, TRIM11, ZNF324, IL17RD, FAM89A, GTPBP1, AP2A2, HSD17B6, GAD1, C15orf39, GNL1, MAP2K7, EXOC4, FYN, NEFM, OAZ2, COPB1, EIF2B1, MAP1S, CYFIP2, GPR50, TJAP1, PCSK1N, SCRIB, RASGEF1C, ANKFY1, ARVCF, PIGQ, SEPT1, EEF2, MIPOL1, EVL, RPUSD3, VASH2, ABI1, EDA, METTL15, SCAPER, ZNF211, DTNA, EEF1D, DYNC2LI1, IRS2, TPT1, ADD3, CEP68, AGTPBP1, GGA1, CDKAL1, MARCKSL1, FASTKD1, ZNF224, DPYSL5, HEATR3, KLHL22, ENPEP, ANKRD10, CPD, PRKG1, HLA-DPA1, UBXN6, PEX19, TNNI3, ARMC6, CHCHD7, DYNC1LI2, FHIT, TGFBRAP1, DCAKD, RB1CC1, IREB2, MYH10, DCP1B, PPP6R1, GAL, RANBP1, SEC63, PTOV1, C8orf34, AMPD2, EIF5B, S1PR2, WWOX, TRO, MON1A, ZNF813, DAAM2, DYNC1I2, C19orf25, ACBD7, ZDHHC17, RADIL, QRSL1, ERI3, ARC, PDF, MAP3K15, ZNF266, DNAJA3, TP73, ANKLE2, EPHA3, BSG, SLAIN1, PAIP2B, COPS4, PACSIN1, ANKRD13B, ASB13, BLOC1S3, NEK3, LAMP3, PHKG2, NUF2, LRP1B, CD320, SGSM3, GLB1L2, SUSD5, MUC5AC, CHPT1, SERGEF, FAM184A, AP1B1, SLC37A3, FKBP10, CKB, PLCH1, NELL2, PDCD2, RHBDL1, MRRF, PHLPP2, GIGYF2, TARSL2, QPCT, KIF1A, UXT, ARHGEF25, RNF167, ZC4H2, CD72, EDC4, BHLHA15, KIDINS220, CTTNBP2, GFAP, PALM, WDR90, CSPP1, UBL7, ARRB2, DDI2, CAMK1, ID4, SYAP1, ALDH8A1, PSMC2, KIAA2013",
+          "Category": "Known system",
+          "name": "Cytoplasm",
+          "95% prediction interval (nm)": "[4880, 16938]",
+          "__system_size": 379,
+          "__isKnown": 1,
+          "Number of proteins": 379,
+          "Annotation": "Cytoplasm",
+          "Predicted diameter (nm)": 9092,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            396,
+            615,
+            394,
+            616,
+            395,
+            605,
+            184,
+            70,
+            29,
+            202,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            564,
+            455,
+            74,
+            297,
+            278,
+            39,
+            194,
+            12,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            206,
+            243,
+            635,
+            131,
+            62,
+            122,
+            59,
+            474,
+            460,
+            176,
+            435,
+            152,
+            153,
+            128,
+            177,
+            13,
+            478,
+            524,
+            14,
+            15,
+            449,
+            470,
+            54,
+            398,
+            550,
+            322,
+            227,
+            492,
+            461,
+            154,
+            442,
+            151,
+            175,
+            475,
+            363,
+            486,
+            451,
+            495,
+            557,
+            493,
+            511,
+            415,
+            295,
+            26,
+            196,
+            304,
+            477,
+            147,
+            123,
+            64,
+            294,
+            450,
+            345,
+            150,
+            40,
+            146,
+            392,
+            220,
+            292,
+            632,
+            72,
+            639,
+            169,
+            436,
+            525,
+            116,
+            145,
+            417,
+            305,
+            110,
+            480,
+            268,
+            496,
+            69,
+            218,
+            149,
+            513,
+            359,
+            612,
+            57,
+            620,
+            482,
+            16,
+            221,
+            50,
+            481,
+            303,
+            148,
+            129,
+            229,
+            81,
+            2,
+            614,
+            30,
+            621,
+            37,
+            579,
+            260,
+            558,
+            508,
+            174,
+            467,
+            533,
+            113,
+            385,
+            577,
+            498,
+            283,
+            338,
+            580,
+            178,
+            536,
+            531,
+            389,
+            192,
+            574,
+            597,
+            319,
+            358,
+            289,
+            418,
+            659,
+            655,
+            313,
+            581,
+            471,
+            208,
+            490,
+            351,
+            121,
+            658,
+            393,
+            462,
+            405,
+            103,
+            195,
+            528,
+            500,
+            578,
+            538,
+            6,
+            457,
+            545,
+            527,
+            562,
+            58,
+            587,
+            487,
+            547,
+            594,
+            444,
+            337,
+            427,
+            321,
+            532,
+            656,
+            553,
+            472,
+            285,
+            512,
+            546,
+            542,
+            271,
+            608,
+            421,
+            53,
+            567,
+            315,
+            225,
+            213,
+            549,
+            515,
+            638,
+            516,
+            377,
+            541,
+            259,
+            317,
+            374,
+            566,
+            607,
+            570,
+            252,
+            559,
+            126,
+            646,
+            576,
+            599,
+            383,
+            320,
+            596,
+            582,
+            489,
+            52,
+            114,
+            314,
+            584,
+            522,
+            571,
+            209,
+            290,
+            235,
+            569,
+            494,
+            391,
+            237,
+            413,
+            401,
+            416,
+            428,
+            373,
+            350,
+            660,
+            372,
+            117,
+            453,
+            464,
+            261,
+            534,
+            497,
+            132,
+            210,
+            483,
+            332,
+            563,
+            556,
+            523,
+            539,
+            270,
+            439,
+            240,
+            357,
+            613,
+            356,
+            548,
+            560,
+            120,
+            440,
+            543,
+            611,
+            537,
+            156,
+            310,
+            231,
+            585,
+            239,
+            144,
+            236,
+            397,
+            590,
+            230,
+            241,
+            264,
+            44,
+            643,
+            555,
+            430,
+            568,
+            535,
+            171,
+            124,
+            520,
+            414,
+            226,
+            657,
+            653,
+            390,
+            588,
+            228,
+            448,
+            344,
+            127,
+            551,
+            521,
+            488,
+            501,
+            509,
+            518,
+            388,
+            601,
+            293,
+            281,
+            56,
+            323,
+            329,
+            238,
+            554,
+            552,
+            399,
+            333,
+            572,
+            575,
+            583,
+            362,
+            595,
+            346,
+            586,
+            592,
+            598,
+            348,
+            288,
+            510,
+            499,
+            432,
+            593,
+            214,
+            324,
+            506,
+            284,
+            309,
+            600,
+            473,
+            505,
+            232,
+            589,
+            591,
+            193,
+            291,
+            544,
+            143,
+            115,
+            287,
+            354,
+            443,
+            610,
+            456,
+            650,
+            339,
+            647,
+            349,
+            565,
+            355,
+            530,
+            84,
+            526
+          ],
+          "assembly_id": "Cluster_0",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A SCAND1 ZNF232 ZNF446 ZNF500 ZSCAN16 ZSCAN18 KRI1 DHX15 SNRNP70 RUVBL2 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 ZNF215 ZNF444 HNRNPU SRSF10 RPS13 HNRNPC SHPRH RBBP6 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 RPL28 RPL11 PRR3 YTHDC2 ZNF689 CASC3 NOP56 NOS1AP ACVR1 AGPAT4 C15orf61 CACNA2D2 GPR180 IGFBP2 IMMT LMF2 NAT14 PCDH19 PEX10 SH3GL2 SLC35F2 TESC TMEM177 ANKRD46 CHST10 CLPTM1 DGCR2 DISP1 DNAJC18 FAM69B FZD8 GABRA5 KCNB2 KCNQ2 MCOLN2 MCOLN3 MFSD10 PDE3B POMT1 SLC41A3 XKR8 AGK MCAT METTL17 MRPS11 NAT8L NDUFA1 NDUFA10 NDUFA7 NDUFA9 NDUFAF2 NMNAT3 POLRMT SUCLA2 TIMM50 TMLHE TOMM40 URB2 YARS2 C19orf53 ZCCHC9 LIN28B CLASP2 INSIG1 PCDH17 SREBF2 TOR1A MFF UQCRQ CA5B ECHDC2 TIMM13 VARS2 RRP7A ZBTB24 AARS2 ADAT3 IBA57 KLHL29 LRP2 PSMG4 TRMU MRPL34 ZC3H10 CBX6 DTNB EEF1G EFHD1 EXOSC8 PICK1 RANGAP1 TERF1 TRABD TRIM27 USP54 WIPF3 SLC35D3 CAND2 FAM160A2 ARHGAP8 PRKCQ CSPG5 GDE1 EIF3D ANAPC5 COCH ULBP1 SCIN CSNK1G2 CNNM2 SLC35F1 LRRC34 EGFL8 PDXDC1 COLEC12 COMMD4 LINGO1 EFNB3 FBXL14 RTN1 BPNT1 SYPL2 PUSL1 ZNF747 CES3 SLC6A15 WASF2 GTSE1 WRAP73 SHB HOXD13 TRAPPC5 ISOC2 DOCK4 LBR ZNF416 ARMC5 TMEM186 PODXL2 COL4A2 PRKAA2 UCK1 CHAC2 FOXN4 NAMPT RAB5C TIAL1 FUZ TMEM102 CNOT10 HOXB5 SLC2A12 ZNF586 FAM198A CTU2 CCDC130 C11orf74 CRY1 SDC2 UNC45A ANTXR1 ZNF620 VRK3 LRRC28 EPN1 MTOR SBF1 STRN4 HLA-DPB1 PRPSAP1 TMEM222 FAM189B CUEDC2 SLC25A17 SEPHS2 RC3H2 NOSIP TRIM11 ZNF324 IL17RD FAM89A GTPBP1 AP2A2 HSD17B6 GAD1 C15orf39 GNL1 MAP2K7 EXOC4 FYN NEFM OAZ2 COPB1 EIF2B1 MAP1S CYFIP2 GPR50 TJAP1 PCSK1N SCRIB RASGEF1C ANKFY1 ARVCF PIGQ SEPT1 EEF2 MIPOL1 EVL RPUSD3 VASH2 ABI1 EDA METTL15 SCAPER ZNF211 DTNA EEF1D DYNC2LI1 IRS2 TPT1 ADD3 CEP68 AGTPBP1 GGA1 CDKAL1 MARCKSL1 FASTKD1 ZNF224 DPYSL5 HEATR3 KLHL22 ENPEP ANKRD10 CPD PRKG1 HLA-DPA1 UBXN6 PEX19 TNNI3 ARMC6 CHCHD7 DYNC1LI2 FHIT TGFBRAP1 DCAKD RB1CC1 IREB2 MYH10 DCP1B PPP6R1 GAL RANBP1 SEC63 PTOV1 C8orf34 AMPD2 EIF5B S1PR2 WWOX TRO MON1A ZNF813 DAAM2 DYNC1I2 C19orf25 ACBD7 ZDHHC17 RADIL QRSL1 ERI3 ARC PDF MAP3K15 ZNF266 DNAJA3 TP73 ANKLE2 EPHA3 BSG SLAIN1 PAIP2B COPS4 PACSIN1 ANKRD13B ASB13 BLOC1S3 NEK3 LAMP3 PHKG2 NUF2 LRP1B CD320 SGSM3 GLB1L2 SUSD5 MUC5AC CHPT1 SERGEF FAM184A AP1B1 SLC37A3 FKBP10 CKB PLCH1 NELL2 PDCD2 RHBDL1 MRRF PHLPP2 GIGYF2 TARSL2 QPCT KIF1A UXT ARHGEF25 RNF167 ZC4H2 CD72 EDC4 BHLHA15 KIDINS220 CTTNBP2 GFAP PALM WDR90 CSPP1 UBL7 ARRB2 DDI2 CAMK1 ID4 SYAP1 ALDH8A1 PSMC2 KIAA2013",
+          "CD_MemberList_Size": 379,
+          "CD_MemberList_LogSize": 5.937536205082426
+        }
+      },
+      {
+        "id": 138,
+        "x": -452.9184855696514,
+        "y": -771.2390514330742,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, SCAND1, ZNF232, ZNF446, ZNF500, ZSCAN16, ZSCAN18, KRI1, CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, ING4, JAZF1, DMAP1, ING3, MORF4L1, RUVBL2, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, MYC, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, ZNF215, ZNF444, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, RPS13, CD2BP2, GEMIN4, SAFB2, HNRNPC, INO80C, SIN3B, TAF5L, FAM120C, SATB1, BCL11A, FBRSL1, NASP, SHPRH, BCORL1, CASP8AP2, E2F3, EHMT2, SFMBT2, ZNF296, TAF11, AKAP17A, RBBP6, ZRANB2, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, COIL, SF3A2, DR1, SULT1C4, TAF6L, RPL28, RPL11, DAXX, ORC2, POLD1, SMARCAL1, TRIM28, CHEK1, CTR9, EAF1, GTF2B, HIRA, HUS1B, NCAPD3, ORC3, RIF1, SFPQ, SUZ12, XRCC6, PRR3, YTHDC2, ZNF689, PRKRIP1, CASC3, HIRIP3, NOP56, NOS1AP, PRPF31, ACVR1, AGPAT4, C15orf61, CACNA2D2, GPR180, IGFBP2, IMMT, LMF2, NAT14, PCDH19, PEX10, SH3GL2, SLC35F2, TESC, TMEM177, ANKRD46, CHST10, CLPTM1, DGCR2, DISP1, DNAJC18, FAM69B, FZD8, GABRA5, KCNB2, KCNQ2, MCOLN2, MCOLN3, MFSD10, PDE3B, POMT1, SLC41A3, XKR8, AGK, MCAT, METTL17, MRPS11, NAT8L, NDUFA1, NDUFA10, NDUFA7, NDUFA9, NDUFAF2, NMNAT3, POLRMT, SUCLA2, TIMM50, TMLHE, TOMM40, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, CLASP2, INSIG1, PCDH17, SREBF2, TOR1A, MFF, UQCRQ, CA5B, ECHDC2, TIMM13, VARS2, RRP7A, ZBTB24, AARS2, ADAT3, IBA57, KLHL29, LRP2, PSMG4, TRMU, MRPL34, ZC3H10, CBX6, DTNB, EEF1G, EFHD1, EXOSC8, PICK1, RANGAP1, TERF1, TRABD, TRIM27, USP54, WIPF3, GTF2H4, NSD1, POP7, RBMS1, RFC1, SS18L2, WDR18, ZNF420, GON4L, MMS22L, PARP1, TIPIN, DDB1, DDX11, NOLC1, PRR14, SMARCC2, UHRF1, XPO1, SLC35D3, CAND2, FAM160A2, ARHGAP8, PRKCQ, CSPG5, GDE1, EIF3D, ANAPC5, COCH, ULBP1, SCIN, CSNK1G2, CNNM2, SLC35F1, LRRC34, EGFL8, PDXDC1, COLEC12, COMMD4, LINGO1, EFNB3, FBXL14, RTN1, BPNT1, SYPL2, PUSL1, ZNF747, CES3, SLC6A15, WASF2, GTSE1, WRAP73, SHB, HOXD13, TRAPPC5, ISOC2, DOCK4, LBR, ZNF416, ARMC5, TMEM186, PODXL2, COL4A2, PRKAA2, UCK1, CHAC2, FOXN4, NAMPT, RAB5C, TIAL1, FUZ, TMEM102, CNOT10, HOXB5, SLC2A12, ZNF586, FAM198A, CTU2, CCDC130, C11orf74, CRY1, SDC2, UNC45A, ANTXR1, ZNF620, VRK3, LRRC28, EPN1, MTOR, SBF1, STRN4, HLA-DPB1, PRPSAP1, TMEM222, FAM189B, CUEDC2, SLC25A17, SEPHS2, RC3H2, NOSIP, TRIM11, ZNF324, IL17RD, FAM89A, GTPBP1, AP2A2, HSD17B6, GAD1, C15orf39, GNL1, MAP2K7, EXOC4, FYN, NEFM, OAZ2, COPB1, EIF2B1, MAP1S, CYFIP2, GPR50, TJAP1, PCSK1N, SCRIB, RASGEF1C, ANKFY1, ARVCF, PIGQ, SEPT1, EEF2, MIPOL1, EVL, RPUSD3, VASH2, ABI1, EDA, METTL15, SCAPER, ZNF211, DTNA, EEF1D, DYNC2LI1, IRS2, TPT1, ADD3, CEP68, AGTPBP1, GGA1, CDKAL1, MARCKSL1, FASTKD1, ZNF224, DPYSL5, HEATR3, KLHL22, ENPEP, ANKRD10, CPD, PRKG1, HLA-DPA1, UBXN6, PEX19, TNNI3, ARMC6, CHCHD7, DYNC1LI2, FHIT, TGFBRAP1, DCAKD, RB1CC1, IREB2, MYH10, DCP1B, PPP6R1, GAL, RANBP1, SEC63, PTOV1, C8orf34, AMPD2, EIF5B, S1PR2, WWOX, TRO, MON1A, ZNF813, DAAM2, DYNC1I2, C19orf25, ACBD7, ZDHHC17, RADIL, QRSL1, ERI3, ARC, PDF, MAP3K15, ZNF266, DNAJA3, TP73, ANKLE2, EPHA3, BSG, SLAIN1, PAIP2B, COPS4, PACSIN1, ANKRD13B, ASB13, BLOC1S3, NEK3, LAMP3, PHKG2, NUF2, LRP1B, CD320, SGSM3, GLB1L2, SUSD5, MUC5AC, CHPT1, SERGEF, FAM184A, AP1B1, SLC37A3, FKBP10, CKB, PLCH1, NELL2, PDCD2, RHBDL1, MRRF, PHLPP2, GIGYF2, TARSL2, QPCT, KIF1A, UXT, ARHGEF25, RNF167, ZC4H2, CD72, EDC4, BHLHA15, KIDINS220, CTTNBP2, GFAP, PALM, WDR90, CSPP1, UBL7, ARRB2, DDI2, CAMK1, ID4, SYAP1, ALDH8A1, PSMC2, KIAA2013, SMARCD2, SCML1, SYMPK, SMAD9, ZNF576, CLASRP, C12orf43, FOXP2, ZNF143, RFXAP, LMX1B, PEF1, LMNB1, ANAPC7, FKBP5, KDM5C, RAVER1, ZNF398, PSMD3, IMP3, FBXL3, PAPLN, BCCIP, C19orf44, KLHL15, CREB5, POLR3E, ZNF580, DCUN1D5, MAD2L2, SUPT4H1, LENG1, ZNF524, FKBPL, JMJD6, HSF2, ZNF281, ZNF829, POLR3H, SYN2, KRBA1, VHL, ARAF, PHF8, HOXD10, PAF1, PNPLA2, MTBP, DLX4, NAF1, CENPT, YDJC, NSMCE4A, PRDM16, SETD7, JMY, NCOR1, POLE, DACH1, PNRC1, ZNF571, SENP3, CDKN2B, CYLD, SMYD3, HEY2, TNRC6C, ARIH2, ZMYM4, ZMYM3, SALL1, C5orf24, AURKB, USF1, TBKBP1, TWIST2, ZNF32, ANKRD54, MAN2C1, KLHDC9, EIF3B, CXXC1, DEAF1, MAU2, DIEXF, ZNF207, RRN3, RARB, NCOA2, ZCCHC12, NUP214, CCDC106, POLR2D, CAMTA2, BRD7, ZNF331, ARID4B, KLF16, PIK3AP1, HLX, DDB2, CDO1, WBP11, PIN1, FIZ1, NPAS1, SOX2, L3MBTL3, GTF2F1, IAH1, MTF2, ZNF212, GPS2, SKI, C7orf25, HOXD4, ZNF280B, NUP85, BAP1, HIC2, OAZ3, EYA3, FIGN, NCAPH2, ZNF593, KDELC1, TRMT11, BCL7A, NUB1, ALKBH2, PITX2, SPTBN4, RAD51C, LYSMD1, SUGP2, DVL2, RUNX1T1, DDX17, IRF2BP1, CCNDBP1, ZBTB40, PDIK1L, PATZ1, IPO11, ZNF629, CAMKMT, SRRT, MAZ, TDP2, POT1, C1orf52, CDKN2A, ZBTB10, PRDM6, GSC, HEY1, COL2A1, THAP3, SOS2, ORC6, DBF4B, BCOR, HOXB7, GTF3C6, RANBP17, HEATR1, UTP18, NSUN5, ZIC2, RNF220, NXF1, ACVR2B, SNAPC4, ZDBF2, TRIM65, HOXC9, CC2D1B, UBE2M, NUP98, FBXO7, FAM122A, LENG8, HIVEP1, MAD2L1BP, FANCL, MLST8, EID1, SEC31B, SALL2, MECOM, WDR26, ZNF579, SNAPC2, ZNF414, HDAC10, MED25, ZNF460, CIR1, NUP133, APBB1",
+          "Category": "Known system",
+          "name": "Cell",
+          "95% prediction interval (nm)": "[4880, 16938]",
+          "__system_size": 661,
+          "__isKnown": 1,
+          "Number of proteins": 661,
+          "Annotation": "Cell",
+          "Predicted diameter (nm)": 9092,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            396,
+            615,
+            394,
+            616,
+            395,
+            605,
+            184,
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            200,
+            400,
+            73,
+            269,
+            188,
+            202,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            258,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            564,
+            455,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            278,
+            326,
+            251,
+            437,
+            39,
+            8,
+            234,
+            4,
+            197,
+            166,
+            263,
+            651,
+            47,
+            194,
+            625,
+            20,
+            111,
+            7,
+            93,
+            402,
+            71,
+            205,
+            12,
+            648,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            181,
+            167,
+            366,
+            573,
+            172,
+            206,
+            243,
+            222,
+            21,
+            25,
+            163,
+            118,
+            253,
+            5,
+            180,
+            3,
+            159,
+            300,
+            367,
+            274,
+            38,
+            108,
+            11,
+            27,
+            635,
+            131,
+            62,
+            298,
+            122,
+            198,
+            59,
+            474,
+            334,
+            460,
+            176,
+            435,
+            152,
+            153,
+            128,
+            177,
+            13,
+            478,
+            524,
+            14,
+            15,
+            449,
+            470,
+            54,
+            398,
+            550,
+            322,
+            227,
+            492,
+            461,
+            154,
+            442,
+            151,
+            175,
+            475,
+            363,
+            486,
+            451,
+            495,
+            557,
+            493,
+            511,
+            415,
+            295,
+            26,
+            196,
+            304,
+            477,
+            147,
+            123,
+            64,
+            294,
+            450,
+            345,
+            150,
+            40,
+            146,
+            392,
+            220,
+            292,
+            632,
+            72,
+            639,
+            169,
+            436,
+            525,
+            116,
+            145,
+            417,
+            305,
+            110,
+            480,
+            268,
+            496,
+            69,
+            218,
+            149,
+            513,
+            359,
+            612,
+            57,
+            620,
+            482,
+            16,
+            221,
+            50,
+            481,
+            303,
+            148,
+            129,
+            229,
+            81,
+            2,
+            614,
+            30,
+            621,
+            37,
+            10,
+            336,
+            61,
+            133,
+            186,
+            504,
+            68,
+            41,
+            43,
+            299,
+            87,
+            161,
+            331,
+            55,
+            135,
+            431,
+            162,
+            18,
+            1,
+            579,
+            260,
+            558,
+            508,
+            174,
+            467,
+            533,
+            113,
+            385,
+            577,
+            498,
+            283,
+            338,
+            580,
+            178,
+            536,
+            531,
+            389,
+            192,
+            574,
+            597,
+            319,
+            358,
+            289,
+            418,
+            659,
+            655,
+            313,
+            581,
+            471,
+            208,
+            490,
+            351,
+            121,
+            658,
+            393,
+            462,
+            405,
+            103,
+            195,
+            528,
+            500,
+            578,
+            538,
+            6,
+            457,
+            545,
+            527,
+            562,
+            58,
+            587,
+            487,
+            547,
+            594,
+            444,
+            337,
+            427,
+            321,
+            532,
+            656,
+            553,
+            472,
+            285,
+            512,
+            546,
+            542,
+            271,
+            608,
+            421,
+            53,
+            567,
+            315,
+            225,
+            213,
+            549,
+            515,
+            638,
+            516,
+            377,
+            541,
+            259,
+            317,
+            374,
+            566,
+            607,
+            570,
+            252,
+            559,
+            126,
+            646,
+            576,
+            599,
+            383,
+            320,
+            596,
+            582,
+            489,
+            52,
+            114,
+            314,
+            584,
+            522,
+            571,
+            209,
+            290,
+            235,
+            569,
+            494,
+            391,
+            237,
+            413,
+            401,
+            416,
+            428,
+            373,
+            350,
+            660,
+            372,
+            117,
+            453,
+            464,
+            261,
+            534,
+            497,
+            132,
+            210,
+            483,
+            332,
+            563,
+            556,
+            523,
+            539,
+            270,
+            439,
+            240,
+            357,
+            613,
+            356,
+            548,
+            560,
+            120,
+            440,
+            543,
+            611,
+            537,
+            156,
+            310,
+            231,
+            585,
+            239,
+            144,
+            236,
+            397,
+            590,
+            230,
+            241,
+            264,
+            44,
+            643,
+            555,
+            430,
+            568,
+            535,
+            171,
+            124,
+            520,
+            414,
+            226,
+            657,
+            653,
+            390,
+            588,
+            228,
+            448,
+            344,
+            127,
+            551,
+            521,
+            488,
+            501,
+            509,
+            518,
+            388,
+            601,
+            293,
+            281,
+            56,
+            323,
+            329,
+            238,
+            554,
+            552,
+            399,
+            333,
+            572,
+            575,
+            583,
+            362,
+            595,
+            346,
+            586,
+            592,
+            598,
+            348,
+            288,
+            510,
+            499,
+            432,
+            593,
+            214,
+            324,
+            506,
+            284,
+            309,
+            600,
+            473,
+            505,
+            232,
+            589,
+            591,
+            193,
+            291,
+            544,
+            143,
+            115,
+            287,
+            354,
+            443,
+            610,
+            456,
+            650,
+            339,
+            647,
+            349,
+            565,
+            355,
+            530,
+            84,
+            526,
+            190,
+            465,
+            434,
+            286,
+            361,
+            640,
+            642,
+            633,
+            308,
+            173,
+            381,
+            223,
+            170,
+            266,
+            342,
+            86,
+            250,
+            217,
+            318,
+            142,
+            469,
+            407,
+            244,
+            634,
+            23,
+            248,
+            340,
+            279,
+            519,
+            48,
+            514,
+            602,
+            561,
+            191,
+            215,
+            85,
+            316,
+            387,
+            371,
+            433,
+            641,
+            249,
+            201,
+            311,
+            654,
+            165,
+            168,
+            441,
+            410,
+            88,
+            423,
+            630,
+            138,
+            386,
+            134,
+            0,
+            65,
+            60,
+            403,
+            185,
+            280,
+            34,
+            96,
+            36,
+            380,
+            267,
+            491,
+            100,
+            409,
+            379,
+            112,
+            619,
+            307,
+            343,
+            636,
+            301,
+            540,
+            211,
+            507,
+            618,
+            406,
+            277,
+            139,
+            51,
+            137,
+            376,
+            212,
+            245,
+            422,
+            312,
+            254,
+            603,
+            9,
+            365,
+            411,
+            242,
+            265,
+            502,
+            463,
+            459,
+            328,
+            107,
+            375,
+            370,
+            105,
+            503,
+            425,
+            627,
+            216,
+            624,
+            424,
+            617,
+            458,
+            79,
+            628,
+            378,
+            99,
+            408,
+            364,
+            140,
+            404,
+            256,
+            479,
+            302,
+            187,
+            246,
+            631,
+            637,
+            420,
+            347,
+            517,
+            109,
+            63,
+            609,
+            604,
+            276,
+            485,
+            255,
+            445,
+            360,
+            476,
+            468,
+            273,
+            438,
+            130,
+            384,
+            104,
+            529,
+            204,
+            233,
+            644,
+            67,
+            629,
+            447,
+            78,
+            262,
+            325,
+            645,
+            119,
+            452,
+            306,
+            446,
+            296,
+            247,
+            49,
+            164,
+            207,
+            80,
+            66,
+            352,
+            158,
+            282,
+            97,
+            622,
+            652,
+            626,
+            179,
+            76,
+            203,
+            341,
+            623,
+            649,
+            466,
+            412,
+            155,
+            272,
+            382,
+            330,
+            183,
+            98,
+            368,
+            419,
+            335,
+            484,
+            199,
+            426,
+            224,
+            89,
+            160,
+            42
+          ],
+          "assembly_id": "785",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A SCAND1 ZNF232 ZNF446 ZNF500 ZSCAN16 ZSCAN18 KRI1 CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC ING4 JAZF1 DMAP1 ING3 MORF4L1 RUVBL2 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A MYC ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 ZNF215 ZNF444 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 RPS13 CD2BP2 GEMIN4 SAFB2 HNRNPC INO80C SIN3B TAF5L FAM120C SATB1 BCL11A FBRSL1 NASP SHPRH BCORL1 CASP8AP2 E2F3 EHMT2 SFMBT2 ZNF296 TAF11 AKAP17A RBBP6 ZRANB2 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 COIL SF3A2 DR1 SULT1C4 TAF6L RPL28 RPL11 DAXX ORC2 POLD1 SMARCAL1 TRIM28 CHEK1 CTR9 EAF1 GTF2B HIRA HUS1B NCAPD3 ORC3 RIF1 SFPQ SUZ12 XRCC6 PRR3 YTHDC2 ZNF689 PRKRIP1 CASC3 HIRIP3 NOP56 NOS1AP PRPF31 ACVR1 AGPAT4 C15orf61 CACNA2D2 GPR180 IGFBP2 IMMT LMF2 NAT14 PCDH19 PEX10 SH3GL2 SLC35F2 TESC TMEM177 ANKRD46 CHST10 CLPTM1 DGCR2 DISP1 DNAJC18 FAM69B FZD8 GABRA5 KCNB2 KCNQ2 MCOLN2 MCOLN3 MFSD10 PDE3B POMT1 SLC41A3 XKR8 AGK MCAT METTL17 MRPS11 NAT8L NDUFA1 NDUFA10 NDUFA7 NDUFA9 NDUFAF2 NMNAT3 POLRMT SUCLA2 TIMM50 TMLHE TOMM40 URB2 YARS2 C19orf53 ZCCHC9 LIN28B CLASP2 INSIG1 PCDH17 SREBF2 TOR1A MFF UQCRQ CA5B ECHDC2 TIMM13 VARS2 RRP7A ZBTB24 AARS2 ADAT3 IBA57 KLHL29 LRP2 PSMG4 TRMU MRPL34 ZC3H10 CBX6 DTNB EEF1G EFHD1 EXOSC8 PICK1 RANGAP1 TERF1 TRABD TRIM27 USP54 WIPF3 GTF2H4 NSD1 POP7 RBMS1 RFC1 SS18L2 WDR18 ZNF420 GON4L MMS22L PARP1 TIPIN DDB1 DDX11 NOLC1 PRR14 SMARCC2 UHRF1 XPO1 SLC35D3 CAND2 FAM160A2 ARHGAP8 PRKCQ CSPG5 GDE1 EIF3D ANAPC5 COCH ULBP1 SCIN CSNK1G2 CNNM2 SLC35F1 LRRC34 EGFL8 PDXDC1 COLEC12 COMMD4 LINGO1 EFNB3 FBXL14 RTN1 BPNT1 SYPL2 PUSL1 ZNF747 CES3 SLC6A15 WASF2 GTSE1 WRAP73 SHB HOXD13 TRAPPC5 ISOC2 DOCK4 LBR ZNF416 ARMC5 TMEM186 PODXL2 COL4A2 PRKAA2 UCK1 CHAC2 FOXN4 NAMPT RAB5C TIAL1 FUZ TMEM102 CNOT10 HOXB5 SLC2A12 ZNF586 FAM198A CTU2 CCDC130 C11orf74 CRY1 SDC2 UNC45A ANTXR1 ZNF620 VRK3 LRRC28 EPN1 MTOR SBF1 STRN4 HLA-DPB1 PRPSAP1 TMEM222 FAM189B CUEDC2 SLC25A17 SEPHS2 RC3H2 NOSIP TRIM11 ZNF324 IL17RD FAM89A GTPBP1 AP2A2 HSD17B6 GAD1 C15orf39 GNL1 MAP2K7 EXOC4 FYN NEFM OAZ2 COPB1 EIF2B1 MAP1S CYFIP2 GPR50 TJAP1 PCSK1N SCRIB RASGEF1C ANKFY1 ARVCF PIGQ SEPT1 EEF2 MIPOL1 EVL RPUSD3 VASH2 ABI1 EDA METTL15 SCAPER ZNF211 DTNA EEF1D DYNC2LI1 IRS2 TPT1 ADD3 CEP68 AGTPBP1 GGA1 CDKAL1 MARCKSL1 FASTKD1 ZNF224 DPYSL5 HEATR3 KLHL22 ENPEP ANKRD10 CPD PRKG1 HLA-DPA1 UBXN6 PEX19 TNNI3 ARMC6 CHCHD7 DYNC1LI2 FHIT TGFBRAP1 DCAKD RB1CC1 IREB2 MYH10 DCP1B PPP6R1 GAL RANBP1 SEC63 PTOV1 C8orf34 AMPD2 EIF5B S1PR2 WWOX TRO MON1A ZNF813 DAAM2 DYNC1I2 C19orf25 ACBD7 ZDHHC17 RADIL QRSL1 ERI3 ARC PDF MAP3K15 ZNF266 DNAJA3 TP73 ANKLE2 EPHA3 BSG SLAIN1 PAIP2B COPS4 PACSIN1 ANKRD13B ASB13 BLOC1S3 NEK3 LAMP3 PHKG2 NUF2 LRP1B CD320 SGSM3 GLB1L2 SUSD5 MUC5AC CHPT1 SERGEF FAM184A AP1B1 SLC37A3 FKBP10 CKB PLCH1 NELL2 PDCD2 RHBDL1 MRRF PHLPP2 GIGYF2 TARSL2 QPCT KIF1A UXT ARHGEF25 RNF167 ZC4H2 CD72 EDC4 BHLHA15 KIDINS220 CTTNBP2 GFAP PALM WDR90 CSPP1 UBL7 ARRB2 DDI2 CAMK1 ID4 SYAP1 ALDH8A1 PSMC2 KIAA2013 SMARCD2 SCML1 SYMPK SMAD9 ZNF576 CLASRP C12orf43 FOXP2 ZNF143 RFXAP LMX1B PEF1 LMNB1 ANAPC7 FKBP5 KDM5C RAVER1 ZNF398 PSMD3 IMP3 FBXL3 PAPLN BCCIP C19orf44 KLHL15 CREB5 POLR3E ZNF580 DCUN1D5 MAD2L2 SUPT4H1 LENG1 ZNF524 FKBPL JMJD6 HSF2 ZNF281 ZNF829 POLR3H SYN2 KRBA1 VHL ARAF PHF8 HOXD10 PAF1 PNPLA2 MTBP DLX4 NAF1 CENPT YDJC NSMCE4A PRDM16 SETD7 JMY NCOR1 POLE DACH1 PNRC1 ZNF571 SENP3 CDKN2B CYLD SMYD3 HEY2 TNRC6C ARIH2 ZMYM4 ZMYM3 SALL1 C5orf24 AURKB USF1 TBKBP1 TWIST2 ZNF32 ANKRD54 MAN2C1 KLHDC9 EIF3B CXXC1 DEAF1 MAU2 DIEXF ZNF207 RRN3 RARB NCOA2 ZCCHC12 NUP214 CCDC106 POLR2D CAMTA2 BRD7 ZNF331 ARID4B KLF16 PIK3AP1 HLX DDB2 CDO1 WBP11 PIN1 FIZ1 NPAS1 SOX2 L3MBTL3 GTF2F1 IAH1 MTF2 ZNF212 GPS2 SKI C7orf25 HOXD4 ZNF280B NUP85 BAP1 HIC2 OAZ3 EYA3 FIGN NCAPH2 ZNF593 KDELC1 TRMT11 BCL7A NUB1 ALKBH2 PITX2 SPTBN4 RAD51C LYSMD1 SUGP2 DVL2 RUNX1T1 DDX17 IRF2BP1 CCNDBP1 ZBTB40 PDIK1L PATZ1 IPO11 ZNF629 CAMKMT SRRT MAZ TDP2 POT1 C1orf52 CDKN2A ZBTB10 PRDM6 GSC HEY1 COL2A1 THAP3 SOS2 ORC6 DBF4B BCOR HOXB7 GTF3C6 RANBP17 HEATR1 UTP18 NSUN5 ZIC2 RNF220 NXF1 ACVR2B SNAPC4 ZDBF2 TRIM65 HOXC9 CC2D1B UBE2M NUP98 FBXO7 FAM122A LENG8 HIVEP1 MAD2L1BP FANCL MLST8 EID1 SEC31B SALL2 MECOM WDR26 ZNF579 SNAPC2 ZNF414 HDAC10 MED25 ZNF460 CIR1 NUP133 APBB1",
+          "CD_MemberList_Size": 661,
+          "CD_MemberList_LogSize": 6.493753839851686
+        }
+      },
+      {
+        "id": 137,
+        "x": -239.5889239823061,
+        "y": -486.00118305098374,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, RPS13, CD2BP2, GEMIN4, SAFB2, HNRNPC, SFMBT2, AKAP17A, RBBP6, ZRANB2, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, COIL, SF3A2, RPL28, RPL11, DAXX, PRR3, YTHDC2, ZNF689, PRKRIP1, CASC3, HIRIP3, NOP56, NOS1AP, PRPF31, SH3GL2, MCAT, METTL17, MRPS11, TMLHE, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, RRP7A, ZBTB24, MRPL34, ZC3H10, GTF2H4, NSD1, POP7, RBMS1, RFC1, SS18L2, WDR18, ZNF420",
+          "Category": "Known system",
+          "name": "Nuclear lumen",
+          "95% prediction interval (nm)": "[1250, 4340]",
+          "__system_size": 88,
+          "__isKnown": 1,
+          "Number of proteins": 88,
+          "Annotation": "Nuclear lumen",
+          "Predicted diameter (nm)": 2330,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            278,
+            326,
+            251,
+            437,
+            39,
+            93,
+            205,
+            12,
+            648,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            181,
+            167,
+            206,
+            243,
+            222,
+            635,
+            131,
+            62,
+            298,
+            122,
+            198,
+            59,
+            474,
+            334,
+            15,
+            295,
+            26,
+            196,
+            146,
+            220,
+            292,
+            632,
+            72,
+            639,
+            69,
+            218,
+            16,
+            221,
+            10,
+            336,
+            61,
+            133,
+            186,
+            504,
+            68,
+            41
+          ],
+          "assembly_id": "784",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 RPS13 CD2BP2 GEMIN4 SAFB2 HNRNPC SFMBT2 AKAP17A RBBP6 ZRANB2 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 COIL SF3A2 RPL28 RPL11 DAXX PRR3 YTHDC2 ZNF689 PRKRIP1 CASC3 HIRIP3 NOP56 NOS1AP PRPF31 SH3GL2 MCAT METTL17 MRPS11 TMLHE URB2 YARS2 C19orf53 ZCCHC9 LIN28B RRP7A ZBTB24 MRPL34 ZC3H10 GTF2H4 NSD1 POP7 RBMS1 RFC1 SS18L2 WDR18 ZNF420",
+          "CD_MemberList_Size": 88,
+          "CD_MemberList_LogSize": 4.477336814478207
+        }
+      },
+      {
+        "id": 136,
+        "x": -699.4966860965275,
+        "y": -602.22555900732,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, DHX15, SNRNP70, RUVBL2, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, HNRNPU, SRSF10, RPS13, HNRNPC, SHPRH, RBBP6, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, RPL28, RPL11, PRR3, YTHDC2, ZNF689, CASC3, NOP56, NOS1AP, IMMT, SH3GL2, AGK, MCAT, METTL17, MRPS11, NAT8L, NDUFA1, NDUFA10, NDUFA7, NDUFA9, NDUFAF2, NMNAT3, POLRMT, SUCLA2, TIMM50, TMLHE, TOMM40, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, CLASP2, TOR1A, MFF, UQCRQ, CA5B, ECHDC2, TIMM13, VARS2, RRP7A, ZBTB24, AARS2, ADAT3, IBA57, KLHL29, LRP2, PSMG4, TRMU, MRPL34, ZC3H10, CBX6, DTNB, EEF1G, EFHD1, EXOSC8, PICK1, RANGAP1, TERF1, TRABD, TRIM27, USP54, WIPF3",
+          "Category": "Putative system",
+          "name": "Cytoplasmic organelles",
+          "95% prediction interval (nm)": "[1775, 6161]",
+          "__system_size": 98,
+          "__isKnown": 0,
+          "Number of proteins": 98,
+          "Annotation": "Cytoplasmic organelles",
+          "Predicted diameter (nm)": 3307,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            70,
+            29,
+            202,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            74,
+            297,
+            278,
+            39,
+            194,
+            12,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            206,
+            243,
+            635,
+            131,
+            62,
+            122,
+            59,
+            474,
+            177,
+            15,
+            415,
+            295,
+            26,
+            196,
+            304,
+            477,
+            147,
+            123,
+            64,
+            294,
+            450,
+            345,
+            150,
+            40,
+            146,
+            392,
+            220,
+            292,
+            632,
+            72,
+            639,
+            169,
+            145,
+            417,
+            305,
+            110,
+            480,
+            268,
+            496,
+            69,
+            218,
+            149,
+            513,
+            359,
+            612,
+            57,
+            620,
+            482,
+            16,
+            221,
+            50,
+            481,
+            303,
+            148,
+            129,
+            229,
+            81,
+            2,
+            614,
+            30,
+            621,
+            37
+          ],
+          "assembly_id": "783",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 DHX15 SNRNP70 RUVBL2 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 HNRNPU SRSF10 RPS13 HNRNPC SHPRH RBBP6 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 RPL28 RPL11 PRR3 YTHDC2 ZNF689 CASC3 NOP56 NOS1AP IMMT SH3GL2 AGK MCAT METTL17 MRPS11 NAT8L NDUFA1 NDUFA10 NDUFA7 NDUFA9 NDUFAF2 NMNAT3 POLRMT SUCLA2 TIMM50 TMLHE TOMM40 URB2 YARS2 C19orf53 ZCCHC9 LIN28B CLASP2 TOR1A MFF UQCRQ CA5B ECHDC2 TIMM13 VARS2 RRP7A ZBTB24 AARS2 ADAT3 IBA57 KLHL29 LRP2 PSMG4 TRMU MRPL34 ZC3H10 CBX6 DTNB EEF1G EFHD1 EXOSC8 PICK1 RANGAP1 TERF1 TRABD TRIM27 USP54 WIPF3",
+          "CD_MemberList_Size": 98,
+          "CD_MemberList_LogSize": 4.584967478670572
+        }
+      },
+      {
+        "id": 135,
+        "x": -413.06648853010694,
+        "y": -442.17950112023993,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, CCDC12, DHX15, GEMIN7, SNRNP70, SNRPB2, SNRPC, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, DHX8, RNPC3, CDC40, EXO1, NAA38, SNRPA1, HNRNPU, RNPS1, SRRM2, SRSF10, RPS13, CD2BP2, GEMIN4, SAFB2, HNRNPC, SFMBT2, AKAP17A, RBBP6, ZRANB2, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, COIL, SF3A2, RPL28, RPL11, PRR3, YTHDC2, ZNF689, PRKRIP1, NOP56, PRPF31, MCAT, METTL17, MRPS11, TMLHE, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, RRP7A, ZBTB24, MRPL34, ZC3H10",
+          "Category": "Known system",
+          "name": "Nucleolus",
+          "95% prediction interval (nm)": "[953, 3308]",
+          "__system_size": 75,
+          "__isKnown": 1,
+          "Number of proteins": 75,
+          "Annotation": "Nucleolus",
+          "Predicted diameter (nm)": 1776,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            606,
+            70,
+            327,
+            29,
+            353,
+            157,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            369,
+            136,
+            95,
+            101,
+            219,
+            182,
+            74,
+            83,
+            141,
+            297,
+            278,
+            326,
+            251,
+            437,
+            39,
+            93,
+            205,
+            12,
+            648,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            181,
+            167,
+            206,
+            243,
+            635,
+            131,
+            62,
+            298,
+            59,
+            334,
+            295,
+            26,
+            196,
+            146,
+            220,
+            292,
+            632,
+            72,
+            639,
+            69,
+            218,
+            16,
+            221
+          ],
+          "assembly_id": "782",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 CCDC12 DHX15 GEMIN7 SNRNP70 SNRPB2 SNRPC MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 DHX8 RNPC3 CDC40 EXO1 NAA38 SNRPA1 HNRNPU RNPS1 SRRM2 SRSF10 RPS13 CD2BP2 GEMIN4 SAFB2 HNRNPC SFMBT2 AKAP17A RBBP6 ZRANB2 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 COIL SF3A2 RPL28 RPL11 PRR3 YTHDC2 ZNF689 PRKRIP1 NOP56 PRPF31 MCAT METTL17 MRPS11 TMLHE URB2 YARS2 C19orf53 ZCCHC9 LIN28B RRP7A ZBTB24 MRPL34 ZC3H10",
+          "CD_MemberList_Size": 75,
+          "CD_MemberList_LogSize": 4.31748811353631
+        }
+      },
+      {
+        "id": 134,
+        "x": -699.8268700383901,
+        "y": -496.4393737193588,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, DHX15, SNRNP70, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, RPS13, HNRNPC, RBBP6, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, RPL28, RPL11, PRR3, YTHDC2, ZNF689, NOP56, IMMT, SH3GL2, AGK, MCAT, METTL17, MRPS11, NAT8L, NDUFA1, NDUFA10, NDUFA7, NDUFA9, NDUFAF2, NMNAT3, POLRMT, SUCLA2, TIMM50, TMLHE, TOMM40, URB2, YARS2, C19orf53, ZCCHC9, LIN28B, MFF, UQCRQ, CA5B, ECHDC2, TIMM13, VARS2, RRP7A, ZBTB24, AARS2, ADAT3, IBA57, KLHL29, LRP2, PSMG4, TRMU",
+          "Category": "Putative system",
+          "name": "Subgroup of cytoplasmic organelles",
+          "95% prediction interval (nm)": "[1350, 4686]",
+          "__system_size": 76,
+          "__isKnown": 0,
+          "Number of proteins": 76,
+          "Annotation": "Subgroup of cytoplasmic organelles",
+          "Predicted diameter (nm)": 2515,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            70,
+            29,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            278,
+            39,
+            12,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            206,
+            243,
+            635,
+            131,
+            62,
+            59,
+            177,
+            15,
+            415,
+            295,
+            26,
+            196,
+            304,
+            477,
+            147,
+            123,
+            64,
+            294,
+            450,
+            345,
+            150,
+            40,
+            146,
+            392,
+            220,
+            292,
+            632,
+            72,
+            639,
+            417,
+            305,
+            110,
+            480,
+            268,
+            496,
+            69,
+            218,
+            149,
+            513,
+            359,
+            612,
+            57,
+            620,
+            482
+          ],
+          "assembly_id": "781",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 DHX15 SNRNP70 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 RPS13 HNRNPC RBBP6 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 RPL28 RPL11 PRR3 YTHDC2 ZNF689 NOP56 IMMT SH3GL2 AGK MCAT METTL17 MRPS11 NAT8L NDUFA1 NDUFA10 NDUFA7 NDUFA9 NDUFAF2 NMNAT3 POLRMT SUCLA2 TIMM50 TMLHE TOMM40 URB2 YARS2 C19orf53 ZCCHC9 LIN28B MFF UQCRQ CA5B ECHDC2 TIMM13 VARS2 RRP7A ZBTB24 AARS2 ADAT3 IBA57 KLHL29 LRP2 PSMG4 TRMU",
+          "CD_MemberList_Size": 76,
+          "CD_MemberList_LogSize": 4.330733340286331
+        }
+      },
+      {
+        "id": 133,
+        "x": -570.5672832937224,
+        "y": -247.53100508992142,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, DHX15, SNRNP70, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, U2AF2, MRPS31, MRPS9, RPL6, RPS13, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, RPL28, RPL11, PRR3, YTHDC2, ZNF689, NOP56, MCAT, URB2, C19orf53, ZCCHC9, LIN28B, RRP7A, ZBTB24",
+          "Category": "Known system",
+          "name": "Ribonucleoprotein complex family",
+          "95% prediction interval (nm)": "[259, 899]",
+          "__system_size": 43,
+          "__isKnown": 1,
+          "Number of proteins": 43,
+          "Annotation": "Ribonucleoprotein complex family",
+          "Predicted diameter (nm)": 482,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            70,
+            29,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            82,
+            454,
+            32,
+            75,
+            278,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            206,
+            243,
+            635,
+            131,
+            62,
+            59,
+            295,
+            220,
+            632,
+            72,
+            639,
+            69,
+            218
+          ],
+          "assembly_id": "780",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 DHX15 SNRNP70 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 U2AF2 MRPS31 MRPS9 RPL6 RPS13 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 RPL28 RPL11 PRR3 YTHDC2 ZNF689 NOP56 MCAT URB2 C19orf53 ZCCHC9 LIN28B RRP7A ZBTB24",
+          "CD_MemberList_Size": 43,
+          "CD_MemberList_LogSize": 3.7612001156935624
+        }
+      },
+      {
+        "id": 132,
+        "x": -687.9569237546423,
+        "y": -376.8853621718381,
+        "v": {
+          "Proteins": "MRPL46, MRPL19, IMMT, MCAT, NDUFA1, NDUFA10, NDUFA7, NDUFA9, SUCLA2, TOMM40, CA5B, ECHDC2, TIMM13, VARS2",
+          "Category": "Putative system",
+          "name": "Mitochondrion",
+          "95% prediction interval (nm)": "[580, 2014]",
+          "__system_size": 14,
+          "__isKnown": 0,
+          "Number of proteins": 14,
+          "Annotation": "Mitochondrion",
+          "Predicted diameter (nm)": 1081,
+          "HCX::members": [
+            429,
+            94,
+            177,
+            295,
+            477,
+            147,
+            123,
+            64,
+            150,
+            392,
+            110,
+            480,
+            268,
+            496
+          ],
+          "assembly_id": "757",
+          "CD_MemberList": "MRPL46 MRPL19 IMMT MCAT NDUFA1 NDUFA10 NDUFA7 NDUFA9 SUCLA2 TOMM40 CA5B ECHDC2 TIMM13 VARS2",
+          "CD_MemberList_Size": 14,
+          "CD_MemberList_LogSize": 2.6390573296152584
+        }
+      },
+      {
+        "id": 131,
+        "x": -785.1817514567251,
+        "y": -449.96075441761553,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, MRPS31, MRPS9, RPL6, RPS13, HNRNPC, RBBP6, NOC2L, RPL28, RPL11, IMMT, AGK, MCAT, METTL17, MRPS11, NAT8L, NDUFA1, NDUFA10, NDUFA7, NDUFA9, NDUFAF2, NMNAT3, POLRMT, SUCLA2, TIMM50, TMLHE, TOMM40, URB2, YARS2, C19orf53, MFF, UQCRQ, CA5B, ECHDC2, TIMM13, VARS2",
+          "Category": "Known system",
+          "name": "Metabolic organelles",
+          "95% prediction interval (nm)": "[985, 3418]",
+          "__system_size": 48,
+          "__isKnown": 1,
+          "Number of proteins": 48,
+          "Annotation": "Metabolic organelles",
+          "Predicted diameter (nm)": 1835,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            454,
+            32,
+            75,
+            278,
+            39,
+            12,
+            33,
+            206,
+            243,
+            177,
+            415,
+            295,
+            26,
+            196,
+            304,
+            477,
+            147,
+            123,
+            64,
+            294,
+            450,
+            345,
+            150,
+            40,
+            146,
+            392,
+            220,
+            292,
+            632,
+            417,
+            305,
+            110,
+            480,
+            268,
+            496
+          ],
+          "assembly_id": "779",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A MRPS31 MRPS9 RPL6 RPS13 HNRNPC RBBP6 NOC2L RPL28 RPL11 IMMT AGK MCAT METTL17 MRPS11 NAT8L NDUFA1 NDUFA10 NDUFA7 NDUFA9 NDUFAF2 NMNAT3 POLRMT SUCLA2 TIMM50 TMLHE TOMM40 URB2 YARS2 C19orf53 MFF UQCRQ CA5B ECHDC2 TIMM13 VARS2",
+          "CD_MemberList_Size": 48,
+          "CD_MemberList_LogSize": 3.871201010907891
+        }
+      },
+      {
+        "id": 130,
+        "x": -900.0061229364239,
+        "y": -660.9344808602115,
+        "v": {
+          "Proteins": "ACVR1, AGPAT4, C15orf61, CACNA2D2, GPR180, IGFBP2, IMMT, LMF2, NAT14, PCDH19, PEX10, SH3GL2, SLC35F2, TESC, TMEM177, ANKRD46, CHST10, CLPTM1, DGCR2, DISP1, DNAJC18, FAM69B, FZD8, GABRA5, KCNB2, KCNQ2, MCOLN2, MCOLN3, MFSD10, PDE3B, POMT1, SLC41A3, XKR8, NDUFA1, CLASP2, INSIG1, PCDH17, SREBF2, TOR1A",
+          "Category": "Putative system",
+          "name": "Secretory organelles",
+          "95% prediction interval (nm)": "[2144, 7440]",
+          "__system_size": 39,
+          "__isKnown": 0,
+          "Number of proteins": 39,
+          "Annotation": "Secretory organelles",
+          "Predicted diameter (nm)": 3994,
+          "HCX::members": [
+            460,
+            176,
+            435,
+            152,
+            153,
+            128,
+            177,
+            13,
+            478,
+            524,
+            14,
+            15,
+            449,
+            470,
+            54,
+            398,
+            550,
+            322,
+            227,
+            492,
+            461,
+            154,
+            442,
+            151,
+            175,
+            475,
+            363,
+            486,
+            451,
+            495,
+            557,
+            493,
+            511,
+            477,
+            169,
+            436,
+            525,
+            116,
+            145
+          ],
+          "assembly_id": "777",
+          "CD_MemberList": "ACVR1 AGPAT4 C15orf61 CACNA2D2 GPR180 IGFBP2 IMMT LMF2 NAT14 PCDH19 PEX10 SH3GL2 SLC35F2 TESC TMEM177 ANKRD46 CHST10 CLPTM1 DGCR2 DISP1 DNAJC18 FAM69B FZD8 GABRA5 KCNB2 KCNQ2 MCOLN2 MCOLN3 MFSD10 PDE3B POMT1 SLC41A3 XKR8 NDUFA1 CLASP2 INSIG1 PCDH17 SREBF2 TOR1A",
+          "CD_MemberList_Size": 39,
+          "CD_MemberList_LogSize": 3.6635616461296463
+        }
+      },
+      {
+        "id": 129,
+        "x": -829.3987360893022,
+        "y": -103.72945640187103,
+        "v": {
+          "Proteins": "ZNF45, RPS13, PRR3, YTHDC2, ZNF689",
+          "Category": "Putative system",
+          "name": "Nucleic acid binding complex",
+          "95% prediction interval (nm)": "[78, 271]",
+          "__system_size": 5,
+          "__isKnown": 0,
+          "Number of proteins": 5,
+          "Annotation": "Nucleic acid binding complex",
+          "Predicted diameter (nm)": 146,
+          "HCX::members": [
+            45,
+            278,
+            635,
+            131,
+            62
+          ],
+          "assembly_id": "730",
+          "CD_MemberList": "ZNF45 RPS13 PRR3 YTHDC2 ZNF689",
+          "CD_MemberList_Size": 5,
+          "CD_MemberList_LogSize": 1.6094379124341003
+        }
+      },
+      {
+        "id": 128,
+        "x": -746.7893650792888,
+        "y": -212.18344671985966,
+        "v": {
+          "Proteins": "RPS18, RPL13A, RPL19, RPL27A, RPL7A, KRI1, DHX15, MRPL46, MRPS14, MRPL19, MRPL20, RPL38, RPL18, RPS3A, ZNF45, SRRM1, MRPS31, MRPS9, RPS13, RRS1, NOC2L, NVL, REXO4, RPL7L1, DHX37, NOL12, ZNF771, RPL28, RPL11, PRR3, YTHDC2, ZNF689, NOP56, C19orf53, ZCCHC9, LIN28B",
+          "Category": "Known system",
+          "name": "Ribosome biogenesis community",
+          "95% prediction interval (nm)": "[186, 646]",
+          "__system_size": 36,
+          "__isKnown": 1,
+          "Number of proteins": 36,
+          "Annotation": "Ribosome biogenesis community",
+          "Predicted diameter (nm)": 347,
+          "HCX::members": [
+            189,
+            257,
+            275,
+            22,
+            17,
+            184,
+            70,
+            429,
+            125,
+            94,
+            28,
+            92,
+            106,
+            46,
+            45,
+            91,
+            454,
+            32,
+            278,
+            24,
+            33,
+            19,
+            102,
+            31,
+            90,
+            35,
+            77,
+            206,
+            243,
+            635,
+            131,
+            62,
+            59,
+            632,
+            72,
+            639
+          ],
+          "assembly_id": "776",
+          "CD_MemberList": "RPS18 RPL13A RPL19 RPL27A RPL7A KRI1 DHX15 MRPL46 MRPS14 MRPL19 MRPL20 RPL38 RPL18 RPS3A ZNF45 SRRM1 MRPS31 MRPS9 RPS13 RRS1 NOC2L NVL REXO4 RPL7L1 DHX37 NOL12 ZNF771 RPL28 RPL11 PRR3 YTHDC2 ZNF689 NOP56 C19orf53 ZCCHC9 LIN28B",
+          "CD_MemberList_Size": 36,
+          "CD_MemberList_LogSize": 3.58351893845611
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 203,
+        "s": 127,
+        "t": 115,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 202,
+        "s": 125,
+        "t": 126,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 201,
+        "s": 123,
+        "t": 84,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 200,
+        "s": 123,
+        "t": 124,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 199,
+        "s": 123,
+        "t": 119,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 198,
+        "s": 122,
+        "t": 111,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 197,
+        "s": 122,
+        "t": 123,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 196,
+        "s": 122,
+        "t": 106,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 195,
+        "s": 120,
+        "t": 108,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 194,
+        "s": 120,
+        "t": 110,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 193,
+        "s": 120,
+        "t": 115,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 192,
+        "s": 120,
+        "t": 121,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 191,
+        "s": 119,
+        "t": 85,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 190,
+        "s": 119,
+        "t": 99,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 189,
+        "s": 119,
+        "t": 112,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 188,
+        "s": 117,
+        "t": 118,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 187,
+        "s": 115,
+        "t": 111,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 186,
+        "s": 115,
+        "t": 75,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 185,
+        "s": 115,
+        "t": 116,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 184,
+        "s": 115,
+        "t": 86,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 183,
+        "s": 115,
+        "t": 95,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 182,
+        "s": 115,
+        "t": 80,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 181,
+        "s": 114,
+        "t": 105,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 180,
+        "s": 112,
+        "t": 100,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 179,
+        "s": 112,
+        "t": 98,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 178,
+        "s": 112,
+        "t": 113,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 177,
+        "s": 112,
+        "t": 89,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 176,
+        "s": 107,
+        "t": 95,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 175,
+        "s": 107,
+        "t": 111,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 174,
+        "s": 107,
+        "t": 110,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 173,
+        "s": 107,
+        "t": 109,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 172,
+        "s": 107,
+        "t": 108,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 171,
+        "s": 107,
+        "t": 75,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 170,
+        "s": 106,
+        "t": 99,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 169,
+        "s": 105,
+        "t": 101,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 168,
+        "s": 103,
+        "t": 104,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 167,
+        "s": 101,
+        "t": 83,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 166,
+        "s": 101,
+        "t": 102,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 165,
+        "s": 99,
+        "t": 100,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 164,
+        "s": 99,
+        "t": 92,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 163,
+        "s": 98,
+        "t": 94,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 232,
+        "s": 95,
+        "t": 72,
+        "v": {
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 162,
+        "s": 95,
+        "t": 97,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 161,
+        "s": 95,
+        "t": 96,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 160,
+        "s": 95,
+        "t": 82,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 158,
+        "s": 94,
+        "t": 76,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 157,
+        "s": 94,
+        "t": 91,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 156,
+        "s": 92,
+        "t": 93,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 155,
+        "s": 89,
+        "t": 91,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 154,
+        "s": 89,
+        "t": 90,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 153,
+        "s": 88,
+        "t": 73,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 152,
+        "s": 86,
+        "t": 87,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 151,
+        "s": 84,
+        "t": 85,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 233,
+        "s": 83,
+        "t": 79,
+        "v": {
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 149,
+        "s": 82,
+        "t": 72,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 148,
+        "s": 80,
+        "t": 81,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 146,
+        "s": 76,
+        "t": 77,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 234,
+        "s": 75,
+        "t": 72,
+        "v": {
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 144,
+        "s": 73,
+        "t": 74,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 231,
+        "s": 140,
+        "t": 137,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 230,
+        "s": 140,
+        "t": 142,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 229,
+        "s": 140,
+        "t": 117,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 228,
+        "s": 140,
+        "t": 114,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 227,
+        "s": 140,
+        "t": 103,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 226,
+        "s": 140,
+        "t": 141,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 225,
+        "s": 140,
+        "t": 88,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 224,
+        "s": 139,
+        "t": 136,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 223,
+        "s": 139,
+        "t": 130,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 222,
+        "s": 139,
+        "t": 88,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 221,
+        "s": 138,
+        "t": 140,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 220,
+        "s": 138,
+        "t": 139,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 219,
+        "s": 137,
+        "t": 135,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 218,
+        "s": 137,
+        "t": 122,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 217,
+        "s": 136,
+        "t": 134,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 216,
+        "s": 135,
+        "t": 133,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 215,
+        "s": 135,
+        "t": 106,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 214,
+        "s": 135,
+        "t": 123,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 213,
+        "s": 134,
+        "t": 133,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 212,
+        "s": 134,
+        "t": 131,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 211,
+        "s": 133,
+        "t": 84,
+        "v": {
+          "Is_Tree_Edge": "Not_Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 210,
+        "s": 133,
+        "t": 128,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 209,
+        "s": 131,
+        "t": 132,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 208,
+        "s": 131,
+        "t": 127,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 207,
+        "s": 130,
+        "t": 125,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 206,
+        "s": 128,
+        "t": 120,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 205,
+        "s": 128,
+        "t": 107,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      },
+      {
+        "id": 204,
+        "s": 128,
+        "t": 129,
+        "v": {
+          "Is_Tree_Edge": "Tree",
+          "interaction": "interacts with"
+        }
+      }
+    ]
+  },
+  {
+    "visualProperties": [
+      {
+        "default": {
+          "edge": {
+            "EDGE_SOURCE_ARROW_SIZE": 6,
+            "EDGE_SOURCE_ARROW_SELECTED_PAINT": "#FFFF00",
+            "EDGE_LABEL_OPACITY": 1,
+            "EDGE_TARGET_ARROW_SELECTED_PAINT": "#FFFF00",
+            "EDGE_TARGET_ARROW_SHAPE": "triangle",
+            "EDGE_LABEL_BACKGROUND_OPACITY": 1,
+            "EDGE_LABEL_POSITION": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "EDGE_ANCHOR": "C",
+              "LABEL_ANCHOR": "C"
+            },
+            "EDGE_Z_ORDER": 0,
+            "EDGE_LABEL_MAX_WIDTH": 200,
+            "EDGE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+            "EDGE_LABEL_ROTATION": 0,
+            "EDGE_VISIBILITY": "element",
+            "EDGE_LABEL_FONT_SIZE": 10,
+            "EDGE_LABEL_COLOR": "#000000",
+            "EDGE_SELECTED_PAINT": "#FF0000",
+            "EDGE_SELECTED": "false",
+            "EDGE_STACKING_DENSITY": 0.5,
+            "EDGE_SOURCE_ARROW_COLOR": "#CCCCCC",
+            "EDGE_TARGET_ARROW_COLOR": "#CCCCCC",
+            "EDGE_STROKE_SELECTED_PAINT": "#FF0000",
+            "EDGE_WIDTH": 2,
+            "EDGE_SOURCE_ARROW_SHAPE": "none",
+            "EDGE_LINE_COLOR": "#CCCCCC",
+            "EDGE_OPACITY": 1,
+            "EDGE_LABEL_BACKGROUND_SHAPE": "NONE",
+            "EDGE_LABEL_FONT_FACE": {
+              "FONT_FAMILY": "sans-serif",
+              "FONT_STYLE": "normal",
+              "FONT_WEIGHT": "normal",
+              "FONT_NAME": "Dialog"
+            },
+            "EDGE_STACKING": "AUTO_BEND",
+            "EDGE_LABEL_AUTOROTATE": false,
+            "EDGE_LINE_STYLE": "solid",
+            "EDGE_CURVED": true,
+            "EDGE_TARGET_ARROW_SIZE": 6
+          },
+          "network": {
+            "NETWORK_BACKGROUND_COLOR": "#FFFFFF"
+          },
+          "node": {
+            "NODE_Y_LOCATION": 0,
+            "NODE_BACKGROUND_COLOR": "#89D0F5",
+            "NODE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+            "NODE_WIDTH": 35,
+            "NODE_CUSTOMGRAPHICS_SIZE_7": 50,
+            "NODE_CUSTOMGRAPHICS_SIZE_6": 50,
+            "COMPOUND_NODE_SHAPE": "ROUND_RECTANGLE",
+            "NODE_CUSTOMGRAPHICS_SIZE_5": 50,
+            "NODE_Z_LOCATION": 0,
+            "NODE_LABEL_POSITION": {
+              "HORIZONTAL_ALIGN": "center",
+              "VERTICAL_ALIGN": "center",
+              "HORIZONTAL_ANCHOR": "center",
+              "VERTICAL_ANCHOR": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "JUSTIFICATION": "center"
+            },
+            "NODE_CUSTOMGRAPHICS_SIZE_4": 50,
+            "NODE_CUSTOMGRAPHICS_SIZE_3": 50,
+            "NODE_CUSTOMGRAPHICS_SIZE_2": 50,
+            "NODE_VISIBILITY": "element",
+            "NODE_CUSTOMGRAPHICS_SIZE_1": 50,
+            "NODE_BORDER_STYLE": "solid",
+            "NODE_BACKGROUND_OPACITY": 1,
+            "NODE_LABEL_COLOR": "#000000",
+            "NODE_SELECTED": false,
+            "NODE_BORDER_COLOR": "#CCCCCC",
+            "NODE_CUSTOMGRAPHICS_POSITION_8": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_9": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_SHAPE": "ellipse",
+            "NODE_CUSTOMGRAPHICS_POSITION_4": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_5": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_6": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_7": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_X_LOCATION": 0,
+            "NODE_LABEL_FONT_SIZE": 12,
+            "NODE_CUSTOMGRAPHICS_POSITION_1": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_BORDER_OPACITY": 1,
+            "NODE_CUSTOMGRAPHICS_POSITION_2": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_SIZE_9": 50,
+            "NODE_LABEL_ROTATION": 0,
+            "NODE_CUSTOMGRAPHICS_POSITION_3": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_SIZE_8": 50,
+            "NODE_BORDER_WIDTH": 2,
+            "NODE_LABEL_OPACITY": 1,
+            "NODE_HEIGHT": 35,
+            "COMPOUND_NODE_PADDING": "10.0",
+            "NODE_LABEL_BACKGROUND_SHAPE": "NONE",
+            "NODE_LABEL_BACKGROUND_OPACITY": 1,
+            "NODE_LABEL_FONT_FACE": {
+              "FONT_FAMILY": "sans-serif",
+              "FONT_STYLE": "normal",
+              "FONT_WEIGHT": "normal",
+              "FONT_NAME": "SansSerif"
+            },
+            "NODE_SELECTED_PAINT": "#FFFF00",
+            "NODE_LABEL_MAX_WIDTH": 200
+          }
+        },
+        "nodeMapping": {
+          "NODE_LABEL": {
+            "type": "PASSTHROUGH",
+            "definition": {
+              "attribute": "Annotation",
+              "type": "string"
+            }
+          },
+          "NODE_HEIGHT": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": 3,
+                  "vp": 20
+                },
+                {
+                  "v": 4,
+                  "vp": 20
+                },
+                {
+                  "v": 5,
+                  "vp": 20
+                },
+                {
+                  "v": 6,
+                  "vp": 20
+                },
+                {
+                  "v": 7,
+                  "vp": 20
+                },
+                {
+                  "v": 8,
+                  "vp": 20
+                },
+                {
+                  "v": 9,
+                  "vp": 20
+                },
+                {
+                  "v": 75,
+                  "vp": 75
+                },
+                {
+                  "v": 11,
+                  "vp": 30
+                },
+                {
+                  "v": 76,
+                  "vp": 75
+                },
+                {
+                  "v": 12,
+                  "vp": 30
+                },
+                {
+                  "v": 13,
+                  "vp": 30
+                },
+                {
+                  "v": 14,
+                  "vp": 30
+                },
+                {
+                  "v": 15,
+                  "vp": 30
+                },
+                {
+                  "v": 18,
+                  "vp": 30
+                },
+                {
+                  "v": 19,
+                  "vp": 30
+                },
+                {
+                  "v": 20,
+                  "vp": 40
+                },
+                {
+                  "v": 661,
+                  "vp": 105
+                },
+                {
+                  "v": 21,
+                  "vp": 40
+                },
+                {
+                  "v": 88,
+                  "vp": 80
+                },
+                {
+                  "v": 27,
+                  "vp": 40
+                },
+                {
+                  "v": 350,
+                  "vp": 100
+                },
+                {
+                  "v": 32,
+                  "vp": 50
+                },
+                {
+                  "v": 33,
+                  "vp": 50
+                },
+                {
+                  "v": 98,
+                  "vp": 90
+                },
+                {
+                  "v": 36,
+                  "vp": 50
+                },
+                {
+                  "v": 37,
+                  "vp": 50
+                },
+                {
+                  "v": 39,
+                  "vp": 50
+                },
+                {
+                  "v": 41,
+                  "vp": 60
+                },
+                {
+                  "v": 42,
+                  "vp": 60
+                },
+                {
+                  "v": 43,
+                  "vp": 60
+                },
+                {
+                  "v": 48,
+                  "vp": 60
+                },
+                {
+                  "v": 379,
+                  "vp": 100
+                }
+              ],
+              "attribute": "__system_size",
+              "type": "integer"
+            }
+          },
+          "NODE_BACKGROUND_COLOR": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": 0,
+                  "vp": "#9999FF"
+                },
+                {
+                  "v": 1,
+                  "vp": "#FFCC33"
+                }
+              ],
+              "attribute": "__isKnown",
+              "type": "integer"
+            }
+          },
+          "NODE_LABEL_FONT_SIZE": {
+            "type": "CONTINUOUS",
+            "definition": {
+              "map": [
+                {
+                  "max": 3,
+                  "maxVPValue": 1,
+                  "includeMin": false,
+                  "includeMax": false
+                },
+                {
+                  "min": 3,
+                  "max": 661,
+                  "maxVPValue": 30,
+                  "minVPValue": 10,
+                  "includeMin": true,
+                  "includeMax": true
+                },
+                {
+                  "min": 661,
+                  "minVPValue": 1,
+                  "includeMin": false,
+                  "includeMax": false
+                }
+              ],
+              "attribute": "__system_size",
+              "type": "integer"
+            }
+          },
+          "NODE_WIDTH": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": 3,
+                  "vp": 20
+                },
+                {
+                  "v": 4,
+                  "vp": 20
+                },
+                {
+                  "v": 5,
+                  "vp": 20
+                },
+                {
+                  "v": 6,
+                  "vp": 20
+                },
+                {
+                  "v": 7,
+                  "vp": 20
+                },
+                {
+                  "v": 8,
+                  "vp": 20
+                },
+                {
+                  "v": 9,
+                  "vp": 20
+                },
+                {
+                  "v": 75,
+                  "vp": 75
+                },
+                {
+                  "v": 11,
+                  "vp": 30
+                },
+                {
+                  "v": 76,
+                  "vp": 75
+                },
+                {
+                  "v": 12,
+                  "vp": 30
+                },
+                {
+                  "v": 13,
+                  "vp": 30
+                },
+                {
+                  "v": 14,
+                  "vp": 30
+                },
+                {
+                  "v": 15,
+                  "vp": 30
+                },
+                {
+                  "v": 18,
+                  "vp": 30
+                },
+                {
+                  "v": 19,
+                  "vp": 30
+                },
+                {
+                  "v": 20,
+                  "vp": 40
+                },
+                {
+                  "v": 661,
+                  "vp": 105
+                },
+                {
+                  "v": 21,
+                  "vp": 40
+                },
+                {
+                  "v": 88,
+                  "vp": 80
+                },
+                {
+                  "v": 27,
+                  "vp": 40
+                },
+                {
+                  "v": 350,
+                  "vp": 100
+                },
+                {
+                  "v": 32,
+                  "vp": 50
+                },
+                {
+                  "v": 33,
+                  "vp": 50
+                },
+                {
+                  "v": 98,
+                  "vp": 90
+                },
+                {
+                  "v": 36,
+                  "vp": 50
+                },
+                {
+                  "v": 37,
+                  "vp": 50
+                },
+                {
+                  "v": 39,
+                  "vp": 50
+                },
+                {
+                  "v": 41,
+                  "vp": 60
+                },
+                {
+                  "v": 42,
+                  "vp": 60
+                },
+                {
+                  "v": 43,
+                  "vp": 60
+                },
+                {
+                  "v": 48,
+                  "vp": 60
+                },
+                {
+                  "v": 379,
+                  "vp": 100
+                }
+              ],
+              "attribute": "__system_size",
+              "type": "integer"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "edgeBypasses": [
+      {
+        "id": 198,
+        "v": {
+          "EDGE_CONTROL_POINTS": [
+            {
+              "sin": 0.8012719385830217,
+              "cos": -0.5983003262905732,
+              "ratio": 0.4822013835899904
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "nodeBypasses": [
+      {
+        "id": 129,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 11.98,
+            "MARGIN_Y": 8.56,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 74,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 60.08,
+            "MARGIN_Y": 8.94,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 83,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 73.82,
+            "MARGIN_Y": 1.64,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 107,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 2.35,
+            "MARGIN_Y": -3.53,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 115,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -1.59,
+            "MARGIN_Y": -0.1,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 123,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 7.94,
+            "MARGIN_Y": 2.54,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 138,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -1.58,
+            "MARGIN_Y": 2.29,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 75,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 27.42,
+            "MARGIN_Y": 3.52,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 84,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 11.08,
+            "MARGIN_Y": -6.1,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 92,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 2.59,
+            "MARGIN_Y": 0,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 100,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 15,
+            "MARGIN_Y": 5.62,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 108,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 2.55,
+            "MARGIN_Y": 9.62,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 116,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 1.29,
+            "MARGIN_Y": 4.49,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 124,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 4.76,
+            "MARGIN_Y": 6.02,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 76,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -0.38,
+            "MARGIN_Y": 0.81,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 85,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -13.43,
+            "MARGIN_Y": -2.62,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 93,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 0.27,
+            "MARGIN_Y": -7.35,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 101,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 9.27,
+            "MARGIN_Y": -8.83,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 109,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -41.95,
+            "MARGIN_Y": -1.93,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 117,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 0.81,
+            "MARGIN_Y": 3.23,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 77,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -0.81,
+            "MARGIN_Y": -0.81,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 86,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 6.79,
+            "MARGIN_Y": -2.71,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 102,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 49.55,
+            "MARGIN_Y": 6.93,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 110,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 7.03,
+            "MARGIN_Y": -5.11,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 118,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 15.48,
+            "MARGIN_Y": -2.32,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 126,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -30.11,
+            "MARGIN_Y": -5.08,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 133,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 3.75,
+            "MARGIN_Y": -11.78,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 79,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 74.78,
+            "MARGIN_Y": -0.78,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 87,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -26.69,
+            "MARGIN_Y": -1.38,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 95,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -10.46,
+            "MARGIN_Y": -2.81,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 103,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 5.02,
+            "MARGIN_Y": -8,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 111,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 8.36,
+            "MARGIN_Y": 3.44,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 127,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 14.46,
+            "MARGIN_Y": 17.95,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 142,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 5.31,
+            "MARGIN_Y": 5.31,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 88,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 6.03,
+            "MARGIN_Y": -4.57,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 96,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 21.11,
+            "MARGIN_Y": 2.37,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 104,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 60.26,
+            "MARGIN_Y": 13.5,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 112,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 6.48,
+            "MARGIN_Y": 13.83,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 81,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -3.62,
+            "MARGIN_Y": -4.34,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 89,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -0.9,
+            "MARGIN_Y": -0.72,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 97,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -3.06,
+            "MARGIN_Y": 2.13,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 105,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -9.11,
+            "MARGIN_Y": 2.68,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 113,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 1.11,
+            "MARGIN_Y": -3.87,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 121,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 1.06,
+            "MARGIN_Y": -2.41,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 73,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 2,
+            "MARGIN_Y": -8.65,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 82,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 0.8,
+            "MARGIN_Y": 0.7,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 90,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 14.22,
+            "MARGIN_Y": 6.94,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 98,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -20.15,
+            "MARGIN_Y": -0.81,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 106,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": 0.32,
+            "MARGIN_Y": 5.48,
+            "JUSTIFICATION": "center"
+          }
+        }
+      },
+      {
+        "id": 114,
+        "v": {
+          "NODE_LABEL_POSITION": {
+            "HORIZONTAL_ALIGN": "center",
+            "VERTICAL_ALIGN": "center",
+            "HORIZONTAL_ANCHOR": "center",
+            "VERTICAL_ANCHOR": "center",
+            "MARGIN_X": -20.53,
+            "MARGIN_Y": 2.87,
+            "JUSTIFICATION": "center"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "visualEditorProperties": [
+      {
+        "properties": {
+          "nodeSizeLocked": true,
+          "arrowColorMatchesEdge": false,
+          "nodeCustomGraphicsSizeSync": true,
+          "NETWORK_CENTER_Y_LOCATION": -212.88309288227262,
+          "NETWORK_CENTER_X_LOCATION": -507.8876400356654,
+          "NETWORK_SCALE_FACTOR": 0.6691199205059577
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "success": true
+      }
+    ]
+  }
+]

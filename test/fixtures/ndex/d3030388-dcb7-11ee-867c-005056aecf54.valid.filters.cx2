@@ -1,0 +1,537 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "visualProperties",
+        "elementCount": 1
+      },
+      {
+        "name": "visualEditorProperties",
+        "elementCount": 1
+      },
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "filterWidgets",
+        "elementCount": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 10
+      },
+      {
+        "name": "nodes",
+        "elementCount": 4
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "nodes": {
+          "ensembl": {
+            "d": "string"
+          },
+          "antibody": {
+            "d": "string"
+          },
+          "filename": {
+            "d": "string"
+          },
+          "querynode": {
+            "d": "boolean"
+          },
+          "bait": {
+            "d": "string"
+          },
+          "imageurl": {
+            "d": "string"
+          },
+          "name": {
+            "a": "n",
+            "d": "string"
+          },
+          "locations": {
+            "d": "string"
+          }
+        },
+        "networkAttributes": {
+          "prov:wasDerivedFrom": {
+            "d": "string"
+          },
+          "prov:wasGeneratedBy": {
+            "d": "string"
+          },
+          "name": {
+            "d": "string"
+          }
+        },
+        "edges": {
+          "sim": {
+            "d": "double"
+          },
+          "interaction": {
+            "a": "i",
+            "d": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "C5407_music_ppi_image_edges",
+        "prov:wasDerivedFrom": "e7b02a25-dcb4-11ee-867c-005056aecf54",
+        "prov:wasGeneratedBy": "NDEx Direct Query/v1.1 (Query terms=\"BLZF1 SDF4 POLB NBEA\")"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 2242,
+        "x": 114.69088149117295,
+        "y": -0,
+        "v": {
+          "n": "NBEA",
+          "ensembl": "ensembl:ENSG00000172915",
+          "antibody": "HPA039730",
+          "filename": "534_B10_1_",
+          "imageurl": "http://images.proteinatlas.org/39730/534_B10_1_blue_red_green.jpg",
+          "locations": "Golgi apparatus",
+          "bait": "False",
+          "querynode": true
+        }
+      },
+      {
+        "id": 2244,
+        "x": 209.83785948284407,
+        "y": -213.88132554586835,
+        "v": {
+          "n": "SDF4",
+          "ensembl": "ensembl:ENSG00000078808",
+          "antibody": "CAB015227",
+          "filename": "620_A4_5_",
+          "imageurl": "http://images.proteinatlas.org/15227/620_A4_5_blue_red_green.jpg",
+          "locations": "Golgi apparatus",
+          "bait": "True",
+          "querynode": true
+        }
+      },
+      {
+        "id": 3546,
+        "x": 0,
+        "y": -189.78341347752743,
+        "v": {
+          "n": "BLZF1",
+          "ensembl": "ensembl:ENSG00000117475",
+          "antibody": "HPA067113",
+          "filename": "1754_H5_13_",
+          "imageurl": "http://images.proteinatlas.org/67113/1754_H5_13_cr57f3e9d007832_blue_red_green.jpg",
+          "locations": "Golgi apparatus",
+          "bait": "True",
+          "querynode": true
+        }
+      },
+      {
+        "id": 4039,
+        "x": 88.4057560797072,
+        "y": -400,
+        "v": {
+          "n": "POLB",
+          "ensembl": "ensembl:ENSG00000070501",
+          "antibody": "HPA049104",
+          "filename": "845_A2_1_",
+          "imageurl": "http://images.proteinatlas.org/49104/845_A2_1_blue_red_green.jpg",
+          "locations": "Vesicles",
+          "bait": "False",
+          "querynode": true
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 2941633,
+        "s": 2242,
+        "t": 3546,
+        "v": {
+          "sim": 0.74,
+          "i": "MuSIC_top1p"
+        }
+      },
+      {
+        "id": 2941634,
+        "s": 2242,
+        "t": 3546,
+        "v": {
+          "sim": 0.81,
+          "i": "img_top1p"
+        }
+      },
+      {
+        "id": 2941635,
+        "s": 2242,
+        "t": 3546,
+        "v": {
+          "i": "image_annotation"
+        }
+      },
+      {
+        "id": 2941639,
+        "s": 2242,
+        "t": 2244,
+        "v": {
+          "sim": 0.69,
+          "i": "MuSIC_top1p"
+        }
+      },
+      {
+        "id": 2941640,
+        "s": 2242,
+        "t": 2244,
+        "v": {
+          "i": "image_annotation"
+        }
+      },
+      {
+        "id": 4123191,
+        "s": 3546,
+        "t": 4039,
+        "v": {
+          "sim": 0.75,
+          "i": "MuSIC_top1p"
+        }
+      },
+      {
+        "id": 2943330,
+        "s": 2244,
+        "t": 3546,
+        "v": {
+          "sim": 0.76,
+          "i": "MuSIC_top1p"
+        }
+      },
+      {
+        "id": 2943331,
+        "s": 2244,
+        "t": 3546,
+        "v": {
+          "i": "image_annotation"
+        }
+      },
+      {
+        "id": 2943351,
+        "s": 2244,
+        "t": 4039,
+        "v": {
+          "sim": 0.7,
+          "i": "MuSIC_top1p"
+        }
+      },
+      {
+        "id": 2943352,
+        "s": 2244,
+        "t": 4039,
+        "v": {
+          "sim": 0.8,
+          "i": "img_top1p"
+        }
+      }
+    ]
+  },
+  {
+    "visualProperties": [
+      {
+        "default": {
+          "edge": {
+            "EDGE_SOURCE_ARROW_SELECTED_PAINT": "#FFFF00",
+            "EDGE_SOURCE_ARROW_SIZE": 6,
+            "EDGE_LABEL_OPACITY": 1,
+            "EDGE_LABEL_BACKGROUND_OPACITY": 1,
+            "EDGE_TARGET_ARROW_SELECTED_PAINT": "#FFFF00",
+            "EDGE_TARGET_ARROW_SHAPE": "none",
+            "EDGE_LABEL_POSITION": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "EDGE_ANCHOR": "C",
+              "LABEL_ANCHOR": "C"
+            },
+            "EDGE_Z_ORDER": 0,
+            "EDGE_LABEL_MAX_WIDTH": 200,
+            "EDGE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+            "EDGE_LABEL_ROTATION": 0,
+            "EDGE_VISIBILITY": "element",
+            "EDGE_LABEL_FONT_SIZE": 10,
+            "EDGE_LABEL_COLOR": "#000000",
+            "EDGE_SELECTED_PAINT": "#FF0000",
+            "EDGE_SELECTED": "false",
+            "EDGE_STACKING_DENSITY": 0.5,
+            "EDGE_SOURCE_ARROW_COLOR": "#000000",
+            "EDGE_TARGET_ARROW_COLOR": "#000000",
+            "EDGE_STROKE_SELECTED_PAINT": "#FF0000",
+            "EDGE_WIDTH": 2,
+            "EDGE_SOURCE_ARROW_SHAPE": "none",
+            "EDGE_LINE_COLOR": "#848484",
+            "EDGE_LABEL_BACKGROUND_SHAPE": "none",
+            "EDGE_OPACITY": 0.49019607843137253,
+            "EDGE_LABEL_FONT_FACE": {
+              "FONT_FAMILY": "sans-serif",
+              "FONT_STYLE": "normal",
+              "FONT_WEIGHT": "normal",
+              "FONT_NAME": "Dialog"
+            },
+            "EDGE_STACKING": "HAYSTACK",
+            "EDGE_LABEL_AUTOROTATE": false,
+            "EDGE_CURVED": true,
+            "EDGE_LINE_STYLE": "solid",
+            "EDGE_TARGET_ARROW_SIZE": 6
+          },
+          "network": {
+            "NETWORK_BACKGROUND_COLOR": "#FFFFFF"
+          },
+          "node": {
+            "NODE_Y_LOCATION": 0,
+            "NODE_BACKGROUND_COLOR": "#F0F0F0",
+            "NODE_LABEL_BACKGROUND_COLOR": "#F0F0F0",
+            "NODE_WIDTH": 25,
+            "NODE_CUSTOMGRAPHICS_SIZE_7": 50,
+            "COMPOUND_NODE_SHAPE": "ROUND_RECTANGLE",
+            "NODE_CUSTOMGRAPHICS_SIZE_6": 50,
+            "NODE_CUSTOMGRAPHICS_SIZE_5": 50,
+            "NODE_LABEL_POSITION": {
+              "HORIZONTAL_ALIGN": "center",
+              "VERTICAL_ALIGN": "center",
+              "HORIZONTAL_ANCHOR": "center",
+              "VERTICAL_ANCHOR": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "JUSTIFICATION": "center"
+            },
+            "NODE_Z_LOCATION": 0,
+            "NODE_CUSTOMGRAPHICS_SIZE_4": 50,
+            "NODE_CUSTOMGRAPHICS_SIZE_3": 50,
+            "NODE_CUSTOMGRAPHICS_SIZE_2": 50,
+            "NODE_BORDER_STYLE": "solid",
+            "NODE_CUSTOMGRAPHICS_SIZE_1": 50,
+            "NODE_VISIBILITY": "element",
+            "NODE_BACKGROUND_OPACITY": 1,
+            "NODE_LABEL_COLOR": "#000000",
+            "NODE_SELECTED": false,
+            "NODE_BORDER_COLOR": "#CCCCCC",
+            "NODE_CUSTOMGRAPHICS_POSITION_8": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_9": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_4": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_SHAPE": "rectangle",
+            "NODE_CUSTOMGRAPHICS_POSITION_5": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_6": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_7": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_LABEL_FONT_SIZE": 20,
+            "NODE_X_LOCATION": 0,
+            "NODE_BORDER_OPACITY": 1,
+            "NODE_CUSTOMGRAPHICS_POSITION_1": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_POSITION_2": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_SIZE_9": 50,
+            "NODE_CUSTOMGRAPHICS_POSITION_3": {
+              "JUSTIFICATION": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "ENTITY_ANCHOR": "C",
+              "GRAPHICS_ANCHOR": "C"
+            },
+            "NODE_CUSTOMGRAPHICS_SIZE_8": 50,
+            "NODE_LABEL_ROTATION": 0,
+            "NODE_BORDER_WIDTH": 0,
+            "NODE_HEIGHT": 25,
+            "NODE_LABEL_OPACITY": 1,
+            "COMPOUND_NODE_PADDING": "10.0",
+            "NODE_LABEL_BACKGROUND_SHAPE": "round-rectangle",
+            "NODE_LABEL_BACKGROUND_OPACITY": 1,
+            "NODE_LABEL_FONT_FACE": {
+              "FONT_FAMILY": "sans-serif",
+              "FONT_STYLE": "normal",
+              "FONT_WEIGHT": "normal",
+              "FONT_NAME": "SansSerif"
+            },
+            "NODE_SELECTED_PAINT": "#FFFF00",
+            "NODE_LABEL_MAX_WIDTH": 200
+          }
+        },
+        "edgeMapping": {
+          "EDGE_LINE_COLOR": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "image_annotation",
+                  "vp": "#FF9999"
+                },
+                {
+                  "v": "bioplex",
+                  "vp": "#08589E"
+                },
+                {
+                  "v": "ppi_top1p",
+                  "vp": "#2B8CBE"
+                },
+                {
+                  "v": "MuSIC_top1p",
+                  "vp": "#88419D"
+                },
+                {
+                  "v": "img_top1p",
+                  "vp": "#E31A1C"
+                }
+              ],
+              "attribute": "interaction",
+              "type": "string"
+            }
+          },
+          "EDGE_OPACITY": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "bioplex",
+                  "vp": 1
+                }
+              ],
+              "attribute": "interaction",
+              "type": "string"
+            }
+          }
+        },
+        "nodeMapping": {
+          "NODE_LABEL": {
+            "type": "PASSTHROUGH",
+            "definition": {
+              "attribute": "name",
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "visualEditorProperties": [
+      {
+        "properties": {
+          "nodeSizeLocked": true,
+          "arrowColorMatchesEdge": false,
+          "NETWORK_CENTER_Y_LOCATION": -112.70342,
+          "nodeCustomGraphicsSizeSync": true,
+          "NETWORK_CENTER_X_LOCATION": 197.44379,
+          "NETWORK_SCALE_FACTOR": 1.4875941
+        }
+      }
+    ]
+  },
+  {
+    "filterWidgets": [
+      {
+        "filter": [
+          {
+            "predicate": "IS",
+            "criterion": "MuSIC_top1p",
+            "description": "Integrated interaction"
+          },
+          {
+            "predicate": "IS",
+            "criterion": "ppi_top1p",
+            "description": "Similar biophysical interaction features"
+          },
+          {
+            "predicate": "IS",
+            "criterion": "img_top1p",
+            "description": "Similar image features"
+          },
+          {
+            "predicate": "IS",
+            "criterion": "bioplex",
+            "description": "Biophysical interaction"
+          },
+          {
+            "predicate": "IS",
+            "criterion": "image_annotation",
+            "description": "Shared image annotation"
+          }
+        ],
+        "filterMode": "edge",
+        "appliesTo": "edges",
+        "attributeName": "interaction",
+        "mappingSource": "EDGE_LINE_COLOR",
+        "label": "Interaction source",
+        "widgetType": "checkboxes"
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "success": true
+      }
+    ]
+  }
+]

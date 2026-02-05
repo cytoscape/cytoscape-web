@@ -1,28 +1,30 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { useVisualStyleStore } from '../../../store/VisualStyleStore'
-import { DEF_VIEW_TYPE, useViewModelStore } from '../../../store/ViewModelStore'
-import { useTableStore } from '../../../store/TableStore'
-import { useOpaqueAspectStore } from '../../../store/OpaqueAspectStore'
+
+import { logApi, logStore } from '../../../debug'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import {
-  createDataFromLocalCx2,
-  isValidCx2Network,
-} from '../../../utils/cx-utils'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
-import { NdexNetworkProperty } from '../../../models/NetworkSummaryModel'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import { ValueType, ValueTypeName } from '../../../models/TableModel'
+  DEF_VIEW_TYPE,
+  useViewModelStore,
+} from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { useNetworkStore } from '../../../store/NetworkStore'
-import { generateUniqueName } from '../../../utils/network-utils'
+import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
+import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
   getNodes,
-} from '../../../models/CxModel/cx2-util'
-import { logApi, logStore } from '../../../debug'
+} from '../../../models/CxModel/impl/extractor'
+import { validateCX2 } from '../../../models/CxModel/impl/validator'
+import { NetworkProperty } from '../../../models/NetworkSummaryModel'
+import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { generateUniqueName } from '../../../utils/generateUniqueName'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 export const useUpdateNetwork = (): (({
   responseObj,
@@ -45,10 +47,15 @@ export const useUpdateNetwork = (): (({
   )
   const updateNetwork = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
-      if (!isValidCx2Network(responseObj)) {
+      // Validate CX2 data from service app before processing
+      const validationResult = validateCX2(responseObj)
+      if (!validationResult.isValid) {
         logApi.warn(
-          `[${updateNetwork.name}]: Invalid update network response`,
+          `[${updateNetwork.name}]: Invalid CX2 network from service app: ${validationResult.errors.length} error(s) found`,
           responseObj,
+        )
+        logApi.warn(
+          `[${updateNetwork.name}]: Validation details: ${validationResult.errorMessage}`,
         )
         return
       }
@@ -72,7 +79,7 @@ export const useUpdateNetwork = (): (({
           summaries[networkId]?.description ??
           localDescription
 
-        const localProperties: NdexNetworkProperty[] = Object.entries(
+        const localProperties: NetworkProperty[] = Object.entries(
           networkAttributes,
         ).map(([key, value]) => {
           return {
@@ -91,13 +98,13 @@ export const useUpdateNetwork = (): (({
 
         // Delete the old view model
         deleteViewModel(networkId)
-        const res = await createDataFromLocalCx2(networkId, responseObj as Cx2)
+        const res = getCyNetworkFromCx2(networkId, responseObj as Cx2)
         const {
           network,
           nodeTable,
           edgeTable,
           visualStyle,
-          networkView,
+          networkViews,
           visualStyleOptions,
           otherAspects,
         } = res
@@ -120,6 +127,7 @@ export const useUpdateNetwork = (): (({
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(networkId, otherAspects, true)
         }
+        const networkView = networkViews[0]
         setViewModel(networkId, {
           ...networkView,
           type: networkView.type ?? DEF_VIEW_TYPE,

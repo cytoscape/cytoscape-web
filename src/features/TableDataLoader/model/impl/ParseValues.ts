@@ -1,10 +1,11 @@
-import { ValueTypeName, ValueType } from '../../../../models/TableModel'
+import { DataTableValue } from 'primereact/datatable'
+
+import { ValueType,ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'
 import { ColumnAppendType } from '../ColumnAppendType'
 import { ColumnAssignmentState } from '../ColumnAssignmentState'
 import { ColumnAssignmentType } from '../ColumnAssignmentType'
 import { DelimiterType } from '../DelimiterType'
-import { DataTableValue } from 'primereact/datatable'
 
 // check if a value matches a given type
 export function valueMatchesType(
@@ -193,7 +194,7 @@ export function generateInferredColumnAssignment(
 
     const typeInferenceResult = inferColumnType(values)
 
-    let inferredType = typeInferenceResult.inferredType
+    const inferredType = typeInferenceResult.inferredType
 
     if (inferredType !== undefined) {
       inferredColumns.push({
@@ -230,7 +231,7 @@ export function generateInferredColumnAppend(
 
     const typeInferenceResult = inferColumnType(values)
 
-    let inferredType = typeInferenceResult.inferredType
+    const inferredType = typeInferenceResult.inferredType
 
     inferredColumns.push({
       name: key,

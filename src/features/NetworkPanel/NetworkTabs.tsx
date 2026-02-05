@@ -1,0 +1,144 @@
+import { Box, Tab, Tabs } from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
+
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { Network } from '../../models/NetworkModel'
+import { Renderer } from '../../models/RendererModel/Renderer'
+import { NetworkView } from '../../models/ViewModel'
+import { NetworkTab } from './NetworkTab'
+
+interface NetworkTabsProps {
+  network: Network
+  views: NetworkView[]
+  renderers: Record<string, Renderer>
+  isActive: boolean
+  bgColor?: string
+  handleClick?: () => void
+  setIsActive?: (active: boolean) => void
+}
+
+export const NetworkTabs = ({
+  network,
+  renderers,
+  isActive,
+  bgColor,
+  handleClick,
+  setIsActive,
+}: NetworkTabsProps) => {
+  const selected = useUiStateStore(
+    (state) => state.ui.networkViewUi.activeTabIndex,
+  )
+  const setSelected = useUiStateStore((state) => state.setNetworkViewTabIndex)
+
+  const customNetworkTabName = useUiStateStore(
+    (state) => state.ui.customNetworkTabName,
+  )
+
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({
+    w: 0,
+    h: 0,
+  })
+
+  useEffect(() => {
+    const boxElement = boxRef.current
+    if (boxElement) {
+      window.requestAnimationFrame(() => {
+        const rect = boxElement.getBoundingClientRect()
+        if (rect.width !== 0 && rect.height !== 0) {
+          setBoxSize({ w: rect.width, h: rect.height })
+        }
+      })
+    }
+  }, [])
+
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    // When clicking a tab, always activate the renderer and switch to the clicked tab
+    // The isActive state will be set by the useEffect in NetworkPanel based on activeNetworkView
+    handleClick?.()
+    setSelected(newValue)
+  }
+
+  const rendererList = Object.values(renderers)
+  return (
+    <Box
+      data-testid="network-tabs"
+      sx={{
+        width: '100%',
+        height: '100%',
+        bgcolor: 'background.paper',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          p: 0,
+          m: 0,
+        }}
+      >
+        <Tabs
+          data-testid="network-tabs-list"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            '& button': {
+              height: '2.5em',
+              minHeight: '2.5em',
+            },
+            height: '2.5em',
+            minHeight: '2.5em',
+            flexGrow: 1,
+          }}
+          value={selected}
+          onChange={handleChange}
+        >
+          {rendererList.map((renderer: Renderer, index: number) => {
+            let label: string = renderer.name ?? 'Renderer'
+            if (customNetworkTabName !== undefined) {
+              if (
+                customNetworkTabName[renderer.id] !== undefined &&
+                customNetworkTabName[renderer.id] !== ''
+              ) {
+                label = customNetworkTabName[renderer.id]
+              }
+            }
+            return (
+              <Tab
+                sx={{ height: '40px' }}
+                key={index}
+                label={label}
+                onClick={() => {
+                  // When clicking a tab (even if already selected), activate the network view
+                  // This handles the case where onChange doesn't fire for already-selected tabs
+                  handleClick?.()
+                }}
+              />
+            )
+          })}
+        </Tabs>
+      </Box>
+      <Box ref={boxRef} sx={{ flexGrow: 1, width: '100%' }}>
+        {rendererList.map((renderer: Renderer, index: number) => {
+          return (
+            <NetworkTab
+              key={index}
+              network={network}
+              renderer={renderer}
+              isActive={isActive}
+              bgColor={bgColor}
+              handleClick={handleClick}
+              selected={index === selected}
+              boxSize={boxSize}
+              hasTab={true}
+            />
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}

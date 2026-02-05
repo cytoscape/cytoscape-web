@@ -1,10 +1,11 @@
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '@mantine/dropzone/styles.css'
+
 import { MenuItem } from '@mui/material'
 import { ReactElement } from 'react'
 
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
 
 export const CreateNetworkFromTableFileMenuItem = (

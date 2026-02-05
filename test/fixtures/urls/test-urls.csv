@@ -1,0 +1,20 @@
+Test Case,Category,URL,Description,Expected Behavior
+Network ID - Valid,Network IDs,http://localhost:5500/workspace-123/networks/a9763574-c72f-11ed-a79c-005056ae23aa,Direct network access with valid network ID,Network loads successfully from URL
+Network ID - Import Needed,Network IDs,http://localhost:5500/workspace-123/networks/new-network-uuid,Network ID not in workspace - needs import,Network is imported from NDEx via URL
+Network ID - Invalid,Network IDs,http://localhost:5500/workspace-123/networks/invalid-uuid,Non-existent network with invalid UUID,Error handling for invalid network IDs
+Import Parameter - Valid,Import Parameters,http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Fnetwork.cx2,Import network from external URL,Network imports successfully from external URL
+Import Parameter - Multiple,Import Parameters,http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Fnet1.cx2&import=https%3A%2F%2Fexample.com%2Fnet2.cx2,Multiple network imports from URLs,Multiple networks import successfully
+Import Parameter - Invalid URL,Import Parameters,http://localhost:5500/?import=not-a-valid-url,Invalid import URL format,Error handling for invalid import URLs
+Import Parameter - Invalid CX,Import Parameters,http://localhost:5500/?import=https%3A%2F%2Fexample.com%2Finvalid-cx.cx2,Valid URL but invalid CX format,Validation error handling for invalid CX
+State - Selected Nodes,State - Selection,http://localhost:5500/workspace-123/networks/net-456?selectednodes=node1+node2+node3,Pre-select nodes from URL,Node selection is restored from URL
+State - Selected Edges,State - Selection,http://localhost:5500/workspace-123/networks/net-456?selectededges=edge1+edge2,Pre-select edges from URL,Edge selection is restored from URL
+State - Selected Both,State - Selection,http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1,Pre-select both nodes and edges,Combined selection state is restored
+State - Filter,State - Filter,http://localhost:5500/workspace-123/networks/net-456?filterFor=node&filterBy=type&filterRange=protein,Pre-apply filters from URL,Filter state is restored from URL
+State - Panels,State - UI,http://localhost:5500/workspace-123/networks/net-456?left=open&right=closed&bottom=open,Pre-open/close panels from URL,Panel states are restored from URL
+State - Active Network View,State - UI,http://localhost:5500/workspace-123/networks/net-456?activeNetworkView=view-1,Pre-select network view from URL,Network view selection is restored
+State - Table Browser Tab,State - UI,http://localhost:5500/workspace-123/networks/net-456?activeTableBrowserTab=1,Pre-select table browser tab from URL,Table browser tab selection is restored
+State - Network View Tab,State - UI,http://localhost:5500/workspace-123/networks/net-456?activeNetworkViewTab=1,Pre-select network view tab from URL,Network view tab selection is restored
+State - Complete,State - Combined,http://localhost:5500/workspace-123/networks/net-456?selectednodes=n1+n2&selectededges=e1&filterFor=node&filterBy=type&left=open&right=closed&activeNetworkView=view-1&activeNetworkViewTab=1&activeTableBrowserTab=1,All state parameters combined,Complete state restoration from URL
+Invalid - Workspace ID,Invalid URLs,http://localhost:5500/invalid-workspace-123!/networks/network-456,Malformed workspace ID format,Workspace ID validation error
+Invalid - Network ID,Invalid URLs,http://localhost:5500/workspace-123/networks/not-a-valid-uuid,Malformed network ID format,Network ID validation error
+Invalid - Query Params,Invalid URLs,http://localhost:5500/workspace-123/networks/network-456?invalid=param&format&missingValue=,Malformed query parameter format,Query parameter parsing error

@@ -1,26 +1,28 @@
-import React, { Suspense, useContext, useEffect } from 'react'
-import CssBaseline from '@mui/material/CssBaseline'
-import { createTheme, ThemeProvider } from '@mui/material/styles'
 import './index.css'
-import { Error } from './components/Error'
+
+import CssBaseline from '@mui/material/CssBaseline'
+import { Box } from '@mui/material'
+import { createTheme, ThemeProvider } from '@mui/material/styles'
+import React, { Suspense, useContext, useEffect } from 'react'
 import {
   createBrowserRouter,
-  RouterProvider,
-  Route,
   createRoutesFromElements,
+  Route,
+  RouterProvider,
 } from 'react-router-dom'
-import { MessagePanel } from './components/Messages'
-import appConfig from './assets/config.json'
-import { KeycloakContext } from './init/keycloak'
-import { useCredentialStore } from './store/CredentialStore'
-import { RedirectPanel } from './components/RedirectPanel'
-import ErrorBoundary from './components/ErrorBoundary'
-import { CookieConsentWidget } from './components/CookieConsent'
-// import { initHistoryClearing } from './store/hooks/useUrlNavigation/url-manager'
 
-const AppShell = React.lazy(() => import('./components/AppShell'))
+import appConfig from './assets/config.json'
+import { CookieConsentWidget } from './features/CookieConsent'
+import { Error } from './features/Error'
+import ErrorBoundary from './features/ErrorBoundary'
+import { MessagePanel } from './features/Messages'
+import { RedirectPanel } from './features/RedirectPanel'
+import { useCredentialStore } from './data/hooks/stores/CredentialStore'
+import { KeycloakContext } from './init/keycloak'
+
+const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(
-  () => import('./components/Workspace/WorkspaceEditor'),
+  () => import('./features/Workspace/WorkspaceEditor'),
 )
 
 const theme = createTheme({
@@ -46,7 +48,14 @@ const router = createBrowserRouter(
       path="/"
       element={
         <Suspense
-          fallback={<MessagePanel message="Preparing your workspace..." />}
+          fallback={
+            <Box sx={{ width: '100%', height: '100vh' }}>
+              <MessagePanel
+                message="Preparing your workspace..."
+                data-testid="app-shell-loading"
+              />
+            </Box>
+          }
         >
           <AppShell />
         </Suspense>
@@ -57,7 +66,14 @@ const router = createBrowserRouter(
         path=":workspaceId"
         element={
           <Suspense
-            fallback={<MessagePanel message={'Initializing Workspace...'} />}
+            fallback={
+              <Box sx={{ width: '100%', height: '100vh' }}>
+                <MessagePanel
+                  message={'Initializing Workspace...'}
+                  data-testid="workspace-editor-loading"
+                />
+              </Box>
+            }
           >
             <WorkspaceEditor />
           </Suspense>
@@ -97,7 +113,9 @@ export const App = (): React.ReactElement => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <ErrorBoundary>
-        <RouterProvider router={router} />
+        <div data-testid="app-router">
+          <RouterProvider router={router} />
+        </div>
       </ErrorBoundary>
       <CookieConsentWidget />
     </ThemeProvider>

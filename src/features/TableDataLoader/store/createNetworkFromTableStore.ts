@@ -38,6 +38,7 @@ interface CreateNetworkFromTableAction {
   setFile: (f: File) => void
   setRawText: (s: string) => void
   setName: (s: string) => void
+  setOptions: (options: Partial<CreateNetworkFromTableOptions>) => void
   reset: () => void
 }
 
@@ -75,6 +76,11 @@ export const useCreateNetworkFromTableStore = create(
     setRawText: (s: string) => {
       set((state) => {
         state.rawText = s
+      })
+    },
+    setOptions: (newOptions: Partial<CreateNetworkFromTableOptions>) => {
+      set((state) => {
+        state.options = { ...state.options, ...newOptions }
       })
     },
     reset: () => {

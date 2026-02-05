@@ -1,6 +1,8 @@
+import { z } from 'zod'
+
 import { Cx2 } from '../Cx2'
 import { ValidationIssue, ValidationResult } from '../Cx2/Validator'
-import { z } from 'zod'
+import { formatValidationErrors } from './formatValidationErrors'
 
 export const findAspect = (
   cx: unknown[],
@@ -516,6 +518,24 @@ export const validateCx2Attributes = (input: Cx2): ValidationResult => {
   }
 }
 
+/**
+ * Validates if an object represents a valid CX2 network
+ *
+ * @param obj - The object to validate, expected to be an array of aspects
+ * @returns True if the object contains valid network attributes, nodes, and edges, otherwise false
+ *
+ * This function checks if the provided object:
+ * - Contains valid network attributes
+ * - Contains valid nodes
+ * - Contains valid edges
+ *
+ * If any of these conditions are not met, the function returns false.
+ */
+export const isValidCx2Network = (obj: any): boolean => {
+  const validationResult = validateCX2(obj)
+  return validationResult.isValid
+}
+
 export const validateCX2 = (input: unknown): ValidationResult => {
   let validationResult: ValidationResult = {
     isValid: true,
@@ -525,7 +545,11 @@ export const validateCX2 = (input: unknown): ValidationResult => {
 
   const validateStructure = validateCx2Structure(input as Cx2)
   if (!validateStructure.isValid) {
-    return validateStructure
+    const resultWithMessage = {
+      ...validateStructure,
+      errorMessage: formatValidationErrors(validateStructure),
+    }
+    return resultWithMessage
   } else {
     validationResult = {
       ...validationResult,
@@ -536,7 +560,11 @@ export const validateCX2 = (input: unknown): ValidationResult => {
   }
   const validateMetadata = validateCx2Metadata(input as Cx2)
   if (!validateMetadata.isValid) {
-    return validateMetadata
+    const resultWithMessage = {
+      ...validateMetadata,
+      errorMessage: formatValidationErrors(validateMetadata),
+    }
+    return resultWithMessage
   } else {
     validationResult = {
       ...validationResult,
@@ -550,7 +578,11 @@ export const validateCX2 = (input: unknown): ValidationResult => {
     input as Cx2,
   )
   if (!validateReferentialIntegrity.isValid) {
-    return validateReferentialIntegrity
+    const resultWithMessage = {
+      ...validateReferentialIntegrity,
+      errorMessage: formatValidationErrors(validateReferentialIntegrity),
+    }
+    return resultWithMessage
   } else {
     validationResult = {
       ...validationResult,
@@ -568,7 +600,11 @@ export const validateCX2 = (input: unknown): ValidationResult => {
 
   const validateAttributes = validateCx2Attributes(input as Cx2)
   if (!validateAttributes.isValid) {
-    return validateAttributes
+    const resultWithMessage = {
+      ...validateAttributes,
+      errorMessage: formatValidationErrors(validateAttributes),
+    }
+    return resultWithMessage
   } else {
     validationResult = {
       ...validationResult,
@@ -576,6 +612,11 @@ export const validateCX2 = (input: unknown): ValidationResult => {
       errors: [...validationResult.errors, ...validateAttributes.errors],
       warnings: [...validationResult.warnings, ...validateAttributes.warnings],
     }
+  }
+
+  // Add formatted error message if validation failed
+  if (!validationResult.isValid) {
+    validationResult.errorMessage = formatValidationErrors(validationResult)
   }
 
   return validationResult

@@ -7,11 +7,12 @@ import {
   Typography,
   useTheme,
 } from '@mui/material'
+
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { ValueType } from '../../../../models/TableModel'
-import { useTableStore } from '../../../../store/TableStore'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { MessagePanel } from '../../../../components/Messages'
 import { NetworkView } from '../../../../models/ViewModel'
+import { MessagePanel } from '../../../Messages'
 
 interface PropertyPanelProps {
   networkId: string
@@ -24,8 +25,8 @@ export const PropertyPanel = ({
   const tables = useTableStore((state) => state.tables)
   const tablePair = tables[networkId]
 
-  const viewModel: NetworkView | undefined = useViewModelStore(
-    (state) => state.getViewModel(networkId),
+  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
+    state.getViewModel(networkId),
   )
   const { selectedNodes, selectedEdges } = viewModel ?? {}
 
@@ -45,7 +46,6 @@ export const PropertyPanel = ({
     )
   }
 
-
   const { nodeTable } = tablePair
 
   const selectedNodeId = selectedNodes[0]
@@ -58,6 +58,7 @@ export const PropertyPanel = ({
 
   return (
     <Box
+      data-testid="property-panel"
       sx={{
         width: '100%',
         height: 'calc(100% - 48px)',

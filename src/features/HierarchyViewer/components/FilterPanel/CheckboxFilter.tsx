@@ -1,27 +1,34 @@
-import Tooltip from '@mui/material/Tooltip'
-import { Table, ValueType } from '../../../../models/TableModel'
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import Tooltip from '@mui/material/Tooltip'
 import { useEffect, useState } from 'react'
-import { IdType } from '../../../../models/IdType'
-import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
-import { useViewModelStore } from '../../../../store/ViewModelStore'
-import { GraphObjectType } from '../../../../models/NetworkModel'
-import { NetworkView } from '../../../../models/ViewModel'
-import {
-  DiscreteMappingFunction,
-  VisualPropertyValueType,
-} from '../../../../models/VisualStyleModel'
-import { useFilterStore } from '../../../../store/FilterStore'
+import { useSearchParams } from 'react-router-dom'
+
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import {
   Filter,
   FilterConfig,
   getBasicFilter,
 } from '../../../../models/FilterModel'
-import { useSearchParams } from 'react-router-dom'
-import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { useTheme } from '@mui/material/styles'
 import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
-import { getAllDiscreteValues } from '../../utils/filter-util'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { IdType } from '../../../../models/IdType'
+import { GraphObjectType } from '../../../../models/NetworkModel'
+import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
+import { Table, ValueType } from '../../../../models/TableModel'
+import { NetworkView } from '../../../../models/ViewModel'
+import {
+  DiscreteMappingFunction,
+  VisualPropertyValueType,
+} from '../../../../models/VisualStyleModel'
+import {
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
+} from '../../../../models/VisualStyleModel/VisualPropertyName'
+import { VisibilityType } from '../../../../models/VisualStyleModel/VisualPropertyValue/VisibilityType'
+import { getAllDiscreteValues } from '../../utils/filterUtil'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -48,7 +55,12 @@ export const CheckboxFilter = ({
   // Updating URL by range
   const [searchParams] = useSearchParams()
 
+  const setBypassMap = useVisualStyleStore((state) => state.setBypassMap)
+
   const getViewModel = useViewModelStore((state) => state.getViewModel)
+  const visualStyleExists = useVisualStyleStore(
+    (state) => state.visualStyles[targetNetworkId] !== undefined,
+  )
   const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
@@ -66,6 +78,10 @@ export const CheckboxFilter = ({
 
   // Apply the filter to the table
   const applyFilter = () => {
+    if (!visualStyleExists) {
+      return
+    }
+
     let filtered: IdType[] = []
     // Current range stored in the config
     const discreteRange: DiscreteRange<ValueType> =
@@ -76,22 +92,58 @@ export const CheckboxFilter = ({
       table,
       attributeName,
     )
-    if (filtered.length === 0) {
-      if (
-        viewModel !== undefined &&
-        (viewModel.selectedNodes.length > 0 ||
-          viewModel.selectedEdges.length > 0)
-      ) {
-        exclusiveSelect(targetNetworkId, [], [])
-      }
-      return
+
+    const idsToFilter: IdType[] = []
+    const idsToExclude: IdType[] = []
+
+    const rangeSet = new Set<ValueType>(discreteRange.values)
+
+    if (rangeSet.size === 0) {
+      // No options checked - hide all items
+      const visibilityBypassMap = new Map<IdType, VisibilityType>()
+      const { rows } = table
+      const ids = [...rows.keys()]
+      ids.forEach((id) => {
+        visibilityBypassMap.set(id, VisibilityType.None)
+      })
+
+      const vpName =
+        filterConfig.target === GraphObjectType.NODE
+          ? NodeVisualPropertyName.NodeVisibility
+          : EdgeVisualPropertyName.EdgeVisibility
+
+      setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
+      return []
     }
 
-    if (filterConfig.target === GraphObjectType.NODE) {
-      exclusiveSelect(targetNetworkId, filtered, [])
-    } else {
-      exclusiveSelect(targetNetworkId, [], filtered)
-    }
+    const { rows } = table
+    const ids = [...rows.keys()]
+
+    ids.forEach((id: string) => {
+      const row = rows.get(id)
+      const value = row?.[attributeName]
+
+      if (value !== undefined && rangeSet.has(value)) {
+        idsToFilter.push(id)
+      } else {
+        idsToExclude.push(id)
+      }
+    })
+
+    const visibilityBypassMap = new Map<IdType, VisibilityType>()
+    idsToFilter.forEach((id) => {
+      visibilityBypassMap.set(id, VisibilityType.Element)
+    })
+    idsToExclude.forEach((id) => {
+      visibilityBypassMap.set(id, VisibilityType.None)
+    })
+
+    const vpName =
+      filterConfig.target === GraphObjectType.NODE
+        ? NodeVisualPropertyName.NodeVisibility
+        : EdgeVisualPropertyName.EdgeVisibility
+
+    setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
   }
 
   useEffect(() => {
@@ -172,7 +224,7 @@ export const CheckboxFilter = ({
    * Apply filter after initialization if the filter is enabled
    */
   useEffect(() => {
-    if (enableFilter) {
+    if (enableFilter && visualStyleExists) {
       applyFilter()
     }
   }, [])
@@ -199,6 +251,7 @@ export const CheckboxFilter = ({
           }}
           control={
             <Checkbox
+              data-testid="checkbox-filter-select-all"
               disabled={!enableFilter}
               checked={isAllSelected}
               indeterminate={
@@ -229,6 +282,7 @@ export const CheckboxFilter = ({
               key={option}
               control={
                 <Checkbox
+                  data-testid={`checkbox-filter-option-${option}`}
                   disabled={!enableFilter}
                   sx={checkboxStyle}
                   checked={currentSelectedOptions.values.includes(option)}

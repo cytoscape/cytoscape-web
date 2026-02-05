@@ -1,1 +1,0 @@
-export { ndexQueryFetcher } from './ndexQueryFetcher'

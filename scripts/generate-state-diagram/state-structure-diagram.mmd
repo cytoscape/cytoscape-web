@@ -1,0 +1,188 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica, Arial, sans-serif","fontSize":"16px","primaryColor":"#FFFFFF","primaryTextColor":"#111827","primaryBorderColor":"#1D4ED8","lineColor":"#1D4ED8","clusterBkg":"#F8FAFC","clusterBorder":"#94A3B8"},"flowchart":{"curve":"basis","defaultRenderer":"elk","htmlLabels":true,"nodeSpacing":120,"rankSpacing":180,"padding":24,"useMaxWidth":false}} }%%
+graph TB
+
+    N0["ApplicationState"]
+    N1["workspace<br/><i style="font-size:12px">Workspace</i>"]
+    N2["networks<br/><i style="font-size:12px">Map<IdType, Network<br/>>[]</i>"]
+    N3["networks[0]<br/><i style="font-size:12px">object</i>"]
+    N4["subnetworkIds<br/><i style="font-size:12px">unknown[]</i>"]
+    N3 --> N4
+    N5["warnings<br/><i style="font-size:12px">unknown[]</i>"]
+    N3 --> N5
+    N6["properties<br/><i style="font-size:12px">Properties[]</i>"]
+    N3 --> N6
+    N7["creationTime<br/><i style="font-size:12px">object</i>"]
+    N3 --> N7
+    N8["modificationTime<br/><i style="font-size:12px">object</i>"]
+    N3 --> N8
+    N2 --> N3
+    N1 --> N2
+    N0 --> N1
+    N9["apps<br/><i style="font-size:12px">CyApp[]</i>"]
+    N10["apps<br/><i style="font-size:12px">CyApp[]</i>"]
+    N9 --> N10
+    N11["serviceApps<br/><i style="font-size:12px">ServiceApp[]</i>"]
+    N9 --> N11
+    N0 --> N9
+    N12["layouts<br/><i style="font-size:12px">object</i>"]
+    N0 --> N12
+    N13["credential<br/><i style="font-size:12px">object</i>"]
+    N0 --> N13
+    N14["uiState<br/><i style="font-size:12px">object</i>"]
+    N0 --> N14
+    N15["messages<br/><i style="font-size:12px">unknown[]</i>"]
+    N0 --> N15
+    N16["cyNetworks<br/><i style="font-size:12px">CyNetworks</i>"]
+    N17["network-1<br/><i style="font-size:12px">Network-1</i>"]
+    N18["summary<br/><i style="font-size:12px">Summary</i>"]
+    N19["subnetworkIds<br/><i style="font-size:12px">unknown[]</i>"]
+    N18 --> N19
+    N20["warnings<br/><i style="font-size:12px">unknown[]</i>"]
+    N18 --> N20
+    N21["properties<br/><i style="font-size:12px">Properties[]</i>"]
+    N18 --> N21
+    N22["creationTime<br/><i style="font-size:12px">object</i>"]
+    N18 --> N22
+    N23["modificationTime<br/><i style="font-size:12px">object</i>"]
+    N18 --> N23
+    N17 --> N18
+    N24["nodes<br/><i style="font-size:12px">Nodes</i>"]
+    N25["n0<br/><i style="font-size:12px">N0</i>"]
+    N24 --> N25
+    N26["n1<br/><i style="font-size:12px">N1</i>"]
+    N24 --> N26
+    N17 --> N24
+    N27["edges<br/><i style="font-size:12px">Edges</i>"]
+    N28["e0<br/><i style="font-size:12px">E0</i>"]
+    N27 --> N28
+    N17 --> N27
+    N29["search<br/><i style="font-size:12px">SearchState</i>"]
+    N30["indexedColumns<br/><i style="font-size:12px">object</i>"]
+    N29 --> N30
+    N31["options<br/><i style="font-size:12px">Options</i>"]
+    N29 --> N31
+    N17 --> N29
+    N32["tables<br/><i style="font-size:12px">Record<IdType,<br/<br/>>{nodeTable: Table, edgeTable: Table}<br/>></i>"]
+    N33["nodeTable<br/><i style="font-size:12px">Table</i>"]
+    N34["columns<br/><i style="font-size:12px">undefined[]</i>"]
+    N33 --> N34
+    N35["rows<br/><i style="font-size:12px">Record<IdType, rows></i>"]
+    N33 --> N35
+    N32 --> N33
+    N36["edgeTable<br/><i style="font-size:12px">Table</i>"]
+    N37["columns<br/><i style="font-size:12px">undefined[]</i>"]
+    N36 --> N37
+    N38["rows<br/><i style="font-size:12px">Rows</i>"]
+    N36 --> N38
+    N32 --> N36
+    N17 --> N32
+    N39["visualStyle<br/><i style="font-size:12px">VisualStyle</i>"]
+    N40["options<br/><i style="font-size:12px">Options</i>"]
+    N41["tableDisplayConfiguration<br/><i style="font-size:12px">object</i>"]
+    N40 --> N41
+    N39 --> N40
+    N42["properties<br/><i style="font-size:12px">Properties</i>"]
+    N43["nodeLabel<br/><i style="font-size:12px">object</i>"]
+    N42 --> N43
+    N44["nodeLabelColor<br/><i style="font-size:12px">object</i>"]
+    N42 --> N44
+    N39 --> N42
+    N17 --> N39
+    N45["views<br/><i style="font-size:12px">Views</i>"]
+    N46["nodeLink-1<br/><i style="font-size:12px">NodeLink-1</i>"]
+    N47["renderer<br/><i style="font-size:12px">Renderer</i>"]
+    N46 --> N47
+    N48["viewport<br/><i style="font-size:12px">Viewport</i>"]
+    N46 --> N48
+    N49["nodeViews<br/><i style="font-size:12px">Record<IdType,<br/<br/>>NodeView<br/>></i>"]
+    N46 --> N49
+    N45 --> N46
+    N50["circlePacking-1<br/><i style="font-size:12px">CirclePacking-1</i>"]
+    N51["renderer<br/><i style="font-size:12px">Renderer</i>"]
+    N50 --> N51
+    N52["viewport<br/><i style="font-size:12px">Viewport</i>"]
+    N50 --> N52
+    N53["nodeViews<br/><i style="font-size:12px">Record<IdType,<br/<br/>>NodeView<br/>></i>"]
+    N50 --> N53
+    N45 --> N50
+    N17 --> N45
+    N54["undoRedoStack<br/><i style="font-size:12px">UndoRedoStack</i>"]
+    N55["undoStack<br/><i style="font-size:12px">unknown[]</i>"]
+    N54 --> N55
+    N56["redoStack<br/><i style="font-size:12px">unknown[]</i>"]
+    N54 --> N56
+    N17 --> N54
+    N57["opaqueAspects<br/><i style="font-size:12px">Record<IdType,<br/<br/>>OpaqueAspects<br/>></i>"]
+    N58["aspects<br/><i style="font-size:12px">Aspects</i>"]
+    N59["nodeLabel<br/><i style="font-size:12px">NodeLabel</i>"]
+    N58 --> N59
+    N57 --> N58
+    N17 --> N57
+    N16 --> N17
+    N0 --> N16
+
+    classDef storeNode fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    classDef recordNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef arrayNode fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef typeNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef primitiveNode fill:#f5f5f5,stroke:#757575,stroke-width:1px
+    class N0 typeNode
+    class N1 typeNode
+    class N2 arrayNode
+    class N3 typeNode
+    class N4 arrayNode
+    class N5 arrayNode
+    class N6 arrayNode
+    class N7 typeNode
+    class N8 typeNode
+    class N9 arrayNode
+    class N10 arrayNode
+    class N11 arrayNode
+    class N12 typeNode
+    class N13 typeNode
+    class N14 typeNode
+    class N15 arrayNode
+    class N16 typeNode
+    class N17 typeNode
+    class N18 typeNode
+    class N19 arrayNode
+    class N20 arrayNode
+    class N21 arrayNode
+    class N22 typeNode
+    class N23 typeNode
+    class N24 typeNode
+    class N25 typeNode
+    class N26 typeNode
+    class N27 typeNode
+    class N28 typeNode
+    class N29 typeNode
+    class N30 typeNode
+    class N31 typeNode
+    class N32 recordNode
+    class N33 typeNode
+    class N34 arrayNode
+    class N35 recordNode
+    class N36 typeNode
+    class N37 arrayNode
+    class N38 typeNode
+    class N39 typeNode
+    class N40 typeNode
+    class N41 typeNode
+    class N42 typeNode
+    class N43 typeNode
+    class N44 typeNode
+    class N45 typeNode
+    class N46 typeNode
+    class N47 typeNode
+    class N48 typeNode
+    class N49 recordNode
+    class N50 typeNode
+    class N51 typeNode
+    class N52 typeNode
+    class N53 recordNode
+    class N54 typeNode
+    class N55 arrayNode
+    class N56 arrayNode
+    class N57 recordNode
+    class N58 typeNode
+    class N59 typeNode

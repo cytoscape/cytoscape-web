@@ -2,11 +2,11 @@ import { ServiceAppAction } from '../../../models/AppModel/ServiceAppAction'
 import { JsonNode } from '../model'
 import { useAddNetworks } from './addNetworks'
 import { useAddTables } from './addTables'
+import { useOpenURL } from './openURL'
 import { useUpdateLayouts } from './updateLayouts'
 import { useUpdateNetwork } from './updateNetwork'
 import { useUpdateSelection } from './updateSelection'
 import { useUpdateTables } from './updateTables'
-import { useOpenURL } from './openURL'
 
 export interface ActionHandlerProps {
   responseObj: JsonNode

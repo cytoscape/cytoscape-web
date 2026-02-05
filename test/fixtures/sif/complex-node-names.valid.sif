@@ -1,0 +1,15 @@
+node-1 interacts node_2
+node_2 interacts node.3
+node.3 interacts node 4
+node 4 interacts node-5 with spaces
+node-5 with spaces interacts node_with_underscores_6
+node_with_underscores_6 interacts node.with.dots.7
+node.with.dots.7 interacts node-8
+node-8 interacts node_9
+node_9 interacts node.10
+node.3 interacts node_9
+node_2 interacts node 4
+node.3 interacts node.10
+node.3 interacts node-8
+node.3 interacts node_with_underscores_6
+node_2 interacts node-1

@@ -1,7 +1,8 @@
 import OpenAI from 'openai'
+
+import { logApi } from '../../../debug'
 import testGPTResponse from '../model/gpt-4-0613-response.json'
 import { LLMModel } from '../model/LLMModel'
-import { logApi } from '../../../debug'
 
 export const analyzeSubsystemGeneSet = async (
   message: string,

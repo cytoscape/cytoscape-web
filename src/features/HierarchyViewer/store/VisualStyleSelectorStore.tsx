@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+
 import { VisualStyle } from '../../../models/VisualStyleModel'
 
 interface VisualStyleSelectorState {

@@ -1,11 +1,10 @@
 import { IdType } from '../IdType'
-
+import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
+import { NetworkBrowserPanelUIState } from './NetworkBrowserPanelState'
+import { NetworkViewUIState } from './NetworkViewUI'
 import { Panel } from './Panel'
 import { PanelState } from './PanelState'
 import { TableUIState } from './TableUi'
-import { NetworkBrowserPanelUIState } from './NetworkBrowserPanelState'
-import { VisualStyleOptions } from '../VisualStyleModel/VisualStyleOptions'
-import { NetworkViewUIState } from './NetworkViewUI'
 /**
  * User interface states shared as a global value
  */

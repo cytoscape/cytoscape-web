@@ -1,6 +1,3 @@
-import React from 'react'
-import { Column } from '../../../models/TableModel/Column'
-import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
 import {
   MenuItem,
   Paper,
@@ -12,10 +9,14 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material'
+import React from 'react'
+
+import { Column } from '../../../models/TableModel/Column'
+import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
-import { checkDuplication } from '../utils/helper-functions'
+import { checkDuplication } from '../utils/mergeNetworkUtil'
 
 interface MatchingTableProps {
   networkRecords: Record<string, NetworkRecord>
@@ -80,6 +81,7 @@ export const MatchingColumnTable = React.memo(
               {toMergeNetworksList.map((net) => (
                 <TableCell key={net[1]}>
                   <Select
+                    data-testid={`merge-matching-column-select-${net[1]}`}
                     value={matchingCols[net[1]]?.name || ''}
                     onChange={handleSetMatchingCols(net[1])}
                   >

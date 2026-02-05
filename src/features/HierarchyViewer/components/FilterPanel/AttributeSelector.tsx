@@ -1,18 +1,19 @@
 import {
-  Select,
-  MenuItem,
-  SelectChangeEvent,
+  Box,
+  Container,
+  FormControl,
   FormControlLabel,
+  FormLabel,
+  MenuItem,
   Radio,
   RadioGroup,
-  FormControl,
-  FormLabel,
-  Container,
-  Box,
+  Select,
+  SelectChangeEvent,
 } from '@mui/material'
-import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
 import { useEffect, useState } from 'react'
+
 import { GraphObjectType } from '../../../../models/NetworkModel'
+import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
 
 interface AttributeSelectorProps {
   enableFilter: boolean
@@ -97,12 +98,12 @@ export const AttributeSelector = ({
           <RadioGroup row value={selectedType} onChange={handleTypeChange}>
             <FormControlLabel
               value={GraphObjectType.NODE}
-              control={<Radio />}
+              control={<Radio data-testid="attribute-selector-node-radio" />}
               label={'Nodes'}
             />
             <FormControlLabel
               value={GraphObjectType.EDGE}
-              control={<Radio />}
+              control={<Radio data-testid="attribute-selector-edge-radio" />}
               label={'Edges'}
             />
           </RadioGroup>
@@ -110,6 +111,7 @@ export const AttributeSelector = ({
       </Box>
       <Box sx={{ width: '100%' }}>
         <Select
+          data-testid="attribute-selector-dropdown"
           disabled={!enableFilter && !enableAttributeNameSelector}
           value={selectedValue}
           onChange={handleChange}

@@ -1,8 +1,9 @@
 import { DataTableValue } from 'primereact/datatable'
+
+import { Column,Table } from '../../../models/TableModel'
 import { ColumnAppendState } from '../model/ColumnAppendState'
 import { ColumnAppendType } from '../model/ColumnAppendType'
 import { joinRowsToTable } from '../model/impl/JoinTableToNetwork'
-import { Table, Column } from '../../../models/TableModel'
 
 describe('joinRowsToTable', () => {
   it('appends columns correctly', () => {

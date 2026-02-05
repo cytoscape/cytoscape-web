@@ -1,38 +1,40 @@
-import { exportNetworkToCx2, exportGraph } from '../../store/io/exportCX'
+import { useCallback } from 'react'
+import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+
+import { useAppStore } from '../../data/hooks/stores/AppStore'
 import {
-  Table,
-  IdType,
   AttributeName,
-  ValueType,
+  IdType,
   Network,
+  NetworkSummary,
+  Table,
+  ValueType,
   VisualStyle,
-  NdexNetworkSummary,
 } from '../../models'
+import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
+import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
+import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
+import {
+  Format,
+  InputColumn,
+  InputNetwork,
+  Model,
+  ServiceInputDefinition,
+} from '../../models/AppModel/ServiceInputDefinition'
+import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import { CyNetwork } from '../../models/CyNetworkModel'
+import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { NetworkView } from '../../models/ViewModel'
+import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { deleteTask, getTaskResult, getTaskStatus, submitTask } from './api'
 import {
   CytoContainerRequest,
+  CytoContainerRequestId,
   CytoContainerResult,
   CytoContainerResultStatus,
   JsonNode,
-  CytoContainerRequestId,
 } from './model'
-import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { TableRecord } from '../../models/StoreModel/TableStoreModel'
-import { NetworkView } from '../../models/ViewModel'
-import { useCallback } from 'react'
-import { useAppStore } from '../../store/AppStore'
-import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
-import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
-import {
-  InputNetwork,
-  ServiceInputDefinition,
-  Model,
-  Format,
-  InputColumn,
-} from '../../models/AppModel/ServiceInputDefinition'
-import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
-import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
-import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
 
 const POLL_INTERVAL = 500 // 0.5 seconds
 
@@ -43,7 +45,7 @@ interface RunTaskProps {
   network?: Network
   table?: TableRecord
   visualStyle?: VisualStyle
-  summary?: NdexNetworkSummary
+  summary?: NetworkSummary
   visualStyleOptions?: VisualStyleOptions
   viewModel?: NetworkView
   opaqueAspect?: OpaqueAspects
@@ -60,7 +62,7 @@ export const createNetworkDataObj = (
   inputNetwork: InputNetwork,
   network: Network,
   visualStyle?: VisualStyle,
-  summary?: NdexNetworkSummary,
+  summary?: NetworkSummary,
   table?: TableRecord,
   visualStyleOptions?: VisualStyleOptions,
   viewModel?: NetworkView,
@@ -84,7 +86,7 @@ export const createNetworkDataObj = (
 
   if (inputNetwork.format === Format.cx2) {
     if (inputNetwork.model === Model.graph) {
-      return exportGraph(filterElements ? getFilteredNetwork() : network)
+      return filterElements ? getFilteredNetwork() : network
     } else if (
       inputNetwork.model === Model.network &&
       visualStyle &&
@@ -99,17 +101,20 @@ export const createNetworkDataObj = (
             edgeCount: selectedEdges.size,
           }
         : summary
-      return exportNetworkToCx2(
-        filteredNetwork,
+      const cyNetwork: CyNetwork = {
+        network: filteredNetwork,
+        nodeTable: table.nodeTable,
+        edgeTable: table.edgeTable,
         visualStyle,
-        filteredSummary,
-        table.nodeTable,
-        table.edgeTable,
+        networkViews: viewModel ? [viewModel] : [],
         visualStyleOptions,
-        viewModel,
-        summary.name,
-        opaqueAspect,
-      )
+        otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
+        undoRedoStack: {
+          undoStack: [],
+          redoStack: [],
+        },
+      }
+      return exportCyNetworkToCx2(cyNetwork, filteredSummary, summary.name)
     } else {
       throw new Error('Illegal Input')
     }

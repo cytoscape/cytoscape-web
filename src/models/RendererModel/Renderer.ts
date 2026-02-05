@@ -3,6 +3,7 @@
  */
 
 import { ReactElement } from 'react'
+
 import { Network } from '../NetworkModel'
 
 /**

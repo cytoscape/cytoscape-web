@@ -1,17 +1,18 @@
-import React from 'react'
-import { MatchingTableRow } from '../models/MatchingTable'
-import { NetworkRecord, TableView } from '../models/DataInterfaceForMerge'
 import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
-import { Column } from '../../../models/TableModel/Column'
+import React from 'react'
+
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
-import { getResonableCompatibleConvertionType } from '../utils/attributes-operations'
-import useMatchingColumnsStore from '../store/matchingColumnStore'
-import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import { Column } from '../../../models/TableModel/Column'
+import { NetworkRecord, TableView } from '../models/DataInterfaceForMerge'
+import { MatchingTableRow } from '../models/MatchingTable'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
+import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import useNodesDuplicationStore from '../store/nodesDuplicationStore'
-import { checkDuplication } from '../utils/helper-functions'
+import { getResonableCompatibleConvertionType } from '../utils/attributesOperationsUtil'
+import { checkDuplication } from '../utils/mergeNetworkUtil'
 
 interface netAttDropDownTemplateProps {
   networkRecords: Record<IdType, NetworkRecord>
@@ -106,6 +107,7 @@ export const NetAttDropDownTemplate = React.memo(
     return (
       <FormControl id={`formcontrol-${rowData.id}-${column}`}>
         <Select
+          data-testid={`merge-net-att-dropdown-${rowData.id}-${column}`}
           labelId={`select-label-${rowData.id}-${column}`}
           value={currentValue}
           onChange={(e) => onDropdownChange(e, type, rowData, column)}

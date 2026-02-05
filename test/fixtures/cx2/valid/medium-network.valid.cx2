@@ -1,0 +1,2720 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "nodes",
+        "elementCount": 100,
+        "version": "1.0",
+        "idCounter": 99,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 200,
+        "version": "1.0",
+        "idCounter": 199,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1,
+        "version": "1.0",
+        "idCounter": 0,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1,
+        "version": "1.0",
+        "idCounter": 0,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "visualProperties",
+        "elementCount": 1,
+        "version": "1.0",
+        "idCounter": 0,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "nodes": {
+          "n": {
+            "a": "n",
+            "d": "string"
+          },
+          "type": {
+            "d": "string"
+          },
+          "score": {
+            "d": "double"
+          }
+        },
+        "edges": {
+          "interaction": {
+            "a": "i",
+            "d": "string"
+          },
+          "weight": {
+            "d": "double"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "Test Network 100 nodes",
+        "description": "Generated test network"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "v": {
+          "n": "node1",
+          "type": "protein",
+          "score": "0.00"
+        }
+      },
+      {
+        "id": 1,
+        "v": {
+          "n": "node2",
+          "type": "gene",
+          "score": "0.10"
+        }
+      },
+      {
+        "id": 2,
+        "v": {
+          "n": "node3",
+          "type": "protein",
+          "score": "0.20"
+        }
+      },
+      {
+        "id": 3,
+        "v": {
+          "n": "node4",
+          "type": "gene",
+          "score": "0.30"
+        }
+      },
+      {
+        "id": 4,
+        "v": {
+          "n": "node5",
+          "type": "protein",
+          "score": "0.40"
+        }
+      },
+      {
+        "id": 5,
+        "v": {
+          "n": "node6",
+          "type": "gene",
+          "score": "0.50"
+        }
+      },
+      {
+        "id": 6,
+        "v": {
+          "n": "node7",
+          "type": "protein",
+          "score": "0.60"
+        }
+      },
+      {
+        "id": 7,
+        "v": {
+          "n": "node8",
+          "type": "gene",
+          "score": "0.70"
+        }
+      },
+      {
+        "id": 8,
+        "v": {
+          "n": "node9",
+          "type": "protein",
+          "score": "0.80"
+        }
+      },
+      {
+        "id": 9,
+        "v": {
+          "n": "node10",
+          "type": "gene",
+          "score": "0.90"
+        }
+      },
+      {
+        "id": 10,
+        "v": {
+          "n": "node11",
+          "type": "protein",
+          "score": "1.00"
+        }
+      },
+      {
+        "id": 11,
+        "v": {
+          "n": "node12",
+          "type": "gene",
+          "score": "1.10"
+        }
+      },
+      {
+        "id": 12,
+        "v": {
+          "n": "node13",
+          "type": "protein",
+          "score": "1.20"
+        }
+      },
+      {
+        "id": 13,
+        "v": {
+          "n": "node14",
+          "type": "gene",
+          "score": "1.30"
+        }
+      },
+      {
+        "id": 14,
+        "v": {
+          "n": "node15",
+          "type": "protein",
+          "score": "1.40"
+        }
+      },
+      {
+        "id": 15,
+        "v": {
+          "n": "node16",
+          "type": "gene",
+          "score": "1.50"
+        }
+      },
+      {
+        "id": 16,
+        "v": {
+          "n": "node17",
+          "type": "protein",
+          "score": "1.60"
+        }
+      },
+      {
+        "id": 17,
+        "v": {
+          "n": "node18",
+          "type": "gene",
+          "score": "1.70"
+        }
+      },
+      {
+        "id": 18,
+        "v": {
+          "n": "node19",
+          "type": "protein",
+          "score": "1.80"
+        }
+      },
+      {
+        "id": 19,
+        "v": {
+          "n": "node20",
+          "type": "gene",
+          "score": "1.90"
+        }
+      },
+      {
+        "id": 20,
+        "v": {
+          "n": "node21",
+          "type": "protein",
+          "score": "2.00"
+        }
+      },
+      {
+        "id": 21,
+        "v": {
+          "n": "node22",
+          "type": "gene",
+          "score": "2.10"
+        }
+      },
+      {
+        "id": 22,
+        "v": {
+          "n": "node23",
+          "type": "protein",
+          "score": "2.20"
+        }
+      },
+      {
+        "id": 23,
+        "v": {
+          "n": "node24",
+          "type": "gene",
+          "score": "2.30"
+        }
+      },
+      {
+        "id": 24,
+        "v": {
+          "n": "node25",
+          "type": "protein",
+          "score": "2.40"
+        }
+      },
+      {
+        "id": 25,
+        "v": {
+          "n": "node26",
+          "type": "gene",
+          "score": "2.50"
+        }
+      },
+      {
+        "id": 26,
+        "v": {
+          "n": "node27",
+          "type": "protein",
+          "score": "2.60"
+        }
+      },
+      {
+        "id": 27,
+        "v": {
+          "n": "node28",
+          "type": "gene",
+          "score": "2.70"
+        }
+      },
+      {
+        "id": 28,
+        "v": {
+          "n": "node29",
+          "type": "protein",
+          "score": "2.80"
+        }
+      },
+      {
+        "id": 29,
+        "v": {
+          "n": "node30",
+          "type": "gene",
+          "score": "2.90"
+        }
+      },
+      {
+        "id": 30,
+        "v": {
+          "n": "node31",
+          "type": "protein",
+          "score": "3.00"
+        }
+      },
+      {
+        "id": 31,
+        "v": {
+          "n": "node32",
+          "type": "gene",
+          "score": "3.10"
+        }
+      },
+      {
+        "id": 32,
+        "v": {
+          "n": "node33",
+          "type": "protein",
+          "score": "3.20"
+        }
+      },
+      {
+        "id": 33,
+        "v": {
+          "n": "node34",
+          "type": "gene",
+          "score": "3.30"
+        }
+      },
+      {
+        "id": 34,
+        "v": {
+          "n": "node35",
+          "type": "protein",
+          "score": "3.40"
+        }
+      },
+      {
+        "id": 35,
+        "v": {
+          "n": "node36",
+          "type": "gene",
+          "score": "3.50"
+        }
+      },
+      {
+        "id": 36,
+        "v": {
+          "n": "node37",
+          "type": "protein",
+          "score": "3.60"
+        }
+      },
+      {
+        "id": 37,
+        "v": {
+          "n": "node38",
+          "type": "gene",
+          "score": "3.70"
+        }
+      },
+      {
+        "id": 38,
+        "v": {
+          "n": "node39",
+          "type": "protein",
+          "score": "3.80"
+        }
+      },
+      {
+        "id": 39,
+        "v": {
+          "n": "node40",
+          "type": "gene",
+          "score": "3.90"
+        }
+      },
+      {
+        "id": 40,
+        "v": {
+          "n": "node41",
+          "type": "protein",
+          "score": "4.00"
+        }
+      },
+      {
+        "id": 41,
+        "v": {
+          "n": "node42",
+          "type": "gene",
+          "score": "4.10"
+        }
+      },
+      {
+        "id": 42,
+        "v": {
+          "n": "node43",
+          "type": "protein",
+          "score": "4.20"
+        }
+      },
+      {
+        "id": 43,
+        "v": {
+          "n": "node44",
+          "type": "gene",
+          "score": "4.30"
+        }
+      },
+      {
+        "id": 44,
+        "v": {
+          "n": "node45",
+          "type": "protein",
+          "score": "4.40"
+        }
+      },
+      {
+        "id": 45,
+        "v": {
+          "n": "node46",
+          "type": "gene",
+          "score": "4.50"
+        }
+      },
+      {
+        "id": 46,
+        "v": {
+          "n": "node47",
+          "type": "protein",
+          "score": "4.60"
+        }
+      },
+      {
+        "id": 47,
+        "v": {
+          "n": "node48",
+          "type": "gene",
+          "score": "4.70"
+        }
+      },
+      {
+        "id": 48,
+        "v": {
+          "n": "node49",
+          "type": "protein",
+          "score": "4.80"
+        }
+      },
+      {
+        "id": 49,
+        "v": {
+          "n": "node50",
+          "type": "gene",
+          "score": "4.90"
+        }
+      },
+      {
+        "id": 50,
+        "v": {
+          "n": "node51",
+          "type": "protein",
+          "score": "5.00"
+        }
+      },
+      {
+        "id": 51,
+        "v": {
+          "n": "node52",
+          "type": "gene",
+          "score": "5.10"
+        }
+      },
+      {
+        "id": 52,
+        "v": {
+          "n": "node53",
+          "type": "protein",
+          "score": "5.20"
+        }
+      },
+      {
+        "id": 53,
+        "v": {
+          "n": "node54",
+          "type": "gene",
+          "score": "5.30"
+        }
+      },
+      {
+        "id": 54,
+        "v": {
+          "n": "node55",
+          "type": "protein",
+          "score": "5.40"
+        }
+      },
+      {
+        "id": 55,
+        "v": {
+          "n": "node56",
+          "type": "gene",
+          "score": "5.50"
+        }
+      },
+      {
+        "id": 56,
+        "v": {
+          "n": "node57",
+          "type": "protein",
+          "score": "5.60"
+        }
+      },
+      {
+        "id": 57,
+        "v": {
+          "n": "node58",
+          "type": "gene",
+          "score": "5.70"
+        }
+      },
+      {
+        "id": 58,
+        "v": {
+          "n": "node59",
+          "type": "protein",
+          "score": "5.80"
+        }
+      },
+      {
+        "id": 59,
+        "v": {
+          "n": "node60",
+          "type": "gene",
+          "score": "5.90"
+        }
+      },
+      {
+        "id": 60,
+        "v": {
+          "n": "node61",
+          "type": "protein",
+          "score": "6.00"
+        }
+      },
+      {
+        "id": 61,
+        "v": {
+          "n": "node62",
+          "type": "gene",
+          "score": "6.10"
+        }
+      },
+      {
+        "id": 62,
+        "v": {
+          "n": "node63",
+          "type": "protein",
+          "score": "6.20"
+        }
+      },
+      {
+        "id": 63,
+        "v": {
+          "n": "node64",
+          "type": "gene",
+          "score": "6.30"
+        }
+      },
+      {
+        "id": 64,
+        "v": {
+          "n": "node65",
+          "type": "protein",
+          "score": "6.40"
+        }
+      },
+      {
+        "id": 65,
+        "v": {
+          "n": "node66",
+          "type": "gene",
+          "score": "6.50"
+        }
+      },
+      {
+        "id": 66,
+        "v": {
+          "n": "node67",
+          "type": "protein",
+          "score": "6.60"
+        }
+      },
+      {
+        "id": 67,
+        "v": {
+          "n": "node68",
+          "type": "gene",
+          "score": "6.70"
+        }
+      },
+      {
+        "id": 68,
+        "v": {
+          "n": "node69",
+          "type": "protein",
+          "score": "6.80"
+        }
+      },
+      {
+        "id": 69,
+        "v": {
+          "n": "node70",
+          "type": "gene",
+          "score": "6.90"
+        }
+      },
+      {
+        "id": 70,
+        "v": {
+          "n": "node71",
+          "type": "protein",
+          "score": "7.00"
+        }
+      },
+      {
+        "id": 71,
+        "v": {
+          "n": "node72",
+          "type": "gene",
+          "score": "7.10"
+        }
+      },
+      {
+        "id": 72,
+        "v": {
+          "n": "node73",
+          "type": "protein",
+          "score": "7.20"
+        }
+      },
+      {
+        "id": 73,
+        "v": {
+          "n": "node74",
+          "type": "gene",
+          "score": "7.30"
+        }
+      },
+      {
+        "id": 74,
+        "v": {
+          "n": "node75",
+          "type": "protein",
+          "score": "7.40"
+        }
+      },
+      {
+        "id": 75,
+        "v": {
+          "n": "node76",
+          "type": "gene",
+          "score": "7.50"
+        }
+      },
+      {
+        "id": 76,
+        "v": {
+          "n": "node77",
+          "type": "protein",
+          "score": "7.60"
+        }
+      },
+      {
+        "id": 77,
+        "v": {
+          "n": "node78",
+          "type": "gene",
+          "score": "7.70"
+        }
+      },
+      {
+        "id": 78,
+        "v": {
+          "n": "node79",
+          "type": "protein",
+          "score": "7.80"
+        }
+      },
+      {
+        "id": 79,
+        "v": {
+          "n": "node80",
+          "type": "gene",
+          "score": "7.90"
+        }
+      },
+      {
+        "id": 80,
+        "v": {
+          "n": "node81",
+          "type": "protein",
+          "score": "8.00"
+        }
+      },
+      {
+        "id": 81,
+        "v": {
+          "n": "node82",
+          "type": "gene",
+          "score": "8.10"
+        }
+      },
+      {
+        "id": 82,
+        "v": {
+          "n": "node83",
+          "type": "protein",
+          "score": "8.20"
+        }
+      },
+      {
+        "id": 83,
+        "v": {
+          "n": "node84",
+          "type": "gene",
+          "score": "8.30"
+        }
+      },
+      {
+        "id": 84,
+        "v": {
+          "n": "node85",
+          "type": "protein",
+          "score": "8.40"
+        }
+      },
+      {
+        "id": 85,
+        "v": {
+          "n": "node86",
+          "type": "gene",
+          "score": "8.50"
+        }
+      },
+      {
+        "id": 86,
+        "v": {
+          "n": "node87",
+          "type": "protein",
+          "score": "8.60"
+        }
+      },
+      {
+        "id": 87,
+        "v": {
+          "n": "node88",
+          "type": "gene",
+          "score": "8.70"
+        }
+      },
+      {
+        "id": 88,
+        "v": {
+          "n": "node89",
+          "type": "protein",
+          "score": "8.80"
+        }
+      },
+      {
+        "id": 89,
+        "v": {
+          "n": "node90",
+          "type": "gene",
+          "score": "8.90"
+        }
+      },
+      {
+        "id": 90,
+        "v": {
+          "n": "node91",
+          "type": "protein",
+          "score": "9.00"
+        }
+      },
+      {
+        "id": 91,
+        "v": {
+          "n": "node92",
+          "type": "gene",
+          "score": "9.10"
+        }
+      },
+      {
+        "id": 92,
+        "v": {
+          "n": "node93",
+          "type": "protein",
+          "score": "9.20"
+        }
+      },
+      {
+        "id": 93,
+        "v": {
+          "n": "node94",
+          "type": "gene",
+          "score": "9.30"
+        }
+      },
+      {
+        "id": 94,
+        "v": {
+          "n": "node95",
+          "type": "protein",
+          "score": "9.40"
+        }
+      },
+      {
+        "id": 95,
+        "v": {
+          "n": "node96",
+          "type": "gene",
+          "score": "9.50"
+        }
+      },
+      {
+        "id": 96,
+        "v": {
+          "n": "node97",
+          "type": "protein",
+          "score": "9.60"
+        }
+      },
+      {
+        "id": 97,
+        "v": {
+          "n": "node98",
+          "type": "gene",
+          "score": "9.70"
+        }
+      },
+      {
+        "id": 98,
+        "v": {
+          "n": "node99",
+          "type": "protein",
+          "score": "9.80"
+        }
+      },
+      {
+        "id": 99,
+        "v": {
+          "n": "node100",
+          "type": "gene",
+          "score": "9.90"
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "interacts",
+          "weight": "0.00"
+        }
+      },
+      {
+        "id": 1,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "interaction": "binds",
+          "weight": "0.05"
+        }
+      },
+      {
+        "id": 2,
+        "s": 2,
+        "t": 3,
+        "v": {
+          "interaction": "regulates",
+          "weight": "0.10"
+        }
+      },
+      {
+        "id": 3,
+        "s": 3,
+        "t": 4,
+        "v": {
+          "interaction": "activates",
+          "weight": "0.15"
+        }
+      },
+      {
+        "id": 4,
+        "s": 4,
+        "t": 5,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "0.20"
+        }
+      },
+      {
+        "id": 5,
+        "s": 5,
+        "t": 6,
+        "v": {
+          "interaction": "interacts",
+          "weight": "0.25"
+        }
+      },
+      {
+        "id": 6,
+        "s": 6,
+        "t": 7,
+        "v": {
+          "interaction": "binds",
+          "weight": "0.30"
+        }
+      },
+      {
+        "id": 7,
+        "s": 7,
+        "t": 8,
+        "v": {
+          "interaction": "regulates",
+          "weight": "0.35"
+        }
+      },
+      {
+        "id": 8,
+        "s": 8,
+        "t": 9,
+        "v": {
+          "interaction": "activates",
+          "weight": "0.40"
+        }
+      },
+      {
+        "id": 9,
+        "s": 9,
+        "t": 10,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "0.45"
+        }
+      },
+      {
+        "id": 10,
+        "s": 10,
+        "t": 11,
+        "v": {
+          "interaction": "interacts",
+          "weight": "0.50"
+        }
+      },
+      {
+        "id": 11,
+        "s": 11,
+        "t": 12,
+        "v": {
+          "interaction": "binds",
+          "weight": "0.55"
+        }
+      },
+      {
+        "id": 12,
+        "s": 12,
+        "t": 13,
+        "v": {
+          "interaction": "regulates",
+          "weight": "0.60"
+        }
+      },
+      {
+        "id": 13,
+        "s": 13,
+        "t": 14,
+        "v": {
+          "interaction": "activates",
+          "weight": "0.65"
+        }
+      },
+      {
+        "id": 14,
+        "s": 14,
+        "t": 15,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "0.70"
+        }
+      },
+      {
+        "id": 15,
+        "s": 15,
+        "t": 16,
+        "v": {
+          "interaction": "interacts",
+          "weight": "0.75"
+        }
+      },
+      {
+        "id": 16,
+        "s": 16,
+        "t": 17,
+        "v": {
+          "interaction": "binds",
+          "weight": "0.80"
+        }
+      },
+      {
+        "id": 17,
+        "s": 17,
+        "t": 18,
+        "v": {
+          "interaction": "regulates",
+          "weight": "0.85"
+        }
+      },
+      {
+        "id": 18,
+        "s": 18,
+        "t": 19,
+        "v": {
+          "interaction": "activates",
+          "weight": "0.90"
+        }
+      },
+      {
+        "id": 19,
+        "s": 19,
+        "t": 20,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "0.95"
+        }
+      },
+      {
+        "id": 20,
+        "s": 20,
+        "t": 21,
+        "v": {
+          "interaction": "interacts",
+          "weight": "1.00"
+        }
+      },
+      {
+        "id": 21,
+        "s": 21,
+        "t": 22,
+        "v": {
+          "interaction": "binds",
+          "weight": "1.05"
+        }
+      },
+      {
+        "id": 22,
+        "s": 22,
+        "t": 23,
+        "v": {
+          "interaction": "regulates",
+          "weight": "1.10"
+        }
+      },
+      {
+        "id": 23,
+        "s": 23,
+        "t": 24,
+        "v": {
+          "interaction": "activates",
+          "weight": "1.15"
+        }
+      },
+      {
+        "id": 24,
+        "s": 24,
+        "t": 25,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "1.20"
+        }
+      },
+      {
+        "id": 25,
+        "s": 25,
+        "t": 26,
+        "v": {
+          "interaction": "interacts",
+          "weight": "1.25"
+        }
+      },
+      {
+        "id": 26,
+        "s": 26,
+        "t": 27,
+        "v": {
+          "interaction": "binds",
+          "weight": "1.30"
+        }
+      },
+      {
+        "id": 27,
+        "s": 27,
+        "t": 28,
+        "v": {
+          "interaction": "regulates",
+          "weight": "1.35"
+        }
+      },
+      {
+        "id": 28,
+        "s": 28,
+        "t": 29,
+        "v": {
+          "interaction": "activates",
+          "weight": "1.40"
+        }
+      },
+      {
+        "id": 29,
+        "s": 29,
+        "t": 30,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "1.45"
+        }
+      },
+      {
+        "id": 30,
+        "s": 30,
+        "t": 31,
+        "v": {
+          "interaction": "interacts",
+          "weight": "1.50"
+        }
+      },
+      {
+        "id": 31,
+        "s": 31,
+        "t": 32,
+        "v": {
+          "interaction": "binds",
+          "weight": "1.55"
+        }
+      },
+      {
+        "id": 32,
+        "s": 32,
+        "t": 33,
+        "v": {
+          "interaction": "regulates",
+          "weight": "1.60"
+        }
+      },
+      {
+        "id": 33,
+        "s": 33,
+        "t": 34,
+        "v": {
+          "interaction": "activates",
+          "weight": "1.65"
+        }
+      },
+      {
+        "id": 34,
+        "s": 34,
+        "t": 35,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "1.70"
+        }
+      },
+      {
+        "id": 35,
+        "s": 35,
+        "t": 36,
+        "v": {
+          "interaction": "interacts",
+          "weight": "1.75"
+        }
+      },
+      {
+        "id": 36,
+        "s": 36,
+        "t": 37,
+        "v": {
+          "interaction": "binds",
+          "weight": "1.80"
+        }
+      },
+      {
+        "id": 37,
+        "s": 37,
+        "t": 38,
+        "v": {
+          "interaction": "regulates",
+          "weight": "1.85"
+        }
+      },
+      {
+        "id": 38,
+        "s": 38,
+        "t": 39,
+        "v": {
+          "interaction": "activates",
+          "weight": "1.90"
+        }
+      },
+      {
+        "id": 39,
+        "s": 39,
+        "t": 40,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "1.95"
+        }
+      },
+      {
+        "id": 40,
+        "s": 40,
+        "t": 41,
+        "v": {
+          "interaction": "interacts",
+          "weight": "2.00"
+        }
+      },
+      {
+        "id": 41,
+        "s": 41,
+        "t": 42,
+        "v": {
+          "interaction": "binds",
+          "weight": "2.05"
+        }
+      },
+      {
+        "id": 42,
+        "s": 42,
+        "t": 43,
+        "v": {
+          "interaction": "regulates",
+          "weight": "2.10"
+        }
+      },
+      {
+        "id": 43,
+        "s": 43,
+        "t": 44,
+        "v": {
+          "interaction": "activates",
+          "weight": "2.15"
+        }
+      },
+      {
+        "id": 44,
+        "s": 44,
+        "t": 45,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "2.20"
+        }
+      },
+      {
+        "id": 45,
+        "s": 45,
+        "t": 46,
+        "v": {
+          "interaction": "interacts",
+          "weight": "2.25"
+        }
+      },
+      {
+        "id": 46,
+        "s": 46,
+        "t": 47,
+        "v": {
+          "interaction": "binds",
+          "weight": "2.30"
+        }
+      },
+      {
+        "id": 47,
+        "s": 47,
+        "t": 48,
+        "v": {
+          "interaction": "regulates",
+          "weight": "2.35"
+        }
+      },
+      {
+        "id": 48,
+        "s": 48,
+        "t": 49,
+        "v": {
+          "interaction": "activates",
+          "weight": "2.40"
+        }
+      },
+      {
+        "id": 49,
+        "s": 49,
+        "t": 50,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "2.45"
+        }
+      },
+      {
+        "id": 50,
+        "s": 50,
+        "t": 51,
+        "v": {
+          "interaction": "interacts",
+          "weight": "2.50"
+        }
+      },
+      {
+        "id": 51,
+        "s": 51,
+        "t": 52,
+        "v": {
+          "interaction": "binds",
+          "weight": "2.55"
+        }
+      },
+      {
+        "id": 52,
+        "s": 52,
+        "t": 53,
+        "v": {
+          "interaction": "regulates",
+          "weight": "2.60"
+        }
+      },
+      {
+        "id": 53,
+        "s": 53,
+        "t": 54,
+        "v": {
+          "interaction": "activates",
+          "weight": "2.65"
+        }
+      },
+      {
+        "id": 54,
+        "s": 54,
+        "t": 55,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "2.70"
+        }
+      },
+      {
+        "id": 55,
+        "s": 55,
+        "t": 56,
+        "v": {
+          "interaction": "interacts",
+          "weight": "2.75"
+        }
+      },
+      {
+        "id": 56,
+        "s": 56,
+        "t": 57,
+        "v": {
+          "interaction": "binds",
+          "weight": "2.80"
+        }
+      },
+      {
+        "id": 57,
+        "s": 57,
+        "t": 58,
+        "v": {
+          "interaction": "regulates",
+          "weight": "2.85"
+        }
+      },
+      {
+        "id": 58,
+        "s": 58,
+        "t": 59,
+        "v": {
+          "interaction": "activates",
+          "weight": "2.90"
+        }
+      },
+      {
+        "id": 59,
+        "s": 59,
+        "t": 60,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "2.95"
+        }
+      },
+      {
+        "id": 60,
+        "s": 60,
+        "t": 61,
+        "v": {
+          "interaction": "interacts",
+          "weight": "3.00"
+        }
+      },
+      {
+        "id": 61,
+        "s": 61,
+        "t": 62,
+        "v": {
+          "interaction": "binds",
+          "weight": "3.05"
+        }
+      },
+      {
+        "id": 62,
+        "s": 62,
+        "t": 63,
+        "v": {
+          "interaction": "regulates",
+          "weight": "3.10"
+        }
+      },
+      {
+        "id": 63,
+        "s": 63,
+        "t": 64,
+        "v": {
+          "interaction": "activates",
+          "weight": "3.15"
+        }
+      },
+      {
+        "id": 64,
+        "s": 64,
+        "t": 65,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "3.20"
+        }
+      },
+      {
+        "id": 65,
+        "s": 65,
+        "t": 66,
+        "v": {
+          "interaction": "interacts",
+          "weight": "3.25"
+        }
+      },
+      {
+        "id": 66,
+        "s": 66,
+        "t": 67,
+        "v": {
+          "interaction": "binds",
+          "weight": "3.30"
+        }
+      },
+      {
+        "id": 67,
+        "s": 67,
+        "t": 68,
+        "v": {
+          "interaction": "regulates",
+          "weight": "3.35"
+        }
+      },
+      {
+        "id": 68,
+        "s": 68,
+        "t": 69,
+        "v": {
+          "interaction": "activates",
+          "weight": "3.40"
+        }
+      },
+      {
+        "id": 69,
+        "s": 69,
+        "t": 70,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "3.45"
+        }
+      },
+      {
+        "id": 70,
+        "s": 70,
+        "t": 71,
+        "v": {
+          "interaction": "interacts",
+          "weight": "3.50"
+        }
+      },
+      {
+        "id": 71,
+        "s": 71,
+        "t": 72,
+        "v": {
+          "interaction": "binds",
+          "weight": "3.55"
+        }
+      },
+      {
+        "id": 72,
+        "s": 72,
+        "t": 73,
+        "v": {
+          "interaction": "regulates",
+          "weight": "3.60"
+        }
+      },
+      {
+        "id": 73,
+        "s": 73,
+        "t": 74,
+        "v": {
+          "interaction": "activates",
+          "weight": "3.65"
+        }
+      },
+      {
+        "id": 74,
+        "s": 74,
+        "t": 75,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "3.70"
+        }
+      },
+      {
+        "id": 75,
+        "s": 75,
+        "t": 76,
+        "v": {
+          "interaction": "interacts",
+          "weight": "3.75"
+        }
+      },
+      {
+        "id": 76,
+        "s": 76,
+        "t": 77,
+        "v": {
+          "interaction": "binds",
+          "weight": "3.80"
+        }
+      },
+      {
+        "id": 77,
+        "s": 77,
+        "t": 78,
+        "v": {
+          "interaction": "regulates",
+          "weight": "3.85"
+        }
+      },
+      {
+        "id": 78,
+        "s": 78,
+        "t": 79,
+        "v": {
+          "interaction": "activates",
+          "weight": "3.90"
+        }
+      },
+      {
+        "id": 79,
+        "s": 79,
+        "t": 80,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "3.95"
+        }
+      },
+      {
+        "id": 80,
+        "s": 80,
+        "t": 81,
+        "v": {
+          "interaction": "interacts",
+          "weight": "4.00"
+        }
+      },
+      {
+        "id": 81,
+        "s": 81,
+        "t": 82,
+        "v": {
+          "interaction": "binds",
+          "weight": "4.05"
+        }
+      },
+      {
+        "id": 82,
+        "s": 82,
+        "t": 83,
+        "v": {
+          "interaction": "regulates",
+          "weight": "4.10"
+        }
+      },
+      {
+        "id": 83,
+        "s": 83,
+        "t": 84,
+        "v": {
+          "interaction": "activates",
+          "weight": "4.15"
+        }
+      },
+      {
+        "id": 84,
+        "s": 84,
+        "t": 85,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "4.20"
+        }
+      },
+      {
+        "id": 85,
+        "s": 85,
+        "t": 86,
+        "v": {
+          "interaction": "interacts",
+          "weight": "4.25"
+        }
+      },
+      {
+        "id": 86,
+        "s": 86,
+        "t": 87,
+        "v": {
+          "interaction": "binds",
+          "weight": "4.30"
+        }
+      },
+      {
+        "id": 87,
+        "s": 87,
+        "t": 88,
+        "v": {
+          "interaction": "regulates",
+          "weight": "4.35"
+        }
+      },
+      {
+        "id": 88,
+        "s": 88,
+        "t": 89,
+        "v": {
+          "interaction": "activates",
+          "weight": "4.40"
+        }
+      },
+      {
+        "id": 89,
+        "s": 89,
+        "t": 90,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "4.45"
+        }
+      },
+      {
+        "id": 90,
+        "s": 90,
+        "t": 91,
+        "v": {
+          "interaction": "interacts",
+          "weight": "4.50"
+        }
+      },
+      {
+        "id": 91,
+        "s": 91,
+        "t": 92,
+        "v": {
+          "interaction": "binds",
+          "weight": "4.55"
+        }
+      },
+      {
+        "id": 92,
+        "s": 92,
+        "t": 93,
+        "v": {
+          "interaction": "regulates",
+          "weight": "4.60"
+        }
+      },
+      {
+        "id": 93,
+        "s": 93,
+        "t": 94,
+        "v": {
+          "interaction": "activates",
+          "weight": "4.65"
+        }
+      },
+      {
+        "id": 94,
+        "s": 94,
+        "t": 95,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "4.70"
+        }
+      },
+      {
+        "id": 95,
+        "s": 95,
+        "t": 96,
+        "v": {
+          "interaction": "interacts",
+          "weight": "4.75"
+        }
+      },
+      {
+        "id": 96,
+        "s": 96,
+        "t": 97,
+        "v": {
+          "interaction": "binds",
+          "weight": "4.80"
+        }
+      },
+      {
+        "id": 97,
+        "s": 97,
+        "t": 98,
+        "v": {
+          "interaction": "regulates",
+          "weight": "4.85"
+        }
+      },
+      {
+        "id": 98,
+        "s": 98,
+        "t": 99,
+        "v": {
+          "interaction": "activates",
+          "weight": "4.90"
+        }
+      },
+      {
+        "id": 99,
+        "s": 99,
+        "t": 0,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "4.95"
+        }
+      },
+      {
+        "id": 100,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "interacts",
+          "weight": "5.00"
+        }
+      },
+      {
+        "id": 101,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "interaction": "binds",
+          "weight": "5.05"
+        }
+      },
+      {
+        "id": 102,
+        "s": 2,
+        "t": 3,
+        "v": {
+          "interaction": "regulates",
+          "weight": "5.10"
+        }
+      },
+      {
+        "id": 103,
+        "s": 3,
+        "t": 4,
+        "v": {
+          "interaction": "activates",
+          "weight": "5.15"
+        }
+      },
+      {
+        "id": 104,
+        "s": 4,
+        "t": 5,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "5.20"
+        }
+      },
+      {
+        "id": 105,
+        "s": 5,
+        "t": 6,
+        "v": {
+          "interaction": "interacts",
+          "weight": "5.25"
+        }
+      },
+      {
+        "id": 106,
+        "s": 6,
+        "t": 7,
+        "v": {
+          "interaction": "binds",
+          "weight": "5.30"
+        }
+      },
+      {
+        "id": 107,
+        "s": 7,
+        "t": 8,
+        "v": {
+          "interaction": "regulates",
+          "weight": "5.35"
+        }
+      },
+      {
+        "id": 108,
+        "s": 8,
+        "t": 9,
+        "v": {
+          "interaction": "activates",
+          "weight": "5.40"
+        }
+      },
+      {
+        "id": 109,
+        "s": 9,
+        "t": 10,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "5.45"
+        }
+      },
+      {
+        "id": 110,
+        "s": 10,
+        "t": 11,
+        "v": {
+          "interaction": "interacts",
+          "weight": "5.50"
+        }
+      },
+      {
+        "id": 111,
+        "s": 11,
+        "t": 12,
+        "v": {
+          "interaction": "binds",
+          "weight": "5.55"
+        }
+      },
+      {
+        "id": 112,
+        "s": 12,
+        "t": 13,
+        "v": {
+          "interaction": "regulates",
+          "weight": "5.60"
+        }
+      },
+      {
+        "id": 113,
+        "s": 13,
+        "t": 14,
+        "v": {
+          "interaction": "activates",
+          "weight": "5.65"
+        }
+      },
+      {
+        "id": 114,
+        "s": 14,
+        "t": 15,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "5.70"
+        }
+      },
+      {
+        "id": 115,
+        "s": 15,
+        "t": 16,
+        "v": {
+          "interaction": "interacts",
+          "weight": "5.75"
+        }
+      },
+      {
+        "id": 116,
+        "s": 16,
+        "t": 17,
+        "v": {
+          "interaction": "binds",
+          "weight": "5.80"
+        }
+      },
+      {
+        "id": 117,
+        "s": 17,
+        "t": 18,
+        "v": {
+          "interaction": "regulates",
+          "weight": "5.85"
+        }
+      },
+      {
+        "id": 118,
+        "s": 18,
+        "t": 19,
+        "v": {
+          "interaction": "activates",
+          "weight": "5.90"
+        }
+      },
+      {
+        "id": 119,
+        "s": 19,
+        "t": 20,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "5.95"
+        }
+      },
+      {
+        "id": 120,
+        "s": 20,
+        "t": 21,
+        "v": {
+          "interaction": "interacts",
+          "weight": "6.00"
+        }
+      },
+      {
+        "id": 121,
+        "s": 21,
+        "t": 22,
+        "v": {
+          "interaction": "binds",
+          "weight": "6.05"
+        }
+      },
+      {
+        "id": 122,
+        "s": 22,
+        "t": 23,
+        "v": {
+          "interaction": "regulates",
+          "weight": "6.10"
+        }
+      },
+      {
+        "id": 123,
+        "s": 23,
+        "t": 24,
+        "v": {
+          "interaction": "activates",
+          "weight": "6.15"
+        }
+      },
+      {
+        "id": 124,
+        "s": 24,
+        "t": 25,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "6.20"
+        }
+      },
+      {
+        "id": 125,
+        "s": 25,
+        "t": 26,
+        "v": {
+          "interaction": "interacts",
+          "weight": "6.25"
+        }
+      },
+      {
+        "id": 126,
+        "s": 26,
+        "t": 27,
+        "v": {
+          "interaction": "binds",
+          "weight": "6.30"
+        }
+      },
+      {
+        "id": 127,
+        "s": 27,
+        "t": 28,
+        "v": {
+          "interaction": "regulates",
+          "weight": "6.35"
+        }
+      },
+      {
+        "id": 128,
+        "s": 28,
+        "t": 29,
+        "v": {
+          "interaction": "activates",
+          "weight": "6.40"
+        }
+      },
+      {
+        "id": 129,
+        "s": 29,
+        "t": 30,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "6.45"
+        }
+      },
+      {
+        "id": 130,
+        "s": 30,
+        "t": 31,
+        "v": {
+          "interaction": "interacts",
+          "weight": "6.50"
+        }
+      },
+      {
+        "id": 131,
+        "s": 31,
+        "t": 32,
+        "v": {
+          "interaction": "binds",
+          "weight": "6.55"
+        }
+      },
+      {
+        "id": 132,
+        "s": 32,
+        "t": 33,
+        "v": {
+          "interaction": "regulates",
+          "weight": "6.60"
+        }
+      },
+      {
+        "id": 133,
+        "s": 33,
+        "t": 34,
+        "v": {
+          "interaction": "activates",
+          "weight": "6.65"
+        }
+      },
+      {
+        "id": 134,
+        "s": 34,
+        "t": 35,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "6.70"
+        }
+      },
+      {
+        "id": 135,
+        "s": 35,
+        "t": 36,
+        "v": {
+          "interaction": "interacts",
+          "weight": "6.75"
+        }
+      },
+      {
+        "id": 136,
+        "s": 36,
+        "t": 37,
+        "v": {
+          "interaction": "binds",
+          "weight": "6.80"
+        }
+      },
+      {
+        "id": 137,
+        "s": 37,
+        "t": 38,
+        "v": {
+          "interaction": "regulates",
+          "weight": "6.85"
+        }
+      },
+      {
+        "id": 138,
+        "s": 38,
+        "t": 39,
+        "v": {
+          "interaction": "activates",
+          "weight": "6.90"
+        }
+      },
+      {
+        "id": 139,
+        "s": 39,
+        "t": 40,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "6.95"
+        }
+      },
+      {
+        "id": 140,
+        "s": 40,
+        "t": 41,
+        "v": {
+          "interaction": "interacts",
+          "weight": "7.00"
+        }
+      },
+      {
+        "id": 141,
+        "s": 41,
+        "t": 42,
+        "v": {
+          "interaction": "binds",
+          "weight": "7.05"
+        }
+      },
+      {
+        "id": 142,
+        "s": 42,
+        "t": 43,
+        "v": {
+          "interaction": "regulates",
+          "weight": "7.10"
+        }
+      },
+      {
+        "id": 143,
+        "s": 43,
+        "t": 44,
+        "v": {
+          "interaction": "activates",
+          "weight": "7.15"
+        }
+      },
+      {
+        "id": 144,
+        "s": 44,
+        "t": 45,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "7.20"
+        }
+      },
+      {
+        "id": 145,
+        "s": 45,
+        "t": 46,
+        "v": {
+          "interaction": "interacts",
+          "weight": "7.25"
+        }
+      },
+      {
+        "id": 146,
+        "s": 46,
+        "t": 47,
+        "v": {
+          "interaction": "binds",
+          "weight": "7.30"
+        }
+      },
+      {
+        "id": 147,
+        "s": 47,
+        "t": 48,
+        "v": {
+          "interaction": "regulates",
+          "weight": "7.35"
+        }
+      },
+      {
+        "id": 148,
+        "s": 48,
+        "t": 49,
+        "v": {
+          "interaction": "activates",
+          "weight": "7.40"
+        }
+      },
+      {
+        "id": 149,
+        "s": 49,
+        "t": 50,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "7.45"
+        }
+      },
+      {
+        "id": 150,
+        "s": 50,
+        "t": 51,
+        "v": {
+          "interaction": "interacts",
+          "weight": "7.50"
+        }
+      },
+      {
+        "id": 151,
+        "s": 51,
+        "t": 52,
+        "v": {
+          "interaction": "binds",
+          "weight": "7.55"
+        }
+      },
+      {
+        "id": 152,
+        "s": 52,
+        "t": 53,
+        "v": {
+          "interaction": "regulates",
+          "weight": "7.60"
+        }
+      },
+      {
+        "id": 153,
+        "s": 53,
+        "t": 54,
+        "v": {
+          "interaction": "activates",
+          "weight": "7.65"
+        }
+      },
+      {
+        "id": 154,
+        "s": 54,
+        "t": 55,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "7.70"
+        }
+      },
+      {
+        "id": 155,
+        "s": 55,
+        "t": 56,
+        "v": {
+          "interaction": "interacts",
+          "weight": "7.75"
+        }
+      },
+      {
+        "id": 156,
+        "s": 56,
+        "t": 57,
+        "v": {
+          "interaction": "binds",
+          "weight": "7.80"
+        }
+      },
+      {
+        "id": 157,
+        "s": 57,
+        "t": 58,
+        "v": {
+          "interaction": "regulates",
+          "weight": "7.85"
+        }
+      },
+      {
+        "id": 158,
+        "s": 58,
+        "t": 59,
+        "v": {
+          "interaction": "activates",
+          "weight": "7.90"
+        }
+      },
+      {
+        "id": 159,
+        "s": 59,
+        "t": 60,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "7.95"
+        }
+      },
+      {
+        "id": 160,
+        "s": 60,
+        "t": 61,
+        "v": {
+          "interaction": "interacts",
+          "weight": "8.00"
+        }
+      },
+      {
+        "id": 161,
+        "s": 61,
+        "t": 62,
+        "v": {
+          "interaction": "binds",
+          "weight": "8.05"
+        }
+      },
+      {
+        "id": 162,
+        "s": 62,
+        "t": 63,
+        "v": {
+          "interaction": "regulates",
+          "weight": "8.10"
+        }
+      },
+      {
+        "id": 163,
+        "s": 63,
+        "t": 64,
+        "v": {
+          "interaction": "activates",
+          "weight": "8.15"
+        }
+      },
+      {
+        "id": 164,
+        "s": 64,
+        "t": 65,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "8.20"
+        }
+      },
+      {
+        "id": 165,
+        "s": 65,
+        "t": 66,
+        "v": {
+          "interaction": "interacts",
+          "weight": "8.25"
+        }
+      },
+      {
+        "id": 166,
+        "s": 66,
+        "t": 67,
+        "v": {
+          "interaction": "binds",
+          "weight": "8.30"
+        }
+      },
+      {
+        "id": 167,
+        "s": 67,
+        "t": 68,
+        "v": {
+          "interaction": "regulates",
+          "weight": "8.35"
+        }
+      },
+      {
+        "id": 168,
+        "s": 68,
+        "t": 69,
+        "v": {
+          "interaction": "activates",
+          "weight": "8.40"
+        }
+      },
+      {
+        "id": 169,
+        "s": 69,
+        "t": 70,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "8.45"
+        }
+      },
+      {
+        "id": 170,
+        "s": 70,
+        "t": 71,
+        "v": {
+          "interaction": "interacts",
+          "weight": "8.50"
+        }
+      },
+      {
+        "id": 171,
+        "s": 71,
+        "t": 72,
+        "v": {
+          "interaction": "binds",
+          "weight": "8.55"
+        }
+      },
+      {
+        "id": 172,
+        "s": 72,
+        "t": 73,
+        "v": {
+          "interaction": "regulates",
+          "weight": "8.60"
+        }
+      },
+      {
+        "id": 173,
+        "s": 73,
+        "t": 74,
+        "v": {
+          "interaction": "activates",
+          "weight": "8.65"
+        }
+      },
+      {
+        "id": 174,
+        "s": 74,
+        "t": 75,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "8.70"
+        }
+      },
+      {
+        "id": 175,
+        "s": 75,
+        "t": 76,
+        "v": {
+          "interaction": "interacts",
+          "weight": "8.75"
+        }
+      },
+      {
+        "id": 176,
+        "s": 76,
+        "t": 77,
+        "v": {
+          "interaction": "binds",
+          "weight": "8.80"
+        }
+      },
+      {
+        "id": 177,
+        "s": 77,
+        "t": 78,
+        "v": {
+          "interaction": "regulates",
+          "weight": "8.85"
+        }
+      },
+      {
+        "id": 178,
+        "s": 78,
+        "t": 79,
+        "v": {
+          "interaction": "activates",
+          "weight": "8.90"
+        }
+      },
+      {
+        "id": 179,
+        "s": 79,
+        "t": 80,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "8.95"
+        }
+      },
+      {
+        "id": 180,
+        "s": 80,
+        "t": 81,
+        "v": {
+          "interaction": "interacts",
+          "weight": "9.00"
+        }
+      },
+      {
+        "id": 181,
+        "s": 81,
+        "t": 82,
+        "v": {
+          "interaction": "binds",
+          "weight": "9.05"
+        }
+      },
+      {
+        "id": 182,
+        "s": 82,
+        "t": 83,
+        "v": {
+          "interaction": "regulates",
+          "weight": "9.10"
+        }
+      },
+      {
+        "id": 183,
+        "s": 83,
+        "t": 84,
+        "v": {
+          "interaction": "activates",
+          "weight": "9.15"
+        }
+      },
+      {
+        "id": 184,
+        "s": 84,
+        "t": 85,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "9.20"
+        }
+      },
+      {
+        "id": 185,
+        "s": 85,
+        "t": 86,
+        "v": {
+          "interaction": "interacts",
+          "weight": "9.25"
+        }
+      },
+      {
+        "id": 186,
+        "s": 86,
+        "t": 87,
+        "v": {
+          "interaction": "binds",
+          "weight": "9.30"
+        }
+      },
+      {
+        "id": 187,
+        "s": 87,
+        "t": 88,
+        "v": {
+          "interaction": "regulates",
+          "weight": "9.35"
+        }
+      },
+      {
+        "id": 188,
+        "s": 88,
+        "t": 89,
+        "v": {
+          "interaction": "activates",
+          "weight": "9.40"
+        }
+      },
+      {
+        "id": 189,
+        "s": 89,
+        "t": 90,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "9.45"
+        }
+      },
+      {
+        "id": 190,
+        "s": 90,
+        "t": 91,
+        "v": {
+          "interaction": "interacts",
+          "weight": "9.50"
+        }
+      },
+      {
+        "id": 191,
+        "s": 91,
+        "t": 92,
+        "v": {
+          "interaction": "binds",
+          "weight": "9.55"
+        }
+      },
+      {
+        "id": 192,
+        "s": 92,
+        "t": 93,
+        "v": {
+          "interaction": "regulates",
+          "weight": "9.60"
+        }
+      },
+      {
+        "id": 193,
+        "s": 93,
+        "t": 94,
+        "v": {
+          "interaction": "activates",
+          "weight": "9.65"
+        }
+      },
+      {
+        "id": 194,
+        "s": 94,
+        "t": 95,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "9.70"
+        }
+      },
+      {
+        "id": 195,
+        "s": 95,
+        "t": 96,
+        "v": {
+          "interaction": "interacts",
+          "weight": "9.75"
+        }
+      },
+      {
+        "id": 196,
+        "s": 96,
+        "t": 97,
+        "v": {
+          "interaction": "binds",
+          "weight": "9.80"
+        }
+      },
+      {
+        "id": 197,
+        "s": 97,
+        "t": 98,
+        "v": {
+          "interaction": "regulates",
+          "weight": "9.85"
+        }
+      },
+      {
+        "id": 198,
+        "s": 98,
+        "t": 99,
+        "v": {
+          "interaction": "activates",
+          "weight": "9.90"
+        }
+      },
+      {
+        "id": 199,
+        "s": 99,
+        "t": 0,
+        "v": {
+          "interaction": "inhibits",
+          "weight": "9.95"
+        }
+      }
+    ]
+  },
+  {
+    "visualProperties": [
+      {
+        "properties": [
+          {
+            "n": "NODE_FILL_COLOR",
+            "v": "#FF0000"
+          },
+          {
+            "n": "NODE_SIZE",
+            "v": "20"
+          }
+        ],
+        "mappings": [],
+        "dependencies": {},
+        "cytoscapeVersion": "3.0"
+      }
+    ]
+  }
+]

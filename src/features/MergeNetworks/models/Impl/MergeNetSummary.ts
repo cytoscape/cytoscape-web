@@ -1,30 +1,31 @@
 import cloneDeep from 'lodash/cloneDeep'
+
+import { logApp } from '../../../../debug'
 import { IdType } from '../../../../models/IdType'
 import {
-  NdexNetworkProperty,
-  NdexNetworkSummary,
+  NetworkProperty,
+  NetworkSummary,
 } from '../../../../models/NetworkSummaryModel'
-import { MatchingTable } from '../MatchingTable'
-import { getMatchingTableRows } from './MatchingTableImpl'
 import {
   isBooleanArray,
   isNumberArray,
   isStringArray,
-} from '../../utils/helper-functions'
-import { logApp } from '../../../../debug'
+} from '../../utils/mergeNetworkUtil'
+import { MatchingTable } from '../MatchingTable'
+import { getMatchingTableRows } from './MatchingTableImpl'
 
 export function mergeNetSummary(
   fromNetworks: IdType[],
   networkAttributeMapping: MatchingTable,
-  netSummaries: Record<IdType, NdexNetworkSummary>,
+  netSummaries: Record<IdType, NetworkSummary>,
 ) {
   // Version and Description: only preserve the base network's information
   const baseNetworkId = fromNetworks[0]
   const mergedVersion: string = netSummaries[baseNetworkId]?.version || ''
   const mergedDescription: string =
     netSummaries[baseNetworkId]?.description || ''
-  const mergedProperties: Record<string, NdexNetworkProperty> = {}
-  const flattenedProperties: NdexNetworkProperty[] = []
+  const mergedProperties: Record<string, NetworkProperty> = {}
+  const flattenedProperties: NetworkProperty[] = []
   const matchingTableRows = getMatchingTableRows(networkAttributeMapping)
   matchingTableRows.slice(3).forEach((row) => {
     for (const netId of fromNetworks) {
@@ -65,9 +66,9 @@ export function mergeNetSummary(
 
 function mergeProperty(
   mergedAttName: string,
-  propt1: NdexNetworkProperty,
-  propt2?: NdexNetworkProperty,
-): NdexNetworkProperty {
+  propt1: NetworkProperty,
+  propt2?: NetworkProperty,
+): NetworkProperty {
   propt1.predicateString = mergedAttName
   if (!propt2) return propt1
   if (propt1.dataType === propt2.dataType) {

@@ -1,10 +1,5 @@
-import Grid from '@mui/material/Grid'
-import { useEffect, useState } from 'react'
-import { IdType } from '../../../../models/IdType'
-import { useTableStore } from '../../../../store/TableStore'
-import { useUiStateStore } from '../../../../store/UiStateStore'
-import { useWorkspaceStore } from '../../../../store/WorkspaceStore'
-import { GraphObjectType } from '../../../../models/NetworkModel'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import SettingsIcon from '@mui/icons-material/Settings'
 import {
   Accordion,
   AccordionDetails,
@@ -14,29 +9,33 @@ import {
   Switch,
   Typography,
 } from '@mui/material'
-import { AttributeSelector } from './AttributeSelector'
-import { ModeSelector } from './ModeSelector'
-
-import SettingsIcon from '@mui/icons-material/Settings'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import Grid from '@mui/material/Grid'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useVisualStyleStore } from '../../../../store/VisualStyleStore'
+
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useTableStore } from '../../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
+import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
+import { IdType } from '../../../../models/IdType'
+import { GraphObjectType } from '../../../../models/NetworkModel'
+import { Table } from '../../../../models/TableModel'
 import {
   VisualMappingFunction,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
-import { CompatibleVisualProperties } from './CompatibleVisualMappings'
-import { CheckboxFilter } from './CheckboxFilter'
-import { useFilterStore } from '../../../../store/FilterStore'
-import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
-import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
-import { Table } from '../../../../models/TableModel'
 import {
   getAllDiscreteValues,
   getDefaultCheckboxFilterConfig,
-} from '../../utils/filter-util'
+} from '../../utils/filterUtil'
+import { AttributeSelector } from './AttributeSelector'
+import { CheckboxFilter } from './CheckboxFilter'
+import { CompatibleVisualProperties } from './CompatibleVisualMappings'
 
 // Default filter name if none exists
 export const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -44,10 +43,7 @@ export const DEFAULT_FILTER_NAME = 'checkboxFilter'
 // TODO: Import from CX
 const DEFAULT_EDGE_ATTR_NAME = 'interaction'
 
-// TODO: document this
-const isInteractionNetwork = (networkId: IdType): boolean => {
-  return networkId.includes('_')
-}
+import { isSubnetwork } from '../../utils/hierarchyUtil'
 
 export const FilterPanel = () => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
@@ -77,7 +73,7 @@ export const FilterPanel = () => {
   const targetNetworkId: IdType = activeNetworkId || currentNetworkId
 
   // Hide the entire filter if it is not the main network
-  const shouldApplyFilter: boolean = isInteractionNetwork(targetNetworkId)
+  const shouldApplyFilter: boolean = isSubnetwork(targetNetworkId)
 
   const vs: VisualStyle = styles[activeNetworkId]
 
@@ -93,11 +89,6 @@ export const FilterPanel = () => {
 
   const [selectedObjectType, setSelectedObjectType] = useState<GraphObjectType>(
     GraphObjectType.EDGE,
-  )
-
-  // Visualization mode for the filtered results
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(
-    DisplayMode.SHOW_HIDE,
   )
 
   const targetAttrName: string =
@@ -247,13 +238,14 @@ export const FilterPanel = () => {
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
-  }, [targetAttrName, selectedObjectType, vs, displayMode])
+  }, [targetAttrName, selectedObjectType, vs])
 
   if (!shouldApplyFilter || selectedFilter === undefined || table === undefined)
     return null
 
   return (
     <Container
+      data-testid="filter-panel"
       disableGutters={true}
       sx={{
         width: '100%',
@@ -307,8 +299,9 @@ export const FilterPanel = () => {
                 margin: 0,
               }}
             >
-              <Typography>Filter: {selectedFilter.label}</Typography>
+              <Typography>Visibility Toggle: {selectedFilter.label}</Typography>
               <Switch
+                data-testid="filter-enable-switch"
                 checked={isFilterEnabled}
                 onClick={(event) => {
                   event.stopPropagation()
@@ -331,13 +324,6 @@ export const FilterPanel = () => {
                 selectedType={selectedObjectType}
                 setSelectedValue={setFunction}
                 setSelectedType={setSelectedObjectType}
-              />
-            </Grid>
-            <Grid item sx={{ flex: 1 }}>
-              <ModeSelector
-                enableFilter={true}
-                displayMode={displayMode}
-                setDisplayMode={setDisplayMode}
               />
             </Grid>
           </AccordionDetails>

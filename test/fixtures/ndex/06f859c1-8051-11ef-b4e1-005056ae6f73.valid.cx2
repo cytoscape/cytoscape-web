@@ -1,0 +1,846 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "nodes",
+        "elementCount": 5
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 6
+      },
+      {
+        "name": "visualProperties",
+        "elementCount": 1
+      },
+      {
+        "name": "visualEditorProperties",
+        "elementCount": 1
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "nodes": {
+          "molecular_function_id": {
+            "d": "string"
+          },
+          "molecular_function_label": {
+            "d": "string"
+          },
+          "name": {
+            "d": "string"
+          },
+          "occurs_in_id": {
+            "d": "string"
+          },
+          "occurs_in_label": {
+            "d": "string"
+          },
+          "part_of_id": {
+            "d": "string"
+          },
+          "part_of_label": {
+            "d": "string"
+          },
+          "represents": {
+            "d": "string"
+          },
+          "type": {
+            "d": "string"
+          }
+        },
+        "networkAttributes": {
+          "represents": {
+            "d": "string"
+          },
+          "name": {
+            "d": "string"
+          },
+          "description": {
+            "d": "string"
+          },
+          "version": {
+            "d": "string"
+          }
+        },
+        "edges": {
+          "evidence": {
+            "d": "list_of_string"
+          },
+          "name": {
+            "d": "string"
+          },
+          "represents": {
+            "d": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "represents": "gomodel:66b5638000000873",
+        "name": "EIF2AK3/PERK phosphorylates NFE2L2/NRF2 in response to unfolded protein response, preventing the ubiquitination of NFE2L2/NRF2 by KEAP1 (Human)."
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "x": 1810.1773978965864,
+        "y": 1894.5077513115343,
+        "v": {
+          "name": "RBX1",
+          "represents": "UniProtKB:P62877",
+          "type": "gene",
+          "molecular_function_id": "GO:0061630",
+          "molecular_function_label": "ubiquitin protein ligase activity",
+          "occurs_in_id": "GO:0005737",
+          "occurs_in_label": "cytoplasm",
+          "part_of_id": "GO:0043161",
+          "part_of_label": "proteasome-mediated ubiquitin-dependent protein catabolic process"
+        }
+      },
+      {
+        "id": 1,
+        "x": 1950.400022534449,
+        "y": 1780.4967107682392,
+        "v": {
+          "name": "KEAP1",
+          "represents": "UniProtKB:Q14145",
+          "type": "gene",
+          "molecular_function_id": "GO:1990756",
+          "molecular_function_label": "ubiquitin-like ligase-substrate adaptor activity",
+          "occurs_in_id": "GO:0005737",
+          "occurs_in_label": "cytoplasm",
+          "part_of_id": "GO:0043161",
+          "part_of_label": "proteasome-mediated ubiquitin-dependent protein catabolic process"
+        }
+      },
+      {
+        "id": 2,
+        "x": 2123.995082296281,
+        "y": 1863.5092501794893,
+        "v": {
+          "name": "EIF2AK3",
+          "represents": "UniProtKB:Q9NZJ5",
+          "type": "gene",
+          "molecular_function_id": "GO:0004674",
+          "molecular_function_label": "protein serine/threonine kinase activity",
+          "part_of_id": "GO:0036499",
+          "part_of_label": "PERK-mediated unfolded protein response"
+        }
+      },
+      {
+        "id": 3,
+        "x": 1654.414369423129,
+        "y": 1985.7813401709202,
+        "v": {
+          "name": "NFE2L2",
+          "represents": "UniProtKB:Q16236",
+          "type": "gene",
+          "molecular_function_id": "GO:0003700",
+          "molecular_function_label": "DNA-binding transcription factor activity",
+          "occurs_in_id": "GO:0005634",
+          "occurs_in_label": "nucleus",
+          "part_of_id": "GO:0006979",
+          "part_of_label": "response to oxidative stress"
+        }
+      },
+      {
+        "id": 4,
+        "x": 1976.7165112363516,
+        "y": 1995.6289611857549,
+        "v": {
+          "name": "NFE2L2",
+          "represents": "UniProtKB:Q16236"
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 4,
+        "t": 0,
+        "v": {
+          "name": "has input",
+          "represents": "RO:0002233"
+        }
+      },
+      {
+        "id": 1,
+        "s": 4,
+        "t": 1,
+        "v": {
+          "name": "has input",
+          "represents": "RO:0002233"
+        }
+      },
+      {
+        "id": 2,
+        "s": 4,
+        "t": 2,
+        "v": {
+          "name": "has input",
+          "represents": "RO:0002233"
+        }
+      },
+      {
+        "id": 3,
+        "s": 0,
+        "t": 3,
+        "v": {
+          "name": "directly negatively regulates",
+          "represents": "RO:0002630",
+          "evidence": [
+            "ECO:0000314"
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "s": 1,
+        "t": 0,
+        "v": {
+          "name": "directly positively regulates",
+          "represents": "RO:0002629",
+          "evidence": [
+            "ECO:0000314"
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "s": 2,
+        "t": 1,
+        "v": {
+          "name": "RO:0012010",
+          "represents": "RO:0012010",
+          "evidence": [
+            "ECO:0000250"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "visualProperties": [
+      {
+        "default": {
+          "edge": {
+            "EDGE_LABEL_OPACITY": 1,
+            "EDGE_TARGET_ARROW_SHAPE": "none",
+            "EDGE_WIDTH": 2,
+            "EDGE_SOURCE_ARROW_SHAPE": "none",
+            "EDGE_LINE_COLOR": "#848484",
+            "EDGE_LABEL_MAX_WIDTH": 200,
+            "EDGE_Z_LOCATION": 0,
+            "EDGE_OPACITY": 1,
+            "EDGE_LABEL_ROTATION": 0,
+            "EDGE_LABEL_FONT_FACE": {
+              "FONT_FAMILY": "sans-serif",
+              "FONT_STYLE": "normal",
+              "FONT_WEIGHT": "normal"
+            },
+            "EDGE_VISIBILITY": "element",
+            "EDGE_LABEL_FONT_SIZE": 10,
+            "EDGE_LABEL_COLOR": "#000000",
+            "EDGE_SELECTED_PAINT": "#FFFF00",
+            "EDGE_LABEL": "",
+            "EDGE_SOURCE_ARROW_COLOR": "#000000",
+            "EDGE_LINE_STYLE": "solid",
+            "EDGE_TARGET_ARROW_COLOR": "#000000"
+          },
+          "network": {
+            "NETWORK_BACKGROUND_COLOR": "#FFFFFF"
+          },
+          "node": {
+            "NODE_LABEL_COLOR": "#000000",
+            "NODE_BORDER_COLOR": "#CCCCCC",
+            "NODE_BACKGROUND_COLOR": "#FFFFFF",
+            "NODE_SHAPE": "round-rectangle",
+            "NODE_LABEL_FONT_SIZE": 12,
+            "NODE_WIDTH": 75,
+            "NODE_BORDER_OPACITY": 1,
+            "NODE_LABEL_ROTATION": 0,
+            "NODE_BORDER_WIDTH": 1,
+            "NODE_LABEL": "",
+            "NODE_LABEL_POSITION": {
+              "HORIZONTAL_ALIGN": "center",
+              "VERTICAL_ALIGN": "center",
+              "HORIZONTAL_ANCHOR": "center",
+              "VERTICAL_ANCHOR": "center",
+              "MARGIN_X": 0,
+              "MARGIN_Y": 0,
+              "JUSTIFICATION": "center"
+            },
+            "NODE_Z_LOCATION": 0,
+            "NODE_BORDER_STYLE": "solid",
+            "NODE_HEIGHT": 35,
+            "NODE_LABEL_OPACITY": 1,
+            "NODE_VISIBILITY": "element",
+            "NODE_LABEL_FONT_FACE": {
+              "FONT_FAMILY": "sans-serif",
+              "FONT_STYLE": "normal",
+              "FONT_WEIGHT": "normal"
+            },
+            "NODE_SELECTED_PAINT": "#FFFF00",
+            "NODE_LABEL_MAX_WIDTH": 200,
+            "NODE_BACKGROUND_OPACITY": 1
+          }
+        },
+        "edgeMapping": {
+          "EDGE_LABEL": {
+            "type": "PASSTHROUGH",
+            "definition": {
+              "attribute": "name"
+            }
+          },
+          "EDGE_LINE_STYLE": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "BFO:0000050",
+                  "vp": "solid"
+                },
+                {
+                  "v": "BFO:0000051",
+                  "vp": "solid"
+                },
+                {
+                  "v": "BFO:0000066",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002211",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0002212",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0002630",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002213",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0002629",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002233",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002234",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002331",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002333",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002411",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0002418",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0002408",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002406",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002305",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0004046",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0002304",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "RO:0004047",
+                  "vp": "dashed"
+                },
+                {
+                  "v": "annotation",
+                  "vp": "solid"
+                },
+                {
+                  "v": "instance_of",
+                  "vp": "solid"
+                },
+                {
+                  "v": "RO:0002413",
+                  "vp": "solid"
+                }
+              ],
+              "attribute": "represents"
+            }
+          },
+          "EDGE_LINE_COLOR": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "BFO:0000050",
+                  "vp": "#add8e6"
+                },
+                {
+                  "v": "BFO:0000051",
+                  "vp": "#6495ED"
+                },
+                {
+                  "v": "BFO:0000066",
+                  "vp": "#66CDAA"
+                },
+                {
+                  "v": "RO:0002211",
+                  "vp": "#2F4F4F"
+                },
+                {
+                  "v": "RO:0002212",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002630",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002213",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0002629",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0002233",
+                  "vp": "#6495ED"
+                },
+                {
+                  "v": "RO:0002234",
+                  "vp": "#ED6495"
+                },
+                {
+                  "v": "RO:0002331",
+                  "vp": "#E9967A"
+                },
+                {
+                  "v": "RO:0002333",
+                  "vp": "#B8860B"
+                },
+                {
+                  "v": "RO:0002411",
+                  "vp": "#483D8B"
+                },
+                {
+                  "v": "RO:0002418",
+                  "vp": "#483D8B"
+                },
+                {
+                  "v": "RO:0002408",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002406",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0002305",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0004046",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002304",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0004047",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "annotation",
+                  "vp": "#483D8B"
+                },
+                {
+                  "v": "instance_of",
+                  "vp": "#FFFAFA"
+                },
+                {
+                  "v": "RO:0002413",
+                  "vp": "#add8e6"
+                }
+              ],
+              "attribute": "represents"
+            }
+          },
+          "EDGE_TARGET_ARROW_COLOR": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "BFO:0000050",
+                  "vp": "#add8e6"
+                },
+                {
+                  "v": "BFO:0000051",
+                  "vp": "#6495ED"
+                },
+                {
+                  "v": "BFO:0000066",
+                  "vp": "#66CDAA"
+                },
+                {
+                  "v": "RO:0002211",
+                  "vp": "#2F4F4F"
+                },
+                {
+                  "v": "RO:0002212",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002630",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002213",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0002629",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0002233",
+                  "vp": "#6495ED"
+                },
+                {
+                  "v": "RO:0002234",
+                  "vp": "#ED6495"
+                },
+                {
+                  "v": "RO:0002331",
+                  "vp": "#E9967A"
+                },
+                {
+                  "v": "RO:0002333",
+                  "vp": "#B8860B"
+                },
+                {
+                  "v": "RO:0002411",
+                  "vp": "#483D8B"
+                },
+                {
+                  "v": "RO:0002418",
+                  "vp": "#483D8B"
+                },
+                {
+                  "v": "RO:0002408",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002406",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0002305",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0004046",
+                  "vp": "#FF0000"
+                },
+                {
+                  "v": "RO:0002304",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "RO:0004047",
+                  "vp": "#008000"
+                },
+                {
+                  "v": "annotation",
+                  "vp": "#483D8B"
+                },
+                {
+                  "v": "instance_of",
+                  "vp": "#FFFAFA"
+                },
+                {
+                  "v": "RO:0002413",
+                  "vp": "#add8e6"
+                }
+              ],
+              "attribute": "represents"
+            }
+          },
+          "EDGE_TARGET_ARROW_SHAPE": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "BFO:0000050",
+                  "vp": "circle"
+                },
+                {
+                  "v": "BFO:0000051",
+                  "vp": "circle"
+                },
+                {
+                  "v": "BFO:0000066",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002211",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002212",
+                  "vp": "tee"
+                },
+                {
+                  "v": "RO:0002630",
+                  "vp": "tee"
+                },
+                {
+                  "v": "RO:0002213",
+                  "vp": "triangle"
+                },
+                {
+                  "v": "RO:0002629",
+                  "vp": "triangle"
+                },
+                {
+                  "v": "RO:0002233",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002234",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002331",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002333",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002411",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002418",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002408",
+                  "vp": "tee"
+                },
+                {
+                  "v": "RO:0002406",
+                  "vp": "triangle"
+                },
+                {
+                  "v": "RO:0002305",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0004046",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002304",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0004047",
+                  "vp": "circle"
+                },
+                {
+                  "v": "annotation",
+                  "vp": "diamond"
+                },
+                {
+                  "v": "instance_of",
+                  "vp": "circle"
+                },
+                {
+                  "v": "RO:0002413",
+                  "vp": "circle"
+                }
+              ],
+              "attribute": "represents"
+            }
+          },
+          "EDGE_WIDTH": {
+            "type": "DISCRETE",
+            "definition": {
+              "map": [
+                {
+                  "v": "BFO:0000050",
+                  "vp": 4
+                },
+                {
+                  "v": "BFO:0000051",
+                  "vp": 4
+                },
+                {
+                  "v": "BFO:0000066",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002211",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0002212",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0002630",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002213",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0002629",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002233",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002234",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002331",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002333",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002411",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0002418",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0002408",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002406",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002305",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0004046",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0002304",
+                  "vp": 3
+                },
+                {
+                  "v": "RO:0004047",
+                  "vp": 3
+                },
+                {
+                  "v": "annotation",
+                  "vp": 4
+                },
+                {
+                  "v": "instance_of",
+                  "vp": 4
+                },
+                {
+                  "v": "RO:0002413",
+                  "vp": 2
+                }
+              ],
+              "attribute": "represents"
+            }
+          }
+        },
+        "nodeMapping": {
+          "NODE_LABEL": {
+            "type": "PASSTHROUGH",
+            "definition": {
+              "attribute": "name"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "visualEditorProperties": [
+      {
+        "properties": {
+          "nodeSizeLocked": false,
+          "arrowColorMatchesEdge": false
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "success": true
+      }
+    ]
+  }
+]

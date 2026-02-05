@@ -1,23 +1,23 @@
 import {
-  Paper,
-  Title,
-  MantineProvider,
   ActionIcon,
   Group,
+  MantineProvider,
   Modal,
+  Paper,
+  Title,
   Tooltip,
 } from '@mantine/core'
-
-import { TableColumnAssignmentForm } from './TableColumnAssignmentForm'
+import { ModalsProvider } from '@mantine/modals'
+import { IconWindowMaximize,IconWindowMinimize } from '@tabler/icons-react'
 import { PrimeReactProvider } from 'primereact/api'
+import { useState } from 'react'
+
+import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
-import { BaseMenuProps } from '../../../../components/ToolBar/BaseMenuProps'
-import { ModalsProvider } from '@mantine/modals'
-import { IconWindowMinimize, IconWindowMaximize } from '@tabler/icons-react'
-import { useState } from 'react'
+import { TableColumnAssignmentForm } from './TableColumnAssignmentForm'
 
 export function CreateNetworkFromTableForm(props: BaseMenuProps) {
   const step = useCreateNetworkFromTableStore((state) => state.step)
@@ -44,6 +44,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
         <ModalsProvider>
           <div>
             <Modal
+              data-testid="create-network-from-table-modal"
               zIndex={2000}
               centered
               fullScreen={fullScreen}
@@ -59,6 +60,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
                       label="Exit Fullscreen"
                     >
                       <ActionIcon
+                        data-testid="create-network-from-table-exit-fullscreen-button"
                         variant="default"
                         onClick={() => setFullScreen(false)}
                       >
@@ -68,6 +70,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
                   ) : (
                     <Tooltip zIndex={2000} position="bottom" label="Fullscreen">
                       <ActionIcon
+                        data-testid="create-network-from-table-fullscreen-button"
                         variant="default"
                         onClick={() => setFullScreen(true)}
                       >

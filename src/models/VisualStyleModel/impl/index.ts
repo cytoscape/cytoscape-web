@@ -1,1 +1,1 @@
-export * as VisualStyleFn from './VisualStyleFnImpl'
+export * as VisualStyleFn from './visualStyleFnImpl'

@@ -1,33 +1,34 @@
 //import the necessary libraries and components
-import React, { useEffect } from 'react'
 import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material'
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+} from '@mui/material'
+import React, { useEffect } from 'react'
+
+import { IdType } from '../../../models/IdType'
+import { ValueTypeName } from '../../../models/TableModel'
+import { Column } from '../../../models/TableModel/Column'
 import {
   MergeType,
   NetworkRecord,
   Pair,
   TableView,
 } from '../models/DataInterfaceForMerge'
-import {
-  TableContainer,
-  Paper,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TextField,
-  Tooltip,
-} from '@mui/material'
 import { MatchingTableRow } from '../models/MatchingTable'
+import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
+import useMergeToolTipStore from '../store/mergeToolTip'
+import useNetMatchingTableStore from '../store/netMatchingTableStore'
+import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
 import { NetAttDropDownTemplate } from './NetAttDropDownTemplate'
 import { TypeDropDownTemplate } from './TypeDropDownTemplate'
-import { IdType } from '../../../models/IdType'
-import { Column } from '../../../models/TableModel/Column'
-import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
-import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
-import useNetMatchingTableStore from '../store/netMatchingTableStore'
-import useMergeToolTipStore from '../store/mergeToolTip'
-import { ValueTypeName } from '../../../models/TableModel'
 
 interface MatchingTableProps {
   networkRecords: Record<IdType, NetworkRecord>
@@ -250,6 +251,7 @@ export const MatchingTableComp = React.memo(
                         arrow
                       >
                         <TextField
+                          data-testid={`merge-matching-table-textfield-${row.id}`}
                           key={`${row.id}-matchingAttribute-textField`}
                           fullWidth
                           variant="outlined"
@@ -263,6 +265,7 @@ export const MatchingTableComp = React.memo(
                       </Tooltip>
                     ) : (
                       <TextField
+                        data-testid={`merge-matching-table-textfield-${row.id}`}
                         key={`${row.id}-textField`}
                         fullWidth
                         variant="outlined"

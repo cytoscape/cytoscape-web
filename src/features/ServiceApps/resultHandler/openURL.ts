@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { useAppStore } from '../../../store/AppStore'
+
+import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { CyApp } from '../../../models'
+import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface URLData {
   url: string

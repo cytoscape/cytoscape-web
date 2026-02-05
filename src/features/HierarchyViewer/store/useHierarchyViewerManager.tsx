@@ -1,28 +1,29 @@
+import difference from 'lodash/difference'
 import { useEffect, useState } from 'react'
-import { useWorkspaceStore } from '../../../store/WorkspaceStore'
-import {
-  NdexNetworkProperty,
-  NdexNetworkSummary,
-} from '../../../models/NetworkSummaryModel'
-import { IdType } from '../../../models/IdType'
-import { useNetworkSummaryStore } from '../../../store/NetworkSummaryStore'
-import { useUiStateStore } from '../../../store/UiStateStore'
-import { PanelState } from '../../../models/UiModel/PanelState'
-import { Panel } from '../../../models/UiModel/Panel'
-import { ValueType } from '../../../models/TableModel'
-import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarchy-util'
-import _ from 'lodash'
+
 import {
   deleteNetworkFromDb,
   deleteNetworkViewsFromDb,
   deleteTablesFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
-} from '../../../store/persist/db'
-import { useRendererStore } from '../../../store/RendererStore'
-import { DEFAULT_RENDERER_ID } from '../../../store/DefaultRenderer'
+} from '../../../data/db'
 import { logDb } from '../../../debug'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { IdType } from '../../../models/IdType'
+import {
+  NetworkProperty,
+  NetworkSummary,
+} from '../../../models/NetworkSummaryModel'
+import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
+import { ValueType } from '../../../models/TableModel'
+import { Panel } from '../../../models/UiModel/Panel'
+import { PanelState } from '../../../models/UiModel/PanelState'
+import { HcxMetaData } from '../model/HcxMetaData'
+import { getHcxProps } from '../utils/hierarchyUtil'
 
 /**
  *  Switch the panel state based on the network meta data
@@ -84,7 +85,7 @@ export const useHierarchyViewerManager = (): void => {
     }
 
     // Check the diff
-    const diff = _.difference(lastIds, networkIds)
+    const diff = difference(lastIds, networkIds)
     setLastIds(networkIds)
 
     if (diff.length < 1) {
@@ -104,7 +105,7 @@ export const useHierarchyViewerManager = (): void => {
   const uiState = useUiStateStore((state) => state.ui)
   const setPanelState = useUiStateStore((state) => state.setPanelState)
 
-  const summaries: Record<IdType, NdexNetworkSummary> = useNetworkSummaryStore(
+  const summaries: Record<IdType, NetworkSummary> = useNetworkSummaryStore(
     (state) => state.summaries,
   )
   const currentNetworkId: IdType = useWorkspaceStore(
@@ -122,7 +123,7 @@ export const useHierarchyViewerManager = (): void => {
       return
     }
 
-    const networkProps: NdexNetworkProperty[] = summary.properties
+    const networkProps: NetworkProperty[] = summary.properties
     const networkPropObj: Record<string, ValueType> = networkProps.reduce<{
       [key: string]: ValueType
     }>((acc, prop) => {

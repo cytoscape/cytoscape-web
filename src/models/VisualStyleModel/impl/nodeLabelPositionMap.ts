@@ -1,4 +1,5 @@
-import _ from 'lodash'
+import cloneDeep from 'lodash/cloneDeep'
+
 import { NodeLabelPositionType } from '../VisualPropertyValue'
 
 export const NodeLabelOrientationType = {
@@ -346,7 +347,7 @@ export const computeNodeLabelPosition = (
       HORIZONTAL_ALIGN
     ]
 
-  const labelPosition = _.cloneDeep(result)
+  const labelPosition = cloneDeep(result)
 
   return {
     verticalAlign: labelPosition['text-valign'],

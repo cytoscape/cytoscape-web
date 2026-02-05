@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { Node, Edge } from '../NetworkModel'
+import { Edge,Node } from '../NetworkModel'
 import { LayoutAlgorithm } from './LayoutAlgorithm'
 
 export interface LayoutEngine {

@@ -1,0 +1,285 @@
+import CircleIcon from '@mui/icons-material/Circle'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import {
+  Box,
+  Chip,
+  CircularProgress,
+  Divider,
+  IconButton,
+  Theme,
+  Tooltip,
+  Typography,
+} from '@mui/material'
+import { blueGrey } from '@mui/material/colors'
+import { useTheme } from '@mui/material/styles'
+import { lazy, ReactElement, Suspense, useState } from 'react'
+
+import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { IdType } from '../../models/IdType'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+
+// Lazy load the heavy network property editor with rich text editing capabilities
+const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
+import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { Network } from '../../models'
+import { ConfirmationDialog } from '../ConfirmationDialog'
+import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
+
+interface NetworkPropertyPanelProps {
+  summary: NetworkSummary
+}
+
+export const NetworkPropertyPanel = ({
+  summary,
+}: NetworkPropertyPanelProps): ReactElement => {
+  const theme: Theme = useTheme()
+  const { navigateToNetwork } = useUrlNavigation()
+  const workspace = useWorkspaceStore((state) => state.workspace)
+  const [openConfirmation, setOpenConfirmation] = useState<boolean>(false)
+
+  // Need to use ID from the summary since it is different from the currentNetworkId
+  const id: IdType = summary.externalId
+
+  // Get the network model from the store to grab the node and edge counts
+  const networkModels = useNetworkStore((state) => state.networks)
+  const networkModel: Network | undefined = networkModels.get(id)
+
+  // If the network model is not loaded, use the summary node and edge counts
+  const nodeCount: number = networkModel?.nodes.length ?? summary.nodeCount
+  const edgeCount: number = networkModel?.edges.length ?? summary.edgeCount
+
+  const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
+    HTMLButtonElement | undefined
+  >(undefined)
+
+  const currentNetworkId: IdType = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const [lastOpenedNetworkId, setLastOpenedNetworkId] = useState<IdType>('')
+  const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
+    (state) => state.setCurrentNetworkId,
+  )
+  const networkViewModel = useViewModelStore((state) => state.getViewModel(id))
+
+  const hideEditNetworkSummaryForm = (event: any): void => {
+    event.stopPropagation()
+    setEditNetworkSummaryAnchorEl(undefined)
+  }
+
+  const showEditNetworkSummaryForm = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ): void => {
+    event.stopPropagation()
+    setEditNetworkSummaryAnchorEl(event.currentTarget)
+  }
+
+  const networkModified =
+    useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
+
+  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+  const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    setLastOpenedNetworkId(currentNetworkId)
+    setCurrentNetworkId(id)
+    setOpenConfirmation(true)
+  }
+
+  const onConfirmDelete = () => {
+    deleteNetwork(id)
+    // deleteSummary(id)
+    const nextNetworkId =
+      lastOpenedNetworkId !== '' && lastOpenedNetworkId !== id
+        ? lastOpenedNetworkId
+        : (workspace.networkIds.filter((networkId) => networkId !== id)?.[0] ??
+          undefined)
+
+    if (nextNetworkId) {
+      setCurrentNetworkId(nextNetworkId)
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: nextNetworkId,
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
+    } else {
+      setCurrentNetworkId('')
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: '',
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
+    }
+  }
+
+  const onCancelDelete = () => {
+    if (lastOpenedNetworkId !== '') {
+      if (lastOpenedNetworkId !== id) {
+        setCurrentNetworkId(lastOpenedNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: lastOpenedNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      }
+    } else {
+      setCurrentNetworkId('')
+      navigateToNetwork({
+        workspaceId: workspace.id,
+        networkId: '',
+        searchParams: new URLSearchParams(location.search),
+        replace: true,
+      })
+    }
+  }
+
+  const backgroundColor: string =
+    currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
+
+  const networkModifiedIcon = networkModified ? (
+    <Tooltip title="Network has been modified">
+      <CircleIcon sx={{ color: theme.palette.error.main, fontSize: 10 }} />
+    </Tooltip>
+  ) : null
+
+  return (
+    <>
+      <Divider />
+      <Box
+        sx={{
+          backgroundColor,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          '&:hover': { cursor: 'pointer' },
+          p: 1,
+        }}
+        onClick={() => {
+          setCurrentNetworkId(id)
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: id,
+            searchParams: new URLSearchParams(location.search),
+            replace: false,
+          })
+        }}
+      >
+        <Box sx={{ width: '100%' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip
+                title={
+                  summary.isNdex
+                    ? 'A network stored in the NDEx database (ndexbio.org)'
+                    : 'A network stored on your local machine'
+                }
+              >
+                <Chip
+                  color={summary.isNdex ? 'primary' : 'success'}
+                  size="small"
+                  sx={{ mr: 1, opacity: 0.8 }}
+                  label={
+                    <Typography sx={{ fontSize: 10 }} variant="caption">
+                      {summary.isNdex ? 'NDEx' : 'Local'}
+                    </Typography>
+                  }
+                />
+              </Tooltip>
+              <Typography variant={'body2'}>{summary.name}</Typography>
+            </Box>
+            {networkModifiedIcon}
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography
+              variant={'subtitle2'}
+              sx={{ width: '100%', color: theme.palette.text.secondary }}
+            >
+              {`N: ${nodeCount} (${
+                networkViewModel?.selectedNodes.length ?? 0
+              }) /
+          E: ${edgeCount} (${networkViewModel?.selectedEdges.length ?? 0})`}
+            </Typography>
+
+            <HcxValidationButtonGroup id={id} />
+            <Tooltip title="Edit network properties">
+              <IconButton
+                data-testid="network-property-edit-button"
+                size="small"
+                sx={{ width: 25, height: 25 }}
+                onClick={(e) => {
+                  setCurrentNetworkId(id)
+                  navigateToNetwork({
+                    workspaceId: workspace.id,
+                    networkId: id,
+                    searchParams: new URLSearchParams(location.search),
+                    replace: false,
+                  })
+                  showEditNetworkSummaryForm(e)
+                }}
+              >
+                <EditIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Remove the network from workspace">
+              <IconButton
+                data-testid="network-property-delete-button"
+                size="small"
+                sx={{ width: 25, height: 25 }}
+                onClick={(e) => {
+                  onClickDelete(e)
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+        <Suspense
+          fallback={
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minHeight="0"
+              height="20px"
+            >
+              <CircularProgress size={16} />
+            </Box>
+          }
+        >
+          <NetworkPropertyEditor
+            networkId={summary.externalId}
+            anchorEl={editNetworkSummaryAnchorEl}
+            onClose={hideEditNetworkSummaryForm}
+          />
+        </Suspense>
+        <ConfirmationDialog
+          title="Remove Network From Workspace"
+          message={`Do you really want to delete the network, ${summary.name}?`}
+          onCancel={onCancelDelete}
+          onConfirm={onConfirmDelete}
+          open={openConfirmation}
+          setOpen={setOpenConfirmation}
+          buttonTitle="Yes (cannot be undone)"
+          isAlert={true}
+        />
+      </Box>
+    </>
+  )
+}

@@ -1,0 +1,303 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Helvetica, Arial, sans-serif","fontSize":"22px","primaryColor":"#FFFFFF","primaryTextColor":"#111827","primaryBorderColor":"#1D4ED8","lineColor":"#1D4ED8","clusterBkg":"#F8FAFC","clusterBorder":"#94A3B8"},"flowchart":{"curve":"basis","defaultRenderer":"elk","htmlLabels":true,"nodeSpacing":140,"rankSpacing":220,"padding":32,"useMaxWidth":false}} }%%
+graph TB
+
+    subgraph AppModel["AppModel"]
+        direction TB
+        AppComponent["AppComponent"]
+        AppStatus["AppStatus"]
+        AppType["AppType"]
+        ColumnTypeFilter["ColumnTypeFilter"]
+        ComponentMetadata["ComponentMetadata"]
+        ComponentType["ComponentType"]
+        CyApp["CyApp"]
+        CyWebMenuItem["CyWebMenuItem"]
+        MenuPathElement["MenuPathElement"]
+        ParameterUiType["ParameterUiType"]
+        RootMenu["RootMenu"]
+        SelectedDataScope["SelectedDataScope"]
+        SelectedDataType["SelectedDataType"]
+        ServiceApp["ServiceApp"]
+        ServiceAppAction["ServiceAppAction"]
+        ServiceAppParameter["ServiceAppParameter"]
+        ServiceAppTask["ServiceAppTask"]
+        ServiceInputDefinition["ServiceInputDefinition"]
+        ServiceMetadata["ServiceMetadata"]
+        ServiceStatus["ServiceStatus"]
+        ValidationType["ValidationType"]
+    end
+    subgraph CxModel["CxModel"]
+        direction TB
+        Aspect["Aspect"]
+        CoreAspectTag["CoreAspectTag"]
+        Attribute["Attribute"]
+        AttributeDeclarations["AttributeDeclarations"]
+        AttributeValue["AttributeValue"]
+        Edge["Edge"]
+        EdgeBypasses["EdgeBypasses"]
+        NetworkAttributes["NetworkAttributes"]
+        Node["Node"]
+        NodeBypasses["NodeBypasses"]
+        VisualProperties["VisualProperties"]
+        CxDescriptor["CxDescriptor"]
+        CxTypeName["CxTypeName"]
+        CxValue["CxValue"]
+        MetaData["MetaData"]
+        Status["Status"]
+    end
+    subgraph CyNetworkModel["CyNetworkModel"]
+        direction TB
+        CyNetwork["CyNetwork"]
+    end
+    subgraph FilterModel["FilterModel"]
+        direction TB
+        DiscreteFilterDetails["DiscreteFilterDetails"]
+        DisplayMode["DisplayMode"]
+        Filter["Filter"]
+        FilterConfig["FilterConfig"]
+        FilterUrlParams["FilterUrlParams"]
+        FilterWidgetType["FilterWidgetType"]
+        Search["Search"]
+        SearchState["SearchState"]
+        SelectionType["SelectionType"]
+    end
+    subgraph LayoutModel["LayoutModel"]
+        direction TB
+        LayoutAlgorithm["LayoutAlgorithm"]
+        LayoutEngine["LayoutEngine"]
+    end
+    subgraph MessageModel["MessageModel"]
+        direction TB
+        Message["Message"]
+    end
+    subgraph NetworkModel["NetworkModel"]
+        direction TB
+        Edge["Edge"]
+        GraphObject["GraphObject"]
+        GraphObjectType["GraphObjectType"]
+        Network["Network"]
+        Node["Node"]
+    end
+    subgraph NetworkSummaryModel["NetworkSummaryModel"]
+        direction TB
+        NetworkProperty["NetworkProperty"]
+        NetworkSummary["NetworkSummary"]
+        Visibility["Visibility"]
+    end
+    subgraph OpaqueAspectModel["OpaqueAspectModel"]
+        direction TB
+        OpaqueAspects["OpaqueAspects"]
+    end
+    subgraph PropertyModel["PropertyModel"]
+        direction TB
+        DiscreteRange["DiscreteRange"]
+        NumberRange["NumberRange"]
+        Property["Property"]
+    end
+    subgraph RendererModel["RendererModel"]
+        direction TB
+        Renderer["Renderer"]
+        ViewPort["ViewPort"]
+    end
+    subgraph StoreModel["StoreModel"]
+        direction TB
+        AppStoreModel["AppStoreModel"]
+        CredentialStoreModel["CredentialStoreModel"]
+        LayoutStoreModel["LayoutStoreModel"]
+        MessageStoreModel["MessageStoreModel"]
+        NetworkStoreModel["NetworkStoreModel"]
+        NetworkSummaryStoreModel["NetworkSummaryStoreModel"]
+        OpaqueAspectStoreModel["OpaqueAspectStoreModel"]
+        RendererStoreModel["RendererStoreModel"]
+        TableStoreModel["TableStoreModel"]
+        UiStateStoreModel["UiStateStoreModel"]
+        UndoStoreModel["UndoStoreModel"]
+        ViewModelStoreModel["ViewModelStoreModel"]
+        VisualStyleStoreModel["VisualStyleStoreModel"]
+        WorkspaceStoreModel["WorkspaceStoreModel"]
+    end
+    subgraph TableModel["TableModel"]
+        direction TB
+        AttributeName["AttributeName"]
+        Column["Column"]
+        NetworkAttributes["NetworkAttributes"]
+        Table["Table"]
+        TableFn["TableFn"]
+        ValueType["ValueType"]
+        ValueTypeName["ValueTypeName"]
+    end
+    subgraph UiModel["UiModel"]
+        direction TB
+        NetworkBrowserPanelState["NetworkBrowserPanelState"]
+        NetworkViewUI["NetworkViewUI"]
+        Panel["Panel"]
+        PanelState["PanelState"]
+        TableUi["TableUi"]
+        Ui["Ui"]
+    end
+    subgraph ViewModel["ViewModel"]
+        direction TB
+        EdgeView["EdgeView"]
+        NetworkView["NetworkView"]
+        NodeView["NodeView"]
+        View["View"]
+    end
+    subgraph VisualStyleModel["VisualStyleModel"]
+        direction TB
+        Bypass["Bypass"]
+        ContinuousMappingFunction["ContinuousMappingFunction"]
+        DiscreteMappingFunction["DiscreteMappingFunction"]
+        Mapper["Mapper"]
+        MappingFunctionType["MappingFunctionType"]
+        PassthroughMappingFunction["PassthroughMappingFunction"]
+        VisualMappingFunction["VisualMappingFunction"]
+        VisualProperty["VisualProperty"]
+        VisualPropertyGroup["VisualPropertyGroup"]
+        VisualPropertyName["VisualPropertyName"]
+        ColorType["ColorType"]
+        CustomGraphicsType["CustomGraphicsType"]
+        EdgeArrowShapeType["EdgeArrowShapeType"]
+        EdgeFillType["EdgeFillType"]
+        EdgeLineType["EdgeLineType"]
+        FontType["FontType"]
+        LabelType["LabelType"]
+        NodeBorderLineType["NodeBorderLineType"]
+        NodeLabelPositionType["NodeLabelPositionType"]
+        NodeShapeType["NodeShapeType"]
+        VisibilityType["VisibilityType"]
+        VisualPropertyValueType["VisualPropertyValueType"]
+        VisualPropertyValueTypeName["VisualPropertyValueTypeName"]
+        VisualStyle["VisualStyle"]
+        VisualStyleFn["VisualStyleFn"]
+        VisualStyleOptions["VisualStyleOptions"]
+    end
+    subgraph WorkspaceModel["WorkspaceModel"]
+        direction TB
+        Workspace["Workspace"]
+    end
+    IdType["IdType"]
+
+    AppComponent --> ComponentType
+    ColumnTypeFilter --> CxTypeName
+    ComponentMetadata --> ComponentType
+    CyApp --> AppStatus
+    CyApp --> ComponentMetadata
+    CyWebMenuItem --> MenuPathElement
+    CyWebMenuItem --> RootMenu
+    ServiceApp --> ServiceMetadata
+    ServiceAppParameter --> ColumnTypeFilter
+    ServiceAppParameter --> ParameterUiType
+    ServiceAppParameter --> ValidationType
+    ServiceAppTask --> ServiceStatus
+    ServiceInputDefinition --> SelectedDataScope
+    ServiceInputDefinition --> SelectedDataType
+    ServiceMetadata --> CyWebMenuItem
+    ServiceMetadata --> ServiceAppAction
+    ServiceMetadata --> ServiceAppParameter
+    ServiceMetadata --> ServiceInputDefinition
+    Attribute --> CxValue
+    AttributeDeclarations --> Aspect
+    AttributeDeclarations --> AttributeValue
+    AttributeValue --> CxTypeName
+    AttributeValue --> CxValue
+    Edge --> Attribute
+    EdgeBypasses --> Aspect
+    NetworkAttributes --> Aspect
+    NetworkAttributes --> CxValue
+    Node --> Attribute
+    NodeBypasses --> Aspect
+    VisualProperties --> Aspect
+    MetaData --> Aspect
+    Status --> Aspect
+    CyNetwork --> UndoStoreModel
+    CyNetwork --> VisualStyleOptions
+    Filter --> IdType
+    Filter --> DiscreteRange
+    Filter --> NumberRange
+    FilterConfig --> DiscreteRange
+    FilterConfig --> NumberRange
+    FilterConfig --> DiscreteFilterDetails
+    FilterConfig --> DisplayMode
+    FilterConfig --> FilterWidgetType
+    FilterConfig --> SelectionType
+    Search --> IdType
+    Search --> SearchState
+    LayoutAlgorithm --> Property
+    LayoutEngine --> IdType
+    LayoutEngine --> LayoutAlgorithm
+    Edge --> IdType
+    Edge --> GraphObject
+    GraphObject --> IdType
+    Network --> IdType
+    Node --> GraphObject
+    NetworkProperty --> IdType
+    NetworkSummary --> IdType
+    NetworkSummary --> NetworkProperty
+    NetworkSummary --> Visibility
+    Property --> DiscreteRange
+    Property --> NumberRange
+    AppStoreModel --> AppStatus
+    AppStoreModel --> CyApp
+    AppStoreModel --> ServiceApp
+    AppStoreModel --> ServiceAppTask
+    NetworkStoreModel --> IdType
+    NetworkSummaryStoreModel --> IdType
+    OpaqueAspectStoreModel --> IdType
+    RendererStoreModel --> IdType
+    RendererStoreModel --> ViewPort
+    TableStoreModel --> IdType
+    UiStateStoreModel --> IdType
+    UiStateStoreModel --> Panel
+    UiStateStoreModel --> PanelState
+    UiStateStoreModel --> VisualStyleOptions
+    UiStateStoreModel --> TableStoreModel
+    UndoStoreModel --> IdType
+    ViewModelStoreModel --> IdType
+    VisualStyleStoreModel --> IdType
+    WorkspaceStoreModel --> IdType
+    Column --> AttributeName
+    Column --> ValueTypeName
+    NetworkAttributes --> IdType
+    Table --> IdType
+    Table --> AttributeName
+    Table --> Column
+    Table --> ValueType
+    TableFn --> IdType
+    Ui --> IdType
+    Ui --> VisualStyleOptions
+    Ui --> NetworkBrowserPanelState
+    Ui --> NetworkViewUI
+    Ui --> Panel
+    Ui --> PanelState
+    Ui --> TableUi
+    EdgeView --> View
+    NetworkView --> IdType
+    NetworkView --> EdgeView
+    NetworkView --> NodeView
+    NetworkView --> View
+    NodeView --> View
+    View --> IdType
+    Bypass --> IdType
+    VisualMappingFunction --> VisualPropertyValueTypeName
+    VisualMappingFunction --> MappingFunctionType
+    VisualProperty --> Bypass
+    VisualProperty --> VisualPropertyGroup
+    VisualProperty --> VisualPropertyName
+    VisualProperty --> VisualPropertyValueTypeName
+    CustomGraphicsType --> AttributeName
+    CustomGraphicsType --> ColorType
+    NodeBorderLineType --> EdgeLineType
+    VisualPropertyValueType --> ColorType
+    VisualPropertyValueType --> CustomGraphicsType
+    VisualPropertyValueType --> EdgeArrowShapeType
+    VisualPropertyValueType --> EdgeFillType
+    VisualPropertyValueType --> EdgeLineType
+    VisualPropertyValueType --> FontType
+    VisualPropertyValueType --> NodeBorderLineType
+    VisualPropertyValueType --> NodeLabelPositionType
+    VisualPropertyValueType --> NodeShapeType
+    VisualPropertyValueType --> VisibilityType
+    VisualStyle --> VisualProperty
+    VisualStyle --> VisualPropertyName
+    VisualStyleFn --> VisualProperty
+    VisualStyleFn --> VisualStyle
+    Workspace --> IdType

@@ -1,0 +1,11 @@
+column1,column2,column3,column4
+Alice,17.07,2020-01-01,false
+New York,55.22,2021-02-02,true
+Alice,40.47,2022-03-03,true
+New York,10.35,2023-04-04,true
+Alice,23.43,2024-05-05,false
+New York,29.99,2020-06-06,true
+Alice,99.12,2021-07-07,true
+New York,100.26,2022-08-08,true
+Alice,50.75,2023-09-09,false
+New York,72.06,2024-10-10,true

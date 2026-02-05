@@ -1,9 +1,9 @@
-import { VisualPropertyName } from './VisualPropertyName'
 import { Bypass } from './Bypass'
 import { VisualMappingFunction } from './VisualMappingFunction'
 import { VisualPropertyGroup } from './VisualPropertyGroup'
-import { VisualPropertyValueTypeName } from './VisualPropertyValueTypeName'
+import { VisualPropertyName } from './VisualPropertyName'
 import { VisualPropertyValueType } from './VisualPropertyValue'
+import { VisualPropertyValueTypeName } from './VisualPropertyValueTypeName'
 
 /**
  * Visual property contains all of default value, mapping,
