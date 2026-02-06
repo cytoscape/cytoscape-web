@@ -56,13 +56,31 @@ export const parseCommand = (input: string): ParsedCommand | { error: string } =
         // allow trailing tokens to still parse key/value pairs if provided
       }
     }
-    remaining.forEach((token) => {
-      const [k, ...rest] = token.split('=')
-      if (rest.length === 0) {
-        return
+    // Parse key=value pairs, preserving quoted values with spaces
+    if (remaining.length > 0) {
+      const restJoined = remaining.join(' ')
+      const regex = /([A-Za-z0-9_-]+)=(".*?"|'.*?'|[^ ]+)/g
+      let matched = false
+      let match: RegExpExecArray | null
+      // eslint-disable-next-line no-cond-assign
+      while ((match = regex.exec(restJoined)) !== null) {
+        matched = true
+        const key = match[1].toLowerCase()
+        const value = match[2].replace(/^['"]|['"]$/g, '')
+        args[key] = value
       }
-      args[k.toLowerCase()] = rest.join('=')
-    })
+
+      // Fallback to simple token parsing if regex found nothing
+      if (!matched) {
+        remaining.forEach((token) => {
+          const [k, ...rest] = token.split('=')
+          if (rest.length === 0) {
+            return
+          }
+          args[k.toLowerCase()] = rest.join('=')
+        })
+      }
+    }
   }
 
   return {
