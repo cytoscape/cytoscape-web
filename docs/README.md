@@ -14,7 +14,7 @@ This directory contains all project documentation for Cytoscape Web. Documents a
 
 | Directory | Audience | Purpose | Status |
 | --- | --- | --- | --- |
-| [specifications/](specifications/) | LLM + Human | Behavioral specs, validation rules, policies | 3 documents |
+| [specifications/](specifications/) | LLM + Human | Behavioral specs, validation rules, creation patterns | 6 documents |
 | [prompts/](prompts/) | LLM | Workflow templates for LLM-assisted tasks | 5 templates |
 | [design/](design/) | LLM + Human | Feature and subsystem design documents | Template ready |
 | [adr/](adr/) | LLM + Human | Architecture Decision Records | Template ready |
@@ -23,13 +23,23 @@ This directory contains all project documentation for Cytoscape Web. Documents a
 
 ## Specifications
 
-Precise behavioral rules that both humans and LLMs reference during implementation.
+Precise behavioral rules and creation patterns that both humans and LLMs reference during implementation.
+
+### Behavioral Specifications
 
 | Document | Scope |
 | --- | --- |
 | [ROUTING_SPECIFICATION.md](specifications/ROUTING_SPECIFICATION.md) | URL routing rules, navigation patterns, search parameter handling |
 | [EXTERNAL_INPUT_VALIDATION_POLICY.md](specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md) | CX2 data validation requirements for all external inputs |
 | [DEBUG_GUIDE.MD](specifications/DEBUG_GUIDE.MD) | Structured logging policy, debug namespaces, browser inspection |
+
+### Creation Patterns
+
+| Document | Scope |
+| --- | --- |
+| [STORE_CREATION_PATTERN.md](specifications/STORE_CREATION_PATTERN.md) | How to create new Zustand stores (middleware tiers, persistence, testing) |
+| [MODEL_CREATION_PATTERN.md](specifications/MODEL_CREATION_PATTERN.md) | How to create new domain models (interfaces, impl, barrel exports) |
+| [FEATURE_MODULE_CREATION_PATTERN.md](specifications/FEATURE_MODULE_CREATION_PATTERN.md) | How to create new feature modules (components, stores, docs, data-testid) |
 
 ## Prompts (LLM Workflow Templates)
 
