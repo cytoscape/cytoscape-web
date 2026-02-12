@@ -89,14 +89,15 @@ Cytoscape Web is a React-based network visualization and analysis app with a str
 
 ### Key Directories
 
-- `src/models/` — 18 domain model directories (see Model Patterns below)
-- `src/data/hooks/stores/` — 16 Zustand stores (see Store Patterns below)
-- `src/data/hooks/` — Hooks that compose stores for complex operations (load, save, delete flows)
-- `src/data/db/` — Dexie-based IndexedDB persistence layer (`cyweb-db`, version 8)
-- `src/data/external-api/` — External service clients (NDEx, Cytoscape Desktop, error reporting)
-- `src/data/task/` — Task hooks exposed via Module Federation to external apps
-- `src/features/` — 23+ self-contained feature modules (see Feature Modules below)
-- `src/assets/` — Static assets, runtime config (`config.json`), external app definitions (`apps.json`)
+- `src/models/` — Source of truth for current model domains.
+- `src/data/hooks/stores/` — Source of truth for current store modules.
+- `src/data/hooks/` — Hooks that compose stores for complex workflows.
+- `src/data/db/` — IndexedDB layer. DB name and current version are defined in `src/data/db/index.ts`.
+- `src/data/db/migrations.ts` — Source of truth for DB migrations.
+- `src/data/external-api/` — External service clients (NDEx, Cytoscape Desktop, error reporting).
+- `src/data/task/` — Task hooks exposed via Module Federation to external apps.
+- `src/features/` — Source of truth for current feature modules.
+- `src/assets/` — Static assets and runtime config files.
 
 ### Feature Module Pattern
 
@@ -148,7 +149,7 @@ export { NetworkFn as default }
 
 ### All Model Directories
 
-AppModel, CxModel, CyNetworkModel, FilterModel, LayoutModel, MessageModel, NetworkModel, NetworkSummaryModel, OpaqueAspectModel, PropertyModel, RendererFunctionModel, RendererModel, StoreModel, TableModel, UiModel, ViewModel, VisualStyleModel, WorkspaceModel
+See `src/models/` for the current model directory set.
 
 ---
 
@@ -169,23 +170,23 @@ create(subscribeWithSelector(immer<StoreType>(persist((set, get) => ({ ... }))))
 - Stores use a custom `persist` wrapper that auto-saves to IndexedDB
 - Before saving to IndexedDB, proxy objects must be converted with `toPlainObject()` from `src/data/db/serialization/`
 - Specialized serializers exist: `serializeTable`, `serializeVisualStyle`, `serializeNetworkView` for Map-based data
-- DB name: `cyweb-db`, version 8 — migrations in `src/data/db/migrations.ts`
+- DB name and current version are defined in `src/data/db/index.ts`.
+- Migrations are defined in `src/data/db/migrations.ts`.
 
 ### Cross-Store Communication
 
 Inside store actions, access other stores via `useXxxStore.getState()` — not hooks. Hooks are for React components only.
 
-### All Stores (16 total)
+### Store Inventory
 
-**Core Data:** NetworkStore, TableStore, VisualStyleStore, ViewModelStore, OpaqueAspectStore, NetworkSummaryStore
-**UI & Interaction:** UiStateStore, RendererStore, RendererFunctionStore, FilterStore, LayoutStore
-**Application:** AppStore, WorkspaceStore, CredentialStore, MessageStore, UndoStore
+See `src/data/hooks/stores/*.ts` for current store implementations.
+See `src/models/StoreModel/` for store model interfaces.
 
 ---
 
 ## Data Layer
 
-- `src/data/db/` — Dexie IndexedDB (`cyweb-db` v8). Includes `migrations.ts`, `serialization/`, `snapshot/`, `validator.ts`
+- `src/data/db/` — Dexie IndexedDB layer. DB name and current version are defined in `src/data/db/index.ts`. Includes `migrations.ts`, `serialization/`, `snapshot/`, `validator.ts`
 - `src/data/external-api/ndex/` — NDEx (Network Data Exchange) API client
 - `src/data/external-api/cytoscape/` — Cytoscape Desktop integration API
 - `src/data/hooks/` — Integration layer: hooks compose stores for complex workflows (load workspace, save network, create/delete nodes/edges)
@@ -246,7 +247,8 @@ Webpack 5 with Module Federation for microfrontend architecture:
 
 - TypeScript compilation with ts-loader
 - Hot module replacement in development (port 5500)
-- Module Federation exposes 14 stores + 2 task hooks to external apps
+- Module Federation exposed modules are defined in `webpack.config.js` (`ModuleFederationPlugin.exposes`).
+- Current values may change; check the config directly.
 - Shared singletons: react, react-dom, @mui/material
 - `DefinePlugin` injects git commit hash and timestamps at build time
 - Production builds strip `console.log` via Terser
@@ -303,7 +305,7 @@ Read these before working in related areas:
 - **`enableMapSet()`** — Must be called before Immer can handle Map/Set. Already done in `src/init.tsx` and `jest-setup.ts`. If you create a new standalone test entry point, include it.
 - **NDEx Dev Server** — `config.json` points to `dev1.ndexbio.org` by default. You need an account there for full development functionality.
 - **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.
-- **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. Current version: 8.
+- **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
 - **`zod`** — Available as a dependency for runtime validation.
 - **`validateCX2()`** — Required for all external CX2 data before processing.
 - **Windows Development** — Requires manual environment variable setup for Git commit info (see README.md).

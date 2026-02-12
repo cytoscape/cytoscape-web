@@ -13,16 +13,29 @@ Typical use cases:
 - Describe algorithms, protocols, or integration points
 - Provide visual diagrams for complex workflows
 
+## Organization
+
+Group related documents into a **subdirectory per feature or subsystem**:
+
+```
+docs/design/
+├── module-federation/          # Module Federation facade API design
+│   ├── module-federation-audit.md
+│   ├── module-federation-design.md
+│   └── multi-scale-viewer-requirments.md
+└── README.md
+```
+
+- One subdirectory per feature (e.g., `module-federation/`, `vizmapper/`)
+- Use kebab-case for both directory and file names
+- Keep one concern per document
+
 ## File Naming
 
 ```
 <topic>.md           # Prose document
 <topic>.mmd          # Mermaid diagram source
 ```
-
-- Use kebab-case for file names (e.g., `network-loading-flow.md`)
-- Group related files by topic prefix (e.g., `vizmapper-overview.md`, `vizmapper-mapping-logic.md`)
-- Keep one concern per document
 
 ## Recommended Format
 
