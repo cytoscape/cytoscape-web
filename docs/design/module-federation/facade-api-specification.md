@@ -1,8 +1,8 @@
 # Facade API Specification
 
-**Rev. 1 (2/12/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
+**Rev. 2 (2/15/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Detailed design for the facade API layer. For priorities and roadmap, see [module-federation-design.md](module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](module-federation-audit.md).
+Detailed design for the facade API (External App API) layer. For priorities and roadmap, see [module-federation-design.md](module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](module-federation-audit.md).
 
 ---
 
@@ -10,7 +10,7 @@ Detailed design for the facade API layer. For priorities and roadmap, see [modul
 
 ### 1.1 Overview
 
-The facade layer at `src/data/api/` is the **sole public API** for external apps. Rather than exposing internal stores or hooks directly, the facade defines a stable contract that external apps program against. This ensures that internal refactoring (store splits, hook reorganization, etc.) never breaks the external API.
+The facade layer at `src/app-api/` is the **sole public API** for external apps. Rather than exposing internal stores or hooks directly, the facade defines a stable contract that external apps program against. This ensures that internal refactoring (store splits, hook reorganization, etc.) never breaks the external API.
 
 Each facade hook wraps existing internal hooks or store actions, providing:
 
@@ -24,7 +24,7 @@ The facade does **not** duplicate store coordination logic. It delegates to exis
 ### 1.2 Directory Structure
 
 ```
-src/data/api/
+src/app-api/
 ├── api_docs/
 │   └── Api.md                     # Behavioral documentation
 ├── types/
@@ -48,7 +48,7 @@ src/data/api/
 All facade operations return `ApiResult<T>`, a discriminated union:
 
 ```typescript
-// src/data/api/types/ApiResult.ts
+// src/app-api/types/ApiResult.ts
 
 interface ApiSuccess<T = void> {
   readonly success: true
@@ -93,7 +93,7 @@ if (result.success) {
 
 ### 1.4 Public Type Re-exports
 
-`src/data/api/types/ElementTypes.ts` re-exports key model types so external apps import from the API module rather than internal model paths:
+`src/app-api/types/ElementTypes.ts` re-exports key model types so external apps import from the API module rather than internal model paths:
 
 ```typescript
 export type { IdType } from '../../models/IdType'
@@ -118,7 +118,7 @@ export type { AppContext, CyAppWithLifecycle } from './AppContext'
 Wraps: `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`
 
 ```typescript
-// src/data/api/useElementApi.ts
+// src/app-api/useElementApi.ts
 
 interface NodeData {
   attributes: Record<AttributeName, ValueType>
@@ -198,7 +198,7 @@ const useElementApi: () => ElementApi
 Wraps: `useCreateNetwork`, `useCreateNetworkFromCx2`, `useDeleteCyNetwork`
 
 ```typescript
-// src/data/api/useNetworkApi.ts
+// src/app-api/useNetworkApi.ts
 
 interface CreateNetworkFromEdgeListProps {
   name: string
@@ -251,7 +251,7 @@ const useNetworkApi: () => NetworkApi
 Wraps: `ViewModelStore` selection methods directly (no internal wrapper hook exists)
 
 ```typescript
-// src/data/api/useSelectionApi.ts
+// src/app-api/useSelectionApi.ts
 
 interface SelectionState {
   selectedNodes: IdType[]
@@ -281,7 +281,7 @@ const useSelectionApi: () => SelectionApi
 Wraps: `TableStore` CRUD methods
 
 ```typescript
-// src/data/api/useTableApi.ts
+// src/app-api/useTableApi.ts
 
 type TableType = 'node' | 'edge'
 
@@ -370,7 +370,7 @@ const useTableApi: () => TableApi
 Wraps: `VisualStyleStore` mapping/bypass methods
 
 ```typescript
-// src/data/api/useVisualStyleApi.ts
+// src/app-api/useVisualStyleApi.ts
 
 interface VisualStyleApi {
   setDefault(
@@ -428,7 +428,7 @@ const useVisualStyleApi: () => VisualStyleApi
 **New coordination logic** — no internal wrapper hook exists today.
 
 ```typescript
-// src/data/api/useLayoutApi.ts
+// src/app-api/useLayoutApi.ts
 
 interface LayoutAlgorithmInfo {
   name: string
@@ -470,10 +470,10 @@ Returns a `Promise` because `LayoutEngine.apply()` is callback-based.
 Wraps: `RendererFunctionStore` (fit) + `ViewModelStore` (updateNodePositions)
 
 ```typescript
-// src/data/api/useViewportApi.ts
+// src/app-api/useViewportApi.ts
 
 interface ViewportApi {
-  fit(networkId: IdType): ApiResult
+  fit(networkId: IdType): Promise<ApiResult>
 
   getNodePositions(
     networkId: IdType,
@@ -491,7 +491,7 @@ const useViewportApi: () => ViewportApi
 
 **Implementation strategy:**
 
-- **`fit()`**: Retrieves and calls `RendererFunctionStore.getFunction('cyjs', 'fit', networkId)`. Returns `FunctionNotAvailable` error if the renderer function is not registered.
+- **`fit()`**: Retrieves and calls `RendererFunctionStore.getFunction('cyjs', 'fit', networkId)`. Returns `Promise<ApiResult>` because Cytoscape.js `cy.fit()` may involve animation; wrapping in a Promise future-proofs against animated transitions. Returns `FunctionNotAvailable` error if the renderer function is not registered.
 - **`getNodePositions()`**: Reads positions from `ViewModelStore.getViewModel(networkId)`. Returns `NetworkNotFound` if the view model does not exist. Returns positions for only the requested node IDs.
 
 #### 1.5.8 Export API
@@ -499,7 +499,7 @@ const useViewportApi: () => ViewportApi
 Wraps: `exportCyNetworkToCx2` from `src/models/CxModel/impl/exporter.ts`
 
 ```typescript
-// src/data/api/useExportApi.ts
+// src/app-api/useExportApi.ts
 
 interface ExportCx2Options {
   networkName?: string
@@ -519,7 +519,7 @@ const useExportApi: () => ExportApi
 **New contract** — extends the `CyApp` interface with lifecycle callbacks.
 
 ```typescript
-// src/data/api/types/AppContext.ts
+// src/app-api/types/AppContext.ts
 
 interface AppContext {
   /** The unique ID of this app instance */
@@ -564,17 +564,39 @@ interface CyAppWithLifecycle extends CyApp {
 - If `mount()` returns a `Promise`, the host awaits it before marking the app as ready.
 - `AppContext` and `CyAppWithLifecycle` types are exported via `cyweb/ApiTypes`.
 
-### 1.6 Design Rules
+### 1.6 Sync/Async Policy
 
-| Rule                                      | Rationale                                                  |
-| ----------------------------------------- | ---------------------------------------------------------- |
-| `skipUndo` is never exposed externally    | Prevents external apps from corrupting the undo stack      |
-| All exceptions caught → `ApiFailure`      | External apps never need try/catch around facade calls     |
-| Validate inputs before any store mutation | Prevents partial state updates on invalid input            |
-| Options with sensible defaults            | Minimize required parameters; opt-in for advanced behavior |
-| Facade hooks wrap, never duplicate        | Single source of truth for store coordination logic        |
+Facade operations use a **mixed sync/async** return type strategy based on the nature of the underlying implementation. The decision criteria are:
 
-### 1.7 Wrapping Pattern
+| Criterion                                                                                     | Return Type             | Rationale                                                                        |
+| --------------------------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------- |
+| Pure store reads/writes (state update is immediate; IndexedDB persistence is fire-and-forget) | `ApiResult<T>`          | No reason to force `await` on callers when the operation completes synchronously |
+| Callback-based async processing (layout engines, renderer operations)                         | `Promise<ApiResult<T>>` | The operation genuinely completes later; callers must `await`                    |
+| External I/O (network requests, file operations)                                              | `Promise<ApiResult<T>>` | Inherently async                                                                 |
+| Operations likely to be moved to Web Workers in the future                                    | `Promise<ApiResult<T>>` | Avoids a breaking change when the implementation becomes async                   |
+
+**Classification of all facade operations:**
+
+| Return Type                  | Operations                                                                                                                                                                                                                                                                                                                                                                                                                | Internal Mechanism                                                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ApiResult<T>` (sync)        | `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`, `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`, `exclusiveSelect`, `additiveSelect`, `getSelection`, `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`, `setDefault`, `setBypass`, `createDiscreteMapping`, `getNodePositions`, `updateNodePositions`, `getAvailableLayouts`, `exportToCx2` | Zustand store read/write — state mutation is synchronous; IndexedDB persistence runs asynchronously but is not awaited                                      |
+| `Promise<ApiResult>` (async) | `applyLayout`                                                                                                                                                                                                                                                                                                                                                                                                             | `LayoutEngine.apply()` is callback-based (CyjsLayout listens for `layoutstop` event; CosmosLayout uses a timer)                                             |
+| `Promise<ApiResult>` (async) | `fit`                                                                                                                                                                                                                                                                                                                                                                                                                     | `RendererFunctionStore` delegates to Cytoscape.js `cy.fit()`, which may involve animation; wrapping in a Promise future-proofs against animated transitions |
+
+**Stability guarantee:** Changing a synchronous operation to `Promise<ApiResult<T>>` is a **breaking change** for callers (they must add `await`). Facade operations are classified conservatively — if there is a reasonable expectation that the underlying implementation will become asynchronous, the operation returns `Promise` from the start.
+
+### 1.7 Design Rules
+
+| Rule                                         | Rationale                                                             |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| `skipUndo` is never exposed externally       | Prevents external apps from corrupting the undo stack                 |
+| All exceptions caught → `ApiFailure`         | External apps never need try/catch around facade calls                |
+| Validate inputs before any store mutation    | Prevents partial state updates on invalid input                       |
+| Options with sensible defaults               | Minimize required parameters; opt-in for advanced behavior            |
+| Facade hooks wrap, never duplicate           | Single source of truth for store coordination logic                   |
+| Sync/async return types match implementation | See § 1.6 — do not force `await` on inherently synchronous operations |
+
+### 1.8 Wrapping Pattern
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -586,7 +608,7 @@ interface CyAppWithLifecycle extends CyApp {
                          │  ApiResult<{ nodeId }>
                          ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  Facade Layer (src/data/api/useElementApi.ts)                │
+│  Facade Layer (src/app-api/useElementApi.ts)                 │
 │  1. Validate inputs                                          │
 │  2. Call internal hook                                       │
 │  3. Convert result → ApiResult<T>                            │
@@ -612,15 +634,15 @@ Add 9 facade entries to `webpack.config.js` `exposes`. These are the **only reco
 ```javascript
 exposes: {
   // === Public Facade API (the only supported public API) ===
-  './ElementApi':     './src/data/api/useElementApi.ts',
-  './NetworkApi':     './src/data/api/useNetworkApi.ts',
-  './SelectionApi':   './src/data/api/useSelectionApi.ts',
-  './TableApi':       './src/data/api/useTableApi.ts',
-  './VisualStyleApi': './src/data/api/useVisualStyleApi.ts',
-  './LayoutApi':      './src/data/api/useLayoutApi.ts',
-  './ViewportApi':    './src/data/api/useViewportApi.ts',
-  './ExportApi':      './src/data/api/useExportApi.ts',
-  './ApiTypes':       './src/data/api/types/index.ts',
+  './ElementApi':     './src/app-api/useElementApi.ts',
+  './NetworkApi':     './src/app-api/useNetworkApi.ts',
+  './SelectionApi':   './src/app-api/useSelectionApi.ts',
+  './TableApi':       './src/app-api/useTableApi.ts',
+  './VisualStyleApi': './src/app-api/useVisualStyleApi.ts',
+  './LayoutApi':      './src/app-api/useLayoutApi.ts',
+  './ViewportApi':    './src/app-api/useViewportApi.ts',
+  './ExportApi':      './src/app-api/useExportApi.ts',
+  './ApiTypes':       './src/app-api/types/index.ts',
 
   // === @deprecated — Raw stores (backward compatibility only) ===
   // These will be removed after 2 release cycles once the facade is stable.
@@ -693,12 +715,398 @@ With the facade API in place, the use case coverage from Audit Section 5 changes
 
 ### 2.6 Implementation Phases
 
-| Phase | Scope                       | Key Files                                                                                 |
-| ----- | --------------------------- | ----------------------------------------------------------------------------------------- |
-| 1     | Types + Element API         | `src/data/api/types/`, `src/data/api/useElementApi.ts`                                    |
-| 2     | Network API                 | `src/data/api/useNetworkApi.ts`, refactor `src/data/task/useCreateNetworkFromCx2.tsx`     |
-| 3     | Selection + Viewport        | `src/data/api/useSelectionApi.ts`, `src/data/api/useViewportApi.ts`                       |
-| 4     | Table + Visual Style        | `src/data/api/useTableApi.ts`, `src/data/api/useVisualStyleApi.ts`                        |
-| 5     | Layout + Export             | `src/data/api/useLayoutApi.ts`, `src/data/api/useExportApi.ts`                            |
-| 6     | Documentation + deprecation | `src/data/api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`     |
-| 7     | App Lifecycle (Phase 3)     | `src/data/api/types/AppContext.ts`, extend `CyApp` interface, host-side lifecycle manager |
+| Phase | Scope                       | Key Files                                                                                |
+| ----- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| 1     | Types + Element API         | `src/app-api/types/`, `src/app-api/useElementApi.ts`                                     |
+| 2     | Network API                 | `src/app-api/useNetworkApi.ts`, refactor `src/data/task/useCreateNetworkFromCx2.tsx`     |
+| 3     | Selection + Viewport        | `src/app-api/useSelectionApi.ts`, `src/app-api/useViewportApi.ts`                        |
+| 4     | Table + Visual Style        | `src/app-api/useTableApi.ts`, `src/app-api/useVisualStyleApi.ts`                         |
+| 5     | Layout + Export             | `src/app-api/useLayoutApi.ts`, `src/app-api/useExportApi.ts`                             |
+| 6     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`     |
+| 7     | App Lifecycle (Phase 3)     | `src/app-api/types/AppContext.ts`, extend `CyApp` interface, host-side lifecycle manager |
+
+---
+
+## 3. Wrap Target Mapping Tables
+
+**Rev. 2 addition (2/15/2026): Wrap target mappings for all 8 facade hooks**
+
+This section provides the internal hook/store → facade method mapping that implementers need to build each facade hook. For each facade method, the table specifies:
+
+- Which internal hook or store method is called
+- How inputs are transformed at the facade boundary
+- How outputs are converted to `ApiResult<T>`
+- Which error conditions map to which `ApiErrorCode`
+
+### 3.1 Element API — `useElementApi`
+
+**Internal targets:** `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges` (all in `src/data/hooks/`)
+
+| Facade Method                                           | Internal Target                                                                                                                                                 | Input Transformation                                                             | Output Transformation                                                    | Error → ApiErrorCode                                                                                                                                                     |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createNode(networkId, position, options?)`             | `useCreateNode().createNode(networkId, position, {attributes, autoSelect, skipUndo: false})`                                                                    | Strip `skipUndo` — always false. Pass `attributes` and `autoSelect` from options | `CreateNodeResult.success` → `ok({nodeId})` / `fail(...)`                | `'Network ${id} not found'` → `NetworkNotFound`. Catch → `OperationFailed`                                                                                               |
+| `createEdge(networkId, sourceId, targetId, options?)`   | `useCreateEdge().createEdge(networkId, sourceId, targetId, {attributes, autoSelect, skipUndo: false})`                                                          | Same as createNode                                                               | `CreateEdgeResult.success` → `ok({edgeId})` / `fail(...)`                | `'Network ... not found'` → `NetworkNotFound`. `'Source node ... not found'` → `NodeNotFound`. `'Target node ... not found'` → `NodeNotFound`. Catch → `OperationFailed` |
+| `deleteNodes(networkId, nodeIds)`                       | `useDeleteNodes().deleteNodes(networkId, nodeIds, {skipUndo: false})`                                                                                           | Strip `skipUndo`                                                                 | `DeleteNodesResult.success` → `ok({deletedNodeCount, deletedEdgeCount})` | Network not found → `NetworkNotFound`. Empty array → `InvalidInput`. None exist → `NodeNotFound`. Catch → `OperationFailed`                                              |
+| `deleteEdges(networkId, edgeIds)`                       | `useDeleteEdges().deleteEdges(networkId, edgeIds, {skipUndo: false})`                                                                                           | Strip `skipUndo`                                                                 | `DeleteEdgesResult.success` → `ok({deletedEdgeCount})`                   | Network not found → `NetworkNotFound`. Empty array → `InvalidInput`. None exist → `EdgeNotFound`. Catch → `OperationFailed`                                              |
+| `getNode(networkId, nodeId)`                            | Direct reads: `NetworkStore.networks`, `TableStore.tables`, `ViewModelStore.viewModels`                                                                         | None — read-only                                                                 | Assemble `{attributes, position}` → `ok(NodeData)`                       | Network missing → `NetworkNotFound`. Node missing → `NodeNotFound`                                                                                                       |
+| `getEdge(networkId, edgeId)`                            | Direct reads: `NetworkStore.networks`, `TableStore.tables`                                                                                                      | None — read-only                                                                 | Assemble `{sourceId, targetId, attributes}` → `ok(EdgeData)`             | Network missing → `NetworkNotFound`. Edge missing → `EdgeNotFound`                                                                                                       |
+| `moveEdge(networkId, edgeId, newSourceId, newTargetId)` | **New coordination logic** (no internal hook): update `NetworkStore` edge source/target, preserve `TableStore` row and `VisualStyleStore` bypasses, record undo | Validate all IDs exist before mutation                                           | `ok()` on success                                                        | Edge missing → `EdgeNotFound`. Source/target missing → `NodeNotFound`. Catch → `OperationFailed`                                                                         |
+| `generateNextNodeId(networkId)`                         | `useCreateNode().generateNextNodeId(networkId)`                                                                                                                 | None                                                                             | Return `IdType` directly (not wrapped in `ApiResult`)                    | Returns `"0"` if network not found (no error)                                                                                                                            |
+| `generateNextEdgeId(networkId)`                         | `useCreateEdge().generateNextEdgeId(networkId)`                                                                                                                 | None                                                                             | Return `IdType` directly                                                 | Returns `"e0"` if network not found (no error)                                                                                                                           |
+
+**Stores involved (6):** `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` (via `postEdit`)
+
+**Undo behavior:** `createNode`, `createEdge`, `deleteNodes`, `deleteEdges` — all record undo via internal hooks. `moveEdge` — facade must call `postEdit` directly. `getNode`, `getEdge` — read-only, no undo.
+
+**Key implementation notes:**
+
+- Internal hooks already return `{success, error?, ...}` objects — the facade converts these to `ApiResult` without duplicating store coordination logic.
+- `skipUndo` is never exposed to external apps — the facade hardcodes it to `false`.
+- `moveEdge` requires new coordination logic since no internal hook exists. Must be atomic: validate all IDs, mutate edge source/target, record undo with before/after state.
+
+---
+
+### 3.2 Network API — `useNetworkApi`
+
+**Internal targets:** `useCreateNetwork` (`src/data/task/`), `useCreateNetworkFromCx2` (`src/data/task/`), `useDeleteCyNetwork` (`src/data/hooks/`)
+
+| Facade Method                        | Internal Target                                         | Input Transformation                                                                                                                                     | Output Transformation                                            | Error → ApiErrorCode                                                                                |
+| ------------------------------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `createNetworkFromEdgeList(props)`   | `useCreateNetwork()(props)`                             | Pass `{name, description?, edgeList}` directly                                                                                                           | `CyNetwork` → `ok({networkId: cyNetwork.network.id, cyNetwork})` | Missing name → `InvalidInput`. Empty edge list → `InvalidInput`. Internal throw → `OperationFailed` |
+| `createNetworkFromCx2(props)`        | `useCreateNetworkFromCx2()({cxData})`                   | **Add `validateCX2(cxData)` before calling internal hook.** Pass `navigate` and `addToWorkspace` options (requires refactoring internal hook — see note) | `CyNetwork` → `ok({networkId, cyNetwork})`                       | `validateCX2` fails → `InvalidCx2`. Internal throw → `OperationFailed`                              |
+| `deleteNetwork(networkId, options?)` | `useDeleteCyNetwork().deleteNetwork(id, {navigate})`    | Pass `navigate` option (default: `true`)                                                                                                                 | Void → `ok()`                                                    | Network missing → `NetworkNotFound`. Catch → `OperationFailed`                                      |
+| `deleteCurrentNetwork(options?)`     | `useDeleteCyNetwork().deleteCurrentNetwork({navigate})` | Pass `navigate` option                                                                                                                                   | Void → `ok()`. No-op if currentNetworkId is empty                | No current network → `NoCurrentNetwork`                                                             |
+| `deleteAllNetworks()`                | `useDeleteCyNetwork().deleteAllNetworks()`              | None                                                                                                                                                     | Void → `ok()`                                                    | Catch → `OperationFailed`                                                                           |
+
+**Stores involved:** `createNetworkFromEdgeList` → 5 stores. `createNetworkFromCx2` → 7 stores (adds `WorkspaceStore`). `deleteNetwork` → 10 stores (full cleanup).
+
+**Internal hook refactoring required:**
+
+- `useCreateNetworkFromCx2` currently always adds to workspace and navigates. The facade needs `navigate` and `addToWorkspace` options. Two approaches:
+  1. **Preferred:** Add optional parameters to the internal hook.
+  2. **Alternative:** The facade duplicates the workspace/navigation logic conditionally after calling the core hook.
+
+**Undo behavior:** None of the network lifecycle operations record undo. Network creation and deletion are not undoable.
+
+**Validation added by facade:**
+
+- `createNetworkFromCx2`: Calls `validateCX2(cxData)` (from `src/models/CxModel/`) before passing to internal hook. This fixes Audit Section 4.5 (missing CX2 validation on CX2 import).
+- `createNetworkFromEdgeList`: Validates `name` is non-empty and `edgeList` is non-empty.
+
+---
+
+### 3.3 Selection API — `useSelectionApi`
+
+**Internal target:** `ViewModelStore` selection methods directly (no wrapper hook exists)
+
+| Facade Method                                  | Internal Target                                                                  | Input Transformation       | Output Transformation                                   | Error → ApiErrorCode                                  |
+| ---------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
+| `exclusiveSelect(networkId, nodeIds, edgeIds)` | `ViewModelStore.exclusiveSelect(networkId, nodeIds, edgeIds)`                    | None                       | Void → `ok()`                                           | `viewModels[networkId]` undefined → `NetworkNotFound` |
+| `additiveSelect(networkId, ids)`               | `ViewModelStore.additiveSelect(networkId, ids)`                                  | None (node/edge IDs mixed) | Void → `ok()`                                           | `viewModels[networkId]` undefined → `NetworkNotFound` |
+| `additiveUnselect(networkId, ids)`             | `ViewModelStore.additiveUnselect(networkId, ids)`                                | None                       | Void → `ok()`                                           | `viewModels[networkId]` undefined → `NetworkNotFound` |
+| `toggleSelected(networkId, ids)`               | `ViewModelStore.toggleSelected(networkId, ids)`                                  | None                       | Void → `ok()`                                           | `viewModels[networkId]` undefined → `NetworkNotFound` |
+| `getSelection(networkId)`                      | `ViewModelStore.getViewModel(networkId)` → read `selectedNodes`, `selectedEdges` | None                       | `{selectedNodes, selectedEdges}` → `ok(SelectionState)` | View model undefined → `NetworkNotFound`              |
+
+**Stores involved (1):** `ViewModelStore` only.
+
+**Facade validation pattern:** The facade calls `useViewModelStore.getState().getViewModel(networkId)` before each mutation. If it returns `undefined`, the facade returns `fail(ApiErrorCode.NetworkNotFound, ...)` instead of letting the store method silently no-op. This converts the store's silent-failure behavior into explicit `ApiResult` errors.
+
+**Undo behavior:** None — selection changes are not undoable.
+
+---
+
+### 3.4 Table API — `useTableApi`
+
+**Internal target:** `TableStore` methods directly (in `src/data/hooks/stores/TableStore.ts`)
+
+| Facade Method                                                                | Internal Target                                                                        | Input Transformation                                                 | Output Transformation    | Error → ApiErrorCode                                                              |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `getValue(networkId, tableType, elementId, column)`                          | Read `TableStore.tables[networkId].[nodeTable\|edgeTable].rows.get(elementId)[column]` | Map `tableType` → `'nodeTable'` / `'edgeTable'`                      | Value → `ok({value})`    | Table missing → `NetworkNotFound`. Row missing → `NodeNotFound` or `EdgeNotFound` |
+| `getRow(networkId, tableType, elementId)`                                    | Read `TableStore.tables[networkId].[nodeTable\|edgeTable].rows.get(elementId)`         | Same                                                                 | Row record → `ok({row})` | Same                                                                              |
+| `createColumn(networkId, tableType, columnName, dataType, defaultValue)`     | `TableStore.createColumn(networkId, tableType, columnName, dataType, defaultValue)`    | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `deleteColumn(networkId, tableType, columnName)`                             | `TableStore.deleteColumn(networkId, tableType, columnName)`                            | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `setColumnName(networkId, tableType, currentName, newName)`                  | `TableStore.setColumnName(networkId, tableType, currentName, newName)`                 | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `setValue(networkId, tableType, elementId, column, value)`                   | `TableStore.setValue(networkId, tableType, elementId, column, value)`                  | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `setValues(networkId, tableType, cellEdits)`                                 | `TableStore.setValues(networkId, tableType, cellEdits)`                                | Map facade `CellEdit` → store `CellEdit` (`{row→id, column, value}`) | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `editRows(networkId, tableType, rows)`                                       | `TableStore.editRows(networkId, tableType, rows)`                                      | Pass `Map<IdType, Record<AttributeName, ValueType>>` directly        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `applyValueToElements(networkId, tableType, columnName, value, elementIds?)` | `TableStore.applyValueToElements(networkId, tableType, columnName, value, elementIds)` | Pass directly. `undefined` elementIds → apply to all                 | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+
+**Stores involved (1):** `TableStore` only.
+
+**Facade validation pattern:** The facade checks `tables[networkId]` existence before every operation. The internal store methods have **inconsistent null-safety** (some fail silently, some throw on undefined) — the facade normalizes this into consistent `NetworkNotFound` errors.
+
+**Internal inconsistency note:** The store uses both `'node' | 'edge'` string literals and `TableType` const enum for `tableType` parameters. Both resolve to the same values. The facade accepts `'node' | 'edge'` consistently and passes through directly.
+
+**Undo behavior:** None of the `TableStore` methods record undo. If undo is needed for table edits in the future, it must be added at the facade or hook level.
+
+---
+
+### 3.5 Visual Style API — `useVisualStyleApi`
+
+**Internal target:** `VisualStyleStore` methods directly (in `src/data/hooks/stores/VisualStyleStore.ts`)
+
+| Facade Method                                                                                   | Internal Target                                                                                                  | Input Transformation | Output Transformation | Error → ApiErrorCode                                              |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------- | --------------------- | ----------------------------------------------------------------- |
+| `setDefault(networkId, vpName, vpValue)`                                                        | `VisualStyleStore.setDefault(networkId, vpName, vpValue)`                                                        | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`. Catch → `OperationFailed`         |
+| `setBypass(networkId, vpName, elementIds, vpValue)`                                             | `VisualStyleStore.setBypass(networkId, vpName, elementIds, vpValue)`                                             | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`. Empty elementIds → `InvalidInput` |
+| `deleteBypass(networkId, vpName, elementIds)`                                                   | `VisualStyleStore.deleteBypass(networkId, vpName, elementIds)`                                                   | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`                                    |
+| `createDiscreteMapping(networkId, vpName, attribute, attributeType)`                            | `VisualStyleStore.createDiscreteMapping(networkId, vpName, attribute, attributeType)`                            | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`                                    |
+| `createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType)` | `VisualStyleStore.createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType)` | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`                                    |
+| `createPassthroughMapping(networkId, vpName, attribute, attributeType)`                         | `VisualStyleStore.createPassthroughMapping(networkId, vpName, attribute, attributeType)`                         | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`                                    |
+| `removeMapping(networkId, vpName)`                                                              | `VisualStyleStore.removeMapping(networkId, vpName)`                                                              | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`                                    |
+
+**Stores involved (1):** `VisualStyleStore` only.
+
+**Facade validation pattern:** The store performs **zero input validation** — if `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and may throw. The facade must check `visualStyles[networkId]` existence before every call and return `NetworkNotFound` on absence.
+
+**Undo behavior:** None of the `VisualStyleStore` methods record undo. Visual style changes are currently not undoable.
+
+**Store methods NOT exposed via facade:**
+| Store Method | Reason |
+|---|---|
+| `setBypassMap` | Low-level bulk bypass — used internally by undo |
+| `setDiscreteMappingValue` | Granular mapping edit — Phase 2 candidate |
+| `deleteDiscreteMappingValue` | Same |
+| `setContinuousMappingValues` | Same |
+| `createMapping` | Generic dispatcher — facade uses typed create methods |
+| `setMapping` | Low-level mapping overwrite — used internally |
+
+---
+
+### 3.6 Layout API — `useLayoutApi`
+
+**Internal targets:** `LayoutStore` (engines/state), `NetworkStore` (topology), `ViewModelStore` (positions), `RendererFunctionStore` (fit)
+
+| Facade Method                      | Internal Target                        | Input Transformation                                                                                    | Output Transformation                                        | Error → ApiErrorCode                                                                                                                                                 |
+| ---------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `applyLayout(networkId, options?)` | **New coordination** (see steps below) | `algorithmName` → find engine. Default: `LayoutStore.preferredLayout`. `fitAfterLayout` default: `true` | Promise resolves to `ok()` on layout complete                | Engine not found → `LayoutEngineNotFound`. Network missing → `NetworkNotFound`. Fit function missing → `FunctionNotAvailable` (warning only — layout still succeeds) |
+| `getAvailableLayouts()`            | Read `LayoutStore.layoutEngines`       | None                                                                                                    | Map `LayoutEngine[]` → `LayoutAlgorithmInfo[]` → `ok(infos)` | Cannot fail — returns empty array if no engines                                                                                                                      |
+
+**`applyLayout` execution steps (new coordination logic):**
+
+```
+1. Validate networkId → NetworkStore.networks[networkId] exists
+2. Find engine:
+   a. If options.algorithmName: find in LayoutStore.layoutEngines where
+      engine.algorithms[algorithmName] exists
+   b. Else: use LayoutStore.preferredLayout → find its engine
+3. If no engine found → return fail(LayoutEngineNotFound, ...)
+4. LayoutStore.setIsRunning(true)
+5. Call engine.apply(network.nodes, network.edges, callback, algorithm)
+6. In callback(positionMap):
+   a. ViewModelStore.updateNodePositions(networkId, positionMap)
+   b. If fitAfterLayout:
+      - fn = RendererFunctionStore.getFunction('cyjs', 'fit', networkId)
+      - If fn: fn()
+      - Else: log warning (layout succeeds without fit)
+   c. LayoutStore.setIsRunning(false)
+   d. Resolve Promise with ok()
+7. On error at any step: reject/resolve with fail(OperationFailed, ...)
+```
+
+**Stores involved (4):** `LayoutStore`, `NetworkStore`, `ViewModelStore`, `RendererFunctionStore`
+
+**Reference implementation:** The pattern in [useRegisterNetwork.ts](src/data/hooks/useRegisterNetwork.ts) (lines 130–155) shows the existing layout execution flow and should be followed.
+
+**Undo behavior:** Layout operations are not undoable (positions are overwritten without undo recording).
+
+---
+
+### 3.7 Viewport API — `useViewportApi`
+
+**Internal targets:** `RendererFunctionStore` (fit), `ViewModelStore` (positions)
+
+| Facade Method                               | Internal Target                                                                        | Input Transformation                                   | Output Transformation                                      | Error → ApiErrorCode                             |
+| ------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------ |
+| `fit(networkId)`                            | `RendererFunctionStore.getFunction('cyjs', 'fit', networkId)` → call returned function | None                                                   | Promise resolves to `ok()`                                 | Function not registered → `FunctionNotAvailable` |
+| `getNodePositions(networkId, nodeIds)`      | `ViewModelStore.getViewModel(networkId)` → extract positions from `nodeViews`          | Filter to requested `nodeIds`                          | `Map<IdType, [number, number, number?]>` → `ok(positions)` | View model missing → `NetworkNotFound`           |
+| `updateNodePositions(networkId, positions)` | `ViewModelStore.updateNodePositions(networkId, positions)`                             | Pass `Map<IdType, [number, number, number?]>` directly | Void → `ok()`                                              | View model missing → `NetworkNotFound`           |
+
+**Stores involved (2):** `ViewModelStore`, `RendererFunctionStore`
+
+**`RendererFunctionStore` lookup pattern:** Functions are registered at runtime by the CyjsRenderer component via `setFunction('cyjs', 'fit', fn, networkId)`. The store checks per-network functions first (`rendererFunctionsByNetworkId`), then global functions. If neither exists, `getFunction()` returns `undefined`.
+
+**`fit()` returns `Promise<ApiResult>`** because `cy.fit()` may involve animation in future implementations. Currently synchronous but wrapped in Promise for API stability.
+
+**Undo behavior:** `updateNodePositions` does not record undo. Position updates via the viewport API are not undoable (same as layout).
+
+---
+
+### 3.8 Export API — `useExportApi`
+
+**Internal target:** `exportCyNetworkToCx2` (pure function in `src/models/CxModel/impl/exporter.ts`)
+
+| Facade Method                      | Internal Target                                           | Input Transformation                                                           | Output Transformation | Error → ApiErrorCode                                                             |
+| ---------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------- |
+| `exportToCx2(networkId, options?)` | `exportCyNetworkToCx2(cyNetwork, summary?, networkName?)` | **Assemble `CyNetwork` from 5 stores** (see below). Pass `options.networkName` | CX2 data → `ok(cx2)`  | Any store entry missing → `NetworkNotFound`. Exporter throws → `OperationFailed` |
+
+**CyNetwork assembly (6 store reads):**
+
+| `CyNetwork` field         | Store                 | Access path                   |
+| ------------------------- | --------------------- | ----------------------------- |
+| `network`                 | `NetworkStore`        | `networks[networkId]`         |
+| `nodeTable`               | `TableStore`          | `tables[networkId].nodeTable` |
+| `edgeTable`               | `TableStore`          | `tables[networkId].edgeTable` |
+| `visualStyle`             | `VisualStyleStore`    | `visualStyles[networkId]`     |
+| `networkViews`            | `ViewModelStore`      | `[getViewModel(networkId)]`   |
+| `otherAspects`            | `OpaqueAspectStore`   | `opaqueAspects[networkId]`    |
+| **separately:** `summary` | `NetworkSummaryStore` | `summaries[networkId]`        |
+
+**Stores involved (6):** `NetworkStore`, `TableStore`, `VisualStyleStore`, `ViewModelStore`, `OpaqueAspectStore`, `NetworkSummaryStore`
+
+**Validation:** The facade checks each store entry individually and returns `NetworkNotFound` with a descriptive message on the first missing entry. This prevents the exporter from receiving `undefined` fields and throwing cryptic errors.
+
+**Undo behavior:** Read-only — no undo concerns.
+
+---
+
+## 4. Facade Test Pattern Template
+
+All facade hooks follow the same testing pattern using the project's existing conventions (Jest, `@testing-library/react`, `renderHook` + `act`).
+
+### 4.1 Mock Strategy
+
+```
+jest.mock('../../data/hooks/stores/NetworkStore', () => ({ ... }))
+jest.mock('../../data/hooks/stores/TableStore', () => ({ ... }))
+jest.mock('../../data/hooks/stores/ViewModelStore', () => ({ ... }))
+// etc. — mock only stores accessed by the facade hook under test
+```
+
+For facade hooks that wrap internal hooks (Element API, Network API):
+
+```
+jest.mock('../../data/hooks/useCreateNode', () => ({ ... }))
+jest.mock('../../data/hooks/useDeleteNodes', () => ({ ... }))
+// etc.
+```
+
+### 4.2 Test Structure Template
+
+Each facade hook test file (`use<Domain>Api.test.ts`, co-located in `src/app-api/`) follows this structure:
+
+```
+describe('use<Domain>Api', () => {
+  beforeEach(() => { /* reset mock store state */ })
+
+  describe('<methodName>()', () => {
+    it('returns ok() with correct data on success', ...)
+    it('returns fail(NetworkNotFound) when network does not exist', ...)
+    it('returns fail(InvalidInput) on invalid parameters', ...)
+    it('returns fail(OperationFailed) when internal hook throws', ...)
+    it('never exposes skipUndo to internal hooks', ...)       // Element API only
+    it('calls validateCX2 before processing', ...)            // Network API CX2 only
+  })
+})
+```
+
+### 4.3 Test Categories Per Facade Hook
+
+| Facade Hook         | Success Cases                                     | Error Cases                                                 | Special Cases                                                                       |
+| ------------------- | ------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `useElementApi`     | CRUD operations return correct data               | NetworkNotFound, NodeNotFound, EdgeNotFound, InvalidInput   | `skipUndo` never forwarded, cascading edge deletion in deleteNodes                  |
+| `useNetworkApi`     | Network creation returns `{networkId, cyNetwork}` | InvalidInput (empty name/edges), InvalidCx2                 | `validateCX2` called before `createNetworkFromCx2`, navigate/addToWorkspace options |
+| `useSelectionApi`   | Selection state reads/writes                      | NetworkNotFound                                             | Silent no-op → explicit error conversion                                            |
+| `useTableApi`       | Read/write operations on tables                   | NetworkNotFound, row not found                              | Inconsistent store null-safety → consistent facade errors                           |
+| `useVisualStyleApi` | Mapping/bypass operations                         | NetworkNotFound                                             | Zero store validation → facade must validate                                        |
+| `useLayoutApi`      | Layout completes, positions updated               | LayoutEngineNotFound, NetworkNotFound, FunctionNotAvailable | Async callback resolution, `fitAfterLayout` optional                                |
+| `useViewportApi`    | Fit, position read/write                          | FunctionNotAvailable, NetworkNotFound                       | `fit()` returns Promise                                                             |
+| `useExportApi`      | CX2 assembly from 6 stores                        | NetworkNotFound (any store entry)                           | Multi-store assembly validation                                                     |
+
+---
+
+## 5. Per-Phase File Lists
+
+Concrete file creation/modification list for each implementation phase.
+
+### Phase 1 (Step 0): Foundation Types
+
+_Fully specified in [phase1a-shared-types-design.md](phase1a-shared-types-design.md)_
+
+| Action | File                                           |
+| ------ | ---------------------------------------------- |
+| Create | `src/app-api/types/ApiResult.ts`               |
+| Create | `src/app-api/types/ApiResult.test.ts`          |
+| Create | `src/app-api/types/AppContext.ts`              |
+| Create | `src/app-api/types/ElementTypes.ts`            |
+| Create | `src/app-api/types/index.ts`                   |
+| Create | `src/app-api/index.ts`                         |
+| Create | `src/app-api/api_docs/Api.md`                  |
+| Modify | `webpack.config.js` — add `'./ApiTypes'` entry |
+
+### Phase 1a: Element API
+
+| Action | File                                | Notes                                                                                                   |
+| ------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Create | `src/app-api/useElementApi.ts`      | Wraps `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`. New `moveEdge` coordination |
+| Create | `src/app-api/useElementApi.test.ts` | Tests per § 4.3                                                                                         |
+| Modify | `src/app-api/index.ts`              | Uncomment `useElementApi` export                                                                        |
+| Modify | `src/app-api/types/AppContext.ts`   | Uncomment `element: ElementApi` in `AppContext.apis`                                                    |
+| Modify | `webpack.config.js`                 | Add `'./ElementApi'` entry                                                                              |
+
+### Phase 1b: Network API
+
+| Action | File                                        | Notes                                                                     |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------------- |
+| Create | `src/app-api/useNetworkApi.ts`              | Wraps `useCreateNetwork`, `useCreateNetworkFromCx2`, `useDeleteCyNetwork` |
+| Create | `src/app-api/useNetworkApi.test.ts`         | Tests per § 4.3                                                           |
+| Modify | `src/data/task/useCreateNetworkFromCx2.tsx` | Add `navigate` and `addToWorkspace` options                               |
+| Modify | `src/app-api/index.ts`                      | Uncomment `useNetworkApi` export                                          |
+| Modify | `src/app-api/types/AppContext.ts`           | Uncomment `network: NetworkApi`                                           |
+| Modify | `webpack.config.js`                         | Add `'./NetworkApi'` entry                                                |
+
+### Phase 1c: Selection + Viewport
+
+| Action | File                                  | Notes                                             |
+| ------ | ------------------------------------- | ------------------------------------------------- |
+| Create | `src/app-api/useSelectionApi.ts`      | Wraps `ViewModelStore` selection methods          |
+| Create | `src/app-api/useSelectionApi.test.ts` |                                                   |
+| Create | `src/app-api/useViewportApi.ts`       | Wraps `RendererFunctionStore` + `ViewModelStore`  |
+| Create | `src/app-api/useViewportApi.test.ts`  |                                                   |
+| Modify | `src/app-api/index.ts`                | Uncomment both exports                            |
+| Modify | `src/app-api/types/AppContext.ts`     | Uncomment `selection`, `viewport`                 |
+| Modify | `webpack.config.js`                   | Add `'./SelectionApi'`, `'./ViewportApi'` entries |
+
+### Phase 1d: Table + Visual Style
+
+| Action | File                                    | Notes                                            |
+| ------ | --------------------------------------- | ------------------------------------------------ |
+| Create | `src/app-api/useTableApi.ts`            | Wraps `TableStore` methods                       |
+| Create | `src/app-api/useTableApi.test.ts`       |                                                  |
+| Create | `src/app-api/useVisualStyleApi.ts`      | Wraps `VisualStyleStore` methods                 |
+| Create | `src/app-api/useVisualStyleApi.test.ts` |                                                  |
+| Modify | `src/app-api/index.ts`                  | Uncomment both exports                           |
+| Modify | `src/app-api/types/AppContext.ts`       | Uncomment `table`, `visualStyle`                 |
+| Modify | `webpack.config.js`                     | Add `'./TableApi'`, `'./VisualStyleApi'` entries |
+
+### Phase 1e: Layout + Export
+
+| Action | File                               | Notes                                                                          |
+| ------ | ---------------------------------- | ------------------------------------------------------------------------------ |
+| Create | `src/app-api/useLayoutApi.ts`      | **New coordination logic** — see § 3.6 execution steps                         |
+| Create | `src/app-api/useLayoutApi.test.ts` |                                                                                |
+| Create | `src/app-api/useExportApi.ts`      | Multi-store CyNetwork assembly + exporter call                                 |
+| Create | `src/app-api/useExportApi.test.ts` |                                                                                |
+| Modify | `src/app-api/index.ts`             | Uncomment both exports                                                         |
+| Modify | `src/app-api/types/AppContext.ts`  | Uncomment `layout`, `export`. All fields now required                          |
+| Modify | `webpack.config.js`                | Add `'./LayoutApi'`, `'./ExportApi'` entries. Mark legacy stores `@deprecated` |
+| Modify | `src/app-api/api_docs/Api.md`      | Complete facade hook documentation                                             |
+
+---
+
+## 6. Internal Store Validation Gap Summary
+
+The following table summarizes the validation behavior of each internal store. The facade must compensate for these gaps by performing input validation before every store call.
+
+| Store                   | Null-check on `networkId`                                                        | Input validation | Failure mode on missing data                                        |
+| ----------------------- | -------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------- |
+| `NetworkStore`          | ✅ (returns `undefined` from `networks.get()`)                                   | None             | Safe — returns `undefined`                                          |
+| `TableStore`            | ⚠️ Inconsistent — `setValue`/`setValues` check, `createColumn`/`editRows` do not | None             | Throws on missing `networkId` (some methods), silent no-op (others) |
+| `ViewModelStore`        | ✅ All selection/position methods guard                                          | None             | Silent no-op (returns unchanged state)                              |
+| `VisualStyleStore`      | ❌ Zero null-checks                                                              | None             | Passes `undefined` to `VisualStyleImpl` → may throw                 |
+| `RendererFunctionStore` | ✅ `getFunction` returns `undefined` safely                                      | None             | Safe — returns `undefined`                                          |
+| `LayoutStore`           | N/A (no per-network state)                                                       | None             | Safe — state is global                                              |
+| `OpaqueAspectStore`     | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
+| `NetworkSummaryStore`   | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
+
+**Facade rule:** Always check store state existence _before_ calling mutation methods. Never rely on store-level null-safety.

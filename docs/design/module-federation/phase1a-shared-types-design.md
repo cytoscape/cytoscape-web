@@ -21,15 +21,15 @@ This phase creates the **foundational type infrastructure** for the entire facad
 
 ### In Scope
 
-1. Create the `src/data/api/` directory structure
+1. Create the `src/app-api/` directory structure
 2. Define `ApiResult<T>`, `ApiSuccess<T>`, `ApiFailure`, `ApiError`, `ApiErrorCode`
 3. Define helper functions for constructing `ApiResult` values (`ok()`, `fail()`)
 4. Define `AppContext` and `CyAppWithLifecycle` types (forward declarations)
 5. Re-export public-facing model types via `ElementTypes.ts`
-6. Create barrel exports (`src/data/api/types/index.ts`, `src/data/api/index.ts`)
+6. Create barrel exports (`src/app-api/types/index.ts`, `src/app-api/index.ts`)
 7. Add `./ApiTypes` entry to `webpack.config.js` Module Federation `exposes`
 8. Write unit tests for result helper functions
-9. Add behavioral documentation in `src/data/api/api_docs/Api.md`
+9. Add behavioral documentation in `src/app-api/api_docs/Api.md`
 
 ### Out of Scope
 
@@ -44,7 +44,7 @@ This phase creates the **foundational type infrastructure** for the entire facad
 After this phase completes, the following files will exist:
 
 ```
-src/data/api/
+src/app-api/
 ├── api_docs/
 │   └── Api.md                          # Behavioral documentation
 ├── types/
@@ -62,12 +62,12 @@ src/data/api/
 
 ### 3.1 `ApiResult.ts` — Result Types and Helpers
 
-**File:** `src/data/api/types/ApiResult.ts`
+**File:** `src/app-api/types/ApiResult.ts`
 
 This is the most critical file in this phase. It defines the discriminated union that every facade operation returns, plus helper functions for ergonomic construction.
 
 ```typescript
-// src/data/api/types/ApiResult.ts
+// src/app-api/types/ApiResult.ts
 
 /**
  * Error codes for facade API operations.
@@ -112,7 +112,7 @@ export const ApiErrorCode = {
 export type ApiErrorCode = (typeof ApiErrorCode)[keyof typeof ApiErrorCode]
 ```
 
-**Design decisions:**
+**Design decisions:** (see [ADR 0001](../../adr/0001-api-result-discriminated-union.md) for full rationale)
 
 | Decision                         | Rationale                                                                                                                                                                             |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -169,7 +169,7 @@ export interface ApiFailure {
 export type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
 ````
 
-**Design decisions:**
+**Design decisions:** (see [ADR 0001](../../adr/0001-api-result-discriminated-union.md) for full rationale and rejected alternatives)
 
 | Decision                      | Rationale                                                                                                                                                                           |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -257,14 +257,14 @@ export function isFail<T>(result: ApiResult<T>): result is ApiFailure {
 
 ### 3.2 `AppContext.ts` — App Lifecycle Types
 
-**File:** `src/data/api/types/AppContext.ts`
+**File:** `src/app-api/types/AppContext.ts`
 
 This file contains **forward declarations** for the app lifecycle contract. The concrete facade API types referenced in `AppContext.apis` are not yet defined (they come in Phase 1a–1e), so this file uses placeholder `interface` stubs or `any` initially and will be updated as each facade hook is implemented.
 
 ```typescript
-// src/data/api/types/AppContext.ts
+// src/app-api/types/AppContext.ts
 
-import { CyApp } from '../../../models/AppModel/CyApp'
+import { CyApp } from '../../models/AppModel/CyApp'
 
 /**
  * Context object passed to external apps during mount().
@@ -338,42 +338,42 @@ export interface CyAppWithLifecycle extends CyApp {
 
 ### 3.3 `ElementTypes.ts` — Public Type Re-exports
 
-**File:** `src/data/api/types/ElementTypes.ts`
+**File:** `src/app-api/types/ElementTypes.ts`
 
 This file re-exports key model types so external apps import from `cyweb/ApiTypes` rather than reaching into internal model paths. External apps should **never** import directly from `../../models/...` — those paths are internal and subject to change.
 
 ```typescript
-// src/data/api/types/ElementTypes.ts
+// src/app-api/types/ElementTypes.ts
 
 // ── Identity ────────────────────────────────────────────────────
-export type { IdType } from '../../../models/IdType'
+export type { IdType } from '../../models/IdType'
 
 // ── Table model types ───────────────────────────────────────────
-export type { AttributeName } from '../../../models/TableModel/AttributeName'
-export type { ValueType } from '../../../models/TableModel/ValueType'
-export { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
-export type { Table } from '../../../models/TableModel/Table'
-export type { Column } from '../../../models/TableModel/Column'
+export type { AttributeName } from '../../models/TableModel/AttributeName'
+export type { ValueType } from '../../models/TableModel/ValueType'
+export { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+export type { Table } from '../../models/TableModel/Table'
+export type { Column } from '../../models/TableModel/Column'
 
 // ── Network model types ─────────────────────────────────────────
-export type { Network } from '../../../models/NetworkModel/Network'
-export type { Node } from '../../../models/NetworkModel/Node'
-export type { Edge } from '../../../models/NetworkModel/Edge'
-export type { CyNetwork } from '../../../models/CyNetworkModel/CyNetwork'
-export type { NetworkSummary } from '../../../models/NetworkSummaryModel/NetworkSummary'
+export type { Network } from '../../models/NetworkModel/Network'
+export type { Node } from '../../models/NetworkModel/Node'
+export type { Edge } from '../../models/NetworkModel/Edge'
+export type { CyNetwork } from '../../models/CyNetworkModel/CyNetwork'
+export type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSummary'
 
 // ── Visual style types ──────────────────────────────────────────
-export { VisualPropertyName } from '../../../models/VisualStyleModel/VisualPropertyName'
-export type { VisualStyle } from '../../../models/VisualStyleModel/VisualStyle'
+export { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
+export type { VisualStyle } from '../../models/VisualStyleModel/VisualStyle'
 
 // ── View model types ────────────────────────────────────────────
-export type { NetworkView } from '../../../models/ViewModel/NetworkView'
+export type { NetworkView } from '../../models/ViewModel/NetworkView'
 
 // ── CX2 types ───────────────────────────────────────────────────
-export type { Cx2 } from '../../../models/CxModel/Cx2'
+export type { Cx2 } from '../../models/CxModel/Cx2'
 ```
 
-**Design decisions:**
+**Design decisions:** (see [ADR 0002](../../adr/0002-public-type-reexport-strategy.md) for full rationale and rejected alternatives)
 
 | Decision                               | Rationale                                                                                                                                                                                                                                              |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -398,10 +398,10 @@ export type { Cx2 } from '../../../models/CxModel/Cx2'
 
 ### 3.4 `types/index.ts` — Types Barrel Export
 
-**File:** `src/data/api/types/index.ts`
+**File:** `src/app-api/types/index.ts`
 
 ```typescript
-// src/data/api/types/index.ts
+// src/app-api/types/index.ts
 
 // ── Facade result types ─────────────────────────────────────────
 export { ApiErrorCode, ok, fail, isOk, isFail } from './ApiResult'
@@ -440,12 +440,12 @@ export type {
 
 ### 3.5 `api/index.ts` — API Barrel Export
 
-**File:** `src/data/api/index.ts`
+**File:** `src/app-api/index.ts`
 
 In this phase, only types are exported. Facade hooks will be added in subsequent phases.
 
 ```typescript
-// src/data/api/index.ts
+// src/app-api/index.ts
 
 // ── Types (Phase 1, Step 1) ─────────────────────────────────────
 export * from './types'
@@ -474,7 +474,7 @@ Add one new entry to `ModuleFederationPlugin.exposes`:
 ```javascript
 exposes: {
   // === Public Facade API Types ===
-  './ApiTypes': './src/data/api/types/index.ts',
+  './ApiTypes': './src/app-api/types/index.ts',
 
   // === Existing stores (unchanged) ===
   './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
@@ -509,12 +509,12 @@ No changes to `shared` configuration. The types module has no runtime dependenci
 
 ### 5.1 `ApiResult.test.ts`
 
-**File:** `src/data/api/types/ApiResult.test.ts`
+**File:** `src/app-api/types/ApiResult.test.ts`
 
 Tests validate the helper functions and type narrowing behavior.
 
 ```typescript
-// src/data/api/types/ApiResult.test.ts
+// src/app-api/types/ApiResult.test.ts
 
 import { ok, fail, isOk, isFail, ApiErrorCode } from './ApiResult'
 import type { ApiResult, ApiSuccess, ApiFailure } from './ApiResult'
@@ -632,14 +632,14 @@ describe('ApiResult helpers', () => {
 
 ### 6.1 `Api.md`
 
-**File:** `src/data/api/api_docs/Api.md`
+**File:** `src/app-api/api_docs/Api.md`
 
 ````markdown
 # Facade API — Behavioral Documentation
 
 ## Overview
 
-The facade API (`src/data/api/`) is the sole public API for external apps
+The facade API (`src/app-api/`) is the sole public API for external apps
 loaded via Module Federation. It provides a stable contract independent of
 internal store and hook implementations.
 
@@ -674,6 +674,7 @@ External apps import types from `cyweb/ApiTypes`:
 import type { ApiResult, IdType } from 'cyweb/ApiTypes'
 import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
 ```
+
 ````
 
 ## Facade Hooks (added incrementally)
@@ -689,7 +690,6 @@ import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
 | `cyweb/LayoutApi`      | `useLayoutApi()`      | 1e    |
 | `cyweb/ExportApi`      | `useExportApi()`      | 1e    |
 
-```
 
 ---
 
@@ -699,13 +699,13 @@ import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
 
 ```
 
-src/data/api/types/ApiResult.ts
+src/app-api/types/ApiResult.ts
 └── (no imports — self-contained)
 
-src/data/api/types/AppContext.ts
+src/app-api/types/AppContext.ts
 └── src/models/AppModel/CyApp.ts
 
-src/data/api/types/ElementTypes.ts
+src/app-api/types/ElementTypes.ts
 ├── src/models/IdType.ts
 ├── src/models/TableModel/AttributeName.ts
 ├── src/models/TableModel/ValueType.ts
@@ -722,12 +722,12 @@ src/data/api/types/ElementTypes.ts
 ├── src/models/ViewModel/NetworkView.ts
 └── src/models/CxModel/Cx2/index.ts
 
-src/data/api/types/index.ts
+src/app-api/types/index.ts
 ├── ./ApiResult.ts
 ├── ./AppContext.ts
 └── ./ElementTypes.ts
 
-src/data/api/index.ts
+src/app-api/index.ts
 └── ./types/index.ts
 
 ```
@@ -759,16 +759,16 @@ Ordered steps for the implementer:
 
 | # | Task | Files Created/Modified | Verification |
 |---|---|---|---|
-| 1 | Create directory structure | `src/data/api/`, `src/data/api/types/`, `src/data/api/api_docs/` | Directories exist |
+| 1 | Create directory structure | `src/app-api/`, `src/app-api/types/`, `src/app-api/api_docs/` | Directories exist |
 | 2 | Verify `CyApp` interface location | — | Import path resolves |
-| 3 | Create `ApiResult.ts` | `src/data/api/types/ApiResult.ts` | `npm run lint` passes |
-| 4 | Create `AppContext.ts` | `src/data/api/types/AppContext.ts` | `npm run lint` passes |
-| 5 | Create `ElementTypes.ts` | `src/data/api/types/ElementTypes.ts` | `npm run lint` passes; all import paths resolve |
-| 6 | Create `types/index.ts` barrel | `src/data/api/types/index.ts` | `npm run lint` passes |
-| 7 | Create `api/index.ts` barrel | `src/data/api/index.ts` | `npm run lint` passes |
+| 3 | Create `ApiResult.ts` | `src/app-api/types/ApiResult.ts` | `npm run lint` passes |
+| 4 | Create `AppContext.ts` | `src/app-api/types/AppContext.ts` | `npm run lint` passes |
+| 5 | Create `ElementTypes.ts` | `src/app-api/types/ElementTypes.ts` | `npm run lint` passes; all import paths resolve |
+| 6 | Create `types/index.ts` barrel | `src/app-api/types/index.ts` | `npm run lint` passes |
+| 7 | Create `api/index.ts` barrel | `src/app-api/index.ts` | `npm run lint` passes |
 | 8 | Add `./ApiTypes` to webpack exposes | `webpack.config.js` | `npm run build` succeeds |
-| 9 | Create `ApiResult.test.ts` | `src/data/api/types/ApiResult.test.ts` | `npm run test:unit -- --testPathPattern="ApiResult"` passes |
-| 10 | Create `Api.md` documentation | `src/data/api/api_docs/Api.md` | File exists, reviewed |
+| 9 | Create `ApiResult.test.ts` | `src/app-api/types/ApiResult.test.ts` | `npm run test:unit -- --testPathPattern="ApiResult"` passes |
+| 10 | Create `Api.md` documentation | `src/app-api/api_docs/Api.md` | File exists, reviewed |
 | 11 | Full build verification | — | `npm run build` succeeds |
 | 12 | Full lint verification | — | `npm run lint` passes |
 
@@ -795,6 +795,6 @@ This phase creates the foundation for all subsequent work. Here is how later pha
 | # | Question | Owner | Resolution |
 |---|---|---|---|
 | 1 | Should `ApiResult` support a `warnings` array alongside `error`? Some operations (e.g., CX2 import) may partially succeed with warnings. | API Design | **Deferred.** Current design is success/failure binary. Warnings can be added as `ApiResult<T & { warnings?: string[] }>` in specific hooks without changing the core type. |
-| 2 | Should `ok()` and `fail()` be frozen (`Object.freeze`)? | API Design | **No.** Freezing adds runtime overhead with no practical benefit — external apps receiving the result have no reason to mutate it, and `readonly` provides compile-time safety. |
-| 3 | Should `ApiErrorCode` be extensible by external apps? | API Design | **No.** Error codes are defined by the host. External apps consume them, never define new ones. The `as const` object is not extensible. |
-```
+| 2 | Should `ok()` and `fail()` be frozen (`Object.freeze`)? | API Design | **No.** See [ADR 0001](../../adr/0001-api-result-discriminated-union.md). |
+| 3 | Should `ApiErrorCode` be extensible by external apps? | API Design | **No.** See [ADR 0001](../../adr/0001-api-result-discriminated-union.md). |
+
