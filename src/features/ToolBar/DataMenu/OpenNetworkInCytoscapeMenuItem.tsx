@@ -1,7 +1,5 @@
-// @ts-expect-error-next-line
-import { CyNDEx } from '@js4cytoscape/ndex-client'
 import { Box, MenuItem, Tooltip } from '@mui/material'
-import { ReactElement } from 'react'
+import { ReactElement, useState } from 'react'
 
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -11,21 +9,21 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { useOpenNetworkInCytoscape } from '../../../data/hooks/useOpenInCytoscapeDesktop'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useFeatureAvailability } from '../../FeatureAvailability'
+import { OpenInCytoscapeDialog } from '../../FeatureAvailability/OpenInCytoscapeDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
 
 export const OpenNetworkInCytoscapeMenuItem = ({
   handleClose,
 }: BaseMenuProps): ReactElement => {
-  const cyndex = new CyNDEx()
-  const openNetworkInCytoscape = useOpenNetworkInCytoscape()
   const featureAvailabilityState = useFeatureAvailability()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const [dialogOpen, setDialogOpen] = useState(false)
+
   const table = useTableStore((state) => state.tables[currentNetworkId])
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
@@ -46,23 +44,11 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     (state) => state.opaqueAspects[currentNetworkId],
   )
 
-  const handleOpenNetworkInCytoscape = async (): Promise<void> => {
-    await openNetworkInCytoscape(
-      network,
-      visualStyle,
-      summary,
-      table,
-      visualStyleOptions,
-      viewModel,
-      opaqueAspects,
-      cyndex,
-    )
-    handleClose()
+  const handleOpenNetworkInCytoscape = (): void => {
+    setDialogOpen(true)
   }
 
-  const disabled =
-    featureAvailabilityState.state.isCyDeskAvailable === false ||
-    currentNetworkId === ''
+  const disabled = currentNetworkId === ''
 
   const menuItem = (
     <MenuItem onClick={handleOpenNetworkInCytoscape} disabled={disabled}>
@@ -71,12 +57,29 @@ export const OpenNetworkInCytoscapeMenuItem = ({
   )
 
   return (
-    <Tooltip
-      arrow
-      placement="right"
-      title={currentNetworkId === '' ? '' : featureAvailabilityState.tooltip}
-    >
-      <Box>{menuItem}</Box>
-    </Tooltip>
+    <>
+      <Tooltip
+        arrow
+        placement="right"
+        title={currentNetworkId === '' ? '' : featureAvailabilityState.tooltip}
+      >
+        <Box>{menuItem}</Box>
+      </Tooltip>
+
+      <OpenInCytoscapeDialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false)
+          handleClose()
+        }}
+        network={network}
+        visualStyle={visualStyle}
+        summary={summary}
+        table={table}
+        visualStyleOptions={visualStyleOptions}
+        viewModel={viewModel}
+        opaqueAspects={opaqueAspects}
+      />
+    </>
   )
 }

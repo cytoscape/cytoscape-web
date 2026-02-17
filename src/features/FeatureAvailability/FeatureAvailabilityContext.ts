@@ -1,5 +1,7 @@
 import { createContext } from 'react'
 
+export type PermissionState = 'prompt' | 'granted' | 'denied'
+
 export type FeatureAvailabilityState = {
   isCyDeskAvailable: boolean
   isSafari: boolean
@@ -26,7 +28,18 @@ export const initialState: FeatureAvailabilityState = {
   isSafari: false,
 }
 
+import { PollingStartResult } from './useFeatureAvailabilityPolling'
+
 export const FeatureAvailabilityContext = createContext<{
   state: FeatureAvailabilityState
   tooltip: string
-}>({ state: initialState, tooltip: '' })
+  startPolling: () => Promise<PollingStartResult>
+  stopPolling: () => void
+  checkPermission: () => Promise<PermissionState | null>
+}>({
+  state: initialState,
+  tooltip: '',
+  startPolling: async () => ({ canAccessEndpoint: false }),
+  stopPolling: () => {},
+  checkPermission: async () => null,
+})

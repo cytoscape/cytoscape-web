@@ -15,6 +15,11 @@ import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
+export type OpenNetworkResult = {
+  success: boolean
+  error?: string
+}
+
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -28,14 +33,18 @@ export const useOpenNetworkInCytoscape = () => {
     opaqueAspects: OpaqueAspects | undefined,
     cyndex: CyNDEx,
     networkLabel?: string,
-  ): Promise<void> => {
+    suppressMessages?: boolean,
+  ): Promise<OpenNetworkResult> => {
     if (viewModel === undefined) {
-      addMessage({
-        message: 'Could not find the current network view model.',
-        duration: 4000,
-        severity: MessageSeverity.WARNING,
-      })
-      return
+      const errorMessage = 'Could not find the current network view model.'
+      if (!suppressMessages) {
+        addMessage({
+          message: errorMessage,
+          duration: 4000,
+          severity: MessageSeverity.WARNING,
+        })
+      }
+      return { success: false, error: errorMessage }
     }
 
     let exportSummary: any = summary
@@ -73,30 +82,44 @@ export const useOpenNetworkInCytoscape = () => {
     )
 
     try {
-      addMessage({
-        message: 'Sending this network to Cytoscape Desktop...',
-        duration: 3000,
-        severity: MessageSeverity.INFO,
-      })
+      if (!suppressMessages) {
+        addMessage({
+          message: 'Sending this network to Cytoscape Desktop...',
+          duration: 3000,
+          severity: MessageSeverity.INFO,
+        })
+      }
 
       await cyndex.postCX2NetworkToCytoscape(cx)
 
-      addMessage({
-        message: 'Network successfully opened in Cytoscape Desktop.',
-        duration: 3000,
-        severity: MessageSeverity.SUCCESS,
-      })
+      if (!suppressMessages) {
+        addMessage({
+          message: 'Network successfully opened in Cytoscape Desktop.',
+          duration: 3000,
+          severity: MessageSeverity.SUCCESS,
+        })
+      }
+
+      return { success: true }
     } catch (error) {
-      addMessage({
-        message:
-          'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
-        duration: 5000,
-        severity: MessageSeverity.ERROR,
-      })
+      const errorMessage =
+        'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.'
+      if (!suppressMessages) {
+        addMessage({
+          message: errorMessage,
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
+      }
       logApi.error(
         `[${useOpenNetworkInCytoscape.name}]: Could not open the network in Cytoscape Desktop!`,
         error,
       )
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : errorMessage,
+      }
     }
   }
 

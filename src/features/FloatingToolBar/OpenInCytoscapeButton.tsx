@@ -1,7 +1,6 @@
-// @ts-expect-error-next-line
-import { CyNDEx } from '@js4cytoscape/ndex-client'
 import { OpenInNew } from '@mui/icons-material'
 import { IconButton, Tooltip } from '@mui/material'
+import { useState } from 'react'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
@@ -11,10 +10,10 @@ import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
-import { useOpenNetworkInCytoscape } from '../../data/hooks/useOpenInCytoscapeDesktop'
 import { IdType } from '../../models'
 import { Network } from '../../models/NetworkModel'
 import { useFeatureAvailability } from '../FeatureAvailability'
+import { OpenInCytoscapeDialog } from '../FeatureAvailability/OpenInCytoscapeDialog'
 
 interface OpenInCytoscapeButtonProps {
   targetNetworkId?: IdType
@@ -26,14 +25,12 @@ export const OpenInCytoscapeButton = ({
   networkLabel,
 }: OpenInCytoscapeButtonProps): JSX.Element => {
   const featureAvailabilityState = useFeatureAvailability()
-  const openNetworkInCytoscape = useOpenNetworkInCytoscape()
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   const networkId: IdType = targetNetworkId ?? currentNetworkId
-
-  const cyndex = new CyNDEx()
 
   const table = useTableStore((state) => state.tables[networkId])
   const summary = useNetworkSummaryStore((state) => state.summaries[networkId])
@@ -55,18 +52,8 @@ export const OpenInCytoscapeButton = ({
       ? allOpaqueAspects[targetNetworkId]
       : undefined
 
-  const handleClick = async (): Promise<void> => {
-    await openNetworkInCytoscape(
-      network,
-      visualStyle,
-      summary,
-      table,
-      visualStyleOptions,
-      viewModel,
-      opaqueAspects,
-      cyndex,
-      networkLabel,
-    )
+  const handleClick = (): void => {
+    setDialogOpen(true)
   }
 
   return (
@@ -79,14 +66,24 @@ export const OpenInCytoscapeButton = ({
             aria-label="open-in-cytoscape"
             size="small"
             disableFocusRipple={true}
-            disabled={
-              featureAvailabilityState.state.isCyDeskAvailable === false
-            }
           >
             <OpenInNew fontSize="inherit" />
           </IconButton>
         </span>
       </Tooltip>
+
+      <OpenInCytoscapeDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        network={network}
+        networkLabel={networkLabel}
+        visualStyle={visualStyle}
+        summary={summary}
+        table={table}
+        visualStyleOptions={visualStyleOptions}
+        viewModel={viewModel}
+        opaqueAspects={opaqueAspects}
+      />
     </>
   )
 }

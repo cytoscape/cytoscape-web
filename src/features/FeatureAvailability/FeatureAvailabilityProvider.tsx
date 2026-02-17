@@ -16,8 +16,9 @@ import { useFeatureAvailabilityPolling } from './useFeatureAvailabilityPolling'
 export const FeatureAvailabilityProvider: React.FC<{
   children: ReactNode
 }> = ({ children }) => {
-  // Use the polling hook to get current state
-  const state = useFeatureAvailabilityPolling()
+  // Use the polling hook to get current state and control methods
+  const pollingHook = useFeatureAvailabilityPolling()
+  const { startPolling, stopPolling, checkPermission, ...state } = pollingHook
 
   // Compute tooltip based on state
   const tooltip = useMemo(() => {
@@ -31,7 +32,15 @@ export const FeatureAvailabilityProvider: React.FC<{
   }, [state.isSafari, state.isCyDeskAvailable])
 
   return (
-    <FeatureAvailabilityContext.Provider value={{ state, tooltip }}>
+    <FeatureAvailabilityContext.Provider
+      value={{
+        state,
+        tooltip,
+        startPolling,
+        stopPolling,
+        checkPermission,
+      }}
+    >
       {children}
     </FeatureAvailabilityContext.Provider>
   )
