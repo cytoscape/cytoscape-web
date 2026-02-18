@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+> Source of truth for agent context in this repository.
+> `AGENTS.md` is auto-generated from this file via `npm run sync:agents`.
+
 ## Development Commands
 
 **Building & Development:**
