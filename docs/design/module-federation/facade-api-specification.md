@@ -191,7 +191,7 @@ const useElementApi: () => ElementApi
 - **`getNode`**: Reads attributes from `TableStore` and position from `ViewModelStore`. Validates node existence in `NetworkStore`. Returns `NodeNotFound` if the node does not exist.
 - **`getEdge`**: Reads source/target from `NetworkStore` and attributes from `TableStore`. Returns `EdgeNotFound` if the edge does not exist.
 - **`createNode` / `createEdge`**: Calls internal `useCreateNode()` / `useCreateEdge()`, maps their result objects to `ApiResult<T>`. The `skipUndo` option is never passed — undo always records.
-- **`moveEdge`**: Atomically updates source/target in `NetworkStore`, preserving all attributes in `TableStore` and visual style bypasses in `VisualStyleStore`. Records undo entry. Returns `EdgeNotFound` or `NodeNotFound` on invalid IDs.
+- **`moveEdge`**: Atomically updates an edge's source and/or target node using Cytoscape.js's native `edge.move()` on the headless core. This preserves the edge ID, so all data keyed by edge ID — table row attributes, visual style bypasses, and edge views — remains intact without any migration. Only the network topology store is mutated. A new `MOVE_EDGES` undo command records `(networkId, edgeId, oldSource, oldTarget)` for rollback. Returns `EdgeNotFound` or `NodeNotFound` on invalid IDs. See [§ 3.1.1](#311-moveedge--detailed-implementation-design) for the full implementation design.
 
 #### 1.5.2 Network API
 
@@ -764,6 +764,375 @@ This section provides the internal hook/store → facade method mapping that imp
 - `skipUndo` is never exposed to external apps — the facade hardcodes it to `false`.
 - `moveEdge` requires new coordination logic since no internal hook exists. Must be atomic: validate all IDs, mutate edge source/target, record undo with before/after state.
 
+#### 3.1.1 `moveEdge` — Detailed Implementation Design
+
+`moveEdge` is the only Element API operation that requires new internal infrastructure (no existing hook wraps this operation). This section specifies every file change, the execution steps, the undo/redo integration, and the data preservation guarantees.
+
+##### Why Core API (Not User-Side Utility)
+
+A user-side `deleteEdge` + `createEdge` approach **cannot preserve data**:
+
+| Aspect                 | delete + create                                   | Core `moveEdge`                                      |
+| ---------------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| Edge ID                | Changes (old ID lost, new sequential ID assigned) | Preserved                                            |
+| Table attributes       | Lost (old row deleted, new row gets defaults)     | Preserved (row keyed by edge ID)                     |
+| Visual style bypasses  | Lost (deleted with old edge, no read API to copy) | Preserved (bypass `Map<IdType, T>` keyed by edge ID) |
+| Edge view state        | Lost (old view removed, new default view created) | Preserved (keyed by edge ID)                         |
+| Undo history           | Two separate entries (delete + create)            | Single atomic entry                                  |
+| External ID references | Dangling (apps holding old ID break)              | Stable                                               |
+
+The bypass loss is structurally unrecoverable: the current facade API has no `getBypass` read method, so external apps cannot extract bypasses before deletion.
+
+##### Internal Mechanism: Cytoscape.js `edge.move()`
+
+The internal graph storage is a headless Cytoscape.js `Core` instance inside `NetworkImpl` (`src/models/NetworkModel/impl/networkImpl.ts`). Cytoscape.js natively supports `edge.move({ source?, target? })`, which atomically changes an edge's endpoints while preserving its identity (ID, data, classes). This is the correct primitive to use.
+
+**The `Edge` interface is `readonly`:**
+
+```typescript
+interface Edge extends GraphObject {
+  readonly s: IdType // source
+  readonly t: IdType // target
+}
+```
+
+This is a read-only projection extracted dynamically from the Cytoscape.js core via `edge.source().id()` / `edge.target().id()`. Mutating the Cytoscape.js edge via `edge.move()` causes subsequent reads of the `Network.edges` getter to reflect the new source/target — no interface change is needed.
+
+##### Files to Create or Modify
+
+| Action | File                                          | Change                                                             |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------ |
+| Modify | `src/models/NetworkModel/impl/networkImpl.ts` | Add `moveEdge(network, edgeId, newSourceId, newTargetId)` function |
+| Modify | `src/models/NetworkModel/index.ts`            | Re-export `moveEdge` in the `NetworkFn` barrel                     |
+| Modify | `src/models/StoreModel/NetworkStoreModel.ts`  | Add `moveEdge` to `NetworkUpdateActions` interface                 |
+| Modify | `src/data/hooks/stores/NetworkStore.ts`       | Add `moveEdge` action implementation                               |
+| Modify | `src/models/StoreModel/UndoStoreModel.ts`     | Add `MOVE_EDGES` to `UndoCommandType`                              |
+| Modify | `src/data/hooks/useUndoStack.tsx`             | Add undo/redo handlers for `MOVE_EDGES`                            |
+| Create | `src/app-api/useElementApi.ts` (Phase 1a)     | `moveEdge` facade method using the above                           |
+
+##### 1. Model Layer: `networkImpl.ts`
+
+Add a new exported function:
+
+```typescript
+// src/models/NetworkModel/impl/networkImpl.ts
+
+/**
+ * Move an edge to new source and/or target nodes.
+ * Uses Cytoscape.js edge.move() to preserve the edge ID and all
+ * associated data (table rows, bypasses, views are keyed by edge ID).
+ *
+ * @param network - Network containing the edge
+ * @param edgeId - ID of the edge to move
+ * @param newSourceId - New source node ID
+ * @param newTargetId - New target node ID
+ * @returns The previous source and target IDs (for undo recording)
+ * @throws Error if edge or nodes do not exist in the network
+ */
+export const moveEdge = (
+  network: Network,
+  edgeId: IdType,
+  newSourceId: IdType,
+  newTargetId: IdType,
+): { oldSourceId: IdType; oldTargetId: IdType } => {
+  const networkImpl = network as NetworkImpl
+  const store = networkImpl.store
+  const edge = store.$id(edgeId)
+
+  if (edge.empty()) {
+    throw new Error(`Edge ${edgeId} not found in network ${network.id}`)
+  }
+
+  const oldSourceId = edge.source().id()
+  const oldTargetId = edge.target().id()
+
+  // Validate new endpoints exist
+  if (store.$id(newSourceId).empty()) {
+    throw new Error(
+      `Source node ${newSourceId} not found in network ${network.id}`,
+    )
+  }
+  if (store.$id(newTargetId).empty()) {
+    throw new Error(
+      `Target node ${newTargetId} not found in network ${network.id}`,
+    )
+  }
+
+  // Cytoscape.js edge.move() atomically updates source/target
+  edge.move({ source: newSourceId, target: newTargetId })
+
+  return { oldSourceId, oldTargetId }
+}
+```
+
+**Key properties of `edge.move()`:**
+
+- Preserves the edge's ID — `edge.id()` remains the same after the call
+- Synchronous — no callback or promise
+- The edge remains in the same Cytoscape.js core instance
+- Subsequent reads of `Network.edges` (which maps from `edge.source().id()` / `edge.target().id()`) reflect the new endpoints immediately
+
+##### 2. Model Barrel Export: `NetworkModel/index.ts`
+
+Add `moveEdge` to the re-exports. The barrel export uses `import * as NetworkFn` pattern, so the new function is automatically included.
+
+##### 3. Store Model: `NetworkStoreModel.ts`
+
+Add to the `NetworkUpdateActions` interface:
+
+```typescript
+export interface NetworkUpdateActions {
+  // ... existing actions ...
+
+  /**
+   * Move an edge to new source and/or target nodes.
+   * Preserves edge ID, table rows, bypasses, and views.
+   *
+   * @returns The previous source and target IDs (for undo recording)
+   */
+  moveEdge: (
+    networkId: IdType,
+    edgeId: IdType,
+    newSourceId: IdType,
+    newTargetId: IdType,
+  ) => { oldSourceId: IdType; oldTargetId: IdType }
+}
+```
+
+##### 4. Store Implementation: `NetworkStore.ts`
+
+Add the `moveEdge` action:
+
+```typescript
+moveEdge: (networkId, edgeId, newSourceId, newTargetId) => {
+  const network = get().networks.get(networkId)
+  if (network === undefined) {
+    throw new Error(`Network ${networkId} not found`)
+  }
+  const result = NetworkFn.moveEdge(
+    network,
+    edgeId,
+    newSourceId,
+    newTargetId,
+  )
+
+  // Trigger reactivity — the network reference is the same (mutation),
+  // but lastUpdated signals the change to subscribers
+  set((state) => {
+    state.lastUpdated = {
+      networkId,
+      type: UpdateEventType.ADD, // Topology changed
+      payload: [edgeId],
+    }
+  })
+
+  return result
+},
+```
+
+##### 5. Undo Integration: `UndoStoreModel.ts` + `useUndoStack.tsx`
+
+**Add to `UndoCommandType`:**
+
+```typescript
+export const UndoCommandType = {
+  // ... existing commands ...
+  MOVE_EDGES: 'MOVE_EDGES',
+} as const
+```
+
+**Undo handler** (reverse the move — restore old source/target):
+
+```typescript
+[UndoCommandType.MOVE_EDGES]: (params: any[]) => {
+  const networkId: IdType = params[0]
+  const edgeId: IdType = params[1]
+  const oldSourceId: IdType = params[2]
+  const oldTargetId: IdType = params[3]
+
+  useNetworkStore
+    .getState()
+    .moveEdge(networkId, edgeId, oldSourceId, oldTargetId)
+},
+```
+
+**Redo handler** (re-apply the move):
+
+```typescript
+[UndoCommandType.MOVE_EDGES]: (params: any[]) => {
+  const networkId: IdType = params[0]
+  const edgeId: IdType = params[1]
+  const newSourceId: IdType = params[2]
+  const newTargetId: IdType = params[3]
+
+  useNetworkStore
+    .getState()
+    .moveEdge(networkId, edgeId, newSourceId, newTargetId)
+},
+```
+
+**Undo/redo params:**
+
+|          | Params                                          |
+| -------- | ----------------------------------------------- |
+| **Undo** | `[networkId, edgeId, oldSourceId, oldTargetId]` |
+| **Redo** | `[networkId, edgeId, newSourceId, newTargetId]` |
+
+##### 6. Facade Implementation: `useElementApi.ts`
+
+```typescript
+moveEdge(
+  networkId: IdType,
+  edgeId: IdType,
+  newSourceId: IdType,
+  newTargetId: IdType,
+): ApiResult {
+  try {
+    // 1. Validate network exists
+    const network = useNetworkStore.getState().networks.get(networkId)
+    if (network === undefined) {
+      return fail(
+        ApiErrorCode.NetworkNotFound,
+        `Network ${networkId} not found`,
+      )
+    }
+
+    // 2. Validate edge exists
+    const edgeExists = network.edges.some((e) => e.id === edgeId)
+    if (!edgeExists) {
+      return fail(
+        ApiErrorCode.EdgeNotFound,
+        `Edge ${edgeId} not found in network ${networkId}`,
+      )
+    }
+
+    // 3. Validate new source node exists
+    const sourceExists = network.nodes.some((n) => n.id === newSourceId)
+    if (!sourceExists) {
+      return fail(
+        ApiErrorCode.NodeNotFound,
+        `Source node ${newSourceId} not found in network ${networkId}`,
+      )
+    }
+
+    // 4. Validate new target node exists
+    const targetExists = network.nodes.some((n) => n.id === newTargetId)
+    if (!targetExists) {
+      return fail(
+        ApiErrorCode.NodeNotFound,
+        `Target node ${newTargetId} not found in network ${networkId}`,
+      )
+    }
+
+    // 5. Execute move (preserves edge ID — table rows, bypasses,
+    //    views unaffected)
+    const { oldSourceId, oldTargetId } = useNetworkStore
+      .getState()
+      .moveEdge(networkId, edgeId, newSourceId, newTargetId)
+
+    // 6. Update table: source/target columns in edge table
+    //    if they exist
+    const tables = useTableStore.getState().tables.get(networkId)
+    if (tables !== undefined) {
+      const edgeTable = tables.edgeTable
+      const row = edgeTable.rows.get(edgeId)
+      if (row !== undefined) {
+        const updatedRow = new Map<
+          IdType,
+          Record<AttributeName, ValueType>
+        >()
+        updatedRow.set(edgeId, {
+          ...row,
+          source: newSourceId,
+          target: newTargetId,
+        })
+        useTableStore
+          .getState()
+          .editRows(networkId, 'edge', updatedRow)
+      }
+    }
+
+    // 7. Record undo
+    postEdit(
+      UndoCommandType.MOVE_EDGES,
+      `Move edge ${edgeId}`,
+      [networkId, edgeId, oldSourceId, oldTargetId], // undo params
+      [networkId, edgeId, newSourceId, newTargetId], // redo params
+    )
+
+    return ok()
+  } catch (e) {
+    return fail(
+      ApiErrorCode.OperationFailed,
+      `Failed to move edge: ${String(e)}`,
+    )
+  }
+},
+```
+
+##### Stores Involved
+
+| Store                 | Role                                               | Mutated?                                      |
+| --------------------- | -------------------------------------------------- | --------------------------------------------- |
+| `NetworkStore`        | Edge topology (`edge.move()` on Cytoscape.js core) | **Yes**                                       |
+| `TableStore`          | Update `source`/`target` columns in edge table row | **Yes** (conditional — only if columns exist) |
+| `ViewModelStore`      | Edge view keyed by edge ID                         | No — preserved automatically                  |
+| `VisualStyleStore`    | Bypass map (`Map<IdType, T>`) keyed by edge ID     | No — preserved automatically                  |
+| `NetworkSummaryStore` | Edge count unchanged                               | No                                            |
+| `UndoStore`           | Record `MOVE_EDGES` undo entry via `postEdit`      | **Yes**                                       |
+
+##### Data Preservation Guarantees
+
+| Data                            | Key                              | Preserved? | Reason                                  |
+| ------------------------------- | -------------------------------- | ---------- | --------------------------------------- |
+| Edge ID                         | —                                | Yes        | `edge.move()` preserves identity        |
+| Table row (all attributes)      | `edgeTable.rows.get(edgeId)`     | Yes        | Edge ID unchanged; row remains in Map   |
+| `source`/`target` table columns | `row['source']`, `row['target']` | Updated    | Facade explicitly updates these columns |
+| Visual style bypasses           | `bypassMap.get(edgeId)` per VP   | Yes        | Edge ID unchanged; Map entries remain   |
+| Edge view                       | `edgeViews[edgeId]`              | Yes        | Edge ID unchanged                       |
+| Undo history                    | `MOVE_EDGES` command             | Yes        | Single atomic undo entry                |
+
+##### Edge Cases
+
+| Case                                | Behavior                                                                                |
+| ----------------------------------- | --------------------------------------------------------------------------------------- |
+| Move to same source/target (no-op)  | Succeeds — `edge.move()` is idempotent. Still records undo.                             |
+| Move only source (target unchanged) | Pass current target as `newTargetId`. No partial-move API to keep the interface simple. |
+| Self-loop (source === target)       | Allowed — Cytoscape.js supports self-loops.                                             |
+| Edge ID not in edge table           | `moveEdge` still succeeds at the topology level. Table update is conditional.           |
+| Concurrent modifications            | Same as all store operations — last-write-wins within the synchronous Zustand dispatch. |
+
+##### Test Outline
+
+```
+describe('moveEdge', () => {
+  it('returns ok() and updates edge endpoints', ...)
+  it('preserves table row attributes after move', ...)
+  it('preserves visual style bypasses after move', ...)
+  it('updates source/target columns in edge table', ...)
+  it('records MOVE_EDGES undo entry', ...)
+  it('undo restores original source/target', ...)
+  it('returns EdgeNotFound when edge does not exist', ...)
+  it('returns NodeNotFound when new source does not exist', ...)
+  it('returns NodeNotFound when new target does not exist', ...)
+  it('returns NetworkNotFound when network does not exist', ...)
+  it('handles self-loop (source === target)', ...)
+  it('handles no-op move (same endpoints)', ...)
+})
+```
+
+##### Estimated Scope
+
+| Layer                                           | Files Modified | Lines Added (approx.) |
+| ----------------------------------------------- | -------------- | --------------------- |
+| Model (`networkImpl.ts` + barrel)               | 2              | ~30                   |
+| Store model (`NetworkStoreModel.ts`)            | 1              | ~8                    |
+| Store impl (`NetworkStore.ts`)                  | 1              | ~15                   |
+| Undo (`UndoStoreModel.ts` + `useUndoStack.tsx`) | 2              | ~20                   |
+| Facade (`useElementApi.ts`)                     | 1              | ~50                   |
+| Tests (`useElementApi.test.ts`)                 | 1              | ~80                   |
+| **Total**                                       | **8**          | **~200**              |
+
 ---
 
 ### 3.2 Network API — `useNetworkApi`
@@ -957,6 +1326,434 @@ This section provides the internal hook/store → facade method mapping that imp
 **Validation:** The facade checks each store entry individually and returns `NetworkNotFound` with a descriptive message on the first missing entry. This prevents the exporter from receiving `undefined` fields and throwing cryptic errors.
 
 **Undo behavior:** Read-only — no undo concerns.
+
+---
+
+### 3.9 Internal Hook / Store Return Type Reference
+
+This subsection documents the return type interfaces of every internal hook and store method that the facade wraps. Implementers need these to build the `ApiResult<T>` conversion layer correctly.
+
+#### 3.9.1 Element Hooks (`src/data/hooks/`)
+
+**`useCreateNode` → `createNode()`**
+
+Returns `CreateNodeResult` (defined in `src/data/hooks/useCreateNode.ts`):
+
+```typescript
+export interface CreateNodeResult {
+  nodeId: IdType // ID of the newly created node (empty string on failure)
+  success: boolean // true if the operation succeeded
+  error?: string // error message on failure
+}
+```
+
+Options accepted:
+
+```typescript
+export interface CreateNodeOptions {
+  attributes?: Record<AttributeName, ValueType> // custom attributes for the new node's table row
+  autoSelect?: boolean // whether to select the new node (default: true)
+  skipUndo?: boolean // @internal — facade hardcodes to false
+}
+```
+
+`generateNextNodeId(networkId)` returns `IdType` directly (a sequential numeric string, e.g. `"0"`, `"1"`).
+
+---
+
+**`useCreateEdge` → `createEdge()`**
+
+Returns `CreateEdgeResult` (defined in `src/data/hooks/useCreateEdge.ts`):
+
+```typescript
+export interface CreateEdgeResult {
+  edgeId: IdType // ID of the newly created edge (empty string on failure)
+  success: boolean // true if the operation succeeded
+  error?: string // error message on failure
+}
+```
+
+Options accepted:
+
+```typescript
+export interface CreateEdgeOptions {
+  attributes?: Record<AttributeName, ValueType> // custom attributes for the new edge's table row
+  autoSelect?: boolean // whether to select the new edge (default: true)
+  skipUndo?: boolean // @internal — facade hardcodes to false
+}
+```
+
+`generateNextEdgeId(networkId)` returns `IdType` directly (prefixed sequential string, e.g. `"e0"`, `"e1"`).
+
+---
+
+**`useDeleteNodes` → `deleteNodes()`**
+
+Returns `DeleteNodesResult` (defined in `src/data/hooks/useDeleteNodes.ts`):
+
+```typescript
+export interface DeleteNodesResult {
+  success: boolean // true if the operation succeeded
+  deletedNodeCount: number // number of nodes actually deleted
+  deletedEdgeCount: number // number of edges cascade-deleted (connected to deleted nodes)
+  error?: string // error message on failure
+}
+```
+
+Options accepted:
+
+```typescript
+export interface DeleteNodesOptions {
+  skipUndo?: boolean // @internal — facade hardcodes to false
+}
+```
+
+Note: The internal model-layer function (`nodeOperations.ts`) returns a richer result for undo recording:
+
+```typescript
+// src/models/CyNetworkModel/impl/nodeOperations.ts — internal only
+interface DeleteNodesResult {
+  deletedNodeIds: IdType[]
+  deletedEdges: Edge[]
+  deletedNodeViews: NodeView[]
+  deletedEdgeViews: EdgeView[]
+  deletedNodeRows: Map<IdType, Record<string, ValueType>>
+  deletedEdgeRows: Map<IdType, Record<string, ValueType>>
+}
+```
+
+The hook converts this into the simplified `{success, deletedNodeCount, deletedEdgeCount}` shape.
+
+---
+
+**`useDeleteEdges` → `deleteEdges()`**
+
+Returns `DeleteEdgesResult` (defined in `src/data/hooks/useDeleteEdges.ts`):
+
+```typescript
+export interface DeleteEdgesResult {
+  success: boolean // true if the operation succeeded
+  deletedEdgeCount: number // number of edges actually deleted
+  error?: string // error message on failure
+}
+```
+
+Options accepted:
+
+```typescript
+export interface DeleteEdgesOptions {
+  skipUndo?: boolean // @internal — facade hardcodes to false
+}
+```
+
+Internal model-layer counterpart (for undo recording):
+
+```typescript
+// src/models/CyNetworkModel/impl/edgeOperations.ts — internal only
+interface DeleteEdgesResult {
+  deletedEdgeIds: IdType[]
+  deletedEdgeViews: EdgeView[]
+  deletedEdgeRows: Map<IdType, Record<string, ValueType>>
+}
+```
+
+---
+
+**Common pattern:** All four CRUD hooks use a `{ success: boolean, error?: string }` result pattern. The facade converts:
+
+- `result.success === true` → `ok({ nodeId })` / `ok({ edgeId })` / `ok({ deletedNodeCount, deletedEdgeCount })` / `ok({ deletedEdgeCount })`
+- `result.success === false` → `fail(...)` with `ApiErrorCode` inferred from `result.error` string
+
+#### 3.9.2 Network API Hook (`src/data/task/`)
+
+**`useCreateNetworkFromCx2`**
+
+The hook returns a **single callback function** (not a `{ method1, method2 }` object):
+
+```typescript
+export const useCreateNetworkFromCx2 = (): ((
+  props: CreateNetworkFromCx2Props,
+) => CyNetwork) => { ... }
+```
+
+Input:
+
+```typescript
+interface CreateNetworkFromCx2Props {
+  cxData: Cx2 // CX2 data to convert into a full network with view
+}
+```
+
+Returns `CyNetwork` (defined in `src/models/CyNetworkModel/CyNetwork.ts`):
+
+```typescript
+export interface CyNetwork {
+  network: Network
+  networkAttributes?: NetworkAttributes
+  nodeTable: Table
+  edgeTable: Table
+  visualStyle: VisualStyle
+  networkViews: NetworkView[]
+  visualStyleOptions?: VisualStyleOptions
+  otherAspects?: OpaqueAspects[]
+  undoRedoStack: UndoRedoStack
+}
+```
+
+**Error behavior:** Throws on failure (no `success`/`error` pattern). The facade must catch and convert to `fail(OperationFailed, ...)`.
+
+**Side effects:** The internal hook always adds the network to the workspace and navigates to it. The facade needs either optional parameters added to the internal hook, or must conditionally skip navigation after calling it (see §3.2).
+
+#### 3.9.3 Selection — `ViewModelStore` Methods
+
+Selection is handled directly by `ViewModelStore` (defined in `src/models/StoreModel/ViewModelStoreModel.ts`). There is no standalone `useSelection` hook.
+
+**All return `void`:**
+
+```typescript
+exclusiveSelect(networkId: IdType, selectedNodes: IdType[], selectedEdges: IdType[]): void
+additiveSelect(networkId: IdType, ids: IdType[]): void
+additiveUnselect(networkId: IdType, ids: IdType[]): void
+toggleSelected(networkId: IdType, ids: IdType[]): void
+```
+
+**Read path:** `getViewModel(networkId, viewModelName?): NetworkView | undefined`
+
+Selection state is embedded in the `NetworkView` object:
+
+```typescript
+interface NetworkView {
+  // ... other fields ...
+  selectedNodes: IdType[]
+  selectedEdges: IdType[]
+}
+```
+
+**Error behavior:** Silent no-op if `networkId` not found. The facade must check `getViewModel(networkId)` before calling mutations and return `NetworkNotFound` explicitly.
+
+#### 3.9.4 Table — `TableStore` Methods
+
+All `TableStore` mutation methods return `void` (defined in `src/models/StoreModel/TableStoreModel.ts`):
+
+```typescript
+setValue(networkId, tableType: 'node' | 'edge', row: IdType, column: string, value: ValueType): void
+setValues(networkId, tableType: 'node' | 'edge', cellEdit: CellEdit[]): void
+createColumn(networkId, tableType, columnName: string, dataType: ValueTypeName, value: ValueType): void
+deleteColumn(networkId, tableType, columnName: string): void
+setColumnName(networkId, tableType, currentColumnName: string, newColumnName: string): void
+editRows(networkId, tableType, rows: Map<IdType, Record<AttributeName, ValueType>>): void
+applyValueToElements(networkId, tableType, columnName, value, elementIds?): void
+```
+
+Supporting types:
+
+```typescript
+export type CellEdit = {
+  row: IdType
+  column: string
+  value: ValueType
+}
+
+export const TableType = { NODE: 'node', EDGE: 'edge' } as const
+export type TableType = 'node' | 'edge'
+```
+
+**Read path:** `tables: Record<IdType, TableRecord>` where:
+
+```typescript
+export interface TableRecord {
+  nodeTable: Table
+  edgeTable: Table
+}
+```
+
+**Error behavior:** Inconsistent — some methods throw on missing `networkId`, others silently no-op. The facade must normalize by checking `tables[networkId]` before every call.
+
+#### 3.9.5 Visual Style — `VisualStyleStore` Methods
+
+All methods return `void` (defined in `src/models/StoreModel/VisualStyleStoreModel.ts`):
+
+```typescript
+setDefault(networkId, vpName: VisualPropertyName, vpValue: VisualPropertyValueType): void
+setBypass(networkId, vpName, elementIds: IdType[], vpValue: VisualPropertyValueType): void
+deleteBypass(networkId, vpName, elementIds: IdType[]): void
+createDiscreteMapping(networkId, vpName, attribute: AttributeName, attributeType: ValueTypeName): void
+createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType): void
+createPassthroughMapping(networkId, vpName, attribute, attributeType): void
+removeMapping(networkId, vpName: VisualPropertyName): void
+```
+
+**Read path:** `visualStyles: Record<IdType, VisualStyle>` — direct record lookup.
+
+**Error behavior:** Zero null-checks. If `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and will throw. The facade must validate before every call.
+
+#### 3.9.6 Layout — `LayoutEngine.apply()`
+
+Layout is not a store action — it's a method on `LayoutEngine` (defined in `src/models/LayoutModel/LayoutEngine.ts`):
+
+```typescript
+export interface LayoutEngine {
+  readonly name: string
+  readonly description?: string
+  defaultAlgorithmName: string
+  algorithms: Record<string, LayoutAlgorithm>
+
+  apply: (
+    nodes: Node[],
+    edges: Edge[],
+    afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
+    algorithm: LayoutAlgorithm,
+  ) => void
+}
+```
+
+**Key observation:** `apply()` is callback-based — `afterLayout` is called asynchronously when layout completes. The facade must wrap this in a `Promise<ApiResult>`. The position map returned in the callback uses `[number, number]` tuples (no Z coordinate).
+
+Available engines are stored in `LayoutStore.layoutEngines: LayoutEngine[]`.
+
+#### 3.9.7 Viewport — `RendererFunctionStore` + `RendererStore`
+
+**`RendererFunctionStore`** (defined in `src/data/hooks/stores/RendererFunctionStore.ts`):
+
+```typescript
+interface RendererFunctionStore {
+  rendererFunctions: Map<string, Map<string, Function>>
+  rendererFunctionsByNetworkId: Map<IdType, Map<string, Map<string, Function>>>
+}
+
+interface RendererFunctionActions {
+  setFunction(
+    rendererName: string,
+    functionName: string,
+    fn: Function,
+    networkId?: IdType,
+  ): void
+  getFunction(
+    rendererName: string,
+    functionName: string,
+    networkId?: IdType,
+  ): Function | undefined
+}
+```
+
+**`fit()` lookup:** `getFunction('cyjs', 'fit', networkId)` — returns `Function | undefined`. The function itself takes no arguments and returns `void`.
+
+**`RendererStore`** (defined in `src/models/StoreModel/RendererStoreModel.ts`):
+
+```typescript
+interface RendererAction {
+  setViewport(rendererId: string, networkId: IdType, viewport: ViewPort): void
+  getViewport(rendererId: string, networkId: IdType): ViewPort | undefined
+}
+```
+
+```typescript
+export interface ViewPort {
+  zoom: number
+  pan: { x: number; y: number }
+}
+```
+
+Default renderer ID: `'cyjs'`.
+
+#### 3.9.8 Export — Pure Function
+
+`exportCyNetworkToCx2` is a pure function (not a hook), located in `src/models/CxModel/impl/exporter.ts`:
+
+```typescript
+exportCyNetworkToCx2(
+  cyNetwork: CyNetwork,
+  summary?: NetworkSummary,
+  networkName?: string,
+): Cx2
+```
+
+Returns `Cx2` (the CX2 format data). Throws on error. The facade assembles the `CyNetwork` from 6 store reads (see §3.8).
+
+#### 3.9.9 Undo — `useUndoStack`
+
+`useUndoStack` (defined in `src/data/hooks/useUndoStack.tsx`) returns:
+
+```typescript
+{
+  undoStack: Edit[]
+  postEdit: (
+    undoCommand: UndoCommandType,
+    description: string,
+    undoParams: any[],
+    redoParams: any[],
+  ) => void
+  undoLastEdit: () => void
+  redoLastEdit: () => void
+  clearStack: () => void
+}
+```
+
+The `Edit` interface (defined in `src/models/StoreModel/UndoStoreModel.ts`):
+
+```typescript
+export interface Edit {
+  undoCommand: UndoCommandType
+  description: string
+  undoParams: any[]
+  redoParams: any[]
+}
+```
+
+`UndoCommandType` is a const object with 26 string values:
+
+```typescript
+export const UndoCommandType = {
+  SET_NETWORK_SUMMARY: 'SET_NETWORK_SUMMARY',
+  SET_CELL_VALUE: 'SET_CELL_VALUE',
+  APPLY_VALUE_TO_COLUMN: 'APPLY_VALUE_TO_COLUMN',
+  APPLY_VALUE_TO_SELECTED: 'APPLY_VALUE_TO_SELECTED',
+  SET_DEFAULT_VP_VALUE: 'SET_DEFAULT_VP_VALUE',
+  CREATE_MAPPING: 'CREATE_MAPPING',
+  REMOVE_MAPPING: 'REMOVE_MAPPING',
+  SET_MAPPING_TYPE: 'SET_MAPPING_TYPE',
+  SET_DISCRETE_VALUE: 'SET_DISCRETE_VALUE',
+  DELETE_DISCRETE_VALUE: 'DELETE_DISCRETE_VALUE',
+  SET_DISCRETE_VALUE_MAP: 'SET_DISCRETE_VALUE_MAP',
+  DELETE_DISCRETE_VALUE_MAP: 'DELETE_DISCRETE_VALUE_MAP',
+  SET_MAPPING_COLUMN: 'SET_MAPPING_COLUMN',
+  SET_BYPASS: 'SET_BYPASS',
+  SET_BYPASS_MAP: 'SET_BYPASS_MAP',
+  DELETE_BYPASS: 'DELETE_BYPASS',
+  DELETE_BYPASS_MAP: 'DELETE_BYPASS_MAP',
+  RENAME_COLUMN: 'RENAME_COLUMN',
+  DELETE_COLUMN: 'DELETE_COLUMN',
+  MOVE_NODES: 'MOVE_NODES',
+  APPLY_LAYOUT: 'APPLY_LAYOUT',
+  DELETE_NODES: 'DELETE_NODES',
+  DELETE_EDGES: 'DELETE_EDGES',
+  CREATE_NODES: 'CREATE_NODES',
+  CREATE_EDGES: 'CREATE_EDGES',
+} as const
+```
+
+The CRUD hooks (`useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`) call `postEdit` internally. `moveEdge` and `applyLayout` must call `postEdit` from the facade.
+
+#### 3.9.10 Return Type Summary
+
+| Internal Target                        | Return Type                | Pattern                                                   | Facade Conversion                                                        |
+| -------------------------------------- | -------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `useCreateNode().createNode()`         | `CreateNodeResult`         | `{ success, nodeId, error? }`                             | `success` → `ok({nodeId})`, else `fail(...)`                             |
+| `useCreateNode().generateNextNodeId()` | `IdType`                   | Direct value                                              | Not wrapped in `ApiResult`                                               |
+| `useCreateEdge().createEdge()`         | `CreateEdgeResult`         | `{ success, edgeId, error? }`                             | `success` → `ok({edgeId})`, else `fail(...)`                             |
+| `useCreateEdge().generateNextEdgeId()` | `IdType`                   | Direct value                                              | Not wrapped in `ApiResult`                                               |
+| `useDeleteNodes().deleteNodes()`       | `DeleteNodesResult`        | `{ success, deletedNodeCount, deletedEdgeCount, error? }` | `success` → `ok({deletedNodeCount, deletedEdgeCount})`, else `fail(...)` |
+| `useDeleteEdges().deleteEdges()`       | `DeleteEdgesResult`        | `{ success, deletedEdgeCount, error? }`                   | `success` → `ok({deletedEdgeCount})`, else `fail(...)`                   |
+| `useCreateNetworkFromCx2()()`          | `CyNetwork`                | Direct value (throws on error)                            | Catch → `fail(OperationFailed, ...)`                                     |
+| `ViewModelStore` selection methods     | `void`                     | Silent no-op on missing network                           | Facade pre-checks → `NetworkNotFound`                                    |
+| `ViewModelStore.getViewModel()`        | `NetworkView \| undefined` | `undefined` on missing                                    | `undefined` → `NetworkNotFound`                                          |
+| `TableStore` mutation methods          | `void`                     | Inconsistent null-safety                                  | Facade pre-checks → `NetworkNotFound`                                    |
+| `VisualStyleStore` all methods         | `void`                     | Zero null-checks (may throw)                              | Facade pre-checks → `NetworkNotFound`                                    |
+| `LayoutEngine.apply()`                 | `void` (callback-based)    | `afterLayout(positionMap)`                                | Wrap in `Promise<ApiResult>`                                             |
+| `RendererFunctionStore.getFunction()`  | `Function \| undefined`    | `undefined` if not registered                             | `undefined` → `FunctionNotAvailable`                                     |
+| `RendererStore.getViewport()`          | `ViewPort \| undefined`    | `undefined` if not set                                    | `undefined` → `NetworkNotFound`                                          |
+| `exportCyNetworkToCx2()`               | `Cx2`                      | Direct value (throws on error)                            | Catch → `fail(OperationFailed, ...)`                                     |
+| `useUndoStack().postEdit()`            | `void`                     | Fire-and-forget                                           | Not exposed via facade                                                   |
 
 ---
 
