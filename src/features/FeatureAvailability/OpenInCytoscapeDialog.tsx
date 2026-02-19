@@ -190,7 +190,7 @@ export const OpenInCytoscapeDialog = ({
   }
 
   const networkName =
-    networkLabel ?? summary?.name ?? `Network ${network.id}`
+    networkLabel ?? summary?.name ?? `Network ${network?.id ?? ''}`
 
   const renderContent = (): JSX.Element => {
     switch (phase) {
