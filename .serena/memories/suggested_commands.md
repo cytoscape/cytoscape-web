@@ -9,6 +9,7 @@
 | `npm run build:netlify` | Build for Netlify deployment |
 | `npm run build:analyze` | Build with Webpack bundle analyzer |
 | `npm run clean` | Remove dist folder |
+| `npm run sync:agents` | Sync CLAUDE.md → AGENTS.md (auto-generate) |
 
 ## Testing
 | Command | Description |
@@ -30,6 +31,5 @@
 |---------|-------------|
 | `git` | Version control |
 | `ls` | List directory contents |
-| `cd` | Change directory |
 | `grep` / `rg` | Search file contents |
 | `find` | Find files |

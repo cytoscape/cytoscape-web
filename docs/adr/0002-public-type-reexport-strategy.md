@@ -6,7 +6,11 @@ Accepted
 
 ## Context
 
-The facade API layer exposes types to external apps via Module Federation (`cyweb/ApiTypes`). External apps need domain model types (`IdType`, `Network`, `VisualPropertyName`, etc.) to call facade operations and interpret results.
+The facade API layer exposes types to external apps via two paths: Module Federation
+(`cyweb/ApiTypes`) for React app consumers, and `window.CyWebApi` for vanilla JS consumers
+(browser extensions, LLM agent bridges). Both paths share the same type definitions.
+External apps need domain model types (`IdType`, `Network`, `VisualPropertyName`, etc.) to call
+facade operations and interpret results regardless of which access path they use.
 
 These model types are defined internally in `src/models/` across ~20 subdirectories. Many model files transitively import runtime dependencies (`debug`, `cytoscape`, `d3-scale`, `react`, `keycloak-js`) through implementation files (`impl/`) or store model interfaces.
 
@@ -106,7 +110,10 @@ export const Types = { IdType, Network, ... } // Not possible for TS types
 **Affected areas:**
 
 - `src/app-api/types/ElementTypes.ts` is the single file to update when adding new public types
-- External apps import from `cyweb/ApiTypes` — a single, predictable import path
+- React app consumers import from `cyweb/ApiTypes` — a single, predictable Module Federation path
+- Vanilla JS consumers (browser extensions, LLM agent bridges via `window.CyWebApi`) use the same
+  types at runtime; TypeScript declarations for these consumers reference the same `ElementTypes.ts`
+  types via `remotes.d.ts` or ambient declarations in the consuming project
 - Internal model refactoring (file moves, renames) requires updating only `ElementTypes.ts`, not external apps
 - When `@cytoscape-web/types` package issues are fixed, the re-export source changes but the public surface remains identical
 
@@ -121,3 +128,4 @@ export const Types = { IdType, Network, ... } // Not possible for TS types
 - [phase1a-shared-types-design.md](../design/module-federation/phase1a-shared-types-design.md) § 3.3 — `ElementTypes.ts` full type list
 - [phase1a-shared-types-design.md](../design/module-federation/phase1a-shared-types-design.md) § 7.2 — External dependency risk analysis
 - [module-federation-design.md](../design/module-federation/module-federation-design.md) § 1.3 — `@cytoscape-web/types` package fix plan
+- [ADR 0003](0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer; `window.CyWebApi` consumers use these same types

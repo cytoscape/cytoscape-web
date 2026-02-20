@@ -31,7 +31,7 @@ Config: `.prettierrc.json`
 
 ## Naming Conventions
 | Artifact | Pattern |
-|----------|---------|
+|----------|---------:|
 | Model interfaces | `src/models/<Domain>Model/<Domain>.ts` |
 | Model implementations | `src/models/<Domain>Model/impl/<domain>Impl.ts` |
 | Model barrel export | `src/models/<Domain>Model/index.ts` → default export `<Domain>Fn` |
@@ -40,9 +40,20 @@ Config: `.prettierrc.json`
 | Feature modules | `src/features/<Feature>/` (PascalCase) |
 | Unit tests | `.test.ts` (utilities/hooks/APIs) |
 | Spec tests | `.spec.ts` (stores and feature modules) |
+| Facade core functions | `src/app-api/core/<domain>Api.ts` |
+| Facade React hooks | `src/app-api/use<Domain>Api.ts` |
 
 ## Design Patterns
 - Zustand middleware stack: `create(subscribeWithSelector(immer<StoreType>(persist(...))))`
 - IndexedDB persistence: proxy objects must be converted with `toPlainObject()` before saving
 - Specialized serializers: `serializeTable`, `serializeVisualStyle`, `serializeNetworkView`
 - Tests co-located with source files (not in separate directory)
+
+## Facade API (`src/app-api/`) Conventions — ADR 0003
+- **Core functions** (`core/`) are framework-agnostic: use `useXxxStore.getState()`, no React imports
+- **Hook wrappers** (`use<Domain>Api.ts`) are ultra-thin (~3–5 lines), contain zero domain logic
+- All public API inputs/outputs must be **JSON-serializable** (no `Map`/`Set` in signatures — use `Record`/`T[]`)
+- Always return `ApiResult<T>` — never throw across the facade boundary
+- `ApiResult<T>` helpers: `ok(data)` / `ok()` / `fail(code, message)` (named functions, not arrows)
+- Hardcode `skipUndo: false` — external apps must not corrupt the undo stack
+- `window.CyWebApi` is assigned in `src/init.tsx` after stores initialize

@@ -130,13 +130,15 @@ export const CircularLayoutMenu = ({
     const radius = 200
     const cx = 0
     const cy = 0
-    const positions = new Map<IdType, [number, number]>()
+    // PositionRecord (Record, not Map) — JSON-serializable for bridge relay
+    const positions: Record<IdType, [number, number]> = {}
 
     nodeIds.forEach((nodeId, index) => {
       const angle = (2 * Math.PI * index) / nodeIds.length
-      const x = cx + radius * Math.cos(angle)
-      const y = cy + radius * Math.sin(angle)
-      positions.set(nodeId, [x, y])
+      positions[nodeId] = [
+        cx + radius * Math.cos(angle),
+        cy + radius * Math.sin(angle),
+      ]
     })
 
     // Update positions in bulk
@@ -1040,21 +1042,396 @@ asyncio.run(build_network())
 
 ---
 
+## Use Case G (Variant): Chrome Extension MCP Bridge — Vanilla JS
+
+> **Scenario:** A Chrome extension content script uses `window.CyWebApi` directly (no React, no
+> Module Federation) to relay MCP commands from Claude Code. The extension background script
+> receives commands via `chrome.runtime.onMessage` from a local MCP Bridge Server, and the content
+> script executes them against Cytoscape Web.
+>
+> **Access path:** `window.CyWebApi` global — no bundler or React required
+>
+> **Architecture:**
+> ```
+> Claude Code → MCP Bridge Server (localhost Node.js)
+>                   ↕ chrome.runtime messaging
+>               Extension Background Script
+>                   ↕ chrome.tabs.sendMessage / onMessage
+>               Content Script (this file) injected into Cytoscape Web page
+>                   ↕ window.CyWebApi
+>               Cytoscape Web Core
+> ```
+
+### Content Script: `content-script.js`
+
+```javascript
+// content-script.js — Injected into the Cytoscape Web page by the extension
+// No React, no bundler. Accesses window.CyWebApi directly.
+
+/** Wait for Cytoscape Web to initialize the API */
+function onApiReady(callback) {
+  if (window.CyWebApi) {
+    callback(window.CyWebApi)
+  } else {
+    window.addEventListener('cywebapi:ready', () => callback(window.CyWebApi), { once: true })
+  }
+}
+
+/**
+ * Dispatch a single MCP tool call to the appropriate CyWebApi method.
+ * All responses are plain JSON — no Map, no class instances.
+ *
+ * @param {string} tool   - MCP tool name (e.g. 'create_network')
+ * @param {object} args   - Tool arguments
+ * @returns {Promise<{success: boolean, data?: unknown, error?: {code: string, message: string}}>}
+ */
+async function dispatchTool(api, tool, args) {
+  switch (tool) {
+    // ── Network ──────────────────────────────────────────────────────────────
+    case 'create_network': {
+      const result = api.network.createNetworkFromEdgeList({
+        name: args.name ?? 'Untitled',
+        description: args.description,
+        edgeList: args.edgeList ?? [],
+      })
+      return toResponse(result)
+    }
+
+    case 'delete_network': {
+      return toResponse(api.network.deleteNetwork(args.networkId))
+    }
+
+    // ── Elements ─────────────────────────────────────────────────────────────
+    case 'create_node': {
+      const result = api.element.createNode(
+        args.networkId,
+        args.position ?? [0, 0],
+        { attributes: args.attributes ?? {}, autoSelect: false },
+      )
+      return toResponse(result)
+    }
+
+    case 'create_edge': {
+      const result = api.element.createEdge(
+        args.networkId,
+        args.sourceId,
+        args.targetId,
+        { attributes: args.attributes ?? {}, autoSelect: false },
+      )
+      return toResponse(result)
+    }
+
+    case 'delete_nodes': {
+      return toResponse(api.element.deleteNodes(args.networkId, args.nodeIds))
+    }
+
+    case 'get_node': {
+      return toResponse(api.element.getNode(args.networkId, args.nodeId))
+    }
+
+    // ── Table ─────────────────────────────────────────────────────────────────
+    case 'set_value': {
+      return toResponse(
+        api.table.setValue(args.networkId, args.tableType, args.elementId, args.column, args.value),
+      )
+    }
+
+    case 'get_row': {
+      return toResponse(api.table.getRow(args.networkId, args.tableType, args.elementId))
+    }
+
+    case 'create_column': {
+      return toResponse(
+        api.table.createColumn(args.networkId, args.tableType, args.columnName, args.dataType, args.defaultValue ?? ''),
+      )
+    }
+
+    // ── Layout ───────────────────────────────────────────────────────────────
+    case 'apply_layout': {
+      // Returns Promise<ApiResult> — await is required
+      const result = await api.layout.applyLayout(args.networkId, {
+        algorithmName: args.algorithmName,
+        fitAfterLayout: args.fitAfterLayout ?? true,
+      })
+      return toResponse(result)
+    }
+
+    case 'get_available_layouts': {
+      return toResponse(api.layout.getAvailableLayouts())
+    }
+
+    // ── Viewport ─────────────────────────────────────────────────────────────
+    case 'fit': {
+      return toResponse(await api.viewport.fit(args.networkId))
+    }
+
+    case 'get_node_positions': {
+      // PositionRecord return is plain JSON — no Map conversion needed
+      return toResponse(api.viewport.getNodePositions(args.networkId, args.nodeIds))
+    }
+
+    case 'update_node_positions': {
+      // args.positions is Record<nodeId, [x, y]> — plain JSON from MCP
+      return toResponse(api.viewport.updateNodePositions(args.networkId, args.positions))
+    }
+
+    // ── Visual Style ──────────────────────────────────────────────────────────
+    case 'set_default': {
+      return toResponse(api.visualStyle.setDefault(args.networkId, args.vpName, args.vpValue))
+    }
+
+    case 'set_bypass': {
+      return toResponse(
+        api.visualStyle.setBypass(args.networkId, args.vpName, args.elementIds, args.vpValue),
+      )
+    }
+
+    // ── Export ────────────────────────────────────────────────────────────────
+    case 'export_cx2': {
+      return toResponse(api.export.exportToCx2(args.networkId))
+    }
+
+    // ── Selection ─────────────────────────────────────────────────────────────
+    case 'get_selection': {
+      return toResponse(api.selection.getSelection(args.networkId))
+    }
+
+    case 'exclusive_select': {
+      return toResponse(
+        api.selection.exclusiveSelect(args.networkId, args.nodeIds ?? [], args.edgeIds ?? []),
+      )
+    }
+
+    default:
+      return { success: false, error: { code: 'INVALID_INPUT', message: `Unknown tool: ${tool}` } }
+  }
+}
+
+/** Normalize ApiResult into a plain JSON-serializable response */
+function toResponse(result) {
+  if (result.success) {
+    return { success: true, data: result.data ?? null }
+  }
+  return { success: false, error: { code: result.error.code, message: result.error.message } }
+}
+
+// ── Bootstrap ────────────────────────────────────────────────────────────────
+
+onApiReady((api) => {
+  // Listen for MCP tool calls relayed from the extension background script
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.type !== 'MCP_TOOL_CALL') return false
+
+    const { callId, tool, args } = message
+    dispatchTool(api, tool, args).then((response) => {
+      sendResponse({ callId, ...response })
+    })
+
+    return true // Keep message channel open for async response
+  })
+
+  // Signal readiness to background script
+  chrome.runtime.sendMessage({ type: 'CONTENT_SCRIPT_READY' })
+})
+```
+
+### Background Script: `background.js` (Service Worker)
+
+```javascript
+// background.js — Extension service worker
+// Bridges the MCP Bridge Server (WebSocket) and the Cytoscape Web tab (content script)
+
+const MCP_BRIDGE_URL = 'ws://localhost:8765'
+let ws = null
+let cywebTabId = null
+
+/** Find the tab running Cytoscape Web */
+async function findCyWebTab() {
+  const tabs = await chrome.tabs.query({ url: '*://*.ndexbio.org/*' })
+  if (tabs.length === 0) {
+    // Also check localhost for development
+    const devTabs = await chrome.tabs.query({ url: 'http://localhost:5500/*' })
+    return devTabs[0]?.id ?? null
+  }
+  return tabs[0]?.id ?? null
+}
+
+/** Forward a tool call to the content script and await the result */
+async function callContentScript(tool, args, callId) {
+  if (!cywebTabId) {
+    cywebTabId = await findCyWebTab()
+    if (!cywebTabId) {
+      return { callId, success: false, error: { code: 'OPERATION_FAILED', message: 'Cytoscape Web tab not found' } }
+    }
+  }
+
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(
+      cywebTabId,
+      { type: 'MCP_TOOL_CALL', callId, tool, args },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          resolve({ callId, success: false, error: { code: 'OPERATION_FAILED', message: chrome.runtime.lastError.message } })
+        } else {
+          resolve({ callId, ...response })
+        }
+      },
+    )
+  })
+}
+
+/** Connect to local MCP Bridge Server */
+function connectToMcpBridge() {
+  ws = new WebSocket(MCP_BRIDGE_URL)
+
+  ws.onmessage = async (event) => {
+    const { callId, tool, args } = JSON.parse(event.data)
+    const result = await callContentScript(tool, args, callId)
+    ws.send(JSON.stringify(result))
+  }
+
+  ws.onclose = () => {
+    ws = null
+    setTimeout(connectToMcpBridge, 3000) // Reconnect after 3s
+  }
+}
+
+// Initialize on extension startup
+chrome.runtime.onInstalled.addListener(connectToMcpBridge)
+chrome.runtime.onStartup.addListener(connectToMcpBridge)
+```
+
+### MCP Bridge Server (Node.js): `mcp-bridge.js`
+
+```javascript
+// mcp-bridge.js — Local Node.js process: Claude Code ↔ WebSocket ↔ Extension
+// Run with: node mcp-bridge.js
+// Configure in ~/.mcp.json: { "cytoscape-web": { "command": "node", "args": ["path/to/mcp-bridge.js"] } }
+
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { WebSocketServer } from 'ws'
+import { z } from 'zod'
+
+const server = new McpServer({ name: 'cytoscape-web', version: '1.0.0' })
+const wss = new WebSocketServer({ port: 8765 })
+let extensionSocket = null
+
+// Accept connection from the Chrome extension background script
+wss.on('connection', (ws) => {
+  extensionSocket = ws
+  ws.on('close', () => { extensionSocket = null })
+})
+
+/** Send a tool call to the extension and wait for the response */
+function callExtension(tool, args) {
+  return new Promise((resolve, reject) => {
+    if (!extensionSocket) {
+      reject(new Error('Chrome extension not connected. Open Cytoscape Web and install the extension.'))
+      return
+    }
+    const callId = Math.random().toString(36).slice(2)
+    extensionSocket.send(JSON.stringify({ callId, tool, args }))
+
+    const onMessage = (data) => {
+      const msg = JSON.parse(data)
+      if (msg.callId !== callId) return
+      extensionSocket.off('message', onMessage)
+      resolve(msg)
+    }
+    extensionSocket.on('message', onMessage)
+    setTimeout(() => { extensionSocket.off('message', onMessage); reject(new Error('Timeout')) }, 30000)
+  })
+}
+
+// Register MCP tools — one per CyWebApi operation
+server.tool('create_network', { name: z.string(), edgeList: z.array(z.tuple([z.string(), z.string(), z.string().optional()])) },
+  async ({ name, edgeList }) => {
+    const result = await callExtension('create_network', { name, edgeList })
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  }
+)
+
+server.tool('create_node', { networkId: z.string(), position: z.tuple([z.number(), z.number()]).optional(), attributes: z.record(z.unknown()).optional() },
+  async (args) => {
+    const result = await callExtension('create_node', args)
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  }
+)
+
+server.tool('apply_layout', { networkId: z.string(), algorithmName: z.string().optional() },
+  async (args) => {
+    const result = await callExtension('apply_layout', args)
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  }
+)
+
+server.tool('get_node_positions', { networkId: z.string(), nodeIds: z.array(z.string()) },
+  async (args) => {
+    // Returns PositionRecord: { nodeId: [x, y] } — plain JSON, no conversion needed
+    const result = await callExtension('get_node_positions', args)
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  }
+)
+
+server.tool('export_cx2', { networkId: z.string() },
+  async (args) => {
+    const result = await callExtension('export_cx2', args)
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  }
+)
+
+// ... additional tools for each CyWebApi operation
+
+const transport = new StdioServerTransport()
+await server.connect(transport)
+```
+
+### Claude Code Side (`.mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "cytoscape-web": {
+      "command": "node",
+      "args": ["/path/to/cytoscape-web-mcp/mcp-bridge.js"]
+    }
+  }
+}
+```
+
+### Key Design Points of the Vanilla JS Variant
+
+| Concern | React variant (Use Case G original) | Vanilla JS / Extension variant |
+| ------- | ------------------------------------ | ------------------------------ |
+| API access | `useXxxApi()` hooks inside React component | `window.CyWebApi.xxx` in content script |
+| React required | Yes | **No** |
+| Module Federation required | Yes | **No** |
+| WebSocket location | In browser (Adapter App React component) | In extension background script (Service Worker) |
+| Cross-origin issue | HTTPS→ws://localhost blocked by Mixed Content | Extension `host_permissions` bypasses Private Network Access |
+| Position type | `Record<IdType, [x, y]>` (JSON-ready) | Same — no `Map` conversion needed |
+| `apply_layout` async | `await` in React `useCallback` | `await` in `dispatchTool` |
+| `cywebapi:ready` guard | Not needed (React hook lifecycle manages timing) | Required — content script may load before Cytoscape Web |
+
+---
+
 ## Summary: Use Case Coverage
 
-| Use Case                            | APIs Used                                                          | Sync/Async                     | Lines of App Code                 |
-| ----------------------------------- | ------------------------------------------------------------------ | ------------------------------ | --------------------------------- |
-| **A: Network Generator**            | `NetworkApi`, `LayoutApi`, `VisualStyleApi`, `ViewportApi`         | Mixed (layout + fit are async) | ~50                               |
-| **B: Custom Layout**                | `ElementApi`, `ViewportApi`                                        | Mixed (fit is async)           | ~30                               |
-| **C: Style Modification**           | `VisualStyleApi`, `SelectionApi`                                   | Sync                           | ~80                               |
-| **D: Analysis / Annotation**        | `TableApi`, `ElementApi`, `SelectionApi`, `VisualStyleApi`         | Sync                           | ~70                               |
-| **E: Data Import/Export**           | `NetworkApi`, `ExportApi`                                          | Sync                           | ~60                               |
-| **F: Graph Structure Modification** | `ElementApi`, `TableApi`, `VisualStyleApi`, `ViewportApi`          | Mixed (fit is async)           | ~80                               |
-| **G: LLM Agent Relay**              | `NetworkApi`, `ElementApi`, `TableApi`, `LayoutApi`, `ViewportApi` | Mixed (layout + fit are async) | ~150 (relay) + ~50 (Python agent) |
+| Use Case                            | APIs Used                                                          | Sync/Async                     | Lines of App Code                         |
+| ----------------------------------- | ------------------------------------------------------------------ | ------------------------------ | ----------------------------------------- |
+| **A: Network Generator**            | `NetworkApi`, `LayoutApi`, `VisualStyleApi`, `ViewportApi`         | Mixed (layout + fit are async) | ~50                                       |
+| **B: Custom Layout**                | `ElementApi`, `ViewportApi`                                        | Mixed (fit is async)           | ~30                                       |
+| **C: Style Modification**           | `VisualStyleApi`, `SelectionApi`                                   | Sync                           | ~80                                       |
+| **D: Analysis / Annotation**        | `TableApi`, `ElementApi`, `SelectionApi`, `VisualStyleApi`         | Sync                           | ~70                                       |
+| **E: Data Import/Export**           | `NetworkApi`, `ExportApi`                                          | Sync                           | ~60                                       |
+| **F: Graph Structure Modification** | `ElementApi`, `TableApi`, `VisualStyleApi`, `ViewportApi`          | Mixed (fit is async)           | ~80                                       |
+| **G: LLM Agent Relay (React)**      | `NetworkApi`, `ElementApi`, `TableApi`, `LayoutApi`, `ViewportApi` | Mixed (layout + fit are async) | ~150 (relay) + ~50 (Python agent)         |
+| **G: LLM Agent Relay (Vanilla JS)** | `window.CyWebApi.*` (all domains)                                  | Mixed (layout + fit are async) | ~130 (content script) + ~80 (background) + ~80 (MCP bridge) |
 
 All seven use cases that were **Partial** or **No** in the audit are now fully implementable with the facade API. Key improvements visible in the code:
 
-- **No raw store imports** — every operation goes through `cyweb/*` facade modules
+- **No raw store imports** — every operation goes through `cyweb/*` facade modules or `window.CyWebApi`
 - **Structured error handling** — `ApiResult` discriminated union with `ApiErrorCode` enables programmatic error handling (especially critical for Use Case G)
 - **Type-safe visual properties** — `VisualPropertyName` and `ValueTypeName` are imported from `cyweb/ApiTypes`
 - **Sync/async clarity** — follows § 1.6 policy: store operations are sync, layout and fit are `Promise`
+- **JSON-serializable positions** — `PositionRecord` (not `Map`) flows through WebSocket and MCP without conversion

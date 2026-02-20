@@ -102,8 +102,12 @@ interface ApiReturn<T> {
 
 **Affected areas:**
 
-- All 8 facade hooks (`useElementApi`, `useNetworkApi`, etc.) must return `ApiResult<T>`
-- Internal hooks (`useCreateNode`, `useCreateEdge`, etc.) already return result-like objects; the facade wraps and converts them
+- All 8 core function modules (`src/app-api/core/<domain>Api.ts`) return `ApiResult<T>`
+- All 8 React hook wrappers (`use<Domain>Api.ts`) re-expose the same `ApiResult<T>` typed objects
+- `window.CyWebApi` global exposes the same core functions — callers use the same `result.success`
+  pattern regardless of access path (Module Federation hook or vanilla JS global)
+- Internal hooks (`useCreateNode`, `useCreateEdge`, etc.) already return result-like objects; core
+  functions replicate and convert their coordination logic
 - External app developers learn one pattern for all error handling
 - `ApiErrorCode` is a closed set defined by the host — external apps cannot add custom codes
 

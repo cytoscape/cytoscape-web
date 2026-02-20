@@ -1,6 +1,6 @@
 # Module Federation Facade API Design and Priorities
 
-**Rev. 1 (2/11/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
+**Rev. 2 (2/19/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
 Solution proposals for the issues identified in [module-federation-audit.md](module-federation-audit.md).
 
@@ -12,29 +12,53 @@ Solution proposals for the issues identified in [module-federation-audit.md](mod
 
 #### 1.1 Design and Implement Facade API Layer
 
-The primary public API for external apps is a **facade layer** (`src/app-api/`) consisting of domain-specific hooks. See [facade-api-specification.md](facade-api-specification.md) for the full design.
+The primary public API for external apps is a **facade layer** (`src/app-api/`) with two access
+paths:
+
+- **Module Federation hooks** (`use<Domain>Api`) — React apps import from `cyweb/ElementApi` etc.
+- **`window.CyWebApi` global** — Vanilla JS consumers (browser extensions, LLM agent bridges)
+  access the same operations without React or a bundler.
+
+Both paths execute the same domain logic, which lives in framework-agnostic core functions at
+`src/app-api/core/`. See [ADR 0003](../../adr/0003-framework-agnostic-core-layer.md) for the
+rationale and [facade-api-specification.md](facade-api-specification.md) for the full design.
+
+**Two-layer architecture:**
+
+```
+src/app-api/core/<domain>Api.ts   ← framework-agnostic functions (no React, uses .getState())
+src/app-api/use<Domain>Api.ts     ← React Hook wrapper: returns core object (thin, ~1 line)
+```
 
 Instead of directly exposing individual internal hooks or raw stores, the facade provides:
 
 - A **stable public contract** independent of internal store implementation
 - **Validated, typed operations** with consistent `ApiResult<T>` returns
-- Coverage for all critical gaps identified in the audit (element CRUD, layout execution, viewport control, CX2 export)
+- Coverage for all critical gaps identified in the audit (element CRUD, layout execution, viewport
+  control, CX2 export)
+- **Framework-agnostic access** enabling non-React consumers without duplication
 
-The facade wraps existing internal hooks (`useCreateNode`, `useCreateEdge`, `useDeleteNodes`, etc.) and stores (`RendererFunctionStore`, `LayoutStore`, etc.) as implementation details. External apps import only from facade modules:
+Core functions coordinate stores directly via `useXxxStore.getState()`, replicating the logic of
+existing internal hooks (`useCreateNode`, `useCreateEdge`, etc.) without calling them. External apps
+import from facade modules:
 
 ```
-cyweb/ElementApi      → Node/edge CRUD (wraps useCreateNode, useCreateEdge, etc.)
-cyweb/NetworkApi      → Network lifecycle (wraps useCreateNetwork, useCreateNetworkFromCx2, etc.)
-cyweb/SelectionApi    → Selection operations (wraps ViewModelStore selection methods)
-cyweb/TableApi        → Table data operations (wraps TableStore)
-cyweb/VisualStyleApi  → Visual style operations (wraps VisualStyleStore)
-cyweb/LayoutApi       → Layout execution (new coordination: LayoutStore + LayoutEngine + ViewModelStore)
-cyweb/ViewportApi     → Viewport control (wraps RendererFunctionStore + ViewModelStore)
-cyweb/ExportApi       → CX2 export (wraps exportCyNetworkToCx2)
+cyweb/ElementApi      → Node/edge CRUD
+cyweb/NetworkApi      → Network lifecycle
+cyweb/SelectionApi    → Selection operations
+cyweb/TableApi        → Table data operations
+cyweb/VisualStyleApi  → Visual style operations
+cyweb/LayoutApi       → Layout execution
+cyweb/ViewportApi     → Viewport control
+cyweb/ExportApi       → CX2 export
 cyweb/ApiTypes        → Shared types (ApiResult, ApiErrorCode, re-exported model types)
+window.CyWebApi       → Same operations, globally accessible (no Module Federation required)
 ```
 
-Internal hooks and stores needed by the facade but not currently exposed (e.g., `RendererFunctionStore` for viewport control, layout execution coordination) are used internally by the facade — they are NOT independently exposed via Module Federation. This ensures external apps have a single, well-designed entry point and are insulated from internal refactoring.
+Internal hooks and stores needed by the facade but not currently exposed (e.g.,
+`RendererFunctionStore` for viewport control, layout execution coordination) are used internally by
+the facade — they are NOT independently exposed via Module Federation. This ensures external apps
+have a single, well-designed entry point and are insulated from internal refactoring.
 
 #### 1.2 Deprecate Raw Store Exposure
 
@@ -75,6 +99,28 @@ import { ApiErrorCode, ValueTypeName, VisualPropertyName } from 'cyweb/ApiTypes'
 ```
 
 The `@cytoscape-web/types` package fixes (issues 1–4) remain tracked as P1 improvements. Once resolved, the curated re-export layer will delegate to the package, unifying the two type distribution mechanisms.
+
+##### Publish `@cytoscape-web/api-types` Package
+
+Vanilla JS consumers (browser extension developers, LLM agent bridge authors) who cannot use
+Module Federation need TypeScript declarations for `window.CyWebApi`. A lightweight
+`@cytoscape-web/api-types` npm package will publish:
+
+- Ambient declarations for `window.CyWebApi` (all 8 domain API interface types)
+- `ApiResult<T>`, `ApiErrorCode`, and public helper type signatures
+- Re-exported public model types (same surface as `cyweb/ApiTypes`)
+
+```typescript
+// tsconfig.json: "types": ["@cytoscape-web/api-types"]
+document.addEventListener('cywebapi:ready', () => {
+  const api = window.CyWebApi  // typed as CyWebApiType
+  const result = api.network.createNetworkFromEdgeList(edges)
+})
+```
+
+The package is generated from the same `src/app-api/types/` sources as the runtime code,
+keeping types synchronized with the implementation. This is a P1 quality-of-life item for
+non-React consumers and does not block Phase 1 core implementation.
 
 #### 1.4 Runtime Dynamic App Registration
 
@@ -173,48 +219,55 @@ Design the facade API surface first, then implement incrementally. Each sub-phas
 
 The facade is the **only new public API** — internal hooks and stores are created or modified as needed to support the facade, but are not independently exposed.
 
-#### Step 0: Foundation Types
+#### Step 0: Foundation Types and Core Layer Structure
 
 1. Define shared types (`ApiResult<T>`, `ApiErrorCode`) and public type re-exports
 2. Create `src/app-api/types/` directory structure with barrel exports
-3. Add `cyweb/ApiTypes` entry to `webpack.config.js`
-4. Unit tests for `ApiResult` helpers (`ok`, `fail`, type guards)
-5. Behavioral documentation (`src/app-api/api_docs/Api.md`)
+3. Create `src/app-api/core/` directory with `index.ts` that assembles the `CyWebApi` object
+4. Assign `window.CyWebApi = CyWebApi` in `src/init.tsx` after store initialization
+5. Add `cyweb/ApiTypes` entry to `webpack.config.js`
+6. Unit tests for `ApiResult` helpers (`ok`, `fail`, type guards)
+7. Behavioral documentation (`src/app-api/api_docs/Api.md`)
 
-> Design: [phase1a-shared-types-design.md](phase1a-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md)
+> Design: [phase1a-shared-types-design.md](phase1a-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md), [0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)
 
 #### Step 1: Facade Hook Implementation (5 sub-phases)
 
 Each sub-phase produces: facade hook source → unit tests → webpack entry → behavioral docs.
 
-**1a: Element API** (`useElementApi`)
+Each sub-phase produces two files per domain: `src/app-api/core/<domain>Api.ts` (framework-agnostic
+core functions) and `src/app-api/use<Domain>Api.ts` (thin React hook wrapper). Core function tests
+use plain Jest; hook wrapper tests use `renderHook`.
+
+**1a: Element API** (`core/elementApi.ts` + `useElementApi.ts`)
 
 - Node/edge CRUD: `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`
-- Wraps: `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`
+- Coordinates stores via `.getState()` (mirrors logic of `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`)
 
-**1b: Network API** (`useNetworkApi`)
+**1b: Network API** (`core/networkApi.ts` + `useNetworkApi.ts`)
 
 - Network lifecycle: `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`
 - Includes CX2 validation fix (P0 item 1.6)
-- Wraps: `useCreateNetworkWithView`, `useCreateNetworkFromCx2`
+- Coordinates stores via `.getState()` (mirrors logic of `useCreateNetworkWithView`, `useCreateNetworkFromCx2`)
 - **Example validation**: Migrate `hello-world/CreateNetworkMenu` and `CreateNetworkFromCx2Menu` from raw stores/hooks to `useNetworkApi`
 
-**1c: Selection + Viewport API** (`useSelectionApi`, `useViewportApi`)
+**1c: Selection + Viewport API** (`core/selectionApi.ts`, `core/viewportApi.ts` + hook wrappers)
 
 - Selection: `exclusiveSelect`, `additiveSelect`, `toggleSelected`, `getSelection`
 - Viewport: `fit`, `getNodePositions`, `updateNodePositions`
 - **Example validation**: Add selection/viewport demo to `hello-world/HelloPanel`
 
-**1d: Table + Visual Style API** (`useTableApi`, `useVisualStyleApi`)
+**1d: Table + Visual Style API** (`core/tableApi.ts`, `core/visualStyleApi.ts` + hook wrappers)
 
 - Table: `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`
 - Visual style: `setDefault`, `setBypass`, `createDiscreteMapping`, `createPassthroughMapping`
 - **Example validation**: Update `simple-panel` to read/display table data via facade API
 
-**1e: Layout + Export API** (`useLayoutApi`, `useExportApi`)
+**1e: Layout + Export API** (`core/layoutApi.ts`, `core/exportApi.ts` + hook wrappers)
 
 - Layout: `applyLayout`, `getAvailableLayouts`
 - Export: `exportToCx2`
+- After 1e: Update `src/app-api/core/index.ts` to assemble all 8 domain objects into `CyWebApi`
 - **Example validation**: Create `network-generator` toy example (create → layout → fit → export)
 
 #### Step 2: Webpack Integration and Deprecation
@@ -246,7 +299,10 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 #### Phase 1 Exit Criteria
 
-- [ ] All 8 facade hooks implemented with unit tests
+- [ ] All 8 `core/<domain>Api.ts` files implemented with plain Jest unit tests (no `renderHook`)
+- [ ] All 8 `use<Domain>Api.ts` hook wrappers implemented (each ~1–5 lines)
+- [ ] `window.CyWebApi` assigned in `src/init.tsx` and accessible after app load
+- [ ] `src/app-api/core/` contains zero React imports (verified by linting or code review)
 - [ ] `ApiResult<T>` and type re-exports verified via `cyweb/ApiTypes`
 - [ ] `hello-world` runs end-to-end using only facade API (no raw store imports)
 - [ ] `network-generator` toy example creates, lays out, styles, and exports a network
@@ -257,14 +313,20 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 ### Phase 2: Developer Experience
 
-1. Design and implement event bus
+1. Design and implement event bus (typed `CustomEvent` on `window`, consumed by both React apps and
+   vanilla JS consumers via `window.addEventListener`)
 2. Dynamic app registration mechanism
-3. API reference documentation
+3. API reference documentation (covering both `use<Domain>Api` hooks and `window.CyWebApi`)
 4. Starter template
+5. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script
+   using `window.CyWebApi`)
 
 ### Phase 3: Extensibility
 
-1. App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)
+1. App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`). `AppContext.apis` is assembled
+   directly from the `window.CyWebApi` core objects — not constructed independently. Module
+   Federation apps receive the same instances as vanilla JS consumers, eliminating the need for
+   a separate React-context-based API assembly step.
 2. Expand UI integration points
 3. Expose CX2 export API
 4. Inter-app communication protocol
