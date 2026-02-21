@@ -195,15 +195,85 @@ _Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §
 
 ---
 
-## Final Verification (All Phase 1 Sub-phases Complete)
+## Step 2: Event Bus
+
+_Design: [event-bus-specification.md](../specifications/event-bus-specification.md) — full spec including store subscription mapping, edge cases, and test patterns_
+
+**Dependency note:** `layout:started` / `layout:completed` events are dispatched from
+`core/layoutApi.ts` (Phase 1e). All other 6 event types depend only on existing stores and can
+be implemented at any point after Phase 1, Step 0. Full wiring of layout events requires Phase 1e
+to be complete before Step 2 is closed.
+
+### Pre-read files
+
+| File                                              | Lines | Purpose                                                     |
+| ------------------------------------------------- | ----- | ----------------------------------------------------------- |
+| `src/data/hooks/stores/WorkspaceStore.ts`         | —     | `networkIds`, `currentNetworkId` — source for network events |
+| `src/data/hooks/stores/ViewModelStore.ts`         | 354   | Selection state per network view                            |
+| `src/data/hooks/stores/VisualStyleStore.ts`       | 337   | Visual style map — source for `style:changed`               |
+| `src/data/hooks/stores/TableStore.ts`             | 397   | Table data — source for `data:changed`                      |
+| `src/app-api/core/layoutApi.ts`                  | —     | Insert `dispatchCyWebEvent` calls for layout events (1e dep) |
+| `src/init.tsx`                                    | —     | Where `initEventBus()` and `cywebapi:ready` will be added   |
+
+### Deliverables
+
+- [ ] Create `src/app-api/event-bus/CyWebEvents.ts` — `CyWebEvents` interface + `CyWebEventMap` type
+- [ ] Create `src/app-api/event-bus/dispatchCyWebEvent.ts` — generic `dispatchCyWebEvent<K>` helper
+- [ ] Create `src/app-api/event-bus/initEventBus.ts` — Zustand subscriptions for 6 store-based events
+  - [ ] `network:created` / `network:deleted` — WorkspaceStore `networkIds` (Set diff)
+  - [ ] `network:switched` — WorkspaceStore `currentNetworkId`
+  - [ ] `selection:changed` — ViewModelStore current view with `shallowEqual`
+  - [ ] `style:changed` — VisualStyleStore `visualStyles` (per-property diff)
+  - [ ] `data:changed` — TableStore `tables` (per-table diff with `rowIds`)
+- [ ] Create `src/app-api/useCyWebEvent.ts` — React hook: `useEffect` + `addEventListener` + cleanup
+- [ ] Modify `src/init.tsx`:
+  - [ ] Import and call `initEventBus()` after `window.CyWebApi = CyWebApi`
+  - [ ] Dispatch `cywebapi:ready` as the final initialization step
+- [ ] Modify `src/app-api/core/layoutApi.ts` — add `dispatchCyWebEvent('layout:started', ...)` before layout and `dispatchCyWebEvent('layout:completed', ...)` after *(requires Phase 1e)*
+- [ ] Modify `webpack.config.js` — add `'./EventBus': './src/app-api/useCyWebEvent.ts'`
+
+### Tests
+
+- [ ] Create `src/app-api/event-bus/initEventBus.test.ts` — plain Jest, mock `window.dispatchEvent`
+  - [ ] `network:created` — add one ID; add multiple IDs simultaneously
+  - [ ] `network:deleted` — remove one ID; remove multiple IDs
+  - [ ] `network:switched` — ID changes; same ID (no event); `previousId` is `''` on first switch
+  - [ ] `selection:changed` — nodes change; edges change; same reference (no event via `shallowEqual`)
+  - [ ] `style:changed` — single property changes; no-op mutation (no event)
+  - [ ] `data:changed` — single row change; bulk change; schema-only change (`rowIds: []`)
+  - [ ] Startup suppression — no `network:created` events fired during `initEventBus()` itself
+- [ ] Create `src/app-api/useCyWebEvent.test.ts` — `renderHook` from `@testing-library/react`
+  - [ ] Handler fires when matching event dispatched on `window`
+  - [ ] Handler not called for non-matching event type
+  - [ ] Listener removed on unmount (handler not called after)
+  - [ ] Handler reference change causes re-subscription
+- [ ] Add layout event tests to `src/app-api/core/layoutApi.test.ts` *(after Phase 1e)*
+  - [ ] `layout:started` dispatched before layout executes
+  - [ ] `layout:completed` dispatched after positions committed
+  - [ ] Neither event dispatched when `applyLayout` fails before starting
+- [ ] Add `cywebapi:ready` smoke test to `src/init.test.ts` (or app initialization test file)
+  - [ ] `cywebapi:ready` fired after `window.CyWebApi` is assigned
+
+### Verification
+
+- [ ] `npm run lint` passes
+- [ ] `npm run test:unit -- --testPathPattern="initEventBus|useCyWebEvent"` passes
+- [ ] `npm run build` succeeds
+- [ ] Manual: open DevTools Event Listeners panel — confirm `selection:changed` fires on node click
+
+---
+
+## Final Verification (All Phase 1 Steps Complete)
 
 - [ ] `npm run lint` — zero errors
 - [ ] `npm run test:unit` — all tests pass
 - [ ] `npm run build` — production build succeeds
-- [ ] All 9 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`
+- [ ] All 10 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `EventBus`
 - [ ] All `AppContext.apis` fields uncommented and typed
 - [ ] Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
-- [ ] `src/app-api/api_docs/Api.md` covers all 8 facade hooks
+- [ ] `src/app-api/api_docs/Api.md` covers all 8 facade hooks + event bus
+- [ ] `cywebapi:ready` dispatched on `window` after full initialization
+- [ ] `hello-world/HelloPanel` `SelectionCounter` reacts to selection via `useCyWebEvent`
 
 ---
 

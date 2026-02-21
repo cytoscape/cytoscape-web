@@ -2,7 +2,7 @@
 
 **Rev. 2 (2/15/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Detailed design for the facade API (External App API) layer. For priorities and roadmap, see [module-federation-design.md](module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](module-federation-audit.md).
+Detailed design for the facade API (External App API) layer. For priorities and roadmap, see [module-federation-design.md](../module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](../module-federation-audit.md).
 
 ---
 
@@ -15,7 +15,7 @@ exposing internal stores or hooks directly, the facade defines a stable contract
 program against. This ensures that internal refactoring (store splits, hook reorganization, etc.)
 never breaks the external API.
 
-**Two-layer design (see [ADR 0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)):**
+**Two-layer design (see [ADR 0003](../../../../docs/adr/0003-framework-agnostic-core-layer.md)):**
 
 ```
 src/app-api/core/<domain>Api.ts    Framework-agnostic pure functions
@@ -66,10 +66,14 @@ src/app-api/
 │   ├── selectionApi.ts            # Selection operations — plain functions
 │   ├── tableApi.ts                # Table data operations — plain functions
 │   ├── visualStyleApi.ts          # Visual style operations — plain functions
-│   ├── layoutApi.ts               # Layout execution — plain functions
+│   ├── layoutApi.ts               # Layout execution — plain functions; dispatches layout:started / layout:completed events
 │   ├── viewportApi.ts             # Viewport control — plain functions
 │   ├── exportApi.ts               # CX2 export — plain functions
 │   └── index.ts                   # Assembles CyWebApi; assigned to window.CyWebApi in init.tsx
+├── event-bus/                     # Event bus — Phase 1 Step 2 (see event-bus-specification.md)
+│   ├── CyWebEvents.ts             # CyWebEvents interface + CyWebEventMap type
+│   ├── dispatchCyWebEvent.ts      # Generic dispatchCyWebEvent<K> helper (used by initEventBus + layoutApi)
+│   └── initEventBus.ts            # Zustand subscriptions — internal, NOT exposed via Module Federation
 ├── useElementApi.ts               # React Hook: returns elementApi (~1 line)
 ├── useNetworkApi.ts               # React Hook: returns networkApi (~1 line)
 ├── useSelectionApi.ts             # React Hook: returns selectionApi (~1 line)
@@ -78,6 +82,7 @@ src/app-api/
 ├── useLayoutApi.ts                # React Hook: returns layoutApi (~1 line)
 ├── useViewportApi.ts              # React Hook: returns viewportApi (~1 line)
 ├── useExportApi.ts                # React Hook: returns exportApi (~1 line)
+├── useCyWebEvent.ts               # React Hook: typed window.addEventListener wrapper — exposed as cyweb/EventBus
 └── index.ts                       # Barrel export
 ```
 
@@ -788,6 +793,7 @@ import { useNetworkStore } from 'cyweb/NetworkStore'
 | Module Federation       | `cyweb/LayoutApi`          | `useLayoutApi()`      | applyLayout, getAvailableLayouts                                                                                        |
 | Module Federation       | `cyweb/ViewportApi`        | `useViewportApi()`    | fit, getNodePositions, updateNodePositions                                                                              |
 | Module Federation       | `cyweb/ExportApi`          | `useExportApi()`      | exportToCx2                                                                                                             |
+| Module Federation       | `cyweb/EventBus`           | `useCyWebEvent()`     | Subscribe to typed window events (network, selection, layout, style, data)                                              |
 | Module Federation       | `cyweb/ApiTypes`           | —                     | IdType, ApiResult, ApiErrorCode, VisualPropertyName, ValueTypeName, CyNetwork, Cx2, AppContext, CyAppWithLifecycle, ... |
 | Global (vanilla JS)     | `window.CyWebApi.element`  | plain object          | Same as ElementApi operations                                                                                           |
 | Global (vanilla JS)     | `window.CyWebApi.network`  | plain object          | Same as NetworkApi operations                                                                                           |
@@ -1529,20 +1535,30 @@ describe('moveEdge', () => {
       engine.algorithms[algorithmName] exists
    b. Else: use LayoutStore.preferredLayout → find its engine
 3. If no engine found → return fail(LayoutEngineNotFound, ...)
-4. LayoutStore.setIsRunning(true)
-5. Call engine.apply(network.nodes, network.edges, callback, algorithm)
-6. In callback(positionMap):
+4. dispatchCyWebEvent('layout:started', { networkId, algorithm: algorithmName })
+5. LayoutStore.setIsRunning(true)
+6. Call engine.apply(network.nodes, network.edges, callback, algorithm)
+7. In callback(positionMap):
    a. ViewModelStore.updateNodePositions(networkId, positionMap)
    b. If fitAfterLayout:
       - fn = RendererFunctionStore.getFunction('cyjs', 'fit', networkId)
       - If fn: fn()
       - Else: log warning (layout succeeds without fit)
    c. LayoutStore.setIsRunning(false)
-   d. Resolve Promise with ok()
-7. On error at any step: reject/resolve with fail(OperationFailed, ...)
+   d. dispatchCyWebEvent('layout:completed', { networkId, algorithm: algorithmName })
+   e. Resolve Promise with ok()
+8. On error at any step: reject/resolve with fail(OperationFailed, ...)
+   NOTE: if error occurs after step 4, layout:completed is NOT dispatched (intentional —
+   see event-bus-specification.md § 1.4.6 and § 2.2)
 ```
 
 **Stores involved (4):** `LayoutStore`, `NetworkStore`, `ViewModelStore`, `RendererFunctionStore`
+
+**Event bus side effects:** `applyLayout` is the dispatch origin for `layout:started` and
+`layout:completed` events. It imports `dispatchCyWebEvent` from
+`./event-bus/dispatchCyWebEvent`. This is the only facade core function that dispatches events
+directly (all other events come from `initEventBus` Zustand subscriptions). See
+[event-bus-specification.md § 1.4.5–1.4.6](event-bus-specification.md).
 
 **Reference implementation:** The pattern in [useRegisterNetwork.ts](src/data/hooks/useRegisterNetwork.ts) (lines 130–155) shows the existing layout execution flow and should be followed.
 

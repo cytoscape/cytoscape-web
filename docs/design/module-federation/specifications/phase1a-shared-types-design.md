@@ -2,7 +2,7 @@
 
 **Rev. 1 (2/12/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Implementation design for Phase 1, Step 1 of the [implementation roadmap](module-federation-design.md):
+Implementation design for Phase 1, Step 1 of the [implementation roadmap](../module-federation-design.md):
 
 > _"Define shared types (`ApiResult<T>`, `ApiErrorCode`) and public type re-exports"_
 
@@ -10,7 +10,7 @@ This document specifies every file to create, every type to define, every export
 
 **Parent documents:**
 
-- [module-federation-design.md](module-federation-design.md) — Priorities and roadmap
+- [module-federation-design.md](../module-federation-design.md) — Priorities and roadmap
 - [facade-api-specification.md](facade-api-specification.md) — Full facade API specification
 
 ---
@@ -34,8 +34,8 @@ This phase creates the **foundational type infrastructure** for the entire facad
 ### Out of Scope
 
 - Facade hook implementations (`useElementApi`, `useNetworkApi`, etc.) — Phase 1a through 1e
-- Event bus — Phase 2
-- `@cytoscape-web/types` package fixes — tracked separately in [module-federation-design.md § 1.3](module-federation-design.md)
+- Event bus (`initEventBus`, `useCyWebEvent`) — Phase 1 Step 2 (after Phase 1e); see [event-bus-specification.md](event-bus-specification.md)
+- `@cytoscape-web/types` package fixes — tracked separately in [module-federation-design.md § 1.3](../module-federation-design.md)
 
 ---
 
@@ -112,7 +112,7 @@ export const ApiErrorCode = {
 export type ApiErrorCode = (typeof ApiErrorCode)[keyof typeof ApiErrorCode]
 ```
 
-**Design decisions:** (see [ADR 0001](../../adr/0001-api-result-discriminated-union.md) for full rationale)
+**Design decisions:** (see [ADR 0001](../../../adr/0001-api-result-discriminated-union.md) for full rationale)
 
 | Decision                         | Rationale                                                                                                                                                                             |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -169,7 +169,7 @@ export interface ApiFailure {
 export type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
 ````
 
-**Design decisions:** (see [ADR 0001](../../adr/0001-api-result-discriminated-union.md) for full rationale and rejected alternatives)
+**Design decisions:** (see [ADR 0001](../../../adr/0001-api-result-discriminated-union.md) for full rationale and rejected alternatives)
 
 | Decision                      | Rationale                                                                                                                                                                           |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -373,7 +373,7 @@ export type { NetworkView } from '../../models/ViewModel/NetworkView'
 export type { Cx2 } from '../../models/CxModel/Cx2'
 ```
 
-**Design decisions:** (see [ADR 0002](../../adr/0002-public-type-reexport-strategy.md) for full rationale and rejected alternatives)
+**Design decisions:** (see [ADR 0002](../../../adr/0002-public-type-reexport-strategy.md) for full rationale and rejected alternatives)
 
 | Decision                               | Rationale                                                                                                                                                                                                                                              |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -785,7 +785,8 @@ This phase creates the foundation for all subsequent work. Here is how later pha
 | 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts` | `ApiResult`, `ok()`, `fail()`, `ApiErrorCode`, `IdType` |
 | 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts` | `ApiResult`, `ok()`, `fail()`, `ApiErrorCode`, `IdType`, table types, VP types |
 | 1e: Layout + Export | `useLayoutApi.ts`, `useExportApi.ts` | `ApiResult`, `ok()`, `fail()`, `ApiErrorCode`, `Cx2` |
-| Webpack update | New `./ElementApi`, etc. entries | `./ApiTypes` entry already present |
+| Step 2: Event Bus | `initEventBus.ts`, `useCyWebEvent.ts`, `CyWebEvents.ts` | `IdType` (re-exported via `cyweb/ApiTypes`) |
+| Webpack update | New `./ElementApi`, etc. + `./EventBus` entries | `./ApiTypes` entry already present |
 | `AppContext` completion | Uncomment API fields | `AppContext` type shell already defined |
 
 ---
@@ -795,6 +796,6 @@ This phase creates the foundation for all subsequent work. Here is how later pha
 | # | Question | Owner | Resolution |
 |---|---|---|---|
 | 1 | Should `ApiResult` support a `warnings` array alongside `error`? Some operations (e.g., CX2 import) may partially succeed with warnings. | API Design | **Deferred.** Current design is success/failure binary. Warnings can be added as `ApiResult<T & { warnings?: string[] }>` in specific hooks without changing the core type. |
-| 2 | Should `ok()` and `fail()` be frozen (`Object.freeze`)? | API Design | **No.** See [ADR 0001](../../adr/0001-api-result-discriminated-union.md). |
-| 3 | Should `ApiErrorCode` be extensible by external apps? | API Design | **No.** See [ADR 0001](../../adr/0001-api-result-discriminated-union.md). |
+| 2 | Should `ok()` and `fail()` be frozen (`Object.freeze`)? | API Design | **No.** See [ADR 0001](../../../adr/0001-api-result-discriminated-union.md). |
+| 3 | Should `ApiErrorCode` be extensible by external apps? | API Design | **No.** See [ADR 0001](../../../adr/0001-api-result-discriminated-union.md). |
 

@@ -4,7 +4,7 @@
 >
 > Phase 1 checklist: [implementation-checklist-phase1.md](implementation-checklist-phase1.md)
 
-_Design: [phase1a-shared-types-design.md](phase1a-shared-types-design.md) — line-by-line blueprint_
+_Design: [phase1a-shared-types-design.md](../specifications/phase1a-shared-types-design.md) — line-by-line blueprint_
 
 ## Deliverables
 

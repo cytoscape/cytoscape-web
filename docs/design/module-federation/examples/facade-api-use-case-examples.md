@@ -2,15 +2,15 @@
 
 **Rev. 1 (2/13/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Concrete code samples for each use case from [module-federation-audit.md § 5](module-federation-audit.md) ("Use Case Gap Matrix"), implemented against the facade API defined in [facade-api-specification.md](facade-api-specification.md).
+Concrete code samples for each use case from [module-federation-audit.md § 5](../module-federation-audit.md) ("Use Case Gap Matrix"), implemented against the facade API defined in [facade-api-specification.md](../specifications/facade-api-specification.md).
 
 Each example is a self-contained React component that a Module Federation external app could register. All examples import exclusively from `cyweb/*` facade modules — no raw store imports.
 
 **Parent documents:**
 
-- [module-federation-audit.md § 5](module-federation-audit.md) — Use case gap analysis
-- [facade-api-specification.md](facade-api-specification.md) — Full facade API specification
-- [module-federation-design.md § 2.5](module-federation-design.md) — Revised use case gap matrix
+- [module-federation-audit.md § 5](../module-federation-audit.md) — Use case gap analysis
+- [facade-api-specification.md](../specifications/facade-api-specification.md) — Full facade API specification
+- [module-federation-design.md § 2.5](../module-federation-design.md) — Revised use case gap matrix
 
 ---
 

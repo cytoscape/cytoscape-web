@@ -1,6 +1,6 @@
 # Module Federation Facade API Design and Priorities
 
-**Rev. 2 (2/19/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
+**Rev. 3 (2/21/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Updated for new Event Bus
 
 Solution proposals for the issues identified in [module-federation-audit.md](module-federation-audit.md).
 
@@ -21,7 +21,7 @@ paths:
 
 Both paths execute the same domain logic, which lives in framework-agnostic core functions at
 `src/app-api/core/`. See [ADR 0003](../../adr/0003-framework-agnostic-core-layer.md) for the
-rationale and [facade-api-specification.md](facade-api-specification.md) for the full design.
+rationale and [facade-api-specification.md](specifications/facade-api-specification.md) for the full design.
 
 **Two-layer architecture:**
 
@@ -62,7 +62,7 @@ have a single, well-designed entry point and are insulated from internal refacto
 
 #### 1.2 Deprecate Raw Store Exposure
 
-The existing 12 raw store exports and 2 legacy task hooks remain available for backward compatibility but are marked `@deprecated`. New external apps should use the facade API exclusively. See [facade-api-specification.md § 2.4](facade-api-specification.md) for the deprecation timeline.
+The existing 12 raw store exports and 2 legacy task hooks remain available for backward compatibility but are marked `@deprecated`. New external apps should use the facade API exclusively. See [facade-api-specification.md § 2.4](specifications/facade-api-specification.md) for the deprecation timeline.
 
 ### P1 (Important — Needed for practical app development)
 
@@ -113,7 +113,7 @@ Module Federation need TypeScript declarations for `window.CyWebApi`. A lightwei
 ```typescript
 // tsconfig.json: "types": ["@cytoscape-web/api-types"]
 document.addEventListener('cywebapi:ready', () => {
-  const api = window.CyWebApi  // typed as CyWebApiType
+  const api = window.CyWebApi // typed as CyWebApiType
   const result = api.network.createNetworkFromEdgeList(edges)
 })
 ```
@@ -132,9 +132,28 @@ Remove build-time dependency on `apps.json` + `app-definition.ts`:
 
 #### 1.5 Introduce Event Bus
 
-Typed event system:
+External apps frequently need to react to state changes in Cytoscape Web — for example, updating a
+side panel when the user changes their selection, or triggering an analysis when a new network is
+loaded. Polling stores is fragile and inefficient; a typed event bus solves this cleanly.
+
+**Design rationale: `window.dispatchEvent` with `CustomEvent`**
+
+The event bus uses the browser's native `CustomEvent` API dispatched on `window`. This design was
+chosen over a pub/sub library or a React Context approach for three concrete reasons:
+
+1. **Zero-dependency universality** — Both React apps (via a thin hook wrapper) and Vanilla JS
+   consumers (browser extensions, LLM agent bridges, server-side runners) listen with the same
+   `window.addEventListener` call. No bundler, no React, no Module Federation required.
+2. **Module boundary transparency** — `CustomEvent` on `window` is visible across all script
+   contexts on the page, including iframes and browser extension content scripts. A shared singleton
+   object passed through Module Federation would not reach these consumers.
+3. **Browser DevTools observability** — Custom events appear in the Chrome DevTools Event Listeners
+   panel, making it straightforward to debug event flow without additional instrumentation.
+
+**Event type interface**
 
 ```typescript
+// src/app-api/event-bus/CyWebEvents.ts
 interface CyWebEvents {
   'network:created': { networkId: IdType }
   'network:deleted': { networkId: IdType }
@@ -151,6 +170,218 @@ interface CyWebEvents {
 }
 ```
 
+**Internal architecture: Zustand subscriptions → `window.dispatchEvent`**
+
+The event bus is initialized once in `src/init.tsx` after stores are ready. It subscribes to each
+relevant Zustand store using `subscribeWithSelector` and dispatches a `CustomEvent` whenever the
+watched state slice changes:
+
+```typescript
+// src/app-api/event-bus/initEventBus.ts (internal, not exposed)
+export function initEventBus(): void {
+  // Subscribe to the network store's current network ID
+  useNetworkStore.subscribe(
+    (state) => state.currentNetworkId,
+    (networkId, previousId) => {
+      if (networkId !== previousId && networkId !== '') {
+        dispatchCyWebEvent('network:switched', { networkId, previousId })
+      }
+    },
+  )
+
+  // Subscribe to the selection store
+  useSelectionStore.subscribe(
+    (state) => ({
+      selectedNodes: state.selectedNodes,
+      selectedEdges: state.selectedEdges,
+    }),
+    ({ selectedNodes, selectedEdges }) => {
+      const networkId = useNetworkStore.getState().currentNetworkId
+      dispatchCyWebEvent('selection:changed', {
+        networkId,
+        selectedNodes,
+        selectedEdges,
+      })
+    },
+    { equalityFn: shallowEqual },
+  )
+  // ... other subscriptions
+}
+
+function dispatchCyWebEvent<K extends keyof CyWebEvents>(
+  type: K,
+  detail: CyWebEvents[K],
+): void {
+  window.dispatchEvent(new CustomEvent(type, { detail }))
+}
+```
+
+`initEventBus()` is called in `src/init.tsx` alongside `window.CyWebApi = CyWebApi`, ensuring
+both are available at the same time. The function is internal and never exposed via Module
+Federation.
+
+---
+
+**Usage: React apps**
+
+React apps import `useCyWebEvent` from `cyweb/EventBus`, a thin hook that wraps
+`window.addEventListener` with automatic cleanup on unmount:
+
+```typescript
+// src/app-api/useCyWebEvent.ts  (exposed as cyweb/EventBus)
+import { useEffect } from 'react'
+
+export function useCyWebEvent<K extends keyof CyWebEvents>(
+  eventType: K,
+  handler: (detail: CyWebEvents[K]) => void,
+): void {
+  useEffect(() => {
+    const listener = (e: Event) =>
+      handler((e as CustomEvent<CyWebEvents[K]>).detail)
+    window.addEventListener(eventType, listener)
+    return () => window.removeEventListener(eventType, listener)
+  }, [eventType, handler])
+}
+```
+
+Minimal example — a panel that shows selected node count:
+
+```typescript
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useState } from 'react'
+
+export function SelectionPanel() {
+  const [count, setCount] = useState(0)
+
+  useCyWebEvent('selection:changed', ({ selectedNodes }) => {
+    setCount(selectedNodes.length)
+  })
+
+  return <div>{count} node(s) selected</div>
+}
+```
+
+For stable handler references (to avoid re-subscribing on every render), wrap the callback in
+`useCallback`:
+
+```typescript
+const handleSelection = useCallback(({ selectedNodes }) => {
+  setCount(selectedNodes.length)
+}, [])
+
+useCyWebEvent('selection:changed', handleSelection)
+```
+
+---
+
+**Usage: Vanilla JS consumers**
+
+Vanilla JS consumers use `window.addEventListener` directly. The recommended pattern is to wait
+for the `cywebapi:ready` event — dispatched by `src/init.tsx` after both `window.CyWebApi` and
+the event bus are initialized — before attaching listeners:
+
+```javascript
+// Browser extension content script or plain <script> tag
+window.addEventListener('cywebapi:ready', () => {
+  // Safe to use window.CyWebApi and attach event listeners here
+  window.addEventListener('selection:changed', (e) => {
+    const { networkId, selectedNodes, selectedEdges } = e.detail
+    console.log(`Network ${networkId}: ${selectedNodes.length} nodes selected`)
+  })
+
+  window.addEventListener('network:switched', (e) => {
+    const { networkId } = e.detail
+    console.log('Active network changed to', networkId)
+  })
+})
+```
+
+For consumers who cannot wait for `cywebapi:ready` (e.g., they load after the app), check
+`window.CyWebApi` synchronously and fall back to the event:
+
+```javascript
+function onApiReady(callback) {
+  if (window.CyWebApi) {
+    callback()
+  } else {
+    window.addEventListener('cywebapi:ready', callback, { once: true })
+  }
+}
+
+onApiReady(() => {
+  window.addEventListener('layout:completed', (e) => {
+    console.log('Layout finished for network', e.detail.networkId)
+  })
+})
+```
+
+**TypeScript support for Vanilla JS consumers**
+
+Install `@cytoscape-web/api-types` (P1 item, see § 1.3) and add it to `tsconfig.json`:
+
+```json
+{ "compilerOptions": { "types": ["@cytoscape-web/api-types"] } }
+```
+
+The package augments the global `WindowEventMap` so `window.addEventListener` is fully typed:
+
+```typescript
+// Automatically typed — no imports needed in the consuming file
+window.addEventListener('selection:changed', (e) => {
+  // e.detail is typed as { networkId: IdType; selectedNodes: IdType[]; selectedEdges: IdType[] }
+  const { selectedNodes } = e.detail
+})
+```
+
+The augmentation is declared inside the package as:
+
+```typescript
+// @cytoscape-web/api-types/global.d.ts
+declare global {
+  interface WindowEventMap extends CyWebEventMap {} // maps each key → CustomEvent<detail>
+  interface Window {
+    CyWebApi: CyWebApiType
+  }
+}
+```
+
+---
+
+**Simplest end-to-end example**
+
+The minimal setup for a new external React app that reacts to selection changes:
+
+```typescript
+// webpack.config.js (external app)
+new ModuleFederationPlugin({
+  remotes: { cyweb: 'cyweb@http://localhost:5500/remoteEntry.js' },
+})
+
+// SelectionCounter.tsx
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useState } from 'react'
+
+export function SelectionCounter() {
+  const [count, setCount] = useState(0)
+  useCyWebEvent('selection:changed', ({ selectedNodes }) => setCount(selectedNodes.length))
+  return <p>Selected: {count}</p>
+}
+```
+
+For a Vanilla JS browser extension (no bundler):
+
+```javascript
+// content-script.js
+window.addEventListener('cywebapi:ready', () => {
+  window.addEventListener('selection:changed', (e) => {
+    document.getElementById('badge').textContent = e.detail.selectedNodes.length
+  })
+})
+```
+
+Both examples listen to the same native browser event — no shared singleton, no React context,
+no Module Federation required for the Vanilla JS case.
+
 #### 1.6 Add CX2 Validation
 
 Add `validateCX2()` to `useCreateNetworkFromCx2` to prevent store corruption from invalid data.
@@ -166,7 +397,7 @@ Add `mount(context)` and `unmount()` lifecycle callbacks to the app contract:
 - **`mount(context)`** — Called when the app is activated. Receives an `AppContext` object providing access to all facade APIs. Use for initializing app state, registering event listeners, and preparing resources.
 - **`unmount()`** — Called when the app is deactivated or unloaded. Apps must clean up DOM nodes, listeners, timers, and async tasks. No async work should survive past `unmount()`.
 
-The `AppContext` type is exported via `cyweb/ApiTypes`. See [facade-api-specification.md § 1.5.9](facade-api-specification.md) for the full specification.
+The `AppContext` type is exported via `cyweb/ApiTypes`. See [facade-api-specification.md § 1.5.9](specifications/facade-api-specification.md) for the full specification.
 
 #### 1.8 Expand UI Integration Points
 
@@ -212,8 +443,9 @@ Add `exportCyNetworkToCx2` as a public task hook.
 
 ### Phase 1: Facade API Implementation and Example App Validation
 
-> Full facade design and Module Federation integration details are in [facade-api-specification.md](facade-api-specification.md).
-> Detailed type infrastructure design is in [phase1a-shared-types-design.md](phase1a-shared-types-design.md).
+> Full facade design and Module Federation integration details are in [facade-api-specification.md](specifications/facade-api-specification.md).
+> Detailed type infrastructure design is in [phase1a-shared-types-design.md](specifications/phase1a-shared-types-design.md).
+> Event bus detailed design is in [event-bus-specification.md](specifications/event-bus-specification.md).
 
 Design the facade API surface first, then implement incrementally. Each sub-phase delivers working code with tests. **Example apps** in [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples) are updated as validation targets alongside each API sub-phase. The phase is complete when multiple toy examples run end-to-end against the facade API.
 
@@ -229,7 +461,7 @@ The facade is the **only new public API** — internal hooks and stores are crea
 6. Unit tests for `ApiResult` helpers (`ok`, `fail`, type guards)
 7. Behavioral documentation (`src/app-api/api_docs/Api.md`)
 
-> Design: [phase1a-shared-types-design.md](phase1a-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md), [0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)
+> Design: [phase1a-shared-types-design.md](specifications/phase1a-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md), [0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)
 
 #### Step 1: Facade Hook Implementation (5 sub-phases)
 
@@ -270,13 +502,45 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - After 1e: Update `src/app-api/core/index.ts` to assemble all 8 domain objects into `CyWebApi`
 - **Example validation**: Create `network-generator` toy example (create → layout → fit → export)
 
-#### Step 2: Webpack Integration and Deprecation
+#### Step 2: Event Bus
 
-1. Add all 9 facade entries to `webpack.config.js` (`ModuleFederationPlugin.exposes`)
+Implement the typed event bus alongside or immediately after all domain APIs are complete. The
+event bus is tightly coupled to `src/init.tsx` and the core layer, making Phase 1 the right time
+to ship it — external apps that use the facade API will immediately benefit from reactive event
+subscriptions without polling.
+
+**Deliverables:**
+
+1. `src/app-api/event-bus/CyWebEvents.ts` — `CyWebEvents` interface (all 8 event types) +
+   `dispatchCyWebEvent<K>` helper (calls `window.dispatchEvent(new CustomEvent(...))`)
+2. `src/app-api/event-bus/initEventBus.ts` — Sets up one Zustand `subscribeWithSelector`
+   subscription per domain; internal file, **not** exposed via Module Federation
+3. `src/app-api/useCyWebEvent.ts` — React hook wrapper: `useEffect` + `addEventListener` +
+   cleanup; exposed as `cyweb/EventBus`
+4. `src/init.tsx` — Call `initEventBus()` immediately after `window.CyWebApi = CyWebApi`;
+   dispatch `cywebapi:ready` as the last initialization step
+5. `webpack.config.js` — Add `cyweb/EventBus` entry to `ModuleFederationPlugin.exposes`
+
+**Tests:**
+
+- Unit tests (`initEventBus.test.ts`) — mock `window.dispatchEvent` and verify each store
+  mutation triggers the correct event type and detail payload (plain Jest, no `renderHook`)
+- Hook test (`useCyWebEvent.test.ts`) — `renderHook` verifies the listener fires on
+  `window.dispatchEvent` and is removed on unmount
+- Integration smoke test — `cywebapi:ready` is dispatched after `window.CyWebApi` is assigned
+
+**Example validation:** Update `hello-world/HelloPanel` to add a `SelectionCounter` component that
+uses `useCyWebEvent('selection:changed', ...)` to display the live selected-node count. This is
+the simplest end-to-end validation that the event bus is wired correctly.
+
+#### Step 3: Webpack Integration and Deprecation
+
+1. Add all 9 facade entries + `cyweb/EventBus` to `webpack.config.js`
+   (`ModuleFederationPlugin.exposes`)
 2. Mark existing 12 store exports and 2 task hooks `@deprecated` in JSDoc
 3. Verify backward compatibility — existing examples still function with deprecated imports
 
-#### Step 3: Example Repository Overhaul
+#### Step 4: Example Repository Overhaul
 
 Work in [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples) on a `facade-api` branch:
 
@@ -293,7 +557,7 @@ Work in [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-
 6. **Update `patterns/` documentation** — Rewrite patterns to use facade API
 7. **Update README.md** — Document facade API usage, deprecation notice for raw stores
 
-#### Step 4: Bug Fixes
+#### Step 5: Bug Fixes
 
 Fix existing bugs identified in the audit (Section 7). Addressed opportunistically as related facade hooks are implemented.
 
@@ -304,6 +568,10 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 - [ ] `window.CyWebApi` assigned in `src/init.tsx` and accessible after app load
 - [ ] `src/app-api/core/` contains zero React imports (verified by linting or code review)
 - [ ] `ApiResult<T>` and type re-exports verified via `cyweb/ApiTypes`
+- [ ] `src/app-api/event-bus/initEventBus.ts` implemented; all 8 event types dispatch correctly
+- [ ] `useCyWebEvent` hook exported via `cyweb/EventBus`; listener cleanup verified on unmount
+- [ ] `cywebapi:ready` dispatched on `window` after `window.CyWebApi` is assigned
+- [ ] `hello-world/HelloPanel` `SelectionCounter` demo works end-to-end via `useCyWebEvent`
 - [ ] `hello-world` runs end-to-end using only facade API (no raw store imports)
 - [ ] `network-generator` toy example creates, lays out, styles, and exports a network
 - [ ] `simple-menu` and `simple-panel` run end-to-end using facade API
@@ -313,12 +581,10 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 ### Phase 2: Developer Experience
 
-1. Design and implement event bus (typed `CustomEvent` on `window`, consumed by both React apps and
-   vanilla JS consumers via `window.addEventListener`)
-2. Dynamic app registration mechanism
-3. API reference documentation (covering both `use<Domain>Api` hooks and `window.CyWebApi`)
-4. Starter template
-5. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script
+1. Dynamic app registration mechanism
+2. API reference documentation (covering both `use<Domain>Api` hooks and `window.CyWebApi`)
+3. Starter template
+4. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script
    using `window.CyWebApi`)
 
 ### Phase 3: Extensibility
@@ -340,16 +606,17 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 - **Goal**: Implement facade API and validate with working toy examples end-to-end
 
-| Milestone                     | Deliverables                                                                                                      |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Step 0: Foundation types      | `ApiResult.ts`, `ElementTypes.ts`, barrel exports, unit tests, `cyweb/ApiTypes` webpack entry                     |
-| Step 1a: Element API          | `useElementApi.ts`, unit tests, `cyweb/ElementApi` webpack entry                                                  |
-| Step 1b: Network API          | `useNetworkApi.ts`, CX2 validation fix, unit tests, **first example migration** (`hello-world` CreateNetworkMenu) |
-| Step 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts`, unit tests, HelloPanel demo update                                     |
-| Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                    |
-| Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                     |
-| Step 2: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                           |
-| Step 3: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                       |
+| Milestone                     | Deliverables                                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Step 0: Foundation types      | `ApiResult.ts`, `ElementTypes.ts`, barrel exports, unit tests, `cyweb/ApiTypes` webpack entry                                        |
+| Step 1a: Element API          | `useElementApi.ts`, unit tests, `cyweb/ElementApi` webpack entry                                                                     |
+| Step 1b: Network API          | `useNetworkApi.ts`, CX2 validation fix, unit tests, **first example migration** (`hello-world` CreateNetworkMenu)                    |
+| Step 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts`, unit tests, HelloPanel demo update                                                        |
+| Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                                       |
+| Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                        |
+| Step 2: Event Bus             | `initEventBus.ts`, `useCyWebEvent.ts`, `cyweb/EventBus` entry, unit + hook tests, `cywebapi:ready` dispatch, `SelectionCounter` demo |
+| Step 3: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                                              |
+| Step 4: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                                          |
 
 **Key dependencies:**
 
@@ -359,12 +626,13 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 **Milestones (checkpoints):**
 
-| Checkpoint                | Verification                                                                |
-| ------------------------- | --------------------------------------------------------------------------- |
-| First toy example working | `hello-world/CreateNetworkMenu` creates a network via `useNetworkApi`       |
-| Core APIs complete        | All 8 facade hooks pass unit tests                                          |
-| E2E example suite         | `network-generator` runs full workflow (create → layout → style → export)   |
-| Phase 1 complete          | All exit criteria met, `facade-api` branch ready for merge in examples repo |
+| Checkpoint                | Verification                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| First toy example working | `hello-world/CreateNetworkMenu` creates a network via `useNetworkApi`                  |
+| Core APIs complete        | All 8 facade hooks pass unit tests                                                     |
+| Event bus live            | `SelectionCounter` in `hello-world/HelloPanel` reacts to selection via `useCyWebEvent` |
+| E2E example suite         | `network-generator` runs full workflow (create → layout → style → export)              |
+| Phase 1 complete          | All exit criteria met, `facade-api` branch ready for merge in examples repo            |
 
 ### Phase 2: Developer Experience (TBD)
 
