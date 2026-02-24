@@ -1547,20 +1547,22 @@ describe('moveEdge', () => {
       engine.algorithms[algorithmName] exists
    b. Else: use LayoutStore.preferredLayout → find its engine
 3. If no engine found → return fail(LayoutEngineNotFound, ...)
-4. dispatchCyWebEvent('layout:started', { networkId, algorithm: algorithmName })
-5. LayoutStore.setIsRunning(true)
-6. Call engine.apply(network.nodes, network.edges, callback, algorithm)
-7. In callback(positionMap):
+4. Snapshot pre-layout positions from ViewModelStore (for undo)
+5. dispatchCyWebEvent('layout:started', { networkId, algorithm: algorithmName })
+6. LayoutStore.setIsRunning(true)
+7. Call engine.apply(network.nodes, network.edges, callback, algorithm)
+8. In callback(positionMap):
    a. ViewModelStore.updateNodePositions(networkId, positionMap)
-   b. If fitAfterLayout:
+   b. postEdit(UndoCommandType.APPLY_LAYOUT, description, [networkId, prevPositions], [networkId, positionMap])
+   c. If fitAfterLayout:
       - fn = RendererFunctionStore.getFunction('cyjs', 'fit', networkId)
       - If fn: fn()
       - Else: log warning (layout succeeds without fit)
-   c. LayoutStore.setIsRunning(false)
-   d. dispatchCyWebEvent('layout:completed', { networkId, algorithm: algorithmName })
-   e. Resolve Promise with ok()
-8. On error at any step: reject/resolve with fail(OperationFailed, ...)
-   NOTE: if error occurs after step 4, layout:completed is NOT dispatched (intentional —
+   d. LayoutStore.setIsRunning(false)
+   e. dispatchCyWebEvent('layout:completed', { networkId, algorithm: algorithmName })
+   f. Resolve Promise with ok()
+9. On error at any step: reject/resolve with fail(OperationFailed, ...)
+   NOTE: if error occurs after step 5, layout:completed is NOT dispatched (intentional —
    see event-bus-specification.md § 1.4.6 and § 2.2)
 ```
 
@@ -1574,7 +1576,11 @@ directly (all other events come from `initEventBus` Zustand subscriptions). See
 
 **Reference implementation:** The pattern in [useRegisterNetwork.ts](src/data/hooks/useRegisterNetwork.ts) (lines 130–155) shows the existing layout execution flow and should be followed.
 
-**Undo behavior:** Layout operations are not undoable (positions are overwritten without undo recording).
+**Undo behavior:** Undoable. `applyLayout` records one `UndoCommandType.APPLY_LAYOUT`
+entry with pre-layout and post-layout position maps:
+
+- Undo params: `[networkId, prevPositions]`
+- Redo params: `[networkId, positionMap]`
 
 ---
 
@@ -1594,7 +1600,8 @@ directly (all other events come from `initEventBus` Zustand subscriptions). See
 
 **`fit()` returns `Promise<ApiResult>`** because `cy.fit()` may involve animation in future implementations. Currently synchronous but wrapped in Promise for API stability.
 
-**Undo behavior:** `updateNodePositions` does not record undo. Position updates via the viewport API are not undoable (same as layout).
+**Undo behavior:** `updateNodePositions` does not record undo. Position updates via the
+viewport API are not undoable (unlike `applyLayout`).
 
 ---
 
@@ -2029,7 +2036,11 @@ export const UndoCommandType = {
 } as const
 ```
 
-The CRUD hooks (`useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`) call `postEdit` internally. `moveEdge` and `applyLayout` must call `postEdit` from the facade.
+The CRUD hooks (`useCreateNode`, `useCreateEdge`, `useDeleteNodes`,
+`useDeleteEdges`) call `postEdit` internally. `moveEdge` and `applyLayout`
+must call `postEdit` from the facade. For `applyLayout`, use
+`[networkId, prevPositions]` for undo params and `[networkId, positionMap]`
+for redo params.
 
 #### 3.9.10 Return Type Summary
 

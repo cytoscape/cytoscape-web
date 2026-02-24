@@ -119,7 +119,7 @@ _Design: facade-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §
 - [ ] Create `src/app-api/core/viewportApi.ts` — framework-agnostic; coordinates `RendererFunctionStore` + `ViewModelStore` via `.getState()`; no React imports
 - [ ] Create `src/app-api/useViewportApi.ts` — thin React hook: `export const useViewportApi = (): ViewportApi => viewportApi`
 - [ ] Implement `fit(networkId)` → `Promise<ApiResult<void>>`
-- [ ] Implement `getNodePositions(networkId, nodeIds)` → `ApiResult<Map<IdType, [number, number, number?]>>`
+- [ ] Implement `getNodePositions(networkId, nodeIds)` → `ApiResult<{positions: PositionRecord}>`
 - [ ] Implement `updateNodePositions(networkId, positions)` → `ApiResult<void>`
 - [ ] Create `src/app-api/core/viewportApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
 - [ ] Create `src/app-api/useViewportApi.test.ts` — trivial hook test: verifies hook returns core `viewportApi` object
@@ -190,8 +190,9 @@ _Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §
 - [ ] Create `src/app-api/core/layoutApi.ts` — framework-agnostic; new coordination logic (see facade-api-spec § 3.6); dispatches `layout:started` / `layout:completed` events; no React imports
 - [ ] Create `src/app-api/useLayoutApi.ts` — thin React hook: `export const useLayoutApi = (): LayoutApi => layoutApi`
 - [ ] Implement `applyLayout(networkId, options?)` → `Promise<ApiResult<void>>` (new coordination logic)
+- [ ] In `applyLayout`, record `UndoCommandType.APPLY_LAYOUT` via `postEdit` using pre/post layout positions
 - [ ] Implement `getAvailableLayouts()` → `ApiResult<LayoutAlgorithmInfo[]>`
-- [ ] Create `src/app-api/core/layoutApi.test.ts` — plain Jest tests; layout event dispatch verified
+- [ ] Create `src/app-api/core/layoutApi.test.ts` — plain Jest tests; layout event dispatch + undo recording verified
 - [ ] Create `src/app-api/useLayoutApi.test.ts` — trivial hook test: verifies hook returns core `layoutApi` object
 - [ ] Create `src/app-api/core/exportApi.ts` — framework-agnostic; multi-store CyNetwork assembly + exporter call; no React imports
 - [ ] Create `src/app-api/useExportApi.ts` — thin React hook: `export const useExportApi = (): ExportApi => exportApi`
@@ -335,6 +336,6 @@ to be complete before Step 2 is closed.
 | `createContinuousMapping`   | `VisualStyleStore.createContinuousMapping()`            | `void` → `ok()`                                                  | 1d    |
 | `createPassthroughMapping`  | `VisualStyleStore.createPassthroughMapping()`           | `void` → `ok()`                                                  | 1d    |
 | `removeMapping`             | `VisualStyleStore.removeMapping()`                      | `void` → `ok()`                                                  | 1d    |
-| `applyLayout`               | **New coordination:** `LayoutEngine.apply()` + callback | `Promise<ok()>`                                                  | 1e    |
+| `applyLayout`               | **New coordination:** `LayoutEngine.apply()` + callback + `postEdit(UndoCommandType.APPLY_LAYOUT)` | `Promise<ok()>`                                                  | 1e    |
 | `getAvailableLayouts`       | `LayoutStore.layoutEngines` read                        | `ok(infos)`                                                      | 1e    |
 | `exportToCx2`               | `exportCyNetworkToCx2()` + 6-store assembly             | `ok(cx2)`                                                        | 1e    |

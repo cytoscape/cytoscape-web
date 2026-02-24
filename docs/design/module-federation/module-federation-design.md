@@ -164,9 +164,9 @@ interface CyWebEvents {
     selectedEdges: IdType[]
   }
   'layout:started': { networkId: IdType; algorithm: string }
-  'layout:completed': { networkId: IdType }
+  'layout:completed': { networkId: IdType; algorithm: string }
   'style:changed': { networkId: IdType; property: string }
-  'data:changed': { networkId: IdType; tableType: string; rowIds: IdType[] }
+  'data:changed': { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }
 }
 ```
 
@@ -179,24 +179,47 @@ watched state slice changes:
 ```typescript
 // src/app-api/event-bus/initEventBus.ts (internal, not exposed)
 export function initEventBus(): void {
-  // Subscribe to the network store's current network ID
-  useNetworkStore.subscribe(
+  // Subscribe to workspace network IDs (network:created/network:deleted)
+  useWorkspaceStore.subscribe(
+    (state) => state.networkIds,
+    (curr, prev) => {
+      const prevSet = new Set(prev)
+      const currSet = new Set(curr)
+      for (const id of currSet) {
+        if (!prevSet.has(id)) {
+          dispatchCyWebEvent('network:created', { networkId: id })
+        }
+      }
+      for (const id of prevSet) {
+        if (!currSet.has(id)) {
+          dispatchCyWebEvent('network:deleted', { networkId: id })
+        }
+      }
+    },
+  )
+
+  // Subscribe to workspace current network ID (network:switched)
+  useWorkspaceStore.subscribe(
     (state) => state.currentNetworkId,
     (networkId, previousId) => {
-      if (networkId !== previousId && networkId !== '') {
+      if (networkId !== previousId) {
         dispatchCyWebEvent('network:switched', { networkId, previousId })
       }
     },
   )
 
-  // Subscribe to the selection store
-  useSelectionStore.subscribe(
+  // Subscribe to selection of the current network view
+  useViewModelStore.subscribe(
     (state) => ({
-      selectedNodes: state.selectedNodes,
-      selectedEdges: state.selectedEdges,
+      networkId: useWorkspaceStore.getState().currentNetworkId,
+      selectedNodes:
+        state.viewModelMap.get(useWorkspaceStore.getState().currentNetworkId)
+          ?.selectedNodes ?? [],
+      selectedEdges:
+        state.viewModelMap.get(useWorkspaceStore.getState().currentNetworkId)
+          ?.selectedEdges ?? [],
     }),
-    ({ selectedNodes, selectedEdges }) => {
-      const networkId = useNetworkStore.getState().currentNetworkId
+    ({ networkId, selectedNodes, selectedEdges }) => {
       dispatchCyWebEvent('selection:changed', {
         networkId,
         selectedNodes,
@@ -205,7 +228,7 @@ export function initEventBus(): void {
     },
     { equalityFn: shallowEqual },
   )
-  // ... other subscriptions
+  // ... other subscriptions (VisualStyleStore, TableStore)
 }
 
 function dispatchCyWebEvent<K extends keyof CyWebEvents>(
@@ -219,6 +242,10 @@ function dispatchCyWebEvent<K extends keyof CyWebEvents>(
 `initEventBus()` is called in `src/init.tsx` alongside `window.CyWebApi = CyWebApi`, ensuring
 both are available at the same time. The function is internal and never exposed via Module
 Federation.
+
+The store subscription mapping above follows
+[event-bus-specification.md](specifications/event-bus-specification.md), which is the source of
+truth for detailed Event Bus behavior.
 
 ---
 
