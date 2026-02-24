@@ -23,7 +23,8 @@ _Design: facade-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
 
 ### Deliverables
 
-- [ ] Create `src/app-api/useElementApi.ts` — wraps `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`; new `moveEdge` coordination
+- [ ] Create `src/app-api/core/elementApi.ts` — framework-agnostic; coordinates stores via `.getState()`; no React imports
+- [ ] Create `src/app-api/useElementApi.ts` — thin React hook: `export const useElementApi = (): ElementApi => elementApi`
 - [ ] Implement `createNode(networkId, position, options?)` → `ApiResult<{nodeId}>`
 - [ ] Implement `createEdge(networkId, sourceId, targetId, options?)` → `ApiResult<{edgeId}>`
 - [ ] Implement `deleteNodes(networkId, nodeIds)` → `ApiResult<{deletedNodeCount, deletedEdgeCount}>`
@@ -39,8 +40,9 @@ _Design: facade-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
   - [ ] Add `moveEdge` action to `src/data/hooks/stores/NetworkStore.ts`
   - [ ] Add `MOVE_EDGES` to `UndoCommandType` in `src/models/StoreModel/UndoStoreModel.ts`
   - [ ] Add undo/redo handlers in `src/data/hooks/useUndoStack.tsx`
-- [ ] Implement `moveEdge(networkId, edgeId, newSourceId, newTargetId)` → `ApiResult<void>` in facade
-- [ ] Create `src/app-api/useElementApi.test.ts` — tests for all methods
+- [ ] Implement `moveEdge(networkId, edgeId, newSourceId, newTargetId)` → `ApiResult<void>` in `core/elementApi.ts`
+- [ ] Create `src/app-api/core/elementApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useElementApi.test.ts` — trivial hook test: verifies hook returns core `elementApi` object
 - [ ] Modify `src/app-api/index.ts` — uncomment `useElementApi` export
 - [ ] Modify `src/app-api/types/AppContext.ts` — uncomment `element: ElementApi`
 - [ ] Modify `webpack.config.js` — add `'./ElementApi': './src/app-api/useElementApi.ts'`
@@ -48,7 +50,7 @@ _Design: facade-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
 ### Verification
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="useElementApi"` passes
+- [ ] `npm run test:unit -- --testPathPattern="elementApi"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -68,14 +70,16 @@ _Design: facade-api-specification.md §1.5.2, §3.2, §3.9.2_
 
 ### Deliverables
 
-- [ ] Create `src/app-api/useNetworkApi.ts`
+- [ ] Create `src/app-api/core/networkApi.ts` — framework-agnostic; coordinates stores via `.getState()`; no React imports
+- [ ] Create `src/app-api/useNetworkApi.ts` — thin React hook: `export const useNetworkApi = (): NetworkApi => networkApi`
 - [ ] Implement `createNetworkFromEdgeList(props)` → `ApiResult<{networkId, cyNetwork}>`
 - [ ] Implement `createNetworkFromCx2(props)` → `ApiResult<{networkId, cyNetwork}>` (with `validateCX2` call)
 - [ ] Implement `deleteNetwork(networkId, options?)` → `ApiResult<void>`
 - [ ] Implement `deleteCurrentNetwork(options?)` → `ApiResult<void>`
 - [ ] Implement `deleteAllNetworks()` → `ApiResult<void>`
 - [ ] Modify `src/data/task/useCreateNetworkFromCx2.tsx` — add optional `navigate` and `addToWorkspace` parameters
-- [ ] Create `src/app-api/useNetworkApi.test.ts`
+- [ ] Create `src/app-api/core/networkApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useNetworkApi.test.ts` — trivial hook test: verifies hook returns core `networkApi` object
 - [ ] Modify `src/app-api/index.ts` — uncomment `useNetworkApi` export
 - [ ] Modify `src/app-api/types/AppContext.ts` — uncomment `network: NetworkApi`
 - [ ] Modify `webpack.config.js` — add `'./NetworkApi': './src/app-api/useNetworkApi.ts'`
@@ -83,7 +87,7 @@ _Design: facade-api-specification.md §1.5.2, §3.2, §3.9.2_
 ### Verification
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="useNetworkApi"` passes
+- [ ] `npm run test:unit -- --testPathPattern="networkApi"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -103,18 +107,22 @@ _Design: facade-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §
 
 ### Deliverables
 
-- [ ] Create `src/app-api/useSelectionApi.ts`
+- [ ] Create `src/app-api/core/selectionApi.ts` — framework-agnostic; coordinates `ViewModelStore` via `.getState()`; no React imports
+- [ ] Create `src/app-api/useSelectionApi.ts` — thin React hook: `export const useSelectionApi = (): SelectionApi => selectionApi`
 - [ ] Implement `exclusiveSelect(networkId, nodeIds, edgeIds)` → `ApiResult<void>`
 - [ ] Implement `additiveSelect(networkId, ids)` → `ApiResult<void>`
 - [ ] Implement `additiveUnselect(networkId, ids)` → `ApiResult<void>`
 - [ ] Implement `toggleSelected(networkId, ids)` → `ApiResult<void>`
 - [ ] Implement `getSelection(networkId)` → `ApiResult<{selectedNodes, selectedEdges}>`
-- [ ] Create `src/app-api/useSelectionApi.test.ts`
-- [ ] Create `src/app-api/useViewportApi.ts`
+- [ ] Create `src/app-api/core/selectionApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useSelectionApi.test.ts` — trivial hook test: verifies hook returns core `selectionApi` object
+- [ ] Create `src/app-api/core/viewportApi.ts` — framework-agnostic; coordinates `RendererFunctionStore` + `ViewModelStore` via `.getState()`; no React imports
+- [ ] Create `src/app-api/useViewportApi.ts` — thin React hook: `export const useViewportApi = (): ViewportApi => viewportApi`
 - [ ] Implement `fit(networkId)` → `Promise<ApiResult<void>>`
 - [ ] Implement `getNodePositions(networkId, nodeIds)` → `ApiResult<Map<IdType, [number, number, number?]>>`
 - [ ] Implement `updateNodePositions(networkId, positions)` → `ApiResult<void>`
-- [ ] Create `src/app-api/useViewportApi.test.ts`
+- [ ] Create `src/app-api/core/viewportApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useViewportApi.test.ts` — trivial hook test: verifies hook returns core `viewportApi` object
 - [ ] Modify `src/app-api/index.ts` — uncomment both exports
 - [ ] Modify `src/app-api/types/AppContext.ts` — uncomment `selection`, `viewport`
 - [ ] Modify `webpack.config.js` — add `'./SelectionApi'`, `'./ViewportApi'`
@@ -122,7 +130,7 @@ _Design: facade-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §
 ### Verification
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="useSelectionApi|useViewportApi"` passes
+- [ ] `npm run test:unit -- --testPathPattern="selectionApi|viewportApi"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -142,12 +150,16 @@ _Design: facade-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §
 
 ### Deliverables
 
-- [ ] Create `src/app-api/useTableApi.ts`
+- [ ] Create `src/app-api/core/tableApi.ts` — framework-agnostic; coordinates `TableStore` via `.getState()`; no React imports
+- [ ] Create `src/app-api/useTableApi.ts` — thin React hook: `export const useTableApi = (): TableApi => tableApi`
 - [ ] Implement `getValue`, `getRow`, `createColumn`, `deleteColumn`, `setValue`, `setValues`, `editRows`, `setColumnName`, `applyValueToElements`
-- [ ] Create `src/app-api/useTableApi.test.ts`
-- [ ] Create `src/app-api/useVisualStyleApi.ts`
+- [ ] Create `src/app-api/core/tableApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useTableApi.test.ts` — trivial hook test: verifies hook returns core `tableApi` object
+- [ ] Create `src/app-api/core/visualStyleApi.ts` — framework-agnostic; coordinates `VisualStyleStore` via `.getState()`; no React imports
+- [ ] Create `src/app-api/useVisualStyleApi.ts` — thin React hook: `export const useVisualStyleApi = (): VisualStyleApi => visualStyleApi`
 - [ ] Implement `setDefault`, `setBypass`, `deleteBypass`, `createDiscreteMapping`, `createContinuousMapping`, `createPassthroughMapping`, `removeMapping`
-- [ ] Create `src/app-api/useVisualStyleApi.test.ts`
+- [ ] Create `src/app-api/core/visualStyleApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useVisualStyleApi.test.ts` — trivial hook test: verifies hook returns core `visualStyleApi` object
 - [ ] Modify `src/app-api/index.ts` — uncomment both exports
 - [ ] Modify `src/app-api/types/AppContext.ts` — uncomment `table`, `visualStyle`
 - [ ] Modify `webpack.config.js` — add `'./TableApi'`, `'./VisualStyleApi'`
@@ -155,7 +167,7 @@ _Design: facade-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §
 ### Verification
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="useTableApi|useVisualStyleApi"` passes
+- [ ] `npm run test:unit -- --testPathPattern="tableApi|visualStyleApi"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -175,13 +187,18 @@ _Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §
 
 ### Deliverables
 
-- [ ] Create `src/app-api/useLayoutApi.ts`
+- [ ] Create `src/app-api/core/layoutApi.ts` — framework-agnostic; new coordination logic (see facade-api-spec § 3.6); dispatches `layout:started` / `layout:completed` events; no React imports
+- [ ] Create `src/app-api/useLayoutApi.ts` — thin React hook: `export const useLayoutApi = (): LayoutApi => layoutApi`
 - [ ] Implement `applyLayout(networkId, options?)` → `Promise<ApiResult<void>>` (new coordination logic)
 - [ ] Implement `getAvailableLayouts()` → `ApiResult<LayoutAlgorithmInfo[]>`
-- [ ] Create `src/app-api/useLayoutApi.test.ts`
-- [ ] Create `src/app-api/useExportApi.ts`
+- [ ] Create `src/app-api/core/layoutApi.test.ts` — plain Jest tests; layout event dispatch verified
+- [ ] Create `src/app-api/useLayoutApi.test.ts` — trivial hook test: verifies hook returns core `layoutApi` object
+- [ ] Create `src/app-api/core/exportApi.ts` — framework-agnostic; multi-store CyNetwork assembly + exporter call; no React imports
+- [ ] Create `src/app-api/useExportApi.ts` — thin React hook: `export const useExportApi = (): ExportApi => exportApi`
 - [ ] Implement `exportToCx2(networkId, options?)` → `ApiResult<Cx2>` (6-store CyNetwork assembly)
-- [ ] Create `src/app-api/useExportApi.test.ts`
+- [ ] Create `src/app-api/core/exportApi.test.ts` — plain Jest tests for all core methods (no `renderHook`)
+- [ ] Create `src/app-api/useExportApi.test.ts` — trivial hook test: verifies hook returns core `exportApi` object
+- [ ] Modify `src/app-api/core/index.ts` — assemble all 8 domain objects into `CyWebApi`; assign to `window.CyWebApi` in `src/init.tsx`
 - [ ] Modify `src/app-api/index.ts` — uncomment both exports
 - [ ] Modify `src/app-api/types/AppContext.ts` — uncomment `layout`, `export`; all fields now required
 - [ ] Modify `webpack.config.js` — add `'./LayoutApi'`, `'./ExportApi'`; mark legacy stores `@deprecated`
@@ -190,7 +207,7 @@ _Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §
 ### Verification
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="useLayoutApi|useExportApi"` passes
+- [ ] `npm run test:unit -- --testPathPattern="layoutApi|exportApi"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -272,6 +289,7 @@ to be complete before Step 2 is closed.
 - [ ] All `AppContext.apis` fields uncommented and typed
 - [ ] Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
 - [ ] `src/app-api/api_docs/Api.md` covers all 8 facade hooks + event bus
+- [ ] `src/app-api/core/` contains zero React imports (`import.*from 'react'` absent in all `core/*.ts` files)
 - [ ] `cywebapi:ready` dispatched on `window` after full initialization
 - [ ] `hello-world/HelloPanel` `SelectionCounter` reacts to selection via `useCyWebEvent`
 

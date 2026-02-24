@@ -69,7 +69,7 @@ src/app-api/
    directly anywhere else.
 9. **`initEventBus()` is called once after hydration** — In `src/init.tsx`, the call order is:
    (1) stores hydrate from IndexedDB, (2) `initEventBus()`, (3) `window.CyWebApi = CyWebApi`,
-   (4) `document.dispatchEvent(new CustomEvent('cywebapi:ready'))`. Startup suppression is automatic:
+   (4) `window.dispatchEvent(new CustomEvent('cywebapi:ready'))`. Startup suppression is automatic:
    Zustand `subscribeWithSelector` only fires on changes after subscription, not on initial state.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
     fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
@@ -206,7 +206,7 @@ export function useCyWebEvent<K extends keyof CyWebEvents>(
 ### Vanilla JS consumption (non-React)
 
 ```javascript
-document.addEventListener('cywebapi:ready', () => {
+window.addEventListener('cywebapi:ready', () => {
   window.addEventListener('network:switched', (e) => {
     console.log('switched to', e.detail.networkId)
   })

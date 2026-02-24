@@ -1083,7 +1083,8 @@ This is a read-only projection extracted dynamically from the Cytoscape.js core 
 | Modify | `src/data/hooks/stores/NetworkStore.ts`       | Add `moveEdge` action implementation                               |
 | Modify | `src/models/StoreModel/UndoStoreModel.ts`     | Add `MOVE_EDGES` to `UndoCommandType`                              |
 | Modify | `src/data/hooks/useUndoStack.tsx`             | Add undo/redo handlers for `MOVE_EDGES`                            |
-| Create | `src/app-api/useElementApi.ts` (Phase 1a)     | `moveEdge` facade method using the above                           |
+| Create | `src/app-api/core/elementApi.ts` (Phase 1a)  | All element operations; `moveEdge` using the above coordination logic  |
+| Create | `src/app-api/useElementApi.ts` (Phase 1a)    | Thin hook: `export const useElementApi = (): ElementApi => elementApi` |
 
 ##### 1. Model Layer: `networkImpl.ts`
 
@@ -1253,7 +1254,7 @@ export const UndoCommandType = {
 | **Undo** | `[networkId, edgeId, oldSourceId, oldTargetId]` |
 | **Redo** | `[networkId, edgeId, newSourceId, newTargetId]` |
 
-##### 6. Facade Implementation: `useElementApi.ts`
+##### 6. Core Implementation: `src/app-api/core/elementApi.ts`
 
 ```typescript
 moveEdge(
@@ -1345,6 +1346,16 @@ moveEdge(
 },
 ```
 
+**Thin hook wrapper** — `src/app-api/useElementApi.ts` is a single line that returns the core object:
+
+```typescript
+// src/app-api/useElementApi.ts
+import { elementApi } from './core/elementApi'
+import type { ElementApi } from './types'
+
+export const useElementApi = (): ElementApi => elementApi
+```
+
 ##### Stores Involved
 
 | Store                 | Role                                               | Mutated?                                      |
@@ -1404,9 +1415,10 @@ describe('moveEdge', () => {
 | Store model (`NetworkStoreModel.ts`)            | 1              | ~8                    |
 | Store impl (`NetworkStore.ts`)                  | 1              | ~15                   |
 | Undo (`UndoStoreModel.ts` + `useUndoStack.tsx`) | 2              | ~20                   |
-| Facade (`useElementApi.ts`)                     | 1              | ~50                   |
-| Tests (`useElementApi.test.ts`)                 | 1              | ~80                   |
-| **Total**                                       | **8**          | **~200**              |
+| Core facade (`core/elementApi.ts`)              | 1              | ~50                   |
+| Hook wrapper (`useElementApi.ts`)               | 1              | ~5                    |
+| Tests (`core/elementApi.test.ts`)               | 1              | ~80                   |
+| **Total**                                       | **9**          | **~205**              |
 
 ---
 
@@ -2118,61 +2130,78 @@ _Fully specified in [phase1a-shared-types-design.md](phase1a-shared-types-design
 
 ### Phase 1a: Element API
 
-| Action | File                                | Notes                                                                                                   |
-| ------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Create | `src/app-api/useElementApi.ts`      | Wraps `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`. New `moveEdge` coordination |
-| Create | `src/app-api/useElementApi.test.ts` | Tests per § 4.3                                                                                         |
-| Modify | `src/app-api/index.ts`              | Uncomment `useElementApi` export                                                                        |
-| Modify | `src/app-api/types/AppContext.ts`   | Uncomment `element: ElementApi` in `AppContext.apis`                                                    |
-| Modify | `webpack.config.js`                 | Add `'./ElementApi'` entry                                                                              |
+| Action | File                                      | Notes                                                                                                          |
+| ------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Create | `src/app-api/core/elementApi.ts`          | Framework-agnostic; coordinates stores via `.getState()` — 9 methods including `moveEdge`. No React imports.  |
+| Create | `src/app-api/core/elementApi.test.ts`     | Plain Jest tests for all core methods (no `renderHook`) per § 4.3                                             |
+| Create | `src/app-api/useElementApi.ts`            | Thin hook: `export const useElementApi = (): ElementApi => elementApi`                                         |
+| Create | `src/app-api/useElementApi.test.ts`       | Trivial hook test: verifies hook returns core `elementApi` object                                              |
+| Modify | `src/app-api/index.ts`                    | Uncomment `useElementApi` export                                                                               |
+| Modify | `src/app-api/types/AppContext.ts`         | Uncomment `element: ElementApi` in `AppContext.apis`                                                           |
+| Modify | `webpack.config.js`                       | Add `'./ElementApi'` entry                                                                                     |
 
 ### Phase 1b: Network API
 
-| Action | File                                        | Notes                                                                     |
-| ------ | ------------------------------------------- | ------------------------------------------------------------------------- |
-| Create | `src/app-api/useNetworkApi.ts`              | Wraps `useCreateNetwork`, `useCreateNetworkFromCx2`, `useDeleteCyNetwork` |
-| Create | `src/app-api/useNetworkApi.test.ts`         | Tests per § 4.3                                                           |
-| Modify | `src/data/task/useCreateNetworkFromCx2.tsx` | Add `navigate` and `addToWorkspace` options                               |
-| Modify | `src/app-api/index.ts`                      | Uncomment `useNetworkApi` export                                          |
-| Modify | `src/app-api/types/AppContext.ts`           | Uncomment `network: NetworkApi`                                           |
-| Modify | `webpack.config.js`                         | Add `'./NetworkApi'` entry                                                |
+| Action | File                                        | Notes                                                                                          |
+| ------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Create | `src/app-api/core/networkApi.ts`            | Framework-agnostic; coordinates stores via `.getState()` — 5 methods. No React imports.       |
+| Create | `src/app-api/core/networkApi.test.ts`       | Plain Jest tests for all core methods per § 4.3                                                |
+| Create | `src/app-api/useNetworkApi.ts`              | Thin hook: `export const useNetworkApi = (): NetworkApi => networkApi`                         |
+| Create | `src/app-api/useNetworkApi.test.ts`         | Trivial hook test: verifies hook returns core `networkApi` object                              |
+| Modify | `src/data/task/useCreateNetworkFromCx2.tsx` | Add `navigate` and `addToWorkspace` options                                                    |
+| Modify | `src/app-api/index.ts`                      | Uncomment `useNetworkApi` export                                                               |
+| Modify | `src/app-api/types/AppContext.ts`           | Uncomment `network: NetworkApi`                                                                |
+| Modify | `webpack.config.js`                         | Add `'./NetworkApi'` entry                                                                     |
 
 ### Phase 1c: Selection + Viewport
 
-| Action | File                                  | Notes                                             |
-| ------ | ------------------------------------- | ------------------------------------------------- |
-| Create | `src/app-api/useSelectionApi.ts`      | Wraps `ViewModelStore` selection methods          |
-| Create | `src/app-api/useSelectionApi.test.ts` |                                                   |
-| Create | `src/app-api/useViewportApi.ts`       | Wraps `RendererFunctionStore` + `ViewModelStore`  |
-| Create | `src/app-api/useViewportApi.test.ts`  |                                                   |
-| Modify | `src/app-api/index.ts`                | Uncomment both exports                            |
-| Modify | `src/app-api/types/AppContext.ts`     | Uncomment `selection`, `viewport`                 |
-| Modify | `webpack.config.js`                   | Add `'./SelectionApi'`, `'./ViewportApi'` entries |
+| Action | File                                       | Notes                                                                                          |
+| ------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Create | `src/app-api/core/selectionApi.ts`         | Framework-agnostic; coordinates `ViewModelStore` via `.getState()`. No React imports.         |
+| Create | `src/app-api/core/selectionApi.test.ts`    | Plain Jest tests per § 4.3                                                                     |
+| Create | `src/app-api/useSelectionApi.ts`           | Thin hook: `export const useSelectionApi = (): SelectionApi => selectionApi`                   |
+| Create | `src/app-api/useSelectionApi.test.ts`      | Trivial hook test: verifies hook returns core object                                           |
+| Create | `src/app-api/core/viewportApi.ts`          | Framework-agnostic; coordinates `RendererFunctionStore` + `ViewModelStore`. No React imports. |
+| Create | `src/app-api/core/viewportApi.test.ts`     | Plain Jest tests per § 4.3                                                                     |
+| Create | `src/app-api/useViewportApi.ts`            | Thin hook: `export const useViewportApi = (): ViewportApi => viewportApi`                      |
+| Create | `src/app-api/useViewportApi.test.ts`       | Trivial hook test: verifies hook returns core object                                           |
+| Modify | `src/app-api/index.ts`                     | Uncomment both exports                                                                         |
+| Modify | `src/app-api/types/AppContext.ts`          | Uncomment `selection`, `viewport`                                                              |
+| Modify | `webpack.config.js`                        | Add `'./SelectionApi'`, `'./ViewportApi'` entries                                              |
 
 ### Phase 1d: Table + Visual Style
 
-| Action | File                                    | Notes                                            |
-| ------ | --------------------------------------- | ------------------------------------------------ |
-| Create | `src/app-api/useTableApi.ts`            | Wraps `TableStore` methods                       |
-| Create | `src/app-api/useTableApi.test.ts`       |                                                  |
-| Create | `src/app-api/useVisualStyleApi.ts`      | Wraps `VisualStyleStore` methods                 |
-| Create | `src/app-api/useVisualStyleApi.test.ts` |                                                  |
-| Modify | `src/app-api/index.ts`                  | Uncomment both exports                           |
-| Modify | `src/app-api/types/AppContext.ts`       | Uncomment `table`, `visualStyle`                 |
-| Modify | `webpack.config.js`                     | Add `'./TableApi'`, `'./VisualStyleApi'` entries |
+| Action | File                                       | Notes                                                                                       |
+| ------ | ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Create | `src/app-api/core/tableApi.ts`             | Framework-agnostic; coordinates `TableStore` via `.getState()`. No React imports.          |
+| Create | `src/app-api/core/tableApi.test.ts`        | Plain Jest tests per § 4.3                                                                  |
+| Create | `src/app-api/useTableApi.ts`               | Thin hook: `export const useTableApi = (): TableApi => tableApi`                            |
+| Create | `src/app-api/useTableApi.test.ts`          | Trivial hook test: verifies hook returns core object                                        |
+| Create | `src/app-api/core/visualStyleApi.ts`       | Framework-agnostic; coordinates `VisualStyleStore` via `.getState()`. No React imports.    |
+| Create | `src/app-api/core/visualStyleApi.test.ts`  | Plain Jest tests per § 4.3                                                                  |
+| Create | `src/app-api/useVisualStyleApi.ts`         | Thin hook: `export const useVisualStyleApi = (): VisualStyleApi => visualStyleApi`          |
+| Create | `src/app-api/useVisualStyleApi.test.ts`    | Trivial hook test: verifies hook returns core object                                        |
+| Modify | `src/app-api/index.ts`                     | Uncomment both exports                                                                      |
+| Modify | `src/app-api/types/AppContext.ts`          | Uncomment `table`, `visualStyle`                                                            |
+| Modify | `webpack.config.js`                        | Add `'./TableApi'`, `'./VisualStyleApi'` entries                                            |
 
 ### Phase 1e: Layout + Export
 
-| Action | File                               | Notes                                                                          |
-| ------ | ---------------------------------- | ------------------------------------------------------------------------------ |
-| Create | `src/app-api/useLayoutApi.ts`      | **New coordination logic** — see § 3.6 execution steps                         |
-| Create | `src/app-api/useLayoutApi.test.ts` |                                                                                |
-| Create | `src/app-api/useExportApi.ts`      | Multi-store CyNetwork assembly + exporter call                                 |
-| Create | `src/app-api/useExportApi.test.ts` |                                                                                |
-| Modify | `src/app-api/index.ts`             | Uncomment both exports                                                         |
-| Modify | `src/app-api/types/AppContext.ts`  | Uncomment `layout`, `export`. All fields now required                          |
-| Modify | `webpack.config.js`                | Add `'./LayoutApi'`, `'./ExportApi'` entries. Mark legacy stores `@deprecated` |
-| Modify | `src/app-api/api_docs/Api.md`      | Complete facade hook documentation                                             |
+| Action | File                                      | Notes                                                                                         |
+| ------ | ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Create | `src/app-api/core/layoutApi.ts`           | Framework-agnostic; **new coordination logic** — see § 3.6; dispatches layout events. No React imports. |
+| Create | `src/app-api/core/layoutApi.test.ts`      | Plain Jest tests; layout event dispatch verified per § 4.3                                    |
+| Create | `src/app-api/useLayoutApi.ts`             | Thin hook: `export const useLayoutApi = (): LayoutApi => layoutApi`                           |
+| Create | `src/app-api/useLayoutApi.test.ts`        | Trivial hook test: verifies hook returns core object                                          |
+| Create | `src/app-api/core/exportApi.ts`           | Framework-agnostic; multi-store CyNetwork assembly + exporter call. No React imports.        |
+| Create | `src/app-api/core/exportApi.test.ts`      | Plain Jest tests per § 4.3                                                                    |
+| Create | `src/app-api/useExportApi.ts`             | Thin hook: `export const useExportApi = (): ExportApi => exportApi`                           |
+| Create | `src/app-api/useExportApi.test.ts`        | Trivial hook test: verifies hook returns core object                                          |
+| Modify | `src/app-api/core/index.ts`               | Assemble all 8 domain objects into `CyWebApi`; assigned to `window.CyWebApi` in `init.tsx`   |
+| Modify | `src/app-api/index.ts`                    | Uncomment both exports                                                                        |
+| Modify | `src/app-api/types/AppContext.ts`         | Uncomment `layout`, `export`. All fields now required                                         |
+| Modify | `webpack.config.js`                       | Add `'./LayoutApi'`, `'./ExportApi'` entries. Mark legacy stores `@deprecated`                |
+| Modify | `src/app-api/api_docs/Api.md`             | Complete facade hook documentation                                                            |
 
 ---
 
