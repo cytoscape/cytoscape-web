@@ -1,4 +1,4 @@
-# 0001: Use Discriminated Union `ApiResult<T>` for Facade API Error Handling
+# 0001: Use Discriminated Union `ApiResult<T>` for App API Error Handling
 
 ## Status
 
@@ -6,9 +6,9 @@ Accepted
 
 ## Context
 
-The facade API layer (`src/app-api/`) introduces a public contract for external apps loaded via Module Federation. External apps call facade hooks that wrap internal store operations. These internal operations can fail for many reasons: invalid network IDs, missing nodes/edges, CX2 validation failures, and unexpected runtime errors.
+The app API layer (`src/app-api/`) introduces a public contract for external apps loaded via Module Federation. External apps call app API hooks that wrap internal store operations. These internal operations can fail for many reasons: invalid network IDs, missing nodes/edges, CX2 validation failures, and unexpected runtime errors.
 
-A consistent error handling pattern is needed across all 8 facade hooks (~30+ operations). The pattern must:
+A consistent error handling pattern is needed across all 8 app API hooks (~30+ operations). The pattern must:
 
 - Be safe across Module Federation boundaries (thrown exceptions may not propagate correctly between separately bundled modules)
 - Provide machine-readable error codes for programmatic handling
@@ -19,7 +19,7 @@ Three alternatives were evaluated.
 
 ## Decision
 
-All facade API operations return `ApiResult<T>`, a discriminated union on the `success` boolean field:
+All app API operations return `ApiResult<T>`, a discriminated union on the `success` boolean field:
 
 ```typescript
 interface ApiSuccess<T = void> {
@@ -113,11 +113,11 @@ interface ApiReturn<T> {
 
 **Trade-offs:**
 
-- Every facade call requires an `if (result.success)` check — slightly more verbose than direct returns
+- Every app API call requires an `if (result.success)` check — slightly more verbose than direct returns
 - `void` data on success for write operations means callers get `undefined` even on success — acceptable since the success flag is the primary signal
 - No stack traces in error results — deliberate, since internal details should not leak to external apps
 
 **Related documents:**
 
 - [phase1a-shared-types-design.md](../design/module-federation/phase1a-shared-types-design.md) § 3.1 — Full type definitions and helper implementations
-- [facade-api-specification.md](../design/module-federation/facade-api-specification.md) § 1.3 — Shared result types specification
+- [app-api-specification.md](../design/module-federation/app-api-specification.md) § 1.3 — Shared result types specification

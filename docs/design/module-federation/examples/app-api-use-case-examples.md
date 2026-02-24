@@ -1,15 +1,15 @@
-# Facade API Use Case Examples — Toy Code Samples
+# App API Use Case Examples — Toy Code Samples
 
 **Rev. 1 (2/13/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Concrete code samples for each use case from [module-federation-audit.md § 5](../module-federation-audit.md) ("Use Case Gap Matrix"), implemented against the facade API defined in [facade-api-specification.md](../specifications/facade-api-specification.md).
+Concrete code samples for each use case from [module-federation-audit.md § 5](../module-federation-audit.md) ("Use Case Gap Matrix"), implemented against the app API defined in [app-api-specification.md](../specifications/app-api-specification.md).
 
-Each example is a self-contained React component that a Module Federation external app could register. All examples import exclusively from `cyweb/*` facade modules — no raw store imports.
+Each example is a self-contained React component that a Module Federation external app could register. All examples import exclusively from `cyweb/*` app API modules — no raw store imports.
 
 **Parent documents:**
 
 - [module-federation-audit.md § 5](../module-federation-audit.md) — Use case gap analysis
-- [facade-api-specification.md](../specifications/facade-api-specification.md) — Full facade API specification
+- [app-api-specification.md](../specifications/app-api-specification.md) — Full app API specification
 - [module-federation-design.md § 2.5](../module-federation-design.md) — Revised use case gap matrix
 
 ---
@@ -486,7 +486,7 @@ export const ImportExportPanel = ({
       return
     }
 
-    // Facade validates CX2 internally via validateCX2()
+    // App API validates CX2 internally via validateCX2()
     const result = createNetworkFromCx2({
       cxData,
       navigate: true,
@@ -712,7 +712,7 @@ export const GraphEditorPanel = ({
 
 ## Use Case G: LLM Agent-Driven Network Generation App
 
-> **Scenario:** A relay app receives commands from an LLM agent via WebSocket, translates them into facade API calls, and returns structured results so the agent can iterate.
+> **Scenario:** A relay app receives commands from an LLM agent via WebSocket, translates them into app API calls, and returns structured results so the agent can iterate.
 >
 > **APIs used:** `NetworkApi` + `ElementApi` + `TableApi` + `LayoutApi` + `ViewportApi` + `ApiTypes`
 
@@ -773,7 +773,7 @@ export const AgentRelayPanel = (): JSX.Element => {
     setLog((prev) => [...prev.slice(-49), msg])
   }, [])
 
-  // Dispatch a single agent command to the appropriate facade API
+  // Dispatch a single agent command to the appropriate app API
   const handleCommand = useCallback(
     async (cmd: AgentCommand): Promise<AgentResponse> => {
       switch (cmd.action) {
@@ -1428,9 +1428,9 @@ await server.connect(transport)
 | **G: LLM Agent Relay (React)**      | `NetworkApi`, `ElementApi`, `TableApi`, `LayoutApi`, `ViewportApi` | Mixed (layout + fit are async) | ~150 (relay) + ~50 (Python agent)         |
 | **G: LLM Agent Relay (Vanilla JS)** | `window.CyWebApi.*` (all domains)                                  | Mixed (layout + fit are async) | ~130 (content script) + ~80 (background) + ~80 (MCP bridge) |
 
-All seven use cases that were **Partial** or **No** in the audit are now fully implementable with the facade API. Key improvements visible in the code:
+All seven use cases that were **Partial** or **No** in the audit are now fully implementable with the app API. Key improvements visible in the code:
 
-- **No raw store imports** — every operation goes through `cyweb/*` facade modules or `window.CyWebApi`
+- **No raw store imports** — every operation goes through `cyweb/*` app API modules or `window.CyWebApi`
 - **Structured error handling** — `ApiResult` discriminated union with `ApiErrorCode` enables programmatic error handling (especially critical for Use Case G)
 - **Type-safe visual properties** — `VisualPropertyName` and `ValueTypeName` are imported from `cyweb/ApiTypes`
 - **Sync/async clarity** — follows § 1.6 policy: store operations are sync, layout and fit are `Promise`

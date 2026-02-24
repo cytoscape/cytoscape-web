@@ -6,11 +6,11 @@ Accepted
 
 ## Context
 
-The facade API layer exposes types to external apps via two paths: Module Federation
+The app API layer exposes types to external apps via two paths: Module Federation
 (`cyweb/ApiTypes`) for React app consumers, and `window.CyWebApi` for vanilla JS consumers
 (browser extensions, LLM agent bridges). Both paths share the same type definitions.
 External apps need domain model types (`IdType`, `Network`, `VisualPropertyName`, etc.) to call
-facade operations and interpret results regardless of which access path they use.
+app API operations and interpret results regardless of which access path they use.
 
 These model types are defined internally in `src/models/` across ~20 subdirectories. Many model files transitively import runtime dependencies (`debug`, `cytoscape`, `d3-scale`, `react`, `keycloak-js`) through implementation files (`impl/`) or store model interfaces.
 
@@ -63,7 +63,7 @@ The following types are included (grouped by domain):
 | `UndoRedoStack`                                | External apps must not manipulate the undo stack.                                       |
 | `VisualProperty<T>`, `VisualPropertyValueType` | Internal style engine types. External apps use `VisualPropertyName` + primitive values. |
 | `NodeView`, `EdgeView`, `View`                 | Internal view model granularity. External apps use `NetworkView`.                       |
-| All `*StoreModel` interfaces                   | Store internals. External apps use facade hooks.                                        |
+| All `*StoreModel` interfaces                   | Store internals. External apps use app API hooks.                                        |
 
 ## Rationale
 
@@ -119,7 +119,7 @@ export const Types = { IdType, Network, ... } // Not possible for TS types
 
 **Trade-offs:**
 
-- Manual curation of the public type list — each new facade hook may require adding types to `ElementTypes.ts`
+- Manual curation of the public type list — each new app API hook may require adding types to `ElementTypes.ts`
 - `export type` means external apps cannot use these types in runtime checks (e.g., `instanceof`) — acceptable since all model types are interfaces, not classes
 - `as const` value objects (`ValueTypeName`, `VisualPropertyName`) are the only runtime values crossing the boundary — these must remain dependency-free
 

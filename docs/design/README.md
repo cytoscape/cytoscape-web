@@ -19,15 +19,15 @@ Group related documents into a **subdirectory per feature or subsystem**:
 
 ```
 docs/design/
-├── module-federation/          # Module Federation facade API design
+├── module-federation/          # Module Federation App API design
 │   ├── module-federation-audit.md      # Background audit
 │   ├── module-federation-design.md     # Entry point: priorities and roadmap
 │   ├── specifications/                 # Detailed specs (designers and implementers)
-│   │   ├── facade-api-specification.md
+│   │   ├── app-api-specification.md
 │   │   ├── event-bus-specification.md
 │   │   └── phase1a-shared-types-design.md
 │   ├── examples/                       # Use-case samples (external app developers)
-│   │   └── facade-api-use-case-examples.md
+│   │   └── app-api-use-case-examples.md
 │   └── checklists/                     # Implementation checklists (implementers)
 │       ├── implementation-checklist-phase0.md
 │       └── implementation-checklist-phase1.md

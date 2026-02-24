@@ -39,11 +39,11 @@ Cytoscape Web is a web-based network visualization and analysis application for 
 - `src/data/db/` — Dexie IndexedDB persistence (version 8)
 - `src/data/external-api/` — NDEx and Cytoscape Desktop API clients
 - `src/features/` — 19 feature module directories + standalone components
-- `src/app-api/` — **New Facade API layer** (public API for external apps, including `window.CyWebApi`)
+- `src/app-api/` — **New App API layer** (public API for external apps, including `window.CyWebApi`)
 - `src/utils/` — Shared utilities
 - `test/fixtures/` — Test fixtures (CX2, HCX, SIF, etc.)
 
-## Facade API Layer (`src/app-api/`) — Key Addition
+## App API Layer (`src/app-api/`) — Key Addition
 The `src/app-api/` directory is the **sole public API** for external apps consuming Cytoscape Web.
 - **Module Federation** — React apps import `useXxxApi()` hooks from `cyweb/ElementApi` etc.
 - **`window.CyWebApi`** — Vanilla JS consumers (browser extensions, LLM agent bridges) access via global
@@ -75,7 +75,7 @@ Located in `docs/adr/`:
 
 ## Design Documents
 Located in `docs/design/module-federation/`:
-- `facade-api-specification.md` — Full API spec (1,900+ lines)
+- `app-api-specification.md` — Full API spec (1,900+ lines)
 - `module-federation-design.md` — Roadmap and priorities
 - `phase1a-shared-types-design.md` — Phase 0 blueprint
 - `implementation-checklist-phase0.md`, `implementation-checklist-phase1.md`
@@ -87,4 +87,4 @@ Located in `docs/design/module-federation/`:
 - `IdType = string` used universally for nodes, edges, networks
 - URL-as-state routing with React Router
 - Branch workflow: `development` (default) → `master` (release)
-- Current active branch for facade API work: `llm-setups`
+- Current active branch for app API work: `llm-setups`

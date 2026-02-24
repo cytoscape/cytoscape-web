@@ -1,17 +1,17 @@
-# Facade API Specification
+# App API Specification
 
 **Rev. 2 (2/15/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Detailed design for the facade API (External App API) layer. For priorities and roadmap, see [module-federation-design.md](../module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](../module-federation-audit.md).
+Detailed design for the app API (External App API) layer. For priorities and roadmap, see [module-federation-design.md](../module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](../module-federation-audit.md).
 
 ---
 
-## 1. Facade Layer Design
+## 1. App API Layer Design
 
 ### 1.1 Overview
 
-The facade layer at `src/app-api/` is the **sole public API** for external apps. Rather than
-exposing internal stores or hooks directly, the facade defines a stable contract that external apps
+The app API layer at `src/app-api/` is the **sole public API** for external apps. Rather than
+exposing internal stores or hooks directly, the app API defines a stable contract that external apps
 program against. This ensures that internal refactoring (store splits, hook reorganization, etc.)
 never breaks the external API.
 
@@ -36,17 +36,17 @@ This split enables two access paths with identical semantics:
 | Browser extension content script | `window.CyWebApi.element.createNode(...)`                |
 | LLM agent bridge (vanilla JS)    | `window.CyWebApi.element.createNode(...)`                |
 
-Each facade domain provides:
+Each app API domain provides:
 
 - Input validation at the boundary before any store mutation
-- Consistent `ApiResult<T>` return types (no thrown exceptions cross the facade)
+- Consistent `ApiResult<T>` return types (no thrown exceptions cross the app API boundary)
 - Internal-only options (`skipUndo`) hidden from external callers
 - Side-effect control via explicit options
 
-The facade does **not** duplicate store coordination logic. Core functions in `src/app-api/core/`
+The app API does **not** duplicate store coordination logic. Core functions in `src/app-api/core/`
 coordinate stores directly via `useXxxStore.getState()`, replicating the coordination logic of
 internal hooks without calling them as React hooks. Internal stores and hooks are created or
-modified as needed to support the facade, but are never independently exposed via Module
+modified as needed to support the app API, but are never independently exposed via Module
 Federation.
 
 ### 1.2 Directory Structure
@@ -88,7 +88,7 @@ src/app-api/
 
 ### 1.3 Shared Result Types
 
-All facade operations return `ApiResult<T>`, a discriminated union:
+All app API operations return `ApiResult<T>`, a discriminated union:
 
 ```typescript
 // src/app-api/types/ApiResult.ts
@@ -158,7 +158,7 @@ export type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSum
 export type { AppContext, CyAppWithLifecycle } from './AppContext'
 ```
 
-### 1.5 Facade Hook Specifications
+### 1.5 App API Hook Specifications
 
 #### 1.5.1 Element API
 
@@ -588,7 +588,7 @@ interface AppContext {
   /** The unique ID of this app instance */
   appId: string
 
-  /** Pre-instantiated facade API instances */
+  /** Pre-instantiated app API instances */
   apis: {
     element: ElementApi
     network: NetworkApi
@@ -621,7 +621,7 @@ interface CyAppWithLifecycle extends CyApp {
 
 **Implementation strategy:**
 
-- The host calls `mount(context)` after an app is activated and its React components are registered. The `AppContext.apis` object contains pre-instantiated facade API instances that provide non-hook access to all operations (the host creates them within a React rendering context and passes the resolved objects).
+- The host calls `mount(context)` after an app is activated and its React components are registered. The `AppContext.apis` object contains pre-instantiated app API instances that provide non-hook access to all operations (the host creates them within a React rendering context and passes the resolved objects).
 - The host calls `unmount()` when the app is deactivated or the page is unloading. The host guarantees `unmount()` is always called.
 - Both callbacks are optional — existing apps without lifecycle methods continue to work unchanged.
 - If `mount()` returns a `Promise`, the host awaits it before marking the app as ready.
@@ -629,7 +629,7 @@ interface CyAppWithLifecycle extends CyApp {
 
 ### 1.6 Sync/Async Policy
 
-Facade operations use a **mixed sync/async** return type strategy based on the nature of the underlying implementation. The decision criteria are:
+App API operations use a **mixed sync/async** return type strategy based on the nature of the underlying implementation. The decision criteria are:
 
 | Criterion                                                                                     | Return Type             | Rationale                                                                        |
 | --------------------------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------- |
@@ -638,7 +638,7 @@ Facade operations use a **mixed sync/async** return type strategy based on the n
 | External I/O (network requests, file operations)                                              | `Promise<ApiResult<T>>` | Inherently async                                                                 |
 | Operations likely to be moved to Web Workers in the future                                    | `Promise<ApiResult<T>>` | Avoids a breaking change when the implementation becomes async                   |
 
-**Classification of all facade operations:**
+**Classification of all app API operations:**
 
 | Return Type                  | Operations                                                                                                                                                                                                                                                                                                                                                                                                                | Internal Mechanism                                                                                                                                          |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -646,14 +646,14 @@ Facade operations use a **mixed sync/async** return type strategy based on the n
 | `Promise<ApiResult>` (async) | `applyLayout`                                                                                                                                                                                                                                                                                                                                                                                                             | `LayoutEngine.apply()` is callback-based (CyjsLayout listens for `layoutstop` event; CosmosLayout uses a timer)                                             |
 | `Promise<ApiResult>` (async) | `fit`                                                                                                                                                                                                                                                                                                                                                                                                                     | `RendererFunctionStore` delegates to Cytoscape.js `cy.fit()`, which may involve animation; wrapping in a Promise future-proofs against animated transitions |
 
-**Stability guarantee:** Changing a synchronous operation to `Promise<ApiResult<T>>` is a **breaking change** for callers (they must add `await`). Facade operations are classified conservatively — if there is a reasonable expectation that the underlying implementation will become asynchronous, the operation returns `Promise` from the start.
+**Stability guarantee:** Changing a synchronous operation to `Promise<ApiResult<T>>` is a **breaking change** for callers (they must add `await`). App API operations are classified conservatively — if there is a reasonable expectation that the underlying implementation will become asynchronous, the operation returns `Promise` from the start.
 
 ### 1.7 Design Rules
 
 | Rule                                                    | Rationale                                                             |
 | ------------------------------------------------------- | --------------------------------------------------------------------- |
 | `skipUndo` is never exposed externally                  | Prevents external apps from corrupting the undo stack                 |
-| All exceptions caught → `ApiFailure`                    | External apps never need try/catch around facade calls                |
+| All exceptions caught → `ApiFailure`                    | External apps never need try/catch around app API calls                |
 | Validate inputs before any store mutation               | Prevents partial state updates on invalid input                       |
 | Options with sensible defaults                          | Minimize required parameters; opt-in for advanced behavior            |
 | Core functions do not call internal React hooks         | Ensures `core/` is usable outside React context (browser extensions, LLM bridges) |
@@ -711,11 +711,11 @@ Two access paths, one implementation:
 
 ### 2.1 New Expose Entries
 
-Add 9 facade entries to `webpack.config.js` `exposes`. These are the **only recommended public API** for new external apps:
+Add 9 app API entries to `webpack.config.js` `exposes`. These are the **only recommended public API** for new external apps:
 
 ```javascript
 exposes: {
-  // === Public Facade API (the only supported public API) ===
+  // === Public App API (the only supported public API) ===
   './ElementApi':     './src/app-api/useElementApi.ts',
   './NetworkApi':     './src/app-api/useNetworkApi.ts',
   './SelectionApi':   './src/app-api/useSelectionApi.ts',
@@ -727,8 +727,8 @@ exposes: {
   './ApiTypes':       './src/app-api/types/index.ts',
 
   // === @deprecated — Raw stores (backward compatibility only) ===
-  // These will be removed after 2 release cycles once the facade is stable.
-  // Do NOT use in new apps. Use the facade API above instead.
+  // These will be removed after 2 release cycles once the app API is stable.
+  // Do NOT use in new apps. Use the app API above instead.
   './CredentialStore':      './src/data/hooks/stores/CredentialStore.ts',
   './LayoutStore':          './src/data/hooks/stores/LayoutStore.ts',
   // ... (12 stores unchanged)
@@ -808,11 +808,11 @@ import { useNetworkStore } from 'cyweb/NetworkStore'
 | Existing 2 task hooks       | Kept as-is, marked `@deprecated` in JSDoc       |
 | Runtime behavior            | No change for existing consumers                |
 | Migration path              | Incremental — replace one import at a time      |
-| Removal timeline            | Minimum 2 release cycles after facade is stable |
+| Removal timeline            | Minimum 2 release cycles after app API is stable |
 
 ### 2.5 Revised Use Case Gap Matrix
 
-With the facade API in place, the use case coverage from Audit Section 5 changes:
+With the app API in place, the use case coverage from Audit Section 5 changes:
 
 | Use Case                                                                | Before             | After                                                                |
 | ----------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
@@ -963,7 +963,7 @@ When Phase 3 App Lifecycle is implemented, `AppContext.apis` is a direct referen
 mount({ appId: app.id, apis: window.CyWebApi })
 ```
 
-This eliminates the complexity of "pre-instantiated facade API instances" noted in § 1.5.9.
+This eliminates the complexity of "pre-instantiated app API instances" noted in § 1.5.9.
 `AppContext.apis` and `window.CyWebApi` are the same object at runtime.
 
 #### Security model
@@ -973,7 +973,7 @@ third-party scripts and browser extensions. This is by design:
 
 - Operations available via `window.CyWebApi` are equivalent to what a user can do via the UI
 - No authentication or token is required — access model matches the UI
-- External I/O (NDEx upload, file download) is NOT exposed via the facade; those operations remain
+- External I/O (NDEx upload, file download) is NOT exposed via the app API; those operations remain
   inside Cytoscape Web's own UI layer
 - The undo stack protection (`skipUndo: false` is hardcoded) prevents silent history corruption
 - Maximum blast radius: local session state within the current browser tab
@@ -998,7 +998,7 @@ declare global {
 
 ## 3. Wrap Target Mapping Tables
 
-**Rev. 2 addition (2/15/2026): Wrap target mappings for all 8 facade hooks**
+**Rev. 2 addition (2/15/2026): Wrap target mappings for all 8 app API hooks**
 **Rev. 3 note (2/19/2026): Core functions do not call internal hooks**
 
 Core functions in `src/app-api/core/` coordinate stores directly via `useXxxStore.getState()`.
@@ -1006,10 +1006,10 @@ The "Wraps:" annotations in each section header indicate the equivalent internal
 is replicated — core functions do **not** call these hooks directly (they require React context).
 
 This section provides the store coordination mapping that implementers need to build each core
-function file. For each facade method, the table specifies:
+function file. For each app API method, the table specifies:
 
 - Which internal hook or store method is called
-- How inputs are transformed at the facade boundary
+- How inputs are transformed at the app API boundary
 - How outputs are converted to `ApiResult<T>`
 - Which error conditions map to which `ApiErrorCode`
 
@@ -1017,7 +1017,7 @@ function file. For each facade method, the table specifies:
 
 **Internal targets:** `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges` (all in `src/data/hooks/`)
 
-| Facade Method                                           | Internal Target                                                                                                                                                 | Input Transformation                                                             | Output Transformation                                                    | Error → ApiErrorCode                                                                                                                                                     |
+| App API Method                                           | Internal Target                                                                                                                                                 | Input Transformation                                                             | Output Transformation                                                    | Error → ApiErrorCode                                                                                                                                                     |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `createNode(networkId, position, options?)`             | `useCreateNode().createNode(networkId, position, {attributes, autoSelect, skipUndo: false})`                                                                    | Strip `skipUndo` — always false. Pass `attributes` and `autoSelect` from options | `CreateNodeResult.success` → `ok({nodeId})` / `fail(...)`                | `'Network ${id} not found'` → `NetworkNotFound`. Catch → `OperationFailed`                                                                                               |
 | `createEdge(networkId, sourceId, targetId, options?)`   | `useCreateEdge().createEdge(networkId, sourceId, targetId, {attributes, autoSelect, skipUndo: false})`                                                          | Same as createNode                                                               | `CreateEdgeResult.success` → `ok({edgeId})` / `fail(...)`                | `'Network ... not found'` → `NetworkNotFound`. `'Source node ... not found'` → `NodeNotFound`. `'Target node ... not found'` → `NodeNotFound`. Catch → `OperationFailed` |
@@ -1031,12 +1031,12 @@ function file. For each facade method, the table specifies:
 
 **Stores involved (6):** `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` (via `postEdit`)
 
-**Undo behavior:** `createNode`, `createEdge`, `deleteNodes`, `deleteEdges` — all record undo via internal hooks. `moveEdge` — facade must call `postEdit` directly. `getNode`, `getEdge` — read-only, no undo.
+**Undo behavior:** `createNode`, `createEdge`, `deleteNodes`, `deleteEdges` — all record undo via internal hooks. `moveEdge` — app API must call `postEdit` directly. `getNode`, `getEdge` — read-only, no undo.
 
 **Key implementation notes:**
 
-- Internal hooks already return `{success, error?, ...}` objects — the facade converts these to `ApiResult` without duplicating store coordination logic.
-- `skipUndo` is never exposed to external apps — the facade hardcodes it to `false`.
+- Internal hooks already return `{success, error?, ...}` objects — the app API converts these to `ApiResult` without duplicating store coordination logic.
+- `skipUndo` is never exposed to external apps — the app API hardcodes it to `false`.
 - `moveEdge` requires new coordination logic since no internal hook exists. Must be atomic: validate all IDs, mutate edge source/target, record undo with before/after state.
 
 #### 3.1.1 `moveEdge` — Detailed Implementation Design
@@ -1056,7 +1056,7 @@ A user-side `deleteEdge` + `createEdge` approach **cannot preserve data**:
 | Undo history           | Two separate entries (delete + create)            | Single atomic entry                                  |
 | External ID references | Dangling (apps holding old ID break)              | Stable                                               |
 
-The bypass loss is structurally unrecoverable: the current facade API has no `getBypass` read method, so external apps cannot extract bypasses before deletion.
+The bypass loss is structurally unrecoverable: the current app API has no `getBypass` read method, so external apps cannot extract bypasses before deletion.
 
 ##### Internal Mechanism: Cytoscape.js `edge.move()`
 
@@ -1373,7 +1373,7 @@ export const useElementApi = (): ElementApi => elementApi
 | ------------------------------- | -------------------------------- | ---------- | --------------------------------------- |
 | Edge ID                         | —                                | Yes        | `edge.move()` preserves identity        |
 | Table row (all attributes)      | `edgeTable.rows.get(edgeId)`     | Yes        | Edge ID unchanged; row remains in Map   |
-| `source`/`target` table columns | `row['source']`, `row['target']` | Updated    | Facade explicitly updates these columns |
+| `source`/`target` table columns | `row['source']`, `row['target']` | Updated    | App API explicitly updates these columns |
 | Visual style bypasses           | `bypassMap.get(edgeId)` per VP   | Yes        | Edge ID unchanged; Map entries remain   |
 | Edge view                       | `edgeViews[edgeId]`              | Yes        | Edge ID unchanged                       |
 | Undo history                    | `MOVE_EDGES` command             | Yes        | Single atomic undo entry                |
@@ -1415,7 +1415,7 @@ describe('moveEdge', () => {
 | Store model (`NetworkStoreModel.ts`)            | 1              | ~8                    |
 | Store impl (`NetworkStore.ts`)                  | 1              | ~15                   |
 | Undo (`UndoStoreModel.ts` + `useUndoStack.tsx`) | 2              | ~20                   |
-| Core facade (`core/elementApi.ts`)              | 1              | ~50                   |
+| Core app API (`core/elementApi.ts`)              | 1              | ~50                   |
 | Hook wrapper (`useElementApi.ts`)               | 1              | ~5                    |
 | Tests (`core/elementApi.test.ts`)               | 1              | ~80                   |
 | **Total**                                       | **9**          | **~205**              |
@@ -1426,7 +1426,7 @@ describe('moveEdge', () => {
 
 **Internal targets:** `useCreateNetwork` (`src/data/task/`), `useCreateNetworkFromCx2` (`src/data/task/`), `useDeleteCyNetwork` (`src/data/hooks/`)
 
-| Facade Method                        | Internal Target                                         | Input Transformation                                                                                                                                     | Output Transformation                                            | Error → ApiErrorCode                                                                                |
+| App API Method                        | Internal Target                                         | Input Transformation                                                                                                                                     | Output Transformation                                            | Error → ApiErrorCode                                                                                |
 | ------------------------------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `createNetworkFromEdgeList(props)`   | `useCreateNetwork()(props)`                             | Pass `{name, description?, edgeList}` directly                                                                                                           | `CyNetwork` → `ok({networkId: cyNetwork.network.id, cyNetwork})` | Missing name → `InvalidInput`. Empty edge list → `InvalidInput`. Internal throw → `OperationFailed` |
 | `createNetworkFromCx2(props)`        | `useCreateNetworkFromCx2()({cxData})`                   | **Add `validateCX2(cxData)` before calling internal hook.** Pass `navigate` and `addToWorkspace` options (requires refactoring internal hook — see note) | `CyNetwork` → `ok({networkId, cyNetwork})`                       | `validateCX2` fails → `InvalidCx2`. Internal throw → `OperationFailed`                              |
@@ -1438,13 +1438,13 @@ describe('moveEdge', () => {
 
 **Internal hook refactoring required:**
 
-- `useCreateNetworkFromCx2` currently always adds to workspace and navigates. The facade needs `navigate` and `addToWorkspace` options. Two approaches:
+- `useCreateNetworkFromCx2` currently always adds to workspace and navigates. The app API needs `navigate` and `addToWorkspace` options. Two approaches:
   1. **Preferred:** Add optional parameters to the internal hook.
-  2. **Alternative:** The facade duplicates the workspace/navigation logic conditionally after calling the core hook.
+  2. **Alternative:** The app API duplicates the workspace/navigation logic conditionally after calling the core hook.
 
 **Undo behavior:** None of the network lifecycle operations record undo. Network creation and deletion are not undoable.
 
-**Validation added by facade:**
+**Validation added by app API:**
 
 - `createNetworkFromCx2`: Calls `validateCX2(cxData)` (from `src/models/CxModel/`) before passing to internal hook. This fixes Audit Section 4.5 (missing CX2 validation on CX2 import).
 - `createNetworkFromEdgeList`: Validates `name` is non-empty and `edgeList` is non-empty.
@@ -1455,7 +1455,7 @@ describe('moveEdge', () => {
 
 **Internal target:** `ViewModelStore` selection methods directly (no wrapper hook exists)
 
-| Facade Method                                  | Internal Target                                                                  | Input Transformation       | Output Transformation                                   | Error → ApiErrorCode                                  |
+| App API Method                                  | Internal Target                                                                  | Input Transformation       | Output Transformation                                   | Error → ApiErrorCode                                  |
 | ---------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
 | `exclusiveSelect(networkId, nodeIds, edgeIds)` | `ViewModelStore.exclusiveSelect(networkId, nodeIds, edgeIds)`                    | None                       | Void → `ok()`                                           | `viewModels[networkId]` undefined → `NetworkNotFound` |
 | `additiveSelect(networkId, ids)`               | `ViewModelStore.additiveSelect(networkId, ids)`                                  | None (node/edge IDs mixed) | Void → `ok()`                                           | `viewModels[networkId]` undefined → `NetworkNotFound` |
@@ -1465,7 +1465,7 @@ describe('moveEdge', () => {
 
 **Stores involved (1):** `ViewModelStore` only.
 
-**Facade validation pattern:** The facade calls `useViewModelStore.getState().getViewModel(networkId)` before each mutation. If it returns `undefined`, the facade returns `fail(ApiErrorCode.NetworkNotFound, ...)` instead of letting the store method silently no-op. This converts the store's silent-failure behavior into explicit `ApiResult` errors.
+**App API validation pattern:** The app API calls `useViewModelStore.getState().getViewModel(networkId)` before each mutation. If it returns `undefined`, the app API returns `fail(ApiErrorCode.NetworkNotFound, ...)` instead of letting the store method silently no-op. This converts the store's silent-failure behavior into explicit `ApiResult` errors.
 
 **Undo behavior:** None — selection changes are not undoable.
 
@@ -1475,7 +1475,7 @@ describe('moveEdge', () => {
 
 **Internal target:** `TableStore` methods directly (in `src/data/hooks/stores/TableStore.ts`)
 
-| Facade Method                                                                | Internal Target                                                                        | Input Transformation                                                 | Output Transformation    | Error → ApiErrorCode                                                              |
+| App API Method                                                                | Internal Target                                                                        | Input Transformation                                                 | Output Transformation    | Error → ApiErrorCode                                                              |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------- |
 | `getValue(networkId, tableType, elementId, column)`                          | Read `TableStore.tables[networkId].[nodeTable\|edgeTable].rows.get(elementId)[column]` | Map `tableType` → `'nodeTable'` / `'edgeTable'`                      | Value → `ok({value})`    | Table missing → `NetworkNotFound`. Row missing → `NodeNotFound` or `EdgeNotFound` |
 | `getRow(networkId, tableType, elementId)`                                    | Read `TableStore.tables[networkId].[nodeTable\|edgeTable].rows.get(elementId)`         | Same                                                                 | Row record → `ok({row})` | Same                                                                              |
@@ -1483,17 +1483,17 @@ describe('moveEdge', () => {
 | `deleteColumn(networkId, tableType, columnName)`                             | `TableStore.deleteColumn(networkId, tableType, columnName)`                            | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `setColumnName(networkId, tableType, currentName, newName)`                  | `TableStore.setColumnName(networkId, tableType, currentName, newName)`                 | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `setValue(networkId, tableType, elementId, column, value)`                   | `TableStore.setValue(networkId, tableType, elementId, column, value)`                  | Pass directly                                                        | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
-| `setValues(networkId, tableType, cellEdits)`                                 | `TableStore.setValues(networkId, tableType, cellEdits)`                                | Map facade `CellEdit` → store `CellEdit` (`{row→id, column, value}`) | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
-| `editRows(networkId, tableType, rows)`                                       | `TableStore.editRows(networkId, tableType, rows)`                                      | Convert facade `Record<IdType, Record<...>>` → store `Map<IdType, Record<...>>` internally | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `setValues(networkId, tableType, cellEdits)`                                 | `TableStore.setValues(networkId, tableType, cellEdits)`                                | Map app API `CellEdit` → store `CellEdit` (`{row→id, column, value}`) | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `editRows(networkId, tableType, rows)`                                       | `TableStore.editRows(networkId, tableType, rows)`                                      | Convert app API `Record<IdType, Record<...>>` → store `Map<IdType, Record<...>>` internally | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `applyValueToElements(networkId, tableType, columnName, value, elementIds?)` | `TableStore.applyValueToElements(networkId, tableType, columnName, value, elementIds)` | Pass directly. `undefined` elementIds → apply to all                 | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 
 **Stores involved (1):** `TableStore` only.
 
-**Facade validation pattern:** The facade checks `tables[networkId]` existence before every operation. The internal store methods have **inconsistent null-safety** (some fail silently, some throw on undefined) — the facade normalizes this into consistent `NetworkNotFound` errors.
+**App API validation pattern:** The app API checks `tables[networkId]` existence before every operation. The internal store methods have **inconsistent null-safety** (some fail silently, some throw on undefined) — the app API normalizes this into consistent `NetworkNotFound` errors.
 
-**Internal inconsistency note:** The store uses both `'node' | 'edge'` string literals and `TableType` const enum for `tableType` parameters. Both resolve to the same values. The facade accepts `'node' | 'edge'` consistently and passes through directly.
+**Internal inconsistency note:** The store uses both `'node' | 'edge'` string literals and `TableType` const enum for `tableType` parameters. Both resolve to the same values. The app API accepts `'node' | 'edge'` consistently and passes through directly.
 
-**Undo behavior:** None of the `TableStore` methods record undo. If undo is needed for table edits in the future, it must be added at the facade or hook level.
+**Undo behavior:** None of the `TableStore` methods record undo. If undo is needed for table edits in the future, it must be added at the app API or hook level.
 
 ---
 
@@ -1501,7 +1501,7 @@ describe('moveEdge', () => {
 
 **Internal target:** `VisualStyleStore` methods directly (in `src/data/hooks/stores/VisualStyleStore.ts`)
 
-| Facade Method                                                                                   | Internal Target                                                                                                  | Input Transformation | Output Transformation | Error → ApiErrorCode                                              |
+| App API Method                                                                                   | Internal Target                                                                                                  | Input Transformation | Output Transformation | Error → ApiErrorCode                                              |
 | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------- | --------------------- | ----------------------------------------------------------------- |
 | `setDefault(networkId, vpName, vpValue)`                                                        | `VisualStyleStore.setDefault(networkId, vpName, vpValue)`                                                        | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`. Catch → `OperationFailed`         |
 | `setBypass(networkId, vpName, elementIds, vpValue)`                                             | `VisualStyleStore.setBypass(networkId, vpName, elementIds, vpValue)`                                             | Pass directly        | Void → `ok()`         | VS missing → `NetworkNotFound`. Empty elementIds → `InvalidInput` |
@@ -1513,18 +1513,18 @@ describe('moveEdge', () => {
 
 **Stores involved (1):** `VisualStyleStore` only.
 
-**Facade validation pattern:** The store performs **zero input validation** — if `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and may throw. The facade must check `visualStyles[networkId]` existence before every call and return `NetworkNotFound` on absence.
+**App API validation pattern:** The store performs **zero input validation** — if `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and may throw. The app API must check `visualStyles[networkId]` existence before every call and return `NetworkNotFound` on absence.
 
 **Undo behavior:** None of the `VisualStyleStore` methods record undo. Visual style changes are currently not undoable.
 
-**Store methods NOT exposed via facade:**
+**Store methods NOT exposed via app API:**
 | Store Method | Reason |
 |---|---|
 | `setBypassMap` | Low-level bulk bypass — used internally by undo |
 | `setDiscreteMappingValue` | Granular mapping edit — Phase 2 candidate |
 | `deleteDiscreteMappingValue` | Same |
 | `setContinuousMappingValues` | Same |
-| `createMapping` | Generic dispatcher — facade uses typed create methods |
+| `createMapping` | Generic dispatcher — app API uses typed create methods |
 | `setMapping` | Low-level mapping overwrite — used internally |
 
 ---
@@ -1533,7 +1533,7 @@ describe('moveEdge', () => {
 
 **Internal targets:** `LayoutStore` (engines/state), `NetworkStore` (topology), `ViewModelStore` (positions), `RendererFunctionStore` (fit)
 
-| Facade Method                      | Internal Target                        | Input Transformation                                                                                    | Output Transformation                                        | Error → ApiErrorCode                                                                                                                                                 |
+| App API Method                      | Internal Target                        | Input Transformation                                                                                    | Output Transformation                                        | Error → ApiErrorCode                                                                                                                                                 |
 | ---------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `applyLayout(networkId, options?)` | **New coordination** (see steps below) | `algorithmName` → find engine. Default: `LayoutStore.preferredLayout`. `fitAfterLayout` default: `true` | Promise resolves to `ok()` on layout complete                | Engine not found → `LayoutEngineNotFound`. Network missing → `NetworkNotFound`. Fit function missing → `FunctionNotAvailable` (warning only — layout still succeeds) |
 | `getAvailableLayouts()`            | Read `LayoutStore.layoutEngines`       | None                                                                                                    | Map `LayoutEngine[]` → `LayoutAlgorithmInfo[]` → `ok(infos)` | Cannot fail — returns empty array if no engines                                                                                                                      |
@@ -1570,7 +1570,7 @@ describe('moveEdge', () => {
 
 **Event bus side effects:** `applyLayout` is the dispatch origin for `layout:started` and
 `layout:completed` events. It imports `dispatchCyWebEvent` from
-`./event-bus/dispatchCyWebEvent`. This is the only facade core function that dispatches events
+`./event-bus/dispatchCyWebEvent`. This is the only app API core function that dispatches events
 directly (all other events come from `initEventBus` Zustand subscriptions). See
 [event-bus-specification.md § 1.4.5–1.4.6](event-bus-specification.md).
 
@@ -1588,11 +1588,11 @@ entry with pre-layout and post-layout position maps:
 
 **Internal targets:** `RendererFunctionStore` (fit), `ViewModelStore` (positions)
 
-| Facade Method                               | Internal Target                                                                        | Input Transformation                                   | Output Transformation                                      | Error → ApiErrorCode                             |
+| App API Method                               | Internal Target                                                                        | Input Transformation                                   | Output Transformation                                      | Error → ApiErrorCode                             |
 | ------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------ |
 | `fit(networkId)`                            | `RendererFunctionStore.getFunction('cyjs', 'fit', networkId)` → call returned function | None                                                   | Promise resolves to `ok()`                                 | Function not registered → `FunctionNotAvailable` |
 | `getNodePositions(networkId, nodeIds)`      | `ViewModelStore.getViewModel(networkId)` → extract positions from `nodeViews`          | Filter to requested `nodeIds`                          | Build `PositionRecord` (Record, not Map) → `ok({ positions })` | View model missing → `NetworkNotFound`           |
-| `updateNodePositions(networkId, positions)` | `ViewModelStore.updateNodePositions(networkId, positions)`                             | Convert facade `PositionRecord` → store `Map<IdType, ...>` internally | Void → `ok()`              | View model missing → `NetworkNotFound`           |
+| `updateNodePositions(networkId, positions)` | `ViewModelStore.updateNodePositions(networkId, positions)`                             | Convert app API `PositionRecord` → store `Map<IdType, ...>` internally | Void → `ok()`              | View model missing → `NetworkNotFound`           |
 
 **Stores involved (2):** `ViewModelStore`, `RendererFunctionStore`
 
@@ -1609,7 +1609,7 @@ viewport API are not undoable (unlike `applyLayout`).
 
 **Internal target:** `exportCyNetworkToCx2` (pure function in `src/models/CxModel/impl/exporter.ts`)
 
-| Facade Method                      | Internal Target                                           | Input Transformation                                                           | Output Transformation | Error → ApiErrorCode                                                             |
+| App API Method                      | Internal Target                                           | Input Transformation                                                           | Output Transformation | Error → ApiErrorCode                                                             |
 | ---------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------- | -------------------------------------------------------------------------------- |
 | `exportToCx2(networkId, options?)` | `exportCyNetworkToCx2(cyNetwork, summary?, networkName?)` | **Assemble `CyNetwork` from 5 stores** (see below). Pass `options.networkName` | CX2 data → `ok(cx2)`  | Any store entry missing → `NetworkNotFound`. Exporter throws → `OperationFailed` |
 
@@ -1627,7 +1627,7 @@ viewport API are not undoable (unlike `applyLayout`).
 
 **Stores involved (6):** `NetworkStore`, `TableStore`, `VisualStyleStore`, `ViewModelStore`, `OpaqueAspectStore`, `NetworkSummaryStore`
 
-**Validation:** The facade checks each store entry individually and returns `NetworkNotFound` with a descriptive message on the first missing entry. This prevents the exporter from receiving `undefined` fields and throwing cryptic errors.
+**Validation:** The app API checks each store entry individually and returns `NetworkNotFound` with a descriptive message on the first missing entry. This prevents the exporter from receiving `undefined` fields and throwing cryptic errors.
 
 **Undo behavior:** Read-only — no undo concerns.
 
@@ -1635,7 +1635,7 @@ viewport API are not undoable (unlike `applyLayout`).
 
 ### 3.9 Internal Hook / Store Return Type Reference
 
-This subsection documents the return type interfaces of every internal hook and store method that the facade wraps. Implementers need these to build the `ApiResult<T>` conversion layer correctly.
+This subsection documents the return type interfaces of every internal hook and store method that the app API wraps. Implementers need these to build the `ApiResult<T>` conversion layer correctly.
 
 #### 3.9.1 Element Hooks (`src/data/hooks/`)
 
@@ -1657,7 +1657,7 @@ Options accepted:
 export interface CreateNodeOptions {
   attributes?: Record<AttributeName, ValueType> // custom attributes for the new node's table row
   autoSelect?: boolean // whether to select the new node (default: true)
-  skipUndo?: boolean // @internal — facade hardcodes to false
+  skipUndo?: boolean // @internal — app API hardcodes to false
 }
 ```
 
@@ -1683,7 +1683,7 @@ Options accepted:
 export interface CreateEdgeOptions {
   attributes?: Record<AttributeName, ValueType> // custom attributes for the new edge's table row
   autoSelect?: boolean // whether to select the new edge (default: true)
-  skipUndo?: boolean // @internal — facade hardcodes to false
+  skipUndo?: boolean // @internal — app API hardcodes to false
 }
 ```
 
@@ -1708,7 +1708,7 @@ Options accepted:
 
 ```typescript
 export interface DeleteNodesOptions {
-  skipUndo?: boolean // @internal — facade hardcodes to false
+  skipUndo?: boolean // @internal — app API hardcodes to false
 }
 ```
 
@@ -1746,7 +1746,7 @@ Options accepted:
 
 ```typescript
 export interface DeleteEdgesOptions {
-  skipUndo?: boolean // @internal — facade hardcodes to false
+  skipUndo?: boolean // @internal — app API hardcodes to false
 }
 ```
 
@@ -1763,7 +1763,7 @@ interface DeleteEdgesResult {
 
 ---
 
-**Common pattern:** All four CRUD hooks use a `{ success: boolean, error?: string }` result pattern. The facade converts:
+**Common pattern:** All four CRUD hooks use a `{ success: boolean, error?: string }` result pattern. The app API converts:
 
 - `result.success === true` → `ok({ nodeId })` / `ok({ edgeId })` / `ok({ deletedNodeCount, deletedEdgeCount })` / `ok({ deletedEdgeCount })`
 - `result.success === false` → `fail(...)` with `ApiErrorCode` inferred from `result.error` string
@@ -1804,9 +1804,9 @@ export interface CyNetwork {
 }
 ```
 
-**Error behavior:** Throws on failure (no `success`/`error` pattern). The facade must catch and convert to `fail(OperationFailed, ...)`.
+**Error behavior:** Throws on failure (no `success`/`error` pattern). The app API must catch and convert to `fail(OperationFailed, ...)`.
 
-**Side effects:** The internal hook always adds the network to the workspace and navigates to it. The facade needs either optional parameters added to the internal hook, or must conditionally skip navigation after calling it (see §3.2).
+**Side effects:** The internal hook always adds the network to the workspace and navigates to it. The app API needs either optional parameters added to the internal hook, or must conditionally skip navigation after calling it (see §3.2).
 
 #### 3.9.3 Selection — `ViewModelStore` Methods
 
@@ -1833,7 +1833,7 @@ interface NetworkView {
 }
 ```
 
-**Error behavior:** Silent no-op if `networkId` not found. The facade must check `getViewModel(networkId)` before calling mutations and return `NetworkNotFound` explicitly.
+**Error behavior:** Silent no-op if `networkId` not found. The app API must check `getViewModel(networkId)` before calling mutations and return `NetworkNotFound` explicitly.
 
 #### 3.9.4 Table — `TableStore` Methods
 
@@ -1871,7 +1871,7 @@ export interface TableRecord {
 }
 ```
 
-**Error behavior:** Inconsistent — some methods throw on missing `networkId`, others silently no-op. The facade must normalize by checking `tables[networkId]` before every call.
+**Error behavior:** Inconsistent — some methods throw on missing `networkId`, others silently no-op. The app API must normalize by checking `tables[networkId]` before every call.
 
 #### 3.9.5 Visual Style — `VisualStyleStore` Methods
 
@@ -1889,7 +1889,7 @@ removeMapping(networkId, vpName: VisualPropertyName): void
 
 **Read path:** `visualStyles: Record<IdType, VisualStyle>` — direct record lookup.
 
-**Error behavior:** Zero null-checks. If `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and will throw. The facade must validate before every call.
+**Error behavior:** Zero null-checks. If `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and will throw. The app API must validate before every call.
 
 #### 3.9.6 Layout — `LayoutEngine.apply()`
 
@@ -1911,7 +1911,7 @@ export interface LayoutEngine {
 }
 ```
 
-**Key observation:** `apply()` is callback-based — `afterLayout` is called asynchronously when layout completes. The facade must wrap this in a `Promise<ApiResult>`. The position map returned in the callback uses `[number, number]` tuples (no Z coordinate).
+**Key observation:** `apply()` is callback-based — `afterLayout` is called asynchronously when layout completes. The app API must wrap this in a `Promise<ApiResult>`. The position map returned in the callback uses `[number, number]` tuples (no Z coordinate).
 
 Available engines are stored in `LayoutStore.layoutEngines: LayoutEngine[]`.
 
@@ -1972,7 +1972,7 @@ exportCyNetworkToCx2(
 ): Cx2
 ```
 
-Returns `Cx2` (the CX2 format data). Throws on error. The facade assembles the `CyNetwork` from 6 store reads (see §3.8).
+Returns `Cx2` (the CX2 format data). Throws on error. The app API assembles the `CyNetwork` from 6 store reads (see §3.8).
 
 #### 3.9.9 Undo — `useUndoStack`
 
@@ -2038,13 +2038,13 @@ export const UndoCommandType = {
 
 The CRUD hooks (`useCreateNode`, `useCreateEdge`, `useDeleteNodes`,
 `useDeleteEdges`) call `postEdit` internally. `moveEdge` and `applyLayout`
-must call `postEdit` from the facade. For `applyLayout`, use
+must call `postEdit` from the app API. For `applyLayout`, use
 `[networkId, prevPositions]` for undo params and `[networkId, positionMap]`
 for redo params.
 
 #### 3.9.10 Return Type Summary
 
-| Internal Target                        | Return Type                | Pattern                                                   | Facade Conversion                                                        |
+| Internal Target                        | Return Type                | Pattern                                                   | App API Conversion                                                        |
 | -------------------------------------- | -------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `useCreateNode().createNode()`         | `CreateNodeResult`         | `{ success, nodeId, error? }`                             | `success` → `ok({nodeId})`, else `fail(...)`                             |
 | `useCreateNode().generateNextNodeId()` | `IdType`                   | Direct value                                              | Not wrapped in `ApiResult`                                               |
@@ -2053,21 +2053,21 @@ for redo params.
 | `useDeleteNodes().deleteNodes()`       | `DeleteNodesResult`        | `{ success, deletedNodeCount, deletedEdgeCount, error? }` | `success` → `ok({deletedNodeCount, deletedEdgeCount})`, else `fail(...)` |
 | `useDeleteEdges().deleteEdges()`       | `DeleteEdgesResult`        | `{ success, deletedEdgeCount, error? }`                   | `success` → `ok({deletedEdgeCount})`, else `fail(...)`                   |
 | `useCreateNetworkFromCx2()()`          | `CyNetwork`                | Direct value (throws on error)                            | Catch → `fail(OperationFailed, ...)`                                     |
-| `ViewModelStore` selection methods     | `void`                     | Silent no-op on missing network                           | Facade pre-checks → `NetworkNotFound`                                    |
+| `ViewModelStore` selection methods     | `void`                     | Silent no-op on missing network                           | App API pre-checks → `NetworkNotFound`                                    |
 | `ViewModelStore.getViewModel()`        | `NetworkView \| undefined` | `undefined` on missing                                    | `undefined` → `NetworkNotFound`                                          |
-| `TableStore` mutation methods          | `void`                     | Inconsistent null-safety                                  | Facade pre-checks → `NetworkNotFound`                                    |
-| `VisualStyleStore` all methods         | `void`                     | Zero null-checks (may throw)                              | Facade pre-checks → `NetworkNotFound`                                    |
+| `TableStore` mutation methods          | `void`                     | Inconsistent null-safety                                  | App API pre-checks → `NetworkNotFound`                                    |
+| `VisualStyleStore` all methods         | `void`                     | Zero null-checks (may throw)                              | App API pre-checks → `NetworkNotFound`                                    |
 | `LayoutEngine.apply()`                 | `void` (callback-based)    | `afterLayout(positionMap)`                                | Wrap in `Promise<ApiResult>`                                             |
 | `RendererFunctionStore.getFunction()`  | `Function \| undefined`    | `undefined` if not registered                             | `undefined` → `FunctionNotAvailable`                                     |
 | `RendererStore.getViewport()`          | `ViewPort \| undefined`    | `undefined` if not set                                    | `undefined` → `NetworkNotFound`                                          |
 | `exportCyNetworkToCx2()`               | `Cx2`                      | Direct value (throws on error)                            | Catch → `fail(OperationFailed, ...)`                                     |
-| `useUndoStack().postEdit()`            | `void`                     | Fire-and-forget                                           | Not exposed via facade                                                   |
+| `useUndoStack().postEdit()`            | `void`                     | Fire-and-forget                                           | Not exposed via app API                                                   |
 
 ---
 
-## 4. Facade Test Pattern Template
+## 4. App API Test Pattern Template
 
-All facade hooks follow the same testing pattern using the project's existing conventions (Jest, `@testing-library/react`, `renderHook` + `act`).
+All app API hooks follow the same testing pattern using the project's existing conventions (Jest, `@testing-library/react`, `renderHook` + `act`).
 
 ### 4.1 Mock Strategy
 
@@ -2075,10 +2075,10 @@ All facade hooks follow the same testing pattern using the project's existing co
 jest.mock('../../data/hooks/stores/NetworkStore', () => ({ ... }))
 jest.mock('../../data/hooks/stores/TableStore', () => ({ ... }))
 jest.mock('../../data/hooks/stores/ViewModelStore', () => ({ ... }))
-// etc. — mock only stores accessed by the facade hook under test
+// etc. — mock only stores accessed by the app API hook under test
 ```
 
-For facade hooks that wrap internal hooks (Element API, Network API):
+For app API hooks that wrap internal hooks (Element API, Network API):
 
 ```
 jest.mock('../../data/hooks/useCreateNode', () => ({ ... }))
@@ -2088,7 +2088,7 @@ jest.mock('../../data/hooks/useDeleteNodes', () => ({ ... }))
 
 ### 4.2 Test Structure Template
 
-Each facade hook test file (`use<Domain>Api.test.ts`, co-located in `src/app-api/`) follows this structure:
+Each app API hook test file (`use<Domain>Api.test.ts`, co-located in `src/app-api/`) follows this structure:
 
 ```
 describe('use<Domain>Api', () => {
@@ -2105,15 +2105,15 @@ describe('use<Domain>Api', () => {
 })
 ```
 
-### 4.3 Test Categories Per Facade Hook
+### 4.3 Test Categories Per App API Hook
 
-| Facade Hook         | Success Cases                                     | Error Cases                                                 | Special Cases                                                                       |
+| App API Hook         | Success Cases                                     | Error Cases                                                 | Special Cases                                                                       |
 | ------------------- | ------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `useElementApi`     | CRUD operations return correct data               | NetworkNotFound, NodeNotFound, EdgeNotFound, InvalidInput   | `skipUndo` never forwarded, cascading edge deletion in deleteNodes                  |
 | `useNetworkApi`     | Network creation returns `{networkId, cyNetwork}` | InvalidInput (empty name/edges), InvalidCx2                 | `validateCX2` called before `createNetworkFromCx2`, navigate/addToWorkspace options |
 | `useSelectionApi`   | Selection state reads/writes                      | NetworkNotFound                                             | Silent no-op → explicit error conversion                                            |
-| `useTableApi`       | Read/write operations on tables                   | NetworkNotFound, row not found                              | Inconsistent store null-safety → consistent facade errors                           |
-| `useVisualStyleApi` | Mapping/bypass operations                         | NetworkNotFound                                             | Zero store validation → facade must validate                                        |
+| `useTableApi`       | Read/write operations on tables                   | NetworkNotFound, row not found                              | Inconsistent store null-safety → consistent app API errors                           |
+| `useVisualStyleApi` | Mapping/bypass operations                         | NetworkNotFound                                             | Zero store validation → app API must validate                                        |
 | `useLayoutApi`      | Layout completes, positions updated               | LayoutEngineNotFound, NetworkNotFound, FunctionNotAvailable | Async callback resolution, `fitAfterLayout` optional                                |
 | `useViewportApi`    | Fit, position read/write                          | FunctionNotAvailable, NetworkNotFound                       | `fit()` returns Promise                                                             |
 | `useExportApi`      | CX2 assembly from 6 stores                        | NetworkNotFound (any store entry)                           | Multi-store assembly validation                                                     |
@@ -2212,13 +2212,13 @@ _Fully specified in [phase1a-shared-types-design.md](phase1a-shared-types-design
 | Modify | `src/app-api/index.ts`                    | Uncomment both exports                                                                        |
 | Modify | `src/app-api/types/AppContext.ts`         | Uncomment `layout`, `export`. All fields now required                                         |
 | Modify | `webpack.config.js`                       | Add `'./LayoutApi'`, `'./ExportApi'` entries. Mark legacy stores `@deprecated`                |
-| Modify | `src/app-api/api_docs/Api.md`             | Complete facade hook documentation                                                            |
+| Modify | `src/app-api/api_docs/Api.md`             | Complete app API hook documentation                                                            |
 
 ---
 
 ## 6. Internal Store Validation Gap Summary
 
-The following table summarizes the validation behavior of each internal store. The facade must compensate for these gaps by performing input validation before every store call.
+The following table summarizes the validation behavior of each internal store. The app API must compensate for these gaps by performing input validation before every store call.
 
 | Store                   | Null-check on `networkId`                                                        | Input validation | Failure mode on missing data                                        |
 | ----------------------- | -------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------- |
@@ -2231,4 +2231,4 @@ The following table summarizes the validation behavior of each internal store. T
 | `OpaqueAspectStore`     | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
 | `NetworkSummaryStore`   | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
 
-**Facade rule:** Always check store state existence _before_ calling mutation methods. Never rely on store-level null-safety.
+**App API rule:** Always check store state existence _before_ calling mutation methods. Never rely on store-level null-safety.

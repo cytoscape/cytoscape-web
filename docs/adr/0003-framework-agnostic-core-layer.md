@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The facade API layer (`src/app-api/`) was originally designed as React Hooks
+The app API layer (`src/app-api/`) was originally designed as React Hooks
 (`useElementApi`, `useNetworkApi`, etc.) for consumption by external apps loaded
 via Module Federation. This design assumes all consumers are React applications.
 
@@ -22,17 +22,17 @@ Three concrete near-term use cases require API access **without React**:
    WebMCP), non-React consumers will need programmatic access to Cytoscape Web
    operations without a bundler or React runtime.
 
-The fundamental question is: **should the domain logic of each facade operation
+The fundamental question is: **should the domain logic of each app API operation
 live inside the React Hook, or in a separate layer?**
 
-Examining the existing facade design (CLAUDE.md), hooks already mandate
+Examining the existing app API design (CLAUDE.md), hooks already mandate
 `useXxxStore.getState()` for store access — React's subscription mechanism is
 explicitly avoided. This means the hooks have no inherent React _dependency_;
 the only React constraint is the function signature convention.
 
 ## Decision
 
-Split each facade domain into two files:
+Split each app API domain into two files:
 
 1. **`src/app-api/core/<domain>Api.ts`** — Framework-agnostic pure functions.
    Uses `useXxxStore.getState()` for all store access. No React imports. Never
@@ -171,13 +171,13 @@ vanilla JS consumers.
 
 Core functions may use `Map` and `Set` internally to interface with Zustand stores
 (which contain Maps). The conversion to/from `Record` or `T[]` happens at the
-facade boundary, inside the core function, before returning to the caller.
+app API boundary, inside the core function, before returning to the caller.
 
 ## Rationale
 
 ### Alternative 1: Keep all logic in hooks, expose via `AppContext` (rejected for near-term)
 
-The `AppContext.apis` pattern (facade-api-specification.md § 1.5.9) provides
+The `AppContext.apis` pattern (app-api-specification.md § 1.5.9) provides
 pre-resolved API instances via the `mount(context)` lifecycle callback. This
 works for Module Federation apps that implement the lifecycle contract.
 
@@ -201,7 +201,7 @@ window.CyNetworkStore = useNetworkStore.getState()
 
 - Exposes internal store interfaces directly, breaking the stable public contract
 - External code would depend on internal store shape, making refactoring impossible
-- No input validation or error handling at the facade boundary
+- No input validation or error handling at the app API boundary
 
 ### Alternative 3: Single utility module (not a hook, not `core/`)
 
@@ -234,7 +234,7 @@ rather than from hook instances. This removes the React-context dependency from
 
 **Related documents:**
 
-- [facade-api-specification.md § 1.2, 1.8, 2.7](../design/module-federation/facade-api-specification.md)
+- [app-api-specification.md § 1.2, 1.8, 2.7](../design/module-federation/app-api-specification.md)
   — Directory structure, wrapping pattern, `window.CyWebApi` specification
 - [module-federation-design.md § 1.1](../design/module-federation/module-federation-design.md)
   — Priority and roadmap update

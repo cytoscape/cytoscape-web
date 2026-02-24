@@ -11,13 +11,13 @@ This document specifies every file to create, every type to define, every export
 **Parent documents:**
 
 - [module-federation-design.md](../module-federation-design.md) — Priorities and roadmap
-- [facade-api-specification.md](facade-api-specification.md) — Full facade API specification
+- [app-api-specification.md](app-api-specification.md) — Full app API specification
 
 ---
 
 ## 1. Scope
 
-This phase creates the **foundational type infrastructure** for the entire facade API layer. No facade hooks are implemented in this phase — only the types and directory structure that all subsequent phases depend on.
+This phase creates the **foundational type infrastructure** for the entire app API layer. No app API hooks are implemented in this phase — only the types and directory structure that all subsequent phases depend on.
 
 ### In Scope
 
@@ -33,7 +33,7 @@ This phase creates the **foundational type infrastructure** for the entire facad
 
 ### Out of Scope
 
-- Facade hook implementations (`useElementApi`, `useNetworkApi`, etc.) — Phase 1a through 1e
+- App API hook implementations (`useElementApi`, `useNetworkApi`, etc.) — Phase 1a through 1e
 - Event bus (`initEventBus`, `useCyWebEvent`) — Phase 1 Step 2 (after Phase 1e); see [event-bus-specification.md](event-bus-specification.md)
 - `@cytoscape-web/types` package fixes — tracked separately in [module-federation-design.md § 1.3](../module-federation-design.md)
 
@@ -64,15 +64,15 @@ src/app-api/
 
 **File:** `src/app-api/types/ApiResult.ts`
 
-This is the most critical file in this phase. It defines the discriminated union that every facade operation returns, plus helper functions for ergonomic construction.
+This is the most critical file in this phase. It defines the discriminated union that every app API operation returns, plus helper functions for ergonomic construction.
 
 ```typescript
 // src/app-api/types/ApiResult.ts
 
 /**
- * Error codes for facade API operations.
+ * Error codes for app API operations.
  *
- * Each code maps to a specific category of failure. Facade hooks
+ * Each code maps to a specific category of failure. App API hooks
  * choose the most specific code applicable. External apps can
  * switch on `error.code` for programmatic error handling.
  */
@@ -117,12 +117,12 @@ export type ApiErrorCode = (typeof ApiErrorCode)[keyof typeof ApiErrorCode]
 | Decision                         | Rationale                                                                                                                                                                             |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `as const` object + derived type | Follows the same pattern as `ValueTypeName`, `VisualPropertyName` in the existing codebase. Allows both value usage (`ApiErrorCode.NetworkNotFound`) and type usage (`ApiErrorCode`). |
-| JSDoc on every code              | External app developers need to know when each code is returned without reading facade source.                                                                                        |
+| JSDoc on every code              | External app developers need to know when each code is returned without reading app API source.                                                                                        |
 | No numeric codes                 | String codes are self-documenting in logs and debugger output.                                                                                                                        |
 
 ````typescript
 /**
- * Detailed error information returned by failed facade operations.
+ * Detailed error information returned by failed app API operations.
  */
 export interface ApiError {
   /** Machine-readable error code for programmatic handling */
@@ -150,7 +150,7 @@ export interface ApiFailure {
 }
 
 /**
- * Discriminated union returned by all facade API operations.
+ * Discriminated union returned by all app API operations.
  *
  * External apps check `result.success` to narrow the type:
  *
@@ -163,7 +163,7 @@ export interface ApiFailure {
  * }
  * ```
  *
- * Facade hooks **never** throw exceptions across the API boundary.
+ * App API hooks **never** throw exceptions across the API boundary.
  * All errors are captured as `ApiFailure` values.
  */
 export type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
@@ -259,7 +259,7 @@ export function isFail<T>(result: ApiResult<T>): result is ApiFailure {
 
 **File:** `src/app-api/types/AppContext.ts`
 
-This file contains **forward declarations** for the app lifecycle contract. The concrete facade API types referenced in `AppContext.apis` are not yet defined (they come in Phase 1a–1e), so this file uses placeholder `interface` stubs or `any` initially and will be updated as each facade hook is implemented.
+This file contains **forward declarations** for the app lifecycle contract. The concrete app API types referenced in `AppContext.apis` are not yet defined (they come in Phase 1a–1e), so this file uses placeholder `interface` stubs or `any` initially and will be updated as each app API hook is implemented.
 
 ```typescript
 // src/app-api/types/AppContext.ts
@@ -269,11 +269,11 @@ import { CyApp } from '../../models/AppModel/CyApp'
 /**
  * Context object passed to external apps during mount().
  *
- * Provides pre-instantiated facade API instances. The host creates
+ * Provides pre-instantiated app API instances. The host creates
  * these within a React rendering context and passes the resolved
  * objects, so apps can use them outside of React components.
  *
- * NOTE: API fields are added incrementally as facade hooks are
+ * NOTE: API fields are added incrementally as app API hooks are
  * implemented in Phase 1a–1e. This initial version declares the
  * shape but marks unimplemented APIs as optional.
  */
@@ -281,7 +281,7 @@ export interface AppContext {
   /** The unique ID of this app instance */
   readonly appId: string
 
-  /** Pre-instantiated facade API instances */
+  /** Pre-instantiated app API instances */
   readonly apis: {
     // Populated in Phase 1a
     // element: ElementApi
@@ -308,7 +308,7 @@ export interface AppContext {
 export interface CyAppWithLifecycle extends CyApp {
   /**
    * Called when the app is activated (after React components are registered).
-   * Receives an AppContext providing access to all facade APIs.
+   * Receives an AppContext providing access to all app APIs.
    * If this returns a Promise, the host awaits it before marking
    * the app as ready.
    */
@@ -403,7 +403,7 @@ export type { Cx2 } from '../../models/CxModel/Cx2'
 ```typescript
 // src/app-api/types/index.ts
 
-// ── Facade result types ─────────────────────────────────────────
+// ── App API result types ─────────────────────────────────────────
 export { ApiErrorCode, ok, fail, isOk, isFail } from './ApiResult'
 export type { ApiResult, ApiSuccess, ApiFailure, ApiError } from './ApiResult'
 
@@ -442,7 +442,7 @@ export type {
 
 **File:** `src/app-api/index.ts`
 
-In this phase, only types are exported. Facade hooks will be added in subsequent phases.
+In this phase, only types are exported. App API hooks will be added in subsequent phases.
 
 ```typescript
 // src/app-api/index.ts
@@ -450,7 +450,7 @@ In this phase, only types are exported. Facade hooks will be added in subsequent
 // ── Types (Phase 1, Step 1) ─────────────────────────────────────
 export * from './types'
 
-// ── Facade hooks (added in Phase 1a–1e) ─────────────────────────
+// ── App API hooks (added in Phase 1a–1e) ─────────────────────────
 // export { useElementApi } from './useElementApi'       // Phase 1a
 // export { useNetworkApi } from './useNetworkApi'       // Phase 1b
 // export { useSelectionApi } from './useSelectionApi'   // Phase 1c
@@ -473,7 +473,7 @@ Add one new entry to `ModuleFederationPlugin.exposes`:
 
 ```javascript
 exposes: {
-  // === Public Facade API Types ===
+  // === Public App API Types ===
   './ApiTypes': './src/app-api/types/index.ts',
 
   // === Existing stores (unchanged) ===
@@ -486,7 +486,7 @@ exposes: {
 
 **Why only `./ApiTypes` in this phase:**
 
-The facade hook entries (`./ElementApi`, `./NetworkApi`, etc.) are not added until the corresponding hooks exist and export valid React hooks. Adding entries that point to empty or stub files would cause Webpack build failures: Module Federation validates that exposed modules export _something_ at build time.
+The app API hook entries (`./ElementApi`, `./NetworkApi`, etc.) are not added until the corresponding hooks exist and export valid React hooks. Adding entries that point to empty or stub files would cause Webpack build failures: Module Federation validates that exposed modules export _something_ at build time.
 
 **External app consumption after this phase:**
 
@@ -635,22 +635,22 @@ describe('ApiResult helpers', () => {
 **File:** `src/app-api/api_docs/Api.md`
 
 ````markdown
-# Facade API — Behavioral Documentation
+# App API — Behavioral Documentation
 
 ## Overview
 
-The facade API (`src/app-api/`) is the sole public API for external apps
+The app API (`src/app-api/`) is the sole public API for external apps
 loaded via Module Federation. It provides a stable contract independent of
 internal store and hook implementations.
 
 ## Result Convention
 
-All facade operations return `ApiResult<T>`, a discriminated union:
+All app API operations return `ApiResult<T>`, a discriminated union:
 
 - `{ success: true, data: T }` — operation succeeded
 - `{ success: false, error: { code, message } }` — operation failed
 
-Facade hooks **never** throw exceptions across the API boundary.
+App API hooks **never** throw exceptions across the API boundary.
 
 ## Error Codes
 
@@ -677,7 +677,7 @@ import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
 
 ````
 
-## Facade Hooks (added incrementally)
+## App API Hooks (added incrementally)
 
 | Module                 | Hook                  | Phase |
 | ---------------------- | --------------------- | ----- |

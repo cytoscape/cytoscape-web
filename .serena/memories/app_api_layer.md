@@ -1,4 +1,4 @@
-# Facade API Layer (`src/app-api/`)
+# App API Layer (`src/app-api/`)
 
 > Added on branch `llm-setups`. Status: design complete, implementation in progress.
 
@@ -57,7 +57,7 @@ src/app-api/
 ## Key Rules
 1. `core/` files: use `useXxxStore.getState()`, **zero React imports**
 2. Hook wrappers: ultra-thin (~3–5 lines), zero domain logic
-3. Always return `ApiResult<T>` — never throw exceptions across the facade
+3. Always return `ApiResult<T>` — never throw exceptions across the app API boundary
 4. All public types must be JSON-serializable (`Record<K,V>` not `Map`, `T[]` not `Set`)
 5. `skipUndo` hardcoded to `false` — never exposed to external callers
 6. `window.CyWebApi` assigned in `src/init.tsx` after all stores initialize
@@ -77,9 +77,9 @@ src/app-api/
 `window.CyWebApi` is NOT a Module Federation expose — assigned globally in `src/init.tsx`.
 
 ## Parent Documents
-- `docs/design/module-federation/facade-api-specification.md` — Full spec (1,900+ lines)
+- `docs/design/module-federation/specifications/app-api-specification.md` — Full spec (1,900+ lines)
 - `docs/design/module-federation/module-federation-design.md` — Roadmap
 - `docs/design/module-federation/phase1a-shared-types-design.md` — Phase 0 blueprint
 - `docs/design/module-federation/implementation-checklist-phase0.md`
 - `docs/design/module-federation/implementation-checklist-phase1.md`
-- `src/app-api/CLAUDE.md` — Local context for the facade layer (read before implementing)
+- `src/app-api/CLAUDE.md` — Local context for the app API layer (read before implementing)

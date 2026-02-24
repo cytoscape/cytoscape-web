@@ -39,6 +39,6 @@ Ensures production build succeeds (import sort errors will fail the build).
 - No semicolons, single quotes, trailing commas
 - No `import React from 'react'` in component files
 - `core/` files in `src/app-api/core/` must have **zero React imports**
-- Facade API core functions must return `ApiResult<T>`, never throw
+- App API core functions must return `ApiResult<T>`, never throw
 - Public API types must be JSON-serializable (`Record` not `Map`, `T[]` not `Set`)
 - CLAUDE.md is the source of truth; AGENTS.md is auto-generated (`npm run sync:agents`)

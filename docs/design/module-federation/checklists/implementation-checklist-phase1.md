@@ -1,4 +1,4 @@
-# Implementation Checklist — Phase 1: Facade Hook Implementation
+# Implementation Checklist — Phase 1: App API Hook Implementation
 
 > Track progress for Phase 1 (all sub-phases). Mark `[x]` when complete. Run verification after each step.
 >
@@ -8,7 +8,7 @@
 
 ## Phase 1a: Element API
 
-_Design: facade-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
+_Design: app-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
 
 ### Pre-read files
 
@@ -57,7 +57,7 @@ _Design: facade-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
 
 ## Phase 1b: Network API
 
-_Design: facade-api-specification.md §1.5.2, §3.2, §3.9.2_
+_Design: app-api-specification.md §1.5.2, §3.2, §3.9.2_
 
 ### Pre-read files
 
@@ -94,7 +94,7 @@ _Design: facade-api-specification.md §1.5.2, §3.2, §3.9.2_
 
 ## Phase 1c: Selection + Viewport
 
-_Design: facade-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §3.9.7_
+_Design: app-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §3.9.7_
 
 ### Pre-read files
 
@@ -137,7 +137,7 @@ _Design: facade-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §
 
 ## Phase 1d: Table + Visual Style
 
-_Design: facade-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §3.9.5_
+_Design: app-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §3.9.5_
 
 ### Pre-read files
 
@@ -174,7 +174,7 @@ _Design: facade-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §
 
 ## Phase 1e: Layout + Export
 
-_Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §3.9.8_
+_Design: app-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §3.9.8_
 
 ### Pre-read files
 
@@ -187,7 +187,7 @@ _Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §
 
 ### Deliverables
 
-- [ ] Create `src/app-api/core/layoutApi.ts` — framework-agnostic; new coordination logic (see facade-api-spec § 3.6); dispatches `layout:started` / `layout:completed` events; no React imports
+- [ ] Create `src/app-api/core/layoutApi.ts` — framework-agnostic; new coordination logic (see app-api-spec § 3.6); dispatches `layout:started` / `layout:completed` events; no React imports
 - [ ] Create `src/app-api/useLayoutApi.ts` — thin React hook: `export const useLayoutApi = (): LayoutApi => layoutApi`
 - [ ] Implement `applyLayout(networkId, options?)` → `Promise<ApiResult<void>>` (new coordination logic)
 - [ ] In `applyLayout`, record `UndoCommandType.APPLY_LAYOUT` via `postEdit` using pre/post layout positions
@@ -203,7 +203,7 @@ _Design: facade-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §
 - [ ] Modify `src/app-api/index.ts` — uncomment both exports
 - [ ] Modify `src/app-api/types/AppContext.ts` — uncomment `layout`, `export`; all fields now required
 - [ ] Modify `webpack.config.js` — add `'./LayoutApi'`, `'./ExportApi'`; mark legacy stores `@deprecated`
-- [ ] Update `src/app-api/api_docs/Api.md` — complete facade hook documentation
+- [ ] Update `src/app-api/api_docs/Api.md` — complete app API hook documentation
 
 ### Verification
 
@@ -289,16 +289,16 @@ to be complete before Step 2 is closed.
 - [ ] All 10 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `EventBus`
 - [ ] All `AppContext.apis` fields uncommented and typed
 - [ ] Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
-- [ ] `src/app-api/api_docs/Api.md` covers all 8 facade hooks + event bus
+- [ ] `src/app-api/api_docs/Api.md` covers all 8 app API hooks + event bus
 - [ ] `src/app-api/core/` contains zero React imports (`import.*from 'react'` absent in all `core/*.ts` files)
 - [ ] `cywebapi:ready` dispatched on `window` after full initialization
 - [ ] `hello-world/HelloPanel` `SelectionCounter` reacts to selection via `useCyWebEvent`
 
 ---
 
-## Quick Reference: Facade Method → Internal Target
+## Quick Reference: App API Method → Internal Target
 
-| Facade Method               | Internal Source                                         | Return                                                           | Phase |
+| App API Method               | Internal Source                                         | Return                                                           | Phase |
 | --------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------- | ----- |
 | `createNode`                | `useCreateNode().createNode()`                          | `CreateNodeResult` → `ok({nodeId})`                              | 1a    |
 | `createEdge`                | `useCreateEdge().createEdge()`                          | `CreateEdgeResult` → `ok({edgeId})`                              | 1a    |

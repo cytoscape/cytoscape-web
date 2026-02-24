@@ -4,8 +4,8 @@
 
 Detailed design for the typed event bus. For priorities and roadmap context, see
 [module-federation-design.md § 1.5 and Phase 1 Step 2](../module-federation-design.md). For the
-facade API design that the event bus complements, see
-[facade-api-specification.md](facade-api-specification.md).
+app API design that the event bus complements, see
+[app-api-specification.md](app-api-specification.md).
 
 ---
 
@@ -44,7 +44,7 @@ This model provides three properties no pub/sub library can match:
 | Data              | Zustand subscription in `initEventBus.ts` (TableStore)          |
 
 Layout events are an exception to the subscription model: because `applyLayout` is an async
-operation initiated through the facade API, `layout:started` and `layout:completed` are dispatched
+operation initiated through the app API, `layout:started` and `layout:completed` are dispatched
 directly from `core/layoutApi.ts` using the shared `dispatchCyWebEvent` helper. This avoids
 building store state purely to notify the event bus.
 
@@ -465,7 +465,7 @@ stores are hydrated and `window.CyWebApi` is assigned:
 
 // 1. Stores hydrate from IndexedDB (async, awaited before this point)
 
-// 2. Assign facade API to window
+// 2. Assign app API to window
 window.CyWebApi = CyWebApi  // assembled from core/ domain objects
 
 // 3. Initialize event bus subscriptions (after stores are hydrated)
@@ -494,7 +494,7 @@ and `CyWebEvents` are internal implementation details.
 // webpack.config.js (ModuleFederationPlugin.exposes)
 exposes: {
   './EventBus': './src/app-api/useCyWebEvent',
-  // ... other facade entries
+  // ... other app API entries
 }
 ```
 
@@ -783,7 +783,7 @@ document and maintain.
 
 **Decision:** Dispatch directly from `core/layoutApi.ts`.
 
-Layout execution is an async operation initiated through the facade API. Adding store state purely
+Layout execution is an async operation initiated through the app API. Adding store state purely
 to carry layout status for the event bus would introduce state that serves no other purpose.
 Layout status is transient — it exists only during the `applyLayout` call — and is not useful to
 other parts of the application. Dispatching directly from the function that starts and awaits the

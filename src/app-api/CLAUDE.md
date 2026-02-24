@@ -1,6 +1,6 @@
-# CLAUDE.md — Facade API Layer
+# CLAUDE.md — App API Layer
 
-> Local context for `src/app-api/`. Read this before implementing any facade hook, core function, or event bus code.
+> Local context for `src/app-api/`. Read this before implementing any app API hook, core function, or event bus code.
 
 ## Purpose
 
@@ -59,7 +59,7 @@ src/app-api/
    They contain no domain logic. `useElementApi = (): ElementApi => elementApi`.
 3. **Wrap, never duplicate store coordination** — Core functions delegate to internal hooks where
    possible via `.getState()`. They do NOT call `useCreateNode()` etc. (React context required).
-4. **Always return `ApiResult<T>`** — Never throw exceptions across the facade boundary.
+4. **Always return `ApiResult<T>`** — Never throw exceptions across the app API boundary.
 5. **Validate before mutating** — Check store state existence before calling any store method.
 6. **Hide `skipUndo`** — Hardcode to `false`; external apps must not corrupt the undo stack.
 7. **No React imports in `core/`** — ESLint should flag any `import ... from 'react'` inside
@@ -274,11 +274,11 @@ it('does not dispatch on startup (startup suppression)', () => {
 
 ## Webpack `exposes` Pattern
 
-Add new facade entries to `webpack.config.js` `ModuleFederationPlugin.exposes`:
+Add new app API entries to `webpack.config.js` `ModuleFederationPlugin.exposes`:
 
 ```javascript
 exposes: {
-  // Public Facade API (hook-based, for React apps via Module Federation)
+  // Public App API (hook-based, for React apps via Module Federation)
   './ApiTypes':       './src/app-api/types/index.ts',
   './ElementApi':     './src/app-api/useElementApi.ts',
   './NetworkApi':     './src/app-api/useNetworkApi.ts',
@@ -301,7 +301,7 @@ exposes: {
 | `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) | Anything from `react` or `react-dom`                  |
 | `src/models/` (types and pure functions)                    | Internal React hooks (`src/data/hooks/use*.ts`)       |
 | `./types/` (barrel export)                                  | React components (`src/features/`)                    |
-| `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)  | Other facade hooks (no cross-dependencies)            |
+| `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)  | Other app API hooks (no cross-dependencies)            |
 
 | From `use<Domain>Api.ts` files, you CAN import              | You CANNOT import                                     |
 | ----------------------------------------------------------- | ----------------------------------------------------- |
@@ -326,16 +326,16 @@ exposes: {
 | Phase                             | Read before implementing                                                                                                                                                                                                                                                               |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Phase 0** (types)               | [phase1a-shared-types-design.md](../docs/design/module-federation/specifications/phase1a-shared-types-design.md), [ADR 0001](../docs/adr/0001-api-result-discriminated-union.md), [ADR 0002](../docs/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../docs/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
-| **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), facade-spec §3.1 + §3.1.1                                                                                                                                 |
-| **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), facade-spec §3.2                                                                                                                        |
-| **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), facade-spec §3.3 + §3.7                                                                                                                                                 |
-| **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), facade-spec §3.4 + §3.5                                                                                                                                                    |
-| **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, facade-spec §3.6 + §3.8                                                                                                                                                                         |
+| **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                 |
+| **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                        |
+| **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                 |
+| **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                    |
+| **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                         |
 | **Step 2** (Event Bus)            | [event-bus-specification.md](../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order) |
 
 ## Parent Documents
 
-- [facade-api-specification.md](../docs/design/module-federation/specifications/facade-api-specification.md) — Full API spec (2,000+ lines)
+- [app-api-specification.md](../docs/design/module-federation/specifications/app-api-specification.md) — Full API spec (2,000+ lines)
 - [event-bus-specification.md](../docs/design/module-federation/specifications/event-bus-specification.md) — Event bus full spec (store mappings, edge cases, test patterns)
 - [phase1a-shared-types-design.md](../docs/design/module-federation/specifications/phase1a-shared-types-design.md) — Phase 0 line-by-line blueprint
 - [module-federation-design.md](../docs/design/module-federation/module-federation-design.md) — Roadmap and priorities
