@@ -125,7 +125,7 @@ export const Types = { IdType, Network, ... } // Not possible for TS types
 
 **Related documents:**
 
-- [phase1a-shared-types-design.md](../design/module-federation/phase1a-shared-types-design.md) § 3.3 — `ElementTypes.ts` full type list
-- [phase1a-shared-types-design.md](../design/module-federation/phase1a-shared-types-design.md) § 7.2 — External dependency risk analysis
+- [phase0-shared-types-design.md](../design/module-federation/specifications/phase0-shared-types-design.md) § 3.3 — `ElementTypes.ts` full type list
+- [phase0-shared-types-design.md](../design/module-federation/specifications/phase0-shared-types-design.md) § 7.2 — External dependency risk analysis
 - [module-federation-design.md](../design/module-federation/module-federation-design.md) § 1.3 — `@cytoscape-web/types` package fix plan
 - [ADR 0003](0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer; `window.CyWebApi` consumers use these same types

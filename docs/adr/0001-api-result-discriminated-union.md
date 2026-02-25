@@ -119,5 +119,5 @@ interface ApiReturn<T> {
 
 **Related documents:**
 
-- [phase1a-shared-types-design.md](../design/module-federation/phase1a-shared-types-design.md) § 3.1 — Full type definitions and helper implementations
+- [phase0-shared-types-design.md](../design/module-federation/specifications/phase0-shared-types-design.md) § 3.1 — Full type definitions and helper implementations
 - [app-api-specification.md](../design/module-federation/app-api-specification.md) § 1.3 — Shared result types specification

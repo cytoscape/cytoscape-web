@@ -1,8 +1,8 @@
-# Phase 1a: Shared Types and Public Type Re-exports — Detailed Design
+# Phase 0: Shared Types and Public Type Re-exports — Detailed Design
 
 **Rev. 1 (2/12/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
 
-Implementation design for Phase 1, Step 1 of the [implementation roadmap](../module-federation-design.md):
+Implementation design for Phase 0 of the [implementation roadmap](../module-federation-design.md):
 
 > _"Define shared types (`ApiResult<T>`, `ApiErrorCode`) and public type re-exports"_
 
@@ -35,7 +35,13 @@ This phase creates the **foundational type infrastructure** for the entire app A
 
 - App API hook implementations (`useElementApi`, `useNetworkApi`, etc.) — Phase 1a through 1e
 - Event bus (`initEventBus`, `useCyWebEvent`) — Phase 1 Step 2 (after Phase 1e); see [event-bus-specification.md](event-bus-specification.md)
-- `@cytoscape-web/types` package fixes — tracked separately in [module-federation-design.md § 1.3](../module-federation-design.md)
+- `@cytoscape-web/types` package fixes (issues 1–4) — tracked separately as P1 in [module-federation-design.md § 1.3](../module-federation-design.md)
+
+> **Note:** Publishing `@cytoscape-web/api-types@0.1.0-alpha.0` is **in scope for Phase 0** and
+> is listed as a separate deliverable in
+> [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md).
+> `@cytoscape-web/api-types` (type declarations for vanilla JS consumers) is a different package
+> from `@cytoscape-web/types` (internal model types).
 
 ---
 
@@ -447,7 +453,7 @@ In this phase, only types are exported. App API hooks will be added in subsequen
 ```typescript
 // src/app-api/index.ts
 
-// ── Types (Phase 1, Step 1) ─────────────────────────────────────
+// ── Types (Phase 0) ──────────────────────────────────────────────
 export * from './types'
 
 // ── App API hooks (added in Phase 1a–1e) ─────────────────────────
@@ -755,6 +761,9 @@ If the interface does not exist or has a different name/path, update the import 
 
 ## 9. Implementation Checklist
 
+> The authoritative checklist is [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md).
+> The table below is a summary for quick reference; for npm package publication steps see the full checklist.
+
 Ordered steps for the implementer:
 
 | # | Task | Files Created/Modified | Verification |
@@ -766,11 +775,13 @@ Ordered steps for the implementer:
 | 5 | Create `ElementTypes.ts` | `src/app-api/types/ElementTypes.ts` | `npm run lint` passes; all import paths resolve |
 | 6 | Create `types/index.ts` barrel | `src/app-api/types/index.ts` | `npm run lint` passes |
 | 7 | Create `api/index.ts` barrel | `src/app-api/index.ts` | `npm run lint` passes |
-| 8 | Add `./ApiTypes` to webpack exposes | `webpack.config.js` | `npm run build` succeeds |
-| 9 | Create `ApiResult.test.ts` | `src/app-api/types/ApiResult.test.ts` | `npm run test:unit -- --testPathPattern="ApiResult"` passes |
-| 10 | Create `Api.md` documentation | `src/app-api/api_docs/Api.md` | File exists, reviewed |
-| 11 | Full build verification | — | `npm run build` succeeds |
-| 12 | Full lint verification | — | `npm run lint` passes |
+| 8 | Create `src/app-api/CLAUDE.md` | `src/app-api/CLAUDE.md` | File exists |
+| 9 | Add `./ApiTypes` to webpack exposes | `webpack.config.js` | `npm run build` succeeds |
+| 10 | Create `ApiResult.test.ts` | `src/app-api/types/ApiResult.test.ts` | `npm run test:unit -- --testPathPattern="ApiResult"` passes |
+| 11 | Create `Api.md` documentation | `src/app-api/api_docs/Api.md` | File exists, reviewed |
+| 12 | Full build verification | — | `npm run build` succeeds |
+| 13 | Full lint verification | — | `npm run lint` passes |
+| 14–18 | Publish `@cytoscape-web/api-types@0.1.0-alpha.0` | `packages/api-types/` | See [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md) |
 
 ---
 

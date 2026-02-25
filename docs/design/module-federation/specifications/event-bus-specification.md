@@ -506,9 +506,9 @@ import { useCyWebEvent } from 'cyweb/EventBus'
 
 ### 1.11 TypeScript Global Augmentation for Vanilla JS
 
-Install `@cytoscape-web/api-types` (P1 item, see
-[module-federation-design.md § 1.3](../module-federation-design.md)) and reference it in
-`tsconfig.json`:
+Install `@cytoscape-web/api-types` (Phase 0 deliverable, see
+[module-federation-design.md § 1.3](../module-federation-design.md); not yet published —
+`0.1.0-alpha.0` released at the end of Phase 0) and reference it in `tsconfig.json`:
 
 ```json
 { "compilerOptions": { "types": ["@cytoscape-web/api-types"] } }

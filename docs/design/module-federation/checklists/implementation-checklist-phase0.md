@@ -4,9 +4,11 @@
 >
 > Phase 1 checklist: [implementation-checklist-phase1.md](implementation-checklist-phase1.md)
 
-_Design: [phase1a-shared-types-design.md](../specifications/phase1a-shared-types-design.md) — line-by-line blueprint_
+_Design: [phase0-shared-types-design.md](../specifications/phase0-shared-types-design.md) — line-by-line blueprint_
 
 ## Deliverables
+
+### App API Types (in-repo)
 
 - [ ] Create directory structure: `src/app-api/`, `src/app-api/types/`, `src/app-api/api_docs/`
 - [ ] Verify `CyApp` interface location — `src/models/AppModel/CyApp.ts` import resolves
@@ -20,8 +22,20 @@ _Design: [phase1a-shared-types-design.md](../specifications/phase1a-shared-types
 - [ ] Create `src/app-api/types/ApiResult.test.ts` — unit tests for `ok()`, `fail()`, type narrowing
 - [ ] Create `src/app-api/api_docs/Api.md` — behavioral documentation stub
 
+### `@cytoscape-web/api-types` npm Package (published at end of Phase 0)
+
+The package provides TypeScript declarations for vanilla JS consumers (browser extensions, LLM agent bridges) who cannot use Module Federation. It lives in `packages/api-types/` as an npm workspace package within this repository, and is generated from the same `src/app-api/types/` sources finalized above.
+
+- [ ] Add `"workspaces": ["packages/*"]` to the root `package.json` (enables npm workspace)
+- [ ] Create `packages/api-types/` directory with `package.json` (`name: "@cytoscape-web/api-types"`, `version: "0.1.0-alpha.0"`, `main: "dist/index.d.ts"`)
+- [ ] Configure `packages/api-types/tsconfig.json` — re-export `src/app-api/types/` with ambient global declarations for `window.CyWebApi` and `WindowEventMap`
+- [ ] Add build script (`tsc` or `tsup`) to `packages/api-types/package.json` and verify generated `.d.ts` files are correct
+- [ ] Add `"build:api-types"` script to root `package.json` that builds this workspace package
+- [ ] Publish `@cytoscape-web/api-types@0.1.0-alpha.0` to npm
+
 ## Verification
 
 - [ ] `npm run lint` passes
 - [ ] `npm run test:unit -- --testPathPattern="ApiResult"` passes
 - [ ] `npm run build` succeeds
+- [ ] `npm install @cytoscape-web/api-types@alpha` resolves and ambient types for `window.CyWebApi` are available in a consuming project

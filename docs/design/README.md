@@ -25,7 +25,7 @@ docs/design/
 │   ├── specifications/                 # Detailed specs (designers and implementers)
 │   │   ├── app-api-specification.md
 │   │   ├── event-bus-specification.md
-│   │   └── phase1a-shared-types-design.md
+│   │   └── phase0-shared-types-design.md
 │   ├── examples/                       # Use-case samples (external app developers)
 │   │   └── app-api-use-case-examples.md
 │   └── checklists/                     # Implementation checklists (implementers)

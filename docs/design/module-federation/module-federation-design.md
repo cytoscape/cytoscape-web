@@ -37,6 +37,7 @@ Instead of directly exposing individual internal hooks or raw stores, the app AP
 - Coverage for all critical gaps identified in the audit (element CRUD, layout execution, viewport
   control, CX2 export)
 - **Framework-agnostic access** enabling non-React consumers without duplication
+- An **evergreen versioning strategy** (no version numbers in paths, additive changes only) ensuring long-term backward compatibility
 
 Core functions coordinate stores directly via `useXxxStore.getState()`, replicating the logic of
 existing internal hooks (`useCreateNode`, `useCreateEdge`, etc.) without calling them. External apps
@@ -102,6 +103,10 @@ The `@cytoscape-web/types` package fixes (issues 1–4) remain tracked as P1 imp
 
 ##### Publish `@cytoscape-web/api-types` Package
 
+> **Priority: P0 — Phase 0 deliverable.** Unlike the `@cytoscape-web/types` fixes above (P1),
+> this package publication is required before Phase 1 begins. See
+> [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md).
+
 Vanilla JS consumers (browser extension developers, LLM agent bridge authors) who cannot use
 Module Federation need TypeScript declarations for `window.CyWebApi`. A lightweight
 `@cytoscape-web/api-types` npm package will publish:
@@ -119,8 +124,26 @@ document.addEventListener('cywebapi:ready', () => {
 ```
 
 The package is generated from the same `src/app-api/types/` sources as the runtime code,
-keeping types synchronized with the implementation. This is a P1 quality-of-life item for
-non-React consumers and does not block Phase 1 core implementation.
+keeping types synchronized with the implementation. Publishing this package is a **Phase 0
+deliverable**: once the public type surface in `src/app-api/types/` is finalized, the package
+is released as `0.1.0-alpha.0` before Phase 1 begins.
+
+**Repository structure (npm workspaces):**
+
+```
+packages/
+└── api-types/
+    ├── package.json      # name: "@cytoscape-web/api-types", version: "0.1.0-alpha.0"
+    ├── tsconfig.json     # re-exports src/app-api/types/ + ambient global declarations
+    └── dist/             # generated .d.ts files (gitignored)
+```
+
+The root `package.json` declares `"workspaces": ["packages/*"]`. A `build:api-types` script
+in the root produces the `dist/` artifacts from the workspace package's build step.
+
+> **Status:** Not yet published. See [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md)
+> for the publication steps. Until published, vanilla JS consumers can declare a minimal ambient
+> type locally (see app-api-specification.md § 2.7).
 
 #### 1.4 Runtime Dynamic App Registration
 
@@ -471,7 +494,7 @@ Add `exportCyNetworkToCx2` as a public task hook.
 ### Phase 1: App API Implementation and Example App Validation
 
 > Full app API design and Module Federation integration details are in [app-api-specification.md](specifications/app-api-specification.md).
-> Detailed type infrastructure design is in [phase1a-shared-types-design.md](specifications/phase1a-shared-types-design.md).
+> Detailed type infrastructure design is in [phase0-shared-types-design.md](specifications/phase0-shared-types-design.md).
 > Event bus detailed design is in [event-bus-specification.md](specifications/event-bus-specification.md).
 
 Design the app API surface first, then implement incrementally. Each sub-phase delivers working code with tests. **Example apps** in [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples) are updated as validation targets alongside each API sub-phase. The phase is complete when multiple toy examples run end-to-end against the app API.
@@ -488,7 +511,7 @@ The app API is the **only new public API** — internal hooks and stores are cre
 6. Unit tests for `ApiResult` helpers (`ok`, `fail`, type guards)
 7. Behavioral documentation (`src/app-api/api_docs/Api.md`)
 
-> Design: [phase1a-shared-types-design.md](specifications/phase1a-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md), [0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)
+> Design: [phase0-shared-types-design.md](specifications/phase0-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md), [0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)
 
 #### Step 1: App API Hook Implementation (5 sub-phases)
 
