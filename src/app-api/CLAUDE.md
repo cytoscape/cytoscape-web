@@ -90,7 +90,11 @@ export const elementApi: ElementApi = {
     try {
       // 1. Validate inputs using .getState() — no React context needed
       const network = useNetworkStore.getState().networks.get(networkId)
-      if (!network) return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+      if (!network)
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
       // 2. Coordinate stores directly
       // ...
       return ok({ nodeId })
@@ -116,7 +120,7 @@ export const useElementApi = (): ElementApi => elementApi
 
 ```typescript
 import { CyWebApi } from './app-api/core'
-window.CyWebApi = CyWebApi  // accessible by browser extensions, LLM agent bridges, etc.
+window.CyWebApi = CyWebApi // accessible by browser extensions, LLM agent bridges, etc.
 ```
 
 ## `ApiResult<T>` Convention
@@ -131,7 +135,7 @@ function ok(): ApiSuccess<void>
 function fail(code: ApiErrorCode, message: string): ApiFailure
 ```
 
-All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../docs/adr/0001-api-result-discriminated-union.md).
+All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md).
 
 ## Event Bus Pattern
 
@@ -140,14 +144,22 @@ All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../docs/adr/
 ```typescript
 // src/app-api/event-bus/CyWebEvents.ts
 export interface CyWebEvents {
-  'network:created':   { networkId: IdType }
-  'network:deleted':   { networkId: IdType }
-  'network:switched':  { networkId: IdType }
-  'selection:changed': { networkId: IdType; selectedNodes: IdType[]; selectedEdges: IdType[] }
-  'layout:started':    { networkId: IdType; algorithm: string }
-  'layout:completed':  { networkId: IdType; algorithm: string }
-  'style:changed':     { networkId: IdType }
-  'data:changed':      { networkId: IdType }
+  'network:created': { networkId: IdType }
+  'network:deleted': { networkId: IdType }
+  'network:switched': { networkId: IdType; previousId: IdType }
+  'selection:changed': {
+    networkId: IdType
+    selectedNodes: IdType[]
+    selectedEdges: IdType[]
+  }
+  'layout:started': { networkId: IdType; algorithm: string }
+  'layout:completed': { networkId: IdType; algorithm: string }
+  'style:changed': { networkId: IdType; property: string }
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+  }
 }
 ```
 
@@ -172,13 +184,21 @@ import { subscribeWithSelector } from 'zustand/middleware'
 export function initEventBus(): void {
   // network:created — fires when a new network is added to the workspace
   useWorkspaceStore.subscribe(
-    (s) => s.networks,
-    (networks, prev) => {
-      const added = [...networks.keys()].filter((id) => !prev.has(id))
-      added.forEach((networkId) => dispatchCyWebEvent('network:created', { networkId }))
+    (state) => state.networkIds,
+    (curr, prev) => {
+      const prevSet = new Set(prev)
+      const currSet = new Set(curr)
+      for (const id of currSet) {
+        if (!prevSet.has(id))
+          dispatchCyWebEvent('network:created', { networkId: id })
+      }
+      for (const id of prevSet) {
+        if (!currSet.has(id))
+          dispatchCyWebEvent('network:deleted', { networkId: id })
+      }
     },
   )
-  // ... similarly for network:deleted, network:switched, selection:changed,
+  // ... similarly for network:switched, selection:changed,
   //     style:changed, data:changed
   // layout:started and layout:completed are dispatched from core/layoutApi.ts, NOT here
 }
@@ -192,14 +212,18 @@ import { useEffect } from 'react'
 import type { CyWebEvents } from './event-bus/CyWebEvents'
 
 export function useCyWebEvent<K extends keyof CyWebEvents>(
-  type: K,
-  handler: (event: CustomEvent<CyWebEvents[K]>) => void,
+  eventType: K,
+  handler: (detail: CyWebEvents[K]) => void,
 ): void {
   useEffect(() => {
-    const listener = (e: Event) => handler(e as CustomEvent<CyWebEvents[K]>)
-    window.addEventListener(type, listener)
-    return () => window.removeEventListener(type, listener)
-  }, [type, handler])
+    const listener = (e: Event): void => {
+      handler((e as CustomEvent<CyWebEvents[K]>).detail)
+    }
+    window.addEventListener(eventType, listener)
+    return () => {
+      window.removeEventListener(eventType, listener)
+    }
+  }, [eventType, handler])
 }
 ```
 
@@ -213,7 +237,7 @@ window.addEventListener('cywebapi:ready', () => {
 })
 ```
 
-`cywebapi:ready` fires on `document` (not `window`), once, after stores and event bus are initialized.
+`cywebapi:ready` fires on `window`, once, after stores and event bus are initialized.
 
 ## Testing Pattern
 
@@ -296,22 +320,22 @@ exposes: {
 
 ## Import Constraints
 
-| From `core/` files, you CAN import                          | You CANNOT import                                     |
-| ----------------------------------------------------------- | ----------------------------------------------------- |
-| `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) | Anything from `react` or `react-dom`                  |
-| `src/models/` (types and pure functions)                    | Internal React hooks (`src/data/hooks/use*.ts`)       |
-| `./types/` (barrel export)                                  | React components (`src/features/`)                    |
-| `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)  | Other app API hooks (no cross-dependencies)            |
+| From `core/` files, you CAN import                          | You CANNOT import                               |
+| ----------------------------------------------------------- | ----------------------------------------------- |
+| `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) | Anything from `react` or `react-dom`            |
+| `src/models/` (types and pure functions)                    | Internal React hooks (`src/data/hooks/use*.ts`) |
+| `./types/` (barrel export)                                  | React components (`src/features/`)              |
+| `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)   | Other app API hooks (no cross-dependencies)     |
 
-| From `use<Domain>Api.ts` files, you CAN import              | You CANNOT import                                     |
-| ----------------------------------------------------------- | ----------------------------------------------------- |
-| `./core/<domain>Api` (the core object)                      | `src/data/hooks/stores/*.ts` directly                 |
-| `./types/` (for return type annotations)                    | React components (`src/features/`)                    |
+| From `use<Domain>Api.ts` files, you CAN import | You CANNOT import                     |
+| ---------------------------------------------- | ------------------------------------- |
+| `./core/<domain>Api` (the core object)         | `src/data/hooks/stores/*.ts` directly |
+| `./types/` (for return type annotations)       | React components (`src/features/`)    |
 
-| From `event-bus/` files, you CAN import                     | You CANNOT import                                     |
-| ----------------------------------------------------------- | ----------------------------------------------------- |
-| `src/data/hooks/stores/*.ts` (in `initEventBus.ts` only)   | Anything from `react` or `react-dom`                  |
-| `./CyWebEvents` (type imports)                              | `./core/` or `use<Domain>Api.ts` files                |
+| From `event-bus/` files, you CAN import                  | You CANNOT import                      |
+| -------------------------------------------------------- | -------------------------------------- |
+| `src/data/hooks/stores/*.ts` (in `initEventBus.ts` only) | Anything from `react` or `react-dom`   |
+| `./CyWebEvents` (type imports)                           | `./core/` or `use<Domain>Api.ts` files |
 
 ## Code Style Reminders
 
@@ -323,22 +347,22 @@ exposes: {
 
 ## Files to Read Per Phase
 
-| Phase                             | Read before implementing                                                                                                                                                                                                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 0** (types)               | [phase1a-shared-types-design.md](../docs/design/module-federation/specifications/phase1a-shared-types-design.md), [ADR 0001](../docs/adr/0001-api-result-discriminated-union.md), [ADR 0002](../docs/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../docs/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
-| **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                 |
-| **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                        |
-| **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                 |
-| **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                    |
-| **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                         |
-| **Step 2** (Event Bus)            | [event-bus-specification.md](../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order) |
+| Phase                             | Read before implementing                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0** (types)               | [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md), [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md), [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../../docs/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
+| **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                                                                                  |
+| **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                                                                                        |
+| **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                                                                                  |
+| **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                                                                                     |
+| **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                                                                                          |
+| **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                   |
 
 ## Parent Documents
 
-- [app-api-specification.md](../docs/design/module-federation/specifications/app-api-specification.md) — Full API spec (2,000+ lines)
-- [event-bus-specification.md](../docs/design/module-federation/specifications/event-bus-specification.md) — Event bus full spec (store mappings, edge cases, test patterns)
-- [phase1a-shared-types-design.md](../docs/design/module-federation/specifications/phase1a-shared-types-design.md) — Phase 0 line-by-line blueprint
-- [module-federation-design.md](../docs/design/module-federation/module-federation-design.md) — Roadmap and priorities
-- [ADR 0001](../docs/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
-- [ADR 0002](../docs/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
-- [ADR 0003](../docs/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision
+- [app-api-specification.md](../../docs/design/module-federation/specifications/app-api-specification.md) — Full API spec (2,000+ lines)
+- [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md) — Event bus full spec (store mappings, edge cases, test patterns)
+- [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md) — Phase 0 line-by-line blueprint
+- [module-federation-design.md](../../docs/design/module-federation/module-federation-design.md) — Roadmap and priorities
+- [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
+- [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
+- [ADR 0003](../../docs/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision
