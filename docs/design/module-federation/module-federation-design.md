@@ -117,7 +117,7 @@ Module Federation need TypeScript declarations for `window.CyWebApi`. A lightwei
 
 ```typescript
 // tsconfig.json: "types": ["@cytoscape-web/api-types"]
-document.addEventListener('cywebapi:ready', () => {
+window.addEventListener('cywebapi:ready', () => {
   const api = window.CyWebApi // typed as CyWebApiType
   const result = api.network.createNetworkFromEdgeList(edges)
 })
