@@ -2,6 +2,9 @@
   "name": "cytoscape-web",
   "version": "1.0.6",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "license": "MIT",
   "keywords": [
     "cytoscape",
@@ -31,6 +34,7 @@
     "build:netlify": "BUILD=netlify webpack --mode production",
     "dev": "webpack serve --open --mode development",
     "build:analyze": "ANALYZE=true webpack --mode production",
+    "build:api-types": "npm run build --workspace=packages/api-types",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"

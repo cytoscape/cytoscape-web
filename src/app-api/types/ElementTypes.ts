@@ -1,5 +1,8 @@
 // src/app-api/types/ElementTypes.ts
 
+// Re-export commonly used types from the core models to
+// simplify imports in app API hooks and external apps.
+
 // ── Identity ────────────────────────────────────────────────────
 export type { IdType } from '../../models/IdType'
 

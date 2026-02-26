@@ -1,0 +1,25 @@
+{
+  "name": "@cytoscape-web/api-types",
+  "version": "0.1.0-alpha.0",
+  "description": "TypeScript type declarations for the Cytoscape Web App API",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup"
+  },
+  "keywords": [
+    "cytoscape",
+    "network",
+    "visualization",
+    "typescript",
+    "types"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.4"
+  }
+}
