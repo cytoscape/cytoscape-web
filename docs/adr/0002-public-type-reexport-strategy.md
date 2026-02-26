@@ -80,18 +80,22 @@ export * from '../../../models'
 - No control over public surface — any internal type rename would break external apps
 - Barrel exports from `impl/` directories are a known issue (see `@cytoscape-web/types` tsconfig.json `exclude` list)
 
-### Alternative 2: Rely solely on `@cytoscape-web/types` package (deferred)
+### Alternative 2: Rely solely on `@cytoscape-web/types` package (deprecated)
 
-The npm package `@cytoscape-web/types` (v1.1.15) already publishes model types. External apps could use it as a dev dependency.
+The npm package `@cytoscape-web/types` (v1.1.15) published model types from `src/models/`.
+External apps could use it as a dev dependency.
 
-**Deferred (not rejected) because:**
+**Deprecated (February 2026) — superseded by `@cytoscape-web/api-types`:**
 
-- The package currently excludes `CxModel` (needed for `Cx2` type)
-- Missing store model exports (`UndoStoreModel`, `RendererFunctionStoreModel`, `FilterStoreModel`)
-- `impl/` leakage in barrel exports needs fixing
-- External `react` and `keycloak-js` not declared as peer dependencies
+The four unresolved issues that originally deferred this alternative
+([module-federation-design.md § 1.3](../design/module-federation/module-federation-design.md))
+were never fixed. Instead, Phase 0 delivered `@cytoscape-web/api-types` — a new npm workspace
+package (`packages/api-types/`) built from scratch with a curated type surface via
+`ElementTypes.ts`. It adds event bus declarations (`CyWebEvents`, `CyWebEventMap`) and ambient
+`window.CyWebApi` / `WindowEventMap` augmentations that `@cytoscape-web/types` never provided.
 
-The package will be fixed separately ([module-federation-design.md § 1.3](../design/module-federation/module-federation-design.md)). Once fixed, `ElementTypes.ts` can delegate to the package. The re-export file acts as a stable indirection point regardless of where types are sourced.
+`@cytoscape-web/types` has been marked as deprecated on the npm registry. External apps should
+migrate to `@cytoscape-web/api-types@alpha`.
 
 ### Alternative 3: Namespace object re-export (rejected)
 
@@ -115,7 +119,7 @@ export const Types = { IdType, Network, ... } // Not possible for TS types
   types at runtime; TypeScript declarations for these consumers reference the same `ElementTypes.ts`
   types via `remotes.d.ts` or ambient declarations in the consuming project
 - Internal model refactoring (file moves, renames) requires updating only `ElementTypes.ts`, not external apps
-- When `@cytoscape-web/types` package issues are fixed, the re-export source changes but the public surface remains identical
+- `@cytoscape-web/types` is deprecated; `@cytoscape-web/api-types` is the canonical npm package for external consumers
 
 **Trade-offs:**
 

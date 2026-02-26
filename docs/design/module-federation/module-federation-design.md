@@ -67,39 +67,51 @@ The existing 12 raw store exports and 2 legacy task hooks remain available for b
 
 ### P1 (Important — Needed for practical app development)
 
-#### 1.3 Utilize Existing Type Definitions Package
+#### 1.3 ~~Utilize Existing Type Definitions Package~~ (Superseded)
 
-The `@cytoscape-web/types` package (currently v1.1.15, published from `src/models/`) already provides most domain model types needed by external apps, including:
+> **Status: Superseded by Phase 0 delivery (February 2026).**
+>
+> `@cytoscape-web/types` has been **deprecated** in favour of
+> [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types)
+> (published as part of Phase 0). The P1 fixes described below are no longer needed
+> because `@cytoscape-web/api-types` was built from scratch with a curated, dependency-safe
+> type surface. Run the following to mark the old package as deprecated on the registry:
+>
+> ```bash
+> npm deprecate "@cytoscape-web/types" \
+>   "Deprecated: use @cytoscape-web/api-types instead. See https://www.npmjs.com/package/@cytoscape-web/api-types"
+> ```
 
-- `IdType`, `VisualPropertyName`, `ValueTypeName`
-- `CyNetwork`, `Network`, `Node`, `Edge` interfaces
-- `VisualStyle`, `VisualProperty`, mapping function types
-- `Table`, `Column`, `AttributeName`, `ValueType` interfaces
-- Store model type definitions (13 of 16 stores via `StoreModel`)
+~~The `@cytoscape-web/types` package (currently v1.1.15, published from `src/models/`) already provides most domain model types needed by external apps.~~
 
-However, **the app API cannot directly depend on this package in its current state** due to four unresolved issues that would leak internal dependencies, omit required types, or cause install failures for external app consumers:
+~~However, **the app API cannot directly depend on this package in its current state** due to four unresolved issues:~~
 
-1. **Missing `Cx2` types** — `CxModel` is currently excluded from both `index.ts` and `tsconfig.json`. The `CxModel/Cx2/` subdirectory contains pure type definitions with no external dependencies and must be exported, since the app API `NetworkApi` requires the `Cx2` type.
-2. **Missing store model definitions** — `StoreModel/index.ts` is missing exports for `UndoStoreModel` (file exists but not re-exported), `RendererFunctionStoreModel`, and `FilterStoreModel` (files do not exist).
-3. **Undeclared peer dependencies** — `RendererModel/Renderer.ts` imports `ReactElement` from `react` and `StoreModel/CredentialStoreModel.ts` imports `Keycloak` from `keycloak-js`. These must be declared as `peerDependencies` in the package to prevent install failures for consumers.
-4. **`impl/` leakage in barrel exports** — Six model `index.ts` files re-export from `./impl/` (`CyNetworkModel`, `FilterModel`, `NetworkModel`, `TableModel`, `VisualStyleModel`, `ViewModel`), but `tsconfig.json` excludes `impl/`. TypeScript still compiles these transitively, pulling in external dependencies (`debug`, `cytoscape`, `d3-scale`). These barrel exports need to be split so that type-only interfaces are exported from non-impl files, and implementation functions (`*Fn` default exports, `getBasicFilter`, etc.) are excluded from the types build.
+1. ~~**Missing `Cx2` types**~~
+2. ~~**Missing store model definitions**~~
+3. ~~**Undeclared peer dependencies**~~
+4. ~~**`impl/` leakage in barrel exports**~~
 
-**Mitigation: Curated re-export via `ElementTypes.ts`**
+**Resolution: Curated re-export via `ElementTypes.ts` + `@cytoscape-web/api-types`**
 
-To decouple the app API's public type surface from these package-level issues, the app API introduces `src/app-api/types/ElementTypes.ts` — a curated re-export module that imports directly from `src/models/` source files (not the published package) and re-exports only the types external apps need. This provides three concrete benefits:
+The app API introduces `src/app-api/types/ElementTypes.ts` — a curated re-export module
+that imports directly from `src/models/` source files and re-exports only the types external
+apps need. The `@cytoscape-web/api-types` npm workspace package (`packages/api-types/`) wraps
+this surface with additional event bus declarations and ambient `window.CyWebApi` augmentations.
 
-- **Transitive dependency isolation** — All model interfaces are re-exported with `export type`, which TypeScript erases at compile time. Runtime-bearing `as const` objects (`ValueTypeName`, `VisualPropertyName`) are self-contained with no external dependencies. This eliminates the `impl/` leakage problem (issue 4) without requiring barrel export refactoring.
-- **Controlled public surface** — Only ~16 selected types are exposed, compared to 100+ types in the package's `export *` barrel. Internal types (`GraphObject`, `OpaqueAspects`, `UndoRedoStack`, view model internals) are explicitly excluded. See [ADR 0002](../../../docs/adr/0002-public-type-reexport-strategy.md) for the full inclusion/exclusion rationale.
-- **Transparent migration path** — `ElementTypes.ts` acts as an indirection layer. Once the package issues above are resolved, the import sources can be switched from `../../models/...` to `@cytoscape-web/types` without any change to the external app import path (`cyweb/ApiTypes`).
-
-External apps import all public types from a single Module Federation entry:
+External apps import all public types from either:
 
 ```typescript
+// Via Module Federation (React app consumers)
 import type { ApiResult, IdType, Network, Node, Edge } from 'cyweb/ApiTypes'
 import { ApiErrorCode, ValueTypeName, VisualPropertyName } from 'cyweb/ApiTypes'
+
+// Via npm (vanilla JS / browser extension consumers)
+// npm install @cytoscape-web/api-types@alpha
+import type { CyWebApiType, CyWebEvents } from '@cytoscape-web/api-types'
 ```
 
-The `@cytoscape-web/types` package fixes (issues 1–4) remain tracked as P1 improvements. Once resolved, the curated re-export layer will delegate to the package, unifying the two type distribution mechanisms.
+See [ADR 0002](../../../docs/adr/0002-public-type-reexport-strategy.md) for the full
+inclusion/exclusion rationale.
 
 ##### Publish `@cytoscape-web/api-types` Package
 
