@@ -111,6 +111,9 @@ module.exports = {
       filename: 'remoteEntry.js',
       remotes: externalAppsConfig,
       exposes: {
+        // Public App API Types
+        './ApiTypes': './src/app-api/types/index.ts',
+
         // Core data models exposed to other Apps
         './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
         './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',
