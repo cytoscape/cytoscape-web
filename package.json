@@ -23,6 +23,8 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
+    "sync:agents": "node scripts/generate-agents-from-claude.js",
+    "check:agents": "node scripts/generate-agents-from-claude.js && git diff --exit-code -- AGENTS.md",
     "test:unit": "jest",
     "test:e2e": "playwright test",
     "build": "webpack --mode production",
