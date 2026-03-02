@@ -17,6 +17,7 @@ export interface KeycloakConfig {
  */
 export interface AppConfig {
   ndexBaseUrl: string
+  enableKeycloak: boolean
   options?: {}
   defaultServices: string[]
   keycloakConfig: KeycloakConfig
@@ -35,6 +36,7 @@ export interface AppConfig {
 
 export const defaultAppConfig: AppConfig = {
   ndexBaseUrl: 'https://dev.ndexbio.org',
+  enableKeycloak: false,
   keycloakConfig: {
     url: 'https://dev.ndexbio.org/auth2',
     realm: 'ndex',

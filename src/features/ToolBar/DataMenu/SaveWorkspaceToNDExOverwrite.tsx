@@ -14,7 +14,7 @@ import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: BaseMenuProps,
 ): React.ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, enableKeycloak } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
@@ -88,7 +88,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
     setOpenNamingDialog(false)
     props.handleClose()
   }
-  const enabled = authenticated && allNetworkId.length > 0
+  const enabled = enableKeycloak && authenticated && allNetworkId.length > 0
 
   const menuItem = (
     <div
@@ -133,7 +133,9 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
           placement="right"
           title={
             allNetworkId.length > 0
-              ? 'Login to save/overwrite the current workspace to NDEx'
+              ? !enableKeycloak
+                ? 'User sign-in and NDEx account features are disabled for this installation'
+                : 'Login to save/overwrite the current workspace to NDEx'
               : ''
           }
         >

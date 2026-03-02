@@ -34,7 +34,7 @@ import { BaseMenuProps } from '../BaseMenuProps'
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuProps,
 ): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, enableKeycloak } = useContext(AppConfigContext)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
     useState<boolean>(false)
   const { navigateToNetwork } = useUrlNavigation()
@@ -161,7 +161,7 @@ export const CopyNetworkToNDExMenuItem = (
     }
   }
 
-  const enabled = authenticated && currentNetworkId !== ''
+  const enabled = enableKeycloak && authenticated && currentNetworkId !== ''
   const menuItem = (
     <Box
       sx={{
@@ -199,7 +199,9 @@ export const CopyNetworkToNDExMenuItem = (
         placement="right"
         title={
           currentNetworkId !== ''
-            ? 'Login to save a copy of the current network to NDEx'
+            ? !enableKeycloak
+              ? 'User sign-in and NDEx account features are disabled for this installation'
+              : 'Login to save a copy of the current network to NDEx'
             : ''
         }
       >

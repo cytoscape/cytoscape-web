@@ -46,88 +46,116 @@ const initializeApp = () => {
   const { keycloak, handleVerify, handleCancel, checkUserVerification } =
     initializeKeycloak()
 
-  keycloak
-    .init({
-      onLoad: 'check-sso',
-      checkLoginIframe: false,
-      silentCheckSsoRedirectUri:
-        window.location.origin + urlBaseName + 'silent-check-sso.html',
-    })
-    .then(async (authenticated) => {
-      let isEmailUnverified = true
-      let userName = ''
-      let userEmail = ''
+  if (!appConfig.enableKeycloak) {
+    updateLoadingMessage('Starting application...')
 
-      updateLoadingMessage('Loading configuration...')
+    const root = ReactDOM.createRoot(rootElement)
+    const innerContent = (
+      <FeatureAvailabilityProvider>
+        <App />
+      </FeatureAvailabilityProvider>
+    )
+    const outerContent = (
+      <AppConfigContext.Provider value={appConfig}>
+        <React.StrictMode>
+          <KeycloakContext.Provider value={keycloak}>
+            <ErrorBoundary>{innerContent}</ErrorBoundary>
+          </KeycloakContext.Provider>
+        </React.StrictMode>
+      </AppConfigContext.Provider>
+    )
 
-      updateLoadingMessage('Initializing authentication...')
+    root.render(outerContent)
 
-      if (authenticated) {
-        updateLoadingMessage('Verifying user credentials...')
-        const verificationStatus = await checkUserVerification()
-        isEmailUnverified = !verificationStatus.isVerified
-        userName = verificationStatus.userName ?? ''
-        userEmail = verificationStatus.userEmail ?? ''
-      }
+    // Remove loading screen after React app is rendered
+    removeLoadingScreenAfterRender()
+  } else {
+    keycloak
+      .init({
+        onLoad: 'check-sso',
+        checkLoginIframe: false,
+        silentCheckSsoRedirectUri:
+          window.location.origin + urlBaseName + 'silent-check-sso.html',
+      })
+      .then(async (authenticated) => {
+        let isEmailUnverified = true
+        let userName = ''
+        let userEmail = ''
 
-      updateLoadingMessage('Starting application...')
+        updateLoadingMessage('Loading configuration...')
 
-      const root = ReactDOM.createRoot(rootElement)
-      const innerContent =
-        authenticated && isEmailUnverified ? (
-          <EmailVerificationModal
-            userName={userName}
-            userEmail={userEmail}
-            onVerify={handleVerify}
-            onCancel={handleCancel}
-          />
-        ) : (
-          <FeatureAvailabilityProvider>
-            <App />
-          </FeatureAvailabilityProvider>
+        updateLoadingMessage('Initializing authentication...')
+
+        if (authenticated) {
+          updateLoadingMessage('Verifying user credentials...')
+          const verificationStatus = await checkUserVerification()
+          isEmailUnverified = !verificationStatus.isVerified
+          userName = verificationStatus.userName ?? ''
+          userEmail = verificationStatus.userEmail ?? ''
+        }
+
+        updateLoadingMessage('Starting application...')
+
+        const root = ReactDOM.createRoot(rootElement)
+        const innerContent =
+          authenticated && isEmailUnverified ? (
+            <EmailVerificationModal
+              userName={userName}
+              userEmail={userEmail}
+              onVerify={handleVerify}
+              onCancel={handleCancel}
+            />
+          ) : (
+            <FeatureAvailabilityProvider>
+              <App />
+            </FeatureAvailabilityProvider>
+          )
+        const outerContent = (
+          <AppConfigContext.Provider value={appConfig}>
+            <React.StrictMode>
+              <KeycloakContext.Provider value={keycloak}>
+                <ErrorBoundary>{innerContent}</ErrorBoundary>
+              </KeycloakContext.Provider>
+            </React.StrictMode>
+          </AppConfigContext.Provider>
         )
-      const outerContent = (
-        <AppConfigContext.Provider value={appConfig}>
-          <React.StrictMode>
-            <KeycloakContext.Provider value={keycloak}>
-              <ErrorBoundary>{innerContent}</ErrorBoundary>
-            </KeycloakContext.Provider>
-          </React.StrictMode>
-        </AppConfigContext.Provider>
-      )
 
-      root.render(outerContent)
+        root.render(outerContent)
 
-      // Remove loading screen after React app is rendered
-      removeLoadingScreenAfterRender()
-    })
-    .catch((e) => {
-      // Make root element visible in case of error
-      const rootEl = document.getElementById('root')
-      if (rootEl) {
-        rootEl.style.opacity = '1'
-        rootEl.style.visibility = 'visible'
-      }
+        // Remove loading screen after React app is rendered
+        removeLoadingScreenAfterRender()
+      })
+      .catch((e) => {
+        // Make root element visible in case of error
+        const rootEl = document.getElementById('root')
+        if (rootEl) {
+          rootEl.style.opacity = '1'
+          rootEl.style.visibility = 'visible'
+        }
 
-      // Remove the initial loading screen
-      removeMessage(INITIAL_LOADING_SCREEN_ID)
+        // Remove the initial loading screen
+        removeMessage(INITIAL_LOADING_SCREEN_ID)
 
-      // Failed initialization
-      logStartup.error(
-        `[bootstrap.tsx]:[${keycloak.init.name}]: Failed to initialize Cytoscape:`,
-        e,
-      )
-      const errorMessage = document.createElement('h2')
-      errorMessage.style.color = 'red'
-      errorMessage.setAttribute('data-testid', 'init-error-message')
-      errorMessage.textContent = `Failed to initialize Cytoscape: ${e.error}`
-      document.body.appendChild(errorMessage)
+        // Failed initialization
+        logStartup.error(
+          `[bootstrap.tsx]:[${keycloak.init.name}]: Failed to initialize Cytoscape:`,
+          e,
+        )
+        const errorMessage = document.createElement('h2')
+        errorMessage.style.color = 'red'
+        errorMessage.setAttribute('data-testid', 'init-error-message')
+        errorMessage.textContent = `Failed to initialize Cytoscape: ${e.error}`
+        document.body.appendChild(errorMessage)
 
-      const errorMessageSub = document.createElement('h4')
-      errorMessageSub.setAttribute('data-testid', 'init-error-message-sub')
-      errorMessageSub.textContent = `Please try reloading this page. If this continues, please contact your administrator`
-      document.body.appendChild(errorMessageSub)
-    })
+        const errorMessageSub = document.createElement('h4')
+        errorMessageSub.setAttribute(
+          'data-testid',
+          'init-error-message-sub',
+        )
+        errorMessageSub.textContent = `Please try reloading this page. If this continues, please contact your administrator`
+        document.body.appendChild(errorMessageSub)
+      })
+  }
 }
 
 initializeApp()

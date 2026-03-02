@@ -102,6 +102,7 @@ export const LoadFromNdexDialog = (
 
   const {
     ndexBaseUrl,
+    enableKeycloak,
     maxNetworkFileSize,
     maxNetworkElementsThreshold,
     maxEdgeCountThreshold,
@@ -150,7 +151,11 @@ export const LoadFromNdexDialog = (
     <Tooltip
       arrow
       placement="right"
-      title="Login to NDEx to access your networks"
+      title={
+        !enableKeycloak
+          ? 'User sign-in and NDEx account features are disabled for this installation'
+          : 'Login to NDEx to access your networks'
+      }
     >
       <Box>
         <Tab disabled label={<Typography>My Networks</Typography>}></Tab>

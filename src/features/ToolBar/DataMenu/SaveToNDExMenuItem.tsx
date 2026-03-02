@@ -42,7 +42,7 @@ import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorSt
 import { BaseMenuProps } from '../BaseMenuProps'
 
 export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, enableKeycloak } = useContext(AppConfigContext)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
     useState<boolean>(false)
@@ -120,16 +120,24 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
         }
       }
     }
+    if (!enableKeycloak) {
+      setEditPermission(false)
+      return
+    }
     if (!authenticated) {
       setEditPermission(false)
       return
     }
     fetchPermission()
-  }, [authenticated, currentNetworkId, ndexBaseUrl, getToken])
+  }, [enableKeycloak, authenticated, currentNetworkId, ndexBaseUrl, getToken])
 
   useEffect(() => {
     if (currentNetworkId === '') {
       setTooltipText('')
+    } else if (!enableKeycloak) {
+      setTooltipText(
+        'User sign-in and NDEx account features are disabled for this installation',
+      )
     } else if (!authenticated) {
       setTooltipText('Login to save network to NDEx')
     } else if (summary?.isNdex === false) {
@@ -149,6 +157,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     editPermission,
     summary?.isNdex,
     currentNetworkId,
+    enableKeycloak,
   ])
 
   const overwriteNDExNetwork = async (accessToken: string): Promise<void> => {
@@ -280,6 +289,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const enabled =
+    enableKeycloak &&
     currentNetworkId !== '' &&
     (summary?.isNdex ? isModified && editPermission : authenticated)
 

@@ -12,11 +12,10 @@ export const LoginButton = (): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)
 
   const client: Keycloak = useContext(KeycloakContext)
-  const { urlBaseName } = useContext(AppConfigContext)
-  const enabled = true
+  const { urlBaseName, enableKeycloak } = useContext(AppConfigContext)
+  const enabled = enableKeycloak
   const handleClose = async (): Promise<void> => {
     if (!enabled) {
-      // Button is not ready yet
       return
     }
 
@@ -70,8 +69,11 @@ export const LoginButton = (): ReactElement => {
   }
 
   const parsed: KeycloakTokenParsed = client.tokenParsed ?? {}
-  const tooltipTitle =
-    parsed.name === undefined ? 'Click to login' : parsed.name
+  const tooltipTitle = !enableKeycloak
+    ? 'User sign-in and NDEx account features are disabled for this installation'
+    : parsed.name === undefined
+      ? 'Click to login'
+      : parsed.name
   return (
     <>
       <Tooltip title={tooltipTitle}>
@@ -82,8 +84,10 @@ export const LoginButton = (): ReactElement => {
             marginLeft: '0.5em',
             width: 32,
             height: 32,
+            cursor: enabled ? 'pointer' : 'not-allowed',
+            opacity: enabled ? 1 : 0.6,
           }}
-          onClick={handleClose}
+          onClick={enabled ? handleClose : undefined}
         >
           {parsed.name === undefined ? null : parsed.name[0]}
         </Avatar>

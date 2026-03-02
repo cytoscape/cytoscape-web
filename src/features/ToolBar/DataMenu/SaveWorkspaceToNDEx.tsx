@@ -11,7 +11,7 @@ import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuProps,
 ): React.ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, enableKeycloak } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
@@ -30,7 +30,7 @@ export const SaveWorkspaceToNDExMenuItem = (
 
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
 
-  const enabled = authenticated && allNetworkId.length > 0
+  const enabled = enableKeycloak && authenticated && allNetworkId.length > 0
 
   const menuItem = (
     <div
@@ -65,7 +65,9 @@ export const SaveWorkspaceToNDExMenuItem = (
           placement="right"
           title={
             allNetworkId.length > 0
-              ? 'Login to save a copy of the current workspace to NDEx'
+              ? !enableKeycloak
+                ? 'User sign-in and NDEx account features are disabled for this installation'
+                : 'Login to save a copy of the current workspace to NDEx'
               : ''
           }
         >
