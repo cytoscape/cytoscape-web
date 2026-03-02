@@ -4,7 +4,7 @@
 export * from './types'
 
 // ── App API hooks (added in Phase 1a–1e) ─────────────────────────
-// export { useElementApi } from './useElementApi'       // Phase 1a
+export { useElementApi } from './useElementApi'       // Phase 1a
 // export { useNetworkApi } from './useNetworkApi'       // Phase 1b
 // export { useSelectionApi } from './useSelectionApi'   // Phase 1c
 // export { useViewportApi } from './useViewportApi'     // Phase 1c

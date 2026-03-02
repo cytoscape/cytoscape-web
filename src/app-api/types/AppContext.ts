@@ -1,6 +1,7 @@
 // src/app-api/types/AppContext.ts
 
 import { CyApp } from '../../models/AppModel/CyApp'
+import type { ElementApi } from '../core/elementApi'
 
 /**
  * Context object passed to external apps during mount().
@@ -18,10 +19,9 @@ export interface AppContext {
   readonly appId: string
 
   /** Pre-instantiated app API instances */
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   readonly apis: {
     // Populated in Phase 1a
-    // element: ElementApi
+    element: ElementApi
     // Populated in Phase 1b
     // network: NetworkApi
     // Populated in Phase 1c
