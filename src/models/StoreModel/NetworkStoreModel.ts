@@ -49,6 +49,12 @@ export interface NetworkUpdateActions {
    */
   deleteNodes: (networkId: IdType, nodeIds: IdType[]) => Edge[]
   deleteEdges: (networkId: IdType, edgeIds: IdType[]) => void
+  moveEdge: (
+    networkId: IdType,
+    edgeId: IdType,
+    newSourceId: IdType,
+    newTargetId: IdType,
+  ) => { oldSourceId: IdType; oldTargetId: IdType }
 }
 
 /**

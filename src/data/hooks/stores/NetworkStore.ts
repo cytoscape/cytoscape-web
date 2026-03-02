@@ -173,6 +173,32 @@ export const useNetworkStore = create(
             return state
           })
         },
+        moveEdge: (
+          networkId: IdType,
+          edgeId: IdType,
+          newSourceId: IdType,
+          newTargetId: IdType,
+        ): { oldSourceId: IdType; oldTargetId: IdType } => {
+          const network = get().networks.get(networkId)
+          if (network === undefined) {
+            throw new Error(`Network ${networkId} not found`)
+          }
+          const result = NetworkFn.moveEdge(
+            network,
+            edgeId,
+            newSourceId,
+            newTargetId,
+          )
+          set((state) => {
+            state.lastUpdated = {
+              networkId,
+              type: UpdateEventType.ADD,
+              payload: [edgeId],
+            }
+            return state
+          })
+          return result
+        },
 
         addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => {
           set((state) => {

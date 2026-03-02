@@ -340,6 +340,11 @@ export const useUndoStack = () => {
         const nodePositions: [number, number] = params[2]
         setNodePosition(networkId, nodeId, nodePositions)
       },
+      [UndoCommandType.MOVE_EDGES]: (params: any[]) => {
+        useNetworkStore
+          .getState()
+          .moveEdge(params[0], params[1], params[2], params[3])
+      },
 
       [UndoCommandType.SET_BYPASS]: (params: any[]) => {
         setBypassMap(params[0], params[1], params[2])
@@ -584,6 +589,11 @@ export const useUndoStack = () => {
         const nodeId: IdType = params[1]
         const nodePositions: [number, number] = params[2]
         setNodePosition(networkId, nodeId, nodePositions)
+      },
+      [UndoCommandType.MOVE_EDGES]: (params: any[]) => {
+        useNetworkStore
+          .getState()
+          .moveEdge(params[0], params[1], params[2], params[3])
       },
       [UndoCommandType.SET_BYPASS]: (params: any[]) => {
         setBypass(params[0], params[1], params[2], params[3])
