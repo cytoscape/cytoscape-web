@@ -451,16 +451,17 @@ Add `validateCX2()` to `useCreateNetworkFromCx2` to prevent store corruption fro
 
 ### P2 (Improvements — Better developer experience)
 
-#### 1.7 Define App Lifecycle Contract
+#### 1.7 ~~Define App Lifecycle Contract~~ (Promoted to Phase 1 Step 1g)
 
-The current `CyApp` interface is purely declarative metadata (`id`, `name`, `components`). External apps have no supported lifecycle hooks for initialization or cleanup.
-
-Add `mount(context)` and `unmount()` lifecycle callbacks to the app contract:
-
-- **`mount(context)`** — Called when the app is activated. Receives an `AppContext` object providing access to all app APIs. Use for initializing app state, registering event listeners, and preparing resources.
-- **`unmount()`** — Called when the app is deactivated or unloaded. Apps must clean up DOM nodes, listeners, timers, and async tasks. No async work should survive past `unmount()`.
-
-The `AppContext` type is exported via `cyweb/ApiTypes`. See [app-api-specification.md § 1.5.9](specifications/app-api-specification.md) for the full specification.
+> **Status: Promoted to Phase 1.**
+>
+> App Lifecycle (`mount`/`unmount`) has been moved from P2/Phase 3 to **Phase 1 Step 1g** because:
+> - `AppContext.apis` is simply `window.CyWebApi` — no React context or separate instantiation needed
+> - All domain APIs are assembled by Phase 1f, making lifecycle wiring straightforward at that point
+> - External apps cannot perform meaningful initialization without a lifecycle hook
+>
+> See [implementation-checklist-phase1.md § Phase 1g](../checklists/implementation-checklist-phase1.md)
+> and [app-api-specification.md § 1.5.9](specifications/app-api-specification.md) for details.
 
 #### 1.8 Expand UI Integration Points
 
@@ -575,6 +576,15 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - Export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi` types via `src/app-api/types/index.ts`
 - **Example validation**: Update `hello-world/HelloPanel` to display workspace name and network list via `useWorkspaceApi`
 
+**1g: App Lifecycle** (host-side `useAppManager.ts` wiring)
+
+- Wire `CyAppWithLifecycle.mount(context)` and `unmount()` into `src/data/hooks/stores/useAppManager.ts`
+- `AppContext.apis` is typed as `CyWebApiType` and set to `CyWebApi` directly (same object as `window.CyWebApi`)
+- `mount({ appId, apis: CyWebApi })` is called after `registerApp`, if the app implements `mount`
+- `unmount()` is called on `beforeunload` and when app status transitions to `AppStatus.Error`
+- Backward-compatible: existing apps without `mount`/`unmount` continue to work unchanged
+- **Example validation**: Add `mount(context)` to a toy app that calls `context.apis.workspace.getNetworkList()` on activation
+
 #### Step 2: Event Bus
 
 Implement the typed event bus alongside or immediately after all domain APIs are complete. The
@@ -654,6 +664,9 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 - [ ] Legacy store-based examples still function (backward compatibility)
 - [ ] `project-template` updated for new developers to use app API
 - [ ] `patterns/` documentation reflects app API usage
+- [ ] `CyAppWithLifecycle.mount(context)` called by host when app is activated; `AppContext.apis === window.CyWebApi`
+- [ ] `CyAppWithLifecycle.unmount()` called by host on page unload and app deactivation
+- [ ] Existing apps without lifecycle methods continue to work (backward compatible)
 
 ### Phase 2: Developer Experience
 
@@ -665,10 +678,7 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 ### Phase 3: Extensibility
 
-1. App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`). `AppContext.apis` is assembled
-   directly from the `window.CyWebApi` core objects — not constructed independently. Module
-   Federation apps receive the same instances as vanilla JS consumers, eliminating the need for
-   a separate React-context-based API assembly step.
+1. ~~App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)~~ — **Moved to Phase 1 Step 1g.** `AppContext.apis` is set to `window.CyWebApi` directly; no separate assembly needed.
 2. Expand UI integration points
 3. Expose CX2 export API
 4. Inter-app communication protocol
@@ -691,6 +701,7 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 | Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                                       |
 | Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                        |
 | Step 1f: Workspace API        | `useWorkspaceApi.ts`, unit tests, `cyweb/WorkspaceApi` webpack entry, `WorkspaceInfo`/`WorkspaceNetworkInfo` types, `hello-world` panel update |
+| Step 1g: App Lifecycle        | `useAppManager.ts` lifecycle wiring, `AppContext.apis` typed as `CyWebApiType`, `mount`/`unmount` tests |
 | Step 2: Event Bus             | `initEventBus.ts`, `useCyWebEvent.ts`, `cyweb/EventBus` entry, unit + hook tests, `cywebapi:ready` dispatch, `SelectionCounter` demo |
 | Step 3: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                                              |
 | Step 4: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                                          |

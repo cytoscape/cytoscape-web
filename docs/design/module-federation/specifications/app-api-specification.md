@@ -579,6 +579,7 @@ const useExportApi: () => ExportApi // React hook — returns exportApi from cor
 #### 1.5.9 App Lifecycle API
 
 **New contract** — extends the `CyApp` interface with lifecycle callbacks.
+**Phase: 1g** (moved from Phase 3; implemented after Phase 1f once all domain APIs are assembled).
 
 ```typescript
 // src/app-api/types/AppContext.ts
@@ -587,18 +588,11 @@ interface AppContext {
   /** The unique ID of this app instance */
   appId: string
 
-  /** Pre-instantiated app API instances */
-  apis: {
-    element: ElementApi
-    network: NetworkApi
-    selection: SelectionApi
-    table: TableApi
-    visualStyle: VisualStyleApi
-    layout: LayoutApi
-    viewport: ViewportApi
-    export: ExportApi
-    workspace: WorkspaceApi
-  }
+  /**
+   * All app API instances — same singleton as window.CyWebApi at runtime.
+   * Typed as CyWebApiType to make the relationship explicit.
+   */
+  apis: CyWebApiType  // imported from '../core'
 }
 
 // Extended CyApp interface (backward-compatible)
@@ -619,10 +613,11 @@ interface CyAppWithLifecycle extends CyApp {
 }
 ```
 
-**Implementation strategy:**
+**Implementation strategy (Phase 1g):**
 
-- The host calls `mount(context)` after an app is activated and its React components are registered. The `AppContext.apis` object contains pre-instantiated app API instances that provide non-hook access to all operations (the host creates them within a React rendering context and passes the resolved objects).
-- The host calls `unmount()` when the app is deactivated or the page is unloading. The host guarantees `unmount()` is always called.
+- `AppContext.apis` is typed as `CyWebApiType` and set to `CyWebApi` (from `src/app-api/core`) — the same singleton as `window.CyWebApi`. No React context or separate instantiation is needed.
+- The host (`src/data/hooks/stores/useAppManager.ts`) calls `mount({ appId: cyApp.id, apis: CyWebApi })` after `registerApp(cyApp)`, if the app implements `CyAppWithLifecycle.mount`.
+- The host calls `unmount()` when the app is deactivated or the page is unloading (`beforeunload`). The host guarantees `unmount()` is always called for apps where `mount` was invoked.
 - Both callbacks are optional — existing apps without lifecycle methods continue to work unchanged.
 - If `mount()` returns a `Promise`, the host awaits it before marking the app as ready.
 - `AppContext` and `CyAppWithLifecycle` types are exported via `cyweb/ApiTypes`.
@@ -960,8 +955,8 @@ plain Jest tests) and `src/app-api/use<Domain>Api.ts` (thin hook wrapper).
 | 5     | Layout + Export             | `src/app-api/core/layoutApi.ts`, `src/app-api/core/exportApi.ts`, hook wrappers                                            |
 | 5.5   | Global assembly             | `src/app-api/core/index.ts` (CyWebApi object), `window.CyWebApi` assignment in `src/init.tsx`                              |
 | 6     | Workspace API               | `src/app-api/core/workspaceApi.ts`, `src/app-api/useWorkspaceApi.ts`, add `workspace` to `CyWebApi`                        |
+| 1g    | App Lifecycle (Phase 1g)    | `src/data/hooks/stores/useAppManager.ts` wiring; `AppContext.apis` typed as `CyWebApiType`; `mount`/`unmount` tests        |
 | 7     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`                                       |
-| 8     | App Lifecycle (Phase 3)     | `src/app-api/types/AppContext.ts`, extend `CyApp` interface, host-side lifecycle manager; `AppContext.apis` uses core objs |
 
 ### 2.7 `window.CyWebApi` Global API
 
@@ -1099,18 +1094,18 @@ declare global {
 }
 ```
 
-#### `AppContext` relationship (Phase 3)
+#### `AppContext` relationship (Phase 1g)
 
-When Phase 3 App Lifecycle is implemented, `AppContext.apis` is a direct reference to
-`window.CyWebApi` — not a new set of instances created inside React context:
+`AppContext.apis` is a direct reference to `window.CyWebApi` — not a new set of instances
+created inside React context. The host (`useAppManager.ts`) passes `CyWebApi` directly:
 
 ```typescript
-// Phase 3 host-side lifecycle implementation
-mount({ appId: app.id, apis: window.CyWebApi })
+// Phase 1g host-side lifecycle wiring (useAppManager.ts)
+mount({ appId: app.id, apis: CyWebApi })  // CyWebApi imported from src/app-api/core
 ```
 
-This eliminates the complexity of "pre-instantiated app API instances" noted in § 1.5.9.
-`AppContext.apis` and `window.CyWebApi` are the same object at runtime.
+`AppContext.apis` is typed as `CyWebApiType` (the same interface as `window.CyWebApi`) to make
+this relationship explicit. Both refer to the same singleton object at runtime.
 
 #### Security model
 
@@ -2396,6 +2391,14 @@ _Fully specified in [phase0-shared-types-design.md](phase0-shared-types-design.m
 | Modify | `src/app-api/types/index.ts`            | Export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi` |
 | Modify | `src/app-api/types/AppContext.ts`       | Add `workspace: WorkspaceApi` to `AppContext.apis` |
 | Modify | `webpack.config.js`                     | Add `'./WorkspaceApi'` entry |
+
+### Phase 1g: App Lifecycle
+
+| Action | File                                                       | Notes |
+| ------ | ---------------------------------------------------------- | ----- |
+| Modify | `src/app-api/types/AppContext.ts`                          | Replace inline `apis` type with `CyWebApiType` imported from `../core`; add JSDoc noting it equals `window.CyWebApi` |
+| Modify | `src/data/hooks/stores/useAppManager.ts`                   | Import `CyAppWithLifecycle` + `CyWebApi`; call `mount({ appId, apis: CyWebApi })` after `registerApp`; call `unmount()` on `beforeunload` and `AppStatus.Error` transition |
+| Create | `src/data/hooks/stores/useAppManager.lifecycle.test.ts`    | Plain Jest tests: `mount` called with correct context; `mount` not called for plain `CyApp`; async `mount` awaited; `unmount` on `beforeunload`; `unmount` on `AppStatus.Error` |
 
 ---
 

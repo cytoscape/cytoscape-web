@@ -256,6 +256,54 @@ _Design: app-api-specification.md §1.5.10, §3.9_
 
 ---
 
+## Phase 1g: App Lifecycle
+
+_Design: app-api-specification.md §1.5.9, §2.6 (Phase 1g)_
+
+**Dependency note:** Requires Phase 1f (all `AppContext.apis` fields populated). The host passes
+`CyWebApi` — assembled in Phase 1e Step 5.5 and extended in Phase 1f — directly as `AppContext.apis`.
+
+### Pre-read files
+
+| File                                               | Lines | Purpose                                                                              |
+| -------------------------------------------------- | ----- | ------------------------------------------------------------------------------------ |
+| `src/data/hooks/stores/useAppManager.ts`           | 175   | App loading loop; `registerApp` call site — injection point for lifecycle calls      |
+| `src/data/hooks/stores/AppStore.ts`                | 258   | `AppStatus` enum (Active, Error); `add` action                                       |
+| `src/app-api/types/AppContext.ts`                  | —     | `AppContext`, `CyAppWithLifecycle` — already defined, need to update `apis` type     |
+| `src/app-api/core/index.ts`                        | —     | `CyWebApi` object + `CyWebApiType` interface — passed as `AppContext.apis`           |
+| `src/models/AppModel/CyApp.ts`                     | 27    | Base `CyApp` interface — no changes needed (backward-compatible via optional methods)|
+
+### Deliverables
+
+- [ ] Modify `src/app-api/types/AppContext.ts`:
+  - Replace inline `apis` type with `CyWebApiType` imported from `../core`
+  - Add JSDoc noting `apis` is the same object as `window.CyWebApi` at runtime
+- [ ] Modify `src/data/hooks/stores/useAppManager.ts`:
+  - Import `CyAppWithLifecycle` from `../../app-api/types/AppContext`
+  - Import `CyWebApi` from `../../app-api/core`
+  - After `registerApp(cyApp)`, cast to `CyAppWithLifecycle`; if `mount` is defined, call `await cyApp.mount({ appId: cyApp.id, apis: CyWebApi })`
+  - Add `mountedApps` ref to track apps where `mount` was called
+  - Add `beforeunload` listener in `useEffect` that calls `unmount()` on all mounted apps
+  - When an app's status changes to `AppStatus.Error`, call `unmount()` if it was previously mounted
+- [ ] Create `src/data/hooks/stores/useAppManager.lifecycle.test.ts` — plain Jest tests (mock `AppStore`, `CyWebApi`):
+  - `mount` called with `{ appId, apis: CyWebApi }` when app implements `CyAppWithLifecycle.mount`
+  - `mount` NOT called when app has no `mount` method (backward-compatible)
+  - Async `mount` (returns Promise) is awaited before marking app as ready
+  - `unmount` called when `beforeunload` fires
+  - `unmount` called when app status transitions to `AppStatus.Error`
+  - `unmount` NOT called for apps that never had `mount` invoked
+
+### Verification
+
+- [ ] `npm run lint` passes
+- [ ] `npm run test:unit -- --testPathPattern="useAppManager.lifecycle"` passes
+- [ ] `npm run build` succeeds
+- [ ] Manual: App that logs in `mount()` shows the log when Cytoscape Web loads
+- [ ] Manual: `AppContext.apis.workspace.getNetworkList()` works inside a `mount()` callback
+- [ ] Manual: `unmount()` is called when page is refreshed (visible via console log in a test app)
+
+---
+
 ## Step 2: Event Bus
 
 _Design: [event-bus-specification.md](../specifications/event-bus-specification.md) — full spec including store subscription mapping, edge cases, and test patterns_
@@ -330,12 +378,15 @@ to be complete before Step 2 is closed.
 - [ ] `npm run test:unit` — all tests pass
 - [ ] `npm run build` — production build succeeds
 - [ ] All 11 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `WorkspaceApi`, `EventBus`
-- [ ] All `AppContext.apis` fields uncommented and typed (including `workspace: WorkspaceApi`)
+- [ ] `AppContext.apis` typed as `CyWebApiType` (same object as `window.CyWebApi` at runtime)
 - [ ] Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
-- [ ] `src/app-api/api_docs/Api.md` covers all 9 app API hooks + event bus
+- [ ] `src/app-api/api_docs/Api.md` covers all 9 app API hooks + event bus + lifecycle
 - [ ] `src/app-api/core/` contains zero React imports (`import.*from 'react'` absent in all `core/*.ts` files)
 - [ ] `cywebapi:ready` dispatched on `window` after full initialization
 - [ ] `hello-world/HelloPanel` `SelectionCounter` reacts to selection via `useCyWebEvent`
+- [ ] Apps implementing `CyAppWithLifecycle.mount()` receive `AppContext` on activation
+- [ ] Apps implementing `CyAppWithLifecycle.unmount()` are cleaned up on page unload
+- [ ] Existing apps without lifecycle methods continue to function (backward compatible)
 
 ---
 
