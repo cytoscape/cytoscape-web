@@ -2,9 +2,13 @@
 
 import { CyApp } from '../../models/AppModel/CyApp'
 import type { ElementApi } from '../core/elementApi'
+import type { ExportApi } from '../core/exportApi'
+import type { LayoutApi } from '../core/layoutApi'
 import type { NetworkApi } from '../core/networkApi'
 import type { SelectionApi } from '../core/selectionApi'
+import type { TableApi } from '../core/tableApi'
 import type { ViewportApi } from '../core/viewportApi'
+import type { VisualStyleApi } from '../core/visualStyleApi'
 
 /**
  * Context object passed to external apps during mount().
@@ -31,11 +35,11 @@ export interface AppContext {
     selection: SelectionApi
     viewport: ViewportApi
     // Populated in Phase 1d
-    // table: TableApi
-    // visualStyle: VisualStyleApi
+    table: TableApi
+    visualStyle: VisualStyleApi
     // Populated in Phase 1e
-    // layout: LayoutApi
-    // export: ExportApi
+    layout: LayoutApi
+    export: ExportApi
   }
 }
 

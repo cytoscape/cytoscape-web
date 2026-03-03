@@ -5,6 +5,7 @@ import React from 'react'
 import * as ReactDOM from 'react-dom/client'
 
 import { App } from './App'
+import { CyWebApi } from './app-api/core'
 import { AppConfigContext } from './AppConfigContext'
 import appConfig from './assets/config.json'
 // this allows immer to work with Map and Set
@@ -22,6 +23,9 @@ import {
   updateVersionText,
 } from './init/loadingScreen'
 import { initializeTabManager } from './init/tabManager'
+
+// Assign CyWebApi to window for external consumers (browser extensions, LLM agents)
+;(window as any).CyWebApi = CyWebApi
 
 const initializeApp = () => {
   const { urlBaseName } = appConfig

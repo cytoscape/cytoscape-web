@@ -124,6 +124,14 @@ module.exports = {
         './SelectionApi': './src/app-api/useSelectionApi.ts',
         './ViewportApi': './src/app-api/useViewportApi.ts',
 
+        // Public App API Hooks (Phase 1d)
+        './TableApi': './src/app-api/useTableApi.ts',
+        './VisualStyleApi': './src/app-api/useVisualStyleApi.ts',
+
+        // Public App API Hooks (Phase 1e)
+        './LayoutApi': './src/app-api/useLayoutApi.ts',
+        './ExportApi': './src/app-api/useExportApi.ts',
+
         // Core data models exposed to other Apps
         './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
         './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',
