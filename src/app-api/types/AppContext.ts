@@ -9,6 +9,7 @@ import type { SelectionApi } from '../core/selectionApi'
 import type { TableApi } from '../core/tableApi'
 import type { ViewportApi } from '../core/viewportApi'
 import type { VisualStyleApi } from '../core/visualStyleApi'
+import type { WorkspaceApi } from '../core/workspaceApi'
 
 /**
  * Context object passed to external apps during mount().
@@ -18,8 +19,7 @@ import type { VisualStyleApi } from '../core/visualStyleApi'
  * objects, so apps can use them outside of React components.
  *
  * NOTE: API fields are added incrementally as app API hooks are
- * implemented in Phase 1a–1e. This initial version declares the
- * shape but marks unimplemented APIs as optional.
+ * implemented in Phase 1a–1f.
  */
 export interface AppContext {
   /** The unique ID of this app instance */
@@ -40,6 +40,8 @@ export interface AppContext {
     // Populated in Phase 1e
     layout: LayoutApi
     export: ExportApi
+    // Populated in Phase 1f
+    workspace: WorkspaceApi
   }
 }
 

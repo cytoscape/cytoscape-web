@@ -7,6 +7,9 @@ export { ApiErrorCode, fail, isFail,isOk, ok } from './ApiResult'
 // ── App lifecycle types ─────────────────────────────────────────
 export type { AppContext, CyAppWithLifecycle } from './AppContext'
 
+// ── Workspace API types (Phase 1f) ───────────────────────────────
+export type { WorkspaceApi, WorkspaceInfo, WorkspaceNetworkInfo } from '../core/workspaceApi'
+
 // ── Re-exported model types ─────────────────────────────────────
 export type {
   AttributeName,

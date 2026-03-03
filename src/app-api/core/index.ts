@@ -18,6 +18,8 @@ import type { ViewportApi } from './viewportApi'
 import { viewportApi } from './viewportApi'
 import type { VisualStyleApi } from './visualStyleApi'
 import { visualStyleApi } from './visualStyleApi'
+import type { WorkspaceApi } from './workspaceApi'
+import { workspaceApi } from './workspaceApi'
 
 export interface CyWebApiType {
   element: ElementApi
@@ -28,6 +30,7 @@ export interface CyWebApiType {
   visualStyle: VisualStyleApi
   layout: LayoutApi
   export: ExportApi
+  workspace: WorkspaceApi
 }
 
 export const CyWebApi: CyWebApiType = {
@@ -39,4 +42,5 @@ export const CyWebApi: CyWebApiType = {
   visualStyle: visualStyleApi,
   layout: layoutApi,
   export: exportApi,
+  workspace: workspaceApi,
 }

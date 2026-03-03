@@ -13,3 +13,4 @@ export { useSelectionApi } from './useSelectionApi'   // Phase 1c
 export { useTableApi } from './useTableApi'           // Phase 1d
 export { useViewportApi } from './useViewportApi'     // Phase 1c
 export { useVisualStyleApi } from './useVisualStyleApi' // Phase 1d
+export { useWorkspaceApi } from './useWorkspaceApi'   // Phase 1f

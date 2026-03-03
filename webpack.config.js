@@ -132,6 +132,9 @@ module.exports = {
         './LayoutApi': './src/app-api/useLayoutApi.ts',
         './ExportApi': './src/app-api/useExportApi.ts',
 
+        // Public App API Hooks (Phase 1f)
+        './WorkspaceApi': './src/app-api/useWorkspaceApi.ts',
+
         // Event Bus (Step 2)
         './EventBus': './src/app-api/useCyWebEvent.ts',
 
