@@ -117,6 +117,13 @@ module.exports = {
         // Public App API Hooks (Phase 1a)
         './ElementApi': './src/app-api/useElementApi.ts',
 
+        // Public App API Hooks (Phase 1b)
+        './NetworkApi': './src/app-api/useNetworkApi.ts',
+
+        // Public App API Hooks (Phase 1c)
+        './SelectionApi': './src/app-api/useSelectionApi.ts',
+        './ViewportApi': './src/app-api/useViewportApi.ts',
+
         // Core data models exposed to other Apps
         './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
         './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',

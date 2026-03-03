@@ -22,6 +22,17 @@ interface CreateNetworkFromCx2Props {
    * CX2 data to convert into a full network with view.
    */
   cxData: Cx2
+  /**
+   * Whether to add the new network to the workspace and set it as the current network.
+   * @default true
+   */
+  addToWorkspace?: boolean
+  /**
+   * Whether to navigate to the new network after creation.
+   * Requires addToWorkspace to be true to have effect.
+   * @default true
+   */
+  navigate?: boolean
 }
 
 /**
@@ -49,7 +60,11 @@ export const useCreateNetworkFromCx2 = (): ((
   const workspace = useWorkspaceStore((state) => state.workspace)
 
   const createNetworkFromCx = useCallback(
-    ({ cxData }: CreateNetworkFromCx2Props) => {
+    ({
+      cxData,
+      addToWorkspace = true,
+      navigate = true,
+    }: CreateNetworkFromCx2Props) => {
       // Convert CX2 to a fully populated CyNetwork
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
@@ -96,17 +111,22 @@ export const useCreateNetworkFromCx2 = (): ((
       addViewModel(network.id, networkViews[0]) // For now, just store the first view
       addSummary(network.id, summary)
 
-      // Add network to workspace
-      addNetworkIds(network.id)
+      if (addToWorkspace) {
+        // Add network to workspace
+        addNetworkIds(network.id)
 
-      // Select it as the current network
-      setCurrentNetworkId(network.id)
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: network.id,
-        searchParams: new URLSearchParams(location.search),
-        replace: false,
-      })
+        // Select it as the current network
+        setCurrentNetworkId(network.id)
+
+        if (navigate) {
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: network.id,
+            searchParams: new URLSearchParams(location.search),
+            replace: false,
+          })
+        }
+      }
 
       return cyNetwork
     },
