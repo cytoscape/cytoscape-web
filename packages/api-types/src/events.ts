@@ -13,6 +13,13 @@ import type { IdType } from '../../../src/app-api/types'
  * `window.addEventListener` overloads carry the correct detail type.
  */
 export interface CyWebEvents {
+  /**
+   * Fired once when the Cytoscape Web App API is fully initialized
+   * and `window.CyWebApi` is ready to use. Subscribe to this event
+   * before accessing `window.CyWebApi`.
+   */
+  'cywebapi:ready': Record<string, never>
+
   /** Fired when a new network is added to the workspace. */
   'network:created': { networkId: IdType }
 
