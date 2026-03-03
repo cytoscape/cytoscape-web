@@ -1,16 +1,19 @@
 // src/app-api/event-bus/dispatchCyWebEvent.ts
-// Minimal dispatch helper for Phase 1e — fires layout events on window.
-// Full event bus (CyWebEvents interface, initEventBus) is implemented in Step 2.
+
+import type { CyWebEvents } from './CyWebEvents'
 
 /**
- * Dispatches a CustomEvent on `window` with the given type and detail payload.
- * Silently no-ops in environments without `window` (e.g., SSR, some test environments).
+ * Type-safe helper for dispatching CyWeb events on window.
+ * Used by initEventBus.ts (subscription-based events) and
+ * core/layoutApi.ts (layout lifecycle events).
+ *
+ * This is the **only place** where `new CustomEvent` is called for CyWeb events.
  */
-export function dispatchCyWebEvent<K extends string>(
-  eventType: K,
-  detail?: Record<string, unknown>,
+export function dispatchCyWebEvent<K extends keyof CyWebEvents>(
+  type: K,
+  detail: CyWebEvents[K],
 ): void {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(eventType, { detail: detail ?? {} }))
+    window.dispatchEvent(new CustomEvent(type, { detail }))
   }
 }

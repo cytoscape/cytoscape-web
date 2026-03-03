@@ -6,6 +6,7 @@ import * as ReactDOM from 'react-dom/client'
 
 import { App } from './App'
 import { CyWebApi } from './app-api/core'
+import { initEventBus } from './app-api/event-bus/initEventBus'
 import { AppConfigContext } from './AppConfigContext'
 import appConfig from './assets/config.json'
 // this allows immer to work with Map and Set
@@ -26,6 +27,10 @@ import { initializeTabManager } from './init/tabManager'
 
 // Assign CyWebApi to window for external consumers (browser extensions, LLM agents)
 ;(window as any).CyWebApi = CyWebApi
+// Initialize event bus subscriptions (stores hydrate after React renders)
+initEventBus()
+// Signal readiness to vanilla JS consumers
+window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 
 const initializeApp = () => {
   const { urlBaseName } = appConfig
