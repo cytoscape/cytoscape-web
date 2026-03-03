@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 
+import { CyWebApi } from '../../../app-api/core'
 import { appImportMap } from '../../../assets/app-definition'
 import appConfig from '../../../assets/apps.json'
 import { logApp } from '../../../debug'
-import { useAppStore } from './AppStore'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { mountApp, unmountAllApps,unmountApp } from './appLifecycle'
+import { useAppStore } from './AppStore'
 logApp.info(`[AppManager]: App config file loaded: `, appConfig)
 
 // appConfig contains reference list of available apps.
@@ -94,6 +96,8 @@ const loadModules = async () => {
 // This contains only active remote apps
 const loadedApps = await loadModules()
 const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
+// Fast ID-to-CyApp lookup for lifecycle calls
+const appRegistry = new Map<string, CyApp>(loadedApps.map((app) => [app.id, app]))
 
 export const useAppManager = (): void => {
   const initRef = useRef<boolean>(false)
@@ -101,11 +105,24 @@ export const useAppManager = (): void => {
   const failedAppIds = useRef<Set<string>>(new Set())
   // Track last processed app state to prevent unnecessary re-runs
   const lastAppsState = useRef<string>('')
+  // Track apps where mount() was successfully called
+  const mountedApps = useRef<Set<string>>(new Set())
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const registerApp = useAppStore((state) => state.add)
   const restore = useAppStore((state) => state.restore)
   const setStatus = useAppStore((state) => state.setStatus)
+
+  // Call unmount() on all mounted apps when the page is about to unload
+  useEffect(() => {
+    const handleUnload = (): void => {
+      void unmountAllApps(appRegistry, mountedApps.current)
+    }
+    window.addEventListener('beforeunload', handleUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload)
+    }
+  }, [])
 
   useEffect(() => {
     if (initRef.current === false) {
@@ -149,8 +166,16 @@ export const useAppManager = (): void => {
 
       try {
         if (!apps[appId] && activatedAppIdSet.has(appId)) {
-          registerApp(loadedApps.find((app) => app.id === appId) as CyApp)
+          const cyApp = loadedApps.find((app) => app.id === appId) as CyApp
+          registerApp(cyApp)
+          // Call mount() for apps that implement CyAppWithLifecycle
+          void mountApp(cyApp, { appId: cyApp.id, apis: CyWebApi }, mountedApps.current)
         } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
+          // App was registered but is no longer loadable — unmount then mark as error
+          const cyApp = appRegistry.get(appId)
+          if (cyApp !== undefined) {
+            void unmountApp(cyApp, mountedApps.current)
+          }
           setStatus(appId, AppStatus.Error)
         } else if (
           apps[appId] &&

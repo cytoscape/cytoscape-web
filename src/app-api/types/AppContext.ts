@@ -1,15 +1,7 @@
 // src/app-api/types/AppContext.ts
 
 import { CyApp } from '../../models/AppModel/CyApp'
-import type { ElementApi } from '../core/elementApi'
-import type { ExportApi } from '../core/exportApi'
-import type { LayoutApi } from '../core/layoutApi'
-import type { NetworkApi } from '../core/networkApi'
-import type { SelectionApi } from '../core/selectionApi'
-import type { TableApi } from '../core/tableApi'
-import type { ViewportApi } from '../core/viewportApi'
-import type { VisualStyleApi } from '../core/visualStyleApi'
-import type { WorkspaceApi } from '../core/workspaceApi'
+import type { CyWebApiType } from '../core'
 
 /**
  * Context object passed to external apps during mount().
@@ -18,31 +10,18 @@ import type { WorkspaceApi } from '../core/workspaceApi'
  * these within a React rendering context and passes the resolved
  * objects, so apps can use them outside of React components.
  *
- * NOTE: API fields are added incrementally as app API hooks are
- * implemented in Phase 1a–1f.
+ * NOTE: `apis` is the same singleton as `window.CyWebApi` at runtime —
+ * the host passes the `CyWebApi` object (assembled in Phase 1f) directly.
  */
 export interface AppContext {
   /** The unique ID of this app instance */
   readonly appId: string
 
-  /** Pre-instantiated app API instances */
-  readonly apis: {
-    // Populated in Phase 1a
-    element: ElementApi
-    // Populated in Phase 1b
-    network: NetworkApi
-    // Populated in Phase 1c
-    selection: SelectionApi
-    viewport: ViewportApi
-    // Populated in Phase 1d
-    table: TableApi
-    visualStyle: VisualStyleApi
-    // Populated in Phase 1e
-    layout: LayoutApi
-    export: ExportApi
-    // Populated in Phase 1f
-    workspace: WorkspaceApi
-  }
+  /**
+   * Pre-instantiated app API instances.
+   * At runtime this is the same object as `window.CyWebApi`.
+   */
+  readonly apis: CyWebApiType
 }
 
 /**
