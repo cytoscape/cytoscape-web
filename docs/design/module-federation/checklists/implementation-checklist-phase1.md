@@ -8,7 +8,7 @@
 
 ## Phase 1a: Element API
 
-_Design: app-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
+_Design: app-api-specification.md §1.5.1, §3.1, §3.1.1, §3.10.1_
 
 ### Pre-read files
 
@@ -57,7 +57,7 @@ _Design: app-api-specification.md §1.5.1, §3.1, §3.1.1, §3.9.1_
 
 ## Phase 1b: Network API
 
-_Design: app-api-specification.md §1.5.2, §3.2, §3.9.2_
+_Design: app-api-specification.md §1.5.2, §3.2, §3.10.2_
 
 ### Pre-read files
 
@@ -94,7 +94,7 @@ _Design: app-api-specification.md §1.5.2, §3.2, §3.9.2_
 
 ## Phase 1c: Selection + Viewport
 
-_Design: app-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §3.9.7_
+_Design: app-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.10.3, §3.10.7_
 
 ### Pre-read files
 
@@ -137,7 +137,7 @@ _Design: app-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.9.3, §3.9
 
 ## Phase 1d: Table + Visual Style
 
-_Design: app-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §3.9.5_
+_Design: app-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.10.4, §3.10.5_
 
 ### Pre-read files
 
@@ -174,7 +174,7 @@ _Design: app-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.9.4, §3.9
 
 ## Phase 1e: Layout + Export
 
-_Design: app-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §3.9.8_
+_Design: app-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.10.6, §3.10.8_
 
 ### Pre-read files
 
@@ -210,6 +210,49 @@ _Design: app-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.9.6, §3.9
 - [ ] `npm run lint` passes
 - [ ] `npm run test:unit -- --testPathPattern="layoutApi|exportApi"` passes
 - [ ] `npm run build` succeeds
+
+---
+
+## Phase 1f: Workspace API
+
+_Design: app-api-specification.md §1.5.10, §3.9_
+
+### Pre-read files
+
+| File                                                           | Lines | Purpose                                                              |
+| -------------------------------------------------------------- | ----- | -------------------------------------------------------------------- |
+| `src/data/hooks/stores/WorkspaceStore.ts`                      | —     | `workspace.networkIds`, `workspace.currentNetworkId`, `setCurrentNetworkId`, `setName` |
+| `src/models/StoreModel/WorkspaceStoreModel.ts`                 | —     | `Workspace` model shape, `WorkspaceStoreModel` interface             |
+| `src/data/hooks/stores/NetworkSummaryStore.ts`                 | —     | `summaries: Record<IdType, NetworkSummary>` — per-network metadata   |
+| `src/models/StoreModel/NetworkSummaryStoreModel.ts`            | —     | `NetworkSummary` shape (`name`, `nodeCount`, `edgeCount`, etc.)      |
+| `src/models/WorkspaceModel/impl/WorkspaceImpl.ts` (or `Workspace.ts`) | — | `Workspace` data model                                        |
+
+### Deliverables
+
+- [ ] Create `src/app-api/core/workspaceApi.ts` — framework-agnostic; reads `WorkspaceStore` + `NetworkSummaryStore` via `.getState()`; no React imports
+- [ ] Create `src/app-api/useWorkspaceApi.ts` — thin React hook: `export const useWorkspaceApi = (): WorkspaceApi => workspaceApi`
+- [ ] Implement `getWorkspaceInfo()` → `ApiResult<WorkspaceInfo>` (always succeeds; reads `workspace` from `WorkspaceStore`)
+- [ ] Implement `getNetworkIds()` → `ApiResult<{ networkIds: IdType[] }>` (shallow copy of `workspace.networkIds`)
+- [ ] Implement `getNetworkList()` → `ApiResult<WorkspaceNetworkInfo[]>` (join `networkIds` with `summaries`; silently omit missing entries)
+- [ ] Implement `getNetworkSummary(networkId)` → `ApiResult<WorkspaceNetworkInfo>` (fail `NetworkNotFound` if not in workspace or summary missing)
+- [ ] Implement `getCurrentNetworkId()` → `ApiResult<{ networkId: IdType }>` (fail `NoCurrentNetwork` when `networkIds.length === 0 || currentNetworkId === ''`)
+- [ ] Implement `switchCurrentNetwork(networkId)` → `ApiResult` (validate non-empty + membership; call `setCurrentNetworkId`; `network:switched` fires automatically via `initEventBus`)
+- [ ] Implement `setWorkspaceName(name)` → `ApiResult` (validate `name.trim() !== ''`; call `WorkspaceStore.setName(name.trim())`)
+- [ ] Create `src/app-api/core/workspaceApi.test.ts` — plain Jest tests for all 7 core methods (mock `WorkspaceStore`, `NetworkSummaryStore`; no `renderHook`)
+- [ ] Create `src/app-api/useWorkspaceApi.test.ts` — trivial hook test: verifies hook returns core `workspaceApi` object
+- [ ] Modify `src/app-api/core/index.ts` — add `workspace: workspaceApi` to `CyWebApi`
+- [ ] Modify `src/app-api/index.ts` — export `useWorkspaceApi`
+- [ ] Modify `src/app-api/types/index.ts` — export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi`
+- [ ] Modify `src/app-api/types/AppContext.ts` — add `workspace: WorkspaceApi` to `AppContext.apis`
+- [ ] Modify `webpack.config.js` — add `'./WorkspaceApi': './src/app-api/useWorkspaceApi.ts'`
+
+### Verification
+
+- [ ] `npm run lint` passes
+- [ ] `npm run test:unit -- --testPathPattern="workspaceApi"` passes
+- [ ] `npm run build` succeeds
+- [ ] Manual: `window.CyWebApi.workspace.getNetworkList()` returns the current workspace's networks in DevTools console
+- [ ] Manual: `window.CyWebApi.workspace.switchCurrentNetwork(id)` triggers `network:switched` event (visible in DevTools Event Listeners)
 
 ---
 
@@ -286,10 +329,10 @@ to be complete before Step 2 is closed.
 - [ ] `npm run lint` — zero errors
 - [ ] `npm run test:unit` — all tests pass
 - [ ] `npm run build` — production build succeeds
-- [ ] All 10 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `EventBus`
-- [ ] All `AppContext.apis` fields uncommented and typed
+- [ ] All 11 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `WorkspaceApi`, `EventBus`
+- [ ] All `AppContext.apis` fields uncommented and typed (including `workspace: WorkspaceApi`)
 - [ ] Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
-- [ ] `src/app-api/api_docs/Api.md` covers all 8 app API hooks + event bus
+- [ ] `src/app-api/api_docs/Api.md` covers all 9 app API hooks + event bus
 - [ ] `src/app-api/core/` contains zero React imports (`import.*from 'react'` absent in all `core/*.ts` files)
 - [ ] `cywebapi:ready` dispatched on `window` after full initialization
 - [ ] `hello-world/HelloPanel` `SelectionCounter` reacts to selection via `useCyWebEvent`
@@ -339,3 +382,10 @@ to be complete before Step 2 is closed.
 | `applyLayout`               | **New coordination:** `LayoutEngine.apply()` + callback + `postEdit(UndoCommandType.APPLY_LAYOUT)` | `Promise<ok()>`                                                  | 1e    |
 | `getAvailableLayouts`       | `LayoutStore.layoutEngines` read                        | `ok(infos)`                                                      | 1e    |
 | `exportToCx2`               | `exportCyNetworkToCx2()` + 6-store assembly             | `ok(cx2)`                                                        | 1e    |
+| `getWorkspaceInfo`          | `WorkspaceStore.workspace` read                         | `ok(WorkspaceInfo)`                                              | 1f    |
+| `getNetworkIds`             | `WorkspaceStore.workspace.networkIds` read              | `ok({networkIds})`                                               | 1f    |
+| `getNetworkList`            | `WorkspaceStore.workspace` + `NetworkSummaryStore.summaries` join | `ok(WorkspaceNetworkInfo[])`                             | 1f    |
+| `getNetworkSummary`         | `WorkspaceStore.workspace` + `NetworkSummaryStore.summaries` read | `ok(WorkspaceNetworkInfo)`                               | 1f    |
+| `getCurrentNetworkId`       | `WorkspaceStore.workspace.currentNetworkId` read        | `ok({networkId})`                                                | 1f    |
+| `switchCurrentNetwork`      | `WorkspaceStore.setCurrentNetworkId()` (fires `network:switched` via `initEventBus`) | `ok()`                                    | 1f    |
+| `setWorkspaceName`          | `WorkspaceStore.setName(name.trim())`                   | `ok()`                                                           | 1f    |

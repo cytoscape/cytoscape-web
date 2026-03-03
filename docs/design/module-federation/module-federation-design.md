@@ -52,6 +52,7 @@ cyweb/VisualStyleApi  → Visual style operations
 cyweb/LayoutApi       → Layout execution
 cyweb/ViewportApi     → Viewport control
 cyweb/ExportApi       → CX2 export
+cyweb/WorkspaceApi    → Workspace state (current network, network list, rename workspace)
 cyweb/ApiTypes        → Shared types (ApiResult, ApiErrorCode, re-exported model types)
 window.CyWebApi       → Same operations, globally accessible (no Module Federation required)
 ```
@@ -564,6 +565,16 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - After 1e: Update `src/app-api/core/index.ts` to assemble all 8 domain objects into `CyWebApi`
 - **Example validation**: Create `network-generator` toy example (create → layout → fit → export)
 
+**1f: Workspace API** (`core/workspaceApi.ts` + `useWorkspaceApi.ts`)
+
+- Read: `getWorkspaceInfo`, `getNetworkIds`, `getNetworkList`, `getNetworkSummary`, `getCurrentNetworkId`
+- Write: `switchCurrentNetwork`, `setWorkspaceName`
+- Coordinates `WorkspaceStore` + `NetworkSummaryStore` directly via `.getState()`
+- `switchCurrentNetwork` fires `network:switched` via the existing `initEventBus` subscription (no additional wiring needed)
+- Add `workspace: workspaceApi` to `CyWebApi` in `src/app-api/core/index.ts`
+- Export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi` types via `src/app-api/types/index.ts`
+- **Example validation**: Update `hello-world/HelloPanel` to display workspace name and network list via `useWorkspaceApi`
+
 #### Step 2: Event Bus
 
 Implement the typed event bus alongside or immediately after all domain APIs are complete. The
@@ -597,7 +608,7 @@ the simplest end-to-end validation that the event bus is wired correctly.
 
 #### Step 3: Webpack Integration and Deprecation
 
-1. Add all 9 app API entries + `cyweb/EventBus` to `webpack.config.js`
+1. Add all 10 app API entries + `cyweb/EventBus` to `webpack.config.js`
    (`ModuleFederationPlugin.exposes`)
 2. Mark existing 12 store exports and 2 task hooks `@deprecated` in JSDoc
 3. Verify backward compatibility — existing examples still function with deprecated imports
@@ -625,10 +636,13 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 #### Phase 1 Exit Criteria
 
-- [ ] All 8 `core/<domain>Api.ts` files implemented with plain Jest unit tests (no `renderHook`)
-- [ ] All 8 `use<Domain>Api.ts` hook wrappers implemented (each ~1–5 lines)
+- [ ] All 9 `core/<domain>Api.ts` files implemented with plain Jest unit tests (no `renderHook`), including `workspaceApi.ts`
+- [ ] All 9 `use<Domain>Api.ts` hook wrappers implemented (each ~1–5 lines), including `useWorkspaceApi.ts`
 - [ ] `window.CyWebApi` assigned in `src/init.tsx` and accessible after app load
 - [ ] `src/app-api/core/` contains zero React imports (verified by linting or code review)
+- [ ] `WorkspaceApi` implemented: `getWorkspaceInfo`, `getNetworkIds`, `getNetworkList`, `getNetworkSummary`, `getCurrentNetworkId`, `switchCurrentNetwork`, `setWorkspaceName`
+- [ ] `WorkspaceInfo` and `WorkspaceNetworkInfo` types exported via `cyweb/ApiTypes`
+- [ ] `window.CyWebApi.workspace` accessible after app load
 - [ ] `ApiResult<T>` and type re-exports verified via `cyweb/ApiTypes`
 - [ ] `src/app-api/event-bus/initEventBus.ts` implemented; all 8 event types dispatch correctly
 - [ ] `useCyWebEvent` hook exported via `cyweb/EventBus`; listener cleanup verified on unmount
@@ -676,6 +690,7 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 | Step 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts`, unit tests, HelloPanel demo update                                                        |
 | Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                                       |
 | Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                        |
+| Step 1f: Workspace API        | `useWorkspaceApi.ts`, unit tests, `cyweb/WorkspaceApi` webpack entry, `WorkspaceInfo`/`WorkspaceNetworkInfo` types, `hello-world` panel update |
 | Step 2: Event Bus             | `initEventBus.ts`, `useCyWebEvent.ts`, `cyweb/EventBus` entry, unit + hook tests, `cywebapi:ready` dispatch, `SelectionCounter` demo |
 | Step 3: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                                              |
 | Step 4: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                                          |

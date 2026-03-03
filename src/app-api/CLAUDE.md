@@ -26,6 +26,7 @@ src/app-api/
 │   ├── layoutApi.ts            ← dispatches layout:started / layout:completed events directly
 │   ├── viewportApi.ts
 │   ├── exportApi.ts
+│   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
 │   └── index.ts                 ← Assembles CyWebApi object; assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
 │   ├── CyWebEvents.ts           ← CyWebEvents interface (8 event types + detail shapes)
@@ -39,6 +40,7 @@ src/app-api/
 ├── useLayoutApi.ts
 ├── useViewportApi.ts
 ├── useExportApi.ts
+├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
@@ -322,7 +324,7 @@ exposes: {
 
 | From `core/` files, you CAN import                          | You CANNOT import                               |
 | ----------------------------------------------------------- | ----------------------------------------------- |
-| `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) | Anything from `react` or `react-dom`            |
+| `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) — including `WorkspaceStore`, `NetworkSummaryStore` | Anything from `react` or `react-dom`            |
 | `src/models/` (types and pure functions)                    | Internal React hooks (`src/data/hooks/use*.ts`) |
 | `./types/` (barrel export)                                  | React components (`src/features/`)              |
 | `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)   | Other app API hooks (no cross-dependencies)     |
@@ -355,6 +357,7 @@ exposes: {
 | **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                                                                                  |
 | **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                                                                                     |
 | **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                                                                                          |
+| **Phase 1f** (Workspace)          | `src/models/StoreModel/WorkspaceStoreModel.ts`, `src/models/StoreModel/NetworkSummaryStoreModel.ts`, `src/models/WorkspaceModel/Workspace.ts`, app-api-spec §1.5.10 + §3.9                                                                                                                                                                               |
 | **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                   |
 
 ## Parent Documents
