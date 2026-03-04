@@ -10,7 +10,7 @@
 - **Plan First:** Enter plan mode for any non-trivial task (3+ steps or architectural decisions). Break work into checkable items and track progress via the built-in todo list tool.
 - **Context Ingestion:** Before planning, actively review the relevant specs in `docs/specifications/` and relevant ADRs. See [Section 5](#5-specification-references) for the full list.
 - **Halt and Re-plan:** If something goes wrong, STOP and re-plan immediately rather than continuing blindly.
-- **Capture Lessons:** After any user corrections or unexpected failures, record what you learned in `/memories/repo/` to prevent repeated mistakes. Review existing repo memories at the start of each session.
+- **Capture Lessons:** After any user corrections or unexpected failures, record what you learned in `.serena/memories/lessons.md` to prevent repeated mistakes. This file is git-tracked and shared across all agents. Review it at the start of each session.
 
 **Autonomous Bug Fixing & Verification:**
 
