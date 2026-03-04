@@ -1,76 +1,38 @@
 # CLAUDE.md
 
-> Source of truth for agent context in this repository.
+> Source of truth for agent context and behavior in this repository.
 > `AGENTS.md` is auto-generated from this file via `npm run sync:agents`.
 
-## Development Commands
+## 1. AI Agent Workflow & Rules
 
-**Building & Development:**
+**Workflow Orchestration:**
 
-- `npm install` - Install dependencies
-- `npm run dev` - Start dev server (opens browser at localhost:5500)
-- `npm run build` - Build for production
-- `npm run build:netlify` - Build for Netlify deployment
-- `npm run build:analyze` - Build with Webpack bundle analyzer
-- `npm run clean` - Remove dist folder
+- **Plan First:** Enter plan mode for any non-trivial task (3+ steps or architectural decisions). Break work into checkable items and track progress via the built-in todo list tool.
+- **Context Ingestion:** Before planning, actively review the relevant specs in `docs/specifications/` and relevant ADRs. See [Section 5](#5-specification-references) for the full list.
+- **Halt and Re-plan:** If something goes wrong, STOP and re-plan immediately rather than continuing blindly.
+- **Capture Lessons:** After any user corrections or unexpected failures, record what you learned in `/memories/repo/` to prevent repeated mistakes. Review existing repo memories at the start of each session.
 
-**Testing:**
+**Autonomous Bug Fixing & Verification:**
 
-- `npm run test:unit` - Run Jest unit tests
-- `npm run test:e2e` - Run Playwright end-to-end tests
+- **Test-Driven Fixes:** Before writing implementation code, write a failing regression test. Use `jest-setup.ts` conventions (must call `enableMapSet()`) and test stores via `@testing-library/react` hooks. Prove it fails, apply the fix, then prove it passes.
+- **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:unit` or `npm run test:e2e` and diff the behavior.
+- **Fix Root Causes:** Fix root causes, not symptoms. Never apply band-aid fixes. Fix failing CI tests proactively.
 
-**Code Quality:**
+**Safety:**
 
-- `npm run lint` - Lint TypeScript/JavaScript files in src/
-- `npm run lint:fix` - Auto-fix lint errors
-- `npm run format` - Format code with Prettier
-
-> **Note:** There is no unified `npm test` command. Use `test:unit` or `test:e2e` separately.
+- **Logging Rule:** ALWAYS use the structured `debug` logger (`logStore`, `logUi`, etc.) defined in `src/debug.ts`. NEVER use `console.log`.
+- **Destructive Operations:** NEVER clear the `cyweb-db` IndexedDB, drop databases, or execute destructive commands (like `--force` push, `rm -rf`) without explicit user confirmation.
+- **Dependency Changes:** ALWAYS ask for permission before modifying `package.json` or other dependency manifests.
 
 ---
 
-## Code Style & Conventions
-
-**Formatting (enforced by Prettier):**
-
-- No semicolons
-- Single quotes
-- Trailing commas (all positions)
-- 2-space indentation, 80-char line width
-
-**Linting (enforced by ESLint):**
-
-- Import sorting via `eslint-plugin-simple-import-sort` (error level — builds will fail)
-- `@typescript-eslint/no-explicit-any` is OFF — `any` is permitted
-- Functional components only — no class components
-- New JSX transform (`react-jsx`) — do NOT add `import React from 'react'` in component files
-
-**Logging:**
-Use the structured `debug` logger from `src/debug.ts`, not `console.log`. Production builds strip all `console.log` calls via Terser.
-
-Available loggers (each has `.info`, `.warn`, `.error`):
-
-- `logDb` — Database operations
-- `logStore` — Store operations
-- `logApi` — API calls
-- `logApp` — Application lifecycle
-- `logUi` — UI events
-- `logStartup` — Initialization sequence
-- `logPerformance` — Performance metrics
-- `logHistory` — Undo/redo history
-- `logModel` — Model operations
-
-See `docs/specifications/DEBUG_GUIDE.MD` for the full logging policy.
-
----
-
-## Architecture Overview
+## 2. Architecture Overview
 
 ### Three-Layer Architecture
 
 Cytoscape Web is a React-based network visualization and analysis app with a strict three-layer separation:
 
-```
+```text
 1. Models    (src/models/)                → Pure TypeScript interfaces + implementation functions
 2. Stores    (src/data/hooks/stores/)     → Zustand stores with Immer, wrapping model operations
 3. Features  (src/features/)              → React components consuming stores via hooks
@@ -95,18 +57,19 @@ Cytoscape Web is a React-based network visualization and analysis app with a str
 - `src/models/` — Source of truth for current model domains.
 - `src/data/hooks/stores/` — Source of truth for current store modules.
 - `src/data/hooks/` — Hooks that compose stores for complex workflows.
-- `src/data/db/` — IndexedDB layer. DB name and current version are defined in `src/data/db/index.ts`.
-- `src/data/db/migrations.ts` — Source of truth for DB migrations.
-- `src/data/external-api/` — External service clients (NDEx, Cytoscape Desktop, error reporting).
+- `src/data/db/` — Dexie IndexedDB layer. DB name and current version are defined in `src/data/db/index.ts`. Includes `migrations.ts`, `serialization/`, `snapshot/`, `validator.ts`.
+- `src/data/external-api/ndex/` — NDEx (Network Data Exchange) API client.
+- `src/data/external-api/cytoscape/` — Cytoscape Desktop integration API.
 - `src/data/task/` — Task hooks exposed via Module Federation to external apps.
 - `src/features/` — Source of truth for current feature modules.
 - `src/assets/` — Static assets and runtime config files.
+- `src/app-api/` — Public API surface for external apps (see [Section 4](#4-app-api-module-federation)).
 
 ### Feature Module Pattern
 
 Feature modules are self-contained. Larger features follow this structure:
 
-```
+```text
 Feature/
 ├── Feature_docs/      # Behavioral documentation (markdown)
 ├── components/        # React components
@@ -127,11 +90,7 @@ Key feature modules:
 - `ServiceApps` — External Module Federation app integration
 - `Workspace` — Workspace editor and management
 
----
-
-## Model Patterns
-
-### Structure
+### Model Patterns
 
 Each model directory exports a `<Domain>Fn` default object with pure implementation functions:
 
@@ -150,60 +109,18 @@ export { NetworkFn as default }
 - `IdType = string` (defined in `src/models/IdType.ts`) is used universally for nodes, edges, networks
 - All external CX2 data must be validated with `validateCX2()` before processing (see `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md`)
 
-### All Model Directories
+### Zustand Store Patterns
 
-See `src/models/` for the current model directory set.
+- **Middleware Stack:** All stores use Immer middleware. Persisted stores with subscriptions use: `create(subscribeWithSelector(immer<StoreType>(persist((set, get) => ({ ... })))))`
+- **`enableMapSet()` (CRITICAL):** Must be called before Immer can handle Map/Set. Already done in `src/init.tsx` (app) and `jest-setup.ts` (tests). **If you create a new standalone test entry point, you MUST include this call or tests will fail with cryptic errors.**
+- **IndexedDB Persistence:** Stores use a custom `persist` wrapper that auto-saves to IndexedDB. Before saving, proxy objects must be converted with `toPlainObject()` from `src/data/db/serialization/`. Specialized serializers exist: `serializeTable`, `serializeVisualStyle`, `serializeNetworkView` for Map-based data.
+- **Cross-Store Communication:** Inside store actions, access other stores via `useXxxStore.getState()` — not hooks. Hooks are for React components only.
 
----
-
-## Zustand Store Patterns
-
-### Middleware Stack
-
-All stores use Immer middleware. Persisted stores with subscriptions use:
-
-```
-create(subscribeWithSelector(immer<StoreType>(persist((set, get) => ({ ... })))))
-```
-
-**Critical:** `enableMapSet()` from Immer must be called before stores initialize. This happens in `src/init.tsx` (app) and `jest-setup.ts` (tests).
-
-### IndexedDB Persistence
-
-- Stores use a custom `persist` wrapper that auto-saves to IndexedDB
-- Before saving to IndexedDB, proxy objects must be converted with `toPlainObject()` from `src/data/db/serialization/`
-- Specialized serializers exist: `serializeTable`, `serializeVisualStyle`, `serializeNetworkView` for Map-based data
-- DB name and current version are defined in `src/data/db/index.ts`.
-- Migrations are defined in `src/data/db/migrations.ts`.
-
-### Cross-Store Communication
-
-Inside store actions, access other stores via `useXxxStore.getState()` — not hooks. Hooks are for React components only.
-
-### Store Inventory
-
-See `src/data/hooks/stores/*.ts` for current store implementations.
-See `src/models/StoreModel/` for store model interfaces.
-
----
-
-## Data Layer
-
-- `src/data/db/` — Dexie IndexedDB layer. DB name and current version are defined in `src/data/db/index.ts`. Includes `migrations.ts`, `serialization/`, `snapshot/`, `validator.ts`
-- `src/data/external-api/ndex/` — NDEx (Network Data Exchange) API client
-- `src/data/external-api/cytoscape/` — Cytoscape Desktop integration API
-- `src/data/hooks/` — Integration layer: hooks compose stores for complex workflows (load workspace, save network, create/delete nodes/edges)
-- `src/data/task/` — Task hooks exposed via Module Federation for external apps
-
----
-
-## Routing
+### Routing
 
 URL-as-state pattern with React Router. Search parameters are consumed on initial load, then removed from URL.
 
-**Route structure:**
-
-```
+```text
 /                                       → Root (AppShell)
 /:workspaceId                           → Workspace Editor
 /:workspaceId/networks                  → Workspace with no network
@@ -215,19 +132,87 @@ See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and
 
 ---
 
-## Testing
+## 3. Code Style & Conventions
 
-### Unit Tests (Jest)
+**Formatting (enforced by Prettier):**
+
+- No semicolons
+- Single quotes
+- Trailing commas (all positions)
+- 2-space indentation, 80-char line width
+
+**Linting (enforced by ESLint):**
+
+- Import sorting via `eslint-plugin-simple-import-sort` (error level — builds will fail)
+- `@typescript-eslint/no-explicit-any` is OFF — `any` is permitted
+- Functional components only — no class components
+- New JSX transform (`react-jsx`) — do NOT add `import React from 'react'` in component files
+
+**Logging:**
+Use the structured `debug` logger from `src/debug.ts`, not `console.log`. Production builds strip all `console.log` calls via Terser.
+Available loggers (each has `.info`, `.warn`, `.error`): `logDb`, `logStore`, `logApi`, `logApp`, `logUi`, `logStartup`, `logPerformance`, `logHistory`, `logModel`.
+See `docs/specifications/DEBUG_GUIDE.MD` for the full policy.
+
+---
+
+## 4. App API (Module Federation)
+
+The `src/app-api/` directory is the **sole public API surface** for external apps consuming Cytoscape Web via Module Federation or `window.CyWebApi`.
+
+**Read `src/app-api/CLAUDE.md` before modifying any file in this directory.** It documents the two-layer pattern, error handling conventions, and event bus architecture.
+
+**Key principles:**
+
+- All API functions return `ApiResult<T>` (discriminated union with `success` flag) — never throw across the API boundary.
+- Core logic in `src/app-api/core/` is framework-agnostic (no React imports).
+- React hooks in `src/app-api/use*.ts` are thin wrappers around core functions.
+- `window.CyWebApi` provides the same API for non-React consumers (browser extensions, LLM agent bridges).
+- Types are published as the `@cytoscape-web/api-types` package (in `packages/api-types/`). Build with `npm run build:api-types`.
+
+**Module Federation exposes** (defined in `webpack.config.js`):
+Plugins import from the `cyweb/` prefix. The full list includes API hooks (`ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `WorkspaceApi`), event bus (`EventBus`), stores (`NetworkStore`, `TableStore`, `VisualStyleStore`, etc.), and task hooks (`CreateNetwork`, `CreateNetworkFromCx2`). Check `webpack.config.js` directly for the current values.
+
+---
+
+## 5. Development Operations
+
+### Commands
+
+**Building & Development:**
+
+- `npm install` - Install dependencies
+- `npm run dev` - Start dev server (opens browser at localhost:5500)
+- `npm run build` - Build for production
+- `npm run build:netlify` - Build for Netlify deployment
+- `npm run build:analyze` - Build with Webpack bundle analyzer
+- `npm run build:api-types` - Build the `@cytoscape-web/api-types` package
+- `npm run clean` - Remove dist folder
+
+**Testing:**
+
+- `npm run test:unit` - Run Jest unit tests
+- `npm run test:e2e` - Run Playwright end-to-end tests
+  > **Note:** There is no unified `npm test` command. Use `test:unit` or `test:e2e` separately.
+
+**Code Quality:**
+
+- `npm run lint` - Lint TypeScript/JavaScript files in src/
+- `npm run lint:fix` - Auto-fix lint errors
+- `npm run format` - Format code with Prettier
+
+### Testing Details
+
+**Unit Tests (Jest):**
 
 - Environment: jsdom with `ts-jest`
 - Setup: `jest-setup.ts` loads `@testing-library/jest-dom`, `fake-indexeddb/auto`, and calls `enableMapSet()`
 - Timeout: 100 seconds (global)
 - **Tests are co-located with source files**, not in a separate directory
 - Convention: `.test.ts` for utilities/hooks/APIs; `.spec.ts` for stores and feature modules
-- Store tests: `renderHook(() => useXxxStore())` + `act()` pattern from `@testing-library/react`
+- Store tests: `renderHook(() => useXxxStore())` + `act()` from `@testing-library/react`
 - Common mocks: `jest.mock('../../db', ...)` for DB operations, `jest.mock('./WorkspaceStore', ...)` for `currentNetworkId`
 
-### E2E Tests (Playwright)
+**E2E Tests (Playwright):**
 
 - Test directory: `test/playwright/`
 - Browsers: Chromium, Firefox, WebKit
@@ -236,31 +221,22 @@ See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and
 - Artifacts: trace on first retry, video on failure, screenshot on failure
 - Test workflow templates in `docs/prompts/`: planner → generator → healer
 
-### Test Fixtures
+**Test Fixtures:**
 
 - Location: `test/fixtures/` (CX2, HCX, SIF, table files, DB snapshots)
 - Naming convention: `<characteristic>.<valid|invalid>.<extension>`
 - Generation scripts: `scripts/generate-test-fixtures/`
 
----
-
-## Build System
+### Build System
 
 Webpack 5 with Module Federation for microfrontend architecture:
 
-- TypeScript compilation with ts-loader
-- Hot module replacement in development (port 5500)
-- Module Federation exposed modules are defined in `webpack.config.js` (`ModuleFederationPlugin.exposes`).
-- Current values may change; check the config directly.
+- Module Federation exposed modules are defined in `webpack.config.js` (`ModuleFederationPlugin.exposes`). Check the config directly for current values.
 - Shared singletons: react, react-dom, @mui/material
 - `DefinePlugin` injects git commit hash and timestamps at build time
 - Production builds strip `console.log` via Terser
-- Code splitting with vendor/app bundles
-- CSS extraction and minification
 
----
-
-## Important Files & Configuration
+### Important Files & Configuration
 
 | File                      | Purpose                                                                                                                                                                                             |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -273,9 +249,7 @@ Webpack 5 with Module Federation for microfrontend architecture:
 
 **Environment variables:** The `.env` file exists but is unused. All build-time variables are injected via Webpack `DefinePlugin` (git commit, timestamps, build mode).
 
----
-
-## Scripts
+### Scripts
 
 | Script                                       | Purpose                                         |
 | -------------------------------------------- | ----------------------------------------------- |
@@ -288,30 +262,33 @@ Webpack 5 with Module Federation for microfrontend architecture:
 
 ---
 
-## Specification References
+## 6. Specification References
 
 Read these before working in related areas:
 
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
+- `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules
+- `docs/specifications/MODEL_CREATION_PATTERN.md` — How to create new model domains
+- `docs/specifications/STORE_CREATION_PATTERN.md` — How to create new Zustand stores
 - `docs/prompts/playwright-test-planner.md` — E2E test planning workflow
 - `docs/prompts/playwright-test-generator.md` — E2E test generation conventions
 - `docs/prompts/playwright-test-healer.md` — Fixing broken E2E tests
 - `docs/prompts/code-quality-for-testing-behaviour.md` — Adding `data-testid`, documentation, linting
 - `docs/prompts/code-quality-testing-refactoring.md` — Extracting hooks, adding unit tests
+- `src/app-api/CLAUDE.md` — App API architecture, two-layer pattern, event bus
 
 ---
 
-## Special Considerations
+## 7. Special Considerations
 
-- **`enableMapSet()`** — Must be called before Immer can handle Map/Set. Already done in `src/init.tsx` and `jest-setup.ts`. If you create a new standalone test entry point, include it.
-- **NDEx Dev Server** — `config.json` points to `dev1.ndexbio.org` by default. You need an account there for full development functionality.
-- **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.
-- **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
+- **`enableMapSet()`** — Must be called before Immer can handle Map/Set. Already done in `src/init.tsx` and `jest-setup.ts`. **If you create a new standalone test entry point, include it.**
 - **`zod`** — Available as a dependency for runtime validation.
 - **`validateCX2()`** — Required for all external CX2 data before processing.
-- **Windows Development** — Requires manual environment variable setup for Git commit info (see README.md).
+- **NDEx Dev Server** — `config.json` points to `dev1.ndexbio.org` by default.
+- **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
+- **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.
 - **Keycloak Auth** — SSO authentication with `silent-check-sso.html` for silent token refresh.
 - **Netlify Auto-Deploy** — All branches auto-deploy to `<branch>--incredible-meringue-aa83b1.netlify.app`.
 - **Branch Workflow** — `development` (default) → `master` (release) → GitHub release → Zenodo DOI.
