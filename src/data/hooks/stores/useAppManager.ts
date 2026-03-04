@@ -1,103 +1,77 @@
 import { useEffect, useRef } from 'react'
 
 import { CyWebApi } from '../../../app-api/core'
-import { appImportMap } from '../../../assets/app-definition'
 import appConfig from '../../../assets/apps.json'
 import { logApp } from '../../../debug'
+import { loadModule } from '../../../features/AppManager/ExternalComponent'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
-import { mountApp, unmountAllApps,unmountApp } from './appLifecycle'
+import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
 logApp.info(`[AppManager]: App config file loaded: `, appConfig)
 
 // appConfig contains reference list of available apps.
-const appNameMap = new Map<string, string>()
-const appIds: string[] = []
-
-appConfig.forEach((app: any) => {
-  appNameMap.set(app.name, app.entryPoint)
-  appIds.push(app.name)
-})
+const appIds: string[] = appConfig.map((app: any) => app.name)
 
 /**
- * Load external modules only once
+ * Load external modules only once.
  *
- * @returns
+ * Uses the low-level webpack container API (via loadModule) so that
+ * the list of apps is driven entirely by apps.json — no hardcoded
+ * import map required.
+ *
+ * @returns Array of successfully loaded CyApp objects
  */
-const loadModules = async () => {
-  const moduleNames = Object.keys(appImportMap) as (keyof typeof appImportMap)[]
-  if (moduleNames.length === 0) {
+const loadModules = async (): Promise<CyApp[]> => {
+  if (appIds.length === 0) {
     return []
   }
-  const loadedModules = await Promise.all(
-    moduleNames.map((moduleName) => {
-      const importFunc: any = appImportMap[moduleName]
-      if (importFunc !== undefined) {
+
+  const results = await Promise.allSettled(
+    appConfig.map(
+      async (app: { name: string; url: string; entryPoint: string }) => {
+        const { name, url, entryPoint } = app
         try {
-          const externalAppModule = importFunc()
-            .then((module: any) => module)
-            .catch((e: any) => {
-              logApp.warn(
-                `[${loadModules.name}]: Error loading external module ${moduleName}:`,
-                e,
-              )
-              // Return undefined explicitly so we can check for it later
-              return undefined
-            })
-          return [moduleName, externalAppModule]
-        } catch (e) {
-          logApp.error(
-            `[${loadModules.name}]: Error loading external module ${moduleName}:`,
-            e,
-          )
-          return [moduleName, null]
-        }
-      }
-      throw new Error(`Unknown module name: ${moduleName}`)
-    }),
-  )
-  const loaded: CyApp[] = []
-  await Promise.all(
-    loadedModules.map(async (moduleEntry) => {
-      const moduleName = moduleEntry[0] as string
-      const module: any = await moduleEntry[1]
-      const entryName: string = appNameMap.get(moduleName) ?? ''
-
-      // Skip if module failed to load (undefined/null)
-      if (!module) {
-        logApp.warn(
-          `[${loadModules.name}]: Module ${moduleName} failed to load, skipping entry point ${entryName}`,
-        )
-        return
-      }
-
-      try {
-        const cyApp: CyApp = await module[entryName as string]
-        if (cyApp !== undefined) {
-          loaded.push(cyApp)
-        } else {
-          // Check cached
+          const module = await loadModule(name, './' + entryPoint, url)
+          const cyApp: CyApp =
+            (module as any)[entryPoint] ?? (module as any).default
+          if (cyApp !== undefined) {
+            logApp.info(
+              `[loadModules]: Successfully loaded app ${name} from ${url}`,
+            )
+            return cyApp
+          }
           logApp.info(
-            `[${loadModules.name}]: Status set to error: ${entryName}`,
+            `[loadModules]: No CyApp export found for ${name}/${entryPoint}`,
           )
+          return undefined
+        } catch (err) {
+          logApp.warn(
+            `[loadModules]: Failed to load remote app ${name}/${entryPoint}:`,
+            err,
+          )
+          return undefined
         }
-      } catch (err) {
-        logApp.warn(
-          `[${loadModules.name}]: Failed to load a remote app: ${entryName}`,
-          err,
-        )
-      }
-    }),
+      },
+    ),
   )
 
-  return loaded
+  return results
+    .filter(
+      (r): r is PromiseFulfilledResult<CyApp | undefined> =>
+        r.status === 'fulfilled',
+    )
+    .map((r) => r.value)
+    .filter((app): app is CyApp => app !== undefined)
 }
 
 // This contains only active remote apps
 const loadedApps = await loadModules()
 const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
 // Fast ID-to-CyApp lookup for lifecycle calls
-const appRegistry = new Map<string, CyApp>(loadedApps.map((app) => [app.id, app]))
+const appRegistry = new Map<string, CyApp>(
+  loadedApps.map((app) => [app.id, app]),
+)
 
 export const useAppManager = (): void => {
   const initRef = useRef<boolean>(false)
@@ -138,7 +112,7 @@ export const useAppManager = (): void => {
     return () => {
       logApp.info(`[${useAppManager.name}]: App Manager unmounted`)
     }
-  }, [])
+  }, [restore])
 
   useEffect(() => {
     // Create a stable string representation of apps state to detect actual changes
@@ -169,7 +143,11 @@ export const useAppManager = (): void => {
           const cyApp = loadedApps.find((app) => app.id === appId) as CyApp
           registerApp(cyApp)
           // Call mount() for apps that implement CyAppWithLifecycle
-          void mountApp(cyApp, { appId: cyApp.id, apis: CyWebApi }, mountedApps.current)
+          void mountApp(
+            cyApp,
+            { appId: cyApp.id, apis: CyWebApi },
+            mountedApps.current,
+          )
         } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
           // App was registered but is no longer loadable — unmount then mark as error
           const cyApp = appRegistry.get(appId)
