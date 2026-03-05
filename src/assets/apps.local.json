@@ -1,0 +1,27 @@
+[
+  {
+    "name": "hello",
+    "url": "http://localhost:2222/remoteEntry.js",
+    "entryPoint": "HelloApp"
+  },
+  {
+    "name": "simpleMenu",
+    "url": "http://localhost:3333/remoteEntry.js",
+    "entryPoint": "SimpleMenuApp"
+  },
+  {
+    "name": "networkWorkflows",
+    "url": "http://localhost:7000/remoteEntry.js",
+    "entryPoint": "NetworkWorkflowsApp"
+  },
+  {
+    "name": "simplePanel",
+    "url": "http://localhost:4001/remoteEntry.js",
+    "entryPoint": "SimplePanelApp"
+  },
+  {
+    "name": "createNetwork",
+    "url": "http://localhost:5555/remoteEntry.js",
+    "entryPoint": "TemplateApp"
+  }
+]

@@ -545,7 +545,7 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - Network lifecycle: `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`
 - Includes CX2 validation fix (P0 item 1.6)
 - Coordinates stores via `.getState()` (mirrors logic of `useCreateNetworkWithView`, `useCreateNetworkFromCx2`)
-- **Example validation**: Migrate `hello-world/CreateNetworkMenu` and `CreateNetworkFromCx2Menu` from raw stores/hooks to `useNetworkApi`
+- **Example validation**: Migrate `network-workflows/CreateNetworkMenu` and `CreateNetworkFromCx2Menu` from raw stores/hooks to `useNetworkApi`
 
 **1c: Selection + Viewport API** (`core/selectionApi.ts`, `core/viewportApi.ts` + hook wrappers)
 
@@ -627,18 +627,20 @@ the simplest end-to-end validation that the event bus is wired correctly.
 
 Work in [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples) on an `app-api` branch:
 
-1. **Update `hello-world`** — Full migration to app API
+1. **Update `hello-world`** — Keep as the minimal panel-only example and migrate its panel to app API
+   - `HelloPanel` → Use `useSelectionApi`, `useViewportApi` for interactive controls
+2. **Update `network-workflows`** — Migrate workflow examples to app API
    - `CreateNetworkMenu` → `useNetworkApi().createNetworkFromEdgeList` (replace `useCreateNetworkWithView` + `useWorkspaceStore`)
    - `CreateNetworkFromCx2Menu` → `useNetworkApi().createNetworkFromCx2`
-   - `HelloPanel` → Use `useSelectionApi`, `useViewportApi` for interactive controls
-2. **Update `simple-menu`** — Migrate menu actions to app API
-3. **Update `simple-panel`** — Migrate to `useTableApi`, `useSelectionApi`
-4. **Create `network-generator` example** — New toy app demonstrating end-to-end workflow:
+   - `JupyterConnectorPanel` → `useNetworkApi().createNetworkFromCx2`
+3. **Update `simple-menu`** — Migrate menu actions to app API
+4. **Update `simple-panel`** — Migrate to `useTableApi`, `useSelectionApi`
+5. **Create `network-generator` example** — New toy app demonstrating end-to-end workflow:
    - Create network from edge list → apply layout → set visual styles → fit viewport
    - Demonstrates: `useNetworkApi` + `useLayoutApi` + `useVisualStyleApi` + `useViewportApi`
-5. **Update `project-template`** — Scaffold uses app API imports, updated `remotes.d.ts` type declarations
-6. **Update `patterns/` documentation** — Rewrite patterns to use app API
-7. **Update README.md** — Document app API usage, deprecation notice for raw stores
+6. **Update `project-template`** — Scaffold uses app API imports, updated `remotes.d.ts` type declarations
+7. **Update `patterns/` documentation** — Rewrite patterns to use app API
+8. **Update README.md** — Document app API usage, deprecation notice for raw stores
 
 #### Step 5: Bug Fixes
 
@@ -696,7 +698,7 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Step 0: Foundation types      | `ApiResult.ts`, `ElementTypes.ts`, barrel exports, unit tests, `cyweb/ApiTypes` webpack entry                                        |
 | Step 1a: Element API          | `useElementApi.ts`, unit tests, `cyweb/ElementApi` webpack entry                                                                     |
-| Step 1b: Network API          | `useNetworkApi.ts`, CX2 validation fix, unit tests, **first example migration** (`hello-world` CreateNetworkMenu)                    |
+| Step 1b: Network API          | `useNetworkApi.ts`, CX2 validation fix, unit tests, **first example migration** (`network-workflows` CreateNetworkMenu)               |
 | Step 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts`, unit tests, HelloPanel demo update                                                        |
 | Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                                       |
 | Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                        |
@@ -716,7 +718,7 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 
 | Checkpoint                | Verification                                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------- |
-| First toy example working | `hello-world/CreateNetworkMenu` creates a network via `useNetworkApi`                  |
+| First toy example working | `network-workflows/CreateNetworkMenu` creates a network via `useNetworkApi`            |
 | Core APIs complete        | All 8 app API hooks pass unit tests                                                     |
 | Event bus live            | `SelectionCounter` in `hello-world/HelloPanel` reacts to selection via `useCyWebEvent` |
 | E2E example suite         | `network-generator` runs full workflow (create → layout → style → export)              |
