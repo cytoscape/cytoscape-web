@@ -33,6 +33,7 @@
     "build": "webpack --mode production",
     "build:netlify": "BUILD=netlify webpack --mode production",
     "dev": "webpack serve --open --mode development",
+    "dev:local": "APPS_JSON=./src/assets/apps.local.json webpack serve --open --mode development",
     "build:analyze": "ANALYZE=true webpack --mode production",
     "build:api-types": "npm run build --workspace=packages/api-types",
     "lint": "eslint --ext .js,.ts,.jsx,.tsx src",

@@ -30,7 +30,11 @@ const deps = packageJson.dependencies
 
 // List of external app properties.
 // This is used in both build and runtime to manage the external apps
-const appConfig = require('./src/assets/apps.json')
+// Override with APPS_JSON env var: APPS_JSON=./src/assets/apps.local.json npm run dev
+const appsJsonPath = process.env.APPS_JSON
+  ? path.resolve(process.env.APPS_JSON)
+  : path.resolve(__dirname, './src/assets/apps.json')
+const appConfig = require(appsJsonPath)
 const externalAppsConfig = {}
 appConfig.forEach((app) => {
   externalAppsConfig[app.name] = `${app.name}@${app.url}`
@@ -78,6 +82,13 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
+    // Redirect the runtime apps.json import when APPS_JSON env var is set,
+    // so that useAppManager.ts loads the same file used for MF remotes config.
+    alias: process.env.APPS_JSON
+      ? {
+          [path.resolve(__dirname, './src/assets/apps.json')]: appsJsonPath,
+        }
+      : {},
   },
   // use content hash for cache busting
   output: {

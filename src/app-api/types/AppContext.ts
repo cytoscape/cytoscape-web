@@ -25,12 +25,18 @@ export interface AppContext {
 }
 
 /**
- * Extended CyApp interface with lifecycle callbacks.
+ * Extended CyApp interface with lifecycle callbacks and API version declaration.
  *
  * Backward-compatible — existing apps without lifecycle methods
  * continue to work unchanged.
  */
 export interface CyAppWithLifecycle extends CyApp {
+  /**
+   * Declared API version this app targets (e.g. '1.0').
+   * The host may use this for compatibility checks in future releases.
+   */
+  apiVersion?: string
+
   /**
    * Called when the app is activated (after React components are registered).
    * Receives an AppContext providing access to all app APIs.

@@ -28,32 +28,29 @@ const loadModules = async (): Promise<CyApp[]> => {
   }
 
   const results = await Promise.allSettled(
-    appConfig.map(
-      async (app: { name: string; url: string; entryPoint: string }) => {
-        const { name, url, entryPoint } = app
-        try {
-          const module = await loadModule(name, './' + entryPoint, url)
-          const cyApp: CyApp =
-            (module as any)[entryPoint] ?? (module as any).default
-          if (cyApp !== undefined) {
-            logApp.info(
-              `[loadModules]: Successfully loaded app ${name} from ${url}`,
-            )
-            return cyApp
-          }
+    appConfig.map(async (app: { name: string; url: string }) => {
+      const { name, url } = app
+      try {
+        const module = await loadModule(name, './AppConfig', url)
+        const cyApp: CyApp = (module as any).default
+        if (cyApp !== undefined) {
           logApp.info(
-            `[loadModules]: No CyApp export found for ${name}/${entryPoint}`,
+            `[loadModules]: Successfully loaded app ${name} from ${url}`,
           )
-          return undefined
-        } catch (err) {
-          logApp.warn(
-            `[loadModules]: Failed to load remote app ${name}/${entryPoint}:`,
-            err,
-          )
-          return undefined
+          return cyApp
         }
-      },
-    ),
+        logApp.info(
+          `[loadModules]: No default export found for ${name}/AppConfig`,
+        )
+        return undefined
+      } catch (err) {
+        logApp.warn(
+          `[loadModules]: Failed to load remote app ${name}/AppConfig:`,
+          err,
+        )
+        return undefined
+      }
+    }),
   )
 
   return results

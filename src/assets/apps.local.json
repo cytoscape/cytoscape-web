@@ -1,27 +1,22 @@
 [
   {
     "name": "hello",
-    "url": "http://localhost:2222/remoteEntry.js",
-    "entryPoint": "HelloApp"
+    "url": "http://localhost:2222/remoteEntry.js"
   },
   {
     "name": "simpleMenu",
-    "url": "http://localhost:3333/remoteEntry.js",
-    "entryPoint": "SimpleMenuApp"
+    "url": "http://localhost:3333/remoteEntry.js"
   },
   {
     "name": "networkWorkflows",
-    "url": "http://localhost:7000/remoteEntry.js",
-    "entryPoint": "NetworkWorkflowsApp"
+    "url": "http://localhost:7000/remoteEntry.js"
   },
   {
     "name": "simplePanel",
-    "url": "http://localhost:4001/remoteEntry.js",
-    "entryPoint": "SimplePanelApp"
+    "url": "http://localhost:4001/remoteEntry.js"
   },
   {
     "name": "createNetwork",
-    "url": "http://localhost:5555/remoteEntry.js",
-    "entryPoint": "TemplateApp"
+    "url": "http://localhost:5555/remoteEntry.js"
   }
 ]

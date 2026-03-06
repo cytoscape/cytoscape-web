@@ -5,10 +5,12 @@
   "types": "dist/index.d.ts",
   "main": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "index.d.ts"
   ],
   "scripts": {
-    "build": "tsup"
+    "build": "tsup",
+    "postbuild": "node -e \"const fs=require('fs');fs.copyFileSync('src/mf-declarations.d.ts','dist/mf-declarations.d.ts');const p='dist/index.d.ts';const c=fs.readFileSync(p,'utf8');const r='/// <reference path=\\\"./mf-declarations.d.ts\\\" />\\n';if(!c.startsWith(r))fs.writeFileSync(p,r+c);\""
   },
   "keywords": [
     "cytoscape",
