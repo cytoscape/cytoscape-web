@@ -6,6 +6,11 @@ declare const __webpack_share_scopes__: any // Declare __webpack_share_scopes__ 
 // Cache of in-flight or completed remote entry loads to avoid duplicate <script> tags
 const remoteEntryCache = new Map<string, Promise<void>>()
 
+// Cache of React.lazy() instances keyed by `scope::module`.
+// Re-using the same lazy instance across re-renders prevents React from
+// unmounting and re-suspending the component every time the parent re-renders.
+const lazyComponentCache = new Map<string, ReturnType<typeof lazy>>()
+
 /**
  * Dynamically inject a <script> tag for a remote's remoteEntry.js and wait for
  * it to load.  Once the script executes, `window[scope]` will hold the webpack
@@ -70,7 +75,14 @@ export const loadComponent = (scope: string, module: string) => {
 }
 
 export const ExternalComponent = (scope: string, module: string) => {
-  return lazy(loadComponent(scope, module))
+  const key = `${scope}::${module}`
+  const cached = lazyComponentCache.get(key)
+  if (cached !== undefined) {
+    return cached
+  }
+  const component = lazy(loadComponent(scope, module))
+  lazyComponentCache.set(key, component)
+  return component
 }
 
 /**
