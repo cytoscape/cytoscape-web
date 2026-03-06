@@ -36,7 +36,7 @@ const theme = createTheme({
   },
 })
 
-const routerOpts: any = {}
+const routerOpts: { basename?: string } = {}
 
 if (appConfig.urlBaseName !== '') {
   routerOpts.basename = appConfig.urlBaseName
