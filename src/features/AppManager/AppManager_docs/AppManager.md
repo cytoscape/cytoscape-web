@@ -25,7 +25,7 @@ The AppManager feature consists of:
 
 ### AppListPanel.tsx
 - Displays list of registered apps
-- Shows app name and description
+- Shows app name, description, and version (if provided)
 - Checkbox to activate/deactivate apps
 - Handles app status changes
 - Shows message when no apps are registered
@@ -138,7 +138,6 @@ The AppManager feature consists of:
 - Task queue management
 - App permissions system
 - Service API documentation
-- App versioning
 - Service caching
 - Batch operations for apps/services
 

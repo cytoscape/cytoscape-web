@@ -896,12 +896,28 @@ interface AppContext {
 
 ### `CyAppWithLifecycle`
 
-Extends the existing `CyApp` interface with optional lifecycle callbacks:
+Extends the existing `CyApp` interface with optional lifecycle callbacks and metadata:
 
 ```typescript
 interface CyAppWithLifecycle extends CyApp {
+  /** Declared API version this app targets (e.g. '1.0'). Optional. */
+  apiVersion?: string
+
   mount?(context: AppContext): void | Promise<void>
   unmount?(): void | Promise<void>
+}
+```
+
+The base `CyApp` interface provides the core metadata fields:
+
+```typescript
+interface CyApp {
+  id: string             // unique ID, matches Module Federation name
+  name: string           // human-readable display name
+  description?: string   // short description shown in the App Settings panel
+  version?: string       // app's own semantic version (e.g. '1.2.0')
+  components: ComponentMetadata[]
+  status?: AppStatus     // managed by host; do not set manually
 }
 ```
 
@@ -911,28 +927,58 @@ interface CyAppWithLifecycle extends CyApp {
 - **`unmount()`** — called when the app is deactivated or the page is unloaded.
   Must clean up all listeners, timers, DOM nodes, and async tasks. Always called,
   even on page reload.
+- **`version`** — the app's own version string. Import from `package.json` to keep
+  it in sync automatically (requires `resolveJsonModule: true` in tsconfig).
+- **`apiVersion`** — the Cytoscape Web App API version this app targets. Reserved
+  for future compatibility checks; set to `'1.0'` for current apps.
 
 Existing apps without these methods continue to work unchanged (backward-compatible).
 
 ### Example
 
 ```typescript
+import { ComponentType } from '@cytoscape-web/types'
 import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
+import { version } from '../package.json'  // requires resolveJsonModule: true
 
-const MyApp: CyAppWithLifecycle = {
-  name: 'my-app',
-  // ...React component registrations...
+let cleanup: (() => void) | undefined
 
+export const MyApp: CyAppWithLifecycle = {
+  // --- Core metadata (CyApp) ---
+  id: 'myApp',                      // unique, matches Module Federation name
+  name: 'My App',
+  description: 'Short description shown in App Settings.',
+  version,                           // imported from package.json — stays in sync automatically
+  components: [
+    { id: 'MyPanel',    type: ComponentType.Panel },
+    { id: 'MyMenuItem', type: ComponentType.Menu },
+  ],
+
+  // --- Lifecycle metadata (CyAppWithLifecycle) ---
+  apiVersion: '1.0',                 // Cytoscape Web App API version this app targets
+
+  // --- Lifecycle callbacks ---
   mount(context: AppContext) {
-    const { apis } = context
-    const ids = apis.workspace.getNetworkIds()
-    if (ids.success) {
-      console.log('Networks on mount:', ids.data.networkIds)
+    const { appId, apis } = context
+
+    // Example: read current networks on startup
+    const result = apis.workspace.getNetworkIds()
+    if (result.success) {
+      console.log(`[${appId}] Networks on mount:`, result.data.networkIds)
     }
+
+    // Example: subscribe to events
+    const handler = (e: Event): void => {
+      const detail = (e as CustomEvent).detail
+      console.log(`[${appId}] Network switched:`, detail.networkId)
+    }
+    window.addEventListener('network:switched', handler)
+    cleanup = () => window.removeEventListener('network:switched', handler)
   },
 
   unmount() {
-    // clean up
+    cleanup?.()
+    cleanup = undefined
   },
 }
 ```

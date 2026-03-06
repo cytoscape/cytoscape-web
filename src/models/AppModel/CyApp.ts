@@ -18,6 +18,20 @@ export interface CyApp {
   // Description of the app
   description?: string
 
+  /**
+   * Semantic version of the app (e.g. '1.2.0').
+   *
+   * Recommended: import from the app's own package.json so this value
+   * stays in sync with the published npm version automatically:
+   *
+   *   import { version } from '../package.json'
+   *   export const MyApp: CyApp = { ..., version }
+   *
+   * Requires `resolveJsonModule: true` in tsconfig.json
+   * (already enabled in all example apps).
+   */
+  version?: string
+
   // Name of components to be exposed via Module Federation
   components: ComponentMetadata[]
 
