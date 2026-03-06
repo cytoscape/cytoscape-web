@@ -24,7 +24,8 @@ export interface CyApp {
    * Recommended: import from the app's own package.json so this value
    * stays in sync with the published npm version automatically:
    *
-   *   import { version } from '../package.json'
+   *   import packageJson from '../package.json'
+   *   const { version } = packageJson        // destructure to avoid webpack warning
    *   export const MyApp: CyApp = { ..., version }
    *
    * Requires `resolveJsonModule: true` in tsconfig.json

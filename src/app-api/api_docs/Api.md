@@ -939,7 +939,8 @@ Existing apps without these methods continue to work unchanged (backward-compati
 ```typescript
 import { ComponentType } from '@cytoscape-web/types'
 import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
-import { version } from '../package.json'  // requires resolveJsonModule: true
+import packageJson from '../package.json'   // requires resolveJsonModule: true
+const { version } = packageJson            // destructure after default import (avoids webpack warning)
 
 let cleanup: (() => void) | undefined
 
