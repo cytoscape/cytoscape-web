@@ -1,5 +1,6 @@
 import { ComponentType, LazyExoticComponent, Suspense } from 'react'
 
+import { appRegistry } from '../../../data/hooks/stores/useAppManager'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import {
   ComponentType as AppComponentType,
@@ -32,10 +33,16 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
           component.type === AppComponentType.Panel &&
           app.status === AppStatus.Active
         ) {
-          const PanelComponent: any = ExternalComponent(
-            app.id,
-            './' + component.id,
-          )
+          // Prefer the lazy component from appRegistry (always fresh, survives
+          // DB restore), then the one stored in the app record, then fall back
+          // to a live Module Federation container.get() call (legacy behaviour).
+          const freshComponent = appRegistry
+            .get(app.id)
+            ?.components?.find((c) => c.id === component.id)
+          const PanelComponent: any =
+            freshComponent?.component ??
+            component.component ??
+            ExternalComponent(app.id, './' + component.id)
           panels.push([component.id, PanelComponent])
         }
       })

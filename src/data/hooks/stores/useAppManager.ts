@@ -65,8 +65,10 @@ const loadModules = async (): Promise<CyApp[]> => {
 // This contains only active remote apps
 const loadedApps = await loadModules()
 const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
-// Fast ID-to-CyApp lookup for lifecycle calls
-const appRegistry = new Map<string, CyApp>(
+// Fast ID-to-CyApp lookup for lifecycle calls.
+// Also exported so rendering code can access fresh component lazy-loaders
+// even before the store is updated (e.g., during DB restore).
+export const appRegistry = new Map<string, CyApp>(
   loadedApps.map((app) => [app.id, app]),
 )
 
@@ -136,15 +138,27 @@ export const useAppManager = (): void => {
       }
 
       try {
-        if (!apps[appId] && activatedAppIdSet.has(appId)) {
+        if (activatedAppIdSet.has(appId)) {
           const cyApp = loadedApps.find((app) => app.id === appId) as CyApp
-          registerApp(cyApp)
-          // Call mount() for apps that implement CyAppWithLifecycle
-          void mountApp(
-            cyApp,
-            { appId: cyApp.id, apis: CyWebApi },
-            mountedApps.current,
-          )
+          if (!apps[appId]) {
+            // Fresh registration — app not yet in store.
+            registerApp(cyApp)
+            void mountApp(
+              cyApp,
+              { appId: cyApp.id, apis: CyWebApi },
+              mountedApps.current,
+            )
+          } else if (!mountedApps.current.has(appId)) {
+            // App was restored from DB (missing component lazy-loaders) but not
+            // yet mounted. Re-register with the fresh module data so that
+            // component.component fields (React.lazy instances) are present.
+            registerApp(cyApp)
+            void mountApp(
+              cyApp,
+              { appId: cyApp.id, apis: CyWebApi },
+              mountedApps.current,
+            )
+          }
         } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
           // App was registered but is no longer loadable — unmount then mark as error
           const cyApp = appRegistry.get(appId)

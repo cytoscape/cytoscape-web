@@ -40,7 +40,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
   // For the task status dialog
   const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
 
-  const [componentList, setComponentList] = useState<[string, string][]>([])
+  const [componentList, setComponentList] = useState<[string, ComponentMetadata][]>([])
 
   // For the notification dialog
   const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
@@ -112,21 +112,20 @@ export const AppMenu = (props: DropdownMenuProps) => {
       return
     }
 
-    const componentList: [string, string][] = []
+    const componentList: [string, ComponentMetadata][] = []
     // Extract component list from the apps
     activeIds.forEach((appId: string) => {
       const app: CyApp = apps[appId]
       const { components } = app
       if (components !== undefined) {
         components.forEach((component: ComponentMetadata) => {
-          const componentId: string = component.id
           const componentType: string = component.type
           if (
             componentType === ComponentType.Menu &&
             app.status === AppStatus.Active
           ) {
             // Add menu only
-            componentList.push([appId, componentId])
+            componentList.push([appId, component])
           }
         })
       }
@@ -171,8 +170,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   const createAppMenu = (): MenuItem[] => {
     const appMenuItems: MenuItem[] = componentList.map(
-      ([appId, componentId], index) => {
-        const MenuComponent = ExternalComponent(appId, './' + componentId)
+      ([appId, component], index) => {
+        // Use pre-built lazy component if provided, otherwise fall back to MF load.
+        const MenuComponent: any =
+          component.component ?? ExternalComponent(appId, './' + component.id)
         const menuItem: MenuItem = {
           template: <MenuComponent key={index} handleClose={handleClose} />,
         }
