@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { CyWebApi } from '../../../app-api/core'
 import appConfig from '../../../assets/apps.json'
@@ -80,6 +80,11 @@ export const useAppManager = (): void => {
   const lastAppsState = useRef<string>('')
   // Track apps where mount() was successfully called
   const mountedApps = useRef<Set<string>>(new Set())
+  // True once restore() has completed. The lifecycle useEffect must not run
+  // before this, because apps would still be empty ({}) and every app would
+  // incorrectly appear as a fresh (never-registered) registration, causing
+  // mount() to be called before the persisted Inactive status is known.
+  const [restored, setRestored] = useState<boolean>(false)
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const registerApp = useAppStore((state) => state.add)
@@ -100,11 +105,13 @@ export const useAppManager = (): void => {
   useEffect(() => {
     if (initRef.current === false) {
       restore(appIds).then(() => {
-        // Load remote modules after loading from cached.
-        // const appsLoaded: CyApp[] = loadModules()
         logApp.info(
           `[${useAppManager.name}]: Apps restored from the local cache`,
         )
+        // Signal that persisted app state (including Inactive status) is now
+        // available in the store. The lifecycle useEffect below depends on this
+        // flag so it does not fire before restore() completes.
+        setRestored(true)
       })
     }
 
@@ -114,6 +121,11 @@ export const useAppManager = (): void => {
   }, [restore])
 
   useEffect(() => {
+    // Do not process any apps until restore() has completed. Without this guard,
+    // the effect fires with apps={} (empty store) and treats every app as a fresh
+    // registration, calling mount() before the persisted Inactive status is known.
+    if (!restored) return
+
     // Create a stable string representation of apps state to detect actual changes
     const currentAppsState = JSON.stringify(
       Object.keys(apps).map((id) => ({
@@ -148,14 +160,36 @@ export const useAppManager = (): void => {
               { appId: cyApp.id, apis: CyWebApi },
               mountedApps.current,
             )
-          } else if (!mountedApps.current.has(appId)) {
+          } else if (
+            !mountedApps.current.has(appId) &&
+            apps[appId]?.status !== AppStatus.Inactive
+          ) {
             // App was restored from DB (missing component lazy-loaders) but not
             // yet mounted. Re-register with the fresh module data so that
             // component.component fields (React.lazy instances) are present.
+            // Skip if the user had previously disabled this app — mounting must
+            // only happen when the app is explicitly enabled (status !== Inactive).
             registerApp(cyApp)
             void mountApp(
               cyApp,
               { appId: cyApp.id, apis: CyWebApi },
+              mountedApps.current,
+            )
+          } else if (
+            apps[appId]?.status === AppStatus.Inactive &&
+            mountedApps.current.has(appId)
+          ) {
+            // User disabled the app via the UI — call unmount() to clean up.
+            // Must be inside the activatedAppIdSet block so cyApp is in scope.
+            void unmountApp(cyApp, mountedApps.current)
+          } else if (
+            apps[appId]?.status === AppStatus.Active &&
+            !mountedApps.current.has(appId)
+          ) {
+            // User re-enabled the app via the UI — call mount() again.
+            void mountApp(
+              cyApp,
+              { appId, apis: CyWebApi },
               mountedApps.current,
             )
           }
@@ -184,5 +218,5 @@ export const useAppManager = (): void => {
       }
     })
     initRef.current = true
-  }, [apps, registerApp, setStatus])
+  }, [apps, registerApp, restored, setStatus])
 }
