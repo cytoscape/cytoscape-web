@@ -5,7 +5,7 @@ Fix review comments on a GitHub pull request.
 
 Workflow:
 
-1. Fetch the PR details and all review comments using the GitHub MCP server or `gh` CLI.
+1. Fetch the PR details and all review comments using the GitHub MCP server.
 2. Display a summary of actionable review comments (ignore resolved ones).
 3. For each actionable comment:
    - Show the comment and the relevant code
