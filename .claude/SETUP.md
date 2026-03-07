@@ -64,7 +64,69 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-## 4. Restart Claude Code
+## 4. Permissions (recommended allowlist)
+
+The repo ships with a shared deny list (`.claude/settings.json`) that blocks dangerous operations for everyone — force push, pushes to main/development, hard resets, branch deletion, and destructive GitHub MCP actions.
+
+For convenience, copy the recommended allowlist into your local settings. Create `.claude/settings.local.json` (already gitignored) and add:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git fetch*)",
+      "Bash(git checkout development*)",
+      "Bash(git checkout -b CW-*)",
+      "Bash(git checkout CW-*)",
+      "Bash(git add *)",
+      "Bash(git rm --cached*)",
+      "Bash(git commit *)",
+      "Bash(git push origin CW-*)",
+      "Bash(git push -u origin CW-*)",
+
+      "Bash(npm run lint*)",
+      "Bash(npm run test:unit*)",
+      "Bash(npm run build*)",
+      "Bash(npm install*)",
+
+      "Bash(afplay *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(which *)",
+
+      "mcp__atlassian__*",
+      "mcp__github__create_pull_request",
+      "mcp__github__list_pull_requests",
+      "mcp__github__pull_request_read",
+      "mcp__github__get_file_contents",
+      "mcp__github__list_commits",
+      "mcp__github__search_code"
+    ]
+  }
+}
+```
+
+This auto-approves safe operations (file edits, git on CW-* branches, lint/test/build, Jira read/write, GitHub PR tools). Everything else prompts for permission.
+
+### Safety layers
+
+| Layer | Scope | What it does |
+|---|---|---|
+| **Deny list** (`.claude/settings.json`) | Shared, committed | Blocks destructive operations for all team members |
+| **Allow list** (`.claude/settings.local.json`) | Personal, local | Auto-approves safe operations (opt-in) |
+| **Safety hook** (`.claude/hooks/pre-bash.sh`) | Shared, committed | Defense-in-depth — catches blocked patterns in bash commands |
+
+## 5. Restart Claude Code
 
 Exit and relaunch Claude Code so the MCP servers connect.
 

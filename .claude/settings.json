@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin master*)",
+      "Bash(git push origin development*)",
+      "Bash(git reset --hard*)",
+      "Bash(git branch -D*)",
+      "Bash(git clean*)",
+      "Bash(rm -rf*)",
+      "mcp__github__delete_file",
+      "mcp__github__create_repository",
+      "mcp__github__merge_pull_request"
+    ]
+  }
+}
