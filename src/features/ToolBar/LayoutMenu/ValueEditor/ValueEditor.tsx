@@ -91,6 +91,7 @@ export const ValueEditor = ({
         optionName={optionName}
         description={description}
         value={value as number}
+        valueType={valueType}
         setValue={setValue}
         typeLabel={showTypeChip ? getTypeLabel(valueType) : undefined}
         typeColor={getTypeColor(valueType)}

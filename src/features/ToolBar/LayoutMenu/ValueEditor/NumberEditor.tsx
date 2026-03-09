@@ -9,10 +9,13 @@ import {
 } from '@mui/material'
 import { ChangeEvent } from 'react'
 
+import { ValueTypeName } from '../../../../models/TableModel'
+
 interface NumberEditorProps {
   optionName: string
   description: string
   value: number
+  valueType?: ValueTypeName
   setValue: (optionName: string, value: number) => void
   typeLabel?: string
   typeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
@@ -24,6 +27,7 @@ export const NumberEditor = ({
   optionName,
   description,
   value,
+  valueType,
   setValue,
   typeLabel,
   typeColor = 'success',
@@ -31,8 +35,14 @@ export const NumberEditor = ({
   error = false,
 }: NumberEditorProps): JSX.Element => {
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
-    const newValue: any = event.target.value
-    setValue(optionName, Number(newValue))
+    const parsed = event.target.valueAsNumber
+    if (Number.isNaN(parsed)) return
+    const coerced =
+      valueType === ValueTypeName.Integer ||
+      valueType === ValueTypeName.Long
+        ? Math.trunc(parsed)
+        : parsed
+    setValue(optionName, coerced)
   }
 
   if (tableLayout) {
