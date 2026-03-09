@@ -544,31 +544,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       )
 
       const newSummary = createNetworkSummary({
+        ...networkSummary,
         networkId: newNetworkId,
-        name: networkSummary.name,
-        description: networkSummary.description,
-        version: networkSummary.version,
-        properties: networkSummary.properties,
-        visibility: networkSummary.visibility,
-        ownerUUID: networkSummary.ownerUUID,
-        externalId: networkSummary.externalId,
         hasLayout: false, // Merged networks don't have layout initially
-        isNdex: networkSummary.isNdex,
-        isReadOnly: networkSummary.isReadOnly,
-        subnetworkIds: networkSummary.subnetworkIds,
-        isValid: networkSummary.isValid,
-        warnings: networkSummary.warnings,
-        isShowcase: networkSummary.isShowcase,
-        isCertified: networkSummary.isCertified,
-        indexLevel: networkSummary.indexLevel,
-        hasSample: networkSummary.hasSample,
-        cxFileSize: networkSummary.cxFileSize,
-        cx2FileSize: networkSummary.cx2FileSize,
-        owner: networkSummary.owner,
-        completed: networkSummary.completed,
-        isDeleted: networkSummary.isDeleted,
-        creationTime: networkSummary.creationTime,
-        modificationTime: networkSummary.modificationTime,
         nodeCount: newCyNetwork.network.nodes.length,
         edgeCount: newCyNetwork.network.edges.length,
       })
