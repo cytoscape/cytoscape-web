@@ -77,8 +77,8 @@ export function ColorPalettePicker({
 
   const handleConfirm = (): void => {
     // Apply reverse logic: if reverse is checked, swap min and max
-    const finalMin = isReverseColorChecked ? minPalette : maxPalette
-    const finalMax = isReverseColorChecked ? maxPalette : minPalette
+    const finalMin = isReverseColorChecked ? maxPalette : minPalette
+    const finalMax = isReverseColorChecked ? minPalette : maxPalette
     onPaletteSelect(finalMin, middlePalette, finalMax, textPalette)
     hideColorPickerMenu()
   }

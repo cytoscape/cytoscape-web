@@ -150,8 +150,8 @@ export const useCreateNode = () => {
       // Generate unique ID
       const newNodeId = generateNextNodeId(networkId)
 
-      // Prepare attributes with defaults
-      const attributes = options?.attributes ?? {}
+      // Prepare attributes with defaults (shallow copy to avoid mutating caller's object)
+      const attributes = { ...(options?.attributes ?? {}) }
       const tableRecord = tables[networkId]
       if (tableRecord?.nodeTable) {
         const hasNameColumn = tableRecord.nodeTable.columns.some(

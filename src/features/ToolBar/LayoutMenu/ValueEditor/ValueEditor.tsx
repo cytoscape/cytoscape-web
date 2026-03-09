@@ -1,9 +1,8 @@
-import { Chip } from '@mui/material'
 import { ValueType, ValueTypeName } from '../../../../models/TableModel'
 import { BooleanEditor } from './BooleanEditor'
+import { ListEditor } from './ListEditor'
 import { NumberEditor } from './NumberEditor'
 import { StringEditor } from './StringEditor'
-import { ListEditor } from './ListEditor'
 
 interface ValueEditorProps {
   optionName: string
