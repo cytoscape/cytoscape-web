@@ -32,7 +32,7 @@ export const NumberEditor = ({
 }: NumberEditorProps): JSX.Element => {
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const newValue: any = event.target.value
-    setValue(optionName, Number.parseInt(newValue))
+    setValue(optionName, Number(newValue))
   }
 
   if (tableLayout) {
