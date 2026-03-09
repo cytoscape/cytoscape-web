@@ -184,19 +184,13 @@ export const LoadFromNdexDialog = (
     try {
       const token = await getToken()
       const rawSummaries = await fetchNdexSummaries(networkIds, token)
-      const summaries = rawSummaries
-        .filter(
-          (summary): summary is NetworkSummary =>
-            summary !== undefined &&
-            summary.externalId !== undefined,
-        )
-        .filter((summary) =>
-          networkPassesSizeThreshold(
-            summary.nodeCount,
-            summary.edgeCount,
-            summary.cx2FileSize ?? 0,
-          ),
-        )
+      const summaries = rawSummaries.filter((summary) =>
+        networkPassesSizeThreshold(
+          summary.nodeCount,
+          summary.edgeCount,
+          summary.cx2FileSize ?? 0,
+        ),
+      )
       addNetworks(summaries.map((summary) => summary.externalId))
       addSummaries(
         summaries.reduce(
