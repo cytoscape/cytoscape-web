@@ -64,9 +64,20 @@ module.exports = {
         },
         exclude: [/node_modules/, /dist/, /\/apps\//, /scripts/],
       },
+      // PrimeReact theme CSS references .woff2 fonts that aren't shipped;
+      // disable url() resolution so css-loader doesn't try to resolve them
+      {
+        test: /\.css$/i,
+        include: /primereact[\\/]resources[\\/]themes/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          { loader: 'css-loader', options: { url: false } },
+        ],
+      },
       // look for css files to transform into the bundle
       {
         test: /\.css$/i,
+        exclude: /primereact[\\/]resources[\\/]themes/,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
       },
       // load all other assets using webpacks default loader
