@@ -1,6 +1,6 @@
 {
   "name": "@cytoscape-web/api-types",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "TypeScript type declarations for the Cytoscape Web App API",
   "types": "dist/index.d.ts",
   "main": "dist/index.d.ts",
