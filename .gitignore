@@ -28,3 +28,5 @@ yarn.lock
 /playwright/.cache/
 /notes/
 /_NOTES/
+.env
+.mcp.json
