@@ -90,19 +90,68 @@ describe('AppStoreImpl', () => {
       expect(result).not.toBe(state) // Immutability check
     })
 
-    it('should use cached app if available', () => {
+    it('should use cached app status but fresh components (without lazy refs)', () => {
       const state = createDefaultState()
-      const app = createTestApp('app-1')
-      const cachedApp = createTestApp('app-1')
+      const freshComponents = [
+        { id: 'Panel', type: 'panel', component: () => null },
+        { id: 'MenuItem', type: 'menu', component: () => null },
+      ]
+      const app = { ...createTestApp('app-1'), components: freshComponents }
+      const cachedApp = {
+        ...createTestApp('app-1'),
+        components: [{ id: 'Panel', type: 'panel' }],
+      }
       cachedApp.status = AppStatus.Active
 
-      const result = add(state, app, cachedApp)
+      const result = add(state, app as any, cachedApp as any)
 
-      expect(result.apps['app-1']).toEqual(cachedApp)
+      // Status preserved from cache
       expect(result.apps['app-1'].status).toBe(AppStatus.Active)
+      // Components taken from fresh module (includes new MenuItem)
+      // but React.lazy refs are stripped for Immer safety
+      expect(result.apps['app-1'].components).toEqual([
+        { id: 'Panel', type: 'panel' },
+        { id: 'MenuItem', type: 'menu' },
+      ])
     })
 
-    it('should not add duplicate app', () => {
+    it('should refresh components when app already exists in store', () => {
+      const state = createDefaultState()
+      const oldComponents = [{ id: 'Panel', type: 'panel' }]
+      const newComponents = [
+        { id: 'Panel', type: 'panel', component: () => null },
+        { id: 'MenuItem', type: 'menu', component: () => null },
+      ]
+      const app = { ...createTestApp('app-1'), components: oldComponents }
+
+      let result = add(state, app as any, undefined)
+      expect(result.apps['app-1'].components).toEqual(oldComponents)
+
+      // Second add with updated components (simulates re-registration)
+      const updatedApp = { ...app, components: newComponents }
+      result = add(result, updatedApp as any, undefined)
+
+      expect(Object.keys(result.apps)).toHaveLength(1)
+      // Lazy refs stripped
+      expect(result.apps['app-1'].components).toEqual([
+        { id: 'Panel', type: 'panel' },
+        { id: 'MenuItem', type: 'menu' },
+      ])
+    })
+
+    it('should strip React.lazy refs from brand-new app components', () => {
+      const state = createDefaultState()
+      const components = [{ id: 'Panel', type: 'panel', component: () => null }]
+      const app = { ...createTestApp('app-1'), components } as any
+
+      const result = add(state, app, undefined)
+
+      expect(result.apps['app-1'].components).toEqual([
+        { id: 'Panel', type: 'panel' },
+      ])
+    })
+
+    it('should not add duplicate app (preserves single entry)', () => {
       const state = createDefaultState()
       const app = createTestApp('app-1')
 
@@ -331,7 +380,10 @@ describe('AppStoreImpl', () => {
       const originalServiceApps = original.serviceApps
 
       let state = add(original, createTestApp('app-1'), undefined)
-      state = addService(state, createTestServiceApp('https://example.com/service'))
+      state = addService(
+        state,
+        createTestServiceApp('https://example.com/service'),
+      )
       state = setStatus(state, 'app-1', AppStatus.Active)
       state = setCurrentTask(state, {
         id: 'task-1',
@@ -351,4 +403,3 @@ describe('AppStoreImpl', () => {
     })
   })
 })
-

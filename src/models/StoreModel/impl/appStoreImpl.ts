@@ -1,7 +1,28 @@
 import { AppStatus } from '../../AppModel/AppStatus'
+import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
+
+/**
+ * Return a copy of the components array with the `component` field
+ * (React.lazy instance) removed.  React.lazy objects are plain JS objects
+ * that React mutates internally (`_status`, `_result`).  If they end up
+ * inside an Immer-managed state tree, Immer will `Object.freeze()` them
+ * and React will crash with "Cannot assign to read only property".
+ *
+ * The live React.lazy refs remain available in `appRegistry` (the
+ * module-level Map exported from useAppManager.ts) and are looked up at
+ * render time by AppMenu and TabContents.
+ */
+const stripLazyRefs = (
+  components: ComponentMetadata[],
+): ComponentMetadata[] => {
+  if (components === undefined || components === null) {
+    return []
+  }
+  return components.map(({ component: _lazy, ...rest }) => rest)
+}
 
 export interface AppState {
   apps: Record<string, CyApp>
@@ -37,38 +58,66 @@ export const restore = (
 }
 
 /**
- * Add an app
+ * Add an app.
+ *
+ * When the app already exists in the store (e.g. after restore()), refresh
+ * `components` and `version` from the live module.  DB-restored entries lose
+ * React.lazy refs (stripped by toPlainObject) and may be missing components
+ * that were added since the last persist.
+ *
+ * When a cachedApp from IndexedDB is provided for a brand-new registration,
+ * use the cached status (so user-toggled Active/Inactive survives) but still
+ * take `components` from the freshly loaded module for the same reasons.
  */
 export const add = (
   state: AppState,
   app: CyApp,
   cachedApp: CyApp | undefined,
 ): AppState => {
-  // Add app only when it is not already present
-  if (state.apps[app.id] !== undefined) {
-    return state
-  }
+  // Strip React.lazy refs so Immer never freezes them
+  const safeComponents = stripLazyRefs(app.components)
 
-  // Try DB first
-  if (cachedApp !== undefined) {
-    return {
-      ...state,
-      apps: {
-        ...state.apps,
-        [app.id]: cachedApp,
-      },
-    }
-  } else {
+  // Already in store — refresh components & version from the live module
+  if (state.apps[app.id] !== undefined) {
     return {
       ...state,
       apps: {
         ...state.apps,
         [app.id]: {
-          ...app,
-          status: app.status || AppStatus.Inactive,
+          ...state.apps[app.id],
+          components: safeComponents,
+          version: app.version,
         },
       },
     }
+  }
+
+  // First registration: use DB cache for persisted fields (status) but
+  // always take components from the fresh module
+  if (cachedApp !== undefined) {
+    return {
+      ...state,
+      apps: {
+        ...state.apps,
+        [app.id]: {
+          ...cachedApp,
+          components: safeComponents,
+        },
+      },
+    }
+  }
+
+  // Brand-new app with no DB history
+  return {
+    ...state,
+    apps: {
+      ...state.apps,
+      [app.id]: {
+        ...app,
+        components: safeComponents,
+        status: app.status || AppStatus.Inactive,
+      },
+    },
   }
 }
 
@@ -96,10 +145,7 @@ export const addService = (
 /**
  * Remove a service app
  */
-export const removeService = (
-  state: AppState,
-  url: string,
-): AppState => {
+export const removeService = (state: AppState, url: string): AppState => {
   const { [url]: deleted, ...restServiceApps } = state.serviceApps
   return {
     ...state,
@@ -236,4 +282,3 @@ export const updateInputColumn = (
     },
   }
 }
-

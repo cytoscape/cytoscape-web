@@ -72,25 +72,22 @@ export const useAppStore = create(
         set((state) => {
           const newState = AppStoreImpl.add(state, app, cachedApp)
           if (newState.apps[id] !== state.apps[id]) {
-            // App was added, persist to DB if it's a new app
-            if (cachedApp === undefined) {
-              try {
-                // Convert to plain object before saving
-                const plainApp = toPlainObject(newState.apps[id])
-                putAppToDb(plainApp).catch((error) => {
-                  logStore.error(
-                    `[${useAppStore.name}]:[add] Failed to persist new app ${id}:`,
-                    error,
-                  )
-                  // Don't throw - prevent error propagation
-                })
-              } catch (cloneError) {
+            // Always persist the updated app record so that newly added
+            // components are saved to DB (React.lazy refs are stripped by
+            // toPlainObject, but the {id, type} entries survive).
+            try {
+              const plainApp = toPlainObject(newState.apps[id])
+              putAppToDb(plainApp).catch((error) => {
                 logStore.error(
-                  `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
-                  cloneError,
+                  `[${useAppStore.name}]:[add] Failed to persist app ${id}:`,
+                  error,
                 )
-                // Don't throw - prevent error propagation
-              }
+              })
+            } catch (cloneError) {
+              logStore.error(
+                `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
+                cloneError,
+              )
             }
           }
           state.apps = newState.apps

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { logApp } from '../../../debug'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
+import { appRegistry } from '../../../data/hooks/stores/useAppManager'
 import { useServiceTaskRunner } from '../../../data/hooks/useServiceTaskRunner'
 import { ComponentType, CyApp } from '../../../models/AppModel'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
@@ -40,7 +41,9 @@ export const AppMenu = (props: DropdownMenuProps) => {
   // For the task status dialog
   const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
 
-  const [componentList, setComponentList] = useState<[string, ComponentMetadata][]>([])
+  const [componentList, setComponentList] = useState<
+    [string, ComponentMetadata][]
+  >([])
 
   // For the notification dialog
   const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
@@ -171,9 +174,15 @@ export const AppMenu = (props: DropdownMenuProps) => {
   const createAppMenu = (): MenuItem[] => {
     const appMenuItems: MenuItem[] = componentList.map(
       ([appId, component], index) => {
-        // Use pre-built lazy component if provided, otherwise fall back to MF load.
+        // Look up the live React.lazy from appRegistry (not frozen by Immer).
+        // The store only holds serialisable {id, type} metadata.
+        const freshComponent = appRegistry
+          .get(appId)
+          ?.components?.find((c) => c.id === component.id)
         const MenuComponent: any =
-          component.component ?? ExternalComponent(appId, './' + component.id)
+          freshComponent?.component ??
+          component.component ??
+          ExternalComponent(appId, './' + component.id)
         const menuItem: MenuItem = {
           template: <MenuComponent key={index} handleClose={handleClose} />,
         }
