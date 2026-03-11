@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import cloneDeep from 'lodash/cloneDeep'
-import { ReactElement, useContext, useEffect, useRef } from 'react'
+import React, { ReactElement, useContext, useEffect, useRef } from 'react'
 import {
   Location,
   Outlet,
@@ -101,6 +101,7 @@ const AppShell = (): ReactElement => {
 
   /**
    * Restores node and edge selection states from URL search parameters
+   * Uses retry logic to wait for the view model to be created (networks are loaded asynchronously)
    * @param networkId - The network ID to restore selections for
    */
   const restoreSelectionStates = (networkId: string): void => {
@@ -113,7 +114,29 @@ const AppShell = (): ReactElement => {
 
     const selectedNodes: string[] = selectedNodeStr.split(' ')
     const selectedEdges: string[] = selectedEdgeStr.split(' ')
-    exclusiveSelect(networkId, selectedNodes, selectedEdges)
+
+    // Get view model store to check if view model exists
+    const getViewModel: (id: IdType) => NetworkView | undefined =
+      useViewModelStore.getState().getViewModel
+
+    // Retry logic: wait for view model to be created (networks are loaded asynchronously)
+    const tryRestoreSelection = (retryCount: number = 0): void => {
+      const MAX_RETRIES = 10
+      const RETRY_DELAY_MS = 500
+
+      const viewModel = getViewModel(networkId)
+      if (viewModel !== undefined) {
+        // View model exists, restore selection
+        exclusiveSelect(networkId, selectedNodes, selectedEdges)
+      } else if (retryCount < MAX_RETRIES) {
+        // View model doesn't exist yet, retry after delay
+        setTimeout(() => {
+          tryRestoreSelection(retryCount + 1)
+        }, RETRY_DELAY_MS)
+      }
+    }
+
+    tryRestoreSelection()
   }
 
   /**
@@ -306,7 +329,7 @@ const AppShell = (): ReactElement => {
       for (const importUrl of importUrls) {
         try {
           const fetchResult = await fetchUrlCx(importUrl, MAX_NETWORK_FILE_SIZE)
-          const { networkWithView, summary } = fetchResult
+          const { cyNetwork, summary } = fetchResult
           const {
             network,
             nodeTable,
@@ -314,7 +337,7 @@ const AppShell = (): ReactElement => {
             visualStyle,
             networkViews,
             visualStyleOptions,
-          } = networkWithView
+          } = cyNetwork
           const importedNetworkId = network.id
 
           summaries[importedNetworkId] = summary

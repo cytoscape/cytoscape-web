@@ -3,6 +3,8 @@ import Menu from '@mui/material/Menu'
 import { useState } from 'react'
 
 import { DropdownMenuProps } from '../DropdownMenuProps'
+import { CreateEdgeMenuItem } from './CreateEdgeMenuItem'
+import { CreateNodeMenuItem } from './CreateNodeMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
@@ -48,6 +50,8 @@ export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
           'aria-labelledby': label,
         }}
       >
+        <CreateNodeMenuItem handleClose={handleClose} />
+        <CreateEdgeMenuItem handleClose={handleClose} />
         <DeleteSelectedNodesMenuItem handleClose={handleClose} />
         <DeleteSelectedEdgesMenuItem handleClose={handleClose} />
         <UndoMenuItem handleClose={handleClose} />

@@ -12,7 +12,7 @@ import { Cx2 } from '../../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { getBaseSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 /**
  * Props for creating a network with a view from a CX2 object.
@@ -26,8 +26,8 @@ interface CreateNetworkFromCx2Props {
 
 /**
  * A custom hook to return a function that creates a CyNetwork from CX2
- * and stores it in Zustand. Modeled after createNetworkWithView in
- * [src/task/CreateNetwork.tsx](src/task/CreateNetwork.tsx).
+ * and stores it in Zustand. Modeled after createNetwork in
+ * [src/task/useCreateNetwork.tsx](src/task/useCreateNetwork.tsx).
  */
 export const useCreateNetworkFromCx2 = (): ((
   props: CreateNetworkFromCx2Props,
@@ -51,7 +51,7 @@ export const useCreateNetworkFromCx2 = (): ((
   const createNetworkFromCx = useCallback(
     ({ cxData }: CreateNetworkFromCx2Props) => {
       // Convert CX2 to a fully populated CyNetwork
-      const withView: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
+      const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
         network,
         networkAttributes,
@@ -59,7 +59,7 @@ export const useCreateNetworkFromCx2 = (): ((
         edgeTable,
         visualStyle,
         networkViews,
-      } = withView
+      } = cyNetwork
 
       let summary: NetworkSummary
 
@@ -68,17 +68,21 @@ export const useCreateNetworkFromCx2 = (): ((
         const name =
           (attributes['name'] as string) ?? `CX2 Network (${network.id})`
         const description = (attributes['description'] as string) ?? ''
-        summary = getBaseSummary({
+        summary = createNetworkSummary({
+          networkId: network.id,
           name,
           description,
-          network,
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
         })
         summary.version = (attributes['version'] as string) ?? 'unknown'
       } else {
         // Create a basic summary
-        summary = getBaseSummary({
+        summary = createNetworkSummary({
+          networkId: network.id,
           name: `CX2 Network (${network.id})`,
-          network,
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
         })
       }
 
@@ -104,7 +108,7 @@ export const useCreateNetworkFromCx2 = (): ((
         replace: false,
       })
 
-      return withView
+      return cyNetwork
     },
     [
       addNetwork,

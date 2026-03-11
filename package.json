@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-web",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "license": "MIT",
   "keywords": [
@@ -23,6 +23,8 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
+    "sync:agents": "node scripts/generate-agents-from-claude.js",
+    "check:agents": "node scripts/generate-agents-from-claude.js && git diff --exit-code -- AGENTS.md",
     "test:unit": "jest",
     "test:e2e": "playwright test",
     "build": "webpack --mode production",

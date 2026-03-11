@@ -13,15 +13,15 @@ The task hooks provide a clean interface for external apps to:
 
 ## Exposed Hooks
 
-### `useCreateNetworkWithView`
+### `useCreateNetwork`
 
 **Module Path:** `cyweb/CreateNetwork`
 
-A custom hook that creates a network from an edge list and stores it in Zustand. Returns a function that takes network creation parameters and returns a `NetworkWithView` object.
+A custom hook that creates a network from an edge list and stores it in Zustand. Returns a function that takes network creation parameters and returns a `CyNetwork` object.
 
 **Signature:**
 ```typescript
-export const useCreateNetworkWithView = (): (({
+export const useCreateNetwork = (): (({
   name: string,
   description?: string,
   edgeList: Array<[IdType, IdType, string?]>
@@ -30,13 +30,13 @@ export const useCreateNetworkWithView = (): (({
 
 **Usage in External Apps:**
 ```typescript
-import { useCreateNetworkWithView } from 'cyweb/CreateNetwork'
+import { useCreateNetwork } from 'cyweb/CreateNetwork'
 
 function MyExternalApp() {
-  const createNetwork = useCreateNetworkWithView()
+  const createNetwork = useCreateNetwork()
   
   const handleCreate = () => {
-    const networkWithView = createNetwork({
+    const cyNetwork = createNetwork({
       name: 'My Network',
       description: 'Network description',
       edgeList: [
@@ -67,7 +67,7 @@ function MyExternalApp() {
 
 **Module Path:** `cyweb/CreateNetworkFromCx2`
 
-A custom hook that creates a network from CX2 (Cytoscape Exchange 2) data and stores it in Zustand. Returns a function that takes CX2 data and returns a `NetworkWithView` object.
+A custom hook that creates a network from CX2 (Cytoscape Exchange 2) data and stores it in Zustand. Returns a function that takes CX2 data and returns a `CyNetwork` object.
 
 **Signature:**
 ```typescript
@@ -84,7 +84,7 @@ function MyExternalApp() {
   const createNetworkFromCx2 = useCreateNetworkFromCx2()
   
   const handleCreate = () => {
-    const networkWithView = createNetworkFromCx2({
+    const cyNetwork = createNetworkFromCx2({
       cxData: cx2Data, // Cx2 object
     })
     // Network is now stored and navigated to
@@ -137,7 +137,7 @@ These hooks are exposed through Webpack Module Federation in:
 - `webpack.config.new.js`
 
 **Exposed Modules:**
-- `./CreateNetwork` → `useCreateNetworkWithView`
+- `./CreateNetwork` → `useCreateNetwork`
 - `./CreateNetworkFromCx2` → `useCreateNetworkFromCx2`
 
 ## Dependencies

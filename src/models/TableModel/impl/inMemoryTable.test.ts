@@ -4,6 +4,7 @@ import { Table } from '../Table'
 import { ValueType } from '../ValueType'
 import {
   addColumn,
+  addRowWithDefaults,
   applyValueToElements,
   columns,
   columnValueSet,
@@ -680,5 +681,94 @@ describe('InMemoryTable', () => {
       expect(original.rows.has('n1')).toBe(true)
     })
   })
-})
 
+  describe('addRowWithDefaults', () => {
+    it('should add a row with default values for all columns', () => {
+      const cols: Column[] = [
+        { name: 'name', type: 'string' },
+        { name: 'score', type: 'double' },
+        { name: 'active', type: 'boolean' },
+      ]
+      const table = createTable('test-table', cols)
+
+      const updated = addRowWithDefaults(table, 'row1')
+
+      expect(updated.rows.size).toBe(1)
+      expect(updated.rows.get('row1')).toEqual({
+        name: '',
+        score: 0,
+        active: false,
+      })
+    })
+
+    it('should override default values with custom values', () => {
+      const cols: Column[] = [
+        { name: 'name', type: 'string' },
+        { name: 'score', type: 'double' },
+        { name: 'active', type: 'boolean' },
+      ]
+      const table = createTable('test-table', cols)
+
+      const updated = addRowWithDefaults(table, 'row1', {
+        name: 'Custom Name',
+        score: 100,
+      })
+
+      expect(updated.rows.get('row1')).toEqual({
+        name: 'Custom Name',
+        score: 100,
+        active: false, // default value for unspecified field
+      })
+    })
+
+    it('should handle list type columns with empty array defaults', () => {
+      const cols: Column[] = [
+        { name: 'tags', type: 'list_of_string' },
+        { name: 'scores', type: 'list_of_double' },
+        { name: 'flags', type: 'list_of_boolean' },
+      ]
+      const table = createTable('test-table', cols)
+
+      const updated = addRowWithDefaults(table, 'row1')
+
+      expect(updated.rows.get('row1')).toEqual({
+        tags: [],
+        scores: [],
+        flags: [],
+      })
+    })
+
+    it('should work with empty column table', () => {
+      const table = createTable('test-table', [])
+
+      const updated = addRowWithDefaults(table, 'row1')
+
+      expect(updated.rows.size).toBe(1)
+      expect(updated.rows.get('row1')).toEqual({})
+    })
+
+    it('should add row to table with existing rows', () => {
+      const cols: Column[] = [{ name: 'name', type: 'string' }]
+      const initialData = new Map([['row1', { name: 'Existing' }]])
+      const table = createTable('test-table', cols, initialData)
+
+      const updated = addRowWithDefaults(table, 'row2', { name: 'New Row' })
+
+      expect(updated.rows.size).toBe(2)
+      expect(updated.rows.get('row1')).toEqual({ name: 'Existing' })
+      expect(updated.rows.get('row2')).toEqual({ name: 'New Row' })
+    })
+
+    it('should not mutate original table', () => {
+      const cols: Column[] = [{ name: 'name', type: 'string' }]
+      const table = createTable('test-table', cols)
+      const originalSize = table.rows.size
+
+      const updated = addRowWithDefaults(table, 'row1', { name: 'Test' })
+
+      expect(table.rows.size).toBe(originalSize)
+      expect(updated.rows.size).toBe(originalSize + 1)
+      expect(updated).not.toBe(table)
+    })
+  })
+})

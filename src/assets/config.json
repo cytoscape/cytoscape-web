@@ -21,5 +21,7 @@
   "urlBaseName": "/",
   "openAIAPIKey": "",
   "googleAnalyticsId": "G-B3X9SFXC2P",
-  "undoStackSize": 20
+  "undoStackSize": 20,
+  "errorReportEndpoint": "https://dev1.ndexbio.org/report",
+  "maxErrorReportSnapshotSizeMB": 10
 }

@@ -1,6 +1,7 @@
 import { MenuItem } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
+import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
@@ -10,9 +11,7 @@ export const RemoveAllNetworksMenuItem = (
 ): ReactElement => {
   const [open, setOpen] = useState(false)
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
-  const deleteAllNetworks = useWorkspaceStore(
-    (state) => state.deleteAllNetworks,
-  )
+  const { deleteAllNetworks } = useDeleteCyNetwork()
 
   const handleDeleteAllNetworks = (): void => {
     props.handleClose()

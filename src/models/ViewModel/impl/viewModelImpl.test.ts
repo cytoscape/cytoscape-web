@@ -20,6 +20,7 @@ import {
   addNodeViewDirect,
   addNodeViewsToModel,
   addNodeViewToModel,
+  addNodeViewWithPosition,
   createViewModel,
   deleteEdgeViews,
   deleteNodeViews,
@@ -1128,6 +1129,74 @@ describe('ViewModel Implementation', () => {
       expect(original.nodeViews['n1'].x).toBe(originalNodeX)
       expect(original.nodeViews['n2']).toBeUndefined()
       expect(original.edgeViews['e1']).toBeDefined()
+    })
+  })
+
+  describe('addNodeViewWithPosition', () => {
+    it('should add a node view with 2D position', () => {
+      const network = NetworkFn.createNetwork('test-network-100')
+      const networkView = createViewModel(network)
+
+      const updated = addNodeViewWithPosition(networkView, 'n1', [100, 200])
+
+      expect(updated.nodeViews['n1']).toBeDefined()
+      expect(updated.nodeViews['n1'].id).toBe('n1')
+      expect(updated.nodeViews['n1'].x).toBe(100)
+      expect(updated.nodeViews['n1'].y).toBe(200)
+      expect(updated.nodeViews['n1'].z).toBeUndefined()
+      expect(updated.nodeViews['n1'].values).toBeInstanceOf(Map)
+    })
+
+    it('should add a node view with 3D position', () => {
+      const network = NetworkFn.createNetwork('test-network-101')
+      const networkView = createViewModel(network)
+
+      const updated = addNodeViewWithPosition(networkView, 'n1', [100, 200, 300])
+
+      expect(updated.nodeViews['n1']).toBeDefined()
+      expect(updated.nodeViews['n1'].x).toBe(100)
+      expect(updated.nodeViews['n1'].y).toBe(200)
+      expect(updated.nodeViews['n1'].z).toBe(300)
+    })
+
+    it('should add node view to network view with existing nodes', () => {
+      const network = NetworkFn.createNetworkFromLists(
+        'test-network-102',
+        [{ id: 'n1' }],
+        [],
+      )
+      const networkView = createViewModel(network)
+
+      const updated = addNodeViewWithPosition(networkView, 'n2', [150, 250])
+
+      expect(Object.keys(updated.nodeViews)).toHaveLength(2)
+      expect(updated.nodeViews['n1']).toBeDefined()
+      expect(updated.nodeViews['n2']).toBeDefined()
+      expect(updated.nodeViews['n2'].x).toBe(150)
+      expect(updated.nodeViews['n2'].y).toBe(250)
+    })
+
+    it('should not mutate original network view', () => {
+      const network = NetworkFn.createNetwork('test-network-103')
+      const networkView = createViewModel(network)
+      const originalNodeViews = networkView.nodeViews
+
+      const updated = addNodeViewWithPosition(networkView, 'n1', [100, 200])
+
+      expect(networkView.nodeViews).toBe(originalNodeViews)
+      expect(updated.nodeViews).not.toBe(originalNodeViews)
+      expect(Object.keys(networkView.nodeViews)).toHaveLength(0)
+      expect(Object.keys(updated.nodeViews)).toHaveLength(1)
+    })
+
+    it('should initialize values with empty Map', () => {
+      const network = NetworkFn.createNetwork('test-network-104')
+      const networkView = createViewModel(network)
+
+      const updated = addNodeViewWithPosition(networkView, 'n1', [100, 200])
+
+      expect(updated.nodeViews['n1'].values).toBeInstanceOf(Map)
+      expect(updated.nodeViews['n1'].values.size).toBe(0)
     })
   })
 })

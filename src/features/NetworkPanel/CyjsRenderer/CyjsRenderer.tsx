@@ -22,6 +22,7 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
@@ -32,6 +33,7 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
+import { ValueType } from '../../../models/TableModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
@@ -44,6 +46,9 @@ import { CxToCyCanvas } from './annotations/cyjsAnnotationRenderer'
 import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
 import { registerCyExtensions } from './registerCyExtensions'
+import { NetworkContextMenu, ContextMenuState } from './NetworkContextMenu'
+import { useCreateNode } from '../../../data/hooks/useCreateNode'
+import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 
 registerCyExtensions()
 import { logUi } from '../../../debug'
@@ -116,6 +121,57 @@ const CyjsRenderer = ({
 
   // Reference to viewport change handler for temporary removal during undo/redo
   const viewportChangeHandlerRef = useRef<any>(null)
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    open: false,
+    anchorPosition: null,
+    networkPosition: null,
+    clickedNodeId: null,
+    clickedEdgeId: null,
+  })
+
+  // Edge creation mode state
+  const [edgeCreationMode, setEdgeCreationMode] = useState<{
+    active: boolean
+    sourceNodeId: IdType | null
+  }>({
+    active: false,
+    sourceNodeId: null,
+  })
+
+  // Reset edge creation mode when switching networks
+  useEffect(() => {
+    setEdgeCreationMode({ active: false, sourceNodeId: null })
+  }, [id])
+  // Ref to track edge creation mode for event handlers
+  const edgeCreationModeRef = useRef(edgeCreationMode)
+  useEffect(() => {
+    edgeCreationModeRef.current = edgeCreationMode
+    logUi.info('[CyjsRenderer] edgeCreationMode state changed', {
+      active: edgeCreationMode.active,
+      sourceNodeId: edgeCreationMode.sourceNodeId,
+    })
+    
+    // Apply cursor style to Cytoscape container when edge creation mode changes
+    if (cy !== null && cyContainer.current) {
+      const container = cy.container()
+      if (container) {
+        if (edgeCreationMode.active) {
+          logUi.info('[CyjsRenderer] Applying crosshair cursor to Cytoscape container')
+          container.style.cursor = 'crosshair'
+        } else {
+          logUi.info('[CyjsRenderer] Removing crosshair cursor from Cytoscape container')
+          container.style.cursor = 'default'
+        }
+      }
+    }
+  }, [edgeCreationMode, cy])
+
+
+  // Creation hooks
+  const { createNode } = useCreateNode()
+  const { createEdge } = useCreateEdge()
 
   // ============================================================================
   //                            Application Store State
@@ -251,14 +307,11 @@ const CyjsRenderer = ({
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
     const { nodeViews, edgeViews } = updatedNetworkView
 
-    // Add nodes and edges to Cytoscape.js
-    addCyElements(
-      cy,
-      Object.values(nodeViews),
-      network.edges,
-      edgeViews,
-      visualEditorProperties,
-    )
+    // Add nodes and edges to Cytoscape.js (with raw data)
+    addCyElements(cy, Object.values(nodeViews), network.edges, edgeViews)
+
+    // Apply transformations and visual editor property overrides via view model
+    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
 
     // Generate and set the Cytoscape.js style
     const newStyle = createCyjsDataMapper(vs)
@@ -302,10 +355,89 @@ const CyjsRenderer = ({
       100,
     )
 
+    // --- Edge Creation Mode: Handle clicks when in creation mode ---
+    // This handler must be registered BEFORE the general tap handler
+    // to intercept node clicks during edge creation mode
+    const edgeCreationTapHandler = (e: EventObject): void => {
+      const currentMode = edgeCreationModeRef.current
+      
+      // Safety check: ensure target is an element with isNode method
+      const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
+      
+      logUi.info('[CyjsRenderer] edgeCreationTapHandler fired', {
+        modeActive: currentMode.active,
+        sourceNodeId: currentMode.sourceNodeId,
+        targetIsNode,
+        targetId: targetIsNode ? e.target.data('id') : null,
+        targetType: e.target === cy ? 'core' : typeof e.target.isNode === 'function' ? 'element' : 'unknown',
+      })
+      
+      if (!currentMode.active || !currentMode.sourceNodeId) {
+        logUi.info('[CyjsRenderer] edgeCreationTapHandler: Mode not active, returning')
+        return
+      }
+      
+      // Check if target is a node (and has the isNode method)
+      if (!targetIsNode) {
+        logUi.info('[CyjsRenderer] edgeCreationTapHandler: Target is not a node, returning')
+        return
+      }
+
+      // Prevent default selection behavior in edge creation mode
+      e.stopPropagation()
+      e.stopImmediatePropagation()
+
+      const targetNodeId: IdType = e.target.data('id')
+      const sourceNodeId = currentMode.sourceNodeId
+
+      logUi.info('[CyjsRenderer] edgeCreationTapHandler: Processing edge creation', {
+        sourceNodeId,
+        targetNodeId,
+      })
+
+      // Check for self-loop
+      if (targetNodeId === sourceNodeId) {
+        logUi.info('[CyjsRenderer] edgeCreationTapHandler: Self-loop detected, preventing')
+        // TODO: Show tooltip or prevent self-loop
+        return
+      }
+
+      // Exit edge creation mode
+      logUi.info('[CyjsRenderer] edgeCreationTapHandler: Exiting edge creation mode and creating edge')
+      setEdgeCreationMode({ active: false, sourceNodeId: null })
+
+      // Create edge directly with default empty attributes
+      createEdge(id, sourceNodeId, targetNodeId, { attributes: {} })
+    }
+    cy.on('tap', 'node', edgeCreationTapHandler)
+
     // Single selection: handle tap events for background, nodes, and edges
     cy.on('tap', (e: EventObject) => {
       // Get the currently active network ID from the ref
       const activeId: string = activeNetworkIdRef.current
+
+      // If in edge creation mode, let the edge creation handler process node clicks
+      if (edgeCreationModeRef.current.active) {
+        const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
+        
+        logUi.info('[CyjsRenderer] General tap handler: Edge creation mode is active', {
+          targetIsNode,
+          targetIsCy: e.target === cy,
+          targetId: targetIsNode ? e.target.data('id') : null,
+        })
+        
+        if (e.target === cy) {
+          // Background click: exit edge creation mode
+          logUi.info('[CyjsRenderer] General tap handler: Background click, exiting edge creation mode')
+          setEdgeCreationMode({ active: false, sourceNodeId: null })
+        } else if (targetIsNode) {
+          // Node click: let the edge creation handler process it
+          // Don't do normal selection
+          logUi.info('[CyjsRenderer] General tap handler: Node clicked in edge creation mode, returning early to let edgeCreationTapHandler process')
+          return
+        }
+        // For edges, still allow normal selection even in edge creation mode
+      }
 
       // Determine if shift or meta key is pressed for multi-selection
       const shiftOrMetaKeyPressed =
@@ -330,23 +462,129 @@ const CyjsRenderer = ({
           // Deselect all if no modifier key is pressed
           exclusiveSelect(id, [], [])
         }
-      } else if (e.target.isNode() || e.target.isEdge()) {
-        // Handle node or edge click
-        if (shiftOrMetaKeyPressed) {
-          toggleSelected(id, [e.target.data('id')])
-        } else {
-          const selectedNodes: IdType[] = []
-          const selectedEdges: IdType[] = []
-          if (e.target.isNode()) {
-            selectedNodes.push(e.target.data('id'))
+      } else {
+        // Safety check: ensure target has element methods
+        const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
+        const targetIsEdge = typeof e.target.isEdge === 'function' && e.target.isEdge()
+        
+        if (targetIsNode || targetIsEdge) {
+          // Handle node or edge click
+          if (shiftOrMetaKeyPressed) {
+            toggleSelected(id, [e.target.data('id')])
           } else {
-            selectedEdges.push(e.target.data('id'))
+            const selectedNodes: IdType[] = []
+            const selectedEdges: IdType[] = []
+            if (targetIsNode) {
+              selectedNodes.push(e.target.data('id'))
+            } else if (targetIsEdge) {
+              selectedEdges.push(e.target.data('id'))
+            }
+            exclusiveSelect(id, selectedNodes, selectedEdges)
           }
-          exclusiveSelect(id, selectedNodes, selectedEdges)
         }
       }
       // Always re-enable selection after tap
       cy.autounselectify(false)
+    })
+
+    // --- Right-click Context Menu ---
+    cy.on('cxttap', (e: EventObject) => {
+      // Safety check: ensure target methods exist before calling
+      const targetIsNode = typeof e.target.isNode === 'function' && e.target.isNode()
+      const targetIsEdge = typeof e.target.isEdge === 'function' && e.target.isEdge()
+      
+      logUi.info('[CyjsRenderer] cxttap event fired', {
+        target: e.target,
+        isNode: targetIsNode,
+        isEdge: targetIsEdge,
+        isCore: e.target === cy,
+      })
+      
+      // Prevent default browser context menu
+      e.originalEvent.preventDefault()
+
+      // Get the currently active network ID from the ref
+      const activeId: string = activeNetworkIdRef.current
+
+      // If the active network is not the current one, ignore
+      if (
+        activeId !== undefined &&
+        activeId !== '' &&
+        id !== '' &&
+        id !== activeId
+      ) {
+        logUi.info('[CyjsRenderer] cxttap: Ignoring - network not active', {
+          activeId,
+          currentId: id,
+        })
+        return
+      }
+
+      // Get click position in screen coordinates
+      const containerElement = cy.container()
+      if (!containerElement) {
+        logUi.warn('[CyjsRenderer] cxttap: No container element')
+        return
+      }
+
+      const clientX = e.originalEvent.clientX
+      const clientY = e.originalEvent.clientY
+
+      // Convert click coordinates to network coordinates.
+      //
+      // Cytoscape's renderer projection expects coordinates relative to the container,
+      // not viewport (clientX/clientY). Prefer event-provided model coordinates when available.
+      let networkPosition: [number, number] = [0, 0]
+      const eventPos = (e as any).position
+      if (
+        eventPos &&
+        typeof eventPos.x === 'number' &&
+        !isNaN(eventPos.x) &&
+        typeof eventPos.y === 'number' &&
+        !isNaN(eventPos.y)
+      ) {
+        networkPosition = [eventPos.x, eventPos.y]
+      } else {
+        const rect = containerElement.getBoundingClientRect()
+        const xInContainer = clientX - rect.left
+        const yInContainer = clientY - rect.top
+        const pos = cy.renderer().projectIntoViewport(xInContainer, yInContainer)
+        // Ensure position values are valid numbers (fallback to 0 if undefined/NaN)
+        networkPosition = [
+          typeof pos.x === 'number' && !isNaN(pos.x) ? pos.x : 0,
+          typeof pos.y === 'number' && !isNaN(pos.y) ? pos.y : 0,
+        ]
+      }
+
+      // Determine what was clicked
+      let clickedNodeId: IdType | null = null
+      let clickedEdgeId: IdType | null = null
+
+      if (targetIsNode) {
+        clickedNodeId = e.target.data('id')
+        logUi.info('[CyjsRenderer] cxttap: Node clicked', { clickedNodeId })
+      } else if (targetIsEdge) {
+        clickedEdgeId = e.target.data('id')
+        logUi.info('[CyjsRenderer] cxttap: Edge clicked', { clickedEdgeId })
+      } else {
+        logUi.info('[CyjsRenderer] cxttap: Canvas clicked', { networkPosition })
+      }
+
+      // Open context menu
+      logUi.info('[CyjsRenderer] cxttap: Opening context menu', {
+        anchorPosition: { top: clientY, left: clientX },
+        networkPosition: clickedNodeId === null ? networkPosition : null,
+        clickedNodeId,
+        clickedEdgeId,
+      })
+      
+      setContextMenu({
+        open: true,
+        anchorPosition: { top: clientY, left: clientX },
+        networkPosition: clickedNodeId === null ? networkPosition : null,
+        clickedNodeId,
+        clickedEdgeId,
+      })
     })
 
     // --- Node Dragging ---
@@ -355,8 +593,8 @@ const CyjsRenderer = ({
     cy.on('grab', 'node', (e: EventObject): void => {
       const targetNode = e.target
 
-      // Only proceed if the target is a node
-      if (!targetNode.isNode()) return
+      // Only proceed if the target is a node (safety check)
+      if (typeof targetNode.isNode !== 'function' || !targetNode.isNode()) return
 
       const nodeId: IdType = targetNode.data('id')
       const position = targetNode.position()
@@ -421,11 +659,22 @@ const CyjsRenderer = ({
     cy.on('mouseover', 'node, edge', (e: EventObject): void => {
       const targetNode = e.target
       setHoveredElement(targetNode.data('id'))
+
+      // In edge creation mode, highlight valid target nodes
+      const currentMode = edgeCreationModeRef.current
+      const targetIsNode = typeof targetNode.isNode === 'function' && targetNode.isNode()
+      if (currentMode.active && targetIsNode) {
+        const nodeId = targetNode.data('id')
+        if (nodeId !== currentMode.sourceNodeId) {
+          targetNode.addClass('edge-creation-target')
+        }
+      }
     })
     // Remove hover class and clear hovered element on mouseout
     cy.on('mouseout', 'node, edge', (e: EventObject): void => {
       const target = e.target
       target.removeClass('hover')
+      target.removeClass('edge-creation-target')
       setHoveredElement(undefined)
     })
 
@@ -969,6 +1218,75 @@ const CyjsRenderer = ({
     [cy, id],
   )
 
+  // Context menu handlers
+  const handleContextMenuClose = (): void => {
+    logUi.info('[CyjsRenderer] handleContextMenuClose called')
+    setContextMenu({
+      open: false,
+      anchorPosition: null,
+      networkPosition: null,
+      clickedNodeId: null,
+      clickedEdgeId: null,
+    })
+  }
+
+  const handleCreateNodeFromContext = (position: [number, number]): void => {
+    logUi.info('[CyjsRenderer] handleCreateNodeFromContext called', { position })
+    // Create node directly with default empty attributes
+    createNode(id, position, { attributes: {} })
+  }
+
+  const handleCreateEdgeFromNode = (sourceNodeId: IdType): void => {
+    logUi.info('[CyjsRenderer] handleCreateEdgeFromNode called', { sourceNodeId })
+    // Enter edge creation mode
+    logUi.info('[CyjsRenderer] handleCreateEdgeFromNode: Setting edge creation mode to active')
+    setEdgeCreationMode({ active: true, sourceNodeId })
+    logUi.info('[CyjsRenderer] handleCreateEdgeFromNode: Edge creation mode set, cursor should change to crosshair')
+    
+    // Immediately apply cursor to container if available
+    if (cy !== null) {
+      const container = cy.container()
+      if (container) {
+        logUi.info('[CyjsRenderer] handleCreateEdgeFromNode: Applying crosshair cursor immediately')
+        container.style.cursor = 'crosshair'
+      }
+    }
+    
+    // Log instructions for user
+    logUi.info('[CyjsRenderer] Edge creation mode activated! Click on another node to create an edge.')
+  }
+
+
+  // Handle ESC key to cancel edge creation mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && edgeCreationMode.active) {
+        setEdgeCreationMode({ active: false, sourceNodeId: null })
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [edgeCreationMode.active])
+
+  // Handle background click to cancel edge creation mode
+  useEffect(() => {
+    if (!cy || !edgeCreationMode.active) return
+
+    const handleBackgroundClick = (e: EventObject): void => {
+      if (e.target === cy) {
+        setEdgeCreationMode({ active: false, sourceNodeId: null })
+      }
+    }
+
+    cy.on('tap', handleBackgroundClick)
+    return () => {
+      cy.off('tap', handleBackgroundClick)
+    }
+  }, [cy, edgeCreationMode.active])
+
   return (
     <>
       {isRunning ? (
@@ -995,9 +1313,37 @@ const CyjsRenderer = ({
           height: '100%',
           backgroundColor: 'rgba(0,0,0,0)',
           zIndex: 0,
+          // Cursor is applied directly to Cytoscape container via useEffect
+          cursor: edgeCreationMode.active ? 'crosshair' : 'default',
         }}
         id="cy-container"
         ref={cyContainer}
+      />
+      {edgeCreationMode.active && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '1em',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '0.5em 1em',
+            borderRadius: '4px',
+            zIndex: 1000,
+            pointerEvents: 'none',
+          }}
+        >
+          Edge creation mode: Click on a node to create an edge (ESC to cancel)
+        </Box>
+      )}
+      <NetworkContextMenu
+        contextMenu={contextMenu}
+        networkView={networkView}
+        onClose={handleContextMenuClose}
+        onCreateNode={handleCreateNodeFromContext}
+        onCreateEdgeFromNode={handleCreateEdgeFromNode}
+        isHierarchy={summary ? isHCX(summary) : false}
       />
     </>
   )

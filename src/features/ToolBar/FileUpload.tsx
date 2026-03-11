@@ -33,6 +33,7 @@ import {
 import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { generateUniqueName } from '../../utils/generateUniqueName'
 import { createDataFromLocalSif } from '../../utils/sifUtils'
@@ -135,36 +136,17 @@ export function FileUpload(props: FileUploadProps) {
           (n) => n.x !== undefined && n.y !== undefined,
         )
 
-        const localNodeCount = network.nodes.length
-        const localEdgeCount = network.edges.length
-        const summary = {
-          isNdex: false,
-          ownerUUID: localUuid,
+        const summary = createNetworkSummary({
+          networkId: localUuid,
           name,
-          isReadOnly: false,
-          subnetworkIds: [],
-          isValid: false,
-          warnings: [],
-          isShowcase: false,
-          isCertified: false,
-          indexLevel: '',
-          hasLayout: anyNodeHasPosition,
-          hasSample: false,
-          cxFileSize: 0,
-          cx2FileSize: 0,
-          properties: localProperties,
-          owner: '',
-          version: '',
-          completed: false,
-          visibility: Visibility.LOCAL,
-          nodeCount: localNodeCount,
-          edgeCount: localEdgeCount,
           description,
-          creationTime: new Date(Date.now()),
+          properties: localProperties,
+          hasLayout: anyNodeHasPosition,
+          visibility: Visibility.LOCAL,
           externalId: localUuid,
-          isDeleted: false,
-          modificationTime: new Date(Date.now()),
-        }
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
+        })
         await putNetworkSummaryToDb(summary)
         // TODO the db syncing logic in various stores assumes the updated network is the current network
         // therefore, as a temporary fix, the first operation that should be done is to set the
@@ -233,37 +215,16 @@ export function FileUpload(props: FileUploadProps) {
           visualStyleOptions,
         } = res
 
-        const localNodeCount = network.nodes.length
-        const localEdgeCount = network.edges.length
-
-        const summary = {
-          isNdex: false,
-          ownerUUID: localUuid,
+        const summary = createNetworkSummary({
+          networkId: localUuid,
           name,
-          isReadOnly: false,
-          subnetworkIds: [],
-          isValid: false,
-          warnings: [],
-          isShowcase: false,
-          isCertified: false,
-          indexLevel: '',
-          hasLayout: false, // SIF files don't contain layout information
-          hasSample: false,
-          cxFileSize: 0,
-          cx2FileSize: 0,
-          properties: [], // SIF files don't have network properties
-          owner: '',
-          version: '',
-          completed: false,
-          visibility: Visibility.LOCAL,
-          nodeCount: localNodeCount,
-          edgeCount: localEdgeCount,
           description: 'Imported from SIF file',
-          creationTime: new Date(Date.now()),
-          externalId: localUuid,
-          isDeleted: false,
-          modificationTime: new Date(Date.now()),
-        }
+          visibility: Visibility.LOCAL,
+          hasLayout: false, // SIF files don't contain layout information
+          properties: [], // SIF files don't have network properties
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
+        })
         await putNetworkSummaryToDb(summary)
 
         setVisualStyleOptions(localUuid, visualStyleOptions)

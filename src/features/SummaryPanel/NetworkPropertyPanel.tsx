@@ -22,6 +22,7 @@ import { NetworkSummary } from '../../models/NetworkSummaryModel'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
+import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { Network } from '../../models'
@@ -43,13 +44,13 @@ export const NetworkPropertyPanel = ({
   // Need to use ID from the summary since it is different from the currentNetworkId
   const id: IdType = summary.externalId
 
-  // Get the network model from the store to grab the node and edge counts
+  // Get the network model from the store as fallback for node and edge counts
   const networkModels = useNetworkStore((state) => state.networks)
   const networkModel: Network | undefined = networkModels.get(id)
 
-  // If the network model is not loaded, use the summary node and edge counts
-  const nodeCount: number = networkModel?.nodes.length ?? summary.nodeCount
-  const edgeCount: number = networkModel?.edges.length ?? summary.edgeCount
+  // Prefer counts from summary, fallback to network model if available
+  const nodeCount: number = summary.nodeCount ?? networkModel?.nodes.length ?? 0
+  const edgeCount: number = summary.edgeCount ?? networkModel?.edges.length ?? 0
 
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined
@@ -79,7 +80,8 @@ export const NetworkPropertyPanel = ({
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
-  const deleteNetwork = useWorkspaceStore((state) => state.deleteNetwork)
+  const { deleteNetwork } = useDeleteCyNetwork()
+
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     setLastOpenedNetworkId(currentNetworkId)
@@ -88,30 +90,64 @@ export const NetworkPropertyPanel = ({
   }
 
   const onConfirmDelete = () => {
-    deleteNetwork(id)
-    // deleteSummary(id)
-    const nextNetworkId =
-      lastOpenedNetworkId !== '' && lastOpenedNetworkId !== id
-        ? lastOpenedNetworkId
-        : (workspace.networkIds.filter((networkId) => networkId !== id)?.[0] ??
-          undefined)
-
-    if (nextNetworkId) {
-      setCurrentNetworkId(nextNetworkId)
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: nextNetworkId,
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
+    // Delete the network without automatic navigation
+    deleteNetwork(id, { navigate: false })
+    
+    // Navigate back to the previously viewed network, same logic as onCancelDelete
+    if (lastOpenedNetworkId !== '') {
+      if (lastOpenedNetworkId !== id) {
+        setCurrentNetworkId(lastOpenedNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: lastOpenedNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      } else {
+        // If the previous network was the one being deleted, navigate to first available or empty
+        const remainingNetworks = workspace.networkIds.filter((networkId) => networkId !== id)
+        const nextNetworkId = remainingNetworks[0] ?? ''
+        
+        if (nextNetworkId !== '') {
+          setCurrentNetworkId(nextNetworkId)
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: nextNetworkId,
+            searchParams: new URLSearchParams(location.search),
+            replace: true,
+          })
+        } else {
+          setCurrentNetworkId('')
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: '',
+            searchParams: new URLSearchParams(location.search),
+            replace: true,
+          })
+        }
+      }
     } else {
-      setCurrentNetworkId('')
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: '',
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
+      // If no previous network was set, navigate to first available or empty
+      const remainingNetworks = workspace.networkIds.filter((networkId) => networkId !== id)
+      const nextNetworkId = remainingNetworks[0] ?? ''
+      
+      if (nextNetworkId !== '') {
+        setCurrentNetworkId(nextNetworkId)
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: nextNetworkId,
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      } else {
+        setCurrentNetworkId('')
+        navigateToNetwork({
+          workspaceId: workspace.id,
+          networkId: '',
+          searchParams: new URLSearchParams(location.search),
+          replace: true,
+        })
+      }
     }
   }
 

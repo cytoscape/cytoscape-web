@@ -1,5 +1,5 @@
 import { IdType } from '../../IdType'
-import { Network } from '../../NetworkModel'
+import { NetworkProperty } from '../NetworkProperty'
 import { NetworkSummary } from '../NetworkSummary'
 import { Visibility } from '../Visibility'
 
@@ -8,47 +8,185 @@ export interface NetworkSummaryState {
 }
 
 /**
- * Creates a base NetworkSummary from a network and name.
- *
- * @param params - Object containing name, network, and optional description
- * @returns A new NetworkSummary with default values
+ * Options for creating a network summary
  */
-export const getBaseSummary = ({
-  name,
-  network,
-  description = '',
-}: {
-  name: string
-  network: Network
+export interface CreateNetworkSummaryOptions {
+  /**
+   * The network ID (UUID) for the summary (required)
+   */
+  networkId: IdType
+  /**
+   * Network name (defaults to empty string if not provided)
+   */
+  name?: string
+  /**
+   * Network description (defaults to empty string)
+   */
   description?: string
-}): NetworkSummary => {
-  const now = new Date(Date.now())
+  /**
+   * Network version (defaults to empty string)
+   */
+  version?: string
+  /**
+   * Network properties (defaults to empty array)
+   */
+  properties?: NetworkProperty[]
+  /**
+   * Whether the network has a layout (defaults to false)
+   */
+  hasLayout?: boolean
+  /**
+   * Network visibility (defaults to Visibility.PUBLIC)
+   */
+  visibility?: Visibility
+  /**
+   * Owner UUID (defaults to network.id)
+   */
+  ownerUUID?: IdType
+  /**
+   * External ID (defaults to network.id)
+   */
+  externalId?: string
+  /**
+   * Whether the network is from NDEx (defaults to false)
+   */
+  isNdex?: boolean
+  /**
+   * Whether the network is read-only (defaults to false)
+   */
+  isReadOnly?: boolean
+  /**
+   * Subnetwork IDs (defaults to empty array)
+   */
+  subnetworkIds?: number[]
+  /**
+   * Whether the network is valid (defaults to false)
+   */
+  isValid?: boolean
+  /**
+   * Warnings array (defaults to empty array)
+   */
+  warnings?: string[]
+  /**
+   * Whether the network is a showcase (defaults to false)
+   */
+  isShowcase?: boolean
+  /**
+   * Whether the network is certified (defaults to false)
+   */
+  isCertified?: boolean
+  /**
+   * Index level (defaults to empty string)
+   */
+  indexLevel?: string
+  /**
+   * Whether the network has a sample (defaults to false)
+   */
+  hasSample?: boolean
+  /**
+   * CX file size in bytes (defaults to 0)
+   */
+  cxFileSize?: number
+  /**
+   * CX2 file size in bytes (defaults to 0)
+   */
+  cx2FileSize?: number
+  /**
+   * Network owner (defaults to empty string)
+   */
+  owner?: string
+  /**
+   * Whether the network is completed (defaults to false)
+   */
+  completed?: boolean
+  /**
+   * Whether the network is deleted (defaults to false)
+   */
+  isDeleted?: boolean
+  /**
+   * Creation time (defaults to current time)
+   */
+  creationTime?: Date
+  /**
+   * Modification time (defaults to current time)
+   */
+  modificationTime?: Date
+  /**
+   * Number of nodes in the network (defaults to 0)
+   */
+  nodeCount?: number
+  /**
+   * Number of edges in the network (defaults to 0)
+   */
+  edgeCount?: number
+}
+
+/**
+ * Creates a NetworkSummary with configurable options.
+ * All parameters except networkId are optional and have sensible defaults.
+ *
+ * @param options - Configuration options for creating the summary
+ * @returns A new NetworkSummary
+ */
+export const createNetworkSummary = (
+  options: CreateNetworkSummaryOptions,
+): NetworkSummary => {
+  const {
+    networkId,
+    name = '',
+    description = '',
+    version = '',
+    properties = [],
+    hasLayout = false,
+    visibility = Visibility.PUBLIC,
+    ownerUUID = networkId,
+    externalId = networkId,
+    isNdex = false,
+    isReadOnly = false,
+    subnetworkIds = [],
+    isValid = false,
+    warnings = [],
+    isShowcase = false,
+    isCertified = false,
+    indexLevel = '',
+    hasSample = false,
+    cxFileSize = 0,
+    cx2FileSize = 0,
+    owner = '',
+    completed = false,
+    isDeleted = false,
+    creationTime = new Date(Date.now()),
+    modificationTime = new Date(Date.now()),
+    nodeCount = 0,
+    edgeCount = 0,
+  } = options
+
   return {
-    isNdex: false,
-    ownerUUID: network.id,
-    isReadOnly: false,
-    subnetworkIds: [],
-    isValid: false,
-    warnings: [],
-    isShowcase: false,
-    isCertified: false,
-    indexLevel: '',
-    hasLayout: false,
-    hasSample: false,
-    cxFileSize: 0,
-    cx2FileSize: 0,
-    properties: [],
-    owner: '',
-    version: '',
-    completed: false,
-    visibility: Visibility.PUBLIC,
-    nodeCount: network.nodes.length,
-    edgeCount: network.edges.length,
+    isNdex,
+    ownerUUID,
+    isReadOnly,
+    subnetworkIds,
+    isValid,
+    warnings,
+    isShowcase,
+    isCertified,
+    indexLevel,
+    hasLayout,
+    hasSample,
+    cxFileSize,
+    cx2FileSize,
+    properties,
+    owner,
+    version,
+    completed,
+    visibility,
+    nodeCount,
+    edgeCount,
     description,
-    creationTime: now,
-    externalId: network.id,
-    isDeleted: false,
-    modificationTime: now,
+    creationTime,
+    externalId,
+    isDeleted,
+    modificationTime,
     name,
   }
 }

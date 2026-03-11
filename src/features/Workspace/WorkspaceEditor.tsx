@@ -18,10 +18,6 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
-import { useNetworkSummaryManager } from '../../data/hooks/useNetworkSummaryManager'
-import { useNetworkViewManager } from '../../data/hooks/useNetworkViewManager'
-import { useTableManager } from '../../data/hooks/useTableManager'
-import { useWorkspaceManager } from '../../data/hooks/useWorkspaceManager'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
@@ -86,10 +82,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers to the stores
   useAppManager() // Register dynamically loaded apps to the store
 
-  useWorkspaceManager()
-  useNetworkViewManager()
-  useTableManager()
-
   // Subscribers for optional features
   useHierarchyViewerManager()
 
@@ -119,6 +111,10 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
+
+  const setActiveNetworkView = useUiStateStore(
+    (state) => state.setActiveNetworkView,
+  )
 
   const { panels, activeNetworkView } = ui
 
@@ -187,8 +183,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       setNetworkModified(currentNetworkId, true)
     }
   })
-
-  useNetworkSummaryManager()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
@@ -363,6 +357,12 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           // Handle the case where the back/forward button is pressed
           setCurrentNetworkId(networkIdFromParams)
+          // Synchronize activeNetworkView with currentNetworkId
+          if (networkIdFromParams === '') {
+            setActiveNetworkView('')
+          } else {
+            setActiveNetworkView(networkIdFromParams)
+          }
           // eslint-disable-next-line react-hooks/exhaustive-deps
         })
         .catch((error) => {

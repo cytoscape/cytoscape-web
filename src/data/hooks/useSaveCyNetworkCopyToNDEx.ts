@@ -16,6 +16,7 @@ import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { useDeleteCyNetwork } from './useDeleteCyNetwork'
 import { useUrlNavigation } from './navigation/useUrlNavigation'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
@@ -31,9 +32,7 @@ export const useSaveCyNetworkCopyToNDEx = () => {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
-  const deleteNetworkFromWorkspace = useWorkspaceStore(
-    (state) => state.deleteNetwork,
-  )
+  const { deleteNetwork: deleteNetworkFromWorkspace } = useDeleteCyNetwork()
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -99,7 +98,7 @@ export const useSaveCyNetworkCopyToNDEx = () => {
       })
     }
     if (deleteOriginal === true) {
-      deleteNetworkFromWorkspace(network.id) // delete the original network from the workspace
+      deleteNetworkFromWorkspace(network.id, { navigate: false })
       const nextNetworkId =
         workspace.networkIds.filter(
           (networkId) => networkId !== network.id,

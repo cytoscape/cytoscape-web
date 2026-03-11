@@ -29,6 +29,8 @@ export interface AppConfig {
   googleAnalyticsId: string
   undoStackSize: number
   debug: boolean
+  errorReportEndpoint: string
+  maxErrorReportSnapshotSizeMB: number
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -65,6 +67,8 @@ export const defaultAppConfig: AppConfig = {
   googleAnalyticsId: '',
   undoStackSize: 20,
   debug: true,
+  errorReportEndpoint: '',
+  maxErrorReportSnapshotSizeMB: 10,
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

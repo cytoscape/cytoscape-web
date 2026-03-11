@@ -26,11 +26,11 @@ describe('DefaultVisualStyle', () => {
 
   describe('DEFAULT_CUSTOM_GRAPHICS_POSITION', () => {
     it('should have correct default values', () => {
-      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.justification).toBe('center')
-      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.marginX).toBe(0)
-      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.marginY).toBe(0)
-      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.entityAnchor).toBe('C')
-      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.graphicsAnchor).toBe('C')
+      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.JUSTIFICATION).toBe('center')
+      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.MARGIN_X).toBe(0)
+      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.MARGIN_Y).toBe(0)
+      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.ENTITY_ANCHOR).toBe('C')
+      expect(DEFAULT_CUSTOM_GRAPHICS_POSITION.GRAPHICS_ANCHOR).toBe('C')
     })
   })
 
@@ -89,7 +89,9 @@ describe('DefaultVisualStyle', () => {
       const visualStyle = getDefaultVisualStyle()
 
       expect(visualStyle.nodeShape.group).toBe(VisualPropertyGroup.Node)
-      expect(visualStyle.nodeBackgroundColor.group).toBe(VisualPropertyGroup.Node)
+      expect(visualStyle.nodeBackgroundColor.group).toBe(
+        VisualPropertyGroup.Node,
+      )
       expect(visualStyle.nodeHeight.group).toBe(VisualPropertyGroup.Node)
     })
 
@@ -98,7 +100,9 @@ describe('DefaultVisualStyle', () => {
 
       expect(visualStyle.edgeLineColor.group).toBe(VisualPropertyGroup.Edge)
       expect(visualStyle.edgeWidth.group).toBe(VisualPropertyGroup.Edge)
-      expect(visualStyle.edgeTargetArrowShape.group).toBe(VisualPropertyGroup.Edge)
+      expect(visualStyle.edgeTargetArrowShape.group).toBe(
+        VisualPropertyGroup.Edge,
+      )
     })
 
     it('should have network properties with correct group', () => {
@@ -158,7 +162,9 @@ describe('DefaultVisualStyle', () => {
     it('should have custom graphics with default values', () => {
       const visualStyle = getDefaultVisualStyle()
 
-      expect(visualStyle.nodeImageChart1.defaultValue).toEqual(DEFAULT_CUSTOM_GRAPHICS)
+      expect(visualStyle.nodeImageChart1.defaultValue).toEqual(
+        DEFAULT_CUSTOM_GRAPHICS,
+      )
       expect(visualStyle.nodeImageChartPosition1.defaultValue).toEqual(
         DEFAULT_CUSTOM_GRAPHICS_POSITION,
       )
@@ -175,4 +181,3 @@ describe('DefaultVisualStyle', () => {
     })
   })
 })
-

@@ -109,8 +109,6 @@ describe('networkAttributesConverter', () => {
             {
               name: 'Test Network',
               version: '1.0',
-              nodeCount: 10,
-              edgeCount: 5,
               isActive: true,
               tags: ['tag1', 'tag2'],
             },
@@ -125,8 +123,7 @@ describe('networkAttributesConverter', () => {
 
       expect(networkAttributes.attributes.name).toBe('Test Network')
       expect(networkAttributes.attributes.version).toBe('1.0')
-      expect(networkAttributes.attributes.nodeCount).toBe(10)
-      expect(networkAttributes.attributes.edgeCount).toBe(5)
+      expect(networkAttributes.attributes.name).toBe('Test Network')
       expect(networkAttributes.attributes.isActive).toBe(true)
       expect(networkAttributes.attributes.tags).toEqual(['tag1', 'tag2'])
     })

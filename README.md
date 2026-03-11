@@ -26,6 +26,15 @@ Keiichiro Ono, Dylan Fong, Chengzhan Gao, Christopher Churas, Rudolf Pillich, Jo
 
 Cytoscape Web is designed to expand with two types of **Apps**. We are actively researching and developing examples. Please visit the following pages for more details:
 
+> **⚠ New App API in active development (as of 2026)**
+>
+> A new JavaScript/TypeScript App API (`window.CyWebApi` / Module Federation) is under active
+> development in the `new-app-api` branch. This API will become the recommended way to build
+> apps and is expected to **deprecate the current Module Federation raw-store approach** once
+> Phase 1 is complete. If you are starting a new app, consider waiting for or tracking
+> [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types)
+> (`@alpha`) which already publishes the Phase 0 type declarations.
+
 - [App examples](https://github.com/cytoscape/cytoscape-web-app-examples)
 - [Service-based app developer guide](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>)
 

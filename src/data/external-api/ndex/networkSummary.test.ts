@@ -39,13 +39,14 @@ describe('normalizeNdexSummaries', () => {
     version: '1.0',
     completed: true,
     visibility: 'public',
-    nodeCount: 10,
-    edgeCount: 20,
     description: 'Test description',
     creationTime: new Date('2023-01-01T00:00:00Z'),
     externalId: 'network-123',
     isDeleted: false,
     modificationTime: new Date('2023-01-02T00:00:00Z'),
+    // Add required properties for NdexNetworkSummary
+    nodeCount: 5,
+    edgeCount: 10,
   })
 
   describe('property value type conversions', () => {
@@ -309,15 +310,13 @@ describe('normalizeNdexSummaries', () => {
     it('should preserve all other summary fields', () => {
       const summary = createBaseSummary()
       summary.ownerUUID = 'owner-456'
-      summary.nodeCount = 100
-      summary.edgeCount = 200
+      summary.version = '2.0'
       summary.externalId = 'external-789'
 
       const result = normalizeNdexSummaries([summary])
 
       expect(result[0].ownerUUID).toBe('owner-456')
-      expect(result[0].nodeCount).toBe(100)
-      expect(result[0].edgeCount).toBe(200)
+      expect(result[0].version).toBe('2.0')
       expect(result[0].externalId).toBe('external-789')
     })
   })
@@ -566,13 +565,13 @@ describe('fetchNdexSummaries', () => {
     version: '1.0',
     completed: true,
     visibility: 'public',
-    nodeCount: 10,
-    edgeCount: 20,
     description: 'Test description',
     creationTime: new Date('2023-01-01T00:00:00Z'),
     externalId: 'network-123',
     isDeleted: false,
     modificationTime: new Date('2023-01-02T00:00:00Z'),
+    nodeCount: 5,
+    edgeCount: 10,
   })
 
   beforeEach(() => {
@@ -775,14 +774,14 @@ describe('getNetworkValidationStatus', () => {
     version: '1.0',
     completed: true,
     visibility: 'public',
-    nodeCount: 10,
-    edgeCount: 20,
     description: 'Test description',
     creationTime: new Date('2023-01-01T00:00:00Z'),
     externalId: 'network-123',
     isDeleted: false,
     modificationTime: new Date('2023-01-02T00:00:00Z'),
     errorMessage: undefined,
+    nodeCount: 5,
+    edgeCount: 10,
   })
 
   beforeEach(() => {

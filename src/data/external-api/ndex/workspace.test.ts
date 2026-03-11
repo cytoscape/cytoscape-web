@@ -175,8 +175,6 @@ describe('fetchMyNdexAccountNetworks', () => {
   const createMockNetwork = (id: string, name: string) => ({
     uuid: id,
     name: name,
-    nodeCount: 10,
-    edgeCount: 20,
   })
 
   beforeEach(() => {
@@ -289,8 +287,6 @@ describe('searchNdexNetworks', () => {
   const createMockNetwork = (id: string, name: string) => ({
     uuid: id,
     name: name,
-    nodeCount: 10,
-    edgeCount: 20,
   })
 
   beforeEach(() => {

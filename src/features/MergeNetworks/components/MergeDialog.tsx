@@ -61,6 +61,7 @@ import { useLoadCyNetwork } from '../../../data/hooks/useLoadCyNetwork'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Column } from '../../../models/TableModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import {
@@ -69,7 +70,7 @@ import {
   Pair,
   TableView,
 } from '../models/DataInterfaceForMerge'
-import { createMergedNetworkWithView } from '../models/Impl/CreateMergedNetworkWithView'
+import { createMergedNetwork } from '../models/Impl/CreateMergedNetwork'
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
@@ -526,35 +527,36 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           toMergeNetworksList.some((pair) => pair[1] === id),
         ),
       )
-      const [newNetworkWithView, networkSummary] =
-        await createMergedNetworkWithView(
-          [...toMergeNetworksList.map((i) => i[1])],
-          newNetworkId,
-          mergedNetworkName,
-          networkRecords,
-          nodeMatchingTableObj,
-          edgeMatchingTableObj,
-          netMatchingTableObj,
-          matchingCols,
-          summaryRecord,
-          mergeOpType,
-          mergeWithinNetwork,
-          mergeOnlyNodes,
-          strictRemoveMode,
-        )
-
-      // Update state stores with the new network and its components
-      setVisualStyleOptions(newNetworkId, newNetworkWithView.visualStyleOptions)
-      addNetworkToWorkspace(newNetworkId)
-      addNewNetwork(newNetworkWithView.network)
-      setVisualStyle(newNetworkId, newNetworkWithView.visualStyle)
-      setTables(
+      const [newCyNetwork, networkSummary] = await createMergedNetwork(
+        [...toMergeNetworksList.map((i) => i[1])],
         newNetworkId,
-        newNetworkWithView.nodeTable,
-        newNetworkWithView.edgeTable,
+        mergedNetworkName,
+        networkRecords,
+        nodeMatchingTableObj,
+        edgeMatchingTableObj,
+        netMatchingTableObj,
+        matchingCols,
+        summaryRecord,
+        mergeOpType,
+        mergeWithinNetwork,
+        mergeOnlyNodes,
+        strictRemoveMode,
       )
-      setViewModel(newNetworkId, newNetworkWithView.networkViews[0])
-      const newSummary = { ...networkSummary, hasLayout: false }
+
+      const newSummary = createNetworkSummary({
+        ...networkSummary,
+        networkId: newNetworkId,
+        hasLayout: false, // Merged networks don't have layout initially
+        nodeCount: newCyNetwork.network.nodes.length,
+        edgeCount: newCyNetwork.network.edges.length,
+      })
+      // Update state stores with the new network and its components
+      setVisualStyleOptions(newNetworkId, newCyNetwork.visualStyleOptions)
+      addNetworkToWorkspace(newNetworkId)
+      addNewNetwork(newCyNetwork.network)
+      setVisualStyle(newNetworkId, newCyNetwork.visualStyle)
+      setTables(newNetworkId, newCyNetwork.nodeTable, newCyNetwork.edgeTable)
+      setViewModel(newNetworkId, newCyNetwork.networkViews[0])
       await putNetworkSummaryToDb(newSummary)
       addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network

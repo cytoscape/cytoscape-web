@@ -1,7 +1,7 @@
 import { MenuItem } from '@mui/material'
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement, useState } from 'react'
 
-import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuProps } from '../BaseMenuProps'
@@ -9,40 +9,11 @@ import { BaseMenuProps } from '../BaseMenuProps'
 export const RemoveNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
-  const deleteCurrentNetwork = useWorkspaceStore(
-    (state) => state.deleteCurrentNetwork,
-  )
-  const currentNetworkId = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
-  const { navigateToNetwork } = useUrlNavigation()
-  const workspace = useWorkspaceStore((state) => state.workspace)
+  const { deleteCurrentNetwork } = useDeleteCyNetwork()
+
   const handleRemoveNetwork = (): void => {
     props.handleClose()
     deleteCurrentNetwork()
-    const nextNetworkId =
-      networkIds.filter((networkId) => networkId !== currentNetworkId)?.[0] ??
-      ''
-    if (nextNetworkId !== '') {
-      setCurrentNetworkId(nextNetworkId)
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: nextNetworkId,
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
-    } else {
-      setCurrentNetworkId('')
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: '',
-        searchParams: new URLSearchParams(location.search),
-        replace: true,
-      })
-    }
   }
 
   return (
