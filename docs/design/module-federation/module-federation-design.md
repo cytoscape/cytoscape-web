@@ -539,6 +539,7 @@ use plain Jest; hook wrapper tests use `renderHook`.
 
 - Node/edge CRUD: `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`
 - Coordinates stores via `.getState()` (mirrors logic of `useCreateNode`, `useCreateEdge`, `useDeleteNodes`, `useDeleteEdges`)
+- **Enhancement (1a+):** Add optional `bypass` field to `CreateNodeOptions` and `CreateEdgeOptions` so callers can set visual property bypasses atomically at creation time (single API call instead of create + separate `setBypass`). The `bypass` field is `Partial<Record<VisualPropertyName, VisualPropertyValueType>>`. Implementation: call `visualStyleApi.setBypass` immediately after the element is created if `options.bypass` is non-empty.
 
 **1b: Network API** (`core/networkApi.ts` + `useNetworkApi.ts`)
 
@@ -584,6 +585,34 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - `unmount()` is called on `beforeunload` and when app status transitions to `AppStatus.Error`
 - Backward-compatible: existing apps without `mount`/`unmount` continue to work unchanged
 - **Example validation**: Add `mount(context)` to a toy app that calls `context.apis.workspace.getNetworkList()` on activation
+
+**1h: Context Menu API** (`core/contextMenuApi.ts` + `useContextMenuApi.ts`)
+
+- Exposes a stable API for external apps to register and remove custom context menu items on nodes, edges, and the canvas background.
+- `addContextMenuItem(config: ContextMenuItemConfig): ApiResult<{ itemId: string }>` — registers an item; returns a unique `itemId` for later removal
+- `removeContextMenuItem(itemId: string): ApiResult` — removes a previously registered item by its `itemId`
+- Context menu items are defined by `ContextMenuItemConfig`:
+  ```typescript
+  interface ContextMenuItemConfig {
+    label: string
+    handler: (target: ContextMenuTarget) => void
+    /** Which context menus to appear in. @default ['node', 'edge'] */
+    targetTypes?: Array<'node' | 'edge' | 'canvas'>
+    icon?: string // optional URL or data URI
+  }
+  interface ContextMenuTarget {
+    type: 'node' | 'edge' | 'canvas'
+    id?: IdType // present for node/edge; absent for canvas
+    networkId: IdType
+  }
+  ```
+- **Host-side requirement:** A `ContextMenuItemStore` (Zustand) must be created to hold the registered item registry. The existing host context menu components (in `src/features/`) must be updated to read from this store and render app-registered items alongside built-in items.
+- `addContextMenuItem`: validates `label` is non-empty, generates a UUID `itemId`, stores the entry in `ContextMenuItemStore`, returns `ok({ itemId })`.
+- `removeContextMenuItem`: looks up the item by `itemId`, removes from store, returns `ItemNotFound` if the `itemId` is unknown.
+- Add `contextMenu: contextMenuApi` to `CyWebApi` in `src/app-api/core/index.ts`.
+- Add `cyweb/ContextMenuApi` entry to `webpack.config.js`.
+- **New error code:** `ContextMenuItemNotFound = 'CONTEXT_MENU_ITEM_NOT_FOUND'` added to `ApiErrorCode`.
+- **Example validation**: Add a demo to `hello-world` that registers an "Expand Pathway" item on node context menus via `mount(context)` and removes it in `unmount()`.
 
 #### Step 2: Event Bus
 
@@ -669,6 +698,12 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 - [ ] `CyAppWithLifecycle.mount(context)` called by host when app is activated; `AppContext.apis === window.CyWebApi`
 - [ ] `CyAppWithLifecycle.unmount()` called by host on page unload and app deactivation
 - [ ] Existing apps without lifecycle methods continue to work (backward compatible)
+- [ ] `createNode` accepts optional `bypass` field; visual property bypasses are applied atomically at creation
+- [ ] `createEdge` accepts optional `bypass` field; visual property bypasses are applied atomically at creation
+- [ ] `ContextMenuApi` implemented: `addContextMenuItem`, `removeContextMenuItem`
+- [ ] `ContextMenuItemStore` implemented; host context menu components render app-registered items
+- [ ] `window.CyWebApi.contextMenu` accessible after app load; `cyweb/ContextMenuApi` webpack entry added
+- [ ] Context menu items registered in `mount()` are removed in `unmount()` demo works end-to-end
 
 ### Phase 2: Developer Experience
 
@@ -681,10 +716,11 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 ### Phase 3: Extensibility
 
 1. ~~App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)~~ — **Moved to Phase 1 Step 1g.** `AppContext.apis` is set to `window.CyWebApi` directly; no separate assembly needed.
-2. Expand UI integration points
-3. Expose CX2 export API
-4. Inter-app communication protocol
-5. Security sandbox evaluation
+2. ~~Context Menu API (`addContextMenuItem`, `removeContextMenuItem`)~~ — **Moved to Phase 1 Step 1h.** Implemented as `ContextMenuItemStore` + `contextMenuApi` with host UI wiring.
+3. ~~Expose CX2 export API~~ — **Shipped in Phase 1e** as `exportApi.exportToCx2`.
+4. Expand UI integration points (toolbar buttons, panel slot injection, status bar items)
+5. Inter-app communication protocol
+6. Security sandbox evaluation
 
 ---
 
@@ -704,6 +740,8 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 | Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                        |
 | Step 1f: Workspace API        | `useWorkspaceApi.ts`, unit tests, `cyweb/WorkspaceApi` webpack entry, `WorkspaceInfo`/`WorkspaceNetworkInfo` types, `hello-world` panel update |
 | Step 1g: App Lifecycle        | `useAppManager.ts` lifecycle wiring, `AppContext.apis` typed as `CyWebApiType`, `mount`/`unmount` tests |
+| Step 1a+: Element bypass      | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `elementApi.ts`    |
+| Step 1h: Context Menu API     | `ContextMenuItemStore`, `contextMenuApi.ts`, `useContextMenuApi.ts`, host UI wiring, unit tests         |
 | Step 2: Event Bus             | `initEventBus.ts`, `useCyWebEvent.ts`, `cyweb/EventBus` entry, unit + hook tests, `cywebapi:ready` dispatch, `SelectionCounter` demo |
 | Step 3: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                                              |
 | Step 4: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                                          |

@@ -6,7 +6,7 @@ The app API (`src/app-api/`) is the sole public API for external apps loaded via
 Module Federation. It provides a stable contract independent of internal store and
 hook implementations.
 
-The API is organized into **9 domain namespaces** (Phase 1a–1g), an **Event Bus**
+The API is organized into **10 domain namespaces** (Phase 1a–1h), an **Event Bus**
 (useCyWebEvent), and an **App Lifecycle** interface (Phase 1g).
 
 ## Result Convention
@@ -20,17 +20,18 @@ App API hooks **never** throw exceptions across the API boundary.
 
 ## Error Codes
 
-| Code                      | When Returned                                          |
-| ------------------------- | ------------------------------------------------------ |
-| `NETWORK_NOT_FOUND`       | The specified network ID does not exist                |
-| `NODE_NOT_FOUND`          | The specified node ID does not exist in the network    |
-| `EDGE_NOT_FOUND`          | The specified edge ID does not exist in the network    |
-| `INVALID_INPUT`           | Input validation failed (missing/malformed parameters) |
-| `INVALID_CX2`             | CX2 data failed structural validation                  |
-| `OPERATION_FAILED`        | An internal store operation threw an unexpected error  |
-| `LAYOUT_ENGINE_NOT_FOUND` | The requested layout engine is not registered          |
-| `FUNCTION_NOT_AVAILABLE`  | A renderer function (e.g., fit) is not registered yet  |
-| `NO_CURRENT_NETWORK`      | No network is currently selected in the workspace      |
+| Code                          | When Returned                                          |
+| ----------------------------- | ------------------------------------------------------ |
+| `NETWORK_NOT_FOUND`           | The specified network ID does not exist                |
+| `NODE_NOT_FOUND`              | The specified node ID does not exist in the network    |
+| `EDGE_NOT_FOUND`              | The specified edge ID does not exist in the network    |
+| `INVALID_INPUT`               | Input validation failed (missing/malformed parameters) |
+| `INVALID_CX2`                 | CX2 data failed structural validation                  |
+| `OPERATION_FAILED`            | An internal store operation threw an unexpected error  |
+| `LAYOUT_ENGINE_NOT_FOUND`     | The requested layout engine is not registered          |
+| `FUNCTION_NOT_AVAILABLE`      | A renderer function (e.g., fit) is not registered yet  |
+| `NO_CURRENT_NETWORK`          | No network is currently selected in the workspace      |
+| `CONTEXT_MENU_ITEM_NOT_FOUND` | The specified context menu item ID does not exist      |
 
 ## Module Federation Entry
 
@@ -54,6 +55,7 @@ import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
 | `cyweb/LayoutApi`      | `useLayoutApi()`        | `.layout`                | 1e    |
 | `cyweb/ExportApi`      | `useExportApi()`        | `.export`                | 1e    |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`     | `.workspace`             | 1f    |
+| `cyweb/ContextMenuApi` | `useContextMenuApi()`   | `.contextMenu`           | 1h    |
 | `cyweb/EventBus`       | `useCyWebEvent()`       | _(window events)_        | 1g    |
 
 All hooks are thin React wrappers around framework-agnostic core objects.
@@ -90,11 +92,15 @@ interface EdgeData {
 
 interface CreateNodeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically at creation. */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean   // default: true
 }
 
 interface CreateEdgeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically at creation. */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean   // default: true
 }
 ```
@@ -127,6 +133,10 @@ unless `autoSelect: false`, exclusively selects the new node.
 If the node table has a `name` column and no `name` attribute is provided,
 defaults to `"Node <id>"`.
 
+If `options.bypass` is provided, visual property bypasses are applied atomically
+immediately after the node is created (single operation — no separate `setBypass`
+call required).
+
 | Error Code          | Condition                  |
 | ------------------- | -------------------------- |
 | `NETWORK_NOT_FOUND` | `networkId` does not exist |
@@ -138,6 +148,9 @@ unless `autoSelect: false`, exclusively selects the new edge.
 
 If the edge table has a `name` column and no `name` attribute is provided,
 defaults to `"<source> (interacts with) <target>"`.
+
+If `options.bypass` is provided, visual property bypasses are applied atomically
+immediately after the edge is created.
 
 | Error Code          | Condition                                    |
 | ------------------- | -------------------------------------------- |
@@ -647,6 +660,97 @@ Renames the workspace. The name is trimmed before being stored.
 
 ---
 
+## ContextMenuApi (`cyweb/ContextMenuApi`)
+
+Allows external apps to register and remove custom items in the host's context
+menus (right-click on nodes, edges, or the canvas background).
+
+```typescript
+import { useContextMenuApi } from 'cyweb/ContextMenuApi'
+import type { ContextMenuItemConfig, ContextMenuTarget } from 'cyweb/ApiTypes'
+```
+
+### Types
+
+```typescript
+interface ContextMenuTarget {
+  type: 'node' | 'edge' | 'canvas'
+  /** Present for node/edge targets; absent for canvas. */
+  id?: IdType
+  networkId: IdType
+}
+
+interface ContextMenuItemConfig {
+  /** Display label shown in the menu. Must be non-empty. */
+  label: string
+  /** Called when the user clicks the item. */
+  handler: (target: ContextMenuTarget) => void
+  /**
+   * Which context menus this item appears in.
+   * @default ['node', 'edge']
+   */
+  targetTypes?: Array<'node' | 'edge' | 'canvas'>
+  /** Optional icon URL or data URI rendered next to the label. */
+  icon?: string
+}
+```
+
+### Methods
+
+#### `addContextMenuItem(config): ApiResult<{ itemId: string }>`
+
+Registers a new context menu item. Returns a unique `itemId` that can be used to
+remove the item later.
+
+Items registered in `mount()` **must** be removed in `unmount()` to avoid
+orphaned entries after app deactivation.
+
+| Error Code      | Condition                        |
+| --------------- | -------------------------------- |
+| `INVALID_INPUT` | `label` is empty or whitespace   |
+
+#### `removeContextMenuItem(itemId): ApiResult`
+
+Removes a previously registered context menu item.
+
+| Error Code                    | Condition                    |
+| ----------------------------- | ---------------------------- |
+| `CONTEXT_MENU_ITEM_NOT_FOUND` | `itemId` is unknown          |
+
+### Example
+
+```typescript
+// Typical pattern — register in mount(), remove in unmount()
+let menuItemId: string | undefined
+
+export const MyApp: CyAppWithLifecycle = {
+  // ...
+  mount(context) {
+    const result = context.apis.contextMenu.addContextMenuItem({
+      label: 'Expand Pathway',
+      handler: (target) => {
+        if (target.type === 'node') {
+          console.log('Expand pathway for node:', target.id)
+        }
+      },
+      targetTypes: ['node'],
+    })
+    if (result.success) {
+      menuItemId = result.data.itemId
+    }
+  },
+
+  unmount() {
+    if (menuItemId !== undefined) {
+      context.apis.contextMenu.removeContextMenuItem(menuItemId)
+      menuItemId = undefined
+    }
+  },
+}
+```
+
+---
+
 ## Event Bus (`cyweb/EventBus`)
 
 The Event Bus bridges Cytoscape Web's internal Zustand store mutations to typed
@@ -810,6 +914,7 @@ Also triggered by TableApi write methods.
 | `layoutApi.applyLayout`                  | `layout:started`, `layout:completed`  |
 | `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `removeMapping` | `style:changed` (×per property) |
 | `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `setColumnName` / `applyValueToElements` | `data:changed` |
+| `contextMenuApi.addContextMenuItem` / `removeContextMenuItem` | _(no events — synchronous store mutation only)_ |
 
 ### Usage Example (React)
 
@@ -988,7 +1093,7 @@ export const MyApp: CyAppWithLifecycle = {
 
 ## `window.CyWebApi`
 
-The global `window.CyWebApi` object assembles all 9 domain APIs into a single
+The global `window.CyWebApi` object assembles all 10 domain APIs into a single
 singleton. Available after the `cywebapi:ready` event.
 
 ```typescript
@@ -1002,6 +1107,7 @@ interface CyWebApiType {
   layout:      LayoutApi
   export:      ExportApi
   workspace:   WorkspaceApi
+  contextMenu: ContextMenuApi
 }
 ```
 

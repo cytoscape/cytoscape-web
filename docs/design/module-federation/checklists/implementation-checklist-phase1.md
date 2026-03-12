@@ -304,6 +304,100 @@ _Design: app-api-specification.md §1.5.9, §2.6 (Phase 1g)_
 
 ---
 
+## Phase 1a+: Element Bypass Support
+
+_Design: app-api-specification.md §1.5.1 (CreateNodeOptions / CreateEdgeOptions enhancement)_
+
+**Dependency note:** Requires Phase 1a (elementApi) and Phase 1d (visualStyleApi) to be complete.
+
+### Deliverables
+
+- [ ] Modify `src/app-api/types/ElementTypes.ts` — re-export `VisualPropertyValueType` (needed for bypass type)
+- [ ] Modify `src/app-api/core/elementApi.ts`:
+  - Add `bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>` to `CreateNodeOptions`
+  - Add `bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>` to `CreateEdgeOptions`
+  - In `createNode`: after element creation, if `options.bypass` is non-empty, call `visualStyleApi.setBypass(networkId, vpName, [newNodeId], vpValue)` for each entry
+  - In `createEdge`: same pattern for the new edge
+- [ ] Update `src/app-api/core/elementApi.test.ts`:
+  - Add test: `createNode` with `bypass` option applies bypass via `setBypass`
+  - Add test: `createEdge` with `bypass` option applies bypass via `setBypass`
+  - Add test: `createNode` without `bypass` does not call `setBypass`
+
+### Verification
+
+- [ ] `npm run lint` passes
+- [ ] `npm run test:unit -- --testPathPattern="elementApi"` passes
+- [ ] Manual: create node with `bypass: { nodeBackgroundColor: '#ff0000' }` — node renders red immediately
+
+---
+
+## Phase 1h: Context Menu API
+
+_Design: app-api-specification.md §1.5.11_
+
+**Dependency note:** Requires Phase 1g (App Lifecycle) for the `mount`/`unmount` registration pattern demo. The `ContextMenuItemStore` can be created independently.
+
+### Pre-read files
+
+| File | Lines | Purpose |
+| ---- | ----- | ------- |
+| `src/features/` context menu components | — | Find existing right-click menu rendering location |
+| `src/data/hooks/stores/` (any existing store for reference) | — | Pattern for new store creation |
+
+### Deliverables — Host-side store
+
+- [ ] Create `src/data/hooks/stores/ContextMenuItemStore.ts` — Zustand store holding registered items registry
+  - `items: RegisteredContextMenuItem[]`
+  - `addItem(item: RegisteredContextMenuItem): void`
+  - `removeItem(itemId: string): void`
+- [ ] Create `src/models/StoreModel/ContextMenuItemStoreModel.ts` — TypeScript interface for the store
+
+### Deliverables — App API
+
+- [ ] Add `ContextMenuItemNotFound = 'CONTEXT_MENU_ITEM_NOT_FOUND'` to `ApiErrorCode` in `src/app-api/types/ApiResult.ts`
+- [ ] Create `src/app-api/core/contextMenuApi.ts` — framework-agnostic; coordinates `ContextMenuItemStore` via `.getState()`; no React imports
+  - Implement `addContextMenuItem(config)` → `ApiResult<{ itemId: string }>`:
+    - Validate `config.label.trim() !== ''` → `fail(InvalidInput)` if empty
+    - Generate UUID `itemId`
+    - Default `config.targetTypes` to `['node', 'edge']` if omitted
+    - Call `ContextMenuItemStore.getState().addItem({...config, itemId})`
+    - Return `ok({ itemId })`
+  - Implement `removeContextMenuItem(itemId)` → `ApiResult`:
+    - Look up item by `itemId` in store
+    - If not found → `fail(ContextMenuItemNotFound, ...)`
+    - Call `ContextMenuItemStore.getState().removeItem(itemId)`
+    - Return `ok()`
+- [ ] Create `src/app-api/useContextMenuApi.ts` — thin React hook: `export const useContextMenuApi = (): ContextMenuApi => contextMenuApi`
+- [ ] Export types `ContextMenuItemConfig`, `ContextMenuTarget`, `ContextMenuApi` via `src/app-api/types/index.ts`
+- [ ] Create `src/app-api/core/contextMenuApi.test.ts` — plain Jest tests (mock `ContextMenuItemStore`):
+  - `addContextMenuItem` with valid label returns `ok({ itemId })`
+  - `addContextMenuItem` with empty label returns `fail(InvalidInput)`
+  - `addContextMenuItem` defaults `targetTypes` to `['node', 'edge']`
+  - `removeContextMenuItem` with known `itemId` removes item and returns `ok()`
+  - `removeContextMenuItem` with unknown `itemId` returns `fail(ContextMenuItemNotFound)`
+- [ ] Create `src/app-api/useContextMenuApi.test.ts` — trivial hook test: verifies hook returns core `contextMenuApi` object
+- [ ] Modify `src/app-api/core/index.ts` — add `contextMenu: contextMenuApi` to `CyWebApi`
+- [ ] Modify `src/app-api/types/AppContext.ts` — add `contextMenu: ContextMenuApi` to `AppContext.apis` type
+- [ ] Modify `webpack.config.js` — add `'./ContextMenuApi': './src/app-api/useContextMenuApi.ts'`
+
+### Deliverables — Host UI wiring
+
+- [ ] Locate existing context menu components in `src/features/` that render node/edge/canvas right-click menus
+- [ ] Modify those components to read from `ContextMenuItemStore` and render app-registered items below built-in items
+- [ ] App-registered items call `item.handler({ type, id, networkId })` on click
+- [ ] Items with `targetTypes` not matching the current target type are filtered out
+
+### Verification
+
+- [ ] `npm run lint` passes
+- [ ] `npm run test:unit -- --testPathPattern="contextMenuApi|ContextMenuItemStore"` passes
+- [ ] `npm run build` succeeds
+- [ ] Manual: call `window.CyWebApi.contextMenu.addContextMenuItem({ label: 'Test Item', handler: (t) => console.log(t) })` in DevTools — item appears in node right-click menu
+- [ ] Manual: call `window.CyWebApi.contextMenu.removeContextMenuItem(itemId)` — item disappears from menu
+- [ ] Manual: add item in `mount()`, remove in `unmount()` — no orphaned items after app deactivation
+
+---
+
 ## Step 2: Event Bus
 
 _Design: [event-bus-specification.md](../specifications/event-bus-specification.md) — full spec including store subscription mapping, edge cases, and test patterns_
@@ -377,16 +471,21 @@ to be complete before Step 2 is closed.
 - [ ] `npm run lint` — zero errors
 - [ ] `npm run test:unit` — all tests pass
 - [ ] `npm run build` — production build succeeds
-- [ ] All 11 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `WorkspaceApi`, `EventBus`
+- [ ] All 12 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `WorkspaceApi`, `ContextMenuApi`, `EventBus`
 - [ ] `AppContext.apis` typed as `CyWebApiType` (same object as `window.CyWebApi` at runtime)
 - [ ] Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
-- [ ] `src/app-api/api_docs/Api.md` covers all 9 app API hooks + event bus + lifecycle
+- [ ] `src/app-api/api_docs/Api.md` covers all 10 app API hooks + event bus + lifecycle
 - [ ] `src/app-api/core/` contains zero React imports (`import.*from 'react'` absent in all `core/*.ts` files)
 - [ ] `cywebapi:ready` dispatched on `window` after full initialization
 - [ ] `hello-world/HelloPanel` `SelectionCounter` reacts to selection via `useCyWebEvent`
 - [ ] Apps implementing `CyAppWithLifecycle.mount()` receive `AppContext` on activation
 - [ ] Apps implementing `CyAppWithLifecycle.unmount()` are cleaned up on page unload
 - [ ] Existing apps without lifecycle methods continue to function (backward compatible)
+- [ ] `createNode` with `bypass` option applies visual property bypasses atomically
+- [ ] `createEdge` with `bypass` option applies visual property bypasses atomically
+- [ ] `window.CyWebApi.contextMenu.addContextMenuItem(...)` registers items visible in context menus
+- [ ] `window.CyWebApi.contextMenu.removeContextMenuItem(itemId)` removes items from context menus
+- [ ] Context menu items registered in `mount()` and removed in `unmount()` leave no orphaned state
 
 ---
 
@@ -440,3 +539,7 @@ to be complete before Step 2 is closed.
 | `getCurrentNetworkId`       | `WorkspaceStore.workspace.currentNetworkId` read        | `ok({networkId})`                                                | 1f    |
 | `switchCurrentNetwork`      | `WorkspaceStore.setCurrentNetworkId()` (fires `network:switched` via `initEventBus`) | `ok()`                                    | 1f    |
 | `setWorkspaceName`          | `WorkspaceStore.setName(name.trim())`                   | `ok()`                                                           | 1f    |
+| `createNode` (bypass)       | `visualStyleApi.setBypass()` called after element creation | `ok({nodeId})` (bypass applied atomically)                    | 1a+   |
+| `createEdge` (bypass)       | `visualStyleApi.setBypass()` called after element creation | `ok({edgeId})` (bypass applied atomically)                    | 1a+   |
+| `addContextMenuItem`        | `ContextMenuItemStore.addItem()`                        | `ok({itemId})`                                                   | 1h    |
+| `removeContextMenuItem`     | `ContextMenuItemStore.removeItem()`                     | `ok()` / `fail(ContextMenuItemNotFound)`                         | 1h    |

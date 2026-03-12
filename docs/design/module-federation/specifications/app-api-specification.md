@@ -126,6 +126,7 @@ const ApiErrorCode = {
   LayoutEngineNotFound: 'LAYOUT_ENGINE_NOT_FOUND',
   FunctionNotAvailable: 'FUNCTION_NOT_AVAILABLE',
   NoCurrentNetwork: 'NO_CURRENT_NETWORK',
+  ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
 } as const
 ```
 
@@ -182,11 +183,15 @@ interface EdgeData {
 
 interface CreateNodeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically at creation. @default undefined */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean // default: true
 }
 
 interface CreateEdgeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically at creation. @default undefined */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean // default: true
 }
 
@@ -241,7 +246,7 @@ const useElementApi: () => ElementApi // React hook — returns elementApi from 
 
 - **`getNode`**: Reads attributes from `TableStore.getState()` and position from `ViewModelStore.getState()`. Validates node existence in `NetworkStore.getState()`. Returns `NodeNotFound` if the node does not exist.
 - **`getEdge`**: Reads source/target from `NetworkStore.getState()` and attributes from `TableStore.getState()`. Returns `EdgeNotFound` if the edge does not exist.
-- **`createNode` / `createEdge`**: Coordinates `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` directly via `.getState()`, replicating the logic of `useCreateNode()` / `useCreateEdge()`. The `skipUndo` option is never passed — undo always records.
+- **`createNode` / `createEdge`**: Coordinates `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` directly via `.getState()`, replicating the logic of `useCreateNode()` / `useCreateEdge()`. The `skipUndo` option is never passed — undo always records. If `options.bypass` is non-empty, `visualStyleApi.setBypass()` is called immediately after element creation so that bypass values are applied atomically in the same operation.
 - **`moveEdge`**: Atomically updates an edge's source and/or target node using Cytoscape.js's native `edge.move()` on the headless core. This preserves the edge ID, so all data keyed by edge ID — table row attributes, visual style bypasses, and edge views — remains intact without any migration. Only the network topology store is mutated. A new `MOVE_EDGES` undo command records `(networkId, edgeId, oldSource, oldTarget)` for rollback. Returns `EdgeNotFound` or `NodeNotFound` on invalid IDs. See [§ 3.1.1](#311-moveedge--detailed-implementation-design) for the full implementation design.
 
 #### 1.5.2 Network API
@@ -704,6 +709,103 @@ const useWorkspaceApi: () => WorkspaceApi // React hook — returns workspaceApi
 - **`switchCurrentNetwork`**: Validates `networkId ∈ workspace.networkIds`, then calls `WorkspaceStore.getState().setCurrentNetworkId(networkId)`. The `network:switched` event is dispatched automatically by the existing `initEventBus` Zustand subscription — no explicit dispatch is needed here.
 - **`setWorkspaceName`**: Validates `name.trim() !== ''`, then calls `WorkspaceStore.getState().setName(name.trim())`.
 
+#### 1.5.11 Context Menu API
+
+Extends the host's context menu with app-registered items. Apps can add items to node, edge, or canvas background context menus and remove them when the app unmounts.
+
+```typescript
+// src/app-api/useContextMenuApi.ts
+
+interface ContextMenuTarget {
+  type: 'node' | 'edge' | 'canvas'
+  /** Present for node/edge; absent for canvas targets. */
+  id?: IdType
+  networkId: IdType
+}
+
+interface ContextMenuItemConfig {
+  /** Display label shown in the context menu. Must be non-empty. */
+  label: string
+  /** Callback invoked when the user clicks the item. */
+  handler: (target: ContextMenuTarget) => void
+  /**
+   * Which context menus this item appears in.
+   * @default ['node', 'edge']
+   */
+  targetTypes?: Array<'node' | 'edge' | 'canvas'>
+  /** Optional icon rendered alongside the label (URL or data URI). */
+  icon?: string
+}
+
+interface ContextMenuApi {
+  /**
+   * Registers a new context menu item.
+   * Returns a unique itemId that can be used to remove the item.
+   * fail(InvalidInput) if label is empty or whitespace-only.
+   */
+  addContextMenuItem(
+    config: ContextMenuItemConfig,
+  ): ApiResult<{ itemId: string }>
+
+  /**
+   * Removes a previously registered context menu item by its itemId.
+   * fail(ContextMenuItemNotFound) if the itemId is unknown.
+   */
+  removeContextMenuItem(itemId: string): ApiResult
+}
+
+const useContextMenuApi: () => ContextMenuApi // React hook — returns contextMenuApi from core/
+```
+
+**Implementation location:** `src/app-api/core/contextMenuApi.ts`
+
+**New error code:** `ContextMenuItemNotFound = 'CONTEXT_MENU_ITEM_NOT_FOUND'` — add to `ApiErrorCode` in `src/app-api/types/ApiResult.ts`.
+
+**Host-side requirement — `ContextMenuItemStore`:**
+
+A new Zustand store (`src/data/hooks/stores/ContextMenuItemStore.ts`) must be created to hold the registry:
+
+```typescript
+interface RegisteredContextMenuItem {
+  itemId: string
+  label: string
+  handler: (target: ContextMenuTarget) => void
+  targetTypes: Array<'node' | 'edge' | 'canvas'>
+  icon?: string
+}
+
+interface ContextMenuItemStoreState {
+  items: RegisteredContextMenuItem[]
+  addItem(item: RegisteredContextMenuItem): void
+  removeItem(itemId: string): void
+}
+```
+
+The existing host context menu components (in `src/features/`) must be updated to read from `ContextMenuItemStore` and render app-registered items as additional menu entries below the built-in items. Built-in items are unaffected.
+
+**Implementation strategy (core functions — no React, uses `.getState()`):**
+
+- **`addContextMenuItem`**: Validates `config.label.trim() !== ''`. Generates a UUID `itemId`. Inserts a `RegisteredContextMenuItem` entry into `ContextMenuItemStore` via `.getState().addItem(...)`. Returns `ok({ itemId })`.
+- **`removeContextMenuItem`**: Looks up the entry by `itemId` in `ContextMenuItemStore.getState().items`. Returns `fail(ContextMenuItemNotFound, ...)` if not found. Otherwise calls `.getState().removeItem(itemId)` and returns `ok()`.
+
+**Typical lifecycle pattern (app-side):**
+
+```typescript
+// In CyAppWithLifecycle.mount(context):
+const { itemId } = context.apis.contextMenu.addContextMenuItem({
+  label: 'Expand Pathway',
+  handler: (target) => { /* ... */ },
+  targetTypes: ['node'],
+}).data
+
+// In CyAppWithLifecycle.unmount():
+context.apis.contextMenu.removeContextMenuItem(itemId)
+```
+
+Apps that call `addContextMenuItem` in `mount()` **must** call `removeContextMenuItem` in `unmount()` to avoid leaving orphaned items in the menu after the app is deactivated.
+
+**Webpack entry:** Add `'./ContextMenuApi': './src/app-api/useContextMenuApi.ts'` to `ModuleFederationPlugin.exposes` in `webpack.config.js`.
+
 ### 1.6 Sync/Async Policy
 
 App API operations use a **mixed sync/async** return type strategy based on the nature of the underlying implementation. The decision criteria are:
@@ -719,7 +821,7 @@ App API operations use a **mixed sync/async** return type strategy based on the 
 
 | Return Type                  | Operations                                                                                                                                                                                                                                                                                                                                                                                                                | Internal Mechanism                                                                                                                                          |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ApiResult<T>` (sync)        | `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`, `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`, `exclusiveSelect`, `additiveSelect`, `getSelection`, `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`, `setDefault`, `setBypass`, `createDiscreteMapping`, `getNodePositions`, `updateNodePositions`, `getAvailableLayouts`, `exportToCx2`, `getWorkspaceInfo`, `getNetworkIds`, `getNetworkList`, `getNetworkSummary`, `getCurrentNetworkId`, `switchCurrentNetwork`, `setWorkspaceName` | Zustand store read/write — state mutation is synchronous; IndexedDB persistence runs asynchronously but is not awaited                                      |
+| `ApiResult<T>` (sync)        | `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`, `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`, `exclusiveSelect`, `additiveSelect`, `getSelection`, `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`, `setDefault`, `setBypass`, `createDiscreteMapping`, `getNodePositions`, `updateNodePositions`, `getAvailableLayouts`, `exportToCx2`, `getWorkspaceInfo`, `getNetworkIds`, `getNetworkList`, `getNetworkSummary`, `getCurrentNetworkId`, `switchCurrentNetwork`, `setWorkspaceName`, `addContextMenuItem`, `removeContextMenuItem` | Zustand store read/write — state mutation is synchronous; IndexedDB persistence runs asynchronously but is not awaited                                      |
 | `Promise<ApiResult>` (async) | `applyLayout`                                                                                                                                                                                                                                                                                                                                                                                                             | `LayoutEngine.apply()` is callback-based (CyjsLayout listens for `layoutstop` event; CosmosLayout uses a timer)                                             |
 | `Promise<ApiResult>` (async) | `fit`                                                                                                                                                                                                                                                                                                                                                                                                                     | `RendererFunctionStore` delegates to Cytoscape.js `cy.fit()`, which may involve animation; wrapping in a Promise future-proofs against animated transitions |
 
@@ -956,23 +1058,26 @@ plain Jest tests) and `src/app-api/use<Domain>Api.ts` (thin hook wrapper).
 | 5.5   | Global assembly             | `src/app-api/core/index.ts` (CyWebApi object), `window.CyWebApi` assignment in `src/init.tsx`                              |
 | 6     | Workspace API               | `src/app-api/core/workspaceApi.ts`, `src/app-api/useWorkspaceApi.ts`, add `workspace` to `CyWebApi`                        |
 | 1g    | App Lifecycle (Phase 1g)    | `src/data/hooks/stores/useAppManager.ts` wiring; `AppContext.apis` typed as `CyWebApiType`; `mount`/`unmount` tests        |
+| 1a+   | Element bypass              | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `core/elementApi.ts`                  |
+| 1h    | Context Menu API (Phase 1h) | `src/data/hooks/stores/ContextMenuItemStore.ts`; `core/contextMenuApi.ts`; `useContextMenuApi.ts`; host UI wiring          |
 | 7     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`                                       |
 
 ### 2.7 `window.CyWebApi` Global API
 
-`window.CyWebApi` is a singleton object assembled from the 8 core domain objects. It is assigned in
+`window.CyWebApi` is a singleton object assembled from the 9 core domain objects. It is assigned in
 `src/init.tsx` after all Zustand stores are initialized.
 
 ```typescript
 // src/app-api/core/index.ts
+import { contextMenuApi } from './contextMenuApi'
 import { elementApi } from './elementApi'
+import { exportApi } from './exportApi'
+import { layoutApi } from './layoutApi'
 import { networkApi } from './networkApi'
 import { selectionApi } from './selectionApi'
 import { tableApi } from './tableApi'
-import { visualStyleApi } from './visualStyleApi'
-import { layoutApi } from './layoutApi'
 import { viewportApi } from './viewportApi'
-import { exportApi } from './exportApi'
+import { visualStyleApi } from './visualStyleApi'
 import { workspaceApi } from './workspaceApi'
 
 export const CyWebApi = {
@@ -986,6 +1091,7 @@ export const CyWebApi = {
   viewport: viewportApi,
   export: exportApi,
   workspace: workspaceApi,
+  contextMenu: contextMenuApi,
 } as const
 
 export type CyWebApiType = typeof CyWebApi
@@ -1012,7 +1118,7 @@ window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 
 | Phase            | Event                     | Available operations                                            | Not yet available |
 | ---------------- | ------------------------- | --------------------------------------------------------------- | ----------------- |
-| App initialized  | `cywebapi:ready`          | element, network, selection, table, visualStyle, layout, export | `viewport.fit()`  |
+| App initialized  | `cywebapi:ready`          | element, network, selection, table, visualStyle, layout, export, workspace, contextMenu | `viewport.fit()`  |
 | Renderer mounted | `cywebapi:renderer-ready` | All operations                                                  | —                 |
 
 `viewport.fit()` requires the Cytoscape.js renderer to be registered in `RendererFunctionStore`.
@@ -1035,6 +1141,7 @@ window.dispatchEvent(
         'layout',
         'export',
         'workspace',
+        'contextMenu',
       ],
     },
   }),

@@ -27,6 +27,7 @@ src/app-api/
 │   ├── viewportApi.ts
 │   ├── exportApi.ts
 │   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
+│   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   └── index.ts                 ← Assembles CyWebApi object; assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
 │   ├── CyWebEvents.ts           ← CyWebEvents interface (8 event types + detail shapes)
@@ -41,6 +42,7 @@ src/app-api/
 ├── useViewportApi.ts
 ├── useExportApi.ts
 ├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
+├── useContextMenuApi.ts         ← React Hook: returns contextMenuApi (thin wrapper)
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
@@ -305,16 +307,18 @@ Add new app API entries to `webpack.config.js` `ModuleFederationPlugin.exposes`:
 ```javascript
 exposes: {
   // Public App API (hook-based, for React apps via Module Federation)
-  './ApiTypes':       './src/app-api/types/index.ts',
-  './ElementApi':     './src/app-api/useElementApi.ts',
-  './NetworkApi':     './src/app-api/useNetworkApi.ts',
-  './SelectionApi':   './src/app-api/useSelectionApi.ts',
-  './TableApi':       './src/app-api/useTableApi.ts',
-  './VisualStyleApi': './src/app-api/useVisualStyleApi.ts',
-  './LayoutApi':      './src/app-api/useLayoutApi.ts',
-  './ViewportApi':    './src/app-api/useViewportApi.ts',
-  './ExportApi':      './src/app-api/useExportApi.ts',
-  './EventBus':       './src/app-api/useCyWebEvent.ts',
+  './ApiTypes':        './src/app-api/types/index.ts',
+  './ElementApi':      './src/app-api/useElementApi.ts',
+  './NetworkApi':      './src/app-api/useNetworkApi.ts',
+  './SelectionApi':    './src/app-api/useSelectionApi.ts',
+  './TableApi':        './src/app-api/useTableApi.ts',
+  './VisualStyleApi':  './src/app-api/useVisualStyleApi.ts',
+  './LayoutApi':       './src/app-api/useLayoutApi.ts',
+  './ViewportApi':     './src/app-api/useViewportApi.ts',
+  './ExportApi':       './src/app-api/useExportApi.ts',
+  './WorkspaceApi':    './src/app-api/useWorkspaceApi.ts',
+  './ContextMenuApi':  './src/app-api/useContextMenuApi.ts',
+  './EventBus':        './src/app-api/useCyWebEvent.ts',
   // Note: window.CyWebApi is NOT a Module Federation expose —
   // it is assigned globally in src/init.tsx for non-React consumers.
 },
@@ -358,6 +362,8 @@ exposes: {
 | **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                                                                                     |
 | **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                                                                                          |
 | **Phase 1f** (Workspace)          | `src/models/StoreModel/WorkspaceStoreModel.ts`, `src/models/StoreModel/NetworkSummaryStoreModel.ts`, `src/models/WorkspaceModel/Workspace.ts`, app-api-spec §1.5.10 + §3.9                                                                                                                                                                               |
+| **Phase 1a+** (Element bypass)    | `src/app-api/core/elementApi.ts`, `src/app-api/core/visualStyleApi.ts`, app-api-spec §1.5.1 (CreateNodeOptions/CreateEdgeOptions)                                                                                                                                                                                                                        |
+| **Phase 1h** (Context Menu)       | `src/data/hooks/stores/` (any store for pattern), context menu components in `src/features/`, app-api-spec §1.5.11, `src/models/StoreModel/ContextMenuItemStoreModel.ts` (to be created)                                                                                                                                                                 |
 | **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                   |
 
 ## Parent Documents
