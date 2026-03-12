@@ -34,6 +34,9 @@ export const ApiErrorCode = {
 
   /** No network is currently selected in the workspace */
   NoCurrentNetwork: 'NO_CURRENT_NETWORK',
+
+  /** The specified context menu item ID was not found in the registry */
+  ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
 } as const
 
 /**

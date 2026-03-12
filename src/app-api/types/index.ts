@@ -40,7 +40,15 @@ export type {
   WorkspaceNetworkInfo,
 } from '../core/workspaceApi'
 
-// ── CyWebApiType: assembles all 9 domain APIs (Phase 1g) ─────────
+// ── Context Menu API types (Phase 1h) ────────────────────────────
+export type {
+  ContextMenuApi,
+  ContextMenuHandlerContext,
+  ContextMenuItemConfig,
+  ContextMenuTarget,
+} from '../core/contextMenuApi'
+
+// ── CyWebApiType: assembles all 10 domain APIs (Phase 1g+1h) ─────
 export type { CyWebApiType } from '../core'
 
 // ── Re-exported model types ─────────────────────────────────────

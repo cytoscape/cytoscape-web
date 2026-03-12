@@ -146,6 +146,9 @@ module.exports = {
         // Public App API Hooks (Phase 1f)
         './WorkspaceApi': './src/app-api/useWorkspaceApi.ts',
 
+        // Public App API Hooks (Phase 1h)
+        './ContextMenuApi': './src/app-api/useContextMenuApi.ts',
+
         // Event Bus (Step 2)
         './EventBus': './src/app-api/useCyWebEvent.ts',
 

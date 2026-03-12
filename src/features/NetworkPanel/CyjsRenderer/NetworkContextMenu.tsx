@@ -1,8 +1,10 @@
 import { Menu, MenuItem, Tooltip } from '@mui/material'
 import { ReactElement, useEffect } from 'react'
 
+import { useContextMenuItemStore } from '../../../data/hooks/stores/ContextMenuItemStore'
 import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
+import { ContextMenuTarget } from '../../../models/StoreModel/ContextMenuItemStoreModel'
 import { NetworkView } from '../../../models/ViewModel'
 
 export interface ContextMenuState {
@@ -11,6 +13,7 @@ export interface ContextMenuState {
   networkPosition: [number, number] | null
   clickedNodeId: IdType | null
   clickedEdgeId: IdType | null
+  networkId: IdType
 }
 
 interface NetworkContextMenuProps {
@@ -37,6 +40,22 @@ export const NetworkContextMenu = ({
   onCreateEdgeFromNode,
   isHierarchy = false,
 }: NetworkContextMenuProps): ReactElement => {
+  // Read app-registered items from store
+  const registeredItems = useContextMenuItemStore((state) => state.items)
+
+  // Determine current target type
+  const target: ContextMenuTarget =
+    contextMenu.clickedNodeId !== null
+      ? 'node'
+      : contextMenu.clickedEdgeId !== null
+        ? 'edge'
+        : 'canvas'
+
+  // Filter items matching the current target
+  const appItems = registeredItems.filter((item) =>
+    (item.targetTypes ?? ['node', 'edge']).includes(target),
+  )
+
   // Check if current view supports creation
   const canCreateInView = (): boolean => {
     if (networkView === undefined) {
@@ -218,6 +237,26 @@ export const NetworkContextMenu = ({
 
       {/* Edge clicked: Future options (Delete, Edit Properties) */}
       {clickedOnEdge && <MenuItem disabled>Edit Edge (Coming soon)</MenuItem>}
+
+      {/* App-registered context menu items */}
+      {appItems.map((item) => (
+        <MenuItem
+          key={item.itemId}
+          onClick={() => {
+            item.handler({
+              type: target,
+              id:
+                contextMenu.clickedNodeId ??
+                contextMenu.clickedEdgeId ??
+                undefined,
+              networkId: contextMenu.networkId,
+            })
+            onClose()
+          }}
+        >
+          {item.label}
+        </MenuItem>
+      ))}
     </Menu>
   )
 }

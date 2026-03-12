@@ -129,6 +129,7 @@ const CyjsRenderer = ({
     networkPosition: null,
     clickedNodeId: null,
     clickedEdgeId: null,
+    networkId: id,
   })
 
   // Edge creation mode state
@@ -584,6 +585,7 @@ const CyjsRenderer = ({
         networkPosition: clickedNodeId === null ? networkPosition : null,
         clickedNodeId,
         clickedEdgeId,
+        networkId: id,
       })
     })
 
@@ -1227,6 +1229,7 @@ const CyjsRenderer = ({
       networkPosition: null,
       clickedNodeId: null,
       clickedEdgeId: null,
+      networkId: id,
     })
   }
 
