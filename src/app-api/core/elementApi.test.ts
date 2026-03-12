@@ -68,6 +68,7 @@ jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
 const mockVisualStyles: Record<string, any> = {}
 const mockVisualStyleActions = {
   deleteBypass: jest.fn(),
+  setBypass: jest.fn(),
 }
 
 jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
@@ -369,6 +370,53 @@ describe('elementApi', () => {
       // createNodesCore does not take a skipUndo param — just verify it was called
       expect(createNodesCore).toHaveBeenCalled()
     })
+
+    it('applies bypass props when bypass option is provided', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNode('net1', [0, 0], {
+        bypass: { NODE_FILL_COLOR: '#ff0000' } as any,
+      })
+
+      expect(mockVisualStyleActions.setBypass).toHaveBeenCalledWith(
+        'net1',
+        'NODE_FILL_COLOR',
+        ['0'],
+        '#ff0000',
+      )
+    })
+
+    it('does not call setBypass when no bypass option', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNode('net1', [0, 0])
+      expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
+    })
+
+    it('applies multiple bypass props when multiple entries provided', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNode('net1', [0, 0], {
+        bypass: {
+          NODE_FILL_COLOR: '#ff0000',
+          NODE_LABEL: 'custom-label',
+        } as any,
+      })
+
+      expect(mockVisualStyleActions.setBypass).toHaveBeenCalledTimes(2)
+    })
   })
 
   // ── createEdge ────────────────────────────────────────────────────────────
@@ -412,6 +460,36 @@ describe('elementApi', () => {
       if (result.success) {
         expect(result.data.edgeId).toBe('e0')
       }
+    })
+
+    it('applies bypass props when bypass option is provided', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createEdge('net1', 'n1', 'n2', {
+        bypass: { EDGE_LINE_COLOR: '#00ff00' } as any,
+      })
+
+      expect(mockVisualStyleActions.setBypass).toHaveBeenCalledWith(
+        'net1',
+        'EDGE_LINE_COLOR',
+        ['e0'],
+        '#00ff00',
+      )
+    })
+
+    it('does not call setBypass when no bypass option', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createEdge('net1', 'n1', 'n2')
+      expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
     })
   })
 

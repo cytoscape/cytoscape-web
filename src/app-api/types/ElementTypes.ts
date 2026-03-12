@@ -22,6 +22,7 @@ export type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSum
 
 // ── Visual style types ──────────────────────────────────────────
 export { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
+export type { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
 export type { VisualStyle } from '../../models/VisualStyleModel/VisualStyle'
 
 // ── View model types ────────────────────────────────────────────

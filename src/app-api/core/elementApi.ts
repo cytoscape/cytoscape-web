@@ -26,6 +26,7 @@ import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { ValueType } from '../../models/TableModel'
 import { AttributeName } from '../../models/TableModel/AttributeName'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
+import { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -43,12 +44,16 @@ export interface EdgeData {
 
 export interface CreateNodeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically after node creation. */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   /** @default true */
   autoSelect?: boolean
 }
 
 export interface CreateEdgeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically after edge creation. */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   /** @default true */
   autoSelect?: boolean
 }
@@ -292,6 +297,17 @@ export const elementApi: ElementApi = {
       }
       createNodesCore(params, storeActions)
 
+      // Apply visual property bypasses atomically after node creation
+      if (options?.bypass) {
+        const setBypass = useVisualStyleStore.getState().setBypass
+        const bypassEntries = Object.entries(options.bypass) as Array<
+          [VisualPropertyName, VisualPropertyValueType]
+        >
+        for (const [vpName, vpValue] of bypassEntries) {
+          setBypass(networkId, vpName, [newNodeId], vpValue)
+        }
+      }
+
       // autoSelect defaults to true
       if (options?.autoSelect !== false) {
         useViewModelStore.getState().exclusiveSelect(networkId, [newNodeId], [])
@@ -375,6 +391,17 @@ export const elementApi: ElementApi = {
         attributes,
       }
       createEdgesCore(params, storeActions)
+
+      // Apply visual property bypasses atomically after edge creation
+      if (options?.bypass) {
+        const setBypass = useVisualStyleStore.getState().setBypass
+        const bypassEntries = Object.entries(options.bypass) as Array<
+          [VisualPropertyName, VisualPropertyValueType]
+        >
+        for (const [vpName, vpValue] of bypassEntries) {
+          setBypass(networkId, vpName, [newEdgeId], vpValue)
+        }
+      }
 
       // autoSelect defaults to true
       if (options?.autoSelect !== false) {
