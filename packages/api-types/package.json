@@ -6,7 +6,8 @@
   "main": "dist/index.d.ts",
   "files": [
     "dist",
-    "index.d.ts"
+    "index.d.ts",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
