@@ -1,5 +1,10 @@
 /**
  * A store for the renderer components
+ *
+ * @deprecated The Module Federation exposure of this store (cyweb/RendererStore) is deprecated for external apps.
+ * This store is still actively used internally by the host application — it is NOT being removed.
+ * External apps should use the App API (e.g., `cyweb/ViewportApi`) instead of importing this store directly.
+ * This cyweb/RendererStore Module Federation export will be removed after 2 release cycles.
  */
 
 import { create } from 'zustand'
