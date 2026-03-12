@@ -58,6 +58,10 @@ declare module 'cyweb/EventBus' {
   ): void
 }
 
+declare module 'cyweb/ContextMenuApi' {
+  export function useContextMenuApi(): import('./index').ContextMenuApi
+}
+
 declare module 'cyweb/ApiTypes' {
   export * from '@cytoscape-web/api-types'
 }

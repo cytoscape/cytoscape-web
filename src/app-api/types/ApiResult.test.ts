@@ -1,7 +1,7 @@
 // src/app-api/types/ApiResult.test.ts
 
-import { ok, fail, isOk, isFail, ApiErrorCode } from './ApiResult'
-import type { ApiResult, ApiSuccess, ApiFailure } from './ApiResult'
+import type { ApiFailure, ApiResult, ApiSuccess } from './ApiResult'
+import { ApiErrorCode, fail, isFail, isOk, ok } from './ApiResult'
 
 describe('ApiResult helpers', () => {
   describe('ok()', () => {
@@ -66,7 +66,7 @@ describe('ApiResult helpers', () => {
   describe('ApiErrorCode', () => {
     it('has the expected number of error codes', () => {
       const codes = Object.keys(ApiErrorCode)
-      expect(codes.length).toBe(9)
+      expect(codes.length).toBe(10)
     })
 
     it('has unique string values', () => {
