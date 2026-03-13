@@ -53,7 +53,7 @@ function detectChangedRowIds(curr: Table, prev: Table): IdType[] {
 
 /**
  * Wires Zustand store subscriptions to window CustomEvents.
- * Must be called once, after store hydration, in src/init.tsx.
+ * Must be called once, after store hydration, in src/features/AppShell.tsx.
  *
  * layout:started and layout:completed are NOT set up here — they are
  * dispatched directly from core/layoutApi.ts via dispatchCyWebEvent.

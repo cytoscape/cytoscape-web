@@ -71,10 +71,11 @@ src/app-api/
 8. **`dispatchCyWebEvent` is the only dispatch site** — All 6 store-subscription-driven events go
    through `event-bus/dispatchCyWebEvent.ts`. Never call `window.dispatchEvent(new CustomEvent(...))`
    directly anywhere else.
-9. **`initEventBus()` is called once after hydration** — In `src/init.tsx`, the call order is:
-   (1) stores hydrate from IndexedDB, (2) `initEventBus()`, (3) `window.CyWebApi = CyWebApi`,
-   (4) `window.dispatchEvent(new CustomEvent('cywebapi:ready'))`. Startup suppression is automatic:
-   Zustand `subscribeWithSelector` only fires on changes after subscription, not on initial state.
+9. **`initEventBus()` is called once after hydration** — `window.CyWebApi = CyWebApi` is assigned
+   in `src/init.tsx` (before React renders). `initEventBus()` and `cywebapi:ready` are called in
+   `src/features/AppShell.tsx` immediately after `setWorkspace(workspace)` completes, so
+   subscriptions are never active during the IndexedDB → store hydration transition and no
+   spurious `network:created` / `network:switched` events fire on startup.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
     fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
     promise resolution. Errors do NOT dispatch `layout:completed`.

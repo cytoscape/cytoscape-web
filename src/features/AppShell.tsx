@@ -17,6 +17,7 @@ import {
   getWorkspaceFromDb,
   putNetworkSummaryToDb,
 } from '../data/db/'
+import { initEventBus } from '../app-api/event-bus/initEventBus'
 import { logStartup } from '../debug'
 import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../data/hooks/stores/FilterStore'
@@ -372,6 +373,12 @@ const AppShell = (): ReactElement => {
 
       addSummaries(summaries)
       setWorkspace(workspace)
+
+      // Initialize event bus after workspace is hydrated so store subscriptions
+      // do not fire spurious network:created / network:switched events on startup.
+      // cywebapi:ready signals external consumers that the API and event bus are ready.
+      initEventBus()
+      window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 
       // Process state restoration parameters after workspace is set
       const hasSearchQueryParams = search.size > 0
