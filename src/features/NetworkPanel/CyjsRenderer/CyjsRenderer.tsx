@@ -141,6 +141,42 @@ const CyjsRenderer = ({
     sourceNodeId: null,
   })
 
+  // When cxttap fires, the MUI Menu opens and its backdrop renders before the
+  // browser's contextmenu event fires. The contextmenu event then targets the
+  // MUI backdrop (not cy-container), so a contains() check would miss it.
+  // Solution: set this flag in the cxttap handler; the document listener uses
+  // it to suppress the very next contextmenu event, then clears the flag.
+  const suppressNextContextMenu = useRef(false)
+
+  // Suppress the browser's native context menu after a Cytoscape right-click.
+  useEffect(() => {
+    const handler = (e: MouseEvent): void => {
+      if (suppressNextContextMenu.current) {
+        suppressNextContextMenu.current = false
+        e.preventDefault()
+      }
+    }
+    document.addEventListener('contextmenu', handler, true)
+    return () => document.removeEventListener('contextmenu', handler, true)
+  }, [])
+
+  // Close context menu when left-clicking outside of it.
+  // MUI's backdrop click does not work here because Cytoscape's mousedown
+  // handler calls e.preventDefault() on the canvas, which prevents the
+  // browser click event from reaching the MUI Modal backdrop.
+  // We use a document mousedown listener instead.
+  useEffect(() => {
+    if (!contextMenu.open) return
+    const handleMouseDown = (e: MouseEvent): void => {
+      if (e.button !== 0) return // left-click only; right-click reopens the menu
+      const target = e.target as Element | null
+      if (target !== null && target.closest('[role="menu"]') !== null) return
+      setContextMenu((prev) => ({ ...prev, open: false }))
+    }
+    document.addEventListener('mousedown', handleMouseDown, true)
+    return () => document.removeEventListener('mousedown', handleMouseDown, true)
+  }, [contextMenu.open])
+
   // Reset edge creation mode when switching networks
   useEffect(() => {
     setEdgeCreationMode({ active: false, sourceNodeId: null })
@@ -579,6 +615,12 @@ const CyjsRenderer = ({
         clickedEdgeId,
       })
       
+      // Flag to suppress the browser's contextmenu event that follows cxttap.
+      // The contextmenu DOM event fires after mouseup, by which time the MUI
+      // backdrop is already rendered on top — so the event targets the backdrop,
+      // not cy-container. We suppress it here regardless of the target element.
+      suppressNextContextMenu.current = true
+
       setContextMenu({
         open: true,
         anchorPosition: { top: clientY, left: clientX },
