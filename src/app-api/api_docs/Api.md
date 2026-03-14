@@ -55,11 +55,15 @@ import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
 | `cyweb/LayoutApi`      | `useLayoutApi()`        | `.layout`                | 1e    |
 | `cyweb/ExportApi`      | `useExportApi()`        | `.export`                | 1e    |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`     | `.workspace`             | 1f    |
-| `cyweb/ContextMenuApi` | `useContextMenuApi()`   | `.contextMenu`           | 1h    |
 | `cyweb/EventBus`       | `useCyWebEvent()`       | _(window events)_        | 1g    |
 
 All hooks are thin React wrappers around framework-agnostic core objects.
 The same objects are exposed on `window.CyWebApi` for Vanilla JS consumers.
+
+> **Context Menu API:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
+> Context menu access is now via `AppContext.apis.contextMenu` (per-app factory in `mount()`) or
+> `window.CyWebApi.contextMenu` (anonymous singleton for non-React consumers).
+> See `createContextMenuApi(appId)` in `src/app-api/core/contextMenuApi.ts`.
 
 ---
 
@@ -660,14 +664,28 @@ Renames the workspace. The name is trimmed before being stored.
 
 ---
 
-## ContextMenuApi (`cyweb/ContextMenuApi`)
+## ContextMenuApi
+
+> **Phase 2 change:** `cyweb/ContextMenuApi` and `useContextMenuApi()` have been removed.
+> Context menu access is now via `AppContext.apis.contextMenu` (per-app factory, lifecycle-managed)
+> or `window.CyWebApi.contextMenu` (anonymous singleton, for non-React consumers only).
 
 Allows external apps to register and remove custom items in the host's context
 menus (right-click on nodes, edges, or the canvas background).
 
 ```typescript
-import { useContextMenuApi } from 'cyweb/ContextMenuApi'
-import type { ContextMenuItemConfig, ContextMenuTarget } from 'cyweb/ApiTypes'
+// In mount() — per-app factory (recommended for plugin apps)
+mount({ apis }) {
+  apis.contextMenu.addContextMenuItem({ ... })
+}
+
+// In plugin components — via useAppContext()
+import { useAppContext } from 'cyweb/AppIdContext'
+const ctx = useAppContext()
+ctx?.apis.contextMenu.addContextMenuItem({ ... })
+
+// Non-React consumers — anonymous singleton (no auto-cleanup)
+window.CyWebApi.contextMenu.addContextMenuItem({ ... })
 ```
 
 ### Types
@@ -702,8 +720,9 @@ interface ContextMenuItemConfig {
 Registers a new context menu item. Returns a unique `itemId` that can be used to
 remove the item later.
 
-Items registered in `mount()` **must** be removed in `unmount()` to avoid
-orphaned entries after app deactivation.
+Items registered via `AppContext.apis.contextMenu` are automatically cleaned up
+when the app is disabled or mount() fails (via `cleanupAllForApp`). Explicit
+removal in `unmount()` is redundant but harmless.
 
 | Error Code      | Condition                        |
 | --------------- | -------------------------------- |

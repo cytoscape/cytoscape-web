@@ -4,7 +4,8 @@
 export * from './types'
 
 // ── App API hooks (added in Phase 1a–1h) ─────────────────────────
-export { useContextMenuApi } from './useContextMenuApi' // Phase 1h
+// useContextMenuApi removed in Phase 2 — context menu access is now via
+// AppContext.apis.contextMenu (per-app factory) or window.CyWebApi.contextMenu (anonymous).
 export { useCyWebEvent } from './useCyWebEvent'         // Step 2: Event Bus
 export { useElementApi } from './useElementApi'         // Phase 1a
 export { useExportApi } from './useExportApi'           // Phase 1e

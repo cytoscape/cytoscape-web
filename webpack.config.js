@@ -146,7 +146,9 @@ module.exports = {
         // Public App API Hooks (Phase 1f)
         './WorkspaceApi': './src/app-api/useWorkspaceApi.ts',
 
-        // Public App API Hooks (Phase 1h)
+        // @deprecated — maintained for backward compatibility with existing example
+        // apps. Will be removed when all examples migrate to AppContext.apis.contextMenu
+        // (Step 2.9). New apps should NOT import from cyweb/ContextMenuApi.
         './ContextMenuApi': './src/app-api/useContextMenuApi.ts',
 
         // Event Bus (Step 2)

@@ -89,25 +89,20 @@ window.addEventListener('cywebapi:ready', () => {
 
 ### Context menu registration
 
+> `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
+> Use `AppContext.apis.contextMenu` in `mount()` or `useAppContext().apis.contextMenu`
+> in plugin components. See the App Resource Registration spec for details.
+
 ```typescript
-import { useContextMenuApi } from 'cyweb/ContextMenuApi'
-
-function MyApp() {
-  const contextMenu = useContextMenuApi()
-
-  useEffect(() => {
-    const result = contextMenu.addContextMenuItem({
-      label: 'Highlight node',
-      targetTypes: ['node'],
-      handler: ({ id, networkId }) => {
-        console.log('clicked node', id, 'in network', networkId)
-      },
-    })
-    if (result.success) {
-      const { itemId } = result.data
-      return () => { contextMenu.removeContextMenuItem(itemId) }
-    }
-  }, [])
+// In mount() — items are auto-cleaned when the app is disabled
+mount({ apis }) {
+  apis.contextMenu.addContextMenuItem({
+    label: 'Highlight node',
+    targetTypes: ['node'],
+    handler: ({ id, networkId }) => {
+      console.log('clicked node', id, 'in network', networkId)
+    },
+  })
 }
 ```
 
@@ -124,7 +119,6 @@ function MyApp() {
 | `cyweb/LayoutApi` | `useLayoutApi()` |
 | `cyweb/ExportApi` | `useExportApi()` |
 | `cyweb/WorkspaceApi` | `useWorkspaceApi()` |
-| `cyweb/ContextMenuApi` | `useContextMenuApi()` |
 | `cyweb/EventBus` | `useCyWebEvent(type, handler)` |
 | `cyweb/ApiTypes` | Re-exports all types from this package |
 

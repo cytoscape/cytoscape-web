@@ -42,7 +42,6 @@ src/app-api/
 ├── useViewportApi.ts
 ├── useExportApi.ts
 ├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
-├── useContextMenuApi.ts         ← React Hook: returns contextMenuApi (thin wrapper)
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
@@ -318,7 +317,7 @@ exposes: {
   './ViewportApi':     './src/app-api/useViewportApi.ts',
   './ExportApi':       './src/app-api/useExportApi.ts',
   './WorkspaceApi':    './src/app-api/useWorkspaceApi.ts',
-  './ContextMenuApi':  './src/app-api/useContextMenuApi.ts',
+  // ContextMenuApi expose removed in Phase 2 — access via AppContext.apis.contextMenu
   './EventBus':        './src/app-api/useCyWebEvent.ts',
   // Note: window.CyWebApi is NOT a Module Federation expose —
   // it is assigned globally in src/init.tsx for non-React consumers.
