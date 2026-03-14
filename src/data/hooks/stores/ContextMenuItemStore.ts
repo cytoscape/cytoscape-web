@@ -5,10 +5,11 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import {
+import type {
   ContextMenuItemStoreModel,
   RegisteredContextMenuItem,
 } from '../../../models/StoreModel/ContextMenuItemStoreModel'
+import { registerAppCleanup } from './AppCleanupRegistry'
 
 export const useContextMenuItemStore = create(
   immer<ContextMenuItemStoreModel>((set) => ({
@@ -27,5 +28,23 @@ export const useContextMenuItemStore = create(
         return state
       })
     },
+
+    removeAllByAppId(appId: string) {
+      set((state) => {
+        // Only remove items with a matching appId.
+        // Items with appId === undefined (anonymous registrations via
+        // window.CyWebApi.contextMenu) are never removed by this action.
+        state.items = state.items.filter(
+          (item) => item.appId === undefined || item.appId !== appId,
+        )
+        return state
+      })
+    },
   })),
+)
+
+// Register cleanup so appLifecycle.ts can clean up context menu items
+// for a disabled/unmounted app via cleanupAllForApp(appId).
+registerAppCleanup((appId) =>
+  useContextMenuItemStore.getState().removeAllByAppId(appId),
 )

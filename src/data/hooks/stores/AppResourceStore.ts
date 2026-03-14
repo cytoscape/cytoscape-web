@@ -9,6 +9,7 @@ import { immer } from 'zustand/middleware/immer'
 import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
 import type { ResourceSlot } from '../../../models/AppModel/RegisteredAppResource'
 import type { AppResourceStoreModel } from '../../../models/StoreModel/AppResourceStoreModel'
+import { registerAppCleanup } from './AppCleanupRegistry'
 
 export const useAppResourceStore = create(
   immer<AppResourceStoreModel>((set, get) => ({
@@ -54,4 +55,10 @@ export const useAppResourceStore = create(
       })
     },
   })),
+)
+
+// Register cleanup so appLifecycle.ts can clean up app resources
+// for a disabled/unmounted app via cleanupAllForApp(appId).
+registerAppCleanup((appId) =>
+  useAppResourceStore.getState().removeAllByAppId(appId),
 )

@@ -39,9 +39,15 @@ export interface ContextMenuItemConfig {
 
 /**
  * A registered context menu item — config + assigned itemId.
+ *
+ * `appId` is optional: items registered via `AppContext.apis.contextMenu`
+ * (per-app factory) carry the bound appId. Items registered via the
+ * anonymous `window.CyWebApi.contextMenu` singleton have `appId: undefined`.
  */
 export interface RegisteredContextMenuItem extends ContextMenuItemConfig {
   readonly itemId: string
+  /** The app that registered this item. Undefined for anonymous registrations. */
+  readonly appId?: string
 }
 
 // ── Store model ─────────────────────────────────────────────────
@@ -53,6 +59,11 @@ export interface ContextMenuItemState {
 export interface ContextMenuItemActions {
   addItem(item: RegisteredContextMenuItem): void
   removeItem(itemId: string): void
+  /**
+   * Remove all items registered by the given appId.
+   * Items with `appId === undefined` (anonymous) are never removed.
+   */
+  removeAllByAppId(appId: string): void
 }
 
 export type ContextMenuItemStoreModel = ContextMenuItemState &

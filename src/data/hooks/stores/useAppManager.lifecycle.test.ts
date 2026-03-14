@@ -7,7 +7,11 @@
 import type { CyWebApiType } from '../../../app-api/core'
 import type { AppContext } from '../../../app-api/types/AppContext'
 import type { CyApp } from '../../../models/AppModel/CyApp'
-import { mountApp, unmountAllApps,unmountApp } from './appLifecycle'
+import {
+  _resetCleanupRegistry,
+  registerAppCleanup,
+} from './AppCleanupRegistry'
+import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 
 // Minimal stub — tests only check that mount/unmount receive the apis object
 const mockApi = {} as CyWebApiType
@@ -27,6 +31,7 @@ describe('mountApp', () => {
 
   beforeEach(() => {
     mountedApps = new Set()
+    _resetCleanupRegistry()
   })
 
   it('calls mount() with correct AppContext when app implements lifecycle', async () => {
@@ -41,11 +46,12 @@ describe('mountApp', () => {
     expect(mountedApps.has('app1')).toBe(true)
   })
 
-  it('does NOT call mount() for plain apps without lifecycle (backward-compatible)', async () => {
+  it('adds plain apps without lifecycle to mountedApps immediately (backward-compatible)', async () => {
     const app = makeApp('plain')
     await mountApp(app, { appId: 'plain', apis: mockApi }, mountedApps)
 
-    expect(mountedApps.has('plain')).toBe(false)
+    // Apps without mount() are treated as mounted immediately
+    expect(mountedApps.has('plain')).toBe(true)
   })
 
   it('awaits async mount() before resolving', async () => {
@@ -64,7 +70,10 @@ describe('mountApp', () => {
     expect(mountedApps.has('async-app')).toBe(true)
   })
 
-  it('propagates mount() errors and does NOT record the app as mounted', async () => {
+  it('propagates mount() errors, runs cleanupAllForApp, and does NOT record the app', async () => {
+    const cleanupSpy = jest.fn()
+    registerAppCleanup(cleanupSpy)
+
     const mountFn = jest.fn().mockRejectedValue(new Error('mount failed'))
     const app = makeApp('err-app', { mount: mountFn })
 
@@ -73,6 +82,18 @@ describe('mountApp', () => {
     ).rejects.toThrow('mount failed')
 
     expect(mountedApps.has('err-app')).toBe(false)
+    expect(cleanupSpy).toHaveBeenCalledWith('err-app')
+  })
+
+  it('does not call cleanupAllForApp when mount() succeeds', async () => {
+    const cleanupSpy = jest.fn()
+    registerAppCleanup(cleanupSpy)
+
+    const mountFn = jest.fn()
+    const app = makeApp('ok-app', { mount: mountFn })
+    await mountApp(app, { appId: 'ok-app', apis: mockApi }, mountedApps)
+
+    expect(cleanupSpy).not.toHaveBeenCalled()
   })
 })
 
@@ -83,6 +104,19 @@ describe('unmountApp', () => {
 
   beforeEach(() => {
     mountedApps = new Set()
+    _resetCleanupRegistry()
+  })
+
+  it('calls cleanupAllForApp BEFORE unmount()', async () => {
+    const order: string[] = []
+    registerAppCleanup(() => order.push('cleanup'))
+    const unmountFn = jest.fn().mockImplementation(() => order.push('unmount'))
+    const app = makeApp('order-test', { unmount: unmountFn })
+    mountedApps.add('order-test')
+
+    await unmountApp(app, mountedApps)
+
+    expect(order).toEqual(['cleanup', 'unmount'])
   })
 
   it('calls unmount() when app was previously mounted', async () => {
