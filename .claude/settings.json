@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "mcp__plugin_serena_serena__search_for_pattern",
+      "Bash(grep -r \"UiSurface\\\\|registerPanel\\\\|registerMenuItem\" /home/kono/code/cytoscape/cytoscape-web/src --include=*.ts --include=*.tsx)",
+      "mcp__plugin_serena_serena__find_file",
+      "Bash(grep -r \"UiSurface\\\\|RegisteredUi\" /home/kono/code/cytoscape/cytoscape-web/src --include=*.ts)",
+      "Bash(find /home/kono/code/cytoscape -name *ui-surface* -o -name *UI-surface*)"
+    ],
+    "additionalDirectories": [
+      "/home/kono/code/cytoscape/cytoscape-web/docs/design/module-federation/specifications"
+    ]
+  }
+}
