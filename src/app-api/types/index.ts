@@ -48,6 +48,20 @@ export type {
   ContextMenuTarget,
 } from '../core/contextMenuApi'
 
+// ── App Resource registration types (Phase 2) ───────────────────
+export type {
+  MenuItemHostProps,
+  PanelHostProps,
+  RegisteredResourceInfo,
+  RegisterMenuItemOptions,
+  RegisterPanelOptions,
+  RegisterResourceEntry,
+  ResourceApi,
+  ResourceDeclaration,
+  ResourceVisibilityResult,
+} from './AppResourceTypes'
+export type { ResourceSlot } from './AppResourceTypes'
+
 // ── CyWebApiType: assembles all 10 domain APIs (Phase 1g+1h) ─────
 export type { CyWebApiType } from '../core'
 

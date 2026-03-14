@@ -37,6 +37,9 @@ export const ApiErrorCode = {
 
   /** The specified context menu item ID was not found in the registry */
   ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
+
+  /** The specified resource ID was not found in the registry */
+  ResourceNotFound: 'RESOURCE_NOT_FOUND',
 } as const
 
 /**

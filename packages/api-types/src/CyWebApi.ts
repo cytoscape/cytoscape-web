@@ -24,4 +24,4 @@
 // }
 // ```
 
-export type { CyWebApiType } from '../../../src/app-api/types'
+export type { CyWebApiType } from '../../../src/app-api/core'

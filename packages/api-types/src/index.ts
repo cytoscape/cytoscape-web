@@ -11,7 +11,9 @@
 //   - AppContext, CyAppWithLifecycle for apps implementing lifecycle hooks
 
 // Import for use in the global Window augmentation below.
-// CyWebApiType is re-exported via `export *` — no separate export needed.
+// CyWebApiType is imported from ./CyWebApi (which reads from src/app-api/core)
+// to avoid a duplicate-declaration conflict with the `export *` barrel below
+// (which re-exports CyWebApiType from src/app-api/types via a different path).
 import type { CyWebApiType } from './CyWebApi'
 import type { CyWebEventMap } from './events'
 
@@ -19,7 +21,7 @@ import type { CyWebEventMap } from './events'
 // Includes: ApiResult, AppContext, CyAppWithLifecycle, CyWebApiType,
 // ElementApi, NetworkApi, SelectionApi, ViewportApi, TableApi,
 // VisualStyleApi, LayoutApi, ExportApi, WorkspaceApi, ContextMenuApi,
-// and all result/data types and model types.
+// ResourceApi, ResourceSlot, and all result/data types and model types.
 export * from '../../../src/app-api/types'
 
 // ── Event bus types ────────────────────────────────────────────────
