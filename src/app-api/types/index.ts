@@ -5,7 +5,7 @@ export type { ApiError, ApiFailure, ApiResult, ApiSuccess } from './ApiResult'
 export { ApiErrorCode, fail, isFail, isOk, ok } from './ApiResult'
 
 // ── App lifecycle types ─────────────────────────────────────────
-export type { AppContext, CyAppWithLifecycle } from './AppContext'
+export type { AppContext, AppContextApis, CyAppWithLifecycle } from './AppContext'
 
 // ── Domain API types (Phase 1a–1g) ──────────────────────────────
 export type {

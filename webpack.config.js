@@ -151,6 +151,9 @@ module.exports = {
         // (Step 2.9). New apps should NOT import from cyweb/ContextMenuApi.
         './ContextMenuApi': './src/app-api/useContextMenuApi.ts',
 
+        // AppIdContext (Phase 2) — host-provided React Context for plugin components
+        './AppIdContext': './src/app-api/AppIdContext.tsx',
+
         // Event Bus (Step 2)
         './EventBus': './src/app-api/useCyWebEvent.ts',
 

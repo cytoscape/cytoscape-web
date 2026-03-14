@@ -1,8 +1,19 @@
 // packages/api-types/src/CyWebApi.ts
 //
-// Re-exports CyWebApiType from the authoritative source.
+// Re-exports API type shapes from the authoritative source.
 //
-// All domain API fields are defined in src/app-api/core/index.ts:
+// Two distinct types for two distinct contexts:
+//
+//   CyWebApiType   = window.CyWebApi shape — no `resource` field (window-safe).
+//                    Non-React consumers cannot provide React.ComponentType values.
+//
+//   AppContextApis = AppContext.apis shape — extends CyWebApiType and adds
+//                    `resource` (ResourceApi) as a required field. The host
+//                    always injects it before calling mount().
+//
+// Both are intentionally distinct; there is no single canonical API shape.
+//
+// Domain API fields on CyWebApiType (defined in src/app-api/core/index.ts):
 //
 //   element: ElementApi         (Phase 1a)
 //   network: NetworkApi         (Phase 1b)
@@ -25,3 +36,4 @@
 // ```
 
 export type { CyWebApiType } from '../../../src/app-api/core'
+export type { AppContextApis } from '../../../src/app-api/types/AppContext'

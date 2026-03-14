@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { CyWebApi } from '../../../app-api/core'
+import type { AppContextApis } from '../../../app-api/types/AppContext'
 import appConfig from '../../../assets/apps.json'
 import { logApp } from '../../../debug'
 import { loadModule } from '../../../features/AppManager/ExternalComponent'
@@ -157,7 +158,7 @@ export const useAppManager = (): void => {
             registerApp(cyApp)
             void mountApp(
               cyApp,
-              { appId: cyApp.id, apis: CyWebApi },
+              { appId: cyApp.id, apis: CyWebApi as AppContextApis },
               mountedApps.current,
             )
           } else if (
@@ -172,7 +173,7 @@ export const useAppManager = (): void => {
             registerApp(cyApp)
             void mountApp(
               cyApp,
-              { appId: cyApp.id, apis: CyWebApi },
+              { appId: cyApp.id, apis: CyWebApi as AppContextApis },
               mountedApps.current,
             )
           } else if (
@@ -189,7 +190,7 @@ export const useAppManager = (): void => {
             // User re-enabled the app via the UI — call mount() again.
             void mountApp(
               cyApp,
-              { appId, apis: CyWebApi },
+              { appId, apis: CyWebApi as AppContextApis },
               mountedApps.current,
             )
           }

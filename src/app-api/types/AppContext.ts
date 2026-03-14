@@ -2,26 +2,46 @@
 
 import { CyApp } from '../../models/AppModel/CyApp'
 import type { CyWebApiType } from '../core'
+import type { ContextMenuApi } from '../core/contextMenuApi'
+import type { ResourceApi } from './AppResourceTypes'
+
+/**
+ * Per-app API object passed to mount(). Extends CyWebApiType and adds
+ * `resource` and per-app `contextMenu` as required fields — the host
+ * always injects them before calling mount().
+ *
+ * Intentionally distinct from CyWebApiType:
+ *   CyWebApiType   = window.CyWebApi shape — no `resource` (window-safe)
+ *   AppContextApis = AppContext.apis shape — `resource` required (mount-safe)
+ */
+export interface AppContextApis extends CyWebApiType {
+  /** Per-app resource registration API. Always provided by the host. */
+  readonly resource: ResourceApi
+  /**
+   * Per-app context menu API (factory-bound to this app's ID).
+   * Items registered here are auto-cleaned when the app is disabled.
+   * Overrides the anonymous contextMenu from CyWebApiType.
+   */
+  readonly contextMenu: ContextMenuApi
+}
 
 /**
  * Context object passed to external apps during mount().
  *
- * Provides pre-instantiated app API instances. The host creates
- * these within a React rendering context and passes the resolved
- * objects, so apps can use them outside of React components.
- *
- * NOTE: `apis` is the same singleton as `window.CyWebApi` at runtime —
- * the host passes the `CyWebApi` object (assembled in Phase 1f) directly.
+ * Provides pre-instantiated, per-app API instances. The host creates
+ * a unique AppContextApis object for each app — it is NOT the same as
+ * window.CyWebApi (which has no `resource` field and uses the anonymous
+ * contextMenu singleton).
  */
 export interface AppContext {
   /** The unique ID of this app instance */
   readonly appId: string
 
   /**
-   * Pre-instantiated app API instances.
-   * At runtime this is the same object as `window.CyWebApi`.
+   * Per-app API instances. Includes all domain APIs from CyWebApiType
+   * plus `resource` (ResourceApi) and a per-app `contextMenu` factory.
    */
-  readonly apis: CyWebApiType
+  readonly apis: AppContextApis
 }
 
 /**

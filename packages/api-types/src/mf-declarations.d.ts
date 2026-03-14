@@ -61,6 +61,17 @@ declare module 'cyweb/EventBus' {
 // cyweb/ContextMenuApi removed in Phase 2 — context menu access is now via
 // AppContext.apis.contextMenu (per-app factory) or window.CyWebApi.contextMenu.
 
+declare module 'cyweb/AppIdContext' {
+  export function useAppContext(): {
+    readonly appId: string
+    readonly apis: import('./index').AppContextApis
+  } | null
+  export const AppIdProvider: import('react').Provider<{
+    readonly appId: string
+    readonly apis: import('./index').AppContextApis
+  } | null>
+}
+
 declare module 'cyweb/ApiTypes' {
   export * from '@cytoscape-web/api-types'
 }
