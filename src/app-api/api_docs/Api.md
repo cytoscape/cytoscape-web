@@ -764,7 +764,7 @@ Zustand stores → initEventBus (subscriptions) → dispatchCyWebEvent → windo
 layoutApi.ts ──────────────────────────────────→ dispatchCyWebEvent → window CustomEvent
 ```
 
-`initEventBus()` is called once after store hydration in `src/init.tsx`. It wires
+`initEventBus()` is called once after store hydration in `src/features/AppShell.tsx`. It wires
 store subscriptions for all events except `layout:started`/`layout:completed`,
 which are dispatched directly from `layoutApi.ts`.
 

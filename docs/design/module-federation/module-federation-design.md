@@ -1,6 +1,7 @@
 # Module Federation App API Design and Priorities
 
-**Rev. 3 (2/21/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Updated for new Event Bus
+**Rev. 4 (3/14/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Added Phase 2 (UI Surface Registration) roadmap
+- Rev. 3 (2/21/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Updated for new Event Bus
 
 Solution proposals for the issues identified in [module-federation-audit.md](module-federation-audit.md).
 
@@ -275,9 +276,11 @@ function dispatchCyWebEvent<K extends keyof CyWebEvents>(
 }
 ```
 
-`initEventBus()` is called in `src/init.tsx` alongside `window.CyWebApi = CyWebApi`, ensuring
-both are available at the same time. The function is internal and never exposed via Module
-Federation.
+`initEventBus()` is called in `src/features/AppShell.tsx` after stores hydrate from IndexedDB,
+ensuring that Zustand subscriptions do not fire spurious `network:created` events for
+previously-persisted networks. `window.CyWebApi` is assigned earlier in `src/init.tsx` (before
+React renders), but the event bus and `cywebapi:ready` are deferred to `AppShell`. The function
+is internal and never exposed via Module Federation.
 
 The store subscription mapping above follows
 [event-bus-specification.md](specifications/event-bus-specification.md), which is the source of
@@ -340,7 +343,7 @@ useCyWebEvent('selection:changed', handleSelection)
 **Usage: Vanilla JS consumers**
 
 Vanilla JS consumers use `window.addEventListener` directly. The recommended pattern is to wait
-for the `cywebapi:ready` event — dispatched by `src/init.tsx` after both `window.CyWebApi` and
+for the `cywebapi:ready` event — dispatched by `AppShell.tsx` after both `window.CyWebApi` and
 the event bus are initialized — before attaching listeners:
 
 ```javascript
@@ -463,15 +466,41 @@ Add `validateCX2()` to `useCreateNetworkFromCx2` to prevent store corruption fro
 > See [implementation-checklist-phase1.md § Phase 1g](../checklists/implementation-checklist-phase1.md)
 > and [app-api-specification.md § 1.5.9](specifications/app-api-specification.md) for details.
 
-#### 1.8 Expand UI Integration Points
+#### 1.8 UI Surface Runtime Registration
 
-Add to `ComponentType`:
+> **Status: Detailed design complete.** See [ui-surface-registration-specification.md](specifications/ui-surface-registration-specification.md) for the full design. Implementation checklist: [implementation-checklist-phase2.md](checklists/implementation-checklist-phase2.md).
 
-- `ContextMenu` — Right-click menu items
-- `Toolbar` — Toolbar buttons
-- `SidePanel` — Side panel tabs
+Replace the manifest-only `CyApp.components` extension model with a **runtime registration API** for panels and app menu items. The current model forces app authors to declare surfaces in two places (app manifest and component code) and makes panels/menu items behave differently from context menus (which are already runtime-registered).
 
-**Context menu dynamic API:** In addition to registering a `ContextMenu` component type, apps need a runtime API for dynamically adding and removing individual menu items with associated callback functions (e.g., `useContextMenuApi().addItem(label, handler)`). The Multi-Scale Viewer app requires this for operations such as "Expand pathway" triggered from right-click on nodes.
+**Key design decisions:**
+
+- **Slot model:** `slot: UiSurfaceSlot` (`'right-panel'` | `'apps-menu'`) replaces `kind: 'panel' | 'menu'`, so new UI locations can be added as new slot values without redesigning the registry
+- **Per-app factory:** `createUiSurfaceApi(appId)` binds `appId` at construction, preventing cross-app surface spoofing; same pattern applied to `contextMenuApi`
+- **Upsert semantics:** `registerPanel` / `registerMenuItem` silently replace existing surfaces with the same `(appId, slot, id)` triple, avoiding flicker
+- **Extensible cleanup:** `AppCleanupRegistry` lets each store register its own cleanup function — `appLifecycle.ts` calls `cleanupAllForApp(appId)` once regardless of how many stores exist
+- **Declarative `surfaces` field:** `CyAppWithLifecycle.surfaces` provides a zero-boilerplate path for apps with fixed surfaces (no `mount()` needed)
+- **`AppIdContext`:** Host-provided React Context (`useAppContext()`) replaces module-scope `appState.ts` as the recommended way for plugin components to access per-app APIs
+- **Error isolation:** `PluginErrorBoundary` wraps every plugin surface; plugins can supply custom fallback components
+- **`useContextMenuApi()` deleted:** The hook and `cyweb/ContextMenuApi` expose are removed (never publicly released); context menu access moves to `AppContext.apis.contextMenu` (factory-bound) or `window.CyWebApi.contextMenu` (anonymous singleton)
+- **Two-type model:** `CyWebApiType` (window-safe, no `uiSurface`) and `AppContextApis` (extends `CyWebApiType`, `uiSurface` required) — distinct by design
+
+**New public API surface (available via `AppContext.apis.uiSurface` in `mount()`):**
+
+```typescript
+interface UiSurfaceApi {
+  getSupportedSlots(): UiSurfaceSlot[]
+  registerPanel(options): ApiResult<{ surfaceId: string }>
+  unregisterPanel(panelId: string): ApiResult
+  registerMenuItem(options): ApiResult<{ surfaceId: string }>
+  unregisterMenuItem(menuItemId: string): ApiResult
+  unregisterAll(): ApiResult
+  registerAll(entries): ApiResult<{ registered, errors }>
+  getRegisteredSurfaces(): RegisteredSurfaceInfo[]
+  getSurfaceVisibility(id: string): SurfaceVisibilityResult
+}
+```
+
+`uiSurface` is NOT on `window.CyWebApi` (requires React components). Plugin components access it via `useAppContext().apis.uiSurface`.
 
 #### 1.10 Developer Documentation and Templates
 
@@ -586,6 +615,12 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - Backward-compatible: existing apps without `mount`/`unmount` continue to work unchanged
 - **Example validation**: Add `mount(context)` to a toy app that calls `context.apis.workspace.getNetworkList()` on activation
 
+> **Phase 2 note:** In Phase 2 (UI Surface Registration), `AppContext.apis` changes from
+> `CyWebApiType` to `AppContextApis` — a per-app object that extends `CyWebApiType` and adds
+> `uiSurface` (required) and a per-app `contextMenu` factory. The host constructs this per-app
+> object in `useAppManager.ts` before calling `mountApp`. See
+> [ui-surface-registration-specification.md § 6.2.5–6.2.6](specifications/ui-surface-registration-specification.md).
+
 **1h: Context Menu API** (`core/contextMenuApi.ts` + `useContextMenuApi.ts`)
 
 - Exposes a stable API for external apps to register and remove custom context menu items on nodes, edges, and the canvas background.
@@ -614,6 +649,13 @@ use plain Jest; hook wrapper tests use `renderHook`.
 - **New error code:** `ContextMenuItemNotFound = 'CONTEXT_MENU_ITEM_NOT_FOUND'` added to `ApiErrorCode`.
 - **Example validation**: Add a demo to `hello-world` that registers an "Expand Pathway" item on node context menus via `mount(context)` and removes it in `unmount()`.
 
+> **Phase 2 note:** `useContextMenuApi.ts` and the `cyweb/ContextMenuApi` Module Federation expose
+> are **deleted** in Phase 2 (UI Surface Registration). The context menu API is refactored into a
+> per-app factory (`createContextMenuApi(appId)`) accessible via `AppContext.apis.contextMenu` in
+> `mount()`, with an anonymous singleton retained for `window.CyWebApi.contextMenu`. Because the
+> hook has not been publicly released, no deprecation period is needed. See
+> [ui-surface-registration-specification.md § 6.6](specifications/ui-surface-registration-specification.md).
+
 #### Step 2: Event Bus
 
 Implement the typed event bus alongside or immediately after all domain APIs are complete. The
@@ -629,8 +671,8 @@ subscriptions without polling.
    subscription per domain; internal file, **not** exposed via Module Federation
 3. `src/app-api/useCyWebEvent.ts` — React hook wrapper: `useEffect` + `addEventListener` +
    cleanup; exposed as `cyweb/EventBus`
-4. `src/init.tsx` — Call `initEventBus()` immediately after `window.CyWebApi = CyWebApi`;
-   dispatch `cywebapi:ready` as the last initialization step
+4. `src/features/AppShell.tsx` — Call `initEventBus()` after store hydration from IndexedDB;
+   dispatch `cywebapi:ready` immediately after (not in `src/init.tsx` — stores must hydrate first)
 5. `webpack.config.js` — Add `cyweb/EventBus` entry to `ModuleFederationPlugin.exposes`
 
 **Tests:**
@@ -702,25 +744,119 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 - [ ] `createEdge` accepts optional `bypass` field; visual property bypasses are applied atomically at creation
 - [ ] `ContextMenuApi` implemented: `addContextMenuItem`, `removeContextMenuItem`
 - [ ] `ContextMenuItemStore` implemented; host context menu components render app-registered items
-- [ ] `window.CyWebApi.contextMenu` accessible after app load; `cyweb/ContextMenuApi` webpack entry added
+- [ ] `window.CyWebApi.contextMenu` accessible after app load; `cyweb/ContextMenuApi` webpack entry added _(note: hook and expose are deleted in Phase 2; see §1.8)_
 - [ ] Context menu items registered in `mount()` are removed in `unmount()` demo works end-to-end
 
-### Phase 2: Developer Experience
+### Phase 2: UI Surface Runtime Registration
 
-1. Dynamic app registration mechanism
-2. API reference documentation (covering both `use<Domain>Api` hooks and `window.CyWebApi`)
-3. Starter template
-4. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script
-   using `window.CyWebApi`)
+> Full design: [ui-surface-registration-specification.md](specifications/ui-surface-registration-specification.md).
+> Checklist: [implementation-checklist-phase2.md](checklists/implementation-checklist-phase2.md).
+> Minimal app examples: [ui-surface-registration-minimal-app.md](examples/ui-surface-registration-minimal-app.md).
 
-### Phase 3: Extensibility
+Replace the manifest-only `CyApp.components` model with a slot-based runtime registry for panels
+and app menu items. Unify the context menu API under the same per-app factory pattern. This phase
+delivers the extensibility infrastructure needed for third-party apps to register UI surfaces
+without relying on the legacy manifest.
 
-1. ~~App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)~~ — **Moved to Phase 1 Step 1g.** `AppContext.apis` is set to `window.CyWebApi` directly; no separate assembly needed.
-2. ~~Context Menu API (`addContextMenuItem`, `removeContextMenuItem`)~~ — **Moved to Phase 1 Step 1h.** Implemented as `ContextMenuItemStore` + `contextMenuApi` with host UI wiring.
+**Dependency:** Requires Phase 1 complete (all domain APIs, app lifecycle, context menu store).
+
+#### Step 2.0: Foundation — Types, Models, and Store
+
+- `UiSurfaceTypes.ts` — `UiSurfaceSlot`, `PanelHostProps`, `MenuItemHostProps`, registration option
+  types, `UiSurfaceApi` interface, `SurfaceDeclaration`
+- `RegisteredUiSurface.ts` — internal model (`component: unknown` — no React in model layer)
+- `UiSurfaceStoreModel.ts` + `UiSurfaceStore.ts` — Zustand store with upsert/remove/query actions
+- `SurfaceNotFound` error code added to `ApiErrorCode`
+
+#### Step 2.1: App Cleanup Registry
+
+- `AppCleanupRegistry.ts` — `registerAppCleanup(fn)` / `cleanupAllForApp(appId)` pattern so that
+  adding a new registrable resource type requires no changes to `appLifecycle.ts`
+- `UiSurfaceStore` and `ContextMenuItemStore` register their cleanup at module load time
+- `ContextMenuItemStore` gains `removeAllByAppId(appId)` (skips anonymous items)
+- `appLifecycle.ts` refactored to delegate to `cleanupAllForApp` instead of hardcoded per-store calls
+
+#### Step 2.2: Core UI Surface API
+
+- `core/uiSurfaceApi.ts` — per-app factory (`createUiSurfaceApi(appId)`)
+- Methods: `getSupportedSlots`, `registerPanel` (upsert), `unregisterPanel`, `registerMenuItem`
+  (upsert), `unregisterMenuItem`, `unregisterAll`, `registerAll` (batch), `getRegisteredSurfaces`
+  (introspection), `getSurfaceVisibility` (debug)
+- Component runtime validation (`typeof component === 'function'`) at registration time
+
+#### Step 2.3: Context Menu Factory Refactor
+
+- **Delete** `useContextMenuApi.ts`, its tests, barrel export, `cyweb/ContextMenuApi` expose, and
+  `mf-declarations.d.ts` module declaration (never publicly released — no deprecation period)
+- Refactor `contextMenuApi.ts` into `createContextMenuApi(appId)` factory + anonymous singleton
+- `appId` stored as optional field on `RegisteredContextMenuItem`; `removeAllByAppId` skips anonymous
+- Update all documentation: `Api.md`, `CLAUDE.md`, `app-api-specification.md`, `README.md`,
+  Phase 1 checklist
+
+#### Step 2.4: AppIdContext and Type Model
+
+- `AppIdContext.tsx` — `AppIdProvider` + `useAppContext()` hook (replaces module-scope `appState.ts`)
+- `AppContextApis` type (extends `CyWebApiType`, adds required `uiSurface`) — distinct from
+  `CyWebApiType` which remains the window-safe shape
+- `cyweb/AppIdContext` expose in webpack.config.js
+- `packages/api-types` updated: `CyWebApiType` for `window.CyWebApi`, `AppContextApis` for `mount()`
+
+#### Step 2.5: App Lifecycle Integration
+
+- `CyApp.components` made optional (with `@deprecated`); `surfaces?: SurfaceDeclaration[]` added to
+  `CyAppWithLifecycle`
+- `useAppManager.ts` constructs per-app `{ ...CyWebApi, uiSurface, contextMenu }` and processes
+  declarative `surfaces` before calling `mountApp`
+- `appLifecycle.ts` updated: `mountApp` with duration warning (>100ms), `unmountApp` calls
+  `cleanupAllForApp` before `unmount()`
+
+#### Step 2.6: PluginErrorBoundary
+
+- `PluginErrorBoundary.tsx` using `react-error-boundary` — per-surface isolation with optional
+  custom fallback component; logs via `logApp.error`
+
+#### Step 2.7–2.8: Host Renderer Updates
+
+- `SidePanel.tsx` — surface-identity-based tab selection (replaces fragile numeric index)
+- `TabContents.tsx` — merges manifest + runtime surfaces; applies `requires.network` visibility,
+  ordering, `PluginErrorBoundary`, `AppIdProvider` wrapping
+- `AppMenu/index.tsx` — same merge + `closeOnAction` auto-close implementation
+
+#### Step 2.9: Example App Migration
+
+- Migrate `hello-world` and `project-template` from `useContextMenuApi()` to `useAppContext()` /
+  declarative `surfaces`
+- Verify no remaining `cyweb/ContextMenuApi` imports
+
+#### Phase 2 Exit Criteria
+
+- [ ] Runtime-registered panels and menu items render without `CyApp.components`
+- [ ] Declarative `surfaces` field works without `mount()`
+- [ ] `AppContext.apis` typed as `AppContextApis` (not `CyWebApiType`); `uiSurface` is required
+- [ ] `window.CyWebApi.uiSurface` is `undefined`; TypeScript rejects `window.CyWebApi.uiSurface`
+- [ ] `cyweb/ContextMenuApi` expose deleted; `cyweb/AppIdContext` expose added
+- [ ] `cleanupAllForApp(appId)` cleans all stores; no hardcoded cleanup in `appLifecycle.ts`
+- [ ] `PluginErrorBoundary` isolates plugin failures per surface
+- [ ] `requires.network` hides panels when no network is loaded
+- [ ] Surface-identity tab selection preserves selection across panel add/remove/hide
+- [ ] `closeOnAction: true` auto-closes Apps dropdown after action
+- [ ] Upsert semantics: re-registering a surface updates title/component without flicker
+- [ ] Existing `CyApp.components` apps continue to work (backward compatible)
+- [ ] All example apps migrated and building
+
+### Phase 3: Extensibility and Developer Experience
+
+1. ~~App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)~~ — **Shipped in Phase 1 Step 1g.**
+2. ~~Context Menu API (`addContextMenuItem`, `removeContextMenuItem`)~~ — **Shipped in Phase 1 Step 1h; refactored to per-app factory in Phase 2.**
 3. ~~Expose CX2 export API~~ — **Shipped in Phase 1e** as `exportApi.exportToCx2`.
-4. Expand UI integration points (toolbar buttons, panel slot injection, status bar items)
-5. Inter-app communication protocol
-6. Security sandbox evaluation
+4. ~~Expand UI integration points (panels, app menu items)~~ — **Shipped in Phase 2** as `UiSurfaceApi` with slot model.
+5. Dynamic app registration mechanism (URL-based app loading, manifest validation)
+6. API reference documentation (covering `use<Domain>Api` hooks, `window.CyWebApi`, and `UiSurfaceApi`)
+7. Starter template and third-party app development guide
+8. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script using `window.CyWebApi`)
+9. Expand UI slots: `'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`
+10. Inter-app communication protocol
+11. Security sandbox evaluation
 
 ---
 
@@ -762,6 +898,38 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 | E2E example suite         | `network-generator` runs full workflow (create → layout → style → export)              |
 | Phase 1 complete          | All exit criteria met, `app-api` branch ready for merge in examples repo            |
 
-### Phase 2: Developer Experience (TBD)
+### Phase 2: UI Surface Runtime Registration
 
-### Phase 3: Extensibility (TBD)
+- **Goal**: Replace manifest-only extension model with runtime registration; unify context menu under per-app factory pattern
+
+| Milestone | Deliverables |
+| --------- | ------------ |
+| Step 2.0: Foundation | `UiSurfaceTypes.ts`, `RegisteredUiSurface.ts`, `UiSurfaceStoreModel.ts`, `UiSurfaceStore.ts`, store tests |
+| Step 2.1: Cleanup Registry | `AppCleanupRegistry.ts`, `removeAllByAppId` on `ContextMenuItemStore`, `appLifecycle.ts` refactor |
+| Step 2.2: Core API | `core/uiSurfaceApi.ts` (factory, batch, introspection), unit tests |
+| Step 2.3: Context Menu Factory | Delete `useContextMenuApi` + expose; refactor to `createContextMenuApi(appId)` factory + anonymous singleton; documentation updates |
+| Step 2.4: AppIdContext & Types | `AppIdContext.tsx`, `AppContextApis` type, `cyweb/AppIdContext` expose, `api-types` package update |
+| Step 2.5: Lifecycle Integration | `CyApp.components` optional, `surfaces` field, `useAppManager.ts` per-app API construction, `appLifecycle.ts` mount/unmount |
+| Step 2.6: Error Boundary | `PluginErrorBoundary.tsx` (per-surface isolation, custom fallback) |
+| Step 2.7–2.8: Renderers | `SidePanel.tsx` identity-based tabs, `TabContents.tsx` + `AppMenu/index.tsx` merge manifest + runtime surfaces, `closeOnAction` |
+| Step 2.9: Example Migration | `hello-world` + `project-template` migrated to `useAppContext()` / declarative `surfaces` |
+
+**Key dependencies:**
+
+- Steps 2.0–2.2 are sequential (store → cleanup → API)
+- Steps 2.3 (context menu refactor) and 2.4 (AppIdContext) can proceed in parallel after 2.2
+- Step 2.5 depends on 2.2 + 2.3 + 2.4
+- Steps 2.7–2.8 depend on 2.5 + 2.6
+- Step 2.9 depends on all prior steps
+
+**Milestones (checkpoints):**
+
+| Checkpoint | Verification |
+| ---------- | ------------ |
+| Store + API working | `UiSurfaceStore` tests pass; `createUiSurfaceApi` tests pass |
+| Context menu unified | `useContextMenuApi` deleted; factory + anonymous singleton tests pass |
+| Lifecycle integrated | `mountApp` constructs per-app APIs; declarative `surfaces` registered before `mount()` |
+| Renderers updated | Runtime-registered panel visible in side panel; menu item visible in Apps dropdown |
+| Phase 2 complete | All exit criteria met; example apps migrated |
+
+### Phase 3: Extensibility and Developer Experience (TBD)
