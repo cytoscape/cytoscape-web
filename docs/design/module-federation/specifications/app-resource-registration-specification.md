@@ -645,7 +645,8 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     }
 
     // 2. Evaluate visibility rules (same logic as host renderers)
-    const currentNetworkId = useNetworkStore.getState().currentNetworkId
+    const { workspace } = useWorkspaceStore.getState()
+    const currentNetworkId = workspace.currentNetworkId
     if (resource.requires?.network && !currentNetworkId) {
       return { registered: true, visible: false, hiddenReason: 'requires-network' }
     }
