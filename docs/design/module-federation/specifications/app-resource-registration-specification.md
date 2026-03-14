@@ -1,4 +1,4 @@
-# UI Surface Runtime Registration Specification
+# App Resource Runtime Registration Specification
 
 - **Rev. 4 (3/14/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Internal consistency fixes, architecture clarifications
 - Rev. 3 (3/14/2026): Keiichiro ONO, GitHub Copilot, and Claude — DX improvements
@@ -53,7 +53,7 @@ For each configured remote:
 
 ### 2.2 Panel and Menu Rendering
 
-The host currently renders app-owned surfaces by scanning `CyApp.components`:
+The host currently renders app-owned resources by scanning `CyApp.components`:
 
 - `src/features/Workspace/SidePanel/TabContents.tsx` filters
   `ComponentType.Panel`
@@ -80,14 +80,14 @@ when an app is disabled or unloaded. This spec addresses this gap in §6.6.
 
 The current manifest-only model is simple, but it has these limitations:
 
-1. It forces app authors to declare surfaces in two places: app manifest and
+1. It forces app authors to declare resources in two places: app manifest and
    component code
 2. It makes panels and menu items behave differently from other runtime
    extensions such as context menus
 3. It ties host rendering to manifest metadata instead of app lifecycle state
-4. `kind: 'panel' | 'menu'` conflates surface type with placement, making it
+4. `kind: 'panel' | 'menu'` conflates resource type with placement, making it
    hard to add new slots (e.g., a second toolbar menu, a bottom panel)
-5. Host props (e.g., `handleClose`) are hardcoded per surface type rather than
+5. Host props (e.g., `handleClose`) are hardcoded per resource type rather than
    defined by the receiving slot
 6. There is no mechanism for capability negotiation — apps cannot ask which slots
    the host currently supports
@@ -96,24 +96,24 @@ The current manifest-only model is simple, but it has these limitations:
 8. Cleanup code in `appLifecycle.ts` must be updated every time a new
    registrable resource type is introduced — this is manual, error-prone, and
    does not scale
-9. There is no API to update a registered surface (title, order, visibility)
+9. There is no API to update a registered resource (title, order, visibility)
    without unregistering and re-registering it, causing flicker and state loss
 10. Plugin components have no host-provided mechanism to obtain their `appId`,
     forcing workarounds like module-scope state that are fragile under HMR and
     break test isolation
-11. Registering multiple surfaces in `mount()` requires verbose per-call
-    `ApiResult` checking — most apps have fixed surfaces and gain nothing from
+11. Registering multiple resources in `mount()` requires verbose per-call
+    `ApiResult` checking — most apps have fixed resources and gain nothing from
     per-call error handling
 12. `handleClose` for menu items is a common footgun: calling it immediately
     unmounts the menu and any Dialog the component opened, requiring developers
     to defer the call manually
-13. Developers have no API to inspect what surfaces are registered or why a
-    surface is hidden, making debugging difficult
+13. Developers have no API to inspect what resources are registered or why a
+    resource is hidden, making debugging difficult
 14. Plugin authors cannot customize the error boundary fallback shown when their
     component fails to render
 
 The host should support a single runtime-oriented model for app-owned UI
-surfaces that is slot-based, prop-typed per slot, error-isolated, and
+resources that is slot-based, prop-typed per slot, error-isolated, and
 capability-aware, while minimizing the boilerplate and friction for common
 plugin patterns.
 
@@ -122,29 +122,29 @@ plugin patterns.
 - Allow apps to register panels and app menu items at runtime
 - Use a **slot model** so that new UI locations can be added without redesigning
   the registry
-- Define host props per slot, not per surface type, to avoid tight coupling
+- Define host props per slot, not per resource type, to avoid tight coupling
 - Support declarative visibility flags so plugins can express contextual
   visibility without reimplementing host state checks
 - Support ordering groups for structured menus and tab strips
-- Isolate plugin rendering failures with per-surface error boundaries
+- Isolate plugin rendering failures with per-resource error boundaries
 - Support capability negotiation so apps can register conditionally
 - Keep app ownership explicit through `appId` via factory binding
 - Ensure automatic cleanup on app disable, unload, and mount failure
 - Use an **extensible cleanup registry** so that new registrable resource types
   do not require changes to `appLifecycle.ts`
-- Support **upsert semantics** for surface registration so apps can update
+- Support **upsert semantics** for resource registration so apps can update
   title, order, or visibility without unregister/re-register flicker
 - Provide a host-managed **`AppIdContext`** (React Context) so plugin
   components can obtain their `appId` without module-scope workarounds
 - Fix the equivalent context menu cleanup gap in the same lifecycle pass
 - **Delete `useContextMenuApi()` and `cyweb/ContextMenuApi`** in this rollout —
   the feature has not been publicly released, so no deprecation period is needed
-- Support a **declarative `surfaces` field** on `CyAppWithLifecycle` so apps
-  with fixed surfaces need not implement `mount()` at all
+- Support a **declarative `resources` field** on `CyAppWithLifecycle` so apps
+  with fixed resources need not implement `mount()` at all
 - Provide a **batch registration API** to reduce per-call boilerplate in
   `mount()`
 - Provide **debug/introspection methods** so developers can inspect registered
-  surfaces and understand visibility evaluation
+  resources and understand visibility evaluation
 - Eliminate the `handleClose` footgun with an **auto-close mode** for menu items
 - Allow plugins to supply a **custom error boundary fallback** component
 - **Validate components at registration time** (runtime type check) to catch
@@ -162,10 +162,10 @@ plugin patterns.
 
 ### 6.1 Slot Model and Registry
 
-#### 6.1.1 `UiSurfaceSlot`
+#### 6.1.1 `ResourceSlot`
 
 Replace the `kind: 'panel' | 'menu'` discriminant with a **slot** that encodes
-both surface type and placement:
+both resource type and placement:
 
 ```typescript
 /**
@@ -178,7 +178,7 @@ both surface type and placement:
  * Reserved for future rollouts:
  *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar', 'modal-launcher'
  */
-type UiSurfaceSlot = 'right-panel' | 'apps-menu'
+type ResourceSlot = 'right-panel' | 'apps-menu'
 ```
 
 Separating slot from kind means the host can add `'bottom-panel'` later without
@@ -191,7 +191,7 @@ Each slot defines its own component prop type. Host renderers inject exactly the
 props declared for that slot:
 
 ```typescript
-// src/app-api/types/UiSurfaceTypes.ts
+// src/app-api/types/AppResourceTypes.ts
 
 /** Props injected by the host into every 'right-panel' component. */
 export interface PanelHostProps {
@@ -222,19 +222,19 @@ export interface MenuItemHostProps {
 These types are exported from the `@cytoscape-web/api-types` package so plugin
 authors can type their components correctly without guessing.
 
-#### 6.1.3 `RegisteredUiSurface`
+#### 6.1.3 `RegisteredAppResource`
 
 New internal type:
 
 ```typescript
-// src/models/AppModel/RegisteredUiSurface.ts
+// src/models/AppModel/RegisteredAppResource.ts
 
-type UiSurfaceSlot = 'right-panel' | 'apps-menu'
+type ResourceSlot = 'right-panel' | 'apps-menu'
 
-interface RegisteredUiSurface {
+interface RegisteredAppResource {
   readonly id: string
   readonly appId: string
-  readonly slot: UiSurfaceSlot
+  readonly slot: ResourceSlot
   readonly title?: string
   /**
    * Sort key within the slot. Lower values appear first.
@@ -253,9 +253,9 @@ interface RegisteredUiSurface {
    * evaluated; the others are stored for future renderers.
    */
   readonly requires?: {
-    /** true → surface is hidden unless a network is currently loaded */
+    /** true → resource is hidden unless a network is currently loaded */
     network?: boolean
-    /** true → surface is hidden unless at least one element is selected */
+    /** true → resource is hidden unless at least one element is selected */
     selection?: boolean
   }
   /**
@@ -283,15 +283,15 @@ interface RegisteredUiSurface {
 New host store:
 
 ```text
-src/data/hooks/stores/UiSurfaceStore.ts
+src/data/hooks/stores/AppResourceStore.ts
 ```
 
 Registry rules:
 
 - `appId` is required for every registration
-- `(appId, slot, id)` is the **stable surface identity** — this triple is used
+- `(appId, slot, id)` is the **stable resource identity** — this triple is used
   for deduplication, future persistence (see §6.5), and tab selection tracking
-- **Upsert semantics:** Registering a surface with the same `(appId, slot, id)`
+- **Upsert semantics:** Registering a resource with the same `(appId, slot, id)`
   replaces the existing entry in place rather than returning an error. This
   enables apps to update `title`, `order`, `requires`, or `component` without
   unregister/re-register flicker (see §6.2.3)
@@ -302,21 +302,21 @@ Registry rules:
 
 #### 6.2.1 Capability Negotiation
 
-Before registering surfaces, apps may query which slots the host currently
+Before registering resources, apps may query which slots the host currently
 supports:
 
 ```typescript
-interface UiSurfaceApi {
+interface ResourceApi {
   /**
    * Returns the set of UI slots this host version supports.
-   * Apps should register surfaces only for supported slots.
+   * Apps should register resources only for supported slots.
    *
    * @example
-   * if (apis.uiSurface.getSupportedSlots().includes('bottom-panel')) {
-   *   apis.uiSurface.registerBottomPanel({ ... })
+   * if (apis.resource.getSupportedSlots().includes('bottom-panel')) {
+   *   apis.resource.registerBottomPanel({ ... })
    * }
    */
-  getSupportedSlots(): UiSurfaceSlot[]
+  getSupportedSlots(): ResourceSlot[]
 
   // ── Individual Registration (upsert semantics) ──────────────────────
 
@@ -325,7 +325,7 @@ interface UiSurfaceApi {
    * if a panel with the same `id` is already registered by this app, it is
    * replaced in place (preserving tab selection) rather than returning an error.
    */
-  registerPanel(options: RegisterPanelOptions): ApiResult<{ surfaceId: string }>
+  registerPanel(options: RegisterPanelOptions): ApiResult<{ resourceId: string }>
   unregisterPanel(panelId: string): ApiResult
   /**
    * Register a menu item in the 'apps-menu' slot. Uses **upsert semantics**:
@@ -334,14 +334,14 @@ interface UiSurfaceApi {
    */
   registerMenuItem(
     options: RegisterMenuItemOptions,
-  ): ApiResult<{ surfaceId: string }>
+  ): ApiResult<{ resourceId: string }>
   unregisterMenuItem(menuItemId: string): ApiResult
   unregisterAll(): ApiResult
 
   // ── Batch Registration ──────────────────────────────────────────────
 
   /**
-   * Register multiple surfaces in a single call. Each entry specifies its
+   * Register multiple resources in a single call. Each entry specifies its
    * target slot. Uses upsert semantics per entry. Entries that fail
    * validation are skipped (logged) but do not block other entries.
    *
@@ -351,49 +351,49 @@ interface UiSurfaceApi {
    * is typically a recoverable "some entries skipped" situation.
    *
    * @example
-   * const result = apis.uiSurface.registerAll([
+   * const result = apis.resource.registerAll([
    *   { slot: 'right-panel', id: 'main', title: 'My Panel', component: MyPanel },
    *   { slot: 'apps-menu', id: 'action', component: MyAction },
    * ])
    * if (result.success && result.data.errors.length > 0) {
-   *   logApp.warn('Some surfaces failed to register:', result.data.errors)
+   *   logApp.warn('Some resources failed to register:', result.data.errors)
    * }
    */
   registerAll(
-    entries: RegisterSurfaceEntry[],
+    entries: RegisterResourceEntry[],
   ): ApiResult<{
-    registered: Array<{ surfaceId: string }>
-    errors: Array<{ id: string; slot: UiSurfaceSlot; error: ApiError }>
+    registered: Array<{ resourceId: string }>
+    errors: Array<{ id: string; slot: ResourceSlot; error: ApiError }>
   }>
 
   // ── Introspection (debug / development) ─────────────────────────────
 
   /**
-   * Returns all surfaces registered by this app. Useful for debugging and
+   * Returns all resources registered by this app. Useful for debugging and
    * DevTools integration.
    */
-  getRegisteredSurfaces(): RegisteredSurfaceInfo[]
+  getRegisteredResources(): RegisteredResourceInfo[]
 
   /**
-   * Returns the visibility evaluation result for a surface registered by
+   * Returns the visibility evaluation result for a resource registered by
    * this app. The `id` parameter is the **slot-local id** passed to
-   * `registerPanel` / `registerMenuItem` — not the full surfaceId triple.
+   * `registerPanel` / `registerMenuItem` — not the full resourceId triple.
    *
    * @example
-   * const vis = apis.uiSurface.getSurfaceVisibility('myPanel')
+   * const vis = apis.resource.getResourceVisibility('myPanel')
    * // { registered: true, visible: false, hiddenReason: 'requires-network' }
    */
-  getSurfaceVisibility(id: string): SurfaceVisibilityResult
+  getResourceVisibility(id: string): ResourceVisibilityResult
 }
 
 /** Entry for batch registration via registerAll(). */
-interface RegisterSurfaceEntry {
-  slot: UiSurfaceSlot
+interface RegisterResourceEntry {
+  slot: ResourceSlot
   id: string
   title?: string
   order?: number
   group?: string
-  requires?: RegisteredUiSurface['requires']
+  requires?: RegisteredAppResource['requires']
   component: React.ComponentType<any>
   /** Custom error fallback (see §6.3.4). */
   errorFallback?: React.ComponentType<{ error: Error; resetErrorBoundary: () => void }>
@@ -401,33 +401,33 @@ interface RegisterSurfaceEntry {
   closeOnAction?: boolean
 }
 
-/** Returned by getRegisteredSurfaces(). */
-interface RegisteredSurfaceInfo {
-  surfaceId: string    // full triple: appId::slot::id
-  slot: UiSurfaceSlot
+/** Returned by getRegisteredResources(). */
+interface RegisteredResourceInfo {
+  resourceId: string    // full triple: appId::slot::id
+  slot: ResourceSlot
   id: string
   title?: string
   order?: number
-  requires?: RegisteredUiSurface['requires']
+  requires?: RegisteredAppResource['requires']
 }
 
-/** Returned by getSurfaceVisibility(). */
-interface SurfaceVisibilityResult {
+/** Returned by getResourceVisibility(). */
+interface ResourceVisibilityResult {
   registered: boolean
   visible: boolean
   hiddenReason?: 'app-inactive' | 'requires-network' | 'requires-selection' | 'slot-not-rendered'
 }
 ```
 
-> **Naming note:** `registerPanel` / `registerMenuItem` return a `surfaceId` — the
+> **Naming note:** `registerPanel` / `registerMenuItem` return a `resourceId` — the
 > full identity triple `${appId}::${slot}::${id}`. The `unregister*` parameters
 > (`panelId`, `menuItemId`) are the **slot-local id** only — the same value passed
 > as `options.id` at registration, not the full triple. Do not pass the returned
-> `surfaceId` to `unregisterPanel`; pass `options.id` directly.
+> `resourceId` to `unregisterPanel`; pass `options.id` directly.
 
 > **Upsert semantics:** Calling `registerPanel` with an `id` that is already
-> registered by the same app replaces the existing surface entry in the store
-> atomically. The `surfaceId` returned is unchanged, so tab selection state in
+> registered by the same app replaces the existing resource entry in the store
+> atomically. The `resourceId` returned is unchanged, so tab selection state in
 > `SidePanel.tsx` is preserved. This allows apps to dynamically update `title`,
 > `order`, `requires`, or `component` without the flicker caused by an
 > unregister/re-register cycle.
@@ -436,12 +436,12 @@ The host implements `getSupportedSlots()` by returning the static list of
 currently wired slots:
 
 ```typescript
-getSupportedSlots(): UiSurfaceSlot[] {
+getSupportedSlots(): ResourceSlot[] {
   return ['right-panel', 'apps-menu']
 }
 ```
 
-Registering a surface for an unsupported slot returns
+Registering a resource for an unsupported slot returns
 `fail(ApiErrorCode.InvalidInput, 'slot ... is not supported')`.
 
 #### 6.2.2 Registration Options
@@ -453,7 +453,7 @@ interface RegisterPanelOptions {
   title?: string
   order?: number
   group?: string
-  requires?: RegisteredUiSurface['requires']
+  requires?: RegisteredAppResource['requires']
   component: React.ComponentType<PanelHostProps>
   /**
    * Custom fallback component rendered when this panel throws a render error.
@@ -472,7 +472,7 @@ interface RegisterMenuItemOptions {
   title?: string
   order?: number
   group?: string
-  requires?: RegisteredUiSurface['requires']
+  requires?: RegisteredAppResource['requires']
   component: React.ComponentType<MenuItemHostProps>
   /**
    * If true, the host automatically closes the Apps dropdown after the menu
@@ -498,16 +498,16 @@ captured once at construction time (§6.2.3).
 
 #### 6.2.3 Per-App Factory Pattern
 
-`UiSurfaceApi` is **per-app**: each instance is bound to a specific `appId` at
+`ResourceApi` is **per-app**: each instance is bound to a specific `appId` at
 creation time. This prevents apps from accidentally (or intentionally)
-registering surfaces under another app's identity.
+registering resources under another app's identity.
 
 ```typescript
-// src/app-api/core/uiSurfaceApi.ts
+// src/app-api/core/resourceApi.ts
 
-const SUPPORTED_SLOTS: UiSurfaceSlot[] = ['right-panel', 'apps-menu']
+const SUPPORTED_SLOTS: ResourceSlot[] = ['right-panel', 'apps-menu']
 
-export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
+export const createResourceApi = (appId: string): ResourceApi => ({
   getSupportedSlots() {
     return [...SUPPORTED_SLOTS]
   },
@@ -530,10 +530,10 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
           `component must be a React component (function), got ${typeof options.component}`,
         )
       }
-      const store = useUiSurfaceStore.getState()
-      // Upsert: if a surface with the same identity already exists, replace it
+      const store = useAppResourceStore.getState()
+      // Upsert: if a resource with the same identity already exists, replace it
       // in place. This preserves tab selection state and avoids flicker.
-      store.upsertSurface({
+      store.upsertResource({
         id: options.id,
         appId,
         slot: 'right-panel',
@@ -544,7 +544,7 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
         component: options.component as unknown,
         errorFallback: options.errorFallback as unknown,
       })
-      return ok({ surfaceId: `${appId}::right-panel::${options.id}` })
+      return ok({ resourceId: `${appId}::right-panel::${options.id}` })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
@@ -552,14 +552,14 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
 
   unregisterPanel(panelId) {
     try {
-      const store = useUiSurfaceStore.getState()
-      if (!store.hasSurface(appId, 'right-panel', panelId)) {
+      const store = useAppResourceStore.getState()
+      if (!store.hasResource(appId, 'right-panel', panelId)) {
         return fail(
-          ApiErrorCode.SurfaceNotFound,
+          ApiErrorCode.ResourceNotFound,
           `Panel '${panelId}' not found`,
         )
       }
-      store.removeSurface(appId, 'right-panel', panelId)
+      store.removeResource(appId, 'right-panel', panelId)
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
@@ -575,7 +575,7 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
 
   unregisterAll() {
     try {
-      useUiSurfaceStore.getState().removeAllByAppId(appId)
+      useAppResourceStore.getState().removeAllByAppId(appId)
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
@@ -585,10 +585,10 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
   // ── Batch Registration ──────────────────────────────────────────────
 
   registerAll(entries) {
-    const registered: Array<{ surfaceId: string }> = []
-    const errors: Array<{ id: string; slot: UiSurfaceSlot; error: ApiError }> = []
+    const registered: Array<{ resourceId: string }> = []
+    const errors: Array<{ id: string; slot: ResourceSlot; error: ApiError }> = []
     for (const entry of entries) {
-      let result: ApiResult<{ surfaceId: string }>
+      let result: ApiResult<{ resourceId: string }>
       if (entry.slot === 'right-panel') {
         result = this.registerPanel(entry as RegisterPanelOptions)
       } else if (entry.slot === 'apps-menu') {
@@ -609,7 +609,7 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
     }
     if (errors.length > 0) {
       for (const e of errors) {
-        logApp.warn(`[UiSurfaceApi]: registerAll skipped ${e.id} (${e.slot}): ${e.error.message}`)
+        logApp.warn(`[ResourceApi]: registerAll skipped ${e.id} (${e.slot}): ${e.error.message}`)
       }
     }
     return ok({ registered, errors })
@@ -617,12 +617,12 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
 
   // ── Introspection ───────────────────────────────────────────────────
 
-  getRegisteredSurfaces() {
-    return useUiSurfaceStore
+  getRegisteredResources() {
+    return useAppResourceStore
       .getState()
-      .surfaces.filter((s) => s.appId === appId)
+      .resources.filter((s) => s.appId === appId)
       .map((s) => ({
-        surfaceId: `${s.appId}::${s.slot}::${s.id}`,
+        resourceId: `${s.appId}::${s.slot}::${s.id}`,
         slot: s.slot,
         id: s.id,
         title: s.title,
@@ -631,12 +631,12 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
       }))
   },
 
-  getSurfaceVisibility(id) {
-    const store = useUiSurfaceStore.getState()
-    const surface = store.surfaces.find(
+  getResourceVisibility(id) {
+    const store = useAppResourceStore.getState()
+    const resource = store.resources.find(
       (s) => s.appId === appId && s.id === id,
     )
-    if (!surface) return { registered: false, visible: false }
+    if (!resource) return { registered: false, visible: false }
 
     // 1. Check app-active state first
     const appStatus = useAppStore.getState().apps[appId]?.status
@@ -646,10 +646,10 @@ export const createUiSurfaceApi = (appId: string): UiSurfaceApi => ({
 
     // 2. Evaluate visibility rules (same logic as host renderers)
     const currentNetworkId = useNetworkStore.getState().currentNetworkId
-    if (surface.requires?.network && !currentNetworkId) {
+    if (resource.requires?.network && !currentNetworkId) {
       return { registered: true, visible: false, hiddenReason: 'requires-network' }
     }
-    if (surface.requires?.selection) {
+    if (resource.requires?.selection) {
       // Selection check — deferred in v1 but included for completeness
       return { registered: true, visible: false, hiddenReason: 'requires-selection' }
     }
@@ -694,13 +694,13 @@ export const useAppContext = (): AppIdContextValue | null =>
 export const AppIdProvider = AppIdContext.Provider
 ```
 
-The host wraps each plugin surface in `AppIdProvider` at the rendering call
+The host wraps each plugin resource in `AppIdProvider` at the rendering call
 site, alongside `PluginErrorBoundary`:
 
 ```tsx
 // TabContents.tsx (right-panel renderer)
-<AppIdProvider value={{ appId: surface.appId, apis: perAppApis.get(surface.appId) }}>
-  <PluginErrorBoundary appId={surface.appId} slot="right-panel">
+<AppIdProvider value={{ appId: resource.appId, apis: perAppApis.get(resource.appId) }}>
+  <PluginErrorBoundary appId={resource.appId} slot="right-panel">
     <Suspense fallback={<PanelLoadingFallback />}>
       <PanelComponent />
     </Suspense>
@@ -750,13 +750,13 @@ React Context immediately (e.g., non-component code that runs outside the React
 tree). It is explicitly marked as deprecated and will be removed once all
 example apps are migrated.
 
-#### 6.2.5 No `useUiSurfaceApi` Hook in v1
+#### 6.2.5 No `useResourceApi` Hook in v1
 
-Unlike other App API domains, `UiSurfaceApi` is **not** exposed as a zero-arg
+Unlike other App API domains, `ResourceApi` is **not** exposed as a zero-arg
 React hook in this rollout. The primary call site is `mount()`, where
-`apis.uiSurface` is provided by `AppContext`. Plugin components that need
-surface registration access can use `useAppContext()` (§6.2.4) to obtain the
-per-app `apis` object, which includes `uiSurface`.
+`apis.resource` is provided by `AppContext`. Plugin components that need
+resource registration access can use `useAppContext()` (§6.2.4) to obtain the
+per-app `apis` object, which includes `resource`.
 
 The host constructs the per-app `CyWebApi` object in `useAppManager.ts` before
 calling `mount()`:
@@ -764,7 +764,7 @@ calling `mount()`:
 ```typescript
 const appApi = {
   ...CyWebApi,
-  uiSurface: createUiSurfaceApi(cyApp.id),
+  resource: createResourceApi(cyApp.id),
   contextMenu: createContextMenuApi(cyApp.id),
 }
 void mountApp(cyApp, { appId: cyApp.id, apis: appApi }, mountedApps.current)
@@ -773,24 +773,24 @@ void mountApp(cyApp, { appId: cyApp.id, apis: appApi }, mountedApps.current)
 #### 6.2.6 `window.CyWebApi` Limitation and `AppContextApis` Type
 
 `window.CyWebApi` is intended for non-React consumers (browser extensions, LLM
-agent bridges). UI surface registration requires `React.ComponentType` values,
+agent bridges). App resource registration requires `React.ComponentType` values,
 which non-React consumers cannot provide.
 
 Because `window.CyWebApi` and `AppContext.apis` now carry different sets of
 fields, they must have **distinct types**. Using a single `CyWebApiType` for
-both would leave `uiSurface` as optional in `mount()`, even though the host
+both would leave `resource` as optional in `mount()`, even though the host
 always injects it there.
 
 The two types are:
 
 The type model follows **Model A**:
 
-| Type             | Used by           | `uiSurface`                            |
+| Type             | Used by           | `resource`                            |
 | ---------------- | ----------------- | -------------------------------------- |
 | `CyWebApiType`   | `window.CyWebApi` | **absent** — window-safe by definition |
 | `AppContextApis` | `AppContext.apis` | **required** — host always injects     |
 
-`CyWebApiType` is the window-safe shape and carries no `uiSurface` field at all.
+`CyWebApiType` is the window-safe shape and carries no `resource` field at all.
 `AppContextApis` extends it and adds the required field. `window.CyWebApi` is
 declared directly as `CyWebApiType` — no `Omit` needed or used.
 
@@ -798,7 +798,7 @@ declared directly as `CyWebApiType` — no `Omit` needed or used.
 // src/app-api/types/index.ts (or AppContext.ts)
 
 /**
- * Window-facing API type. uiSurface is intentionally absent:
+ * Window-facing API type. resource is intentionally absent:
  * non-React consumers cannot provide React.ComponentType values.
  * window.CyWebApi is declared as this type directly.
  */
@@ -807,16 +807,16 @@ export interface CyWebApiType {
   network: NetworkApi
   // ... existing fields ...
   contextMenu: ContextMenuApi
-  // No uiSurface field here.
+  // No resource field here.
 }
 
 /**
  * Per-app API object passed to mount(). Extends CyWebApiType and adds
- * uiSurface as a required field — the host always injects it before calling
+ * resource as a required field — the host always injects it before calling
  * mount(). Intentionally distinct from CyWebApiType.
  */
 export interface AppContextApis extends CyWebApiType {
-  readonly uiSurface: UiSurfaceApi // required: never undefined inside mount()
+  readonly resource: ResourceApi // required: never undefined inside mount()
 }
 ```
 
@@ -833,32 +833,32 @@ declare global {
 // src/app-api/types/AppContext.ts
 export interface AppContext {
   readonly appId: string
-  readonly apis: AppContextApis // uiSurface is UiSurfaceApi, not undefined
+  readonly apis: AppContextApis // resource is ResourceApi, not undefined
 }
 ```
 
-App code inside `mount()` can safely call `apis.uiSurface.registerPanel(...)` without
+App code inside `mount()` can safely call `apis.resource.registerPanel(...)` without
 a null check. TypeScript enforces this at compile time.
 
 ### 6.3 Host Rendering
 
-Update host renderers to merge both sources — manifest surfaces from
-`CyApp.components` and runtime surfaces from `UiSurfaceStore` — and apply the
+Update host renderers to merge both sources — manifest resources from
+`CyApp.components` and runtime resources from `AppResourceStore` — and apply the
 following rules uniformly.
 
 #### 6.3.1 Rendering Rules
 
-- Runtime surfaces are rendered only when the app is active
+- Runtime resources are rendered only when the app is active
 - Visibility flags in `requires` are evaluated after app-active state:
   - `requires.network = true` → skip rendering unless a network is loaded
   - Other flags are stored and logged as unsupported in the first rollout
-- If a runtime surface and a manifest surface share the same `(appId, slot,
-id)`, the runtime surface wins and the host logs a warning
-- Surfaces within a slot are sorted by `order` (ascending, undefined last),
+- If a runtime resource and a manifest resource share the same `(appId, slot,
+id)`, the runtime resource wins and the host logs a warning
+- Resources within a slot are sorted by `order` (ascending, undefined last),
   then by registration order for ties
 - `group` is stored but ignored by renderers in the first rollout
 
-#### 6.3.2 Stable Tab Selection by Surface Identity
+#### 6.3.2 Stable Tab Selection by Resource Identity
 
 The current `SidePanel.tsx` stores the selected tab as a numeric index
 (`useState(0)`). This breaks when panels are added, removed, or hidden by
@@ -866,27 +866,27 @@ The current `SidePanel.tsx` stores the selected tab as a numeric index
 silently points to a different panel.
 
 As part of this implementation, `SidePanel.tsx` must be updated to store the
-selected panel by **surface identity** instead of array position:
+selected panel by **resource identity** instead of array position:
 
 ```typescript
 // Before (fragile)
 const [value, setValue] = useState(0)
 
 // After (stable)
-const [selectedSurfaceId, setSelectedSurfaceId] = useState<string | null>(null)
+const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null)
 ```
 
-The surface identity for a `right-panel` surface is the same triple used
+The resource identity for a `right-panel` resource is the same triple used
 elsewhere: `${appId}::right-panel::${id}`. For the built-in "Sub Network Viewer"
-tab (not a registered surface), use a reserved sentinel string such as
+tab (not a registered resource), use a reserved sentinel string such as
 `'__builtin__::right-panel::sub-network-viewer'`.
 
 Rendering logic:
 
-1. Build the ordered, visibility-filtered array of surfaces to display
-2. Find the index of `selectedSurfaceId` in that array
-3. If not found (surface removed or hidden), fall back to index 0 and update
-   `selectedSurfaceId` to the first visible surface's identity
+1. Build the ordered, visibility-filtered array of resources to display
+2. Find the index of `selectedResourceId` in that array
+3. If not found (resource removed or hidden), fall back to index 0 and update
+   `selectedResourceId` to the first visible resource's identity
 4. Pass the resolved index to MUI `<Tabs value={resolvedIndex}>`
 
 This ensures that when `requires.network` hides a panel, the selected tab
@@ -900,11 +900,11 @@ type is `unknown` in the store; renderers cast it to the appropriate prop type:
 
 ```tsx
 // right-panel renderer (TabContents.tsx)
-const PanelComponent = surface.component as React.ComponentType<PanelHostProps>
+const PanelComponent = resource.component as React.ComponentType<PanelHostProps>
 // PanelHostProps = {} in first rollout — no props injected yet
 return (
-  <PluginErrorBoundary appId={surface.appId} slot="right-panel"
-    customFallback={surface.errorFallback as any}>
+  <PluginErrorBoundary appId={resource.appId} slot="right-panel"
+    customFallback={resource.errorFallback as any}>
     <Suspense fallback={<PanelLoadingFallback />}>
       <PanelComponent />
     </Suspense>
@@ -913,7 +913,7 @@ return (
 
 // apps-menu renderer (AppMenu/index.tsx)
 const MenuComponent =
-  surface.component as React.ComponentType<MenuItemHostProps>
+  resource.component as React.ComponentType<MenuItemHostProps>
 
 // closeOnAction implementation:
 // When closeOnAction is true, the host wraps the component in a <div>
@@ -921,10 +921,10 @@ const MenuComponent =
 // within the component. The plugin does NOT need to call handleClose.
 // When closeOnAction is false (default), the plugin must call handleClose
 // manually (e.g., after a Dialog closes).
-if (surface.closeOnAction) {
+if (resource.closeOnAction) {
   return (
-    <PluginErrorBoundary appId={surface.appId} slot="apps-menu"
-      customFallback={surface.errorFallback as any}>
+    <PluginErrorBoundary appId={resource.appId} slot="apps-menu"
+      customFallback={resource.errorFallback as any}>
       <div onClick={() => { /* defer close to next microtask so the
            component's own handler runs first */
         queueMicrotask(() => handleClose())
@@ -936,8 +936,8 @@ if (surface.closeOnAction) {
 }
 // Default: plugin calls handleClose manually
 return (
-  <PluginErrorBoundary appId={surface.appId} slot="apps-menu"
-    customFallback={surface.errorFallback as any}>
+  <PluginErrorBoundary appId={resource.appId} slot="apps-menu"
+    customFallback={resource.errorFallback as any}>
     <MenuComponent handleClose={handleClose} />
   </PluginErrorBoundary>
 )
@@ -945,7 +945,7 @@ return (
 
 #### 6.3.4 Error Boundaries
 
-Every plugin surface must be wrapped in a `PluginErrorBoundary` before
+Every plugin resource must be wrapped in a `PluginErrorBoundary` before
 rendering. This isolates rendering failures so that one broken plugin component
 cannot crash an entire panel or menu region.
 
@@ -953,8 +953,8 @@ Required behavior:
 
 - On render error, display a minimal fallback (e.g., "Plugin panel unavailable")
   that shows `appId` and `slot` for debugging
-- Log the error via `logApp.error` with app ID, slot, and surface ID
-- The error boundary must be **per surface**, not per slot — a broken panel must
+- Log the error via `logApp.error` with app ID, slot, and resource ID
+- The error boundary must be **per resource**, not per slot — a broken panel must
   not hide other panels in the same slot
 
 The repository already uses `react-error-boundary` in `ErrorHandler.tsx`.
@@ -967,7 +967,7 @@ import { ErrorBoundary, type FallbackProps } from 'react-error-boundary'
 
 interface PluginErrorBoundaryProps {
   appId: string
-  slot: UiSurfaceSlot
+  slot: ResourceSlot
   children: React.ReactNode
   /**
    * Optional plugin-provided fallback component. If supplied, it is used
@@ -977,7 +977,7 @@ interface PluginErrorBoundaryProps {
   customFallback?: React.ComponentType<FallbackProps>
 }
 
-const PluginFallback = ({ appId, slot }: { appId: string; slot: UiSurfaceSlot }) => (
+const PluginFallback = ({ appId, slot }: { appId: string; slot: ResourceSlot }) => (
   <div role="alert">
     Plugin panel unavailable ({appId} / {slot})
   </div>
@@ -1021,17 +1021,17 @@ app visible and begins rendering `CyApp.components`), and then
 `void mountApp(...)` is called as fire-and-forget. This means that for apps
 using runtime registration:
 
-- `CyApp.components` surfaces appear immediately after `registerApp`
-- Runtime surfaces (registered in `mount()`) appear only after `mount()` resolves
+- `CyApp.components` resources appear immediately after `registerApp`
+- Runtime resources (registered in `mount()`) appear only after `mount()` resolves
 
 This two-phase appearance is expected and acceptable for the first rollout
 because `mount()` is intended to be fast. The following rule applies:
 
-> **Implementation rule:** `mount()` must complete all surface registrations
+> **Implementation rule:** `mount()` must complete all resource registrations
 > synchronously or in a single microtask. Do not perform async I/O (network
 > requests, IndexedDB reads) inside `mount()` before calling
-> `apis.uiSurface.registerPanel()`. Slow `mount()` implementations cause a
-> noticeable delay before runtime surfaces appear.
+> `apis.resource.registerPanel()`. Slow `mount()` implementations cause a
+> noticeable delay before runtime resources appear.
 
 Because this rule relies on plugin author discipline and cannot be enforced by
 the host at compile time, `mountApp` in `appLifecycle.ts` must add a **runtime
@@ -1046,9 +1046,9 @@ export const mountApp = async (
   const lifecycle = cyApp as CyAppWithLifecycle
   if (typeof lifecycle.mount !== 'function') {
     // No lifecycle callback — treat as mounted immediately so renderers
-    // show CyApp.components surfaces without waiting. This is important for
+    // show CyApp.components resources without waiting. This is important for
     // the mountedAppIds gating scheme (Next Iteration): apps that have no
-    // mount() must still appear in mountedAppIds or their surfaces are
+    // mount() must still appear in mountedAppIds or their resources are
     // hidden forever.
     mountedApps.add(cyApp.id)
     return
@@ -1060,7 +1060,7 @@ export const mountApp = async (
     if (elapsed > 100) {
       logApp.warn(
         `[appLifecycle]: mount() for ${cyApp.id} took ${elapsed.toFixed(0)}ms. ` +
-          'Surface registrations should complete synchronously to avoid rendering delays. ' +
+          'Resource registrations should complete synchronously to avoid rendering delays. ' +
           'Move async I/O out of mount() or defer it after registerPanel().',
       )
     }
@@ -1075,7 +1075,7 @@ export const mountApp = async (
 
 **Next Iteration (concrete task):** Introduce a `mountedAppIds: Set<string>` in
 the app lifecycle state. Renderers read this set and skip displaying **any**
-surface — `CyApp.components` or runtime-registered — for apps not yet in the
+resource — `CyApp.components` or runtime-registered — for apps not yet in the
 set. This eliminates the two-phase appearance entirely and allows mount() to be
 genuinely async without UI side-effects. Implementation steps:
 
@@ -1113,8 +1113,8 @@ const cleanupFns: AppCleanupFn[] = []
  * should call this once at module load time.
  *
  * @example
- * // In UiSurfaceStore.ts, at module level:
- * registerAppCleanup((appId) => useUiSurfaceStore.getState().removeAllByAppId(appId))
+ * // In AppResourceStore.ts, at module level:
+ * registerAppCleanup((appId) => useAppResourceStore.getState().removeAllByAppId(appId))
  */
 export const registerAppCleanup = (fn: AppCleanupFn): void => {
   cleanupFns.push(fn)
@@ -1138,8 +1138,8 @@ export const cleanupAllForApp = (appId: string): void => {
 Each store registers its own cleanup at module load time:
 
 ```typescript
-// UiSurfaceStore.ts — at module level, after store creation
-registerAppCleanup((appId) => useUiSurfaceStore.getState().removeAllByAppId(appId))
+// AppResourceStore.ts — at module level, after store creation
+registerAppCleanup((appId) => useAppResourceStore.getState().removeAllByAppId(appId))
 
 // ContextMenuItemStore.ts — at module level, after store creation
 registerAppCleanup((appId) => useContextMenuItemStore.getState().removeAllByAppId(appId))
@@ -1159,7 +1159,7 @@ When any of the following occurs:
 - `mount()` throws after partial registration
 - The page unloads
 
-The host must remove all registered surfaces for that `appId`.
+The host must remove all registered resources for that `appId`.
 
 #### 6.4.3 Cleanup Implementation in `appLifecycle.ts`
 
@@ -1204,18 +1204,18 @@ cleanup is covered transitively.
 
 #### 6.4.4 Plugin-Initiated Cleanup
 
-Plugin authors may call `apis.uiSurface.unregisterAll()` from `unmount()` as
+Plugin authors may call `apis.resource.unregisterAll()` from `unmount()` as
 explicit cleanup. This is redundant with host-owned cleanup but harmless because
 `removeAllByAppId` is idempotent.
 
 Correct cleanup must not depend on the plugin calling `unregisterAll()`.
 
-### 6.5 Stable Surface Identity and Future Persistence
+### 6.5 Stable Resource Identity and Future Persistence
 
 Runtime registrations are **not** persisted to IndexedDB in this rollout.
-However, the surface identity triple `(appId, slot, id)` is designed to be
+However, the resource identity triple `(appId, slot, id)` is designed to be
 stable across app reloads, so that a future persistence layer can store
-user customizations (tab ordering, hidden surfaces, pinned items) keyed by this
+user customizations (tab ordering, hidden resources, pinned items) keyed by this
 triple without redesigning the registry.
 
 Implementation constraint: the `id` passed to `registerPanel()` or
@@ -1223,14 +1223,14 @@ Implementation constraint: the `id` passed to `registerPanel()` or
 a UUID or timestamp. Apps must document which IDs they register.
 
 Persistence of user customizations is explicitly deferred. When that work begins,
-a separate `UiSurfacePreferenceStore` (persisted to IndexedDB) keyed by the
-surface identity triple should be introduced alongside the runtime registry,
+a separate `AppResourcePreferenceStore` (persisted to IndexedDB) keyed by the
+resource identity triple should be introduced alongside the runtime registry,
 not inside it.
 
 ### 6.6 Context Menu Unified Design
 
 `contextMenu` follows the same factory-only, mount()-only pattern as
-`uiSurface`. `useContextMenuApi` has been declared in `packages/api-types`
+`resource`. `useContextMenuApi` has been declared in `packages/api-types`
 and documented in `Api.md`, but this spec replaces it with a lifecycle-bound
 model that guarantees per-app cleanup. Because the feature has **not been
 publicly released** to external consumers, the hook and its Module Federation
@@ -1565,7 +1565,7 @@ The host constructs per-app instances in `useAppManager.ts`:
 const appApi = {
   ...CyWebApi,
   contextMenu: createContextMenuApi(cyApp.id),
-  uiSurface: createUiSurfaceApi(cyApp.id),
+  resource: createResourceApi(cyApp.id),
 }
 void mountApp(cyApp, { appId: cyApp.id, apis: appApi }, mountedApps.current)
 ```
@@ -1704,50 +1704,50 @@ const handleRemove = () => {
 // On app disable, host calls cleanupAllForApp — any un-removed item is auto-cleaned.
 ```
 
-### 6.7 Declarative `surfaces` Field and `CyApp.components` Made Optional
+### 6.7 Declarative `resources` Field and `CyApp.components` Made Optional
 
-#### 6.7.1 Declarative `surfaces` on `CyAppWithLifecycle`
+#### 6.7.1 Declarative `resources` on `CyAppWithLifecycle`
 
-Most plugins have a fixed set of surfaces that do not change at runtime. For
+Most plugins have a fixed set of resources that do not change at runtime. For
 these apps, implementing `mount()` solely to call `registerPanel()` is
-unnecessary boilerplate. The `surfaces` field provides a declarative shorthand:
+unnecessary boilerplate. The `resources` field provides a declarative shorthand:
 
-**`SurfaceDeclaration` type** is defined in `src/app-api/types/UiSurfaceTypes.ts`
+**`ResourceDeclaration` type** is defined in `src/app-api/types/AppResourceTypes.ts`
 (not in `CyApp.ts`) because it references `React.ComponentType`, which must not
 be imported in the model layer (`src/models/` must stay free of React imports):
 
 ```typescript
-// src/app-api/types/UiSurfaceTypes.ts
+// src/app-api/types/AppResourceTypes.ts
 
-/** Declarative surface entry — same fields as RegisterSurfaceEntry. */
-export interface SurfaceDeclaration {
-  slot: UiSurfaceSlot
+/** Declarative resource entry — same fields as RegisterResourceEntry. */
+export interface ResourceDeclaration {
+  slot: ResourceSlot
   id: string
   title?: string
   order?: number
   group?: string
-  requires?: RegisteredUiSurface['requires']
+  requires?: RegisteredAppResource['requires']
   component: React.ComponentType<any> // typically lazy(() => import(...))
   errorFallback?: React.ComponentType<{ error: Error; resetErrorBoundary: () => void }>
   closeOnAction?: boolean // for 'apps-menu' slot
 }
 ```
 
-**`CyApp.ts`** imports `SurfaceDeclaration` as a **type-only import** from the
+**`CyApp.ts`** imports `ResourceDeclaration` as a **type-only import** from the
 app-api types layer. This preserves the model layer's framework-agnostic
 constraint — no runtime React import is introduced:
 
 ```typescript
 // src/models/AppModel/CyApp.ts
 
-import type { SurfaceDeclaration } from '../../app-api/types/UiSurfaceTypes'
+import type { ResourceDeclaration } from '../../app-api/types/AppResourceTypes'
 
 export interface CyApp {
   id: string
   name: string
   description?: string
   version?: string
-  /** @deprecated Prefer `surfaces` (§6.7.1) or runtime registration via mount(). */
+  /** @deprecated Prefer `resources` (§6.7.1) or runtime registration via mount(). */
   components?: ComponentMetadata[]
   status?: AppStatus
 }
@@ -1756,15 +1756,15 @@ export interface CyAppWithLifecycle extends CyApp {
   apiVersion?: string
 
   /**
-   * Declarative surface registrations. The host registers these automatically
-   * when the app is loaded — no mount() implementation needed. Surfaces
+   * Declarative resource registrations. The host registers these automatically
+   * when the app is loaded — no mount() implementation needed. Resources
    * declared here follow the same slot model, visibility rules, and cleanup
-   * semantics as runtime-registered surfaces.
+   * semantics as runtime-registered resources.
    *
    * For dynamic registration (conditional, user-driven), use
-   * apis.uiSurface.registerPanel() from mount() instead.
+   * apis.resource.registerPanel() from mount() instead.
    */
-  surfaces?: SurfaceDeclaration[]
+  resources?: ResourceDeclaration[]
 
   mount?(context: AppContext): void | Promise<void>
   unmount?(): void | Promise<void>
@@ -1772,35 +1772,35 @@ export interface CyAppWithLifecycle extends CyApp {
 ```
 
 **Host behavior:** In `useAppManager.ts`, after `registerApp(cyApp)` stores the
-app metadata in `AppStore`, the host inspects `cyApp.surfaces`. If present,
-each entry is registered in `UiSurfaceStore` with the app's `id` as `appId`,
+app metadata in `AppStore`, the host inspects `cyApp.resources`. If present,
+each entry is registered in `AppResourceStore` with the app's `id` as `appId`,
 exactly as if `registerPanel()`/`registerMenuItem()` had been called from
 `mount()`. This processing happens in `useAppManager.ts` (not inside
 `AppStore.add()`), keeping `AppStore` concerned only with serializable metadata
-and `UiSurfaceStore` with runtime surface state.
+and `AppResourceStore` with runtime resource state.
 
 ```typescript
-// useAppManager.ts — declarative surfaces processing (before mountApp)
+// useAppManager.ts — declarative resources processing (before mountApp)
 registerApp(cyApp)
-if ((cyApp as CyAppWithLifecycle).surfaces) {
-  const uiApi = createUiSurfaceApi(cyApp.id)
-  for (const surface of (cyApp as CyAppWithLifecycle).surfaces!) {
-    if (surface.slot === 'right-panel') {
-      uiApi.registerPanel(surface as RegisterPanelOptions)
-    } else if (surface.slot === 'apps-menu') {
-      uiApi.registerMenuItem(surface as RegisterMenuItemOptions)
+if ((cyApp as CyAppWithLifecycle).resources) {
+  const uiApi = createResourceApi(cyApp.id)
+  for (const resource of (cyApp as CyAppWithLifecycle).resources!) {
+    if (resource.slot === 'right-panel') {
+      uiApi.registerPanel(resource as RegisterPanelOptions)
+    } else if (resource.slot === 'apps-menu') {
+      uiApi.registerMenuItem(resource as RegisterMenuItemOptions)
     }
   }
 }
 void mountApp(cyApp, { appId: cyApp.id, apis: appApi }, mountedApps.current)
 ```
 
-This happens synchronously before `mount()` is called, so declarative surfaces
+This happens synchronously before `mount()` is called, so declarative resources
 are available to renderers immediately.
 
-**Coexistence with `mount()`:** Apps may declare `surfaces` **and** implement
-`mount()`. Declarative surfaces are registered first; `mount()` can register
-additional dynamic surfaces. If a `mount()`-registered surface has the same
+**Coexistence with `mount()`:** Apps may declare `resources` **and** implement
+`mount()`. Declarative resources are registered first; `mount()` can register
+additional dynamic resources. If a `mount()`-registered resource has the same
 `(appId, slot, id)` as a declarative one, upsert semantics apply (the runtime
 registration wins).
 
@@ -1811,7 +1811,7 @@ export const MyApp: CyAppWithLifecycle = {
   id: 'myApp',
   name: 'My App',
   version: packageJson.version,
-  surfaces: [
+  resources: [
     {
       slot: 'right-panel',
       id: 'main',
@@ -1826,7 +1826,7 @@ export const MyApp: CyAppWithLifecycle = {
       closeOnAction: true, // auto-close menu after action
     },
   ],
-  // No mount() needed — surfaces are registered declaratively
+  // No mount() needed — resources are registered declaratively
 }
 ```
 
@@ -1835,17 +1835,17 @@ Compare this with the previous minimum viable plugin, which required:
 - Separate `lazy()` imports for each component
 - Understanding the legacy `ComponentMetadata` type
 
-The `surfaces` field uses the same slot model and types as the runtime API,
+The `resources` field uses the same slot model and types as the runtime API,
 providing a consistent mental model whether declaring or registering.
 
-**Cleanup:** Declarative surfaces are cleaned up by the same
-`cleanupAllForApp(appId)` path as runtime-registered surfaces. No special
+**Cleanup:** Declarative resources are cleaned up by the same
+`cleanupAllForApp(appId)` path as runtime-registered resources. No special
 handling is needed.
 
 #### 6.7.2 `CyApp.components` Made Optional
 
 `CyApp.components` is now optional with a `@deprecated` JSDoc. Apps should
-use `surfaces` (declarative) or `mount()` (imperative) instead.
+use `resources` (declarative) or `mount()` (imperative) instead.
 
 Host renderers that iterate `CyApp.components` must guard against `undefined`:
 
@@ -1869,7 +1869,7 @@ During migration:
 - Mixed mode is supported
 
 The host treats runtime registration as the preferred source when the same
-surface is declared in both places.
+resource is declared in both places.
 
 ### 7.2 Why Export Discovery Is Rejected
 
@@ -1879,7 +1879,7 @@ Reasons:
 
 - Webpack Module Federation does not provide a clean, stable export enumeration
   contract for this use case
-- The host still needs surface metadata such as `slot`, `order`, `group`, and
+- The host still needs resource metadata such as `slot`, `order`, `group`, and
   ownership
 - Export discovery would be harder to validate, test, and debug than explicit
   runtime registration
@@ -1891,52 +1891,52 @@ Runtime registration keeps ownership, metadata, and lifecycle in one place.
 ### 8.1 New Files
 
 ```text
-src/app-api/core/uiSurfaceApi.ts             — factory, batch, introspection (§6.2)
-src/app-api/types/UiSurfaceTypes.ts          — UiSurfaceSlot, PanelHostProps, MenuItemHostProps,
-                                                RegisterSurfaceEntry, RegisteredSurfaceInfo,
-                                                SurfaceVisibilityResult, SurfaceDeclaration
+src/app-api/core/resourceApi.ts             — factory, batch, introspection (§6.2)
+src/app-api/types/AppResourceTypes.ts          — ResourceSlot, PanelHostProps, MenuItemHostProps,
+                                                RegisterResourceEntry, RegisteredResourceInfo,
+                                                ResourceVisibilityResult, ResourceDeclaration
 src/app-api/AppIdContext.tsx                  — AppIdProvider + useAppContext() hook (§6.2.4)
-src/data/hooks/stores/UiSurfaceStore.ts
+src/data/hooks/stores/AppResourceStore.ts
 src/data/hooks/stores/AppCleanupRegistry.ts  — extensible cleanup registry (§6.4.1)
-src/models/AppModel/RegisteredUiSurface.ts   — includes errorFallback, closeOnAction fields
-src/models/StoreModel/UiSurfaceStoreModel.ts
+src/models/AppModel/RegisteredAppResource.ts   — includes errorFallback, closeOnAction fields
+src/models/StoreModel/AppResourceStoreModel.ts
 src/features/AppManager/PluginErrorBoundary.tsx — supports customFallback prop (§6.3.4)
 ```
 
-**`UiSurfaceStoreModel.ts` interface:**
+**`AppResourceStoreModel.ts` interface:**
 
 ```typescript
-// src/models/StoreModel/UiSurfaceStoreModel.ts
+// src/models/StoreModel/AppResourceStoreModel.ts
 
-import type { RegisteredUiSurface, UiSurfaceSlot } from '../AppModel/RegisteredUiSurface'
+import type { RegisteredAppResource, ResourceSlot } from '../AppModel/RegisteredAppResource'
 
-export interface UiSurfaceState {
-  readonly surfaces: RegisteredUiSurface[]
+export interface AppResourceState {
+  readonly resources: RegisteredAppResource[]
 }
 
-export interface UiSurfaceActions {
+export interface AppResourceActions {
   /**
-   * Insert or replace a surface. If a surface with the same
+   * Insert or replace a resource. If a resource with the same
    * (appId, slot, id) triple exists, it is replaced in place.
    */
-  upsertSurface(surface: RegisteredUiSurface): void
+  upsertResource(resource: RegisteredAppResource): void
 
-  /** Remove a specific surface by identity triple. */
-  removeSurface(appId: string, slot: UiSurfaceSlot, id: string): void
+  /** Remove a specific resource by identity triple. */
+  removeResource(appId: string, slot: ResourceSlot, id: string): void
 
-  /** Check if a surface with the given identity exists. */
-  hasSurface(appId: string, slot: UiSurfaceSlot, id: string): boolean
+  /** Check if a resource with the given identity exists. */
+  hasResource(appId: string, slot: ResourceSlot, id: string): boolean
 
-  /** Remove all surfaces registered by the given app. */
+  /** Remove all resources registered by the given app. */
   removeAllByAppId(appId: string): void
 }
 
-export type UiSurfaceStore = UiSurfaceState & UiSurfaceActions
+export type AppResourceStore = AppResourceState & AppResourceActions
 ```
 
-Note: `src/app-api/useUiSurfaceApi.ts` is **not** created in this rollout.
-Surface registration is available via `AppContext.apis.uiSurface` in `mount()`
-or via `useAppContext().apis.uiSurface` in plugin components (§6.2.4).
+Note: `src/app-api/useResourceApi.ts` is **not** created in this rollout.
+Resource registration is available via `AppContext.apis.resource` in `mount()`
+or via `useAppContext().apis.resource` in plugin components (§6.2.4).
 
 ### 8.2 Updated Files
 
@@ -1944,12 +1944,12 @@ or via `useAppContext().apis.uiSurface` in plugin components (§6.2.4).
 src/app-api/types/AppContext.ts
   — change AppContext.apis from CyWebApiType to new AppContextApis type
   — remove the "apis is the same singleton as window.CyWebApi" note (no longer
-    true: AppContext.apis includes the per-app uiSurface and contextMenu bindings)
-  — add AppContextApis interface (extends CyWebApiType, uiSurface required)
+    true: AppContext.apis includes the per-app resource and contextMenu bindings)
+  — add AppContextApis interface (extends CyWebApiType, resource required)
   — update AppContext.apis JSDoc to describe the per-app nature of the object
 
 src/app-api/core/index.ts
-  — CyWebApiType does NOT get a uiSurface field; uiSurface lives on AppContextApis only
+  — CyWebApiType does NOT get a resource field; resource lives on AppContextApis only
 
 src/app-api/core/contextMenuApi.ts
   — replace singleton with createContextMenuApi(appId) factory
@@ -1964,20 +1964,20 @@ webpack.config.js
   — add './AppIdContext' expose: './src/app-api/AppIdContext.tsx'
 
 src/app-api/types/index.ts
-  — re-export UiSurfaceApi, UiSurfaceSlot, PanelHostProps, MenuItemHostProps,
-    RegisterPanelOptions, RegisterMenuItemOptions, RegisterSurfaceEntry,
-    RegisteredSurfaceInfo, SurfaceVisibilityResult, SurfaceDeclaration
+  — re-export ResourceApi, ResourceSlot, PanelHostProps, MenuItemHostProps,
+    RegisterPanelOptions, RegisterMenuItemOptions, RegisterResourceEntry,
+    RegisteredResourceInfo, ResourceVisibilityResult, ResourceDeclaration
   — re-export updated ContextMenuApi
   — re-export AppContextApis
 
 src/app-api/types/ApiResult.ts
-  — add SurfaceNotFound error code (DuplicateSurface is not needed — see §8.5)
+  — add ResourceNotFound error code (DuplicateResource is not needed — see §8.5)
 
 packages/api-types/src/index.ts
   — type window.CyWebApi as CyWebApiType directly (no Omit needed — CyWebApiType
-    is already the window-safe shape with no uiSurface field):
+    is already the window-safe shape with no resource field):
       declare global { interface Window { CyWebApi: CyWebApiType } }
-    TypeScript will reject window.CyWebApi.uiSurface because the field does not
+    TypeScript will reject window.CyWebApi.resource because the field does not
     exist on CyWebApiType at all.
   — remove declare module 'cyweb/ContextMenuApi' (see §8.3)
 
@@ -1986,28 +1986,28 @@ packages/api-types/README.md
   — remove cyweb/ContextMenuApi row from the remotes table (line 127)
 
 src/features/Workspace/SidePanel/SidePanel.tsx
-  — replace numeric useState(0) tab selection with surface-identity-based
+  — replace numeric useState(0) tab selection with resource-identity-based
     useState<string | null>(null) as specified in §6.3.2
-  — resolve selectedSurfaceId to a numeric index for MUI <Tabs> at render time
-  — fall back to first visible surface when selected surface is hidden or removed
+  — resolve selectedResourceId to a numeric index for MUI <Tabs> at render time
+  — fall back to first visible resource when selected resource is hidden or removed
 
 src/features/Workspace/SidePanel/TabContents.tsx
-  — read UiSurfaceStore (slot: 'right-panel') in addition to CyApp.components
-  — wrap each surface in PluginErrorBoundary
+  — read AppResourceStore (slot: 'right-panel') in addition to CyApp.components
+  — wrap each resource in PluginErrorBoundary
   — apply order sort and requires.network evaluation
-  — expose surfaceId alongside each rendered panel for SidePanel.tsx identity tracking
+  — expose resourceId alongside each rendered panel for SidePanel.tsx identity tracking
 
 src/features/ToolBar/AppMenu/index.tsx
-  — read UiSurfaceStore (slot: 'apps-menu') in addition to CyApp.components
-  — wrap each surface in PluginErrorBoundary (with customFallback support)
+  — read AppResourceStore (slot: 'apps-menu') in addition to CyApp.components
+  — wrap each resource in PluginErrorBoundary (with customFallback support)
   — apply order sort and requires.network evaluation
   — implement closeOnAction: auto-close dropdown after menu item action (§6.1.2)
 
 src/data/hooks/stores/useAppManager.ts
-  — construct per-app contextMenu and uiSurface APIs
+  — construct per-app contextMenu and resource APIs
   — pass them in AppContext to mountApp
-  — in registerApp: if cyApp.surfaces is defined, register each entry in
-    UiSurfaceStore (§6.7.1) before calling mountApp
+  — in registerApp: if cyApp.resources is defined, register each entry in
+    AppResourceStore (§6.7.1) before calling mountApp
   — store per-app apis in a Map<string, AppContextApis> for AppIdProvider
 
 src/data/hooks/stores/appLifecycle.ts
@@ -2016,7 +2016,7 @@ src/data/hooks/stores/appLifecycle.ts
 
 src/models/AppModel/CyApp.ts
   — make components optional, mark @deprecated
-  — add surfaces?: SurfaceDeclaration[] to CyAppWithLifecycle (§6.7.1)
+  — add resources?: ResourceDeclaration[] to CyAppWithLifecycle (§6.7.1)
 
 src/models/StoreModel/ContextMenuItemStoreModel.ts
   — add appId to RegisteredContextMenuItem
@@ -2086,7 +2086,7 @@ docs/design/module-federation/checklists/implementation-checklist-phase1.md:474
 
 docs/design/module-federation/checklists/implementation-checklist-phase1.md:475
   — update: "AppContext.apis typed as CyWebApiType" → "AppContext.apis typed as
-    AppContextApis (distinct from CyWebApiType; uiSurface is required)"
+    AppContextApis (distinct from CyWebApiType; resource is required)"
 
 cytoscape-web-app-examples/hello-world/src/components/ContextMenuSection.tsx
   — migrate from useContextMenuApi() hook to useAppContext() pattern (§6.2.4)
@@ -2102,8 +2102,8 @@ packages/api-types/src/CyWebApi.ts
     type their mount() context argument correctly without extra imports:
       export type { CyWebApiType, AppContextApis } from '../../../src/app-api/types'
   — update the file header comment to explain the two-type model:
-      CyWebApiType   = window.CyWebApi shape — no uiSurface (window-safe)
-      AppContextApis = AppContext.apis shape — uiSurface required (mount-safe)
+      CyWebApiType   = window.CyWebApi shape — no resource (window-safe)
+      AppContextApis = AppContext.apis shape — resource required (mount-safe)
       Both are intentionally distinct; there is no single canonical API shape.
 
 packages/api-types/src/mf-declarations.d.ts
@@ -2137,50 +2137,50 @@ src/app-api/CLAUDE.md
 Add to `ApiErrorCode` in `src/app-api/types/ApiResult.ts`:
 
 ```typescript
-/** The specified surface ID was not found in the registry */
-SurfaceNotFound: 'SURFACE_NOT_FOUND',
+/** The specified resource ID was not found in the registry */
+ResourceNotFound: 'RESOURCE_NOT_FOUND',
 ```
 
-Note: `DuplicateSurface` is no longer needed — `registerPanel` and
+Note: `DuplicateResource` is no longer needed — `registerPanel` and
 `registerMenuItem` use upsert semantics (§6.2.1, §6.2.3) and silently replace
-existing surfaces with the same `(appId, slot, id)` triple.
+existing resources with the same `(appId, slot, id)` triple.
 
 ### 8.6 Testing Patterns
 
-#### Store tests (`UiSurfaceStore.spec.ts`)
+#### Store tests (`AppResourceStore.spec.ts`)
 
 ```typescript
 import { act } from '@testing-library/react'
-import { useUiSurfaceStore } from './UiSurfaceStore'
+import { useAppResourceStore } from './AppResourceStore'
 
-describe('UiSurfaceStore', () => {
+describe('AppResourceStore', () => {
   beforeEach(() => {
-    useUiSurfaceStore.setState({ surfaces: [] })
+    useAppResourceStore.setState({ resources: [] })
   })
 
-  it('upserts a surface (insert on first call)', () => {
+  it('upserts a resource (insert on first call)', () => {
     act(() => {
-      useUiSurfaceStore.getState().upsertSurface({
+      useAppResourceStore.getState().upsertResource({
         id: 'P1',
         appId: 'app1',
         slot: 'right-panel',
         component: {} as unknown, // component is opaque to the store
       })
     })
-    expect(useUiSurfaceStore.getState().surfaces).toHaveLength(1)
+    expect(useAppResourceStore.getState().resources).toHaveLength(1)
   })
 
-  it('upserts a surface (replaces on second call with same identity)', () => {
+  it('upserts a resource (replaces on second call with same identity)', () => {
     act(() => {
-      const store = useUiSurfaceStore.getState()
-      store.upsertSurface({
+      const store = useAppResourceStore.getState()
+      store.upsertResource({
         id: 'P1',
         appId: 'app1',
         slot: 'right-panel',
         title: 'Old',
         component: {},
       })
-      store.upsertSurface({
+      store.upsertResource({
         id: 'P1',
         appId: 'app1',
         slot: 'right-panel',
@@ -2188,21 +2188,21 @@ describe('UiSurfaceStore', () => {
         component: {},
       })
     })
-    const { surfaces } = useUiSurfaceStore.getState()
-    expect(surfaces).toHaveLength(1)
-    expect(surfaces[0].title).toBe('New')
+    const { resources } = useAppResourceStore.getState()
+    expect(resources).toHaveLength(1)
+    expect(resources[0].title).toBe('New')
   })
 
-  it('removes all surfaces for an appId', () => {
+  it('removes all resources for an appId', () => {
     act(() => {
-      const store = useUiSurfaceStore.getState()
-      store.upsertSurface({
+      const store = useAppResourceStore.getState()
+      store.upsertResource({
         id: 'P1',
         appId: 'app1',
         slot: 'right-panel',
         component: {},
       })
-      store.upsertSurface({
+      store.upsertResource({
         id: 'P2',
         appId: 'app2',
         slot: 'right-panel',
@@ -2210,48 +2210,48 @@ describe('UiSurfaceStore', () => {
       })
       store.removeAllByAppId('app1')
     })
-    const { surfaces } = useUiSurfaceStore.getState()
-    expect(surfaces).toHaveLength(1)
-    expect(surfaces[0].appId).toBe('app2')
+    const { resources } = useAppResourceStore.getState()
+    expect(resources).toHaveLength(1)
+    expect(resources[0].appId).toBe('app2')
   })
 })
 ```
 
-#### Core API tests (`uiSurfaceApi.test.ts`)
+#### Core API tests (`resourceApi.test.ts`)
 
 ```typescript
-import { createUiSurfaceApi } from './uiSurfaceApi'
-import { useUiSurfaceStore } from '../../data/hooks/stores/UiSurfaceStore'
+import { createResourceApi } from './resourceApi'
+import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 
-jest.mock('../../data/hooks/stores/UiSurfaceStore', () => ({
-  useUiSurfaceStore: { getState: jest.fn() },
+jest.mock('../../data/hooks/stores/AppResourceStore', () => ({
+  useAppResourceStore: { getState: jest.fn() },
 }))
 
-describe('createUiSurfaceApi', () => {
+describe('createResourceApi', () => {
   const mockStore = {
-    surfaces: [],
-    hasSurface: jest.fn(() => false),
-    addSurface: jest.fn(),
-    upsertSurface: jest.fn(),
+    resources: [],
+    hasResource: jest.fn(() => false),
+    addResource: jest.fn(),
+    upsertResource: jest.fn(),
     removeAllByAppId: jest.fn(),
-    removeSurface: jest.fn(),
+    removeResource: jest.fn(),
   }
 
   beforeEach(() => {
-    jest.mocked(useUiSurfaceStore.getState).mockReturnValue(mockStore as any)
+    jest.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
     jest.clearAllMocks()
   })
 
   it('getSupportedSlots returns right-panel and apps-menu', () => {
-    const api = createUiSurfaceApi('app1')
+    const api = createResourceApi('app1')
     expect(api.getSupportedSlots()).toEqual(['right-panel', 'apps-menu'])
   })
 
-  it('registerPanel returns ok with surfaceId', () => {
-    const api = createUiSurfaceApi('app1')
+  it('registerPanel returns ok with resourceId', () => {
+    const api = createResourceApi('app1')
     const result = api.registerPanel({ id: 'P1', component: {} as any })
     expect(result.success).toBe(true)
-    expect(mockStore.upsertSurface).toHaveBeenCalledWith(
+    expect(mockStore.upsertResource).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'P1',
         appId: 'app1',
@@ -2261,24 +2261,24 @@ describe('createUiSurfaceApi', () => {
   })
 
   it('registerPanel returns fail(InvalidInput) for empty id', () => {
-    const api = createUiSurfaceApi('app1')
+    const api = createResourceApi('app1')
     const result = api.registerPanel({ id: '', component: {} as any })
     expect(result.success).toBe(false)
     if (!result.success) expect(result.error.code).toBe('INVALID_INPUT')
   })
 
-  it('registerPanel with same id upserts (replaces) the existing surface', () => {
-    const api = createUiSurfaceApi('app1')
+  it('registerPanel with same id upserts (replaces) the existing resource', () => {
+    const api = createResourceApi('app1')
     api.registerPanel({ id: 'P1', title: 'Old', component: {} as any })
     const result = api.registerPanel({ id: 'P1', title: 'New', component: {} as any })
     expect(result.success).toBe(true)
-    expect(mockStore.upsertSurface).toHaveBeenCalledWith(
+    expect(mockStore.upsertResource).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'P1', title: 'New' }),
     )
   })
 
   it('unregisterAll delegates to removeAllByAppId with bound appId', () => {
-    const api = createUiSurfaceApi('app1')
+    const api = createResourceApi('app1')
     api.unregisterAll()
     expect(mockStore.removeAllByAppId).toHaveBeenCalledWith('app1')
   })
@@ -2372,7 +2372,7 @@ it('does not call cleanupAllForApp for apps without mount()', async () => {
 
 ### 8.7 Migration Examples
 
-**Path A — Declarative (recommended for fixed surfaces, zero boilerplate):**
+**Path A — Declarative (recommended for fixed resources, zero boilerplate):**
 
 ```typescript
 import { lazy } from 'react'
@@ -2382,7 +2382,7 @@ export const TemplateApp: CyAppWithLifecycle = {
   id: 'template',
   name: 'Template App',
   version: packageJson.version,
-  surfaces: [
+  resources: [
     {
       slot: 'right-panel',
       id: 'TemplatePanel',
@@ -2401,11 +2401,11 @@ export const TemplateApp: CyAppWithLifecycle = {
 }
 ```
 
-**Path B — Batch registration in mount() (for conditional/dynamic surfaces):**
+**Path B — Batch registration in mount() (for conditional/dynamic resources):**
 
 ```typescript
 mount({ appId, apis }) {
-  apis.uiSurface.registerAll([
+  apis.resource.registerAll([
     {
       slot: 'right-panel',
       id: 'TemplatePanel',
@@ -2428,8 +2428,8 @@ mount({ appId, apis }) {
 
 ```typescript
 mount({ appId, apis }) {
-  if (apis.uiSurface.getSupportedSlots().includes('right-panel')) {
-    apis.uiSurface.registerPanel({
+  if (apis.resource.getSupportedSlots().includes('right-panel')) {
+    apis.resource.registerPanel({
       id: 'TemplatePanel',
       title: 'Template',
       requires: { network: true },
@@ -2446,14 +2446,14 @@ The implementation is complete only when all of the following are verified:
 1. A runtime-registered panel appears without a `CyApp.components` declaration
 2. A runtime-registered menu item appears without a `CyApp.components`
    declaration
-3. Disabling an app removes all of its runtime surfaces immediately
-4. Re-enabling the app re-registers its surfaces correctly
+3. Disabling an app removes all of its runtime resources immediately
+4. Re-enabling the app re-registers its resources correctly
 5. A failed `mount()` does not leave orphaned panels or menu items behind
 6. Existing manifest-only apps still render correctly
-7. An app cannot register a surface under another app's `appId`
+7. An app cannot register a resource under another app's `appId`
 8. Registering the same `(appId, slot, id)` twice **upserts** (replaces) the
-   existing surface and returns `ok` — no `DuplicateSurface` error
-9. `window.CyWebApi.uiSurface` is `undefined` at runtime
+   existing resource and returns `ok` — no `DuplicateResource` error
+9. `window.CyWebApi.resource` is `undefined` at runtime
 10. `getSupportedSlots()` returns `['right-panel', 'apps-menu']`
 11. A panel registered with `requires.network = true` is hidden when no network
     is loaded and visible when one is loaded
@@ -2465,16 +2465,16 @@ The implementation is complete only when all of the following are verified:
     to the first visible panel and does not silently jump to a different panel
 16. Selecting a panel, then adding a new panel before it, leaves the originally
     selected panel still selected (index-shift regression test)
-17. `window.CyWebApi.uiSurface` is `undefined`; `AppContext.apis.uiSurface` is
-    a bound `UiSurfaceApi` instance inside `mount()`
+17. `window.CyWebApi.resource` is `undefined`; `AppContext.apis.resource` is
+    a bound `ResourceApi` instance inside `mount()`
 18. `window.CyWebApi.contextMenu` (anonymous path) registers items with
     `appId === undefined`; `removeAllByAppId` does not remove them
 19. Items registered via `AppContext.apis.contextMenu` carry the correct
     `appId` and are removed by `removeAllByAppId` on app disable
-20. TypeScript compile check: `AppContext.apis.uiSurface.registerPanel(...)` has
-    no type error (uiSurface is non-optional on `AppContextApis`)
-21. TypeScript compile check: `window.CyWebApi.uiSurface` causes a type error
-    (uiSurface is absent from the `window.CyWebApi` type declaration)
+20. TypeScript compile check: `AppContext.apis.resource.registerPanel(...)` has
+    no type error (resource is non-optional on `AppContextApis`)
+21. TypeScript compile check: `window.CyWebApi.resource` causes a type error
+    (resource is absent from the `window.CyWebApi` type declaration)
 22. `addContextMenuItem` with empty label returns `fail(InvalidInput)` — same
     behavior as before the factory refactor
 23. `addContextMenuItem` with omitted `targetTypes` registers with default
@@ -2482,7 +2482,7 @@ The implementation is complete only when all of the following are verified:
 24. `removeContextMenuItem` with an unknown `itemId` returns
     `fail(ContextMenuItemNotFound)` — same behavior as before
 25. `useAppContext()` returns `{ appId, apis }` when rendered inside a
-    plugin surface wrapped by `AppIdProvider`
+    plugin resource wrapped by `AppIdProvider`
 26. `useAppContext()` returns `null` when rendered outside the provider
     (test isolation, standalone rendering)
 27. `AppCleanupRegistry.cleanupAllForApp(appId)` invokes all registered
@@ -2492,12 +2492,12 @@ The implementation is complete only when all of the following are verified:
 29. `import { useContextMenuApi } from 'cyweb/ContextMenuApi'` causes a
     TypeScript error (the module declaration no longer exists)
 30. Upsert: re-registering a panel with a new `title` updates the title
-    in the store without changing the `surfaceId`, preserving tab selection
-31. `registerAll()` registers multiple surfaces in one call; entries that fail
+    in the store without changing the `resourceId`, preserving tab selection
+31. `registerAll()` registers multiple resources in one call; entries that fail
     validation are skipped (logged) but do not block other entries
-32. `getRegisteredSurfaces()` returns only surfaces registered by the calling
+32. `getRegisteredResources()` returns only resources registered by the calling
     app (scoped by factory-bound `appId`)
-33. `getSurfaceVisibility('myPanel')` (slot-local id, not full triple) returns
+33. `getResourceVisibility('myPanel')` (slot-local id, not full triple) returns
     `{ registered: true, visible: false, hiddenReason: 'requires-network' }`
     when the panel requires a network but none is loaded
 34. `registerPanel({ id: 'x', component: 'notAFunction' as any })` returns
@@ -2507,9 +2507,9 @@ The implementation is complete only when all of the following are verified:
 36. A menu item registered with `closeOnAction: true` causes the Apps dropdown
     to close automatically after the item's action fires, without the plugin
     calling `handleClose`
-37. An app with `surfaces: [...]` and no `mount()` renders all declared surfaces
+37. An app with `resources: [...]` and no `mount()` renders all declared resources
     after `registerApp` without requiring lifecycle hooks
-38. An app with both `surfaces` and `mount()` sees declarative surfaces first;
+38. An app with both `resources` and `mount()` sees declarative resources first;
     `mount()` can upsert over them
 
 ## 10. Decision Summary
@@ -2523,33 +2523,33 @@ backward-compatible path during migration.
 
 Key design decisions:
 
-- **Slot model**: `slot: UiSurfaceSlot` replaces `kind`, separating surface type
+- **Slot model**: `slot: ResourceSlot` replaces `kind`, separating resource type
   from placement so new UI locations can be added as new slot values
 - **Per-slot props**: `PanelHostProps` and `MenuItemHostProps` define the host's
   injection contract per slot; renderers cast `component: unknown` to the slot
   type at the call site
 - **`component: unknown` in store**: keeps store model free of React imports;
   only renderers (`TabContents.tsx`, `AppMenu/index.tsx`) import React types
-- **Factory pattern**: `createUiSurfaceApi(appId)` and `createContextMenuApi(appId)`
-  bind `appId` at construction, preventing cross-app surface spoofing
+- **Factory pattern**: `createResourceApi(appId)` and `createContextMenuApi(appId)`
+  bind `appId` at construction, preventing cross-app resource spoofing
 - **`AppCleanupRegistry` as extensible cleanup point**: stores register their
   own cleanup functions; `appLifecycle.ts` calls `cleanupAllForApp(appId)` once
   — adding a new registrable resource type requires no changes to appLifecycle
 - **Upsert semantics for registration**: `registerPanel` and `registerMenuItem`
-  replace existing surfaces with the same `(appId, slot, id)` triple in place,
+  replace existing resources with the same `(appId, slot, id)` triple in place,
   avoiding flicker and preserving tab selection state
 - **Capability negotiation**: `getSupportedSlots()` lets apps register
   conditionally without hardcoding slot names
-- **Error boundaries**: every plugin surface is wrapped in `PluginErrorBoundary`
+- **Error boundaries**: every plugin resource is wrapped in `PluginErrorBoundary`
   to isolate rendering failures
 - **Visibility flags**: `requires` declarative flags let apps express contextual
   visibility rules without reimplementing host state checks
-- **Ordering groups**: `order` and `group` are stored on every surface; `group`
+- **Ordering groups**: `order` and `group` are stored on every resource; `group`
   is ignored by renderers in the first rollout but available for future use
-- **Stable surface identity**: `(appId, slot, id)` is the persistence key for
+- **Stable resource identity**: `(appId, slot, id)` is the persistence key for
   future user customization; plugin authors must use stable, hardcoded IDs
 - **Context menu unified design**: `contextMenu` follows the same factory-only,
-  mount()-only pattern as `uiSurface`; `useContextMenuApi()` hook and
+  mount()-only pattern as `resource`; `useContextMenuApi()` hook and
   `cyweb/ContextMenuApi` expose are **deleted** (not deprecated) because the
   feature has not been publicly released; `appId` is optional in
   `RegisteredContextMenuItem` to support the `window.CyWebApi.contextMenu`
@@ -2562,32 +2562,32 @@ Key design decisions:
 - **Anonymous singleton is a plain object literal**: `contextMenuApi` is
   implemented as a standalone object that omits `appId` from `addItem` calls —
   not via a pseudo-`.__anonymous__` accessor on `createContextMenuApi`
-- **`cyweb/ContextMenuApi` migration surface spans 9 public artifacts**: the two
+- **`cyweb/ContextMenuApi` migration resource spans 9 public artifacts**: the two
   deleted files (`useContextMenuApi.ts`, `useContextMenuApi.test.ts`), the
   internal barrel (`index.ts:7`), webpack expose, `mf-declarations.d.ts`,
   `README.md` (×2), `app-api-specification.md`, `module-federation-design.md`
   — all must be updated atomically; §8.3.1 lists 11 additional non-public
   follow-ups: checklist (×4), example apps (×2), `CyWebApi.ts` (×1),
   `Api.md` (×2), `CLAUDE.md` (×2) (see §8.3)
-- **mount() ordering gap acknowledged**: `CyApp.components` surfaces appear
-  immediately after `registerApp`; runtime surfaces appear after `mount()`
+- **mount() ordering gap acknowledged**: `CyApp.components` resources appear
+  immediately after `registerApp`; runtime resources appear after `mount()`
   resolves; `mount()` must complete registrations synchronously to minimise the
   gap; a future `mountedAppIds` tracking mechanism is documented as Future Work
 - **`AppIdContext` provides `appId` to plugin components**: the host wraps
-  every plugin surface in `AppIdProvider`; plugin components use
+  every plugin resource in `AppIdProvider`; plugin components use
   `useAppContext()` to access `appId` and the per-app `apis` object — this
   eliminates the need for module-scope state in most cases
-- **No `useUiSurfaceApi` hook in v1**: surface registration is available from
-  `mount()` or via `useAppContext().apis.uiSurface` in plugin components
+- **No `useResourceApi` hook in v1**: resource registration is available from
+  `mount()` or via `useAppContext().apis.resource` in plugin components
 - **`AppContextApis` is a distinct type from `CyWebApiType`**: `AppContext.apis`
-  is typed as `AppContextApis` (not `CyWebApiType`), so `uiSurface` is
+  is typed as `AppContextApis` (not `CyWebApiType`), so `resource` is
   **required** (not optional) inside `mount()`; TypeScript prevents mount-time
-  code from needing an undefined-check on `apis.uiSurface`
+  code from needing an undefined-check on `apis.resource`
 - **`contextMenuApi` validation semantics preserved**: factory and anonymous
   singleton share the same validation logic — empty label → `fail(InvalidInput)`;
   omitted `targetTypes` → default `['node', 'edge']`; unknown itemId →
   `fail(ContextMenuItemNotFound)` — these are not changed by the factory refactor
-- **`CyWebApiType` is the window-safe shape (Model A)**: `uiSurface` is absent
+- **`CyWebApiType` is the window-safe shape (Model A)**: `resource` is absent
   from `CyWebApiType` by design; `window.CyWebApi` is declared as `CyWebApiType`
   directly — no `Omit` needed or used anywhere
 - **`appState.ts` lifecycle module is an interim pattern (deprecated)**: raw
@@ -2608,33 +2608,33 @@ Key design decisions:
   during component initialization
 - **`AppContext.apis` is no longer the same object as `window.CyWebApi`**:
   `AppContext.ts` documentation updated; `packages/api-types` Window declaration
-  updated to reflect that `uiSurface` is absent on `window.CyWebApi`
+  updated to reflect that `resource` is absent on `window.CyWebApi`
 - **`CyApp.components` made optional**: apps using only runtime registration
   need not declare an empty array
-- **`window.CyWebApi.uiSurface` is `undefined`**: the API is only available in
+- **`window.CyWebApi.resource` is `undefined`**: the API is only available in
   the per-app `AppContext.apis` passed to `mount()`
-- **Surface-identity tab selection**: `SidePanel.tsx` switches from numeric
-  index to `surfaceId` string for selected tab; prevents silent panel-jump when
+- **Resource-identity tab selection**: `SidePanel.tsx` switches from numeric
+  index to `resourceId` string for selected tab; prevents silent panel-jump when
   panels are hidden or reordered
 - **`PluginErrorBoundary` uses `react-error-boundary`**: consistent with the
   existing `ErrorHandler.tsx` pattern; no new class component introduced
 - **Cleanup scope is explicit**: host-owned cleanup applies only to registrations
   made via `AppContext.apis` in `mount()`; callers using the anonymous
   `window.CyWebApi.contextMenu` path are responsible for manual cleanup
-- **Declarative `surfaces` field**: `CyAppWithLifecycle.surfaces` provides a
-  zero-boilerplate path for apps with fixed surfaces; host registers them
+- **Declarative `resources` field**: `CyAppWithLifecycle.resources` provides a
+  zero-boilerplate path for apps with fixed resources; host registers them
   in `useAppManager.ts` after `registerApp` and before `mountApp`, keeping
   `AppStore` concerned only with serializable metadata; coexists with
   imperative registration via `mount()` using upsert semantics;
-  `SurfaceDeclaration` is defined in `UiSurfaceTypes.ts` (not `CyApp.ts`) to
+  `ResourceDeclaration` is defined in `AppResourceTypes.ts` (not `CyApp.ts`) to
   keep the model layer free of React imports — `CyApp.ts` uses a type-only
   import
 - **Batch registration API**: `registerAll()` reduces mount-time boilerplate;
   always returns `ok()` — callers must check `result.data.errors.length` to
   detect partial failures; failed entries are logged and skipped without
   blocking successful ones
-- **Introspection API**: `getRegisteredSurfaces()` and
-  `getSurfaceVisibility()` help plugin developers debug registration and
+- **Introspection API**: `getRegisteredResources()` and
+  `getResourceVisibility()` help plugin developers debug registration and
   visibility issues without requiring host-side DevTools
 - **`closeOnAction` for menu items**: eliminates the `handleClose` footgun;
   when set to `true`, the host wraps the component in a click-capturing
@@ -2650,17 +2650,17 @@ Key design decisions:
 ## 11. Implementation Constraints
 
 These constraints must be followed by all implementations of this spec and all
-future extensions to the UI surface system.
+future extensions to the App resource system.
 
-1. **Treat `UiSurfaceStore` as a generic slot registry.** Do not add
+1. **Treat `AppResourceStore` as a generic slot registry.** Do not add
    panel-specific or menu-specific logic to the store itself. Slot-specific
    behavior belongs in renderers.
 
-2. **Add a new `UiSurfaceSlot` value before adding a new UI location.** Do not
+2. **Add a new `ResourceSlot` value before adding a new UI location.** Do not
    introduce new registry fields or separate stores for new locations.
 
 3. **Define a new `*HostProps` type for every new slot.** Export it from
-   `UiSurfaceTypes.ts` and add it to `@cytoscape-web/api-types`. Renderers must
+   `AppResourceTypes.ts` and add it to `@cytoscape-web/api-types`. Renderers must
    inject only the props declared by that type.
 
 4. **Register cleanup via `AppCleanupRegistry`, not in `appLifecycle.ts`.**
@@ -2673,14 +2673,14 @@ future extensions to the UI surface system.
    capability negotiation accurate and allows apps to guard registrations
    conditionally.
 
-6. **Wrap every plugin-owned surface in `PluginErrorBoundary`.** The boundary
-   must be per surface, not per slot.
+6. **Wrap every plugin-owned resource in `PluginErrorBoundary`.** The boundary
+   must be per resource, not per slot.
 
-7. **Require stable, hardcoded surface IDs.** Plugin authors must document which
+7. **Require stable, hardcoded resource IDs.** Plugin authors must document which
    IDs they register. The `(appId, slot, id)` triple is the future persistence
    key and must not use dynamic values.
 
-8. **Wrap every plugin surface in `AppIdProvider`.** Host renderers must provide
+8. **Wrap every plugin resource in `AppIdProvider`.** Host renderers must provide
    `AppIdContext` to every plugin component so that `useAppContext()` works
    without additional setup. The provider must be the outermost wrapper, above
    `PluginErrorBoundary`.
@@ -2696,12 +2696,12 @@ future extensions to the UI surface system.
     the check fails.
 
 11. **Pass `customFallback` to `PluginErrorBoundary` when present.** If a
-    registered surface has an `errorFallback`, renderers must pass it as the
+    registered resource has an `errorFallback`, renderers must pass it as the
     `customFallback` prop. The host default is used only when no custom
     fallback is provided.
 
-12. **Process `CyAppWithLifecycle.surfaces` in `useAppManager.ts`, after
-    `registerApp` and before `mountApp`.** Declarative surfaces must be
+12. **Process `CyAppWithLifecycle.resources` in `useAppManager.ts`, after
+    `registerApp` and before `mountApp`.** Declarative resources must be
     available to renderers immediately, before `mount()` is called. The
     processing goes in `useAppManager.ts` (orchestration layer), NOT inside
     `AppStore.add()` (which handles only serializable metadata). This keeps

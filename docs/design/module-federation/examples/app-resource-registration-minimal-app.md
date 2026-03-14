@@ -1,21 +1,21 @@
-# UI Surface Registration — Minimal App Examples
+# App Resource Registration — Minimal App Examples
 
 - **Rev. 2 (3/14/2026): Keiichiro ONO and Claude Opus 4.6** — Updated to match
   spec Rev. 4: `title` (not `label`), `useAppContext()` as primary pattern,
-  declarative `surfaces`, `closeOnAction`, `registerAll`, corrected API calls
+  declarative `resources`, `closeOnAction`, `registerAll`, corrected API calls
 - Rev. 1 (3/14/2026): Keiichiro ONO and Claude Sonnet 4.6
 
 Concrete code samples showing the minimum viable plugin app that registers a
 panel, an app-menu item, and a context menu item using the runtime registration
 API defined in
-[ui-surface-registration-specification.md](../specifications/ui-surface-registration-specification.md).
+[app-resource-registration-specification.md](../specifications/app-resource-registration-specification.md).
 
-**Three paths to surface registration (choose one per surface):**
+**Three paths to resource registration (choose one per resource):**
 
 | Path | Best for | Boilerplate |
 |------|----------|-------------|
-| **A. Declarative `surfaces`** (§6.7.1) | Fixed surfaces that never change at runtime | Zero — no `mount()` needed |
-| **B. Batch `registerAll` in `mount()`** (§6.2.1) | Multiple surfaces registered together | Low — one call in `mount()` |
+| **A. Declarative `resources`** (§6.7.1) | Fixed resources that never change at runtime | Zero — no `mount()` needed |
+| **B. Batch `registerAll` in `mount()`** (§6.2.1) | Multiple resources registered together | Low — one call in `mount()` |
 | **C. Individual `registerPanel` / `registerMenuItem` in `mount()`** (§6.2.1) | Conditional or capability-guarded registration | Medium — per-call error handling |
 
 **How plugin components access per-app APIs:**
@@ -27,7 +27,7 @@ API defined in
 
 **Related documents:**
 
-- [ui-surface-registration-specification.md](../specifications/ui-surface-registration-specification.md) — Full
+- [app-resource-registration-specification.md](../specifications/app-resource-registration-specification.md) — Full
   design
 - [app-api-use-case-examples.md](./app-api-use-case-examples.md) — Other API use
   cases
@@ -36,11 +36,11 @@ API defined in
 
 ## File layout
 
-A plugin app that uses all three surface types needs the following files:
+A plugin app that uses all three resource types needs the following files:
 
 ```text
 src/
-├── index.ts                 ← CyApp definition with surfaces / mount() / unmount()
+├── index.ts                 ← CyApp definition with resources / mount() / unmount()
 ├── panels/
 │   └── MyPanel.tsx          ← React component rendered in the right panel
 └── menuItems/
@@ -51,9 +51,9 @@ Context menu items do not need a component — they register a handler function.
 
 ---
 
-## 1. Path A — Declarative `surfaces` (recommended for fixed surfaces)
+## 1. Path A — Declarative `resources` (recommended for fixed resources)
 
-The simplest path. Declare surfaces on the `CyApp` object; the host registers
+The simplest path. Declare resources on the `CyApp` object; the host registers
 them automatically. No `mount()` or `unmount()` needed.
 
 ```typescript
@@ -66,7 +66,7 @@ const app: CyAppWithLifecycle = {
   name: 'My Plugin',
   description: 'Panel and menu item example (declarative)',
 
-  surfaces: [
+  resources: [
     {
       slot: 'right-panel',
       id: 'main-panel',                                // stable, hardcoded
@@ -89,16 +89,16 @@ export default app
 ```
 
 > **When to add `mount()`:** If the app also needs context menu items or
-> conditional logic, implement `mount()` alongside `surfaces`. Declarative
-> surfaces are registered first; `mount()` can register additional surfaces or
+> conditional logic, implement `mount()` alongside `resources`. Declarative
+> resources are registered first; `mount()` can register additional resources or
 > upsert over declarative ones.
 
 ---
 
 ## 2. Path B — Batch `registerAll` in `mount()`
 
-For apps that register multiple surfaces and want a single call instead of
-per-surface error handling:
+For apps that register multiple resources and want a single call instead of
+per-resource error handling:
 
 ```typescript
 // src/index.ts
@@ -115,7 +115,7 @@ const app: CyAppWithLifecycle = {
     const { apis } = context
 
     // ── Panels + menu items in one call ──────────────────────────────────
-    const result = apis.uiSurface.registerAll([
+    const result = apis.resource.registerAll([
       {
         slot: 'right-panel',
         id: 'main-panel',
@@ -133,7 +133,7 @@ const app: CyAppWithLifecycle = {
     ])
     // registerAll always returns ok(); check errors array for partial failures
     if (result.success && result.data.errors.length > 0) {
-      console.warn('Some surfaces failed to register:', result.data.errors)
+      console.warn('Some resources failed to register:', result.data.errors)
     }
 
     // ── Context menu item ────────────────────────────────────────────────
@@ -178,8 +178,8 @@ const app: CyAppWithLifecycle = {
     const { apis } = context
 
     // ── Panel (only if slot is supported) ────────────────────────────────
-    if (apis.uiSurface.getSupportedSlots().includes('right-panel')) {
-      const panelResult = apis.uiSurface.registerPanel({
+    if (apis.resource.getSupportedSlots().includes('right-panel')) {
+      const panelResult = apis.resource.registerPanel({
         id: 'main-panel',
         title: 'My Plugin',
         requires: { network: true },
@@ -192,8 +192,8 @@ const app: CyAppWithLifecycle = {
     }
 
     // ── Apps-menu item ───────────────────────────────────────────────────
-    if (apis.uiSurface.getSupportedSlots().includes('apps-menu')) {
-      const menuResult = apis.uiSurface.registerMenuItem({
+    if (apis.resource.getSupportedSlots().includes('apps-menu')) {
+      const menuResult = apis.resource.registerMenuItem({
         id: 'main-menu',
         title: 'My Plugin',
         component: MyMenuItem,
@@ -220,7 +220,7 @@ export default app
 ```
 
 > **Note on cleanup:** The host calls `cleanupAllForApp(appId)` on both
-> `UiSurfaceStore` and `ContextMenuItemStore` when an app is disabled, when
+> `AppResourceStore` and `ContextMenuItemStore` when an app is disabled, when
 > `mount()` throws, and on page unload. Implementing `unmount()` purely for
 > cleanup is unnecessary — the host handles it. `unmount()` is only needed if
 > the app must perform app-specific teardown (e.g., closing a WebSocket).
@@ -279,7 +279,7 @@ export default MyPanel
 ## 5. `menuItems/MyMenuItem.tsx` — apps-menu component
 
 Apps-menu item components receive `MenuItemHostProps` with
-`handleClose: () => void`. When the surface is registered with
+`handleClose: () => void`. When the resource is registered with
 `closeOnAction: true`, the host auto-closes the dropdown after any click — the
 plugin does not need to call `handleClose` manually.
 
@@ -450,35 +450,35 @@ const app: CyAppWithLifecycle = {
 
 ---
 
-## 8. Upsert: dynamically updating a registered surface
+## 8. Upsert: dynamically updating a registered resource
 
-Re-registering a surface with the same `id` replaces it in place (upsert
+Re-registering a resource with the same `id` replaces it in place (upsert
 semantics), preserving tab selection state. This lets apps update title, order,
 or component without flicker:
 
 ```typescript
 // inside mount() or a component event handler:
-apis.uiSurface.registerPanel({
+apis.resource.registerPanel({
   id: 'main-panel',            // same id as before
   title: 'My Plugin (updated)', // new title
   component: UpdatedPanel,      // new component
 })
-// The surfaceId is unchanged; if this panel was the selected tab, it stays selected.
+// The resourceId is unchanged; if this panel was the selected tab, it stays selected.
 ```
 
 ---
 
-## 9. Introspection: debugging registered surfaces
+## 9. Introspection: debugging registered resources
 
-Plugin developers can inspect what surfaces are registered and why a surface is
+Plugin developers can inspect what resources are registered and why a resource is
 hidden:
 
 ```typescript
 // inside mount() or a component event handler:
-const surfaces = apis.uiSurface.getRegisteredSurfaces()
-console.log('Registered surfaces:', surfaces)
+const resources = apis.resource.getRegisteredResources()
+console.log('Registered resources:., resources)
 
-const vis = apis.uiSurface.getSurfaceVisibility('main-panel')
+const vis = apis.resource.getResourceVisibility('main-panel')
 console.log('Panel visibility:', vis)
 // { registered: true, visible: false, hiddenReason: 'requires-network' }
 ```
@@ -487,12 +487,12 @@ console.log('Panel visibility:', vis)
 
 ## Summary
 
-| Surface type | Registration API | Cleanup |
+| Resource type | Registration API | Cleanup |
 |--------------|------------------|---------|
-| Right panel | `surfaces: [{ slot: 'right-panel', ... }]` (declarative) | Host auto |
-| Right panel | `apis.uiSurface.registerPanel(options)` (imperative) | `unregisterAll()` or host auto |
-| Apps-menu item | `surfaces: [{ slot: 'apps-menu', ... }]` (declarative) | Host auto |
-| Apps-menu item | `apis.uiSurface.registerMenuItem(options)` (imperative) | `unregisterAll()` or host auto |
+| Right panel | `resources: [{ slot: 'right-panel', ... }]` (declarative) | Host auto |
+| Right panel | `apis.resource.registerPanel(options)` (imperative) | `unregisterAll()` or host auto |
+| Apps-menu item | `resources: [{ slot: 'apps-menu', ... }]` (declarative) | Host auto |
+| Apps-menu item | `apis.resource.registerMenuItem(options)` (imperative) | `unregisterAll()` or host auto |
 | Context menu | `apis.contextMenu.addContextMenuItem(options)` | `removeContextMenuItem(id)` or host auto |
 
 All imperative registrations happen inside `mount()`. Cleanup is automatic when

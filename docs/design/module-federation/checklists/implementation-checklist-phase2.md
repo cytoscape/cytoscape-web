@@ -1,10 +1,10 @@
-# Implementation Checklist — Phase 2: UI Surface Runtime Registration
+# Implementation Checklist — Phase 2: App Resource Runtime Registration
 
 > Track progress for Phase 2. Mark `[x]` when complete. Run verification after each step.
 >
 > Phase 1 checklist: [implementation-checklist-phase1.md](implementation-checklist-phase1.md)
 
-_Design: [ui-surface-registration-specification.md](../specifications/ui-surface-registration-specification.md) — full spec including slot model, lifecycle, cleanup, and testing patterns_
+_Design: [app-resource-registration-specification.md](../specifications/app-resource-registration-specification.md) — full spec including slot model, lifecycle, cleanup, and testing patterns_
 
 **Dependency note:** Requires Phase 1g (App Lifecycle) and Phase 1h (Context Menu API) to be complete. `AppContext`, `CyAppWithLifecycle`, `mountApp`/`unmountApp`, `ContextMenuItemStore`, and `contextMenuApi` must all exist before this phase begins.
 
@@ -18,62 +18,62 @@ _Design: §6.1, §6.5, §8.1, §8.5_
 
 | File | Purpose |
 | ---- | ------- |
-| `src/app-api/types/ApiResult.ts` | Add `SurfaceNotFound` error code |
+| `src/app-api/types/ApiResult.ts` | Add `ResourceNotFound` error code |
 | `src/app-api/types/AppContext.ts` | Existing `AppContext`, `CyAppWithLifecycle` — will be modified |
-| `src/app-api/types/index.ts` | Barrel export — will add new UI surface types |
-| `src/models/AppModel/CyApp.ts` | `CyApp` interface — will make `components` optional, add `surfaces` |
+| `src/app-api/types/index.ts` | Barrel export — will add new app resource types |
+| `src/models/AppModel/CyApp.ts` | `CyApp` interface — will make `components` optional, add `resources` |
 | `src/models/StoreModel/ContextMenuItemStoreModel.ts` | Reference for store model pattern |
 | `src/data/hooks/stores/ContextMenuItemStore.ts` | Reference for store implementation pattern |
 
 ### Deliverables — Types
 
-- [ ] Create `src/app-api/types/UiSurfaceTypes.ts`:
-  - `UiSurfaceSlot` type: `'right-panel' | 'apps-menu'`
+- [ ] Create `src/app-api/types/AppResourceTypes.ts`:
+  - `ResourceSlot` type: `'right-panel' | 'apps-menu'`
   - `PanelHostProps` interface (empty in first rollout)
   - `MenuItemHostProps` interface (`handleClose: () => void`)
   - `RegisterPanelOptions` interface
   - `RegisterMenuItemOptions` interface (includes `closeOnAction?: boolean`)
-  - `RegisterSurfaceEntry` interface (for batch `registerAll`)
-  - `RegisteredSurfaceInfo` interface (for `getRegisteredSurfaces`)
-  - `SurfaceVisibilityResult` interface (for `getSurfaceVisibility`)
-  - `SurfaceDeclaration` interface (for declarative `surfaces` field, §6.7.1)
-  - `UiSurfaceApi` interface (full public API surface)
-- [ ] Modify `src/app-api/types/ApiResult.ts` — add `SurfaceNotFound = 'SURFACE_NOT_FOUND'` to `ApiErrorCode`
-- [ ] Modify `src/app-api/types/index.ts` — re-export all new types from `UiSurfaceTypes.ts`
+  - `RegisterResourceEntry` interface (for batch `registerAll`)
+  - `RegisteredResourceInfo` interface (for `getRegisteredResources`)
+  - `ResourceVisibilityResult` interface (for `getResourceVisibility`)
+  - `ResourceDeclaration` interface (for declarative `resources` field, §6.7.1)
+  - `ResourceApi` interface (full public API resource)
+- [ ] Modify `src/app-api/types/ApiResult.ts` — add `ResourceNotFound = 'RESOURCE_NOT_FOUND'` to `ApiErrorCode`
+- [ ] Modify `src/app-api/types/index.ts` — re-export all new types from `AppResourceTypes.ts`
 
 ### Deliverables — Model
 
-- [ ] Create `src/models/AppModel/RegisteredUiSurface.ts`:
-  - `UiSurfaceSlot` (re-exported from `UiSurfaceTypes.ts` or duplicated in model layer)
-  - `RegisteredUiSurface` interface with fields: `id`, `appId`, `slot`, `title?`, `order?`, `group?`, `requires?`, `component: unknown`, `errorFallback?: unknown`, `closeOnAction?: boolean`
+- [ ] Create `src/models/AppModel/RegisteredAppResource.ts`:
+  - `ResourceSlot` (re-exported from `AppResourceTypes.ts` or duplicated in model layer)
+  - `RegisteredAppResource` interface with fields: `id`, `appId`, `slot`, `title?`, `order?`, `group?`, `requires?`, `component: unknown`, `errorFallback?: unknown`, `closeOnAction?: boolean`
 
 ### Deliverables — Store Model
 
-- [ ] Create `src/models/StoreModel/UiSurfaceStoreModel.ts`:
-  - `UiSurfaceState` interface: `readonly surfaces: RegisteredUiSurface[]`
-  - `UiSurfaceActions` interface: `upsertSurface`, `removeSurface`, `hasSurface`, `removeAllByAppId`
-  - `UiSurfaceStore` type: `UiSurfaceState & UiSurfaceActions`
+- [ ] Create `src/models/StoreModel/AppResourceStoreModel.ts`:
+  - `AppResourceState` interface: `readonly resources: RegisteredAppResource[]`
+  - `AppResourceActions` interface: `upsertResource`, `removeResource`, `hasResource`, `removeAllByAppId`
+  - `AppResourceStore` type: `AppResourceState & AppResourceActions`
 
 ### Deliverables — Store Implementation
 
-- [ ] Create `src/data/hooks/stores/UiSurfaceStore.ts`:
+- [ ] Create `src/data/hooks/stores/AppResourceStore.ts`:
   - Zustand store with Immer middleware (no persistence — runtime only)
-  - `upsertSurface(surface)`: insert or replace by `(appId, slot, id)` triple
-  - `removeSurface(appId, slot, id)`: remove by identity triple
-  - `hasSurface(appId, slot, id)`: boolean check
-  - `removeAllByAppId(appId)`: filter out all surfaces matching appId
-- [ ] Create `src/data/hooks/stores/UiSurfaceStore.spec.ts` — store tests:
+  - `upsertResource(resource)`: insert or replace by `(appId, slot, id)` triple
+  - `removeResource(appId, slot, id)`: remove by identity triple
+  - `hasResource(appId, slot, id)`: boolean check
+  - `removeAllByAppId(appId)`: filter out all resources matching appId
+- [ ] Create `src/data/hooks/stores/AppResourceStore.spec.ts` — store tests:
   - Upsert inserts on first call
   - Upsert replaces on second call with same identity (preserves array length)
-  - `removeSurface` removes the correct surface
-  - `hasSurface` returns true/false correctly
-  - `removeAllByAppId` removes only surfaces for the specified app
-  - `removeAllByAppId` does not affect surfaces from other apps
+  - `removeResource` removes the correct resource
+  - `hasResource` returns true/false correctly
+  - `removeAllByAppId` removes only resources for the specified app
+  - `removeAllByAppId` does not affect resources from other apps
 
 ### Verification (Step 2.0)
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="UiSurfaceStore"` passes
+- [ ] `npm run test:unit -- --testPathPattern="AppResourceStore"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -94,8 +94,8 @@ _Design: §6.4.1_
 - [ ] Create `src/data/hooks/stores/AppCleanupRegistry.ts`:
   - `registerAppCleanup(fn: (appId: string) => void): void`
   - `cleanupAllForApp(appId: string): void` — calls all registered fns, catches errors per-fn
-- [ ] Modify `src/data/hooks/stores/UiSurfaceStore.ts` — add module-level `registerAppCleanup` call:
-  `registerAppCleanup((appId) => useUiSurfaceStore.getState().removeAllByAppId(appId))`
+- [ ] Modify `src/data/hooks/stores/AppResourceStore.ts` — add module-level `registerAppCleanup` call:
+  `registerAppCleanup((appId) => useAppResourceStore.getState().removeAllByAppId(appId))`
 - [ ] Modify `src/data/hooks/stores/ContextMenuItemStore.ts`:
   - Add `removeAllByAppId(appId: string)` action (skips items with `appId === undefined`)
   - Add module-level `registerAppCleanup` call
@@ -117,7 +117,7 @@ _Design: §6.4.1_
 
 ---
 
-## Step 2.2: Core UI Surface API
+## Step 2.2: Core App Resource API
 
 _Design: §6.2.1–§6.2.3, §6.2.5–§6.2.6_
 
@@ -131,19 +131,19 @@ _Design: §6.2.1–§6.2.3, §6.2.5–§6.2.6_
 
 ### Deliverables
 
-- [ ] Create `src/app-api/core/uiSurfaceApi.ts` — per-app factory:
-  - `createUiSurfaceApi(appId: string): UiSurfaceApi`
+- [ ] Create `src/app-api/core/resourceApi.ts` — per-app factory:
+  - `createResourceApi(appId: string): ResourceApi`
   - `getSupportedSlots()` → `['right-panel', 'apps-menu']`
-  - `registerPanel(options)` → `ApiResult<{ surfaceId }>`:
+  - `registerPanel(options)` → `ApiResult<{ resourceId }>`:
     - Validate `id` non-empty
     - Validate `component` is a function (`typeof === 'function'`)
-    - Call `useUiSurfaceStore.getState().upsertSurface(...)` (upsert semantics)
-    - Return `ok({ surfaceId: '${appId}::right-panel::${id}' })`
+    - Call `useAppResourceStore.getState().upsertResource(...)` (upsert semantics)
+    - Return `ok({ resourceId: '${appId}::right-panel::${id}' })`
   - `unregisterPanel(panelId)` → `ApiResult`:
-    - Check existence via `hasSurface`
-    - If not found → `fail(SurfaceNotFound)`
-    - Call `removeSurface`
-  - `registerMenuItem(options)` → `ApiResult<{ surfaceId }>` (mirrors `registerPanel` with `slot: 'apps-menu'`)
+    - Check existence via `hasResource`
+    - If not found → `fail(ResourceNotFound)`
+    - Call `removeResource`
+  - `registerMenuItem(options)` → `ApiResult<{ resourceId }>` (mirrors `registerPanel` with `slot: 'apps-menu'`)
   - `unregisterMenuItem(menuItemId)` → `ApiResult` (mirrors `unregisterPanel`)
   - `unregisterAll()` → `ApiResult`:
     - Call `removeAllByAppId(appId)`
@@ -151,29 +151,29 @@ _Design: §6.2.1–§6.2.3, §6.2.5–§6.2.6_
     - Iterate entries, delegate to `registerPanel`/`registerMenuItem` per slot
     - Unsupported slots → push to `errors` array, log warning
     - Always return `ok({ registered, errors })`
-  - `getRegisteredSurfaces()` → `RegisteredSurfaceInfo[]`:
-    - Filter surfaces by factory-bound `appId`
-  - `getSurfaceVisibility(id)` → `SurfaceVisibilityResult`:
+  - `getRegisteredResources()` → `RegisteredResourceInfo[]`:
+    - Filter resources by factory-bound `appId`
+  - `getResourceVisibility(id)` → `ResourceVisibilityResult`:
     - Check registration, app-active state, `requires.network`, `requires.selection`
-- [ ] Create `src/app-api/core/uiSurfaceApi.test.ts` — plain Jest tests:
+- [ ] Create `src/app-api/core/resourceApi.test.ts` — plain Jest tests:
   - `getSupportedSlots` returns `['right-panel', 'apps-menu']`
-  - `registerPanel` with valid options returns `ok` with correct `surfaceId`
+  - `registerPanel` with valid options returns `ok` with correct `resourceId`
   - `registerPanel` with empty `id` returns `fail(InvalidInput)`
   - `registerPanel` with non-function `component` returns `fail(InvalidInput)`
   - `registerPanel` with same `id` upserts (replaces) — no error
   - `unregisterPanel` with existing panel returns `ok`
-  - `unregisterPanel` with unknown panel returns `fail(SurfaceNotFound)`
+  - `unregisterPanel` with unknown panel returns `fail(ResourceNotFound)`
   - `registerMenuItem` mirrors `registerPanel` behavior for `apps-menu` slot
   - `unregisterAll` delegates to `removeAllByAppId` with bound `appId`
-  - `registerAll` registers multiple surfaces; failed entries are skipped but logged
+  - `registerAll` registers multiple resources; failed entries are skipped but logged
   - `registerAll` with unsupported slot pushes error but does not block others
-  - `getRegisteredSurfaces` returns only surfaces for the bound `appId`
-  - `getSurfaceVisibility` returns correct `hiddenReason` for each case
+  - `getRegisteredResources` returns only resources for the bound `appId`
+  - `getResourceVisibility` returns correct `hiddenReason` for each case
 
 ### Verification (Step 2.2)
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="uiSurfaceApi"` passes
+- [ ] `npm run test:unit -- --testPathPattern="resourceApi"` passes
 - [ ] `npm run build` succeeds
 
 ---
@@ -258,7 +258,7 @@ _Design: §6.2.4, §6.2.6_
 | File | Purpose |
 | ---- | ------- |
 | `src/app-api/types/AppContext.ts` | Will add `AppContextApis` type |
-| `src/app-api/core/index.ts` | `CyWebApiType` — verify it does NOT get `uiSurface` field |
+| `src/app-api/core/index.ts` | `CyWebApiType` — verify it does NOT get `resource` field |
 | `packages/api-types/src/index.ts` | Window declaration — will be updated |
 | `packages/api-types/src/CyWebApi.ts` | Will re-export `AppContextApis` |
 
@@ -271,12 +271,12 @@ _Design: §6.2.4, §6.2.6_
   - `AppIdProvider` export (the `.Provider`)
 - [ ] Modify `src/app-api/types/AppContext.ts`:
   - Create `AppContextApis` interface extending `CyWebApiType`:
-    - `readonly uiSurface: UiSurfaceApi` (required)
+    - `readonly resource: ResourceApi` (required)
     - `readonly contextMenu: ContextMenuApi` (required — per-app factory instance)
   - Change `AppContext.apis` type from `CyWebApiType` to `AppContextApis`
   - Update JSDoc: `apis` is per-app, NOT the same object as `window.CyWebApi`
 - [ ] Modify `src/app-api/core/index.ts`:
-  - Ensure `CyWebApiType` does NOT include `uiSurface` field
+  - Ensure `CyWebApiType` does NOT include `resource` field
   - `window.CyWebApi` assignment uses the anonymous `contextMenuApi` singleton
 - [ ] Modify `src/app-api/types/index.ts` — re-export `AppContextApis`
 - [ ] Modify `packages/api-types/src/index.ts`:
@@ -293,8 +293,8 @@ _Design: §6.2.4, §6.2.6_
 - [ ] `npm run lint` passes
 - [ ] `npm run build` succeeds
 - [ ] `npm run build:api-types` succeeds
-- [ ] TypeScript check: `AppContext.apis.uiSurface.registerPanel(...)` has no type error
-- [ ] TypeScript check: `window.CyWebApi.uiSurface` causes a type error
+- [ ] TypeScript check: `AppContext.apis.resource.registerPanel(...)` has no type error
+- [ ] TypeScript check: `window.CyWebApi.resource` causes a type error
 
 ---
 
@@ -306,15 +306,15 @@ _Design: §6.4.0, §6.4.2–§6.4.3, §6.7.1–§6.7.2_
 
 | File | Purpose |
 | ---- | ------- |
-| `src/data/hooks/stores/useAppManager.ts` | App loading loop — injection point for lifecycle and declarative surfaces |
+| `src/data/hooks/stores/useAppManager.ts` | App loading loop — injection point for lifecycle and declarative resources |
 | `src/data/hooks/stores/appLifecycle.ts` | `mountApp`, `unmountApp` — will be updated |
-| `src/models/AppModel/CyApp.ts` | Add `surfaces` field, make `components` optional |
+| `src/models/AppModel/CyApp.ts` | Add `resources` field, make `components` optional |
 
 ### Deliverables — CyApp model changes
 
 - [ ] Modify `src/models/AppModel/CyApp.ts`:
   - Mark `components` as optional with `@deprecated` JSDoc
-  - Add `surfaces?: SurfaceDeclaration[]` to `CyAppWithLifecycle` (type-only import from `UiSurfaceTypes.ts`)
+  - Add `resources?: ResourceDeclaration[]` to `CyAppWithLifecycle` (type-only import from `AppResourceTypes.ts`)
 
 ### Deliverables — Lifecycle functions
 
@@ -332,10 +332,10 @@ _Design: §6.4.0, §6.4.2–§6.4.3, §6.7.1–§6.7.2_
 ### Deliverables — useAppManager integration
 
 - [ ] Modify `src/data/hooks/stores/useAppManager.ts`:
-  - Import `createUiSurfaceApi` and `createContextMenuApi`
-  - Construct per-app API object: `{ ...CyWebApi, uiSurface: createUiSurfaceApi(cyApp.id), contextMenu: createContextMenuApi(cyApp.id) }`
+  - Import `createResourceApi` and `createContextMenuApi`
+  - Construct per-app API object: `{ ...CyWebApi, resource: createResourceApi(cyApp.id), contextMenu: createContextMenuApi(cyApp.id) }`
   - Store per-app apis in `Map<string, AppContextApis>` ref (for `AppIdProvider`)
-  - After `registerApp(cyApp)`: if `cyApp.surfaces` is defined, create a `uiSurfaceApi` and register each entry via `registerPanel`/`registerMenuItem` (§6.7.1)
+  - After `registerApp(cyApp)`: if `cyApp.resources` is defined, create a `resourceApi` and register each entry via `registerPanel`/`registerMenuItem` (§6.7.1)
   - Pass per-app API object as `AppContext.apis` to `mountApp`
   - Add `mountedApps` ref (`Set<string>`) to track mounted apps
   - Add `beforeunload` listener calling `unmountAllApps`
@@ -396,28 +396,28 @@ _Design: §6.3.1–§6.3.3_
 
 | File | Purpose |
 | ---- | ------- |
-| `src/features/Workspace/SidePanel/SidePanel.tsx` | Tab selection — switch to surface-identity-based selection (§6.3.2) |
-| `src/features/Workspace/SidePanel/TabContents.tsx` | Panel rendering — merge manifest + runtime surfaces |
+| `src/features/Workspace/SidePanel/SidePanel.tsx` | Tab selection — switch to resource-identity-based selection (§6.3.2) |
+| `src/features/Workspace/SidePanel/TabContents.tsx` | Panel rendering — merge manifest + runtime resources |
 
 ### Deliverables — SidePanel.tsx (stable tab selection)
 
-- [ ] Replace `useState(0)` numeric tab index with `useState<string | null>(null)` surface-identity-based selection (§6.3.2)
+- [ ] Replace `useState(0)` numeric tab index with `useState<string | null>(null)` resource-identity-based selection (§6.3.2)
 - [ ] Use `'__builtin__::right-panel::sub-network-viewer'` as reserved identity for built-in tab
 - [ ] Rendering logic:
-  - Build ordered, visibility-filtered array of surfaces
-  - Find index of `selectedSurfaceId` in array
-  - If not found → fall back to index 0, update `selectedSurfaceId`
+  - Build ordered, visibility-filtered array of resources
+  - Find index of `selectedResourceId` in array
+  - If not found → fall back to index 0, update `selectedResourceId`
   - Pass resolved index to MUI `<Tabs value={resolvedIndex}>`
 
-### Deliverables — TabContents.tsx (merge manifest + runtime surfaces)
+### Deliverables — TabContents.tsx (merge manifest + runtime resources)
 
-- [ ] Read `UiSurfaceStore` (filter by `slot: 'right-panel'`) in addition to `CyApp.components`
+- [ ] Read `AppResourceStore` (filter by `slot: 'right-panel'`) in addition to `CyApp.components`
 - [ ] Apply rendering rules (§6.3.1):
-  - Runtime surfaces rendered only when app is active
+  - Runtime resources rendered only when app is active
   - Evaluate `requires.network`: skip when no network is loaded
-  - Runtime surface wins when same `(appId, slot, id)` exists in both manifest and runtime
+  - Runtime resource wins when same `(appId, slot, id)` exists in both manifest and runtime
   - Sort by `order` (ascending, `undefined` last), then registration order for ties
-- [ ] Wrap each plugin surface in `AppIdProvider` (outermost) → `PluginErrorBoundary` → `Suspense`:
+- [ ] Wrap each plugin resource in `AppIdProvider` (outermost) → `PluginErrorBoundary` → `Suspense`:
   ```
   <AppIdProvider value={{ appId, apis }}>
     <PluginErrorBoundary appId={...} slot="right-panel" customFallback={...}>
@@ -427,7 +427,7 @@ _Design: §6.3.1–§6.3.3_
     </PluginErrorBoundary>
   </AppIdProvider>
   ```
-- [ ] Expose `surfaceId` alongside each rendered panel for identity tracking
+- [ ] Expose `resourceId` alongside each rendered panel for identity tracking
 
 ### Verification (Step 2.7)
 
@@ -447,13 +447,13 @@ _Design: §6.3.1, §6.3.3, §6.1.2_
 
 | File | Purpose |
 | ---- | ------- |
-| `src/features/ToolBar/AppMenu/index.tsx` | Menu rendering — merge manifest + runtime surfaces, implement closeOnAction |
+| `src/features/ToolBar/AppMenu/index.tsx` | Menu rendering — merge manifest + runtime resources, implement closeOnAction |
 
 ### Deliverables
 
-- [ ] Read `UiSurfaceStore` (filter by `slot: 'apps-menu'`) in addition to `CyApp.components`
+- [ ] Read `AppResourceStore` (filter by `slot: 'apps-menu'`) in addition to `CyApp.components`
 - [ ] Apply same rendering rules as right-panel (§6.3.1): active check, `requires.network`, ordering
-- [ ] Wrap each menu surface in `AppIdProvider` → `PluginErrorBoundary`:
+- [ ] Wrap each menu resource in `AppIdProvider` → `PluginErrorBoundary`:
   ```
   <AppIdProvider value={{ appId, apis }}>
     <PluginErrorBoundary appId={...} slot="apps-menu" customFallback={...}>
@@ -484,18 +484,18 @@ _Design: §6.6.4, §6.7.1, §8.3.1, §8.7_
 | File | Purpose |
 | ---- | ------- |
 | `cytoscape-web-app-examples/hello-world/` | Migrate to `useAppContext()` pattern |
-| `cytoscape-web-app-examples/project-template/` | Migrate to declarative `surfaces` or `mount()` pattern |
+| `cytoscape-web-app-examples/project-template/` | Migrate to declarative `resources` or `mount()` pattern |
 | `cytoscape-web-app-examples/network-workflows/` | Check if any context menu usage needs migration |
 
 ### Deliverables
 
 - [ ] Migrate `hello-world`:
   - Migrate `ContextMenuSection.tsx` from `useContextMenuApi()` to `useAppContext()` pattern (§6.2.4)
-  - Update `AppConfig` to use `surfaces` declarative field or `mount()` registration where appropriate
+  - Update `AppConfig` to use `resources` declarative field or `mount()` registration where appropriate
 - [ ] Migrate `project-template`:
   - Migrate `TemplateContextMenuExample.tsx` from `useContextMenuApi()` to `useAppContext()` pattern
   - Remove `import { useContextMenuApi } from 'cyweb/ContextMenuApi'`
-  - Update `AppConfig` to use `surfaces` declarative field (Path A, §8.7)
+  - Update `AppConfig` to use `resources` declarative field (Path A, §8.7)
 - [ ] Verify all example apps build: `cd cytoscape-web-app-examples && npm run build` (or per-app builds)
 
 ### Verification (Step 2.9)
@@ -522,28 +522,28 @@ _Design: §6.6.4, §6.7.1, §8.3.1, §8.7_
 
 ### Type System
 
-- [ ] `AppContext.apis` typed as `AppContextApis` (distinct from `CyWebApiType`; `uiSurface` is required)
-- [ ] `window.CyWebApi` typed as `CyWebApiType` (no `uiSurface` field)
-- [ ] `window.CyWebApi.uiSurface` is `undefined` at runtime
-- [ ] `AppContext.apis.uiSurface.registerPanel(...)` has no TypeScript error
-- [ ] `window.CyWebApi.uiSurface` causes a TypeScript error
+- [ ] `AppContext.apis` typed as `AppContextApis` (distinct from `CyWebApiType`; `resource` is required)
+- [ ] `window.CyWebApi` typed as `CyWebApiType` (no `resource` field)
+- [ ] `window.CyWebApi.resource` is `undefined` at runtime
+- [ ] `AppContext.apis.resource.registerPanel(...)` has no TypeScript error
+- [ ] `window.CyWebApi.resource` causes a TypeScript error
 
-### UI Surface Registration
+### App Resource Registration
 
 - [ ] Runtime-registered panel appears without a `CyApp.components` declaration
 - [ ] Runtime-registered menu item appears without a `CyApp.components` declaration
 - [ ] `getSupportedSlots()` returns `['right-panel', 'apps-menu']`
-- [ ] Upsert: re-registering a panel with a new `title` updates without changing `surfaceId`
-- [ ] `registerAll()` registers multiple surfaces; failed entries are skipped but logged
-- [ ] `getRegisteredSurfaces()` returns only surfaces for the calling app
-- [ ] `getSurfaceVisibility()` returns correct `hiddenReason` for each condition
+- [ ] Upsert: re-registering a panel with a new `title` updates without changing `resourceId`
+- [ ] `registerAll()` registers multiple resources; failed entries are skipped but logged
+- [ ] `getRegisteredResources()` returns only resources for the calling app
+- [ ] `getResourceVisibility()` returns correct `hiddenReason` for each condition
 - [ ] `registerPanel({ component: 'notAFunction' })` returns `fail(InvalidInput)`
-- [ ] An app cannot register a surface under another app's `appId` (factory-bound)
+- [ ] An app cannot register a resource under another app's `appId` (factory-bound)
 
-### Declarative Surfaces
+### Declarative Resources
 
-- [ ] An app with `surfaces: [...]` and no `mount()` renders all declared surfaces
-- [ ] An app with both `surfaces` and `mount()` sees declarative surfaces first; `mount()` can upsert over them
+- [ ] An app with `resources: [...]` and no `mount()` renders all declared resources
+- [ ] An app with both `resources` and `mount()` sees declarative resources first; `mount()` can upsert over them
 
 ### Visibility & Error Isolation
 
@@ -561,8 +561,8 @@ _Design: §6.6.4, §6.7.1, §8.3.1, §8.7_
 
 ### Lifecycle & Cleanup
 
-- [ ] Disabling an app removes all of its runtime surfaces immediately
-- [ ] Re-enabling an app re-registers its surfaces correctly
+- [ ] Disabling an app removes all of its runtime resources immediately
+- [ ] Re-enabling an app re-registers its resources correctly
 - [ ] Failed `mount()` does not leave orphaned panels or menu items
 - [ ] `cleanupAllForApp(appId)` invokes all registered cleanup functions
 - [ ] One failing cleanup does not prevent others from running
@@ -581,7 +581,7 @@ _Design: §6.6.4, §6.7.1, §8.3.1, §8.7_
 
 ### AppIdContext
 
-- [ ] `useAppContext()` returns `{ appId, apis }` inside a plugin surface wrapped by `AppIdProvider`
+- [ ] `useAppContext()` returns `{ appId, apis }` inside a plugin resource wrapped by `AppIdProvider`
 - [ ] `useAppContext()` returns `null` outside the provider (test isolation)
 
 ### Backward Compatibility
