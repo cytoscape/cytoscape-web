@@ -42,6 +42,9 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 | `ExportApi` | Export networks to CX2, PNG, and SVG |
 | `WorkspaceApi` | Read workspace and network summary metadata |
 | `ContextMenuApi` | Register custom items in the network context menu |
+| `AppContextApis` | Per-app API shape passed to `mount()` (extends `CyWebApiType`) |
+| `ResourceApi` | Register panels and menu items at runtime |
+| `ResourceDeclaration` | Declarative resource entry for `CyAppWithLifecycle.resources` |
 | `ApiResult<T>` | Discriminated union returned by all API functions |
 | `ApiErrorCode` | Enum of all possible error codes |
 | `CyWebEvents` | Typed event detail shapes for all `window` events |
@@ -120,6 +123,7 @@ mount({ apis }) {
 | `cyweb/ExportApi` | `useExportApi()` |
 | `cyweb/WorkspaceApi` | `useWorkspaceApi()` |
 | `cyweb/EventBus` | `useCyWebEvent(type, handler)` |
+| `cyweb/AppIdContext` | `useAppContext()` — per-app context for plugin components |
 | `cyweb/ApiTypes` | Re-exports all types from this package |
 
 ## Documentation

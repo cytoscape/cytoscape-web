@@ -7,8 +7,9 @@
 //   - Typed window.addEventListener overloads for all CyWeb events
 //   - All public model types (IdType, Network, Table, etc.)
 //   - All domain API types (ElementApi, NetworkApi, ..., ContextMenuApi)
+//   - Phase 2 types (AppContextApis, ResourceApi, ResourceSlot, ResourceDeclaration, etc.)
 //   - ApiResult<T>, ApiErrorCode, and helper types
-//   - AppContext, CyAppWithLifecycle for apps implementing lifecycle hooks
+//   - AppContext, AppContextApis, CyAppWithLifecycle for apps implementing lifecycle hooks
 
 // Import for use in the global Window augmentation below.
 // CyWebApiType is imported from ./CyWebApi (which reads from src/app-api/core)

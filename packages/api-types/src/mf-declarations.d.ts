@@ -58,9 +58,6 @@ declare module 'cyweb/EventBus' {
   ): void
 }
 
-// cyweb/ContextMenuApi removed in Phase 2 — context menu access is now via
-// AppContext.apis.contextMenu (per-app factory) or window.CyWebApi.contextMenu.
-
 declare module 'cyweb/AppIdContext' {
   export function useAppContext(): {
     readonly appId: string
