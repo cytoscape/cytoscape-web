@@ -1,6 +1,7 @@
 # Module Federation App API Design and Priorities
 
 **Rev. 4 (3/14/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Added Phase 2 (App Resource Registration) roadmap
+
 - Rev. 3 (2/21/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Updated for new Event Bus
 
 Solution proposals for the issues identified in [module-federation-audit.md](module-federation-audit.md).
@@ -203,7 +204,11 @@ interface CyWebEvents {
   'layout:started': { networkId: IdType; algorithm: string }
   'layout:completed': { networkId: IdType; algorithm: string }
   'style:changed': { networkId: IdType; property: string }
-  'data:changed': { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+  }
 }
 ```
 
@@ -459,6 +464,7 @@ Add `validateCX2()` to `useCreateNetworkFromCx2` to prevent store corruption fro
 > **Status: Promoted to Phase 1.**
 >
 > App Lifecycle (`mount`/`unmount`) has been moved from P2/Phase 3 to **Phase 1 Step 1g** because:
+>
 > - `AppContext.apis` is simply `window.CyWebApi` — no React context or separate instantiation needed
 > - All domain APIs are assembled by Phase 1f, making lifecycle wiring straightforward at that point
 > - External apps cannot perform meaningful initialization without a lifecycle hook
@@ -478,7 +484,7 @@ Replace the manifest-only `CyApp.components` extension model with a **runtime re
 - **Per-app factory:** `createResourceApi(appId)` binds `appId` at construction, preventing cross-app resource spoofing; same pattern applied to `contextMenuApi`
 - **Upsert semantics:** `registerPanel` / `registerMenuItem` silently replace existing resources with the same `(appId, slot, id)` triple, avoiding flicker
 - **Extensible cleanup:** `AppCleanupRegistry` lets each store register its own cleanup function — `appLifecycle.ts` calls `cleanupAllForApp(appId)` once regardless of how many stores exist
-- **Declarative `resources` field: `CyAppWithLifecycle.resources`` provides a zero-boilerplate path for apps with fixed resources (no `mount()` needed)
+- \*\*Declarative `resources` field: `CyAppWithLifecycle.resources`` provides a zero-boilerplate path for apps with fixed resources (no `mount()` needed)
 - **`AppIdContext`:** Host-provided React Context (`useAppContext()`) replaces module-scope `appState.ts` as the recommended way for plugin components to access per-app APIs
 - **Error isolation:** `PluginErrorBoundary` wraps every plugin resource; plugins can supply custom fallback components
 - **`useContextMenuApi()` deleted:** The hook and `cyweb/ContextMenuApi` expose are removed (never publicly released); context menu access moves to `AppContext.apis.contextMenu` (factory-bound) or `window.CyWebApi.contextMenu` (anonymous singleton)
@@ -494,7 +500,7 @@ interface ResourceApi {
   registerMenuItem(options): ApiResult<{ resourceId: string }>
   unregisterMenuItem(menuItemId: string): ApiResult
   unregisterAll(): ApiResult
-  registerAll(entries): ApiResult<{ registered, errors }>
+  registerAll(entries): ApiResult<{ registered; errors }>
   getRegisteredResources(): RegisteredResourceInfo[]
   getResourceVisibility(id: string): ResourceVisibilityResult
 }
@@ -733,7 +739,6 @@ Fix existing bugs identified in the audit (Section 7). Addressed opportunistical
 - [ ] `hello-world/HelloPanel` `SelectionCounter` demo works end-to-end via `useCyWebEvent`
 - [ ] `hello-world` runs end-to-end using only app API (no raw store imports)
 - [ ] `network-generator` toy example creates, lays out, styles, and exports a network
-- [ ] `simple-menu` and `simple-panel` run end-to-end using app API
 - [ ] Legacy store-based examples still function (backward compatibility)
 - [ ] `project-template` updated for new developers to use app API
 - [ ] `patterns/` documentation reflects app API usage
@@ -844,19 +849,38 @@ without relying on the legacy manifest.
 - [ ] Existing `CyApp.components` apps continue to work (backward compatible)
 - [ ] All example apps migrated and building
 
-### Phase 3: Extensibility and Developer Experience
+### Phase 3: Sample Code and Developer Documentation
 
-1. ~~App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)~~ — **Shipped in Phase 1 Step 1g.**
-2. ~~Context Menu API (`addContextMenuItem`, `removeContextMenuItem`)~~ — **Shipped in Phase 1 Step 1h; refactored to per-app factory in Phase 2.**
-3. ~~Expose CX2 export API~~ — **Shipped in Phase 1e** as `exportApi.exportToCx2`.
-4. ~~Expand UI integration points (panels, app menu items)~~ — **Shipped in Phase 2** as `ResourceApi` with slot model.
-5. Dynamic app registration mechanism (URL-based app loading, manifest validation)
-6. API reference documentation (covering `use<Domain>Api` hooks, `window.CyWebApi`, and `ResourceApi`)
-7. Starter template and third-party app development guide
-8. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script using `window.CyWebApi`)
-9. Expand UI slots: `'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`
-10. Inter-app communication protocol
-11. Security sandbox evaluation
+> Implementation checklist: [implementation-checklist-phase3.md](checklists/implementation-checklist-phase3.md).
+
+Focus: make it easy for third-party developers to build and publish Cytoscape Web apps.
+
+**Shipped in earlier phases (1–4):**
+
+1. ~~App Lifecycle contract (`AppContext`, `CyAppWithLifecycle`)~~ — **Phase 1 Step 1g.**
+2. ~~Context Menu API~~ — **Phase 1 Step 1h; refactored to per-app factory in Phase 2.**
+3. ~~CX2 Export API~~ — **Phase 1e** as `exportApi.exportToCx2`.
+4. ~~UI integration points (panels, app menu items)~~ — **Phase 2** as `ResourceApi` with slot model.
+
+**Phase 3 deliverables (5–9):**
+
+5. **App Developer Guide** (Step 3.0) — zero-to-deploy walkthrough: project setup, `@cytoscape-web/api-types`, webpack MF config, `resources[]`, `mount()`/`unmount()`, context menu, event bus, deploy
+6. **API Reference** (Step 3.1) — add `ResourceApi`, `AppIdContext`/`useAppContext()`, `AppContextApis` to `Api.md`; update error codes, App Lifecycle, and `window.CyWebApi` sections
+7. **Enriched Examples** (Step 3.2) — expand `hello-world` to cover all API surfaces (ViewportApi, TableApi, ExportApi, ElementApi); migrate `network-workflows` to Phase 2 `resources[]` pattern
+8. **Starter Template Overhaul** (Step 3.3) — fix id/name mismatch, add TODO markers, update README
+9. **Package Documentation** (Step 3.4) — `@cytoscape-web/api-types` README fixes, CHANGELOG.md
+10. **Cross-cutting Updates** (Step 3.5) — update examples CLAUDE.md, rewrite patterns/README.md with App API hooks, clean up stale references
+
+### Phase 4: Platform Extensibility
+
+Items deferred from earlier phases — each requires its own design document.
+
+10. Dynamic app registration mechanism (URL-based app loading, manifest validation)
+11. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script using `window.CyWebApi`)
+12. Expand UI slots: `'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`
+13. Non-component resource registration (keyboard shortcuts, commands) via `resources` declarative field
+14. Inter-app communication protocol
+15. Security sandbox evaluation
 
 ---
 
@@ -866,21 +890,21 @@ without relying on the legacy manifest.
 
 - **Goal**: Implement app API and validate with working toy examples end-to-end
 
-| Milestone                     | Deliverables                                                                                                                         |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Step 0: Foundation types      | `ApiResult.ts`, `ElementTypes.ts`, barrel exports, unit tests, `cyweb/ApiTypes` webpack entry                                        |
-| Step 1a: Element API          | `useElementApi.ts`, unit tests, `cyweb/ElementApi` webpack entry                                                                     |
-| Step 1b: Network API          | `useNetworkApi.ts`, CX2 validation fix, unit tests, **first example migration** (`network-workflows` CreateNetworkMenu)               |
-| Step 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts`, unit tests, HelloPanel demo update                                                        |
-| Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                                       |
-| Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                        |
+| Milestone                     | Deliverables                                                                                                                                   |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Step 0: Foundation types      | `ApiResult.ts`, `ElementTypes.ts`, barrel exports, unit tests, `cyweb/ApiTypes` webpack entry                                                  |
+| Step 1a: Element API          | `useElementApi.ts`, unit tests, `cyweb/ElementApi` webpack entry                                                                               |
+| Step 1b: Network API          | `useNetworkApi.ts`, CX2 validation fix, unit tests, **first example migration** (`network-workflows` CreateNetworkMenu)                        |
+| Step 1c: Selection + Viewport | `useSelectionApi.ts`, `useViewportApi.ts`, unit tests, HelloPanel demo update                                                                  |
+| Step 1d: Table + Visual Style | `useTableApi.ts`, `useVisualStyleApi.ts`, unit tests, `simple-panel` migration                                                                 |
+| Step 1e: Layout + Export      | `useLayoutApi.ts`, `useExportApi.ts`, unit tests, `network-generator` example                                                                  |
 | Step 1f: Workspace API        | `useWorkspaceApi.ts`, unit tests, `cyweb/WorkspaceApi` webpack entry, `WorkspaceInfo`/`WorkspaceNetworkInfo` types, `hello-world` panel update |
-| Step 1g: App Lifecycle        | `useAppManager.ts` lifecycle wiring, `AppContext.apis` typed as `CyWebApiType`, `mount`/`unmount` tests |
-| Step 1a+: Element bypass      | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `elementApi.ts`    |
-| Step 1h: Context Menu API     | `ContextMenuItemStore`, `contextMenuApi.ts`, `useContextMenuApi.ts`, host UI wiring, unit tests         |
-| Step 2: Event Bus             | `initEventBus.ts`, `useCyWebEvent.ts`, `cyweb/EventBus` entry, unit + hook tests, `cywebapi:ready` dispatch, `SelectionCounter` demo |
-| Step 3: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                                              |
-| Step 4: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                                          |
+| Step 1g: App Lifecycle        | `useAppManager.ts` lifecycle wiring, `AppContext.apis` typed as `CyWebApiType`, `mount`/`unmount` tests                                        |
+| Step 1a+: Element bypass      | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `elementApi.ts`                                           |
+| Step 1h: Context Menu API     | `ContextMenuItemStore`, `contextMenuApi.ts`, `useContextMenuApi.ts`, host UI wiring, unit tests                                                |
+| Step 2: Event Bus             | `initEventBus.ts`, `useCyWebEvent.ts`, `cyweb/EventBus` entry, unit + hook tests, `cywebapi:ready` dispatch, `SelectionCounter` demo           |
+| Step 3: Integration           | Webpack config finalization, `@deprecated` markers, backward compatibility verification                                                        |
+| Step 4: Examples & Docs       | Example repo overhaul complete, `project-template` update, end-to-end validation, bug fixes                                                    |
 
 **Key dependencies:**
 
@@ -893,26 +917,26 @@ without relying on the legacy manifest.
 | Checkpoint                | Verification                                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------- |
 | First toy example working | `network-workflows/CreateNetworkMenu` creates a network via `useNetworkApi`            |
-| Core APIs complete        | All 8 app API hooks pass unit tests                                                     |
+| Core APIs complete        | All 8 app API hooks pass unit tests                                                    |
 | Event bus live            | `SelectionCounter` in `hello-world/HelloPanel` reacts to selection via `useCyWebEvent` |
 | E2E example suite         | `network-generator` runs full workflow (create → layout → style → export)              |
-| Phase 1 complete          | All exit criteria met, `app-api` branch ready for merge in examples repo            |
+| Phase 1 complete          | All exit criteria met, `app-api` branch ready for merge in examples repo               |
 
 ### Phase 2: App Resource Runtime Registration
 
 - **Goal**: Replace manifest-only extension model with runtime registration; unify context menu under per-app factory pattern
 
-| Milestone | Deliverables |
-| --------- | ------------ |
-| Step 2.0: Foundation | `AppResourceTypes.ts`, `RegisteredAppResource.ts`, `AppResourceStoreModel.ts`, `AppResourceStore.ts`, store tests |
-| Step 2.1: Cleanup Registry | `AppCleanupRegistry.ts`, `removeAllByAppId` on `ContextMenuItemStore`, `appLifecycle.ts` refactor |
-| Step 2.2: Core API | `core/resourceApi.ts` (factory, batch, introspection), unit tests |
-| Step 2.3: Context Menu Factory | Delete `useContextMenuApi` + expose; refactor to `createContextMenuApi(appId)` factory + anonymous singleton; documentation updates |
-| Step 2.4: AppIdContext & Types | `AppIdContext.tsx`, `AppContextApis` type, `cyweb/AppIdContext` expose, `api-types` package update |
-| Step 2.5: Lifecycle Integration | `CyApp.components` optional, `resources` field, `useAppManager.ts` per-app API construction, `appLifecycle.ts` mount/unmount |
-| Step 2.6: Error Boundary | `PluginErrorBoundary.tsx` (per-resource isolation, custom fallback) |
-| Step 2.7–2.8: Renderers | `SidePanel.tsx` identity-based tabs, `TabContents.tsx` + `AppMenu/index.tsx` merge manifest + runtime resources, `closeOnAction` |
-| Step 2.9: Example Migration | `hello-world` + `project-template` migrated to `useAppContext()` / declarative `resources` |
+| Milestone                       | Deliverables                                                                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Step 2.0: Foundation            | `AppResourceTypes.ts`, `RegisteredAppResource.ts`, `AppResourceStoreModel.ts`, `AppResourceStore.ts`, store tests                   |
+| Step 2.1: Cleanup Registry      | `AppCleanupRegistry.ts`, `removeAllByAppId` on `ContextMenuItemStore`, `appLifecycle.ts` refactor                                   |
+| Step 2.2: Core API              | `core/resourceApi.ts` (factory, batch, introspection), unit tests                                                                   |
+| Step 2.3: Context Menu Factory  | Delete `useContextMenuApi` + expose; refactor to `createContextMenuApi(appId)` factory + anonymous singleton; documentation updates |
+| Step 2.4: AppIdContext & Types  | `AppIdContext.tsx`, `AppContextApis` type, `cyweb/AppIdContext` expose, `api-types` package update                                  |
+| Step 2.5: Lifecycle Integration | `CyApp.components` optional, `resources` field, `useAppManager.ts` per-app API construction, `appLifecycle.ts` mount/unmount        |
+| Step 2.6: Error Boundary        | `PluginErrorBoundary.tsx` (per-resource isolation, custom fallback)                                                                 |
+| Step 2.7–2.8: Renderers         | `SidePanel.tsx` identity-based tabs, `TabContents.tsx` + `AppMenu/index.tsx` merge manifest + runtime resources, `closeOnAction`    |
+| Step 2.9: Example Migration     | `hello-world` + `project-template` migrated to `useAppContext()` / declarative `resources`                                          |
 
 **Key dependencies:**
 
@@ -924,12 +948,45 @@ without relying on the legacy manifest.
 
 **Milestones (checkpoints):**
 
-| Checkpoint | Verification |
-| ---------- | ------------ |
-| Store + API working | `AppResourceStore` tests pass; `createResourceApi` tests pass |
-| Context menu unified | `useContextMenuApi` deleted; factory + anonymous singleton tests pass |
+| Checkpoint           | Verification                                                                            |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| Store + API working  | `AppResourceStore` tests pass; `createResourceApi` tests pass                           |
+| Context menu unified | `useContextMenuApi` deleted; factory + anonymous singleton tests pass                   |
 | Lifecycle integrated | `mountApp` constructs per-app APIs; declarative `resources` registered before `mount()` |
-| Renderers updated | Runtime-registered panel visible in side panel; menu item visible in Apps dropdown |
-| Phase 2 complete | All exit criteria met; example apps migrated |
+| Renderers updated    | Runtime-registered panel visible in side panel; menu item visible in Apps dropdown      |
+| Phase 2 complete     | All exit criteria met; example apps migrated                                            |
 
-### Phase 3: Extensibility and Developer Experience (TBD)
+### Phase 3: Sample Code and Developer Documentation
+
+- **Goal**: Make it easy for third-party developers to build, test, and publish Cytoscape Web apps
+- **Checklist**: [implementation-checklist-phase3.md](checklists/implementation-checklist-phase3.md)
+
+| Milestone                            | Deliverables                                                                                                                     |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Step 3.0: App Developer Guide        | Zero-to-deploy walkthrough + Migration Guide (Phase 1→2); update examples root README                                           |
+| Step 3.1: API Reference              | Add `ResourceApi`, `AppIdContext`/`useAppContext()`, `AppContextApis` to Api.md; update error codes, lifecycle, CyWebApi sections |
+| Step 3.2: Enriched Examples           | Expand `hello-world` with ViewportApi, TableApi, ExportApi, ElementApi sections; migrate `network-workflows` to `resources[]`    |
+| Step 3.3: Starter Template Overhaul   | Fix id/name mismatch, add TODO markers, update README                                                                            |
+| Step 3.4: Package Documentation       | `@cytoscape-web/api-types` README fixes, CHANGELOG.md                                                                            |
+| Step 3.5: Cross-cutting Updates       | Update examples CLAUDE.md, rewrite patterns/README.md, clean up stale references                                                 |
+
+**Milestones (checkpoints):**
+
+| Checkpoint                    | Verification                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------- |
+| Guide published               | A new developer can create a working app from scratch following only the guide                 |
+| Reference complete            | Every public API function has description, parameters, return type, and example                |
+| Examples comprehensive        | `hello-world` exercises every API domain (all 10 + EventBus + ResourceApi)                   |
+| Template works out-of-the-box | `git clone` → `npm install` → `npm run dev` produces a working panel + menu item in < 5 min  |
+| Phase 3 complete              | All docs reviewed; example apps build against published `@cytoscape-web/api-types`            |
+
+### Phase 4: Platform Extensibility (TBD)
+
+Items deferred from earlier phases — each requires its own design document before implementation.
+
+- Dynamic app registration (URL-based loading, manifest validation)
+- Chrome Extension bridge (MCP Bridge Server + Adapter content script)
+- Expanded UI slots (`'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`)
+- Non-component resource registration (keyboard shortcuts, commands)
+- Inter-app communication protocol
+- Security sandbox evaluation
