@@ -317,7 +317,7 @@ exposes: {
   './ViewportApi':     './src/app-api/useViewportApi.ts',
   './ExportApi':       './src/app-api/useExportApi.ts',
   './WorkspaceApi':    './src/app-api/useWorkspaceApi.ts',
-  // ContextMenuApi expose removed in Phase 2 — access via AppContext.apis.contextMenu
+  './AppIdContext':    './src/app-api/AppIdContext.tsx',
   './EventBus':        './src/app-api/useCyWebEvent.ts',
   // Note: window.CyWebApi is NOT a Module Federation expose —
   // it is assigned globally in src/init.tsx for non-React consumers.
