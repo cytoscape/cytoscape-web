@@ -4,17 +4,24 @@ import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
 import { useEffect, useRef, useState } from 'react'
 
-import { logApp } from '../../../debug'
+import { AppIdProvider } from '../../../app-api/AppIdContext'
+import { CyWebApi } from '../../../app-api/core'
+import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { createResourceApi } from '../../../app-api/core/resourceApi'
+import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { appRegistry } from '../../../data/hooks/stores/useAppManager'
 import { useServiceTaskRunner } from '../../../data/hooks/useServiceTaskRunner'
+import { logApp } from '../../../debug'
 import { ComponentType, CyApp } from '../../../models/AppModel'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
+import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import ExternalComponent from '../../AppManager/ExternalComponent'
+import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { DropdownMenuProps } from '../DropdownMenuProps'
@@ -171,11 +178,74 @@ export const AppMenu = (props: DropdownMenuProps) => {
     menuRefCurrent.hide()
   }, [])
 
+  // Read runtime menu resources from AppResourceStore
+  const runtimeResources = useAppResourceStore((state) => state.resources)
+
   const createAppMenu = (): MenuItem[] => {
-    const appMenuItems: MenuItem[] = componentList.map(
-      ([appId, component], index) => {
-        // Look up the live React.lazy from appRegistry (not frozen by Immer).
-        // The store only holds serialisable {id, type} metadata.
+    // 1. Collect runtime 'apps-menu' resources
+    const runtimeMenuItems: MenuItem[] = runtimeResources
+      .filter((r: RegisteredAppResource) => {
+        if (r.slot !== 'apps-menu') return false
+        if (apps[r.appId]?.status !== AppStatus.Active) return false
+        return true
+      })
+      .map((r: RegisteredAppResource) => {
+        const MenuComponent = r.component as React.ComponentType<any>
+        const perAppApis = {
+          ...CyWebApi,
+          resource: createResourceApi(r.appId),
+          contextMenu: createContextMenuApi(r.appId),
+        }
+
+        const wrapped = r.closeOnAction ? (
+          <div
+            key={`${r.appId}::apps-menu::${r.id}`}
+            onClick={() => {
+              queueMicrotask(() => handleClose())
+            }}
+          >
+            <AppIdProvider value={{ appId: r.appId, apis: perAppApis }}>
+              <PluginErrorBoundary
+                appId={r.appId}
+                slot="apps-menu"
+                customFallback={r.errorFallback as any}
+              >
+                <MenuComponent handleClose={handleClose} />
+              </PluginErrorBoundary>
+            </AppIdProvider>
+          </div>
+        ) : (
+          <AppIdProvider
+            key={`${r.appId}::apps-menu::${r.id}`}
+            value={{ appId: r.appId, apis: perAppApis }}
+          >
+            <PluginErrorBoundary
+              appId={r.appId}
+              slot="apps-menu"
+              customFallback={r.errorFallback as any}
+            >
+              <MenuComponent handleClose={handleClose} />
+            </PluginErrorBoundary>
+          </AppIdProvider>
+        )
+
+        return { template: wrapped } as MenuItem
+      })
+
+    // Track runtime ids for deduplication
+    const runtimeIds = new Set(
+      runtimeResources
+        .filter((r) => r.slot === 'apps-menu')
+        .map((r) => `${r.appId}::apps-menu::${r.id}`),
+    )
+
+    // 2. Collect manifest menu items (legacy CyApp.components)
+    const manifestMenuItems: MenuItem[] = componentList
+      .filter(([appId, component]) => {
+        const manifestId = `${appId}::apps-menu::${component.id}`
+        return !runtimeIds.has(manifestId)
+      })
+      .map(([appId, component], index) => {
         const freshComponent = appRegistry
           .get(appId)
           ?.components?.find((c) => c.id === component.id)
@@ -187,10 +257,10 @@ export const AppMenu = (props: DropdownMenuProps) => {
           template: <MenuComponent key={index} handleClose={handleClose} />,
         }
         return menuItem
-      },
-    )
+      })
 
-    return appMenuItems
+    // 3. Merge: runtime first, then manifest
+    return [...runtimeMenuItems, ...manifestMenuItems]
   }
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
