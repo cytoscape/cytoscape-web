@@ -521,13 +521,16 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         )
       }
       // Runtime type check: catch non-component values early (before render).
-      // React components are functions (function components) or objects with
-      // a render method (class components). This catches common mistakes like
-      // passing a string, number, or plain object.
-      if (typeof options.component !== 'function') {
+      // React components are functions (function/class components) or objects
+      // (React.lazy, React.memo, React.forwardRef). This catches common
+      // mistakes like passing a string, number, or null.
+      if (
+        typeof options.component !== 'function' &&
+        (typeof options.component !== 'object' || options.component === null)
+      ) {
         return fail(
           ApiErrorCode.InvalidInput,
-          `component must be a React component (function), got ${typeof options.component}`,
+          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
         )
       }
       const store = useAppResourceStore.getState()
@@ -2692,8 +2695,9 @@ future extensions to the App resource system.
    per-app `apis` object.
 
 10. **Validate `component` at registration time.** Both `registerPanel` and
-    `registerMenuItem` must check `typeof options.component === 'function'`
-    before storing. Return `fail(InvalidInput)` with a descriptive message if
+    `registerMenuItem` must verify that `component` is a function or non-null
+    object (to accept `React.lazy`, `React.memo`, `React.forwardRef`).
+    Return `fail(InvalidInput)` with a descriptive message if
     the check fails.
 
 11. **Pass `customFallback` to `PluginErrorBoundary` when present.** If a

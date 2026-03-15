@@ -24,6 +24,18 @@ const stripLazyRefs = (
   return components.map(({ component: _lazy, ...rest }) => rest)
 }
 
+/**
+ * Return a copy of the CyApp with `resources` removed.
+ * `resources` contains React.lazy() components that must not be frozen
+ * by Immer. The live `resources` array is available from the original
+ * CyApp in `appRegistry` and is processed by `processDeclarativeResources`
+ * in useAppManager.ts (which stores them in the Immer-free AppResourceStore).
+ */
+const stripResources = (app: CyApp): Omit<CyApp, 'resources'> => {
+  const { resources: _resources, ...rest } = app as any
+  return rest
+}
+
 export interface AppState {
   apps: Record<string, CyApp>
   serviceApps: Record<string, ServiceApp>
@@ -74,8 +86,9 @@ export const add = (
   app: CyApp,
   cachedApp: CyApp | undefined,
 ): AppState => {
-  // Strip React.lazy refs so Immer never freezes them
+  // Strip React.lazy refs and resources so Immer never freezes them
   const safeComponents = stripLazyRefs(app.components ?? [])
+  const safeApp = stripResources(app)
 
   // Already in store — refresh components & version from the live module
   if (state.apps[app.id] !== undefined) {
@@ -113,7 +126,7 @@ export const add = (
     apps: {
       ...state.apps,
       [app.id]: {
-        ...app,
+        ...safeApp,
         components: safeComponents,
         status: app.status || AppStatus.Inactive,
       },

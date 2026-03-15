@@ -155,18 +155,38 @@ describe('createResourceApi', () => {
       }
     })
 
-    it('returns fail(InvalidInput) for non-function component', () => {
+    it('returns fail(InvalidInput) for primitive component (string)', () => {
       const api = createResourceApi('app1')
       const result = api.registerPanel({
         id: 'P1',
-        component: 'not-a-function' as any,
+        component: 'not-a-component' as any,
       })
 
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(result.error.code).toBe('INVALID_INPUT')
-        expect(result.error.message).toContain('function')
       }
+    })
+
+    it('returns fail(InvalidInput) for null component', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerPanel({
+        id: 'P1',
+        component: null as any,
+      })
+
+      expect(result.success).toBe(false)
+    })
+
+    it('accepts React.lazy-like object component (typeof === object)', () => {
+      const lazyLike = { $$typeof: Symbol('react.lazy'), _payload: {} }
+      const api = createResourceApi('app1')
+      const result = api.registerPanel({
+        id: 'P1',
+        component: lazyLike as any,
+      })
+
+      expect(result.success).toBe(true)
     })
 
     it('upserts on second call with same id (no error)', () => {
@@ -263,7 +283,7 @@ describe('createResourceApi', () => {
       }
     })
 
-    it('returns fail(InvalidInput) for non-function component', () => {
+    it('returns fail(InvalidInput) for primitive component (number)', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({
         id: 'M1',

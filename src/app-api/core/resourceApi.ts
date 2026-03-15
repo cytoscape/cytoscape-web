@@ -24,6 +24,19 @@ import type {
 const SUPPORTED_SLOTS: ResourceSlot[] = ['right-panel', 'apps-menu']
 
 /**
+ * Check if a value is a valid React component type.
+ * Accepts function components, class components, React.lazy(), React.memo(),
+ * and React.forwardRef() — all of which are either functions or non-null objects.
+ * Rejects primitives (string, number, boolean, null, undefined).
+ */
+function isValidComponent(value: unknown): boolean {
+  return (
+    typeof value === 'function' ||
+    (typeof value === 'object' && value !== null)
+  )
+}
+
+/**
  * Create a per-app ResourceApi instance bound to the given appId.
  * Prevents apps from registering resources under another app's identity.
  */
@@ -42,10 +55,10 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           'id is required and must be non-empty',
         )
       }
-      if (typeof options.component !== 'function') {
+      if (!isValidComponent(options.component)) {
         return fail(
           ApiErrorCode.InvalidInput,
-          `component must be a React component (function), got ${typeof options.component}`,
+          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
         )
       }
       const store = useAppResourceStore.getState()
@@ -90,10 +103,10 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           'id is required and must be non-empty',
         )
       }
-      if (typeof options.component !== 'function') {
+      if (!isValidComponent(options.component)) {
         return fail(
           ApiErrorCode.InvalidInput,
-          `component must be a React component (function), got ${typeof options.component}`,
+          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
         )
       }
       const store = useAppResourceStore.getState()
