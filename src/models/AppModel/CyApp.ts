@@ -33,8 +33,11 @@ export interface CyApp {
    */
   version?: string
 
-  // Name of components to be exposed via Module Federation
-  components: ComponentMetadata[]
+  /**
+   * Name of components to be exposed via Module Federation.
+   * @deprecated Prefer `resources` (declarative) or runtime registration via mount().
+   */
+  components?: ComponentMetadata[]
 
   // Current status of the app. Default is 'active', which is set by the host
   status?: AppStatus

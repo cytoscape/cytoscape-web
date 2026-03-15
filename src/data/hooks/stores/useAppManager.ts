@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { CyWebApi } from '../../../app-api/core'
+import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { createResourceApi } from '../../../app-api/core/resourceApi'
 import type { AppContextApis } from '../../../app-api/types/AppContext'
+import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
+import type {
+  RegisterMenuItemOptions,
+  RegisterPanelOptions,
+} from '../../../app-api/types/AppResourceTypes'
 import appConfig from '../../../assets/apps.json'
 import { logApp } from '../../../debug'
 import { loadModule } from '../../../features/AppManager/ExternalComponent'
@@ -72,6 +79,41 @@ const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
 export const appRegistry = new Map<string, CyApp>(
   loadedApps.map((app) => [app.id, app]),
 )
+
+/**
+ * Build a per-app AppContextApis object. This extends CyWebApi with
+ * per-app resource and contextMenu factories bound to the given appId.
+ */
+function buildPerAppApis(appId: string): AppContextApis {
+  return {
+    ...CyWebApi,
+    resource: createResourceApi(appId),
+    contextMenu: createContextMenuApi(appId),
+  }
+}
+
+/**
+ * Process declarative `resources` on CyAppWithLifecycle. Registers each
+ * entry in AppResourceStore before mountApp is called, so declarative
+ * resources are available to renderers immediately.
+ */
+function processDeclarativeResources(cyApp: CyApp): void {
+  const lifecycle = cyApp as CyAppWithLifecycle
+  if (!lifecycle.resources || lifecycle.resources.length === 0) return
+
+  const resourceApi = createResourceApi(cyApp.id)
+  for (const entry of lifecycle.resources) {
+    if (entry.slot === 'right-panel') {
+      resourceApi.registerPanel(entry as RegisterPanelOptions)
+    } else if (entry.slot === 'apps-menu') {
+      resourceApi.registerMenuItem(entry as RegisterMenuItemOptions)
+    } else {
+      logApp.warn(
+        `[useAppManager]: Unsupported slot '${entry.slot}' in declarative resources for ${cyApp.id}`,
+      )
+    }
+  }
+}
 
 export const useAppManager = (): void => {
   const initRef = useRef<boolean>(false)
@@ -156,9 +198,10 @@ export const useAppManager = (): void => {
           if (!apps[appId]) {
             // Fresh registration — app not yet in store.
             registerApp(cyApp)
+            processDeclarativeResources(cyApp)
             void mountApp(
               cyApp,
-              { appId: cyApp.id, apis: CyWebApi as AppContextApis },
+              { appId: cyApp.id, apis: buildPerAppApis(cyApp.id) },
               mountedApps.current,
             )
           } else if (
@@ -171,9 +214,10 @@ export const useAppManager = (): void => {
             // Skip if the user had previously disabled this app — mounting must
             // only happen when the app is explicitly enabled (status !== Inactive).
             registerApp(cyApp)
+            processDeclarativeResources(cyApp)
             void mountApp(
               cyApp,
-              { appId: cyApp.id, apis: CyWebApi as AppContextApis },
+              { appId: cyApp.id, apis: buildPerAppApis(cyApp.id) },
               mountedApps.current,
             )
           } else if (
@@ -188,9 +232,10 @@ export const useAppManager = (): void => {
             !mountedApps.current.has(appId)
           ) {
             // User re-enabled the app via the UI — call mount() again.
+            processDeclarativeResources(cyApp)
             void mountApp(
               cyApp,
-              { appId, apis: CyWebApi as AppContextApis },
+              { appId, apis: buildPerAppApis(appId) },
               mountedApps.current,
             )
           }

@@ -75,7 +75,7 @@ export const add = (
   cachedApp: CyApp | undefined,
 ): AppState => {
   // Strip React.lazy refs so Immer never freezes them
-  const safeComponents = stripLazyRefs(app.components)
+  const safeComponents = stripLazyRefs(app.components ?? [])
 
   // Already in store — refresh components & version from the live module
   if (state.apps[app.id] !== undefined) {
