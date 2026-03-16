@@ -368,6 +368,7 @@ _Design: app-api-specification.md §1.5.11_
     - Call `ContextMenuItemStore.getState().removeItem(itemId)`
     - Return `ok()`
 - [x]Create `src/app-api/useContextMenuApi.ts` — thin React hook: `export const useContextMenuApi = (): ContextMenuApi => contextMenuApi`
+  > **Phase 2 note:** Deleted in Step 2.3. Replaced by `createContextMenuApi(appId)` factory and anonymous singleton.
 - [x]Export types `ContextMenuItemConfig`, `ContextMenuTarget`, `ContextMenuApi` via `src/app-api/types/index.ts`
 - [x]Create `src/app-api/core/contextMenuApi.test.ts` — plain Jest tests (mock `ContextMenuItemStore`):
   - `addContextMenuItem` with valid label returns `ok({ itemId })`
@@ -376,9 +377,11 @@ _Design: app-api-specification.md §1.5.11_
   - `removeContextMenuItem` with known `itemId` removes item and returns `ok()`
   - `removeContextMenuItem` with unknown `itemId` returns `fail(ContextMenuItemNotFound)`
 - [x]Create `src/app-api/useContextMenuApi.test.ts` — trivial hook test: verifies hook returns core `contextMenuApi` object
+  > **Phase 2 note:** Deleted in Step 2.3 along with `useContextMenuApi.ts`.
 - [x]Modify `src/app-api/core/index.ts` — add `contextMenu: contextMenuApi` to `CyWebApi`
 - [x]Modify `src/app-api/types/AppContext.ts` — add `contextMenu: ContextMenuApi` to `AppContext.apis` type
 - [x]Modify `webpack.config.js` — add `'./ContextMenuApi': './src/app-api/useContextMenuApi.ts'`
+  > **Phase 2 note:** Expose removed in Step 2.3. Context menu API is now accessed via `AppContext.apis.contextMenu` (per-app) or `window.CyWebApi.contextMenu` (anonymous singleton).
 
 ### Deliverables — Host UI wiring
 
@@ -472,6 +475,7 @@ to be complete before Step 2 is closed.
 - [x]`npm run test:unit` — all tests pass
 - [x]`npm run build` — production build succeeds
 - [x]All 12 webpack `exposes` entries present: `ApiTypes`, `ElementApi`, `NetworkApi`, `SelectionApi`, `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`, `WorkspaceApi`, `ContextMenuApi`, `EventBus`
+  > **Phase 2 note:** Now 12 entries (not 13): `ContextMenuApi` was removed and `AppIdContext` was added in Phase 2.
 - [x]`AppContext.apis` typed as `CyWebApiType` (same object as `window.CyWebApi` at runtime)
 - [x]Legacy 12 store exposures + 2 task hook exposures still present (backward compatible)
 - [x]`src/app-api/api_docs/Api.md` covers all 10 app API hooks + event bus + lifecycle
