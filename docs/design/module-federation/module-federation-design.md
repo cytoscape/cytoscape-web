@@ -871,6 +871,19 @@ Focus: make it easy for third-party developers to build and publish Cytoscape We
 9. **Package Documentation** (Step 3.4) — `@cytoscape-web/api-types` README fixes, CHANGELOG.md
 10. **Cross-cutting Updates** (Step 3.5) — update examples CLAUDE.md, rewrite patterns/README.md with App API hooks, clean up stale references
 
+### Beta Release (between Phase 3 and Phase 4)
+
+Before proceeding to Phase 4, publish the first beta release of the App API.
+
+**Pre-release tasks:**
+
+- [ ] Merge `new-app-api` branch into `development`
+- [ ] Update all GitHub URL links in `cytoscape-web-app-examples/README.md` and `guides/architecture-overview.md`: change branch from `new-app-api` to `development`
+- [ ] Bump `@cytoscape-web/api-types` to `0.1.0-beta.0` (drop alpha tag)
+- [ ] Update `apiVersion` in all example apps if needed
+- [ ] Tag release in both repositories
+- [ ] Publish beta announcement with link to developer documentation
+
 ### Phase 4: Platform Extensibility
 
 Items deferred from earlier phases — each requires its own design document.
