@@ -55,25 +55,85 @@ like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in Typ
 
 ## Usage examples
 
-### Module Federation (React plugin)
+### Declarative resource registration (recommended)
+
+```typescript
+import { lazy } from 'react'
+import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
+
+export const MyApp: CyAppWithLifecycle = {
+  id: 'myApp',
+  name: 'My App',
+  version: '1.0.0',
+  apiVersion: '1.0',
+
+  // Panels and menu items — host registers these automatically
+  resources: [
+    {
+      slot: 'right-panel',
+      id: 'MainPanel',
+      title: 'My Panel',
+      component: lazy(() => import('./components/MainPanel')),
+    },
+    {
+      slot: 'apps-menu',
+      id: 'QuickAction',
+      title: 'Quick Action',
+      component: lazy(() => import('./components/QuickAction')),
+      closeOnAction: true,
+    },
+  ],
+
+  // Context menus need apis access, so they go in mount()
+  mount({ apis }) {
+    apis.contextMenu.addContextMenuItem({
+      label: 'Highlight node',
+      targetTypes: ['node'],
+      handler: ({ id, networkId }) => {
+        apis.visualStyle.setBypass(networkId, 'NODE_BACKGROUND_COLOR', { [id]: '#ff0000' })
+      },
+    })
+  },
+}
+```
+
+### Module Federation (React component)
 
 ```typescript
 import { useElementApi } from 'cyweb/ElementApi'
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 import { useCyWebEvent } from 'cyweb/EventBus'
 
 function MyPanel() {
   const element = useElementApi()
+  const workspace = useWorkspaceApi()
 
   useCyWebEvent('network:switched', ({ networkId }) => {
     console.log('switched to', networkId)
   })
 
   const handleAdd = () => {
-    const result = element.createNode(networkId, { x: 100, y: 100 })
+    const net = workspace.getCurrentNetworkId()
+    if (!net.success) return
+    const result = element.createNode(net.data.networkId, [100, 200])
     if (result.success) {
       console.log('created node', result.data.nodeId)
     }
   }
+}
+```
+
+### Per-app context in plugin components
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+
+function MyComponent() {
+  const ctx = useAppContext()
+  if (!ctx) return null
+
+  // ctx.apis has all 10 domain APIs + resource + contextMenu (per-app)
+  const resources = ctx.apis.resource.getRegisteredResources()
 }
 ```
 
@@ -90,24 +150,9 @@ window.addEventListener('cywebapi:ready', () => {
 })
 ```
 
-### Context menu registration
-
-> `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
-> Use `AppContext.apis.contextMenu` in `mount()` or `useAppContext().apis.contextMenu`
-> in plugin components. See the App Resource Registration spec for details.
-
-```typescript
-// In mount() — items are auto-cleaned when the app is disabled
-mount({ apis }) {
-  apis.contextMenu.addContextMenuItem({
-    label: 'Highlight node',
-    targetTypes: ['node'],
-    handler: ({ id, networkId }) => {
-      console.log('clicked node', id, 'in network', networkId)
-    },
-  })
-}
-```
+> **Note:** `window.CyWebApi` is typed as `CyWebApiType` which does NOT include
+> `resource` or per-app `contextMenu`. These are only available via `AppContextApis`
+> inside `mount()` or `useAppContext()`.
 
 ## Available `cyweb/*` remotes
 
