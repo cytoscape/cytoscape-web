@@ -1769,7 +1769,7 @@ export default function TableBrowser(props: {
             '& button': {
               minHeight: TABS_HEIGHT,
               height: TABS_HEIGHT,
-              width: 200,
+              width: 200, // Reverting to original width as it fits better with counts
             },
             height: TABS_HEIGHT,
             minHeight: TABS_HEIGHT,
@@ -1777,11 +1777,21 @@ export default function TableBrowser(props: {
         >
           <Tab
             data-testid="table-browser-nodes-tab"
-            label={<Typography variant="caption">Nodes</Typography>}
+            label={
+              <Typography variant="caption">
+                Nodes
+                {selectedNodes.length > 0 ? ` (${selectedNodes.length})` : ''}
+              </Typography>
+            }
           />
           <Tab
             data-testid="table-browser-edges-tab"
-            label={<Typography variant="caption">Edges</Typography>}
+            label={
+              <Typography variant="caption">
+                Edges
+                {selectedEdges.length > 0 ? ` (${selectedEdges.length})` : ''}
+              </Typography>
+            }
           />
           <Tab
             data-testid="table-browser-network-tab"
