@@ -21,7 +21,10 @@ import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { inputColumnFilterFn } from '../../../models/AppModel/impl'
+import {
+  inputColumnFilterFn,
+  validateParameter,
+} from '../../../models/AppModel/impl'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
 import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
@@ -155,7 +158,9 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
 
   const renderParameter = (parameter: ServiceAppParameter) => {
     switch (parameter.type) {
-      case ParameterUiType.Text:
+      case ParameterUiType.Text: {
+        const value = parameter.value ?? parameter.defaultValue ?? ''
+        const isValid = validateParameter(parameter)
         return (
           <Tooltip title={parameter.description ?? ''}>
             <Box
@@ -167,10 +172,11 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
             >
               <Typography>{parameter.displayName}</Typography>
               <TextField
+                error={!isValid}
+                helperText={!isValid ? parameter.validationHelp : ''}
                 size="small"
                 label={parameter.displayName}
-                value={parameter.value ?? parameter.defaultValue ?? ''}
-                defaultValue={parameter.defaultValue ?? ''}
+                value={value}
                 onChange={(e) =>
                   updateServiceParameter(
                     app.url,
@@ -182,6 +188,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
             </Box>
           </Tooltip>
         )
+      }
       case ParameterUiType.DropDown:
         return (
           <Tooltip title={parameter.description ?? ''}>
@@ -375,6 +382,14 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   if (serviceInputDefinition?.inputNetwork) {
     serviceCanBeRun = serviceCanBeRun && numNetworks > 0
     submitTooltip = "Unable to run service. There isn't an active network."
+  }
+
+  const allParametersValid =
+    app.parameters?.every((parameter) => validateParameter(parameter)) ?? true
+
+  if (!allParametersValid) {
+    serviceCanBeRun = false
+    submitTooltip = 'Please fix the validation errors in the parameters.'
   }
 
   const inputDefinition = inputTypeIsElement ? (
