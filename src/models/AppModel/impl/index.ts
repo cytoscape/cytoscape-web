@@ -1,5 +1,7 @@
 import { Column, ValueTypeName } from '../../TableModel'
 import { InputColumn } from '../ServiceInputDefinition'
+import { ServiceAppParameter } from '../ServiceAppParameter'
+import { ParameterUiType } from '../ParameterUiType'
 
 export const isList = (vtn: ValueTypeName): boolean => {
   return vtn.includes('list_of')
@@ -41,4 +43,25 @@ export const inputColumnFilterFn = (
       return column.type === inputColumn.dataType
     }
   }
+}
+
+export const validateParameter = (parameter: ServiceAppParameter): boolean => {
+  if (parameter.type === ParameterUiType.Text) {
+    const value = parameter.value ?? parameter.defaultValue ?? ''
+    const { validationRegex } = parameter
+
+    if (
+      validationRegex !== undefined &&
+      validationRegex !== null &&
+      validationRegex !== ''
+    ) {
+      try {
+        const regex = new RegExp(validationRegex)
+        return regex.test(value)
+      } catch (e) {
+        return true
+      }
+    }
+  }
+  return true
 }
