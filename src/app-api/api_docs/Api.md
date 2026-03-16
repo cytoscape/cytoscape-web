@@ -761,11 +761,12 @@ export const MyApp: CyAppWithLifecycle = {
     }
   },
 
+  // unmount() is optional — context menu items registered via
+  // AppContext.apis.contextMenu are automatically cleaned up when
+  // the app is disabled. Only add unmount() if you have manual
+  // event listeners to remove.
   unmount() {
-    if (menuItemId !== undefined) {
-      context.apis.contextMenu.removeContextMenuItem(menuItemId)
-      menuItemId = undefined
-    }
+    // No need to remove context menu items — auto-cleaned by host.
   },
 }
 ```
@@ -807,17 +808,18 @@ interface ResourceDeclaration {
 }
 
 interface RegisteredResourceInfo {
-  id: string
-  slot: ResourceSlot
-  title: string
   resourceId: string   // identity triple: appId::slot::id
+  slot: ResourceSlot
+  id: string
+  title?: string
   order?: number
+  requires?: { network?: boolean; selection?: boolean }
 }
 
 interface ResourceVisibilityResult {
   registered: boolean
   visible: boolean
-  reason?: string   // e.g. 'app-inactive', 'requires-network', 'requires-selection'
+  hiddenReason?: 'app-inactive' | 'requires-network' | 'requires-selection' | 'slot-not-rendered'
 }
 ```
 
