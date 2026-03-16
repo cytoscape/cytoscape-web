@@ -27,4 +27,5 @@ yarn.lock
 /playwright-report/
 /playwright/.cache/
 /notes/
-/_NOTES/
+test/playwright/baselines/
+test/playwright/outputs/
