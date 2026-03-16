@@ -66,7 +66,7 @@ describe('ApiResult helpers', () => {
   describe('ApiErrorCode', () => {
     it('has the expected number of error codes', () => {
       const codes = Object.keys(ApiErrorCode)
-      expect(codes.length).toBe(10)
+      expect(codes.length).toBe(11)
     })
 
     it('has unique string values', () => {
