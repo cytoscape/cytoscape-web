@@ -83,7 +83,7 @@ function MyPanel() {
 window.addEventListener('cywebapi:ready', () => {
   const api = window.CyWebApi
 
-  const result = api.network.getCurrentNetwork()
+  const result = api.workspace.getCurrentNetworkId()
   if (result.success) {
     console.log('current network:', result.data.networkId)
   }

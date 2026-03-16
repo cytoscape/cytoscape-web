@@ -713,8 +713,13 @@ const useWorkspaceApi: () => WorkspaceApi // React hook — returns workspaceApi
 
 Extends the host's context menu with app-registered items. Apps can add items to node, edge, or canvas background context menus and remove them when the app unmounts.
 
+> **Phase 2 update:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were deleted.
+> Context menu access is now per-app via `AppContext.apis.contextMenu` in `mount()` or
+> `useAppContext().apis.contextMenu` in plugin components. The anonymous singleton on
+> `window.CyWebApi.contextMenu` remains for non-React consumers.
+
 ```typescript
-// src/app-api/useContextMenuApi.ts
+// src/app-api/core/contextMenuApi.ts
 
 interface ContextMenuTarget {
   type: 'node' | 'edge' | 'canvas'
@@ -733,78 +738,33 @@ interface ContextMenuItemConfig {
    * @default ['node', 'edge']
    */
   targetTypes?: Array<'node' | 'edge' | 'canvas'>
-  /** Optional icon rendered alongside the label (URL or data URI). */
-  icon?: string
 }
 
 interface ContextMenuApi {
-  /**
-   * Registers a new context menu item.
-   * Returns a unique itemId that can be used to remove the item.
-   * fail(InvalidInput) if label is empty or whitespace-only.
-   */
-  addContextMenuItem(
-    config: ContextMenuItemConfig,
-  ): ApiResult<{ itemId: string }>
-
-  /**
-   * Removes a previously registered context menu item by its itemId.
-   * fail(ContextMenuItemNotFound) if the itemId is unknown.
-   */
+  addContextMenuItem(config: ContextMenuItemConfig): ApiResult<{ itemId: string }>
   removeContextMenuItem(itemId: string): ApiResult
 }
 
-const useContextMenuApi: () => ContextMenuApi // React hook — returns contextMenuApi from core/
+// Per-app factory — items carry bound appId, auto-cleaned on app disable
+function createContextMenuApi(appId: string): ContextMenuApi
+
+// Anonymous singleton — for window.CyWebApi only (no auto-cleanup)
+const contextMenuApi: ContextMenuApi
 ```
 
-**Implementation location:** `src/app-api/core/contextMenuApi.ts`
+**Two access paths:**
 
-**New error code:** `ContextMenuItemNotFound = 'CONTEXT_MENU_ITEM_NOT_FOUND'` — add to `ApiErrorCode` in `src/app-api/types/ApiResult.ts`.
+| Path | Factory | Auto-cleanup | Use case |
+|------|---------|-------------|----------|
+| `context.apis.contextMenu` | `createContextMenuApi(appId)` | Yes — `removeAllByAppId` on disable | Plugin apps in `mount()` or components |
+| `window.CyWebApi.contextMenu` | anonymous singleton | No — items persist until explicit removal | Browser console, extensions |
 
-**Host-side requirement — `ContextMenuItemStore`:**
+Items registered via the per-app factory carry `appId` and are automatically
+removed when the app is disabled (via `AppCleanupRegistry`). Explicit removal
+in `unmount()` is redundant but harmless.
 
-A new Zustand store (`src/data/hooks/stores/ContextMenuItemStore.ts`) must be created to hold the registry:
-
-```typescript
-interface RegisteredContextMenuItem {
-  itemId: string
-  label: string
-  handler: (target: ContextMenuTarget) => void
-  targetTypes: Array<'node' | 'edge' | 'canvas'>
-  icon?: string
-}
-
-interface ContextMenuItemStoreState {
-  items: RegisteredContextMenuItem[]
-  addItem(item: RegisteredContextMenuItem): void
-  removeItem(itemId: string): void
-}
-```
-
-The existing host context menu components (in `src/features/`) must be updated to read from `ContextMenuItemStore` and render app-registered items as additional menu entries below the built-in items. Built-in items are unaffected.
-
-**Implementation strategy (core functions — no React, uses `.getState()`):**
-
-- **`addContextMenuItem`**: Validates `config.label.trim() !== ''`. Generates a UUID `itemId`. Inserts a `RegisteredContextMenuItem` entry into `ContextMenuItemStore` via `.getState().addItem(...)`. Returns `ok({ itemId })`.
-- **`removeContextMenuItem`**: Looks up the entry by `itemId` in `ContextMenuItemStore.getState().items`. Returns `fail(ContextMenuItemNotFound, ...)` if not found. Otherwise calls `.getState().removeItem(itemId)` and returns `ok()`.
-
-**Typical lifecycle pattern (app-side):**
-
-```typescript
-// In CyAppWithLifecycle.mount(context):
-const { itemId } = context.apis.contextMenu.addContextMenuItem({
-  label: 'Expand Pathway',
-  handler: (target) => { /* ... */ },
-  targetTypes: ['node'],
-}).data
-
-// In CyAppWithLifecycle.unmount():
-context.apis.contextMenu.removeContextMenuItem(itemId)
-```
-
-Apps that call `addContextMenuItem` in `mount()` **must** call `removeContextMenuItem` in `unmount()` to avoid leaving orphaned items in the menu after the app is deactivated.
-
-**Webpack entry:** Add `'./ContextMenuApi': './src/app-api/useContextMenuApi.ts'` to `ModuleFederationPlugin.exposes` in `webpack.config.js`.
+**Host store:** `ContextMenuItemStore` has `removeAllByAppId(appId)` which skips
+items with `appId === undefined` (anonymous singleton items).
 
 ### 1.6 Sync/Async Policy
 
@@ -1059,7 +1019,7 @@ plain Jest tests) and `src/app-api/use<Domain>Api.ts` (thin hook wrapper).
 | 6     | Workspace API               | `src/app-api/core/workspaceApi.ts`, `src/app-api/useWorkspaceApi.ts`, add `workspace` to `CyWebApi`                        |
 | 1g    | App Lifecycle (Phase 1g)    | `src/data/hooks/stores/useAppManager.ts` wiring; `AppContext.apis` typed as `CyWebApiType`; `mount`/`unmount` tests        |
 | 1a+   | Element bypass              | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `core/elementApi.ts`                  |
-| 1h    | Context Menu API (Phase 1h) | `src/data/hooks/stores/ContextMenuItemStore.ts`; `core/contextMenuApi.ts`; `useContextMenuApi.ts`; host UI wiring          |
+| 1h    | Context Menu API (Phase 1h) | `src/data/hooks/stores/ContextMenuItemStore.ts`; `core/contextMenuApi.ts` (factory + singleton); host UI wiring. `useContextMenuApi.ts` deleted in Phase 2. |
 | 7     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`                                       |
 
 ### 2.7 `window.CyWebApi` Global API

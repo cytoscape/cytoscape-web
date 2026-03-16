@@ -6,8 +6,9 @@ The app API (`src/app-api/`) is the sole public API for external apps loaded via
 Module Federation. It provides a stable contract independent of internal store and
 hook implementations.
 
-The API is organized into **10 domain namespaces** (Phase 1a–1h), an **Event Bus**
-(useCyWebEvent), and an **App Lifecycle** interface (Phase 1g).
+The API is organized into **10 domain namespaces** (Phase 1a–1f), a **Context Menu
+API** (per-app factory), a **Resource Registration API** (Phase 2), an **Event Bus**
+(useCyWebEvent), and an **App Lifecycle** interface with declarative resource support.
 
 ## Result Convention
 
@@ -32,6 +33,7 @@ App API hooks **never** throw exceptions across the API boundary.
 | `FUNCTION_NOT_AVAILABLE`      | A renderer function (e.g., fit) is not registered yet  |
 | `NO_CURRENT_NETWORK`          | No network is currently selected in the workspace      |
 | `CONTEXT_MENU_ITEM_NOT_FOUND` | The specified context menu item ID does not exist      |
+| `RESOURCE_NOT_FOUND`          | The specified resource ID is not registered by this app |
 
 ## Module Federation Entry
 
@@ -770,6 +772,115 @@ export const MyApp: CyAppWithLifecycle = {
 
 ---
 
+## ResourceApi (`cyweb/AppIdContext`)
+
+Per-app resource registration API for panels and menu items. Available via
+`useAppContext().apis.resource` in plugin components or `context.apis.resource`
+in `mount()`. Not available on `window.CyWebApi`.
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+
+function MyComponent() {
+  const ctx = useAppContext()
+  if (!ctx) return null
+  const { resource } = ctx.apis
+  // resource.registerPanel(...), resource.getRegisteredResources(), etc.
+}
+```
+
+### Types
+
+```typescript
+type ResourceSlot = 'right-panel' | 'apps-menu'
+
+interface ResourceDeclaration {
+  slot: ResourceSlot
+  id: string
+  title?: string
+  order?: number
+  group?: string
+  requires?: { network?: boolean; selection?: boolean }
+  component: React.ComponentType<any>
+  errorFallback?: React.ComponentType<{ error: Error; resetErrorBoundary: () => void }>
+  closeOnAction?: boolean   // apps-menu only
+}
+
+interface RegisteredResourceInfo {
+  id: string
+  slot: ResourceSlot
+  title: string
+  resourceId: string   // identity triple: appId::slot::id
+  order?: number
+}
+
+interface ResourceVisibilityResult {
+  registered: boolean
+  visible: boolean
+  reason?: string   // e.g. 'app-inactive', 'requires-network', 'requires-selection'
+}
+```
+
+### Methods
+
+#### `getSupportedSlots(): ResourceSlot[]`
+
+Returns the slots the host supports. Currently `['right-panel', 'apps-menu']`.
+
+#### `registerPanel(options): ApiResult<{ resourceId: string }>`
+
+Registers a panel in the `'right-panel'` slot. Uses upsert semantics: if a
+panel with the same `id` is already registered by this app, it is replaced
+in place (preserving tab selection).
+
+| Error Code      | Condition                                    |
+| --------------- | -------------------------------------------- |
+| `INVALID_INPUT` | `id` empty, `component` not a valid React type |
+
+#### `unregisterPanel(panelId): ApiResult`
+
+Removes a panel. Returns `RESOURCE_NOT_FOUND` if the panel is not registered.
+
+#### `registerMenuItem(options): ApiResult<{ resourceId: string }>`
+
+Registers a menu item in the `'apps-menu'` slot. Uses upsert semantics.
+
+#### `unregisterMenuItem(menuItemId): ApiResult`
+
+Removes a menu item.
+
+#### `unregisterAll(): ApiResult`
+
+Removes all resources registered by this app.
+
+#### `registerAll(entries): ApiResult<{ registered, errors }>`
+
+Batch registration. Always returns `ok()`. Check `result.data.errors` for
+partial failures.
+
+```typescript
+const result = apis.resource.registerAll([
+  { slot: 'right-panel', id: 'Panel', component: MyPanel },
+  { slot: 'apps-menu', id: 'Menu', component: MyMenu },
+])
+if (result.success && result.data.errors.length > 0) {
+  console.warn('Partial failures:', result.data.errors)
+}
+```
+
+#### `getRegisteredResources(): RegisteredResourceInfo[]`
+
+Returns all resources registered by this app. Useful for debugging.
+
+#### `getResourceVisibility(id): ResourceVisibilityResult`
+
+Returns the visibility evaluation for a specific resource. Evaluates:
+1. App active status
+2. `requires.network` — hidden when no network is loaded
+3. `requires.selection` — hidden when nothing is selected
+
+---
+
 ## Event Bus (`cyweb/EventBus`)
 
 The Event Bus bridges Cytoscape Web's internal Zustand store mutations to typed
@@ -1004,28 +1115,47 @@ window.addEventListener('cywebapi:ready', () => {
 
 ## App Lifecycle
 
-Phase 1g introduced an optional lifecycle API for external apps that need to run
-initialization logic outside of React components.
-
 ### `AppContext`
 
 Passed to `mount()` when the app is activated:
 
 ```typescript
 interface AppContext {
-  readonly appId: string       // unique ID of this app instance
-  readonly apis: CyWebApiType  // same object as window.CyWebApi at runtime
+  readonly appId: string          // unique ID of this app instance
+  readonly apis: AppContextApis   // per-app APIs (extends CyWebApiType)
 }
 ```
 
+### `AppContextApis`
+
+Per-app API object that extends `CyWebApiType` with additional per-app capabilities:
+
+```typescript
+interface AppContextApis extends CyWebApiType {
+  readonly resource: ResourceApi       // per-app resource registration
+  readonly contextMenu: ContextMenuApi // per-app, auto-cleaned on disable
+}
+```
+
+> **Note:** `window.CyWebApi` is typed as `CyWebApiType` and does NOT include
+> `resource`. Resource registration requires the per-app context available in
+> `mount()` or via `useAppContext()`.
+
 ### `CyAppWithLifecycle`
 
-Extends the existing `CyApp` interface with optional lifecycle callbacks and metadata:
+Extends the existing `CyApp` interface with lifecycle callbacks, declarative
+resource registration, and metadata:
 
 ```typescript
 interface CyAppWithLifecycle extends CyApp {
-  /** Declared API version this app targets (e.g. '1.0'). Optional. */
+  /** Declared API version this app targets (e.g. '1.0'). */
   apiVersion?: string
+
+  /**
+   * Declarative resource registrations. The host registers these automatically
+   * when the app is loaded — no mount() needed.
+   */
+  resources?: ResourceDeclaration[]
 
   mount?(context: AppContext): void | Promise<void>
   unmount?(): void | Promise<void>
@@ -1040,70 +1170,84 @@ interface CyApp {
   name: string           // human-readable display name
   description?: string   // short description shown in the App Settings panel
   version?: string       // app's own semantic version (e.g. '1.2.0')
-  components: ComponentMetadata[]
+  /** @deprecated Prefer `resources` or runtime registration via mount(). */
+  components?: ComponentMetadata[]
   status?: AppStatus     // managed by host; do not set manually
 }
 ```
 
-- **`mount(context)`** — called after React components are registered. If it returns
-  a Promise, the host awaits it before marking the app as ready. Use it to
-  initialize data, subscribe to events, or call `CyWebApi` methods.
-- **`unmount()`** — called when the app is deactivated or the page is unloaded.
-  Must clean up all listeners, timers, DOM nodes, and async tasks. Always called,
-  even on page reload.
-- **`version`** — the app's own version string. Import from `package.json` to keep
-  it in sync automatically (requires `resolveJsonModule: true` in tsconfig).
-- **`apiVersion`** — the Cytoscape Web App API version this app targets. Reserved
-  for future compatibility checks; set to `'1.0'` for current apps.
+- **`resources`** — declarative registration of panels and menu items. The host
+  registers them before `mount()` is called. For dynamic registration, use
+  `apis.resource.registerPanel()` in `mount()`.
+- **`mount(context)`** — called after declarative resources are registered. If it
+  returns a Promise, the host awaits it. Use for context menus, event listeners,
+  and API-dependent initialization. If mount() throws, the host auto-cleans all
+  registered resources.
+- **`unmount()`** — called when the app is disabled or the page unloads. The host
+  calls `cleanupAllForApp()` before `unmount()`, so resources and context menu
+  items are already removed. Only manual cleanup (event listeners, timers) is needed.
+- **`version`** — import from `package.json` to keep in sync automatically.
+- **`apiVersion`** — reserved for future compatibility checks; set to `'1.0'`.
 
-Existing apps without these methods continue to work unchanged (backward-compatible).
+Existing apps without lifecycle methods continue to work unchanged.
 
 ### Example
 
 ```typescript
-import { ComponentType } from '@cytoscape-web/types'
-import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
-import packageJson from '../package.json'   // requires resolveJsonModule: true
-const { version } = packageJson            // destructure after default import (avoids webpack warning)
+import { lazy } from 'react'
+import type { CyAppWithLifecycle, AppContext } from '@cytoscape-web/api-types'
 
-let cleanup: (() => void) | undefined
+let _networkHandler: ((e: Event) => void) | null = null
 
 export const MyApp: CyAppWithLifecycle = {
-  // --- Core metadata (CyApp) ---
-  id: 'myApp',                      // unique, matches Module Federation name
+  id: 'myApp',
   name: 'My App',
   description: 'Short description shown in App Settings.',
-  version,                           // imported from package.json — stays in sync automatically
-  components: [
-    { id: 'MyPanel',    type: ComponentType.Panel },
-    { id: 'MyMenuItem', type: ComponentType.Menu },
+  version: '1.0.0',
+  apiVersion: '1.0',
+
+  // Declarative: panels and menu items
+  resources: [
+    {
+      slot: 'right-panel',
+      id: 'MainPanel',
+      title: 'My App',
+      component: lazy(() => import('./components/MainPanel')),
+    },
+    {
+      slot: 'apps-menu',
+      id: 'MyMenuItem',
+      title: 'My Action',
+      component: lazy(() => import('./components/MyMenuItem')),
+      closeOnAction: true,
+    },
   ],
 
-  // --- Lifecycle metadata (CyAppWithLifecycle) ---
-  apiVersion: '1.0',                 // Cytoscape Web App API version this app targets
-
-  // --- Lifecycle callbacks ---
+  // Imperative: context menus and event listeners
   mount(context: AppContext) {
     const { appId, apis } = context
 
-    // Example: read current networks on startup
-    const result = apis.workspace.getNetworkIds()
-    if (result.success) {
-      console.log(`[${appId}] Networks on mount:`, result.data.networkIds)
-    }
+    // Context menu items (auto-cleaned on disable)
+    apis.contextMenu.addContextMenuItem({
+      label: 'My App: Inspect',
+      targetTypes: ['node'],
+      handler: (ctx) => console.log(`[${appId}]`, ctx.id),
+    })
 
-    // Example: subscribe to events
-    const handler = (e: Event): void => {
-      const detail = (e as CustomEvent).detail
-      console.log(`[${appId}] Network switched:`, detail.networkId)
+    // Event listeners (manual cleanup in unmount)
+    _networkHandler = (e: Event) => {
+      const { networkId } = (e as CustomEvent).detail
+      console.log(`[${appId}] switched to`, networkId)
     }
-    window.addEventListener('network:switched', handler)
-    cleanup = () => window.removeEventListener('network:switched', handler)
+    window.addEventListener('network:switched', _networkHandler)
   },
 
   unmount() {
-    cleanup?.()
-    cleanup = undefined
+    // Only event listeners need manual cleanup
+    if (_networkHandler) {
+      window.removeEventListener('network:switched', _networkHandler)
+      _networkHandler = null
+    }
   },
 }
 ```
@@ -1137,4 +1281,6 @@ window.addEventListener('cywebapi:ready', () => {
 })
 ```
 
-The `apis` field of `AppContext` is the same object as `window.CyWebApi` at runtime.
+`AppContext.apis` extends `window.CyWebApi` with per-app `resource` and `contextMenu`
+fields. The 10 domain APIs (element, network, etc.) are shared; `resource` and the
+per-app `contextMenu` are exclusive to `AppContext.apis`.
