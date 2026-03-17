@@ -365,6 +365,7 @@ exposes: {
 | **Phase 1a+** (Element bypass)    | `src/app-api/core/elementApi.ts`, `src/app-api/core/visualStyleApi.ts`, app-api-spec §1.5.1 (CreateNodeOptions/CreateEdgeOptions)                                                                                                                                                                                                                        |
 | **Phase 1h** (Context Menu)       | `src/data/hooks/stores/` (any store for pattern), context menu components in `src/features/`, app-api-spec §1.5.11, `src/models/StoreModel/ContextMenuItemStoreModel.ts` (to be created)                                                                                                                                                                 |
 | **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                   |
+| **Phase 3.6** (Graph Traversal)   | `src/app-api/core/elementApi.ts` (getNodeIds, getEdgeIds, getConnectedEdges, getConnectedNodes, getOutgoers, getIncomers, getSuccessors, getPredecessors, getRoots, getLeaves), `src/app-api/api_docs/Api.md` §Graph Traversal                                                                                                                         |
 
 ## Parent Documents
 

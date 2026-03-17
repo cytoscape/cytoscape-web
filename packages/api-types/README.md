@@ -32,7 +32,7 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 | Export | Description |
 |--------|-------------|
 | `CyWebApiType` | Type of `window.CyWebApi` (10 domain API objects) |
-| `ElementApi` | Create/delete nodes and edges, apply visual bypasses |
+| `ElementApi` | Create/delete nodes and edges, visual bypasses, graph traversal queries |
 | `NetworkApi` | Create, delete, and switch networks |
 | `SelectionApi` | Read and modify node/edge selection state |
 | `ViewportApi` | Pan, zoom, and fit the viewport |

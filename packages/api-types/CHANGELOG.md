@@ -2,6 +2,19 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
+## 1.0.0-beta.0 (2026-03-17)
+
+### Added — Phase 3.6 (Graph Traversal API)
+
+- 10 read-only graph query methods on `ElementApi`:
+  `getNodeIds`, `getEdgeIds`, `getConnectedEdges`, `getConnectedNodes`,
+  `getOutgoers`, `getIncomers`, `getSuccessors`, `getPredecessors`,
+  `getRoots`, `getLeaves`
+
+### Changed
+
+- Version bumped from `0.1.0-alpha.4` to `1.0.0-beta.0` (pre-beta milestone)
+
 ## 0.1.0-alpha.4 (2026-03-16)
 
 ### Added — Phase 2 (App Resource Registration)

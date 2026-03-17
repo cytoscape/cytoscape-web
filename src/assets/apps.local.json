@@ -8,7 +8,7 @@
     "url": "http://localhost:7000/remoteEntry.js"
   },
   {
-    "name": "createNetwork",
+    "name": "template",
     "url": "http://localhost:5555/remoteEntry.js"
   }
 ]

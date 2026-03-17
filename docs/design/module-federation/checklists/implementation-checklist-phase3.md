@@ -204,7 +204,7 @@ core methods via `getInternalNetworkDataStore()`.
 
 ### Types
 
-- [ ] Add `ElementApi` method signatures to `src/app-api/types/ElementTypes.ts` or appropriate type file:
+- [x] Add `ElementApi` method signatures to `src/app-api/types/ElementTypes.ts` or appropriate type file:
   - `getNodeIds(networkId): ApiResult<{ nodeIds: IdType[] }>`
   - `getEdgeIds(networkId): ApiResult<{ edgeIds: IdType[] }>`
   - `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }>`
@@ -215,20 +215,20 @@ core methods via `getInternalNetworkDataStore()`.
   - `getPredecessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
   - `getRoots(networkId): ApiResult<{ nodeIds: IdType[] }>`
   - `getLeaves(networkId): ApiResult<{ nodeIds: IdType[] }>`
-- [ ] Export new types from `src/app-api/types/index.ts`
+- [x] Export new types from `src/app-api/types/index.ts`
 
 ### Core Implementation
 
-- [ ] Implement all 10 methods in `src/app-api/core/elementApi.ts`:
+- [x] Implement all 10 methods in `src/app-api/core/elementApi.ts`:
   - Use `getInternalNetworkDataStore(network)` to access cytoscape.js `Core`
   - Validate `networkId` exists (return `fail(NetworkNotFound)`)
   - For node-scoped methods, validate `nodeId` exists (return `fail(NodeNotFound)`)
   - Map cytoscape.js collections to plain ID arrays / `EdgeData` objects
-- [ ] Verify no React imports in core (framework-agnostic rule)
+- [x] Verify no React imports in core (framework-agnostic rule)
 
 ### Tests
 
-- [ ] Add tests to `src/app-api/core/elementApi.test.ts`:
+- [x] Add tests to `src/app-api/core/elementApi.test.ts`:
   - `getNodeIds` returns all node IDs
   - `getEdgeIds` returns all edge IDs
   - `getConnectedEdges` returns edges for a given node
@@ -242,16 +242,16 @@ core methods via `getInternalNetworkDataStore()`.
 
 ### Documentation
 
-- [ ] Add Graph Traversal section to `src/app-api/api_docs/Api.md`
-- [ ] Update `@cytoscape-web/api-types` package with new types
-- [ ] Update `guides/architecture-overview.md` Available APIs table if needed
+- [x] Add Graph Traversal section to `src/app-api/api_docs/Api.md`
+- [x] Update `@cytoscape-web/api-types` package with new types
+- [x] Update `guides/architecture-overview.md` Available APIs table if needed
 
 ### Verification
 
-- [ ] `npm run test:unit` — all tests pass
-- [ ] `npm run build` — host builds
-- [ ] `npm run build:api-types` — types package builds
-- [ ] Manual test: hello-world or dedicated example uses `getConnectedEdges`
+- [x] `npm run test:unit` — all tests pass
+- [x] `npm run build` — host builds
+- [x] `npm run build:api-types` — types package builds
+- [x] Manual test: project-template example uses `getConnectedNodes` in context menu
 
 ---
 
