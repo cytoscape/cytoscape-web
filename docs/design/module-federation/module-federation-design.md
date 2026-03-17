@@ -871,7 +871,34 @@ Focus: make it easy for third-party developers to build and publish Cytoscape We
 9. **Package Documentation** (Step 3.4) — `@cytoscape-web/api-types` README fixes, CHANGELOG.md
 10. **Cross-cutting Updates** (Step 3.5) — update examples CLAUDE.md, rewrite patterns/README.md with App API hooks, clean up stale references
 
-### Beta Release (between Phase 3 and Phase 4)
+### Pre-Beta: Graph Traversal API (Step 3.6)
+
+Add read-only graph query methods to `ElementApi`, wrapping cytoscape.js core
+methods via `getInternalNetworkDataStore()`. All methods follow the existing
+2-layer pattern (core function + React hook) and return `ApiResult<T>`.
+
+**New `ElementApi` methods (Group A — thin wrappers):**
+
+| Method | cytoscape.js | Returns |
+|--------|-------------|---------|
+| `getNodeIds(networkId)` | `cy.nodes()` | `{ nodeIds: IdType[] }` |
+| `getEdgeIds(networkId)` | `cy.edges()` | `{ edgeIds: IdType[] }` |
+| `getConnectedEdges(networkId, nodeId)` | `node.connectedEdges()` | `{ edges: EdgeData[] }` |
+| `getConnectedNodes(networkId, nodeId)` | `node.neighborhood().nodes()` | `{ nodeIds: IdType[] }` |
+| `getOutgoers(networkId, nodeId)` | `node.outgoers()` | `{ nodeIds: IdType[], edgeIds: IdType[] }` |
+| `getIncomers(networkId, nodeId)` | `node.incomers()` | `{ nodeIds: IdType[], edgeIds: IdType[] }` |
+| `getSuccessors(networkId, nodeId)` | `node.successors()` | `{ nodeIds: IdType[] }` |
+| `getPredecessors(networkId, nodeId)` | `node.predecessors()` | `{ nodeIds: IdType[] }` |
+| `getRoots(networkId)` | `cy.nodes().roots()` | `{ nodeIds: IdType[] }` |
+| `getLeaves(networkId)` | `cy.nodes().leaves()` | `{ nodeIds: IdType[] }` |
+
+**Motivation:** External developers building graph-manipulation apps (e.g.,
+pathway expand/collapse) need adjacency queries. The internal cytoscape.js
+instance already supports these operations; the App API simply exposes them.
+
+> Implementation checklist: [implementation-checklist-phase3.md § Step 3.6](checklists/implementation-checklist-phase3.md)
+
+### Beta Release (between Step 3.6 and Phase 4)
 
 Before proceeding to Phase 4, publish the first beta release of the App API.
 

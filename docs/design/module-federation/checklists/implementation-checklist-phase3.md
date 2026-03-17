@@ -195,6 +195,66 @@ _Goal: Make it easy for third-party developers to build, test, and publish Cytos
 
 ---
 
+## Step 3.6: Graph Traversal API (Pre-Beta)
+
+_Design: [module-federation-design.md § Pre-Beta: Graph Traversal API](../module-federation-design.md)_
+
+Add 10 read-only graph query methods to `ElementApi`, wrapping cytoscape.js
+core methods via `getInternalNetworkDataStore()`.
+
+### Types
+
+- [ ] Add `ElementApi` method signatures to `src/app-api/types/ElementTypes.ts` or appropriate type file:
+  - `getNodeIds(networkId): ApiResult<{ nodeIds: IdType[] }>`
+  - `getEdgeIds(networkId): ApiResult<{ edgeIds: IdType[] }>`
+  - `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }>`
+  - `getConnectedNodes(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+  - `getOutgoers(networkId, nodeId): ApiResult<{ nodeIds: IdType[], edgeIds: IdType[] }>`
+  - `getIncomers(networkId, nodeId): ApiResult<{ nodeIds: IdType[], edgeIds: IdType[] }>`
+  - `getSuccessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+  - `getPredecessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+  - `getRoots(networkId): ApiResult<{ nodeIds: IdType[] }>`
+  - `getLeaves(networkId): ApiResult<{ nodeIds: IdType[] }>`
+- [ ] Export new types from `src/app-api/types/index.ts`
+
+### Core Implementation
+
+- [ ] Implement all 10 methods in `src/app-api/core/elementApi.ts`:
+  - Use `getInternalNetworkDataStore(network)` to access cytoscape.js `Core`
+  - Validate `networkId` exists (return `fail(NetworkNotFound)`)
+  - For node-scoped methods, validate `nodeId` exists (return `fail(NodeNotFound)`)
+  - Map cytoscape.js collections to plain ID arrays / `EdgeData` objects
+- [ ] Verify no React imports in core (framework-agnostic rule)
+
+### Tests
+
+- [ ] Add tests to `src/app-api/core/elementApi.test.ts`:
+  - `getNodeIds` returns all node IDs
+  - `getEdgeIds` returns all edge IDs
+  - `getConnectedEdges` returns edges for a given node
+  - `getConnectedNodes` returns neighbor node IDs
+  - `getOutgoers` / `getIncomers` return directed neighbors
+  - `getSuccessors` / `getPredecessors` return transitive closure
+  - `getRoots` returns nodes with no incoming edges
+  - `getLeaves` returns nodes with no outgoing edges
+  - All methods return `fail(NetworkNotFound)` for invalid network
+  - Node-scoped methods return `fail(NodeNotFound)` for invalid node
+
+### Documentation
+
+- [ ] Add Graph Traversal section to `src/app-api/api_docs/Api.md`
+- [ ] Update `@cytoscape-web/api-types` package with new types
+- [ ] Update `guides/architecture-overview.md` Available APIs table if needed
+
+### Verification
+
+- [ ] `npm run test:unit` — all tests pass
+- [ ] `npm run build` — host builds
+- [ ] `npm run build:api-types` — types package builds
+- [ ] Manual test: hello-world or dedicated example uses `getConnectedEdges`
+
+---
+
 ## Final Verification
 
 ### Build & Test
