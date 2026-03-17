@@ -119,6 +119,141 @@ jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   },
 }))
 
+// ── Mock cytoscape.js internal store ──────────────────────────────────────────
+
+const mockCyNodes: any[] = []
+const mockCyEdges: any[] = []
+
+function makeCyCollection(items: any[]) {
+  const col: any = items.slice()
+  col.map = (fn: any) => items.map(fn)
+  col.nodes = () => makeCyCollection(items.filter((i: any) => i._isNode))
+  col.edges = () => makeCyCollection(items.filter((i: any) => !i._isNode))
+  col.roots = () =>
+    makeCyCollection(
+      items.filter(
+        (n: any) =>
+          n._isNode &&
+          !mockCyEdges.some((e: any) => e.target().id() === n.id()),
+      ),
+    )
+  col.leaves = () =>
+    makeCyCollection(
+      items.filter(
+        (n: any) =>
+          n._isNode &&
+          !mockCyEdges.some((e: any) => e.source().id() === n.id()),
+      ),
+    )
+  return col
+}
+
+function makeCyNode(id: string) {
+  const node: any = {
+    _isNode: true,
+    id: () => id,
+    empty: () => false,
+    connectedEdges: () =>
+      makeCyCollection(
+        mockCyEdges.filter(
+          (e: any) => e.source().id() === id || e.target().id() === id,
+        ),
+      ),
+    neighborhood: () => {
+      const neighborEdges = mockCyEdges.filter(
+        (e: any) => e.source().id() === id || e.target().id() === id,
+      )
+      const neighborNodeIds = new Set<string>()
+      neighborEdges.forEach((e: any) => {
+        if (e.source().id() !== id) neighborNodeIds.add(e.source().id())
+        if (e.target().id() !== id) neighborNodeIds.add(e.target().id())
+      })
+      return makeCyCollection(
+        mockCyNodes.filter((n: any) => neighborNodeIds.has(n.id())),
+      )
+    },
+    outgoers: () => {
+      const outEdges = mockCyEdges.filter(
+        (e: any) => e.source().id() === id,
+      )
+      const outNodeIds = new Set(outEdges.map((e: any) => e.target().id()))
+      return makeCyCollection([
+        ...outEdges,
+        ...mockCyNodes.filter((n: any) => outNodeIds.has(n.id())),
+      ])
+    },
+    incomers: () => {
+      const inEdges = mockCyEdges.filter(
+        (e: any) => e.target().id() === id,
+      )
+      const inNodeIds = new Set(inEdges.map((e: any) => e.source().id()))
+      return makeCyCollection([
+        ...inEdges,
+        ...mockCyNodes.filter((n: any) => inNodeIds.has(n.id())),
+      ])
+    },
+    successors: () => {
+      const visited = new Set<string>()
+      const queue = [id]
+      const resultNodes: any[] = []
+      while (queue.length > 0) {
+        const curr = queue.shift()!
+        mockCyEdges.forEach((e: any) => {
+          if (e.source().id() === curr && !visited.has(e.target().id())) {
+            visited.add(e.target().id())
+            queue.push(e.target().id())
+            resultNodes.push(
+              mockCyNodes.find((n: any) => n.id() === e.target().id()),
+            )
+          }
+        })
+      }
+      return makeCyCollection(resultNodes)
+    },
+    predecessors: () => {
+      const visited = new Set<string>()
+      const queue = [id]
+      const resultNodes: any[] = []
+      while (queue.length > 0) {
+        const curr = queue.shift()!
+        mockCyEdges.forEach((e: any) => {
+          if (e.target().id() === curr && !visited.has(e.source().id())) {
+            visited.add(e.source().id())
+            queue.push(e.source().id())
+            resultNodes.push(
+              mockCyNodes.find((n: any) => n.id() === e.source().id()),
+            )
+          }
+        })
+      }
+      return makeCyCollection(resultNodes)
+    },
+  }
+  return node
+}
+
+function makeCyEdge(id: string, sourceId: string, targetId: string) {
+  return {
+    _isNode: false,
+    id: () => id,
+    source: () => ({ id: () => sourceId }),
+    target: () => ({ id: () => targetId }),
+  }
+}
+
+const mockCyInstance = {
+  $id: (id: string) => {
+    const found = mockCyNodes.find((n: any) => n.id() === id)
+    return found ?? { empty: () => true }
+  },
+  nodes: () => makeCyCollection(mockCyNodes),
+  edges: () => makeCyCollection(mockCyEdges),
+}
+
+jest.mock('../../models/NetworkModel/impl/networkImpl', () => ({
+  getInternalNetworkDataStore: jest.fn(() => mockCyInstance),
+}))
+
 // ── Mock pure functions ───────────────────────────────────────────────────────
 
 jest.mock('../../models/CyNetworkModel', () => ({
@@ -151,6 +286,8 @@ function resetMocks() {
   Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])
   Object.keys(mockViewModels).forEach((k) => delete mockViewModels[k])
   Object.keys(mockUndoStacks).forEach((k) => delete mockUndoStacks[k])
+  mockCyNodes.length = 0
+  mockCyEdges.length = 0
   jest.clearAllMocks()
 }
 
@@ -683,6 +820,197 @@ describe('elementApi', () => {
       if (result.success) {
         expect(result.data.deletedEdgeCount).toBe(1)
       }
+    })
+  })
+
+  // ── Graph Traversal ──────────────────────────────────────────────────────
+
+  describe('graph traversal', () => {
+    // Graph: A → B → C, A → D (directed)
+    beforeEach(() => {
+      resetMocks()
+      const nodes = [
+        { id: 'A' },
+        { id: 'B' },
+        { id: 'C' },
+        { id: 'D' },
+      ]
+      const edges = [
+        { id: 'e1', s: 'A', t: 'B' },
+        { id: 'e2', s: 'B', t: 'C' },
+        { id: 'e3', s: 'A', t: 'D' },
+      ]
+      mockNetworks.set('net1', makeNetwork('net1', nodes, edges))
+      // Set up cytoscape.js mock graph
+      mockCyNodes.push(
+        makeCyNode('A'),
+        makeCyNode('B'),
+        makeCyNode('C'),
+        makeCyNode('D'),
+      )
+      mockCyEdges.push(
+        makeCyEdge('e1', 'A', 'B'),
+        makeCyEdge('e2', 'B', 'C'),
+        makeCyEdge('e3', 'A', 'D'),
+      )
+    })
+
+    describe('getNodeIds', () => {
+      it('returns all node IDs', () => {
+        const result = elementApi.getNodeIds('net1')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds).toEqual(['A', 'B', 'C', 'D'])
+        }
+      })
+
+      it('returns NetworkNotFound for invalid network', () => {
+        const result = elementApi.getNodeIds('invalid')
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        }
+      })
+    })
+
+    describe('getEdgeIds', () => {
+      it('returns all edge IDs', () => {
+        const result = elementApi.getEdgeIds('net1')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edgeIds).toEqual(['e1', 'e2', 'e3'])
+        }
+      })
+
+      it('returns NetworkNotFound for invalid network', () => {
+        const result = elementApi.getEdgeIds('invalid')
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        }
+      })
+    })
+
+    describe('getConnectedEdges', () => {
+      it('returns edges connected to node A', () => {
+        const result = elementApi.getConnectedEdges('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges).toHaveLength(2)
+          const edgeSourceTargets = result.data.edges.map((e) => [
+            e.sourceId,
+            e.targetId,
+          ])
+          expect(edgeSourceTargets).toContainEqual(['A', 'B'])
+          expect(edgeSourceTargets).toContainEqual(['A', 'D'])
+        }
+      })
+
+      it('returns NodeNotFound for invalid node', () => {
+        const result = elementApi.getConnectedEdges('net1', 'Z')
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        }
+      })
+    })
+
+    describe('getConnectedNodes', () => {
+      it('returns neighbors of node A', () => {
+        const result = elementApi.getConnectedNodes('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds.sort()).toEqual(['B', 'D'])
+        }
+      })
+    })
+
+    describe('getOutgoers', () => {
+      it('returns outgoing nodes and edges from A', () => {
+        const result = elementApi.getOutgoers('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds.sort()).toEqual(['B', 'D'])
+          expect(result.data.edgeIds.sort()).toEqual(['e1', 'e3'])
+        }
+      })
+
+      it('returns empty for leaf node C', () => {
+        const result = elementApi.getOutgoers('net1', 'C')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds).toEqual([])
+          expect(result.data.edgeIds).toEqual([])
+        }
+      })
+    })
+
+    describe('getIncomers', () => {
+      it('returns incoming nodes and edges to B', () => {
+        const result = elementApi.getIncomers('net1', 'B')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds).toEqual(['A'])
+          expect(result.data.edgeIds).toEqual(['e1'])
+        }
+      })
+
+      it('returns empty for root node A', () => {
+        const result = elementApi.getIncomers('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds).toEqual([])
+          expect(result.data.edgeIds).toEqual([])
+        }
+      })
+    })
+
+    describe('getSuccessors', () => {
+      it('returns all transitive downstream nodes from A', () => {
+        const result = elementApi.getSuccessors('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds.sort()).toEqual(['B', 'C', 'D'])
+        }
+      })
+
+      it('returns only C from B', () => {
+        const result = elementApi.getSuccessors('net1', 'B')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds).toEqual(['C'])
+        }
+      })
+    })
+
+    describe('getPredecessors', () => {
+      it('returns all transitive upstream nodes from C', () => {
+        const result = elementApi.getPredecessors('net1', 'C')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds.sort()).toEqual(['A', 'B'])
+        }
+      })
+    })
+
+    describe('getRoots', () => {
+      it('returns nodes with no incoming edges', () => {
+        const result = elementApi.getRoots('net1')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds).toEqual(['A'])
+        }
+      })
+    })
+
+    describe('getLeaves', () => {
+      it('returns nodes with no outgoing edges', () => {
+        const result = elementApi.getLeaves('net1')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.nodeIds.sort()).toEqual(['C', 'D'])
+        }
+      })
     })
   })
 })

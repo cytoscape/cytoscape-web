@@ -21,6 +21,7 @@ import {
   type NodeOperationStoreActions,
 } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
+import { getInternalNetworkDataStore } from '../../models/NetworkModel/impl/networkImpl'
 import { TableType } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { ValueType } from '../../models/TableModel'
@@ -98,6 +99,56 @@ export interface ElementApi {
 
   generateNextNodeId(networkId: IdType): IdType
   generateNextEdgeId(networkId: IdType): IdType
+
+  // --- Graph Traversal (read-only, cytoscape.js core wrappers) ---
+
+  /** Return all node IDs in the network. */
+  getNodeIds(networkId: IdType): ApiResult<{ nodeIds: IdType[] }>
+
+  /** Return all edge IDs in the network. */
+  getEdgeIds(networkId: IdType): ApiResult<{ edgeIds: IdType[] }>
+
+  /** Return all edges connected to a node (both incoming and outgoing). */
+  getConnectedEdges(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ edges: EdgeData[] }>
+
+  /** Return all nodes directly connected to a node (undirected neighborhood). */
+  getConnectedNodes(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[] }>
+
+  /** Return immediate outgoing nodes and edges (directed, one hop). */
+  getOutgoers(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[]; edgeIds: IdType[] }>
+
+  /** Return immediate incoming nodes and edges (directed, one hop). */
+  getIncomers(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[]; edgeIds: IdType[] }>
+
+  /** Return all downstream nodes (transitive closure, directed). */
+  getSuccessors(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[] }>
+
+  /** Return all upstream nodes (transitive closure, directed). */
+  getPredecessors(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[] }>
+
+  /** Return root nodes (no incoming edges) in the network. */
+  getRoots(networkId: IdType): ApiResult<{ nodeIds: IdType[] }>
+
+  /** Return leaf nodes (no outgoing edges) in the network. */
+  getLeaves(networkId: IdType): ApiResult<{ nodeIds: IdType[] }>
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -735,5 +786,263 @@ export const elementApi: ElementApi = {
       .filter((id) => !isNaN(id))
     const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
     return `e${maxId + 1}`
+  },
+
+  // ── Graph Traversal ──────────────────────────────────────────────────────
+
+  getNodeIds(networkId): ApiResult<{ nodeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      return ok({ nodeIds: network.nodes.map((n) => n.id) })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getEdgeIds(networkId): ApiResult<{ edgeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      return ok({ edgeIds: network.edges.map((e) => e.id) })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getConnectedEdges(
+    networkId,
+    nodeId,
+  ): ApiResult<{ edges: EdgeData[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const cyNode = cy.$id(nodeId)
+      if (cyNode.empty()) {
+        return fail(
+          ApiErrorCode.NodeNotFound,
+          `Node ${nodeId} not found in network ${networkId}`,
+        )
+      }
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const edges: EdgeData[] = cyNode.connectedEdges().map((cyEdge: any) => {
+        const edgeId = cyEdge.id()
+        const row = tableRecord?.edgeTable?.rows?.get(edgeId) ?? {}
+        return {
+          sourceId: cyEdge.source().id() as IdType,
+          targetId: cyEdge.target().id() as IdType,
+          attributes: row as Record<AttributeName, ValueType>,
+        }
+      })
+      return ok({ edges })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getConnectedNodes(
+    networkId,
+    nodeId,
+  ): ApiResult<{ nodeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const cyNode = cy.$id(nodeId)
+      if (cyNode.empty()) {
+        return fail(
+          ApiErrorCode.NodeNotFound,
+          `Node ${nodeId} not found in network ${networkId}`,
+        )
+      }
+      const nodeIds: IdType[] = cyNode
+        .neighborhood()
+        .nodes()
+        .map((n: any) => n.id() as IdType)
+      return ok({ nodeIds })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getOutgoers(
+    networkId,
+    nodeId,
+  ): ApiResult<{ nodeIds: IdType[]; edgeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const cyNode = cy.$id(nodeId)
+      if (cyNode.empty()) {
+        return fail(
+          ApiErrorCode.NodeNotFound,
+          `Node ${nodeId} not found in network ${networkId}`,
+        )
+      }
+      const outgoers = cyNode.outgoers()
+      return ok({
+        nodeIds: outgoers.nodes().map((n: any) => n.id() as IdType),
+        edgeIds: outgoers.edges().map((e: any) => e.id() as IdType),
+      })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getIncomers(
+    networkId,
+    nodeId,
+  ): ApiResult<{ nodeIds: IdType[]; edgeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const cyNode = cy.$id(nodeId)
+      if (cyNode.empty()) {
+        return fail(
+          ApiErrorCode.NodeNotFound,
+          `Node ${nodeId} not found in network ${networkId}`,
+        )
+      }
+      const incomers = cyNode.incomers()
+      return ok({
+        nodeIds: incomers.nodes().map((n: any) => n.id() as IdType),
+        edgeIds: incomers.edges().map((e: any) => e.id() as IdType),
+      })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getSuccessors(
+    networkId,
+    nodeId,
+  ): ApiResult<{ nodeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const cyNode = cy.$id(nodeId)
+      if (cyNode.empty()) {
+        return fail(
+          ApiErrorCode.NodeNotFound,
+          `Node ${nodeId} not found in network ${networkId}`,
+        )
+      }
+      const nodeIds: IdType[] = cyNode
+        .successors()
+        .nodes()
+        .map((n: any) => n.id() as IdType)
+      return ok({ nodeIds })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getPredecessors(
+    networkId,
+    nodeId,
+  ): ApiResult<{ nodeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const cyNode = cy.$id(nodeId)
+      if (cyNode.empty()) {
+        return fail(
+          ApiErrorCode.NodeNotFound,
+          `Node ${nodeId} not found in network ${networkId}`,
+        )
+      }
+      const nodeIds: IdType[] = cyNode
+        .predecessors()
+        .nodes()
+        .map((n: any) => n.id() as IdType)
+      return ok({ nodeIds })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getRoots(networkId): ApiResult<{ nodeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const nodeIds: IdType[] = cy
+        .nodes()
+        .roots()
+        .map((n: any) => n.id() as IdType)
+      return ok({ nodeIds })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getLeaves(networkId): ApiResult<{ nodeIds: IdType[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      const cy = getInternalNetworkDataStore(network)
+      const nodeIds: IdType[] = cy
+        .nodes()
+        .leaves()
+        .map((n: any) => n.id() as IdType)
+      return ok({ nodeIds })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
   },
 }

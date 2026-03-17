@@ -205,6 +205,65 @@ network is not found.
 Returns the next available edge ID without creating an edge. Returns `'e0'` if
 the network is not found.
 
+### Graph Traversal
+
+Read-only methods wrapping the internal cytoscape.js graph engine. These are
+useful for apps that need adjacency queries, graph walking, or structural
+analysis (e.g., pathway expand/collapse).
+
+#### `getNodeIds(networkId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all node IDs in the network.
+
+#### `getEdgeIds(networkId): ApiResult<{ edgeIds: IdType[] }>`
+
+Returns all edge IDs in the network.
+
+#### `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }>`
+
+Returns all edges connected to the given node (both incoming and outgoing).
+Each `EdgeData` includes `sourceId`, `targetId`, and `attributes`.
+
+#### `getConnectedNodes(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all nodes directly connected to the given node (undirected
+neighborhood, excluding the node itself).
+
+#### `getOutgoers(networkId, nodeId): ApiResult<{ nodeIds, edgeIds }>`
+
+Returns immediate outgoing neighbors and the edges connecting to them
+(directed, one hop). For undirected networks, returns all neighbors.
+
+#### `getIncomers(networkId, nodeId): ApiResult<{ nodeIds, edgeIds }>`
+
+Returns immediate incoming neighbors and the edges connecting from them
+(directed, one hop). For undirected networks, returns all neighbors.
+
+#### `getSuccessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all downstream nodes reachable from the given node (transitive closure,
+directed). Does not include the starting node.
+
+#### `getPredecessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all upstream nodes from which the given node is reachable (transitive
+closure, directed). Does not include the starting node.
+
+#### `getRoots(networkId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns nodes with no incoming edges (roots of the directed graph).
+
+#### `getLeaves(networkId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns nodes with no outgoing edges (leaves of the directed graph).
+
+**Common errors for graph traversal methods:**
+
+| Error Code          | When                                            |
+|---------------------|-------------------------------------------------|
+| `NETWORK_NOT_FOUND` | The specified network does not exist             |
+| `NODE_NOT_FOUND`    | The specified node does not exist (node-scoped)  |
+
 ---
 
 ## NetworkApi (`cyweb/NetworkApi`)
