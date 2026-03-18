@@ -305,11 +305,19 @@ _Design: [module-federation-design.md § Step 3.7](../module-federation-design.m
   - Round-trip: `exportTableToTsv` → `importTableFromTsv` preserves data
   - All methods return `fail(NetworkNotFound)` for invalid network
 
+### Example App
+
+- [ ] Add `TsvDownloadSection.tsx` (Example 12) to `hello-world`:
+  - Export node/edge tables as TSV via `exportTableToTsv()`
+  - Trigger browser download using `Blob` + `URL.createObjectURL` + `<a download>`
+  - Demonstrates the standard pattern for saving API data to the local filesystem
+
 ### Documentation
 
 - [ ] Add TSV I/O section to `src/app-api/api_docs/Api.md` under TableApi
 - [ ] Update `@cytoscape-web/api-types` package with new method signatures
 - [ ] Update `guides/architecture-overview.md` TableApi description
+- [ ] Update `hello-world/README.md` with Example 12 walkthrough
 
 ### Verification
 
