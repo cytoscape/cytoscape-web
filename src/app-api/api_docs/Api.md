@@ -506,6 +506,74 @@ Converts to `Map` internally. Triggers `data:changed`.
 Sets the same value for all specified elements (or all elements if `elementIds`
 is omitted). Triggers `data:changed`.
 
+### Bulk Read
+
+#### `getTable(networkId, tableType, options?): ApiResult<{ columns, rows }>`
+
+Returns all columns (with type metadata) and all rows for the given table.
+For edge tables, `source` and `target` columns are always prepended (read from
+the network model, not from the table itself).
+
+**Options:**
+- `columns?: string[]` — return only these columns (omit = all)
+
+```typescript
+const result = tableApi.getTable(networkId, 'node')
+if (result.success) {
+  result.data.columns // [{ name: 'name', type: 'string' }, { name: 'degree', type: 'long' }]
+  result.data.rows    // [{ name: 'TP53', degree: 42 }, ...]
+}
+```
+
+### TSV I/O
+
+#### `exportTableToTsv(networkId, tableType, options?): ApiResult<{ tsvText }>`
+
+Serializes the table to a tab-separated values string. Useful for interop with
+pandas, R, and other external tools.
+
+**Options:**
+- `columns?: string[]` — export only these columns
+- `includeTypeHeader?: boolean` — `true` → `name:string\tscore:double` (Cytoscape
+  Desktop format for lossless round-trip). Default: `false` (plain column names).
+
+For edge tables, `source` and `target` columns are always included.
+
+```typescript
+const result = tableApi.exportTableToTsv(networkId, 'node')
+if (result.success) {
+  console.log(result.data.tsvText)
+  // name\tscore
+  // TP53\t0.95
+  // BRCA1\t0.73
+}
+```
+
+#### `importTableFromTsv(networkId, tableType, tsvText, options?): ApiResult<{ rowCount, newColumns }>`
+
+Parses a TSV string and writes data into the table. Creates new columns as
+needed. Matches rows by a key column (default: `id`).
+
+**Options:**
+- `keyColumn?: string` — column in the TSV to use as element ID (default: `'id'`)
+
+Auto-detects typed headers (`name:string\tscore:double`) if present. Otherwise
+infers types from the first few data rows.
+
+```typescript
+const tsv = 'id\tcluster\tpagerank\nn1\t0\t0.042\nn2\t1\t0.015'
+const result = tableApi.importTableFromTsv(networkId, 'node', tsv)
+if (result.success) {
+  console.log(result.data.newColumns) // ['cluster', 'pagerank']
+  console.log(result.data.rowCount)   // 2
+}
+```
+
+| Error Code          | Condition                               |
+| ------------------- | --------------------------------------- |
+| `NETWORK_NOT_FOUND` | Table record for `networkId` not found  |
+| `INVALID_INPUT`     | TSV has < 2 lines or key column missing |
+
 All methods return `NETWORK_NOT_FOUND` if the table record for `networkId` is not found.
 
 ---

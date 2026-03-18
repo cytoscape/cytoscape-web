@@ -2,6 +2,15 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
+## 1.0.0-beta.2 (2026-03-18)
+
+### Added — Step 3.7 (TSV Table I/O)
+
+- `getTable(networkId, tableType, options?)` — bulk read with column metadata
+- `exportTableToTsv(networkId, tableType, options?)` — serialize table to TSV string
+- `importTableFromTsv(networkId, tableType, tsvText, options?)` — parse TSV and write to table
+- New types: `ColumnInfo`, `GetTableOptions`, `ExportTableToTsvOptions`, `ImportTableFromTsvOptions`
+
 ## 1.0.0-beta.0 (2026-03-17)
 
 ### Added — Phase 3.6 (Graph Traversal API)

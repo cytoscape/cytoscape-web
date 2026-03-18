@@ -32,17 +32,34 @@ jest.mock('../../data/hooks/stores/TableStore', () => ({
   },
 }))
 
+// ── Mock: NetworkStore (for edge source/target in getTable) ──────────────────
+
+const mockNetworks = new Map<string, any>()
+
+jest.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: {
+    getState: jest.fn(() => ({
+      networks: mockNetworks,
+    })),
+  },
+}))
+
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
-function makeTableRecord(nodeRows?: Map<string, any>, edgeRows?: Map<string, any>) {
+function makeTableRecord(
+  nodeRows?: Map<string, any>,
+  edgeRows?: Map<string, any>,
+  nodeColumns?: any[],
+  edgeColumns?: any[],
+) {
   return {
     nodeTable: {
       rows: nodeRows ?? new Map(),
-      columns: [],
+      columns: nodeColumns ?? [],
     },
     edgeTable: {
       rows: edgeRows ?? new Map(),
-      columns: [],
+      columns: edgeColumns ?? [],
     },
   }
 }
@@ -51,8 +68,17 @@ function makeTableRecord(nodeRows?: Map<string, any>, edgeRows?: Map<string, any
 
 beforeEach(() => {
   jest.clearAllMocks()
+  // Reset any custom mockImplementation set by prior tests
+  mockCreateColumn.mockReset()
+  mockDeleteColumn.mockReset()
+  mockSetColumnName.mockReset()
+  mockSetValue.mockReset()
+  mockSetValues.mockReset()
+  mockEditRows.mockReset()
+  mockApplyValueToElements.mockReset()
   // Clear mock tables
   Object.keys(mockTables).forEach((k) => delete mockTables[k])
+  mockNetworks.clear()
 })
 
 // --- getValue ----------------------------------------------------------------
@@ -368,5 +394,287 @@ describe('applyValueToElements', () => {
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
+  })
+})
+
+// --- getTable ----------------------------------------------------------------
+
+describe('getTable', () => {
+  it('returns columns with types and all rows', () => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice', score: 0.9 }],
+      ['n2', { name: 'Bob', score: 0.5 }],
+    ])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const result = tableApi.getTable('net1', 'node')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.columns).toEqual([
+        { name: 'name', type: 'string' },
+        { name: 'score', type: 'double' },
+      ])
+      expect(result.data.rows).toHaveLength(2)
+      expect(result.data.rows[0]).toEqual({ name: 'Alice', score: 0.9 })
+    }
+  })
+
+  it('filters columns when options.columns is provided', () => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice', score: 0.9, age: 30 }],
+    ])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+      { name: 'age', type: 'integer' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const result = tableApi.getTable('net1', 'node', { columns: ['name'] })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.columns).toEqual([{ name: 'name', type: 'string' }])
+      expect(result.data.rows[0]).toEqual({ name: 'Alice' })
+    }
+  })
+
+  it('includes source/target for edge tables', () => {
+    const edgeRows = new Map([
+      ['e1', { interaction: 'pp', weight: 0.8 }],
+    ])
+    const edgeColumns = [
+      { name: 'interaction', type: 'string' },
+      { name: 'weight', type: 'double' },
+    ]
+    mockTables['net1'] = makeTableRecord(undefined, edgeRows, [], edgeColumns)
+    mockNetworks.set('net1', {
+      edges: [{ id: 'e1', s: 'n1', t: 'n2' }],
+    })
+
+    const result = tableApi.getTable('net1', 'edge')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.columns[0]).toEqual({ name: 'source', type: 'string' })
+      expect(result.data.columns[1]).toEqual({ name: 'target', type: 'string' })
+      expect(result.data.rows[0].source).toBe('n1')
+      expect(result.data.rows[0].target).toBe('n2')
+      expect(result.data.rows[0].interaction).toBe('pp')
+    }
+  })
+
+  it('returns NetworkNotFound for invalid network', () => {
+    const result = tableApi.getTable('missing', 'node')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+    }
+  })
+})
+
+// --- exportTableToTsv --------------------------------------------------------
+
+describe('exportTableToTsv', () => {
+  it('produces valid TSV with header and data rows', () => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice', score: 0.9 }],
+      ['n2', { name: 'Bob', score: 0.5 }],
+    ])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const result = tableApi.exportTableToTsv('net1', 'node')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      const lines = result.data.tsvText.split('\n')
+      expect(lines[0]).toBe('name\tscore')
+      expect(lines[1]).toBe('Alice\t0.9')
+      expect(lines[2]).toBe('Bob\t0.5')
+    }
+  })
+
+  it('includes type annotations when includeTypeHeader is true', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const result = tableApi.exportTableToTsv('net1', 'node', {
+      includeTypeHeader: true,
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      const lines = result.data.tsvText.split('\n')
+      expect(lines[0]).toBe('name:string')
+    }
+  })
+
+  it('edge table TSV always includes source and target', () => {
+    const edgeRows = new Map([['e1', { weight: 0.8 }]])
+    const edgeColumns = [{ name: 'weight', type: 'double' }]
+    mockTables['net1'] = makeTableRecord(undefined, edgeRows, [], edgeColumns)
+    mockNetworks.set('net1', {
+      edges: [{ id: 'e1', s: 'n1', t: 'n2' }],
+    })
+
+    const result = tableApi.exportTableToTsv('net1', 'edge')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      const lines = result.data.tsvText.split('\n')
+      expect(lines[0]).toBe('source\ttarget\tweight')
+      expect(lines[1]).toBe('n1\tn2\t0.8')
+    }
+  })
+
+  it('returns NetworkNotFound for invalid network', () => {
+    const result = tableApi.exportTableToTsv('missing', 'node')
+    expect(result.success).toBe(false)
+  })
+})
+
+// --- importTableFromTsv ------------------------------------------------------
+
+describe('importTableFromTsv', () => {
+  it('creates new columns and writes data', () => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice' }],
+      ['n2', { name: 'Bob' }],
+    ])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const tsv = 'id\tname\tscore\nn1\tAlice\t0.9\nn2\tBob\t0.5'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv)
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.rowCount).toBe(2)
+      expect(result.data.newColumns).toContain('score')
+    }
+    expect(mockCreateColumn).toHaveBeenCalledWith(
+      'net1',
+      'node',
+      'score',
+      expect.any(String),
+      '',
+    )
+    expect(mockEditRows).toHaveBeenCalled()
+  })
+
+  it('preserves column types from typed header', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const tsv = 'id\tname:string\tscore:double\nn1\tAlice\t0.9'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv)
+
+    expect(result.success).toBe(true)
+    expect(mockCreateColumn).toHaveBeenCalledWith(
+      'net1',
+      'node',
+      'score',
+      'double',
+      '',
+    )
+  })
+
+  it('matches rows by custom keyColumn', () => {
+    const nodeRows = new Map([
+      ['n1', { gene: 'TP53' }],
+      ['n2', { gene: 'BRCA1' }],
+    ])
+    const columns = [{ name: 'gene', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const tsv = 'gene\tcluster\nTP53\t0\nBRCA1\t1'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv, {
+      keyColumn: 'gene',
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.rowCount).toBe(2)
+    }
+  })
+
+  it('returns InvalidInput when key column not in header', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const tsv = 'name\tscore\nAlice\t0.9'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+    }
+  })
+
+  it('returns InvalidInput for TSV with only header', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.importTableFromTsv('net1', 'node', 'id\tname')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+    }
+  })
+
+  it('returns NetworkNotFound for invalid network', () => {
+    const result = tableApi.importTableFromTsv('missing', 'node', 'id\tname\nn1\tAlice')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+    }
+  })
+})
+
+// --- Round-trip: exportTableToTsv → importTableFromTsv -----------------------
+
+describe('TSV round-trip', () => {
+  it('export → import preserves data', () => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice', score: 42 }],
+      ['n2', { name: 'Bob', score: 18 }],
+    ])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'long' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    // Export
+    const exportResult = tableApi.exportTableToTsv('net1', 'node', {
+      includeTypeHeader: true,
+    })
+    expect(exportResult.success).toBe(true)
+    if (!exportResult.success) return
+
+    // Prepare for re-import (add id column for matching)
+    const lines = exportResult.data.tsvText.split('\n')
+    const withId = [
+      'id\t' + lines[0],
+      ...lines.slice(1).map((line, i) => `n${i + 1}\t${line}`),
+    ].join('\n')
+
+    // Import into same network
+    const importResult = tableApi.importTableFromTsv('net1', 'node', withId)
+    expect(importResult.success).toBe(true)
+    if (importResult.success) {
+      expect(importResult.data.rowCount).toBe(2)
+    }
+    expect(mockEditRows).toHaveBeenCalled()
   })
 })

@@ -2,8 +2,10 @@
 // Framework-agnostic Table API core — zero React imports.
 // All store access via .getState(); no React hook subscriptions.
 
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { IdType } from '../../models/IdType'
+import { Column } from '../../models/TableModel/Column'
 import {
   CellEdit as StoreCellEdit,
   TableType,
@@ -30,6 +32,28 @@ export interface CellEdit {
   value: ValueType
 }
 
+/** Column metadata returned by getTable() */
+export interface ColumnInfo {
+  name: string
+  type: ValueTypeName
+}
+
+/** Options for getTable() */
+export interface GetTableOptions {
+  columns?: string[]
+}
+
+/** Options for exportTableToTsv() */
+export interface ExportTableToTsvOptions {
+  columns?: string[]
+  includeTypeHeader?: boolean
+}
+
+/** Options for importTableFromTsv() */
+export interface ImportTableFromTsvOptions {
+  keyColumn?: string
+}
+
 export interface TableApi {
   // --- Read ---
   getValue(
@@ -44,6 +68,29 @@ export interface TableApi {
     tableType: AppTableType,
     elementId: IdType,
   ): ApiResult<{ row: Record<AttributeName, ValueType> }>
+
+  getTable(
+    networkId: IdType,
+    tableType: AppTableType,
+    options?: GetTableOptions,
+  ): ApiResult<{
+    columns: ColumnInfo[]
+    rows: Array<Record<string, ValueType>>
+  }>
+
+  // --- TSV I/O ---
+  exportTableToTsv(
+    networkId: IdType,
+    tableType: AppTableType,
+    options?: ExportTableToTsvOptions,
+  ): ApiResult<{ tsvText: string }>
+
+  importTableFromTsv(
+    networkId: IdType,
+    tableType: AppTableType,
+    tsvText: string,
+    options?: ImportTableFromTsvOptions,
+  ): ApiResult<{ rowCount: number; newColumns: string[] }>
 
   // --- Write ---
   createColumn(
@@ -262,4 +309,269 @@ export const tableApi: TableApi = {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
   },
+
+  // --- getTable ---------------------------------------------------------------
+
+  getTable(networkId, tableType, options) {
+    try {
+      const tableRecord = useTableStore.getState().tables[networkId]
+      if (tableRecord === undefined) {
+        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+      }
+      const table = tableRecord[tableKey(tableType)]
+      const allColumns: Column[] = table?.columns ?? []
+      const requestedCols = options?.columns
+      const filteredColumns = requestedCols
+        ? allColumns.filter((c) => requestedCols.includes(c.name))
+        : allColumns
+
+      // For edge tables, prepend source/target from the network model
+      const edgeLookup =
+        tableType === 'edge' ? buildEdgeLookup(networkId) : undefined
+
+      const rows: Array<Record<string, ValueType>> = []
+      const tableRows = table?.rows
+      if (tableRows) {
+        tableRows.forEach(
+          (rowData: Record<AttributeName, ValueType>, elementId: IdType) => {
+            const row: Record<string, ValueType> = {}
+            if (edgeLookup) {
+              const edge = edgeLookup.get(elementId)
+              if (edge) {
+                row['source'] = edge.s
+                row['target'] = edge.t
+              }
+            }
+            for (const col of filteredColumns) {
+              row[col.name] = rowData[col.name] as ValueType
+            }
+            rows.push(row)
+          },
+        )
+      }
+
+      // Build column info (with source/target prepended for edge table)
+      const columnInfos: ColumnInfo[] = []
+      if (edgeLookup) {
+        columnInfos.push(
+          { name: 'source', type: ValueTypeName.String },
+          { name: 'target', type: ValueTypeName.String },
+        )
+      }
+      for (const col of filteredColumns) {
+        columnInfos.push({ name: col.name, type: col.type })
+      }
+
+      return ok({ columns: columnInfos, rows })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  // --- exportTableToTsv -------------------------------------------------------
+
+  exportTableToTsv(networkId, tableType, options) {
+    const result = tableApi.getTable(networkId, tableType, {
+      columns: options?.columns,
+    })
+    if (!result.success) return result
+
+    const { columns, rows } = result.data
+    const includeType = options?.includeTypeHeader ?? false
+
+    // Header line
+    const header = columns
+      .map((c) => (includeType ? `${c.name}:${c.type}` : c.name))
+      .join('\t')
+
+    // Data lines
+    const dataLines = rows.map((row) =>
+      columns.map((c) => formatTsvValue(row[c.name])).join('\t'),
+    )
+
+    return ok({ tsvText: [header, ...dataLines].join('\n') })
+  },
+
+  // --- importTableFromTsv -----------------------------------------------------
+
+  importTableFromTsv(networkId, tableType, tsvText, options) {
+    try {
+      const tableRecord = useTableStore.getState().tables[networkId]
+      if (tableRecord === undefined) {
+        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+      }
+      const table = tableRecord[tableKey(tableType)]
+      const existingColumns = new Map(
+        (table?.columns ?? []).map((c: Column) => [c.name, c.type]),
+      )
+
+      const lines = tsvText.split('\n').filter((l) => l.trim() !== '')
+      if (lines.length < 2) {
+        return fail(
+          ApiErrorCode.InvalidInput,
+          'TSV must have at least a header line and one data line',
+        )
+      }
+
+      // Parse header — detect optional type annotations (name:type)
+      const headerFields = lines[0].split('\t')
+      const colNames: string[] = []
+      const colTypes: Map<string, ValueTypeName> = new Map()
+      for (const field of headerFields) {
+        const colonIdx = field.lastIndexOf(':')
+        if (colonIdx > 0) {
+          const name = field.slice(0, colonIdx)
+          const typePart = field.slice(colonIdx + 1)
+          if (isValidTypeName(typePart)) {
+            colNames.push(name)
+            colTypes.set(name, typePart as ValueTypeName)
+            continue
+          }
+        }
+        colNames.push(field)
+      }
+
+      const keyColumn = options?.keyColumn ?? 'id'
+      const keyIndex = colNames.indexOf(keyColumn)
+      if (keyIndex < 0) {
+        return fail(
+          ApiErrorCode.InvalidInput,
+          `Key column "${keyColumn}" not found in TSV header`,
+        )
+      }
+
+      // Create any missing columns
+      const newColumns: string[] = []
+      const storeState = useTableStore.getState()
+      for (const colName of colNames) {
+        if (colName === keyColumn) continue
+        if (colName === 'source' || colName === 'target') continue
+        if (!existingColumns.has(colName)) {
+          const inferredType =
+            colTypes.get(colName) ?? inferTypeFromData(lines, colNames, colName)
+          storeState.createColumn(
+            networkId,
+            tableType,
+            colName,
+            inferredType,
+            '',
+          )
+          newColumns.push(colName)
+        }
+      }
+
+      // Build rows map
+      const rowsMap = new Map<
+        IdType,
+        Record<AttributeName, ValueType>
+      >()
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split('\t')
+        const rowId = values[keyIndex]
+        if (!rowId) continue
+        const rowData: Record<AttributeName, ValueType> = {}
+        for (let j = 0; j < colNames.length; j++) {
+          const colName = colNames[j]
+          if (colName === keyColumn) continue
+          if (colName === 'source' || colName === 'target') continue
+          const rawValue = values[j] ?? ''
+          const colType =
+            colTypes.get(colName) ?? existingColumns.get(colName) ?? 'string'
+          rowData[colName] = parseTsvValue(rawValue, colType as ValueTypeName)
+        }
+        rowsMap.set(rowId, rowData)
+      }
+
+      storeState.editRows(
+        networkId,
+        tableType as TableType,
+        rowsMap,
+      )
+
+      return ok({ rowCount: rowsMap.size, newColumns })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+}
+
+// ── TSV helpers ───────────────────────────────────────────────────────────────
+
+/** Build edge id → {s, t} lookup from NetworkStore */
+function buildEdgeLookup(
+  networkId: IdType,
+): Map<IdType, { s: IdType; t: IdType }> {
+  const lookup = new Map<IdType, { s: IdType; t: IdType }>()
+  const network = useNetworkStore.getState().networks.get(networkId)
+  if (network) {
+    for (const edge of network.edges) {
+      lookup.set(edge.id, { s: edge.s, t: edge.t })
+    }
+  }
+  return lookup
+}
+
+/** Format a value for TSV output */
+function formatTsvValue(value: ValueType): string {
+  if (value === null || value === undefined) return ''
+  if (Array.isArray(value)) return value.join('|')
+  return String(value)
+}
+
+/** Valid ValueTypeName strings */
+const VALID_TYPE_NAMES = new Set<string>(Object.values(ValueTypeName))
+
+function isValidTypeName(s: string): boolean {
+  return VALID_TYPE_NAMES.has(s)
+}
+
+/** Parse a TSV cell value according to its type */
+function parseTsvValue(raw: string, type: ValueTypeName): ValueType {
+  if (raw === '') return ''
+  switch (type) {
+    case ValueTypeName.Long:
+    case ValueTypeName.Integer:
+      return parseInt(raw, 10) || 0
+    case ValueTypeName.Double:
+      return parseFloat(raw) || 0
+    case ValueTypeName.Boolean:
+      return raw.toLowerCase() === 'true'
+    case ValueTypeName.ListString:
+      return raw.split('|')
+    case ValueTypeName.ListLong:
+    case ValueTypeName.ListInteger:
+      return raw.split('|').map((v) => parseInt(v, 10) || 0)
+    case ValueTypeName.ListDouble:
+      return raw.split('|').map((v) => parseFloat(v) || 0)
+    case ValueTypeName.ListBoolean:
+      return raw.split('|').map((v) => v.toLowerCase() === 'true')
+    default:
+      return raw
+  }
+}
+
+/** Infer column type from the first few non-empty data values */
+function inferTypeFromData(
+  lines: string[],
+  colNames: string[],
+  colName: string,
+): ValueTypeName {
+  const colIdx = colNames.indexOf(colName)
+  if (colIdx < 0) return ValueTypeName.String
+  const samples: string[] = []
+  for (let i = 1; i < Math.min(lines.length, 6); i++) {
+    const val = lines[i].split('\t')[colIdx]
+    if (val && val.trim() !== '') samples.push(val.trim())
+  }
+  if (samples.length === 0) return ValueTypeName.String
+  if (samples.every((s) => /^-?\d+$/.test(s))) return ValueTypeName.Long
+  if (samples.every((s) => /^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(s)))
+    return ValueTypeName.Double
+  if (
+    samples.every(
+      (s) => s.toLowerCase() === 'true' || s.toLowerCase() === 'false',
+    )
+  )
+    return ValueTypeName.Boolean
+  return ValueTypeName.String
 }

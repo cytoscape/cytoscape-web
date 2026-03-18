@@ -27,7 +27,15 @@ export type {
   NetworkApi,
 } from '../core/networkApi'
 export type { SelectionApi, SelectionState } from '../core/selectionApi'
-export type { AppTableType, CellEdit, TableApi } from '../core/tableApi'
+export type {
+  AppTableType,
+  CellEdit,
+  ColumnInfo,
+  ExportTableToTsvOptions,
+  GetTableOptions,
+  ImportTableFromTsvOptions,
+  TableApi,
+} from '../core/tableApi'
 export type { PositionRecord, ViewportApi } from '../core/viewportApi'
 export type { VisualStyleApi } from '../core/visualStyleApi'
 // Note: Cx2 from exportApi is a loose alias (any[]); the canonical Cx2 is exported below via ElementTypes
