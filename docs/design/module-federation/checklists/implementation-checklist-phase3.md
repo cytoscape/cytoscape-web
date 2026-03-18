@@ -255,6 +255,71 @@ core methods via `getInternalNetworkDataStore()`.
 
 ---
 
+## Step 3.7: TSV Table Import/Export API (Pre-Beta)
+
+_Design: [module-federation-design.md § Step 3.7](../module-federation-design.md)_
+
+### Types
+
+- [ ] Add `getTable()` signature to `TableApi` interface in `src/app-api/types/index.ts`
+  - Returns `ApiResult<{ columns: Array<{ name: string; type: ValueTypeName }>; rows: Array<Record<string, ValueType>> }>`
+  - Options: `{ columns?: string[] }`
+- [ ] Add `exportTableToTsv()` signature to `TableApi` interface
+  - Returns `ApiResult<{ tsvText: string }>`
+  - Options: `{ columns?: string[]; includeTypeHeader?: boolean }`
+- [ ] Add `importTableFromTsv()` signature to `TableApi` interface
+  - Returns `ApiResult<{ rowCount: number; newColumns: string[] }>`
+  - Options: `{ keyColumn?: string }`
+- [ ] Edge table export always includes `source` and `target` columns
+
+### Core Implementation
+
+- [ ] Implement `getTable()` in `src/app-api/core/tableApi.ts`:
+  - Read all rows from `TableStore` for the given `networkId` and `tableType`
+  - Return column metadata (name + type) and row data
+  - Optional column filter
+- [ ] Implement `exportTableToTsv()`:
+  - Delegate to `getTable()`, then serialize columns + rows to TSV string
+  - Tab-separated, newline-delimited
+  - `includeTypeHeader: true` → `name:string\tdegree:integer` Cytoscape Desktop header format
+  - `includeTypeHeader: false` (default) → plain column names
+- [ ] Implement `importTableFromTsv()`:
+  - Parse header row (detect `:type` annotations if present)
+  - Auto-detect types via existing `inferColumnType()` when no type header
+  - Create new columns as needed
+  - Match rows by `keyColumn` (default: `id`)
+  - Use `tableApi.editRows()` internally for bulk write
+- [ ] Verify no React imports in core (framework-agnostic rule)
+
+### Tests
+
+- [ ] Add tests to `src/app-api/core/tableApi.test.ts`:
+  - `getTable` returns columns with types and all rows
+  - `getTable` with `columns` filter returns subset
+  - `exportTableToTsv` produces valid TSV (tab-separated, header + data rows)
+  - `exportTableToTsv` with `includeTypeHeader: true` adds type annotations
+  - Edge table TSV always includes `source` and `target`
+  - `importTableFromTsv` creates new columns and writes data
+  - `importTableFromTsv` with typed header preserves column types
+  - `importTableFromTsv` matches rows by custom `keyColumn`
+  - Round-trip: `exportTableToTsv` → `importTableFromTsv` preserves data
+  - All methods return `fail(NetworkNotFound)` for invalid network
+
+### Documentation
+
+- [ ] Add TSV I/O section to `src/app-api/api_docs/Api.md` under TableApi
+- [ ] Update `@cytoscape-web/api-types` package with new method signatures
+- [ ] Update `guides/architecture-overview.md` TableApi description
+
+### Verification
+
+- [ ] `npm run test:unit` — all tests pass
+- [ ] `npm run build` — host builds
+- [ ] `npm run build:api-types` — types package builds
+- [ ] Manual test: export node table → edit TSV → import back → data visible in Table Browser
+
+---
+
 ## Final Verification
 
 ### Build & Test

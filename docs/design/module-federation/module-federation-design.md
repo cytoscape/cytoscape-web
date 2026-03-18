@@ -898,7 +898,92 @@ instance already supports these operations; the App API simply exposes them.
 
 > Implementation checklist: [implementation-checklist-phase3.md § Step 3.6](checklists/implementation-checklist-phase3.md)
 
-### Beta Release (between Step 3.6 and Phase 4)
+#### Step 3.7: TSV Table Import/Export API (Pre-Beta)
+
+Add TSV-based table I/O to enable efficient data exchange between Cytoscape
+Web and external analysis tools (Python/pandas, R, CLI agents).
+
+**Motivation:** The existing `exportToCx2()` produces complete but verbose JSON
+(~500KB for a 1000-node network). For iterative analysis workflows — export
+attributes → run analysis in Python/R → write results back — a compact
+tab-delimited format reduces payload size by ~10x and maps 1:1 to
+`pandas.DataFrame` / R `data.frame`.
+
+**New methods on `TableApi`:**
+
+```typescript
+// Export: table → TSV string
+getTable(
+  networkId: IdType,
+  tableType: 'node' | 'edge',
+  options?: {
+    columns?: string[]         // subset of columns (omit = all)
+    includeTypeHeader?: boolean // "name:string\tdegree:integer" header
+  },
+): ApiResult<{
+  columns: Array<{ name: string; type: ValueTypeName }>
+  rows: Array<Record<string, ValueType>>
+}>
+
+exportTableToTsv(
+  networkId: IdType,
+  tableType: 'node' | 'edge',
+  options?: {
+    columns?: string[]
+    includeTypeHeader?: boolean  // default: false (plain TSV)
+  },
+): ApiResult<{ tsvText: string }>
+
+// Import: TSV string → table
+importTableFromTsv(
+  networkId: IdType,
+  tableType: 'node' | 'edge',
+  tsvText: string,
+  options?: {
+    keyColumn?: string  // column to match rows (default: 'id')
+  },
+): ApiResult<{ rowCount: number; newColumns: string[] }>
+```
+
+**Design decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| TSV not CSV | Tab separators avoid quoting issues with commas in biological names. Matches Cytoscape Desktop convention |
+| `getTable()` as structured read | Returns typed columns + rows for programmatic use; `exportTableToTsv()` is a string convenience wrapper |
+| `includeTypeHeader` opt-in | Default plain TSV maximizes compatibility with pandas/R. Typed header (`name:string`) enables lossless round-trip |
+| Import matches by key column | Default `id` column; overridable to `name` for human-authored data |
+| On `TableApi` not `ExportApi` | Table I/O is naturally grouped with other table operations. `ExportApi` remains for whole-network formats (CX2) |
+| Edge table includes source/target | When exporting edge table, `source` and `target` columns are always included. This implicitly captures topology |
+
+**Existing code to leverage:**
+
+| Existing code | Location | Reuse |
+|---|---|---|
+| `parseSif()`, `validateSif()` | `src/utils/sifUtils.ts` | Pattern reference for text-to-model parsing |
+| `tableApi.getRow()`, `tableApi.editRows()` | `src/app-api/core/tableApi.ts` | Extend with `getTable()` / `importTableFromTsv()` |
+| `inferColumnType()` | `src/data/hooks/stores/TableStore.ts` | Auto-detect types on TSV import when no type header |
+
+**Round-trip workflow example:**
+
+```
+Cytoscape Web                  Python/R
+     │                              │
+     │ exportTableToTsv('node')     │
+     │ ──────────────────────────►  │
+     │       (compact TSV)          │  df = pd.read_csv(tsv, sep='\t')
+     │                              │  df['cluster'] = louvain(G)
+     │ importTableFromTsv('node')   │  df.to_csv(result, sep='\t')
+     │ ◄──────────────────────────  │
+     │       (analysis results)     │
+     │                              │
+     │ setMapping('cluster'→color)  │
+     │  (visualize results)         │
+```
+
+> Implementation checklist: [implementation-checklist-phase3.md § Step 3.7](checklists/implementation-checklist-phase3.md)
+
+### Beta Release (between Step 3.7 and Phase 4)
 
 Before proceeding to Phase 4, publish the first beta release of the App API.
 
@@ -1009,6 +1094,8 @@ Items deferred from earlier phases — each requires its own design document.
 | Step 3.3: Starter Template Overhaul   | Fix id/name mismatch, add TODO markers, update README                                                                            |
 | Step 3.4: Package Documentation       | `@cytoscape-web/api-types` README fixes, CHANGELOG.md                                                                            |
 | Step 3.5: Cross-cutting Updates       | Update examples CLAUDE.md, rewrite patterns/README.md, clean up stale references                                                 |
+| Step 3.6: Graph Traversal API         | 10 read-only `ElementApi` methods wrapping cytoscape.js core; `network-statistics` non-React example                             |
+| Step 3.7: TSV Table I/O API           | `getTable()`, `exportTableToTsv()`, `importTableFromTsv()` on `TableApi`; enables pandas/R round-trip workflows                 |
 
 **Milestones (checkpoints):**
 
@@ -1018,6 +1105,8 @@ Items deferred from earlier phases — each requires its own design document.
 | Reference complete            | Every public API function has description, parameters, return type, and example                |
 | Examples comprehensive        | `hello-world` exercises every API domain (all 10 + EventBus + ResourceApi)                   |
 | Template works out-of-the-box | `git clone` → `npm install` → `npm run dev` produces a working panel + menu item in < 5 min  |
+| Graph traversal working       | `getConnectedNodes`, `getRoots`, `getLeaves` etc. pass unit tests; `network-statistics` runs |
+| TSV I/O working               | `exportTableToTsv` → edit → `importTableFromTsv` round-trip preserves data                   |
 | Phase 3 complete              | All docs reviewed; example apps build against published `@cytoscape-web/api-types`            |
 
 ### Phase 4: Platform Extensibility (TBD)
