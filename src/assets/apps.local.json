@@ -10,5 +10,9 @@
   {
     "name": "networkStatistics",
     "url": "http://localhost:3333/remoteEntry.js"
+  },
+  {
+    "name": "claudeBridge",
+    "url": "http://localhost:6100/remoteEntry.js"
   }
 ]
