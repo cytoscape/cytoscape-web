@@ -1,6 +1,6 @@
 # Runtime App Registration Specification
 
-- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Code review follow-up: rollback contract, id validation strengthening, concurrency notes, deactivation clarity, orphan app handling, Step 0 decomposition, cleanup synchronous execution model, lifecycle state machine table
+- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Code review rounds: state machine table corrections, startup vs refresh failure separation, orphan lifecycle completion, dependencies first-rollout semantics, custom URL validation policy, concurrency extension design
 - Rev. 1 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude
 
 Detailed design for runtime-configurable external app registration and selective
@@ -282,9 +282,16 @@ interface AppCatalogEntry {
 ```
 
 The `dependencies` field declares which other apps must be loaded before this
-app can be activated. In the first rollout, this field is defined in the type
-but the host does not perform dependency resolution or topological ordering.
-It is reserved for future use.
+app can be activated. **First-rollout semantics:** this field is accepted and
+stored but has no effect on runtime behavior. Specifically:
+
+- The host does not perform dependency resolution or topological ordering
+- Unknown dependency IDs (not in catalog) produce a warning and are ignored
+- Self-dependencies and duplicate entries produce a warning and are ignored
+- Dependencies are not displayed in the app manager UI
+- No activation or deactivation is blocked by dependency state
+
+The field is reserved for future use.
 
 `id` is the Module Federation scope name and serves as the unique key in
 `catalog`. It maps directly to `CyApp.id` and to `window[id]` at runtime.
@@ -444,7 +451,7 @@ const AppManifestEntrySchema = z
     url: z.string().url(),
     description: z.string().optional(),
     version: z.string().optional(),
-    dependencies: z.array(z.string()).optional(),
+    dependencies: z.array(z.string()).optional(), // accepted but ignored at runtime (first rollout)
   })
   .refine((e) => e.id !== undefined || e.name !== undefined, {
     message: 'Either id or name must be present',
@@ -525,20 +532,29 @@ rollout if IndexedDB growth becomes a concern.
 
 ### 7.4 Manifest Failure Handling
 
-If manifest fetch fails:
+Failure behavior differs between startup and manual refresh:
+
+**Startup fetch failure:**
 
 - the host remains usable
-- catalog becomes empty
+- catalog becomes empty (no prior catalog exists)
 - no external apps are auto-loaded
 - a warning is logged
+- if a custom `manifestUrl` fails, the host offers a UI action to clear it
+  and revert to the default App Store URL
 
-If a custom `manifestUrl` fails, the host may offer a UI action to clear it
-and revert to the default App Store URL.
+**Manual refresh failure:**
 
-If the manifest is malformed:
+- the **previous catalog is retained** — a transient network error must not
+  wipe the user's visible app list
+- a toast or inline error notifies the user that refresh failed
+- already-loaded apps continue running unaffected
+- the user can retry the refresh at any time
 
-- if the response is not a JSON array, the manifest is rejected entirely and
-  catalog becomes empty
+**Malformed manifest (applies to both startup and refresh):**
+
+- if the response is not a JSON array, the manifest is rejected entirely:
+  at startup catalog becomes empty; on refresh the previous catalog is retained
 - if individual entries fail zod validation, they are skipped and the
   remaining valid entries populate the catalog
 - validation errors are logged with the entry index and zod error message
@@ -694,9 +710,15 @@ When the App Store serves all remote entries from a single origin, the
 browser's per-origin connection limit (typically 6) acts as a natural
 concurrency bound. This is sufficient for the first rollout.
 
-If catalogs grow to tens or hundreds of apps, a concurrency pool (e.g., load
-at most N apps simultaneously) can be introduced without changing the per-app
-loader or the orchestrator's API — only the scheduling logic changes.
+If catalogs grow to tens or hundreds of apps, bounded concurrency (e.g.,
+`p-limit`) can be introduced. Because all loads funnel through
+`loadRemoteApp` and the orchestrator's `Promise.allSettled` loop, adding a
+concurrency cap requires changing only the scheduling logic in the
+orchestrator — the per-app loader interface and the lifecycle hooks remain
+unchanged. The first rollout intentionally does not fix a concurrency API;
+the unbounded default is the simplest correct implementation for small
+catalogs, and the single-entry-point design ensures a future cap can be
+added in one place.
 
 ### 8.5 Inactive and Unknown Apps
 
@@ -835,11 +857,11 @@ in session-local `loadStates`).
 | # | Trigger | AppStatus before | LoadState before | AppStatus after | LoadState after | Actions |
 |---|---------|-----------------|-----------------|----------------|----------------|---------|
 | 1 | First-time activate (user click) | _(none)_ | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
-| 2 | First-time activate — load fails | _(none)_ | `unloaded` | `Error` | `failed` | Rollback per Section 9.2 |
-| 3 | First-time activate — mount fails | _(none)_ | `unloaded` | `Error` | `loaded` | `cleanupAllForApp()`, status set to Error |
+| 2 | First-time activate — load fails | _(none)_ | `unloaded` | `Inactive` | `failed` | Rollback per Section 9.2; keep `Inactive` so user can retry via Enable |
+| 3 | First-time activate — mount fails | _(none)_ | `unloaded` | `Inactive` | `failed` | `cleanupAllForApp(appId)`; keep `Inactive` per Section 9.2 |
 | 4 | Startup auto-load (persisted active) | `Active` | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
-| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Active` | `failed` | Keep status, show retry in UI |
-| 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `unmount()` → `cleanupAllForApp()` |
+| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Error` | `failed` | Set `Error` to signal previously working app needs attention; show Retry |
+| 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()` (host cleanup first; see Section 9.4) |
 | 7 | Re-enable (user click, module cached) | `Inactive` | `loaded` | `Active` | `loaded` | Reuse `appRegistry` entry → declarative resources → `mount()` |
 | 8 | Re-enable (user click, module evicted) | `Inactive` | `unloaded` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` → register → declarative resources → `mount()` |
 | 9 | Retry after failure | `Error` | `failed` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` flow |
@@ -896,6 +918,19 @@ The panel must also expose manifest URL controls:
 - allow entering or editing a custom manifest URL
 - allow clearing the custom URL to revert to the default
 
+**Custom URL validation policy:**
+
+Custom manifest URLs are validated **before** being saved to `AppStore`:
+
+1. Parse with the `URL` constructor — reject if parsing fails
+2. Protocol must be `https:` in production builds; `http:` is permitted only
+   in development mode (`NODE_ENV !== 'production'`)
+3. Relative paths are not accepted — the URL must be absolute
+4. If validation fails, the URL is **not saved** and an inline validation
+   error is shown immediately (no round-trip to the server)
+5. If validation passes but the subsequent fetch fails, the URL remains saved
+   and the failure is handled per Section 7.4 (manual refresh failure policy)
+
 ### 11.2 UI States
 
 | Catalog | Load state | Status              | UI behavior                                  |
@@ -906,6 +941,7 @@ The panel must also expose manifest URL controls:
 | Yes     | loaded     | inactive            | Show Enable (fast, no network fetch)         |
 | Yes     | failed     | any                 | Show Retry                                   |
 | No      | loaded     | active              | Show Disable only (session-only, see below)  |
+| No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
 
 Note: `loadStates` tracks whether the remote module is in memory, not whether
 the app is active (see Section 6.3). A `loaded + inactive` app was previously
@@ -916,6 +952,12 @@ app that is currently running. The app continues to run for the session but
 cannot be re-enabled after deactivation because it is no longer in the
 catalog. The app manager shows it as a session-only entry with Disable as
 the only action.
+
+The `No` / `loaded` / `inactive` row occurs when a user disables a
+session-only orphan app (the row above). Since the app is no longer in the
+catalog, re-enabling is not possible — the remote URL is unknown. The only
+available action is Remove, which deletes the `AppStore.apps` entry and the
+`appRegistry` entry, fully cleaning up the orphan.
 
 ### 11.3 Apps Menu and Panels
 
