@@ -460,7 +460,11 @@ export const tableApi: TableApi = {
         }
       }
 
-      // Build rows map
+      // Build rows map — merge with existing row data so we don't
+      // overwrite attributes not present in the TSV
+      const existingTable = useTableStore.getState().tables[networkId]?.[
+        tableKey(tableType)
+      ]
       const rowsMap = new Map<
         IdType,
         Record<AttributeName, ValueType>
@@ -469,7 +473,12 @@ export const tableApi: TableApi = {
         const values = lines[i].split('\t')
         const rowId = values[keyIndex]
         if (!rowId) continue
-        const rowData: Record<AttributeName, ValueType> = {}
+        // Start from existing row data (preserve all existing attributes)
+        const existingRow = existingTable?.rows?.get(rowId)
+        const rowData: Record<AttributeName, ValueType> = existingRow
+          ? { ...existingRow }
+          : {}
+        // Overlay only the columns present in the TSV
         for (let j = 0; j < colNames.length; j++) {
           const colName = colNames[j]
           if (colName === keyColumn) continue
