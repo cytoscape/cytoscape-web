@@ -356,6 +356,7 @@ interface AppState {
 interface AppAction {
   restore: (appIds: string[]) => Promise<void>
   add: (app: CyApp) => void
+  remove: (id: string) => void        // delete in-memory entry AND persisted record
   setCatalog: (entries: AppCatalogEntry[]) => void
   setLoadState: (id: string, state: AppLoadState) => void
   setManifestUrl: (url: string | undefined) => void
@@ -976,6 +977,7 @@ activation state.
 | Yes     | failed     | any                 | Show Retry                                   |
 | No      | loaded     | active              | Show Disable only (session-only, see below)  |
 | No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
+| No      | failed     | any                 | Do not display (no catalog entry, no retry)  |
 
 Note: `loadStates` tracks whether the remote module is in memory, not whether
 the app is active (see Section 6.3). A `Catalog = Yes` / `loaded + inactive`
@@ -993,18 +995,30 @@ The `No` / `loaded` / `inactive` row occurs when a user disables a
 session-only orphan app (the row above). Since the app is no longer in the
 catalog, re-enabling is not possible. The only available action is Remove.
 
-**Remove behavior:** Remove is an explicit user action that permanently
-deletes the orphan app's persisted state from IndexedDB (`AppStore.apps`
-entry) as well as the runtime `appRegistry` entry. After Remove, the app
-will not reappear on the next session even if the manifest URL is switched
-back. This is distinct from the automatic orphan retention policy (Section
-7.3), which preserves records without user intervention. The difference:
+**Remove behavior:** Remove is an explicit user action that deletes the
+orphan app from **both** layers:
+
+1. **In-memory store entry** — `AppStore.apps[id]` (Zustand runtime state)
+   and the `appRegistry` Map entry are deleted immediately
+2. **Persisted record** — the corresponding IndexedDB app record is deleted
+   so the app does not reappear on the next session
+
+The orchestrator calls `AppStore.remove(id)` (see Section 6.6) which handles
+both layers. After Remove, the app will not reappear even if the manifest URL
+is switched back. This is distinct from the automatic orphan retention policy
+(Section 7.3), which preserves records without user intervention:
 
 - **Automatic:** orphan records are retained in IndexedDB — switching back
   to the original manifest restores them
 - **Manual Remove:** the user explicitly deletes the record — it is gone
   permanently and must be re-activated from scratch if the app reappears in
   a future catalog
+
+The `No` / `failed` row occurs when a load attempt was in progress during a
+catalog refresh that removed the app, and the load subsequently failed (see
+Section 7.5). Since the app has no catalog entry, retry is not available.
+The failed `loadStates` entry remains in session memory but is not displayed
+in the app manager — it is silently discarded at session end.
 
 ### 11.3 Apps Menu and Panels
 
@@ -1123,7 +1137,9 @@ independently, and the host must build and start after each one.
 
 - Add `AppCatalogEntry` and `AppLoadState` types
 - Add `catalog`, `loadStates`, and `manifestUrl` fields to AppStore
-- Add `setCatalog`, `setLoadState`, and `setManifestUrl` actions
+- Add `setCatalog`, `setLoadState`, `setManifestUrl`, and `remove` actions
+- The `remove` action deletes both the in-memory `AppStore.apps[id]` entry
+  and the corresponding persisted IndexedDB record
 - Define `DEFAULT_MANIFEST_URL` constant
 - No behavioral change yet — new fields are populated but unused
 
@@ -1174,9 +1190,14 @@ independently, and the host must build and start after each one.
 
 - Render the app manager panel from `catalog` (not from loaded apps only)
 - Show load state and enable / disable / retry actions per Section 11.2
+- Add orphan app handling: show Disable for active orphans, Remove for
+  inactive orphans; Remove calls `AppStore.remove(id)` and deletes the
+  `appRegistry` entry (see Section 11.2)
 - Add manifest URL controls (display current URL, edit, clear to default)
+  with inline validation per Section 11.1
 - Add manual catalog refresh button
-- Verify: unloaded apps are visible; loaded apps show correct state
+- Verify: unloaded apps are visible; loaded apps show correct state;
+  orphan apps show correct actions after catalog refresh
 
 ### Step 8 — Preserve existing rendering
 
