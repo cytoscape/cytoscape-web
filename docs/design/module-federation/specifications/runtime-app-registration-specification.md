@@ -1,6 +1,6 @@
 # Runtime App Registration Specification
 
-- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Code review rounds: state machine table corrections, startup vs refresh failure separation, orphan lifecycle completion, dependencies first-rollout semantics, custom URL validation policy, concurrency extension design
+- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Multiple code review rounds addressing state consistency, failure handling, orphan lifecycle, validation policies, and concurrency design
 - Rev. 1 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude
 
 Detailed design for runtime-configurable external app registration and selective
@@ -235,9 +235,13 @@ intent separate.
 
 AppStatus keeps its current meaning:
 
-- active
-- inactive
-- error
+- `AppStatus.Active` (persisted value: `'active'`)
+- `AppStatus.Inactive` (persisted value: `'inactive'`)
+- `AppStatus.Error` (persisted value: `'error'`)
+
+This document uses enum member names (`AppStatus.Active`, etc.) to refer to
+status values. The corresponding persisted string values are stored in
+IndexedDB as defined in `AppStatus.ts`.
 
 AppStatus represents user intent and persisted activation state.
 
@@ -471,6 +475,10 @@ Validation rules:
   the entry is skipped with a warning
 - After normalization, duplicate `id` values are resolved by keeping the first
   occurrence and logging a warning for subsequent duplicates
+- `dependencies` entries that reference unknown IDs (not present in the
+  manifest), self-references, or duplicates are logged as warnings and
+  ignored during normalization. In the first rollout, `dependencies` has no
+  runtime effect (see Section 6.4)
 - After remote loading, `CyApp.id` from the loaded module must match the
   manifest `id`. A mismatch is treated as a load failure
 
@@ -597,6 +605,10 @@ Effect on already-loaded apps:
   app manager UI, these apps are shown as session-only entries with Disable as
   the only available action (they cannot be re-enabled since they are no
   longer in the catalog). See the `No` / `loaded` row in Section 11.2.
+- **Currently loading apps** — if a load attempt is in progress when a catalog
+  refresh removes the app, the load attempt continues to completion. After it
+  finishes, the app is treated as a session-only orphan (same as a loaded app
+  removed by refresh).
 
 ### 7.6 Security Considerations
 
@@ -697,8 +709,8 @@ If loading fails for an individual app:
 
 ### 8.4 Concurrency Strategy
 
-The first rollout uses `Promise.allSettled` with no concurrency limit. This is
-appropriate because:
+The first rollout reference implementation may use `Promise.allSettled` with
+unbounded scheduling. This is appropriate because:
 
 - Each app loads from a different remote server, so requests are independent
 - The browser's built-in per-origin connection limit (typically 6) provides
@@ -715,10 +727,10 @@ If catalogs grow to tens or hundreds of apps, bounded concurrency (e.g.,
 `loadRemoteApp` and the orchestrator's `Promise.allSettled` loop, adding a
 concurrency cap requires changing only the scheduling logic in the
 orchestrator — the per-app loader interface and the lifecycle hooks remain
-unchanged. The first rollout intentionally does not fix a concurrency API;
-the unbounded default is the simplest correct implementation for small
-catalogs, and the single-entry-point design ensures a future cap can be
-added in one place.
+unchanged. Bounded concurrency remains an implementation-compatible optimization — the
+specification does not require unbounded scheduling. The single-entry-point
+design ensures a future cap can be added in one place without changing the
+per-app loader contract or lifecycle hooks.
 
 ### 8.5 Inactive and Unknown Apps
 
@@ -758,7 +770,7 @@ rollback behavior for each stage:
 | Failure stage              | appRegistry          | AppStore.apps        | Resources                    | loadStates | AppStatus                                         |
 | -------------------------- | -------------------- | -------------------- | ---------------------------- | ---------- | ------------------------------------------------- |
 | `loadRemoteApp` fails      | No change            | No change            | No change                    | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
-| register / resource fails  | Entry remains (bundle in memory) | Remove if partially added | `cleanupAllForApp(appId)` | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
+| register / resource fails  | Entry remains (bundle in memory) | Remove if newly added (see below) | `cleanupAllForApp(appId)` | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
 | `mount()` fails            | Entry remains         | Remains              | `cleanupAllForApp(appId)`    | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
 
 Rollback procedure by stage:
@@ -768,9 +780,12 @@ Rollback procedure by stage:
 
 2. **register / resource registration failure** — the app was partially
    registered in `AppStore.apps` or `AppResourceStore`. Call
-   `cleanupAllForApp(appId)` to remove resources. Remove the partial
-   `AppStore.apps` entry if it was added during this activation attempt.
-   Set `loadStates[id] = 'failed'`.
+   `cleanupAllForApp(appId)` to remove resources. Remove the
+   `AppStore.apps` entry **only if it did not exist before this activation
+   attempt started** (i.e., the orchestrator checks `id in apps` before
+   beginning the attempt and records the result). If the entry existed prior
+   to this attempt (e.g., a previously active app being retried), it is
+   retained. Set `loadStates[id] = 'failed'`.
 
 3. **`mount()` failure** — resources are registered and the app is in
    `AppStore.apps`, but `mount()` threw or rejected. Call
@@ -866,7 +881,9 @@ in session-local `loadStates`).
 | 8 | Re-enable (user click, module evicted) | `Inactive` | `unloaded` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` → register → declarative resources → `mount()` |
 | 9 | Retry after failure | `Error` | `failed` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` flow |
 | 10 | Retry — fails again | `Error` | `failed` | `Error` | `failed` | No state change, show error |
-| 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; orphan policy (Section 7.5) applies |
+| 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; app becomes session-only orphan (Section 7.5) |
+| 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()`; re-enable not possible (no catalog entry) |
+| 13 | Remove orphan app | `Inactive` | `loaded` | _(deleted)_ | _(deleted)_ | Delete `AppStore.apps[id]` and `appRegistry` entry; app disappears from UI |
 
 **Invariants:**
 
@@ -930,6 +947,16 @@ Custom manifest URLs are validated **before** being saved to `AppStore`:
    error is shown immediately (no round-trip to the server)
 5. If validation passes but the subsequent fetch fails, the URL remains saved
    and the failure is handled per Section 7.4 (manual refresh failure policy)
+
+**Manifest source switching behavior:**
+
+Switching the manifest URL changes which apps appear in the catalog but does
+not delete persisted app state. Apps that were active under the previous
+manifest but are absent from the new manifest become orphan records (see
+Section 7.3). Their `AppStore.apps` entries and `AppStatus` are retained in
+IndexedDB. If the user switches back to the original manifest URL, these
+entries are restored automatically and the apps resume their previous
+activation state.
 
 ### 11.2 UI States
 
