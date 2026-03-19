@@ -569,7 +569,7 @@ describe('importTableFromTsv', () => {
       expect.any(String),
       '',
     )
-    expect(mockEditRows).toHaveBeenCalled()
+    expect(mockSetValues).toHaveBeenCalled()
   })
 
   it('preserves column types from typed header', () => {
@@ -675,6 +675,6 @@ describe('TSV round-trip', () => {
     if (importResult.success) {
       expect(importResult.data.rowCount).toBe(2)
     }
-    expect(mockEditRows).toHaveBeenCalled()
+    expect(mockSetValues).toHaveBeenCalled()
   })
 })

@@ -517,25 +517,19 @@ export const tableApi: TableApi = {
         }
       }
 
-      // Build rows map — merge with existing row data so we don't
-      // overwrite attributes not present in the TSV
-      const existingTable = useTableStore.getState().tables[networkId]?.[
-        tableKey(tableType)
-      ]
-      const rowsMap = new Map<
-        IdType,
-        Record<AttributeName, ValueType>
-      >()
+      // Build cell edits — only touch the columns present in the TSV,
+      // preserving all existing attributes. Uses setValues (batch cell edit)
+      // instead of editRows (full row replace) for performance: avoids
+      // copying all ~20 attributes per row × 330 rows.
+      const cellEdits: Array<{
+        row: IdType
+        column: AttributeName
+        value: ValueType
+      }> = []
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split('\t')
         const rowId = values[keyIndex]
         if (!rowId) continue
-        // Start from existing row data (preserve all existing attributes)
-        const existingRow = existingTable?.rows?.get(rowId)
-        const rowData: Record<AttributeName, ValueType> = existingRow
-          ? { ...existingRow }
-          : {}
-        // Overlay only the columns present in the TSV
         for (let j = 0; j < colNames.length; j++) {
           const colName = colNames[j]
           if (colName === keyColumn) continue
@@ -543,18 +537,19 @@ export const tableApi: TableApi = {
           const rawValue = values[j] ?? ''
           const colType =
             colTypes.get(colName) ?? existingColumns.get(colName) ?? 'string'
-          rowData[colName] = parseTsvValue(rawValue, colType as ValueTypeName)
+          cellEdits.push({
+            row: rowId,
+            column: colName,
+            value: parseTsvValue(rawValue, colType as ValueTypeName),
+          })
         }
-        rowsMap.set(rowId, rowData)
       }
 
-      storeState.editRows(
-        networkId,
-        tableType as TableType,
-        rowsMap,
-      )
+      storeState.setValues(networkId, tableType, cellEdits)
 
-      return ok({ rowCount: rowsMap.size, newColumns })
+      // Count unique row IDs from cell edits
+      const uniqueRows = new Set(cellEdits.map((e) => e.row))
+      return ok({ rowCount: uniqueRows.size, newColumns })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
