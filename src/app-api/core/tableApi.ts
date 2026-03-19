@@ -161,38 +161,30 @@ function syncColumnToTableDisplayConfig(
   tableType: AppTableType,
   columnName: string,
 ): void {
-  try {
-    const uiState = useUiStateStore.getState()
-    const vsOpts = uiState.ui.visualStyleOptions as
-      | Record<string, any>
-      | undefined
-    const currentConfig =
-      vsOpts?.[networkId]?.visualEditorProperties?.tableDisplayConfiguration
-    if (!currentConfig) return // no config to update (fallback path will show all)
+  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+  // Directly mutate the Immer-managed state to add the column entry.
+  // Using setTableDisplayConfiguration triggers toPlainObject + IndexedDB
+  // write which can hang inside page.evaluate(). This minimal mutation
+  // is safe because it runs inside the same synchronous call stack as
+  // createColumn, and the next DB persist cycle will pick it up.
+  useUiStateStore.setState((state: any) => {
+    const tdc =
+      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
+        ?.tableDisplayConfiguration
+    if (!tdc?.[configKey]?.columnConfiguration) return state
 
-    const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
-    const tableConfig = currentConfig[configKey]
-    if (!tableConfig?.columnConfiguration) return
-
-    const alreadyExists = tableConfig.columnConfiguration.some(
+    const colConfig = tdc[configKey].columnConfiguration
+    const exists = colConfig.some(
       (c: { attributeName: string }) => c.attributeName === columnName,
     )
-    if (alreadyExists) return
+    if (exists) return state
 
-    const updatedConfig = {
-      ...currentConfig,
-      [configKey]: {
-        ...tableConfig,
-        columnConfiguration: [
-          { attributeName: columnName, visible: true, columnWidth: undefined },
-          ...tableConfig.columnConfiguration,
-        ],
-      },
-    }
-    uiState.setTableDisplayConfiguration(networkId, updatedConfig)
-  } catch {
-    // Best-effort — table data is correct even if display config update fails
-  }
+    tdc[configKey].columnConfiguration = [
+      { attributeName: columnName, visible: true, columnWidth: undefined },
+      ...colConfig,
+    ]
+    return state
+  })
 }
 
 // ── Core implementation ──────────────────────────────────────────────────────
@@ -250,8 +242,16 @@ export const tableApi: TableApi = {
         .getState()
         .createColumn(networkId, tableType, columnName, dataType, defaultValue)
 
-      // Also update tableDisplayConfiguration so the Table Browser shows the new column
-      syncColumnToTableDisplayConfig(networkId, tableType, columnName)
+      // Schedule table display config sync asynchronously to avoid
+      // blocking page.evaluate() — the Immer + IndexedDB persist cycle
+      // in UiStateStore can hang when called synchronously from CDP.
+      setTimeout(() => {
+        try {
+          syncColumnToTableDisplayConfig(networkId, tableType, columnName)
+        } catch {
+          // Best-effort
+        }
+      }, 0)
 
       return ok()
     } catch (e) {
@@ -506,6 +506,14 @@ export const tableApi: TableApi = {
             '',
           )
           newColumns.push(colName)
+          // Sync to Table Browser display config
+          setTimeout(() => {
+            try {
+              syncColumnToTableDisplayConfig(networkId, tableType, colName)
+            } catch {
+              // Best-effort
+            }
+          }, 0)
         }
       }
 
