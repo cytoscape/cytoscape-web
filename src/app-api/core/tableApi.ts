@@ -4,6 +4,7 @@
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { IdType } from '../../models/IdType'
 import { Column } from '../../models/TableModel/Column'
 import {
@@ -150,6 +151,50 @@ function tableKey(tableType: AppTableType): 'nodeTable' | 'edgeTable' {
   return tableType === 'node' ? 'nodeTable' : 'edgeTable'
 }
 
+/**
+ * Add a column to the tableDisplayConfiguration in UiStateStore so the
+ * Table Browser shows newly created columns. Without this, columns created
+ * via the API exist in the data but are invisible in the UI.
+ */
+function syncColumnToTableDisplayConfig(
+  networkId: IdType,
+  tableType: AppTableType,
+  columnName: string,
+): void {
+  try {
+    const uiState = useUiStateStore.getState()
+    const vsOpts = uiState.ui.visualStyleOptions as
+      | Record<string, any>
+      | undefined
+    const currentConfig =
+      vsOpts?.[networkId]?.visualEditorProperties?.tableDisplayConfiguration
+    if (!currentConfig) return // no config to update (fallback path will show all)
+
+    const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+    const tableConfig = currentConfig[configKey]
+    if (!tableConfig?.columnConfiguration) return
+
+    const alreadyExists = tableConfig.columnConfiguration.some(
+      (c: { attributeName: string }) => c.attributeName === columnName,
+    )
+    if (alreadyExists) return
+
+    const updatedConfig = {
+      ...currentConfig,
+      [configKey]: {
+        ...tableConfig,
+        columnConfiguration: [
+          { attributeName: columnName, visible: true, columnWidth: undefined },
+          ...tableConfig.columnConfiguration,
+        ],
+      },
+    }
+    uiState.setTableDisplayConfiguration(networkId, updatedConfig)
+  } catch {
+    // Best-effort — table data is correct even if display config update fails
+  }
+}
+
 // ── Core implementation ──────────────────────────────────────────────────────
 
 export const tableApi: TableApi = {
@@ -204,6 +249,10 @@ export const tableApi: TableApi = {
       useTableStore
         .getState()
         .createColumn(networkId, tableType, columnName, dataType, defaultValue)
+
+      // Also update tableDisplayConfiguration so the Table Browser shows the new column
+      syncColumnToTableDisplayConfig(networkId, tableType, columnName)
+
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
