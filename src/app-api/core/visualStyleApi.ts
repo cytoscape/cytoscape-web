@@ -6,6 +6,7 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
 import { AttributeName, ValueType, ValueTypeName } from '../../models/TableModel'
 import {
+  MappingFunctionType,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualPropertyValueTypeName,
@@ -132,43 +133,28 @@ export const visualStyleApi: VisualStyleApi = {
           `Network ${networkId} not found`,
         )
       }
-      // 1. Create the discrete mapping structure
-      store.createDiscreteMapping(networkId, vpName, attribute, attributeType)
-
-      // 2. If value→VP mapping entries are provided, populate the vpValueMap
-      //    Done via setTimeout to avoid blocking page.evaluate — the Immer
-      //    produce cycle for VisualStyle (100+ VPs) can be heavy.
-      if (mapping && Object.keys(mapping).length > 0) {
-        const mappingEntries = mapping
-        const attrType = attributeType
-        setTimeout(() => {
-          try {
-            const vs = useVisualStyleStore.getState().visualStyles[networkId]
-            const vpEntry = vs[vpName as keyof typeof vs] as any
-            const existingMf = vpEntry?.mapping
-            if (!existingMf) return
-            const vpValueMap = new Map<ValueType, VisualPropertyValueType>(
-              existingMf.vpValueMap ?? [],
-            )
-            for (const [key, value] of Object.entries(mappingEntries)) {
-              const parsedKey =
-                attrType === ValueTypeName.Integer ||
-                attrType === ValueTypeName.Long
-                  ? parseInt(key, 10)
-                  : attrType === ValueTypeName.Double
-                    ? parseFloat(key)
-                    : key
-              vpValueMap.set(parsedKey, value)
-            }
-            useVisualStyleStore.getState().setMapping(networkId, vpName, {
-              ...existingMf,
-              vpValueMap,
-            })
-          } catch {
-            // Best-effort
-          }
-        }, 0)
+      // Build a complete discrete mapping with entries in one call
+      const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
+      if (mapping) {
+        for (const [key, value] of Object.entries(mapping)) {
+          const parsedKey =
+            attributeType === ValueTypeName.Integer ||
+            attributeType === ValueTypeName.Long
+              ? parseInt(key, 10)
+              : attributeType === ValueTypeName.Double
+                ? parseFloat(key)
+                : key
+          vpValueMap.set(parsedKey, value)
+        }
       }
+      const visualProperty = visualStyles[networkId][vpName]
+      store.setMapping(networkId, vpName, {
+        attribute,
+        type: MappingFunctionType.Discrete,
+        vpValueMap,
+        visualPropertyType: visualProperty.type,
+        defaultValue: visualProperty.defaultValue,
+      })
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
