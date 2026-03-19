@@ -1,6 +1,6 @@
 # Runtime App Registration Specification
 
-- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy
+- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Code review follow-up: rollback contract, id validation strengthening, concurrency notes, deactivation clarity, orphan app handling, Step 0 decomposition, cleanup synchronous execution model, lifecycle state machine table
 - Rev. 1 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude
 
 Detailed design for runtime-configurable external app registration and selective
@@ -288,8 +288,25 @@ It is reserved for future use.
 
 `id` is the Module Federation scope name and serves as the unique key in
 `catalog`. It maps directly to `CyApp.id` and to `window[id]` at runtime.
-`name` is the optional display name shown in the app manager UI; when omitted,
-the host uses `id` as the display name.
+Because `id` is used as a JavaScript property key on `window`, it must be a
+valid JavaScript identifier. The allowed pattern is:
+
+```
+/^[a-zA-Z_$][a-zA-Z0-9_$]*$/
+```
+
+`name` is the optional human-readable display name shown in the app manager
+UI; when omitted, the host uses `id` as the display name. `name` has no format
+restrictions. The two fields have distinct responsibilities:
+
+- `id` — runtime key (scope name, store key, `window` property). Immutable
+  after registration.
+- `name` — display label. May contain spaces, Unicode, or any human-readable
+  text.
+
+After loading a remote module, the host compares the exported `CyApp.id` with
+the manifest's `id`. If they do not match, the app is rejected with a warning
+log and treated as a load failure.
 
 ### 6.5 Manifest URL
 
@@ -382,6 +399,12 @@ This registry is open for extension: adding a new per-app resource type (e.g.,
 keyboard shortcuts) only requires a `registerAppCleanup()` call in the new
 store — no changes to `appLifecycle.ts`.
 
+**Execution model:** All cleanup handlers are **synchronous functions**.
+`cleanupAllForApp()` iterates the handler list sequentially and completes
+synchronously. If a future resource type requires async teardown (e.g., aborting
+in-flight network requests), a dedicated async cleanup phase will be introduced
+at that time — it is out of scope for this rollout.
+
 ## 7. Runtime Manifest Loading
 
 ### 7.1 Manifest Contract
@@ -416,7 +439,7 @@ normalization. Validation uses a skip-and-warn strategy at the entry level:
 ```typescript
 const AppManifestEntrySchema = z
   .object({
-    id: z.string().min(1).optional(),
+    id: z.string().regex(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/).optional(),
     name: z.string().min(1).optional(),
     url: z.string().url(),
     description: z.string().optional(),
@@ -436,8 +459,13 @@ Validation rules:
   empty catalog + warning log
 - Each entry is validated independently. Invalid entries are skipped with a
   warning log; valid entries proceed to normalization
+- When `id` is absent and `name` is used as fallback, `name` must also match
+  the identifier pattern (`/^[a-zA-Z_$][a-zA-Z0-9_$]*$/`). If it does not,
+  the entry is skipped with a warning
 - After normalization, duplicate `id` values are resolved by keeping the first
   occurrence and logging a warning for subsequent duplicates
+- After remote loading, `CyApp.id` from the loaded module must match the
+  manifest `id`. A mismatch is treated as a load failure
 
 The validation and normalization logic is encapsulated in a single pure
 function:
@@ -549,7 +577,10 @@ Effect on already-loaded apps:
   for enable.
 - **Removed apps** that are currently loaded continue running for the remainder
   of the session. They will not be auto-loaded on the next startup because
-  they will no longer be present in the catalog passed to `restore`.
+  they will no longer be present in the catalog passed to `restore`. In the
+  app manager UI, these apps are shown as session-only entries with Disable as
+  the only available action (they cannot be re-enabled since they are no
+  longer in the catalog). See the `No` / `loaded` row in Section 11.2.
 
 ### 7.6 Security Considerations
 
@@ -659,6 +690,10 @@ appropriate because:
 - Initial catalogs are expected to be small
 - One app's failure must not block others
 
+When the App Store serves all remote entries from a single origin, the
+browser's per-origin connection limit (typically 6) acts as a natural
+concurrency bound. This is sufficient for the first rollout.
+
 If catalogs grow to tens or hundreds of apps, a concurrency pool (e.g., load
 at most N apps simultaneously) can be introduced without changing the per-app
 loader or the orchestrator's API — only the scheduling logic changes.
@@ -695,21 +730,39 @@ host page.
 
 ### 9.2 Activation Failure and Rollback
 
-If dynamic activation fails at any point after loading starts, the host should:
+Failure handling depends on which stage failed. The following table defines the
+rollback behavior for each stage:
 
-1. Call `cleanupAllForApp(appId)` via `AppCleanupRegistry` — this removes
-   `AppResourceStore` resources (menu items, panels), `ContextMenuItemStore`
-   entries, and any other registered per-app state
-2. Call `unmount()` only if `mount()` had completed successfully
-3. Verify that the app is no longer visible in menu or panel regions
-4. Set `loadStates[id] = 'failed'`
-5. Preserve or downgrade `AppStatus` according to the failure policy
+| Failure stage              | appRegistry          | AppStore.apps        | Resources                    | loadStates | AppStatus                                         |
+| -------------------------- | -------------------- | -------------------- | ---------------------------- | ---------- | ------------------------------------------------- |
+| `loadRemoteApp` fails      | No change            | No change            | No change                    | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
+| register / resource fails  | Entry remains (bundle in memory) | Remove if partially added | `cleanupAllForApp(appId)` | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
+| `mount()` fails            | Entry remains         | Remains              | `cleanupAllForApp(appId)`    | `failed`   | First-time: keep `Inactive`; existing: set `Error` |
 
-Recommended first-rollout policy:
+Rollback procedure by stage:
 
-- keep `AppStatus.Inactive` when first activation fails before the app becomes ready
-- use `AppStatus.Error` only when the user needs explicit retry signaling for a
-  previously active app
+1. **`loadRemoteApp` failure** — the remote bundle could not be fetched or
+   initialized. No host state was modified. Set `loadStates[id] = 'failed'`.
+
+2. **register / resource registration failure** — the app was partially
+   registered in `AppStore.apps` or `AppResourceStore`. Call
+   `cleanupAllForApp(appId)` to remove resources. Remove the partial
+   `AppStore.apps` entry if it was added during this activation attempt.
+   Set `loadStates[id] = 'failed'`.
+
+3. **`mount()` failure** — resources are registered and the app is in
+   `AppStore.apps`, but `mount()` threw or rejected. Call
+   `cleanupAllForApp(appId)` to remove resources. Do NOT call `unmount()`
+   (mount did not complete). `AppStore.apps` entry remains (metadata is
+   valid). Set `loadStates[id] = 'failed'`.
+
+AppStatus policy:
+
+- **First-time activation** (app was `Inactive` or missing): keep
+  `AppStatus.Inactive`. The user can retry via the Enable action.
+- **Startup auto-load of previously active app**: set `AppStatus.Error` to
+  signal that a previously working app needs attention. The user can retry
+  via the Retry action.
 
 ### 9.3 Subsequent Startups
 
@@ -726,19 +779,36 @@ When a loaded app is deactivated from the UI, the host should:
    other stores registered with the cleanup registry
 3. Call the app's `unmount()` lifecycle if present
 
-The app's `loadStates` remains `loaded` because the remote bundle is still in
-browser memory. This allows fast re-activation without re-fetching.
+What is **not** changed by deactivation:
+
+- `loadStates` remains `loaded` (remote bundle is still in browser memory)
+- `AppStore.apps[id]` remains (CyApp metadata is still valid)
+- `appRegistry` entry remains (React.lazy references are still usable)
+
+This ensures fast re-activation without re-fetching (see Section 9.6).
 
 This deactivation path is immediate and does not require page reload.
+
+#### AppStore.apps vs appRegistry
+
+These two structures serve different roles and are not redundant:
+
+- `AppStore.apps` — serializable CyApp metadata managed by Zustand/Immer,
+  persisted to IndexedDB. Does not contain React.lazy references (they are
+  stripped by `toPlainObject` before persistence).
+- `appRegistry` — runtime Map holding CyApp objects with live React.lazy
+  component references. Not persisted; exists only for the session duration.
+  Required because Immer would freeze React.lazy internals.
+
+Both are populated when an app is loaded. Neither is removed on deactivation.
 
 ### 9.5 Meaning of "Unload"
 
 In this specification, "unload" means host-level deactivation:
 
 - unmount the app lifecycle
-- remove host-managed resources
+- remove host-managed resources (via `AppCleanupRegistry`)
 - stop rendering the app's UI
-- remove the live app object from host state if desired
 
 It does **not** mean that the browser reclaims the previously downloaded remote
 JavaScript bundle on demand. Full bundle eviction is out of scope for the first
@@ -754,6 +824,36 @@ The orchestrator uses `loadStates` to decide the re-enable path:
 
 - `loaded` → skip `loadRemoteApp`, reuse `appRegistry` entry
 - `unloaded` or `failed` → call `loadRemoteApp` (full fetch)
+
+### 9.7 Lifecycle State Machine
+
+The following table defines all valid state transitions for app activation and
+deactivation. Each row is a trigger event; columns show the before/after values
+of the two orthogonal state dimensions (`AppStatus` in AppStore, `AppLoadState`
+in session-local `loadStates`).
+
+| # | Trigger | AppStatus before | LoadState before | AppStatus after | LoadState after | Actions |
+|---|---------|-----------------|-----------------|----------------|----------------|---------|
+| 1 | First-time activate (user click) | _(none)_ | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
+| 2 | First-time activate — load fails | _(none)_ | `unloaded` | `Error` | `failed` | Rollback per Section 9.2 |
+| 3 | First-time activate — mount fails | _(none)_ | `unloaded` | `Error` | `loaded` | `cleanupAllForApp()`, status set to Error |
+| 4 | Startup auto-load (persisted active) | `Active` | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
+| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Active` | `failed` | Keep status, show retry in UI |
+| 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `unmount()` → `cleanupAllForApp()` |
+| 7 | Re-enable (user click, module cached) | `Inactive` | `loaded` | `Active` | `loaded` | Reuse `appRegistry` entry → declarative resources → `mount()` |
+| 8 | Re-enable (user click, module evicted) | `Inactive` | `unloaded` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` → register → declarative resources → `mount()` |
+| 9 | Retry after failure | `Error` | `failed` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` flow |
+| 10 | Retry — fails again | `Error` | `failed` | `Error` | `failed` | No state change, show error |
+| 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; orphan policy (Section 7.5) applies |
+
+**Invariants:**
+
+- `LoadState` is never persisted — it starts as `unloaded` on every session
+- `loaded` means the webpack container is initialized in memory; it says nothing
+  about activation
+- `AppStatus` is persisted to IndexedDB; `LoadState` is session-only
+- A transition from `Inactive` to `Active` always requires `mount()` to be
+  called, regardless of `LoadState`
 
 ## 10. Failure and Retry
 
@@ -798,17 +898,24 @@ The panel must also expose manifest URL controls:
 
 ### 11.2 UI States
 
-| Catalog | Load state | Status              | UI behavior                          |
-| ------- | ---------- | ------------------- | ------------------------------------ |
-| Yes     | unloaded   | inactive or missing | Show Enable                          |
-| Yes     | loading    | any                 | Show loading indicator               |
-| Yes     | loaded     | active              | Show Disable (app is running)        |
-| Yes     | loaded     | inactive            | Show Enable (fast, no network fetch) |
-| Yes     | failed     | any                 | Show Retry                           |
+| Catalog | Load state | Status              | UI behavior                                  |
+| ------- | ---------- | ------------------- | -------------------------------------------- |
+| Yes     | unloaded   | inactive or missing | Show Enable                                  |
+| Yes     | loading    | any                 | Show loading indicator                       |
+| Yes     | loaded     | active              | Show Disable (app is running)                |
+| Yes     | loaded     | inactive            | Show Enable (fast, no network fetch)         |
+| Yes     | failed     | any                 | Show Retry                                   |
+| No      | loaded     | active              | Show Disable only (session-only, see below)  |
 
 Note: `loadStates` tracks whether the remote module is in memory, not whether
 the app is active (see Section 6.3). A `loaded + inactive` app was previously
 fetched and can be re-enabled without a network round-trip (see Section 9.6).
+
+The `No` / `loaded` / `active` row occurs when a catalog refresh removes an
+app that is currently running. The app continues to run for the session but
+cannot be re-enabled after deactivation because it is no longer in the
+catalog. The app manager shows it as a session-only entry with Disable as
+the only action.
 
 ### 11.3 Apps Menu and Panels
 
@@ -886,14 +993,42 @@ verifiable — the host must build and function correctly after each step.
 
 ### Step 0 — Decouple the host build from the app list
 
-- Remove `ModuleFederationPlugin.remotes` from `webpack.config.js` (delete the
-  `externalAppsConfig` generation loop and the `remotes` key)
-- Remove the build-time `import appConfig from '../../../assets/apps.json'` and
-  the top-level `await loadModules()` from `useAppManager.ts`
-- Remove the module-level variables `loadedApps`, `activatedAppIdSet`; convert
-  `appRegistry` from a fixed Map to a dynamically growing Map
-- Verify: host builds, starts, and runs without errors (no external apps are
-  loaded — this is expected)
+This step removes all build-time and import-time dependencies on the static
+app list. After this step, the host runs with **zero external apps** — this is
+the expected transitional state until Step 2 restores app loading via the
+runtime manifest.
+
+The step is decomposed into four sub-steps. Each sub-step can be committed
+independently, and the host must build and start after each one.
+
+**0a — Remove webpack remotes configuration**
+
+- Delete the `externalAppsConfig` generation loop (`webpack.config.js:37–41`)
+  and the `remotes` key from `ModuleFederationPlugin` (`webpack.config.js:123`)
+- `exposes` and `shared` remain unchanged
+- Verify: `npm run build` succeeds
+
+**0b — Remove runtime appConfig import**
+
+- Remove `import appConfig from '../../../assets/apps.json'`
+  (`useAppManager.ts:12`) and the derived `appIds` array
+- Verify: host builds (useAppManager no longer references apps.json)
+
+**0c — Remove top-level await and module-level state**
+
+- Remove `const loadedApps = await loadModules()` (`useAppManager.ts:74`)
+  and the `loadModules` function
+- Remove module-level `activatedAppIdSet`
+- Verify: host starts without top-level await blocking module evaluation
+
+**0d — Convert appRegistry to a dynamic Map**
+
+- Change `appRegistry` from a pre-populated `new Map(loadedApps.map(...))`
+  to an empty `new Map()` that will be populated on demand by `loadRemoteApp`
+  in later steps
+- Export `appRegistry` so it remains accessible to rendering code
+- Verify: host starts and runs correctly with an empty app registry (no
+  external apps are loaded, app menu is empty — this is expected)
 
 ### Step 1 — Add types and store fields
 
