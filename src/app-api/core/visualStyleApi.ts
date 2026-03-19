@@ -136,30 +136,38 @@ export const visualStyleApi: VisualStyleApi = {
       store.createDiscreteMapping(networkId, vpName, attribute, attributeType)
 
       // 2. If value→VP mapping entries are provided, populate the vpValueMap
+      //    Done via setTimeout to avoid blocking page.evaluate — the Immer
+      //    produce cycle for VisualStyle (100+ VPs) can be heavy.
       if (mapping && Object.keys(mapping).length > 0) {
-        const vs = useVisualStyleStore.getState().visualStyles[networkId]
-        const vpEntry = vs[vpName as keyof typeof vs] as any
-        const existingMf = vpEntry?.mapping
-        if (existingMf) {
-          const vpValueMap = new Map<ValueType, VisualPropertyValueType>(
-            existingMf.vpValueMap ?? [],
-          )
-          for (const [key, value] of Object.entries(mapping)) {
-            // Parse key to match the attribute type
-            const parsedKey =
-              attributeType === ValueTypeName.Integer ||
-              attributeType === ValueTypeName.Long
-                ? parseInt(key, 10)
-                : attributeType === ValueTypeName.Double
-                  ? parseFloat(key)
-                  : key
-            vpValueMap.set(parsedKey, value)
+        const mappingEntries = mapping
+        const attrType = attributeType
+        setTimeout(() => {
+          try {
+            const vs = useVisualStyleStore.getState().visualStyles[networkId]
+            const vpEntry = vs[vpName as keyof typeof vs] as any
+            const existingMf = vpEntry?.mapping
+            if (!existingMf) return
+            const vpValueMap = new Map<ValueType, VisualPropertyValueType>(
+              existingMf.vpValueMap ?? [],
+            )
+            for (const [key, value] of Object.entries(mappingEntries)) {
+              const parsedKey =
+                attrType === ValueTypeName.Integer ||
+                attrType === ValueTypeName.Long
+                  ? parseInt(key, 10)
+                  : attrType === ValueTypeName.Double
+                    ? parseFloat(key)
+                    : key
+              vpValueMap.set(parsedKey, value)
+            }
+            useVisualStyleStore.getState().setMapping(networkId, vpName, {
+              ...existingMf,
+              vpValueMap,
+            })
+          } catch {
+            // Best-effort
           }
-          store.setMapping(networkId, vpName, {
-            ...existingMf,
-            vpValueMap,
-          })
-        }
+        }, 0)
       }
       return ok()
     } catch (e) {
