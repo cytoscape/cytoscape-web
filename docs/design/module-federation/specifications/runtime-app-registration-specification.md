@@ -607,8 +607,11 @@ Effect on already-loaded apps:
   longer in the catalog). See the `No` / `loaded` row in Section 11.2.
 - **Currently loading apps** — if a load attempt is in progress when a catalog
   refresh removes the app, the load attempt continues to completion. After it
-  finishes, the app is treated as a session-only orphan (same as a loaded app
-  removed by refresh).
+  finishes successfully, the app is treated as a session-only orphan (same as
+  a loaded app removed by refresh). If the load attempt fails, `loadStates`
+  is set to `failed` as usual, but since the app is no longer in the catalog,
+  retry is not available — the failed entry is silently discarded at the end
+  of the session.
 
 ### 7.6 Security Considerations
 
@@ -883,7 +886,7 @@ in session-local `loadStates`).
 | 10 | Retry — fails again | `Error` | `failed` | `Error` | `failed` | No state change, show error |
 | 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; app becomes session-only orphan (Section 7.5) |
 | 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()`; re-enable not possible (no catalog entry) |
-| 13 | Remove orphan app | `Inactive` | `loaded` | _(deleted)_ | _(deleted)_ | Delete `AppStore.apps[id]` and `appRegistry` entry; app disappears from UI |
+| 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | Delete `AppStore.apps[id]` (IndexedDB) and `appRegistry` entry; app disappears from UI |
 
 **Invariants:**
 
@@ -939,10 +942,14 @@ The panel must also expose manifest URL controls:
 
 Custom manifest URLs are validated **before** being saved to `AppStore`:
 
-1. Parse with the `URL` constructor — reject if parsing fails
-2. Protocol must be `https:` in production builds; `http:` is permitted only
-   in development mode (`NODE_ENV !== 'production'`)
-3. Relative paths are not accepted — the URL must be absolute
+1. Parse with `new URL(input, window.location.origin)` — this resolves both
+   absolute URLs and same-origin relative paths (e.g., `/apps.json`). Reject
+   if parsing fails
+2. Protocol of the resolved URL must be `https:` in production builds;
+   `http:` is permitted only in development mode
+   (`NODE_ENV !== 'production'`)
+3. The resolved absolute URL is stored in `AppStore.manifestUrl` (not the
+   raw input), ensuring consistent fetch behavior across sessions
 4. If validation fails, the URL is **not saved** and an inline validation
    error is shown immediately (no round-trip to the server)
 5. If validation passes but the subsequent fetch fails, the URL remains saved
@@ -971,8 +978,10 @@ activation state.
 | No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
 
 Note: `loadStates` tracks whether the remote module is in memory, not whether
-the app is active (see Section 6.3). A `loaded + inactive` app was previously
-fetched and can be re-enabled without a network round-trip (see Section 9.6).
+the app is active (see Section 6.3). A `Catalog = Yes` / `loaded + inactive`
+app was previously fetched and can be re-enabled without a network round-trip
+(see Section 9.6). This does **not** apply to orphan apps (`Catalog = No`),
+which cannot be re-enabled because the remote URL is no longer known.
 
 The `No` / `loaded` / `active` row occurs when a catalog refresh removes an
 app that is currently running. The app continues to run for the session but
@@ -982,9 +991,20 @@ the only action.
 
 The `No` / `loaded` / `inactive` row occurs when a user disables a
 session-only orphan app (the row above). Since the app is no longer in the
-catalog, re-enabling is not possible — the remote URL is unknown. The only
-available action is Remove, which deletes the `AppStore.apps` entry and the
-`appRegistry` entry, fully cleaning up the orphan.
+catalog, re-enabling is not possible. The only available action is Remove.
+
+**Remove behavior:** Remove is an explicit user action that permanently
+deletes the orphan app's persisted state from IndexedDB (`AppStore.apps`
+entry) as well as the runtime `appRegistry` entry. After Remove, the app
+will not reappear on the next session even if the manifest URL is switched
+back. This is distinct from the automatic orphan retention policy (Section
+7.3), which preserves records without user intervention. The difference:
+
+- **Automatic:** orphan records are retained in IndexedDB — switching back
+  to the original manifest restores them
+- **Manual Remove:** the user explicitly deletes the record — it is gone
+  permanently and must be re-activated from scratch if the app reappears in
+  a future catalog
 
 ### 11.3 Apps Menu and Panels
 
