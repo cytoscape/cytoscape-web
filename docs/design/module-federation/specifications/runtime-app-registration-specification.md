@@ -1,6 +1,7 @@
 # Runtime App Registration Specification
 
-- **Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Multiple code review rounds addressing state consistency, failure handling, orphan lifecycle, validation policies, and concurrency design
+- **Rev. 3 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Responsibility boundary fixes: cleanup ownership consolidated to `unmountApp` (§9.4), restore failure policy added (§7.3), command surface and mount ownership rule added (§12.4.1, §12.4.2). `manifestUrl` generalized to `manifestSource` with inline (file upload) support (§6.5); persistence moved to IndexedDB `appSettings` store (§6.7); multi-source manifest merging added to Non-Goals (§5)
+- Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Multiple code review rounds addressing state consistency, failure handling, orphan lifecycle, validation policies, and concurrency design
 - Rev. 1 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude
 
 Detailed design for runtime-configurable external app registration and selective
@@ -151,6 +152,11 @@ catalog, while actual app loading happens only when needed.
 - No changes to Service Apps (REST-based `ServiceApp` in `AppStore`). Service
   Apps are a separate mechanism with their own discovery, registration, and
   execution model. This specification covers only Module Federation apps
+- No multi-source manifest merging. The host uses a single manifest source at
+  a time (default App Store URL, custom URL, or uploaded file). Users who need
+  apps from multiple catalogs can merge the JSON arrays manually and supply
+  the combined file as a single manifest — the format is a plain JSON array
+  that supports straightforward concatenation
 
 ## 6. Proposed Design
 
@@ -221,12 +227,12 @@ the orchestrator calls `loadRemoteApp`, without changing the loader itself.
 
 The host distinguishes four different concerns:
 
-| Concern               | Store field    | Meaning                                                  |
-| --------------------- | -------------- | -------------------------------------------------------- |
-| Manifest URL          | manifestUrl    | User-configured catalog URL (undefined = default)        |
-| Available apps        | catalog        | All apps declared by the runtime manifest                |
-| Loaded apps           | apps           | Apps whose remote module has been fetched and registered |
-| Runtime load progress | loadStates     | Per-app loading state in the current session             |
+| Concern               | Store field      | Meaning                                                  |
+| --------------------- | ---------------- | -------------------------------------------------------- |
+| Manifest source       | manifestSource   | User-configured catalog source (undefined = default URL) |
+| Available apps        | catalog          | All apps declared by the runtime manifest                |
+| Loaded apps           | apps             | Apps whose remote module has been fetched and registered |
+| Runtime load progress | loadStates       | Per-app loading state in the current session             |
 
 This keeps manifest selection, manifest availability, loaded code, and user
 intent separate.
@@ -319,23 +325,61 @@ After loading a remote module, the host compares the exported `CyApp.id` with
 the manifest's `id`. If they do not match, the app is rejected with a warning
 log and treated as a load failure.
 
-### 6.5 Manifest URL
+### 6.5 Manifest Source
 
-The host resolves the manifest URL as follows:
+The host supports three manifest source modes:
 
-- If `manifestUrl` is set in AppStore, the host fetches from that URL
-- If `manifestUrl` is `undefined`, the host uses the default App Store URL
-  (a compile-time constant, e.g., `DEFAULT_MANIFEST_URL`)
+```typescript
+type ManifestSource =
+  | { type: 'url'; url: string }        // Custom URL (fetch at startup)
+  | { type: 'inline'; content: string } // Uploaded file (raw JSON string)
+  // undefined = use DEFAULT_MANIFEST_URL
+```
 
-`manifestUrl` is persisted so the same source is reused across sessions until
-the user changes or clears it.
+The host resolves the manifest as follows:
 
-Custom manifest URLs support two main use cases:
+- If `manifestSource` is `undefined`, the host fetches from
+  `DEFAULT_MANIFEST_URL` (a compile-time constant)
+- If `manifestSource.type === 'url'`, the host fetches from the custom URL
+- If `manifestSource.type === 'inline'`, the host parses the stored JSON
+  content directly (no network fetch)
+
+`manifestSource` is persisted to IndexedDB (via the `appSettings` object
+store) so the same source is reused across sessions until the user changes or
+clears it. This keeps `manifestSource` co-located with the other app state
+(`apps`, `catalog`, `loadStates`) in a single store. The DB migration cost is
+negligible — adding an `appSettings` object store only requires incrementing
+`currentVersion` in `src/data/db/index.ts` with no data migration.
+
+#### Source modes
+
+| Source mode | How catalog is obtained | Persistence | Use case |
+| --- | --- | --- | --- |
+| Default (`undefined`) | `fetch(DEFAULT_MANIFEST_URL)` | Nothing to persist | Normal operation with App Store |
+| Custom URL | `fetch(url)` | `{ type: 'url', url }` in `appSettings` | Alternate catalog server, local dev server |
+| Inline (file upload) | `JSON.parse(content)` | `{ type: 'inline', content }` in `appSettings` | Local testing, offline use, merged catalogs |
+
+#### Custom URL use cases
 
 | Use case                     | Example URL                                    | Notes                                       |
 | ---------------------------- | ---------------------------------------------- | ------------------------------------------- |
 | Local / same-origin file     | `/apps.json`, `http://localhost:8080/apps.json` | No CORS issues; typical for development     |
 | Third-party external server  | `https://example.com/catalog/apps.json`        | Requires CORS headers on the remote server  |
+
+#### Inline (file upload) behavior
+
+When the user uploads a manifest file via the app manager UI:
+
+1. The file is read via `FileReader.readAsText()`
+2. The content is validated via `parseManifest(JSON.parse(content))`
+3. If valid, `manifestSource` is set to `{ type: 'inline', content }` and
+   persisted to IndexedDB
+4. If invalid, an inline validation error is shown and no state change occurs
+
+On subsequent startups, the persisted `content` string is parsed directly —
+no file re-upload or network fetch is needed. If the stored content is
+corrupted (JSON parse failure), the host clears `manifestSource`, falls back
+to the default URL, and logs a warning.
 
 See Section 7.6 for security considerations related to each source type.
 
@@ -348,7 +392,7 @@ interface AppState {
   apps: Record<string, CyApp>
   catalog: Record<string, AppCatalogEntry>
   loadStates: Record<string, AppLoadState>
-  manifestUrl?: string        // undefined = use DEFAULT_MANIFEST_URL
+  manifestSource?: ManifestSource  // undefined = use DEFAULT_MANIFEST_URL
   serviceApps: Record<string, ServiceApp>
   currentTask?: ServiceAppTask
 }
@@ -359,12 +403,12 @@ interface AppAction {
   remove: (id: string) => void        // delete apps[id], loadStates[id], and persisted IndexedDB record
   setCatalog: (entries: AppCatalogEntry[]) => void
   setLoadState: (id: string, state: AppLoadState) => void
-  setManifestUrl: (url: string | undefined) => void
+  setManifestSource: (source: ManifestSource | undefined) => void
   setStatus: (id: string, status: AppStatus) => void
 }
 ```
 
-### 6.7 Why manifestUrl, catalog, and loadStates belong in AppStore
+### 6.7 Why manifestSource, catalog, and loadStates belong in AppStore
 
 These values are needed by:
 
@@ -376,6 +420,16 @@ These values are needed by:
 - runtime loading orchestration
 
 Keeping them in AppStore provides one consistent state model for external apps.
+
+**Persistence model:**
+
+| Field            | Persisted?   | Where                                     | Rationale                                  |
+| ---------------- | ------------ | ----------------------------------------- | ------------------------------------------ |
+| `apps`           | Yes          | IndexedDB (per-record via `putAppToDb`)   | Activation status survives sessions        |
+| `catalog`        | No           | —                                         | Re-fetched from manifest each session      |
+| `loadStates`     | No           | —                                         | Session-local runtime state                |
+| `manifestSource` | Yes          | IndexedDB (`appSettings` object store)    | Co-located with other app state            |
+| `serviceApps`    | Yes          | IndexedDB                                 | Existing mechanism                         |
 
 ### 6.8 AppResourceStore and Cleanup Registry
 
@@ -496,24 +550,28 @@ validated, normalized catalog entries.
 The host normalizes each valid manifest entry into an AppCatalogEntry and
 stores it in catalog.
 
-### 7.2 Manifest URL Resolution
+### 7.2 Manifest Source Resolution
 
-The effective manifest URL is:
+The effective manifest source determines how the catalog is obtained:
 
 ```
-manifestUrl ?? DEFAULT_MANIFEST_URL
+manifestSource === undefined          → fetch(DEFAULT_MANIFEST_URL)
+manifestSource.type === 'url'         → fetch(manifestSource.url)
+manifestSource.type === 'inline'      → JSON.parse(manifestSource.content)
 ```
 
-`manifestUrl` is persisted in AppStore so the same source is reused across
-sessions until the user changes or clears it. Clearing `manifestUrl` (setting
-it to `undefined`) reverts to the default App Store URL.
+`manifestSource` is persisted to IndexedDB via AppStore's `appSettings` object
+store so the same source is reused across sessions until the user changes or
+clears it. On startup, `restore()` reads the persisted `manifestSource` along
+with app records. Clearing `manifestSource` (setting it to `undefined`)
+removes the persisted entry and reverts to the default App Store URL.
 
 ### 7.3 Manifest Load Sequence
 
 The host startup sequence is:
 
-1. Resolve the effective manifest URL (`manifestUrl ?? DEFAULT_MANIFEST_URL`)
-2. Fetch the runtime manifest
+1. Resolve the manifest source (see §7.2)
+2. Obtain the raw manifest data (fetch or parse inline content)
 3. Validate and normalize entries via `parseManifest()` (invalid entries are
    skipped with warning logs)
 4. Store valid entries in catalog
@@ -526,6 +584,20 @@ and loads matching records from IndexedDB. The only difference from the current
 behavior is that the IDs now come from the runtime catalog instead of the
 build-time `apps.json`.
 
+#### Restore Failure Policy
+
+`restore()` failure (e.g., IndexedDB access error) is **non-fatal**. If the
+call rejects, the host:
+
+1. Logs a warning via the structured logger
+2. Continues with an empty restored app state (no previously active apps)
+3. Sets the `restored` flag to `true` so the startup sequence always completes
+4. Proceeds to load apps from the manifest catalog only
+
+This ensures that a corrupted or inaccessible IndexedDB does not block the
+host from starting. The behavior is analogous to a first-time user with no
+persisted state.
+
 #### Orphan Records
 
 App records persisted in IndexedDB but absent from the current manifest are
@@ -533,7 +605,7 @@ not passed to `restore` and therefore not loaded into the store. These orphan
 records are kept in IndexedDB rather than purged, because:
 
 - They are harmless (small storage footprint)
-- If the user switches `manifestUrl` back to a manifest that includes the app,
+- If the user switches `manifestSource` back to a source that includes the app,
   the persisted state (including `AppStatus`) is restored automatically
 
 Periodic cleanup or manual purge of orphan records may be added in a future
@@ -549,7 +621,7 @@ Failure behavior differs between startup and manual refresh:
 - catalog becomes empty (no prior catalog exists)
 - no external apps are auto-loaded
 - a warning is logged
-- if a custom `manifestUrl` fails, the host offers a UI action to clear it
+- if a custom `manifestSource` fails, the host offers a UI action to clear it
   and revert to the default App Store URL
 
 **Manual refresh failure:**
@@ -815,10 +887,15 @@ auto-load path like any other persisted active app.
 When a loaded app is deactivated from the UI, the host should:
 
 1. Persist `AppStatus.Inactive`
-2. Call `cleanupAllForApp(appId)` via `AppCleanupRegistry` — this removes all
-   per-app resources from `AppResourceStore`, `ContextMenuItemStore`, and any
-   other stores registered with the cleanup registry
-3. Call the app's `unmount()` lifecycle if present
+2. Call `unmountApp(cyApp, mountedApps)` — this is the **sole cleanup entry
+   point**. Internally, `unmountApp` calls `cleanupAllForApp(appId)` (removing
+   all per-app resources from `AppResourceStore`, `ContextMenuItemStore`, and
+   any other stores registered with the cleanup registry) and then calls the
+   app's `unmount()` lifecycle if present
+
+The orchestrator must **not** call `cleanupAllForApp` directly during
+deactivation — `unmountApp` owns that responsibility. This prevents double
+cleanup if future cleanup handlers acquire side effects.
 
 What is **not** changed by deactivation:
 
@@ -932,12 +1009,13 @@ For each app, the UI combines:
 
 to decide which action to show.
 
-The panel must also expose manifest URL controls:
+The panel must also expose manifest source controls:
 
-- show the current manifest URL (or indicate "Default" when `manifestUrl` is
-  `undefined`)
+- show the current manifest source (or indicate "Default" when
+  `manifestSource` is `undefined`)
 - allow entering or editing a custom manifest URL
-- allow clearing the custom URL to revert to the default
+- allow uploading a manifest file from the local filesystem
+- allow clearing the custom source to revert to the default
 
 **Custom URL validation policy:**
 
@@ -949,20 +1027,33 @@ Custom manifest URLs are validated **before** being saved to `AppStore`:
 2. Protocol of the resolved URL must be `https:` in production builds;
    `http:` is permitted only in development mode
    (`NODE_ENV !== 'production'`)
-3. The resolved absolute URL is stored in `AppStore.manifestUrl` (not the
-   raw input), ensuring consistent fetch behavior across sessions
-4. If validation fails, the URL is **not saved** and an inline validation
+3. The resolved absolute URL is stored in
+   `AppStore.manifestSource` as `{ type: 'url', url }` (not the raw input),
+   ensuring consistent fetch behavior across sessions
+4. If validation fails, the source is **not saved** and an inline validation
    error is shown immediately (no round-trip to the server)
-5. If validation passes but the subsequent fetch fails, the URL remains saved
-   and the failure is handled per Section 7.4 (manual refresh failure policy)
+5. If validation passes but the subsequent fetch fails, the source remains
+   saved and the failure is handled per Section 7.4 (manual refresh failure
+   policy)
+
+**File upload validation policy:**
+
+Uploaded manifest files are validated **before** being saved:
+
+1. Read the file via `FileReader.readAsText()`
+2. Parse the content as JSON — reject if parsing fails
+3. Validate via `parseManifest()` — reject if zero valid entries result
+4. Store as `{ type: 'inline', content }` in `AppStore.manifestSource`
+5. If validation fails, the source is **not saved** and an inline error is
+   shown
 
 **Manifest source switching behavior:**
 
-Switching the manifest URL changes which apps appear in the catalog but does
-not delete persisted app state. Apps that were active under the previous
-manifest but are absent from the new manifest become orphan records (see
+Switching the manifest source changes which apps appear in the catalog but
+does not delete persisted app state. Apps that were active under the previous
+source but are absent from the new source become orphan records (see
 Section 7.3). Their `AppStore.apps` entries and `AppStatus` are retained in
-IndexedDB. If the user switches back to the original manifest URL, these
+IndexedDB. If the user switches back to the original manifest source, these
 entries are restored automatically and the apps resume their previous
 activation state.
 
@@ -1079,6 +1170,52 @@ useAppManager owns orchestration:
 - handle in-page dynamic activation
 - coordinate mount and unmount
 
+#### 12.4.1 Command Surface
+
+`useAppManager` returns a command object that UI components use to trigger
+orchestration flows. The UI must **not** call `AppStore.setStatus` or
+`cleanupAllForApp` directly — all user-initiated actions flow through the
+command surface.
+
+```typescript
+interface AppManagerCommands {
+  activateApp: (id: string) => Promise<void>
+  deactivateApp: (id: string) => Promise<void>
+  retryApp: (id: string) => Promise<void>
+  refreshCatalog: () => Promise<void>
+  setManifestSource: (source: ManifestSource | undefined) => void
+  removeOrphan: (id: string) => void
+}
+
+export const useAppManager = (): AppManagerCommands => { ... }
+```
+
+| Command          | Orchestration flow                                                        |
+| ---------------- | ------------------------------------------------------------------------- |
+| `activateApp`    | Resolve catalog → `loadRemoteApp` (if needed) → register → resources → `mountApp` → persist `Active` |
+| `deactivateApp`  | Persist `Inactive` → `unmountApp` (which internally cleans up)            |
+| `retryApp`       | Same as `activateApp` with `loadStates` reset to `loading`               |
+| `refreshCatalog` | Re-fetch manifest → `parseManifest` → `setCatalog`                       |
+| `setManifestSource` | Validate source → update `AppStore.manifestSource` → persist to IndexedDB |
+| `removeOrphan`   | `AppStore.remove(id)` → `appRegistry.delete(id)`                        |
+
+#### 12.4.2 Mount Ownership Rule
+
+All mount calls flow through a single internal `activateAndMount(id)` helper
+inside `useAppManager`. This helper:
+
+1. Checks `mountedApps.has(id)` — if true, returns immediately (already mounted)
+2. Checks `mountingApps.has(id)` — if true, returns immediately (mount in progress)
+3. Adds `id` to `mountingApps` (a per-app async guard Set)
+4. Calls register → `processDeclarativeResources` → `mountApp`
+5. Removes `id` from `mountingApps` on completion (success or failure)
+
+Both startup auto-load (§8.3) and user-initiated activation (§9.1) call
+`activateAndMount`. The lifecycle `useEffect` monitors only **unmount
+triggers** (`Active` → `Inactive` status transitions) and does **not**
+initiate mount. This eliminates the race condition where startup auto-load
+and the lifecycle effect both attempt to mount the same app.
+
 ### 12.5 Lifecycle Reuse
 
 Existing lifecycle helpers remain valid:
@@ -1137,9 +1274,10 @@ independently, and the host must build and start after each one.
 
 ### Step 1 — Add types and store fields
 
-- Add `AppCatalogEntry` and `AppLoadState` types
-- Add `catalog`, `loadStates`, and `manifestUrl` fields to AppStore
-- Add `setCatalog`, `setLoadState`, `setManifestUrl`, and `remove` actions
+- Add `AppCatalogEntry`, `AppLoadState`, and `ManifestSource` types
+- Add `catalog`, `loadStates`, and `manifestSource` fields to AppStore
+- Add `setCatalog`, `setLoadState`, `setManifestSource`, and `remove` actions
+- Add `appSettings` object store to IndexedDB (version bump)
 - The `remove` action deletes both the in-memory `AppStore.apps[id]` entry
   and the corresponding persisted IndexedDB record
 - Define `DEFAULT_MANIFEST_URL` constant
@@ -1149,8 +1287,8 @@ independently, and the host must build and start after each one.
 
 - Implement `parseManifest(data: unknown): AppCatalogEntry[]` with zod
   validation and normalization (id/name fallback, duplicate detection)
-- Add manifest fetch logic to `useAppManager`: resolve effective URL
-  (`manifestUrl ?? DEFAULT_MANIFEST_URL`), fetch, parse, call `setCatalog`
+- Add manifest resolution logic to `useAppManager`: resolve effective source
+  (see §7.2), fetch or parse inline, call `setCatalog`
 - Verify: host fetches manifest at startup and populates `catalog`
 
 ### Step 3 — Extract per-app loader
@@ -1238,11 +1376,11 @@ cleaned up and the app must not remain visible as active.
 If a loaded app is deactivated, host-managed resources must be removed and the
 app lifecycle must be unmounted without requiring a full page reload.
 
-### 14.6 Manifest URL Override
+### 14.6 Manifest Source Override
 
-If the user sets a custom `manifestUrl`, that URL must be reused on the next
-startup until the user clears it. Clearing `manifestUrl` must revert to the
-default App Store URL.
+If the user sets a custom `manifestSource` (URL or uploaded file), that source
+must be reused on the next startup until the user clears it. Clearing
+`manifestSource` must revert to the default App Store URL.
 
 ### 14.7 Failure Isolation
 
