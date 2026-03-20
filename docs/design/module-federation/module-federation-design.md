@@ -1,7 +1,8 @@
 # Module Federation App API Design and Priorities
 
-**Rev. 4 (3/14/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Added Phase 2 (App Resource Registration) roadmap
+**Rev. 5 (3/19/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Updated Section 1.4 and Phase 4 with runtime app registration design (specification complete)
 
+- Rev. 4 (3/14/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Added Phase 2 (App Resource Registration) roadmap
 - Rev. 3 (2/21/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Updated for new Event Bus
 
 Solution proposals for the issues identified in [module-federation-audit.md](module-federation-audit.md).
@@ -162,11 +163,40 @@ in the root produces the `dist/` artifacts from the workspace package's build st
 
 #### 1.4 Runtime Dynamic App Registration
 
-Remove build-time dependency on `apps.json` + `app-definition.ts`:
+> **Status: Detailed design complete.** See [runtime-app-registration-specification.md](specifications/runtime-app-registration-specification.md) for the full design.
 
-- Runtime dynamic module loading (`new Function` or `importScripts` based)
-- URL-based app registration UI
-- Manifest validation
+Replace the build-time `apps.json` + webpack `remotes` model with a runtime
+manifest-driven architecture. This is not a custom mechanism — it follows
+Module Federation's Dynamic Remote pattern (low-level container API) for
+runtime app discovery.
+
+**Key design decisions:**
+
+- **Build-time decoupling:** Remove `ModuleFederationPlugin.remotes`, the
+  `apps.json` import, top-level `await loadModules()`, and all module-level
+  pre-populated state from `useAppManager.ts`. After this step the host
+  build has zero knowledge of external apps
+- **Runtime manifest fetch:** The host fetches an app catalog (JSON array)
+  at startup from a configurable URL. The default points to a Cytoscape Web
+  App Store; users can override with a custom manifest URL (same-origin
+  relative paths or absolute HTTPS URLs)
+- **Selective loading:** Only apps persisted as `AppStatus.Active` are loaded
+  at startup. Inactive and unknown apps remain visible in the app manager
+  but consume no network or memory resources
+- **Two-layer architecture:** `loadRemoteApp(id, url)` is a pure async
+  per-app loader; `useAppManager` is the orchestrator that coordinates
+  manifest fetch → selective loading → lifecycle
+- **Manifest validation:** zod schema with skip-and-warn strategy — invalid
+  entries are logged and skipped, valid entries proceed to normalization
+- **State model:** `AppLoadState` (`unloaded | loading | loaded | failed`)
+  is session-only and orthogonal to `AppStatus` (persisted user intent).
+  Full lifecycle state machine with 13 defined transitions
+- **Orphan management:** Apps removed from the catalog after a manifest
+  refresh continue running for the session; disabled orphans can be
+  permanently removed by the user via `AppStore.remove(id)` +
+  `appRegistry.delete(id)`
+- **9-step migration strategy:** Each step is independently verifiable —
+  the host builds and functions correctly after each step
 
 #### 1.5 Introduce Event Bus
 
@@ -998,9 +1028,13 @@ Before proceeding to Phase 4, publish the first beta release of the App API.
 
 ### Phase 4: Platform Extensibility
 
-Items deferred from earlier phases — each requires its own design document.
+Items deferred from earlier phases. Item 10 has a detailed design document;
+the remaining items each require their own design document.
 
-10. Dynamic app registration mechanism (URL-based app loading, manifest validation)
+10. **Dynamic app registration** — Runtime manifest-driven app discovery and
+    selective loading, replacing build-time `apps.json` + webpack `remotes`.
+    **Design complete:** [runtime-app-registration-specification.md](specifications/runtime-app-registration-specification.md).
+    See also Section 1.4 for a summary of key design decisions.
 11. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script using `window.CyWebApi`)
 12. Expand UI slots: `'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`
 13. Non-component resource registration (keyboard shortcuts, commands) via `resources` declarative field
@@ -1109,11 +1143,40 @@ Items deferred from earlier phases — each requires its own design document.
 | TSV I/O working               | `exportTableToTsv` → edit → `importTableFromTsv` round-trip preserves data                   |
 | Phase 3 complete              | All docs reviewed; example apps build against published `@cytoscape-web/api-types`            |
 
-### Phase 4: Platform Extensibility (TBD)
+### Phase 4: Platform Extensibility
 
-Items deferred from earlier phases — each requires its own design document before implementation.
+#### Dynamic App Registration (Priority Item — Design Complete)
 
-- Dynamic app registration (URL-based loading, manifest validation)
+> Design: [runtime-app-registration-specification.md](specifications/runtime-app-registration-specification.md)
+
+Replace the build-time static app list with runtime manifest-driven discovery
+and selective loading. Implementation follows a 9-step migration strategy
+(Steps 0–8) where each step is independently verifiable.
+
+| Step | Deliverables |
+|------|-------------|
+| Step 0 | Decouple host build: remove webpack `remotes`, `apps.json` import, top-level await, pre-populated `appRegistry` |
+| Step 1 | Add types (`AppCatalogEntry`, `AppLoadState`) and store fields (`catalog`, `loadStates`, `manifestUrl`, `remove`) |
+| Step 2 | Implement `parseManifest()` with zod validation/normalization; manifest fetch in `useAppManager` |
+| Step 3 | Extract `loadRemoteApp(id, url)` per-app loader |
+| Step 4 | Selective startup loading — only `AppStatus.Active` apps are fetched |
+| Step 5 | User-initiated in-page activation with rollback on failure |
+| Step 6 | Deactivation cleanup (`cleanupAllForApp` → `unmount()`) |
+| Step 7 | App manager UI: catalog-based rendering, orphan handling, manifest URL controls, custom URL validation |
+| Step 8 | Verify existing rendering (Apps menu, panels) works from loaded apps only |
+
+**Exit criteria:**
+
+- [ ] Host builds with zero knowledge of external apps (no `remotes`, no `apps.json` import)
+- [ ] Manifest fetched at runtime; catalog populated via `parseManifest()`
+- [ ] Only persisted-active apps loaded at startup; inactive apps visible but unloaded
+- [ ] User can enable/disable apps without page reload
+- [ ] Custom manifest URL with inline validation (HTTPS, same-origin relative paths)
+- [ ] Orphan app lifecycle complete (disable → remove permanently)
+- [ ] Lifecycle state machine (13 transitions) matches implementation
+
+#### Remaining Items (Design Required)
+
 - Chrome Extension bridge (MCP Bridge Server + Adapter content script)
 - Expanded UI slots (`'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`)
 - Non-component resource registration (keyboard shortcuts, commands)
