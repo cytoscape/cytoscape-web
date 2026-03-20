@@ -24,6 +24,7 @@ docs/design/
 │   ├── module-federation-design.md     # Entry point: priorities and roadmap
 │   ├── specifications/                 # Detailed specs (designers and implementers)
 │   │   ├── app-api-specification.md
+│   │   ├── app-store-design.md
 │   │   ├── event-bus-specification.md
 │   │   └── phase0-shared-types-design.md
 │   ├── examples/                       # Use-case samples (external app developers)
