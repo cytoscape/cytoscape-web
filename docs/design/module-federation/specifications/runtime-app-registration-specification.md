@@ -1205,7 +1205,7 @@ export const useAppManager = (): AppManagerCommands => { ... }
 | `activateApp`    | Resolve catalog → `loadRemoteApp` (if needed) → register → resources → `mountApp` → persist `Active` |
 | `deactivateApp`  | Persist `Inactive` → `unmountApp` (which internally cleans up)            |
 | `retryApp`       | Same as `activateApp` with `loadStates` reset to `loading`               |
-| `refreshCatalog` | Re-fetch manifest → `parseManifest` → `setCatalog`                       |
+| `refreshCatalog` | `obtainCatalogEntries(manifestSource)` → `setCatalog`                    |
 | `setManifestSource` | Validate source → update `AppStore.manifestSource` → persist to IndexedDB |
 | `removeOrphan`   | `AppStore.remove(id)` → `appRegistry.delete(id)`                        |
 
