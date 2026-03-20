@@ -356,7 +356,7 @@ interface AppState {
 interface AppAction {
   restore: (appIds: string[]) => Promise<void>
   add: (app: CyApp) => void
-  remove: (id: string) => void        // delete apps[id], loadStates[id], and persisted record
+  remove: (id: string) => void        // delete apps[id], loadStates[id], and persisted IndexedDB record
   setCatalog: (entries: AppCatalogEntry[]) => void
   setLoadState: (id: string, state: AppLoadState) => void
   setManifestUrl: (url: string | undefined) => void
@@ -887,7 +887,7 @@ in session-local `loadStates`).
 | 10 | Retry — fails again | `Error` | `failed` | `Error` | `failed` | No state change, show error |
 | 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; app becomes session-only orphan (Section 7.5) |
 | 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()`; re-enable not possible (no catalog entry) |
-| 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | Delete `AppStore.apps[id]`, `loadStates[id]`, persisted IndexedDB record, and `appRegistry` entry; app disappears from UI |
+| 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | `AppStore.remove(id)` (apps, loadStates, IndexedDB) + `appRegistry.delete(id)`; app disappears from UI |
 
 **Invariants:**
 
@@ -998,14 +998,15 @@ catalog, re-enabling is not possible. The only available action is Remove.
 **Remove behavior:** Remove is an explicit user action that deletes the
 orphan app from **both** layers:
 
-1. **In-memory store entries** — `AppStore.apps[id]` and `loadStates[id]`
-   (Zustand runtime state) and the `appRegistry` Map entry are deleted
-   immediately
-2. **Persisted record** — the corresponding IndexedDB app record is deleted
-   so the app does not reappear on the next session
+1. **Store entries** — the orchestrator calls `AppStore.remove(id)` (see
+   Section 6.6), which deletes `AppStore.apps[id]`, `loadStates[id]`, and
+   the persisted IndexedDB record
+2. **Runtime registry** — the orchestrator separately calls
+   `appRegistry.delete(id)` to remove the module-level Map entry
 
-The orchestrator calls `AppStore.remove(id)` (see Section 6.6) which handles
-both layers. After Remove, the app will not reappear even if the manifest URL
+`AppStore.remove()` does **not** touch `appRegistry` — the runtime Map lives
+outside Zustand and is managed by the orchestrator (see Section 9.5 for the
+separation of responsibilities). After Remove, the app will not reappear even if the manifest URL
 is switched back. This is distinct from the automatic orphan retention policy
 (Section 7.3), which preserves records without user intervention:
 
@@ -1192,8 +1193,8 @@ independently, and the host must build and start after each one.
 - Render the app manager panel from `catalog` (not from loaded apps only)
 - Show load state and enable / disable / retry actions per Section 11.2
 - Add orphan app handling: show Disable for active orphans, Remove for
-  inactive orphans; Remove calls `AppStore.remove(id)` and deletes the
-  `appRegistry` entry (see Section 11.2)
+  inactive orphans; Remove calls `AppStore.remove(id)` (store + IndexedDB)
+  and `appRegistry.delete(id)` (see Section 11.2)
 - Add manifest URL controls (display current URL, edit, clear to default)
   with inline validation per Section 11.1
 - Add manual catalog refresh button
