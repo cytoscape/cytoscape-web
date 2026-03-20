@@ -356,7 +356,7 @@ interface AppState {
 interface AppAction {
   restore: (appIds: string[]) => Promise<void>
   add: (app: CyApp) => void
-  remove: (id: string) => void        // delete in-memory entry AND persisted record
+  remove: (id: string) => void        // delete apps[id], loadStates[id], and persisted record
   setCatalog: (entries: AppCatalogEntry[]) => void
   setLoadState: (id: string, state: AppLoadState) => void
   setManifestUrl: (url: string | undefined) => void
@@ -887,7 +887,7 @@ in session-local `loadStates`).
 | 10 | Retry — fails again | `Error` | `failed` | `Error` | `failed` | No state change, show error |
 | 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; app becomes session-only orphan (Section 7.5) |
 | 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()`; re-enable not possible (no catalog entry) |
-| 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | Delete `AppStore.apps[id]` (IndexedDB) and `appRegistry` entry; app disappears from UI |
+| 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | Delete `AppStore.apps[id]`, `loadStates[id]`, persisted IndexedDB record, and `appRegistry` entry; app disappears from UI |
 
 **Invariants:**
 
@@ -998,8 +998,9 @@ catalog, re-enabling is not possible. The only available action is Remove.
 **Remove behavior:** Remove is an explicit user action that deletes the
 orphan app from **both** layers:
 
-1. **In-memory store entry** — `AppStore.apps[id]` (Zustand runtime state)
-   and the `appRegistry` Map entry are deleted immediately
+1. **In-memory store entries** — `AppStore.apps[id]` and `loadStates[id]`
+   (Zustand runtime state) and the `appRegistry` Map entry are deleted
+   immediately
 2. **Persisted record** — the corresponding IndexedDB app record is deleted
    so the app does not reappear on the next session
 
