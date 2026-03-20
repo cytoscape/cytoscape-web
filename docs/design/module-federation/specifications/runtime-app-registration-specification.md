@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 4 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Second code review round: `manifestSource` hydration responsibility unified to `useAppManager` (§7.2); state transition table cleanup calls updated to use `unmountApp` (§9.7 rows 6/12); `obtainCatalogEntries` introduced as source-agnostic manifest resolution entry point (§7.2); remaining `manifestUrl` naming remnants fixed throughout
 - **Rev. 3 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Responsibility boundary fixes: cleanup ownership consolidated to `unmountApp` (§9.4), restore failure policy added (§7.3), command surface and mount ownership rule added (§12.4.1, §12.4.2). `manifestUrl` generalized to `manifestSource` with inline (file upload) support (§6.5); persistence moved to IndexedDB `appSettings` store (§6.7); multi-source manifest merging added to Non-Goals (§5)
 - Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Multiple code review rounds addressing state consistency, failure handling, orphan lifecycle, validation policies, and concurrency design
 - Rev. 1 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude
@@ -416,7 +417,7 @@ These values are needed by:
 - app manager UI
 - enable and disable actions
 - failure handling and retry
-- manifest URL switching
+- manifest source switching
 - runtime loading orchestration
 
 Keeping them in AppStore provides one consistent state model for external apps.
@@ -562,22 +563,32 @@ manifestSource.type === 'inline'      → JSON.parse(manifestSource.content)
 
 `manifestSource` is persisted to IndexedDB via AppStore's `appSettings` object
 store so the same source is reused across sessions until the user changes or
-clears it. On startup, `restore()` reads the persisted `manifestSource` along
-with app records. Clearing `manifestSource` (setting it to `undefined`)
-removes the persisted entry and reverts to the default App Store URL.
+clears it. On startup, `useAppManager` reads `manifestSource` from
+`appSettings` via `getAppSettingFromDb('manifestSource')` and hydrates
+`AppStore.manifestSource` **before** resolving the manifest. This is separate
+from `restore()`, which only handles app record recovery and runs **after**
+the manifest is resolved. Clearing `manifestSource` (setting it to
+`undefined`) removes the persisted entry and reverts to the default App Store
+URL.
+
+Resolution is implemented by a single helper function
+`obtainCatalogEntries(source: ManifestSource | undefined)` that encapsulates the
+three-way branch above. This is the **sole entry point** for all manifest
+resolution — callers never call `fetchManifest` or `parseManifest` directly.
 
 ### 7.3 Manifest Load Sequence
 
 The host startup sequence is:
 
-1. Resolve the manifest source (see §7.2)
-2. Obtain the raw manifest data (fetch or parse inline content)
-3. Validate and normalize entries via `parseManifest()` (invalid entries are
-   skipped with warning logs)
-4. Store valid entries in catalog
-5. Extract catalog app IDs
-6. Call `restore(catalogAppIds)` to load persisted app records from IndexedDB
-7. Determine which restored apps should be auto-loaded
+1. Read `manifestSource` from IndexedDB and hydrate `AppStore.manifestSource`
+2. Call `obtainCatalogEntries(manifestSource)` to obtain validated and
+   normalized `AppCatalogEntry[]` (fetches URL or parses inline content,
+   then runs `parseManifest()` internally — invalid entries are skipped
+   with warning logs)
+3. Store valid entries in catalog via `setCatalog(entries)`
+4. Extract catalog app IDs
+5. Call `restore(catalogAppIds)` to load persisted app records from IndexedDB
+6. Determine which restored apps should be auto-loaded
 
 The `restore` action's contract is unchanged — it takes an array of app IDs
 and loads matching records from IndexedDB. The only difference from the current
@@ -957,13 +968,13 @@ in session-local `loadStates`).
 | 3 | First-time activate — mount fails | _(none)_ | `unloaded` | `Inactive` | `failed` | `cleanupAllForApp(appId)`; keep `Inactive` per Section 9.2 |
 | 4 | Startup auto-load (persisted active) | `Active` | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
 | 5 | Startup auto-load — fails | `Active` | `unloaded` | `Error` | `failed` | Set `Error` to signal previously working app needs attention; show Retry |
-| 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()` (host cleanup first; see Section 9.4) |
+| 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)` (internally runs cleanup then `unmount()`; see §9.4) |
 | 7 | Re-enable (user click, module cached) | `Inactive` | `loaded` | `Active` | `loaded` | Reuse `appRegistry` entry → declarative resources → `mount()` |
 | 8 | Re-enable (user click, module evicted) | `Inactive` | `unloaded` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` → register → declarative resources → `mount()` |
 | 9 | Retry after failure | `Error` | `failed` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` flow |
 | 10 | Retry — fails again | `Error` | `failed` | `Error` | `failed` | No state change, show error |
 | 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; app becomes session-only orphan (Section 7.5) |
-| 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `cleanupAllForApp(appId)` → `unmount()`; re-enable not possible (no catalog entry) |
+| 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)`; re-enable not possible (no catalog entry) |
 | 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | `AppStore.remove(id)` (apps, loadStates, IndexedDB) + `appRegistry.delete(id)`; app disappears from UI |
 
 **Invariants:**
@@ -1013,13 +1024,13 @@ The panel must also expose manifest source controls:
 
 - show the current manifest source (or indicate "Default" when
   `manifestSource` is `undefined`)
-- allow entering or editing a custom manifest URL
+- allow entering or editing a custom manifest source URL
 - allow uploading a manifest file from the local filesystem
 - allow clearing the custom source to revert to the default
 
 **Custom URL validation policy:**
 
-Custom manifest URLs are validated **before** being saved to `AppStore`:
+Custom manifest source URLs are validated **before** being saved to `AppStore`:
 
 1. Parse with `new URL(input, window.location.origin)` — this resolves both
    absolute URLs and same-origin relative paths (e.g., `/apps.json`). Reject
@@ -1097,7 +1108,7 @@ orphan app from **both** layers:
 
 `AppStore.remove()` does **not** touch `appRegistry` — the runtime Map lives
 outside Zustand and is managed by the orchestrator (see Section 9.5 for the
-separation of responsibilities). After Remove, the app will not reappear even if the manifest URL
+separation of responsibilities). After Remove, the app will not reappear even if the manifest source
 is switched back. This is distinct from the automatic orphan retention policy
 (Section 7.3), which preserves records without user intervention:
 
@@ -1132,7 +1143,7 @@ This preserves the current rendering assumptions and minimizes regression risk.
 AppStore owns:
 
 - manifest-derived app catalog
-- manifest URL (user override or undefined for default)
+- manifest source (user override or undefined for default)
 - loaded app records
 - runtime load states
 - persisted activation status
@@ -1162,8 +1173,7 @@ AppCleanupRegistry owns per-app cleanup coordination:
 
 useAppManager owns orchestration:
 
-- resolve manifest URL
-- fetch manifest
+- resolve manifest source via `obtainCatalogEntries`
 - populate catalog
 - restore persisted app state
 - auto-load persisted active apps
@@ -1321,8 +1331,9 @@ independently, and the host must build and start after each one.
 
 ### Step 6 — Deactivation cleanup
 
-- When the user disables a loaded app, persist `AppStatus.Inactive`, call
-  `cleanupAllForApp(appId)`, then call `unmount()` if present
+- When the user disables a loaded app, persist `AppStatus.Inactive`, then
+  call `unmountApp(cyApp, mountedApps)` — this is the sole cleanup entry
+  point (internally runs `cleanupAllForApp` then `unmount()`; see §9.4)
 - `loadStates` remains `loaded` (remote bundle stays in memory)
 - Verify: disabling an app removes its UI immediately; re-enabling is fast
 
@@ -1333,7 +1344,7 @@ independently, and the host must build and start after each one.
 - Add orphan app handling: show Disable for active orphans, Remove for
   inactive orphans; Remove calls `AppStore.remove(id)` (store + IndexedDB)
   and `appRegistry.delete(id)` (see Section 11.2)
-- Add manifest URL controls (display current URL, edit, clear to default)
+- Add manifest source controls (display current source, edit, clear to default)
   with inline validation per Section 11.1
 - Add manual catalog refresh button
 - Verify: unloaded apps are visible; loaded apps show correct state;
@@ -1421,9 +1432,9 @@ avoiding eager startup cost.
 
 The key architectural decisions are:
 
-- store manifest URL, catalog, and load states in AppStore
+- store manifest source, catalog, and load states in AppStore
 - keep apps reserved for loaded CyApp objects only
-- use the default App Store manifest URL unless the user sets a custom one
+- use the default App Store manifest source unless the user sets a custom one
 - use in-page dynamic first activation with rollback and immediate cleanup-based deactivation
 
 This preserves existing rendering assumptions, supports App Store generated

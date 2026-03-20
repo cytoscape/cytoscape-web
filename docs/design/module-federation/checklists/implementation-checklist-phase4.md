@@ -151,7 +151,8 @@ _Design: §6.3, §6.4, §6.6, §6.7_
   - `getAppSettingFromDb(key: string): Promise<any>`
   - `deleteAppSettingFromDb(key: string): Promise<void>`
 - [ ] `manifestSource` is persisted to `appSettings` object store with key `'manifestSource'`
-  - On startup, `restore()` reads `manifestSource` from `appSettings` and hydrates `AppStore.manifestSource`
+  - On startup, `useAppManager` (not `restore()`) reads `manifestSource` via `getAppSettingFromDb('manifestSource')` and hydrates `AppStore.manifestSource` before resolving the manifest
+  - `restore()` only handles app record recovery — it does not read `manifestSource`
 - [ ] Verify that `catalog` and `loadStates` are **not** persisted:
   - `catalog` is re-fetched each session from the manifest
   - `loadStates` is session-local and always starts as empty
@@ -212,7 +213,7 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
   - Unknown dependency IDs → warned and ignored
   - Mixed valid/invalid entries → valid entries returned, invalid skipped
 
-### 2.3 — Implement manifest fetch logic
+### 2.3 — Implement manifest fetch and resolution logic
 
 - [ ] Create `src/features/ServiceApps/manifest/fetchManifest.ts`:
   - `fetchManifest(url: string): Promise<AppCatalogEntry[]>`:
@@ -221,17 +222,22 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
     - Call `parseManifest(data)`
     - On network error: log warning, return empty array
     - On JSON parse error: log warning, return empty array
+- [ ] Create `src/features/ServiceApps/manifest/obtainCatalogEntries.ts`:
+  - `obtainCatalogEntries(source: ManifestSource | undefined): Promise<AppCatalogEntry[]>`:
+    - Source-agnostic resolution:
+      - `undefined` or `{ type: 'url' }` → call `fetchManifest(source?.url ?? DEFAULT_MANIFEST_URL)`
+      - `{ type: 'inline' }` → call `parseManifest(JSON.parse(source.content))`, catch JSON parse errors
+    - This is the **single entry point** for all manifest resolution — callers never call `fetchManifest` or `parseManifest` directly
 
 ### 2.4 — Integrate manifest fetch into useAppManager
 
-- [ ] In `useAppManager.ts`, add manifest fetch to the init `useEffect`:
-  1. Read `manifestSource` from IndexedDB (`appSettings` store) and hydrate `AppStore.manifestSource`
-  2. Resolve manifest source: `manifestSource` (see §7.2) — fetch URL or parse inline content
-  3. Call `fetchManifest(effectiveUrl)`
-  4. Call `setCatalog(entries)` with the result
-  5. Extract catalog app IDs
-  6. Call `restore(catalogAppIds)` (replaces the hardcoded `appIds`)
-  7. Set `restored = true` after restore completes
+- [ ] In `useAppManager.ts`, add manifest resolution to the init `useEffect`:
+  1. Read `manifestSource` from IndexedDB via `getAppSettingFromDb('manifestSource')` and hydrate `AppStore.manifestSource`
+  2. Call `obtainCatalogEntries(manifestSource)` (see Step 2.3b) to resolve the manifest source-agnostically
+  3. Call `setCatalog(entries)` with the result
+  4. Extract catalog app IDs
+  5. Call `restore(catalogAppIds)` — `restore()` only recovers app records, not `manifestSource`
+  6. Set `restored = true` after restore completes
 - [ ] Add `.catch()` to `restore()` call — restore failure is **non-fatal** (§7.3):
   - Log warning via `logApp.warn`
   - Set `restored = true` to unblock the lifecycle effect
@@ -366,7 +372,7 @@ _Design: §9.1, §9.2, §9.6, §9.7 rows 1–3/7–10, §13 Step 5_
     deactivateApp: (id: string) => Promise<void>
     retryApp: (id: string) => Promise<void>
     refreshCatalog: () => Promise<void>
-    setManifestUrl: (url: string | undefined) => void
+    setManifestSource: (source: ManifestSource | undefined) => void
     removeOrphan: (id: string) => void
   }
   ```
@@ -505,7 +511,7 @@ _Design: §11.1, §11.2, §11.3, §13 Step 7_
 ### 7.3 — Add manifest source controls
 
 - [ ] Display current manifest source (or "Default" when `manifestSource` is `undefined`)
-- [ ] Allow entering/editing a custom manifest URL
+- [ ] Allow entering/editing a custom manifest source URL
 - [ ] Allow uploading a manifest file from the local filesystem (§6.5):
   - `<input type="file" accept=".json">` to select file
   - Read via `FileReader.readAsText()`
@@ -546,8 +552,8 @@ _Design: §11.1, §11.2, §11.3, §13 Step 7_
 - [ ] Manual test: loaded apps show correct Enable/Disable state
 - [ ] Manual test: catalog refresh adds new apps, removes old ones
 - [ ] Manual test: orphan apps show correct Disable/Remove actions
-- [ ] Manual test: custom manifest URL can be set and cleared
-- [ ] Manual test: invalid manifest URL shows inline validation error
+- [ ] Manual test: custom manifest source can be set and cleared
+- [ ] Manual test: invalid manifest source shows inline validation error
 - [ ] Manual test: refresh failure retains previous catalog
 
 ---
@@ -607,7 +613,7 @@ _Design: §11.3, §13 Step 8_
 
 - [ ] Disable a loaded app → resources removed, lifecycle unmounted, no page reload
 
-### Manifest URL Override (§14.6)
+### Manifest Source Override (§14.6)
 
 - [ ] Set custom `manifestSource` (URL or uploaded file) → persisted across sessions
 - [ ] Clear `manifestSource` → reverts to default App Store URL
