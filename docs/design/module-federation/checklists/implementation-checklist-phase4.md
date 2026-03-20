@@ -92,7 +92,19 @@ _Design: §6.3, §6.4, §6.6, §6.7_
 ### 1.1 — Add AppCatalogEntry, AppLoadState, and ManifestSource types
 
 - [ ] Create `src/models/AppModel/AppCatalogEntry.ts`:
-  - `AppCatalogEntry` interface with fields: `id`, `name?`, `description?`, `url`, `version?`, `dependencies?`
+  - `AppCatalogEntry` interface with fields:
+    - `id: string` — Module Federation scope name
+    - `name?: string` — human-readable display name (falls back to `id`)
+    - `url: string` — full remote entry URL
+    - `author: string` — developer or organization name (required)
+    - `description?: string`
+    - `version?: string`
+    - `tags?: string[]` — category tags for filtering
+    - `icon?: string` — URL to app icon image
+    - `license?: string` — SPDX license identifier
+    - `repository?: string` — source code repository URL
+    - `compatibleHostVersions?: string` — semver range of compatible host versions
+    - `dependencies?: string[]` — app IDs that must be loaded first (reserved)
 - [ ] Create `src/models/AppModel/AppLoadState.ts`:
   - `AppLoadState` type: `'unloaded' | 'loading' | 'loaded' | 'failed'`
 - [ ] Create `src/models/AppModel/ManifestSource.ts`:
@@ -185,8 +197,14 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
     - `id`: `z.string().regex(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/).optional()`
     - `name`: `z.string().min(1).optional()`
     - `url`: `z.string().url()`
+    - `author`: `z.string().min(1)` (required)
     - `description`: `z.string().optional()`
     - `version`: `z.string().optional()`
+    - `tags`: `z.array(z.string()).optional()`
+    - `icon`: `z.string().url().optional()`
+    - `license`: `z.string().optional()`
+    - `repository`: `z.string().url().optional()`
+    - `compatibleHostVersions`: `z.string().optional()`
     - `dependencies`: `z.array(z.string()).optional()`
     - Refine: either `id` or `name` must be present
   - Define `AppManifestSchema = z.array(AppManifestEntrySchema)`
@@ -201,8 +219,9 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
 ### 2.2 — Unit tests for parseManifest
 
 - [ ] Create `src/features/ServiceApps/manifest/parseManifest.test.ts`:
-  - Valid manifest with `id` and `url` → returns entries
+  - Valid manifest with `id`, `url`, and `author` → returns entries
   - Manifest with `name` only (no `id`) → uses `name` as `id` (backward compat)
+  - Entry missing `author` → skipped (required field)
   - Entry missing both `id` and `name` → skipped
   - Entry with invalid `id` pattern → skipped
   - Entry with invalid `url` → skipped
@@ -212,6 +231,9 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
   - Self-referencing `dependencies` → warned and ignored
   - Unknown dependency IDs → warned and ignored
   - Mixed valid/invalid entries → valid entries returned, invalid skipped
+  - Optional metadata fields (`tags`, `icon`, `license`, `repository`, `compatibleHostVersions`) → preserved when present, absent when omitted
+  - Entry with invalid `icon` URL → skipped
+  - Entry with invalid `repository` URL → skipped
 
 ### 2.3 — Implement manifest fetch and resolution logic
 

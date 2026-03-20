@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 5 (3/20/2026): Keiichiro ONO and Claude** — Manifest schema extension for App Store readiness: added `author` (required), `tags`, `icon`, `license`, `repository`, `compatibleHostVersions` fields to `AppCatalogEntry` (§6.4) and `AppManifestEntrySchema` (§7.1)
 - **Rev. 4 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Second code review round: `manifestSource` hydration responsibility unified to `useAppManager` (§7.2); state transition table cleanup calls updated to use `unmountApp` (§9.7 rows 6/12); `obtainCatalogEntries` introduced as source-agnostic manifest resolution entry point (§7.2); remaining `manifestUrl` naming remnants fixed throughout
 - **Rev. 3 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Responsibility boundary fixes: cleanup ownership consolidated to `unmountApp` (§9.4), restore failure policy added (§7.3), command surface and mount ownership rule added (§12.4.1, §12.4.2). `manifestUrl` generalized to `manifestSource` with inline (file upload) support (§6.5); persistence moved to IndexedDB `appSettings` store (§6.7); multi-source manifest merging added to Non-Goals (§5)
 - Rev. 2 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude — Codebase audit and comprehensive redesign: webpack remotes removal, two-layer loader/orchestrator separation, zod manifest validation, security considerations, detailed migration strategy. Multiple code review rounds addressing state consistency, failure handling, orphan lifecycle, validation policies, and concurrency design
@@ -285,9 +286,15 @@ Add a manifest-derived catalog type:
 interface AppCatalogEntry {
   id: string            // Module Federation scope name (= CyApp.id = window[id])
   name?: string         // Human-readable display name (falls back to id)
-  description?: string
   url: string           // Full remote entry URL
+  author: string        // Developer or organization name (required)
+  description?: string
   version?: string
+  tags?: string[]       // Category tags for filtering (e.g., ["network-analysis", "layout"])
+  icon?: string         // URL to app icon image
+  license?: string      // SPDX license identifier (e.g., "MIT", "Apache-2.0")
+  repository?: string   // Source code repository URL (e.g., GitHub)
+  compatibleHostVersions?: string // Semver range of compatible host versions (e.g., ">=1.0.0")
   dependencies?: string[] // App IDs that must be loaded before this app (reserved)
 }
 ```
@@ -482,8 +489,20 @@ The manifest is an array of objects. Two formats are accepted:
 
 ```json
 [
-  { "id": "hello", "name": "Hello World App", "url": "http://localhost:2222/remoteEntry.js" },
-  { "name": "networkWorkflows", "url": "http://localhost:7000/remoteEntry.js" }
+  {
+    "id": "hello",
+    "name": "Hello World App",
+    "url": "http://localhost:2222/remoteEntry.js",
+    "author": "Cytoscape Team",
+    "description": "A simple hello world demo app",
+    "version": "1.0.0",
+    "tags": ["demo", "getting-started"],
+    "icon": "https://apps.cytoscape.org/icons/hello.png",
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples",
+    "compatibleHostVersions": ">=1.0.0"
+  },
+  { "name": "networkWorkflows", "url": "http://localhost:7000/remoteEntry.js", "author": "Cytoscape Team" }
 ]
 ```
 
@@ -494,6 +513,7 @@ Normalization rules:
   existing apps.json format)
 - If `name` is absent, `id` is used as the display name
 - After normalization, `id` must be non-empty and unique within the manifest
+- `author` is the only required metadata field beyond `url` and `id`/`name`
 
 This ensures backward compatibility with the existing `{ name, url }` format
 while supporting richer metadata from the App Store.
@@ -509,8 +529,14 @@ const AppManifestEntrySchema = z
     id: z.string().regex(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/).optional(),
     name: z.string().min(1).optional(),
     url: z.string().url(),
+    author: z.string().min(1),
     description: z.string().optional(),
     version: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    icon: z.string().url().optional(),
+    license: z.string().optional(),
+    repository: z.string().url().optional(),
+    compatibleHostVersions: z.string().optional(),
     dependencies: z.array(z.string()).optional(), // accepted but ignored at runtime (first rollout)
   })
   .refine((e) => e.id !== undefined || e.name !== undefined, {
