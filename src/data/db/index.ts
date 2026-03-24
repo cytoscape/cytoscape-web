@@ -5,8 +5,6 @@ import _ from 'lodash'
 
 import config from '../../assets/config.json'
 import { logDb } from '../../debug'
-import { toPlainObject } from './serialization'
-import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -23,7 +21,9 @@ import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../../models/WorkspaceModel'
 import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
+import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import { applyMigrations } from './migrations'
+import { toPlainObject } from './serialization'
 import {
   deserializeFilterConfig,
   deserializeNetworkView,
@@ -40,7 +40,7 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 8
+const currentVersion: number = 9
 
 /**
  * Predefined object store names.
@@ -68,6 +68,9 @@ export const ObjectStoreNames = {
   OpaqueAspects: 'opaqueAspects',
 
   UndoStacks: 'undoStacks',
+
+  // From v9
+  AppSettings: 'appSettings',
 } as const
 
 // The type derived from the names of object stores
@@ -97,6 +100,8 @@ const Keys = {
   [ObjectStoreNames.OpaqueAspects]: 'id',
 
   [ObjectStoreNames.UndoStacks]: 'id',
+
+  [ObjectStoreNames.AppSettings]: 'key',
 } as const
 
 /**
@@ -120,7 +125,10 @@ class CyDB extends Dexie {
   // From v4
   [ObjectStoreNames.OpaqueAspects]!: DxTable<any>;
 
-  [ObjectStoreNames.UndoStacks]!: DxTable<any>
+  [ObjectStoreNames.UndoStacks]!: DxTable<any>;
+
+  // From v9
+  [ObjectStoreNames.AppSettings]!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -748,6 +756,38 @@ export const getAllAppsFromDb = async (): Promise<CyApp[]> => {
 export const deleteAppFromDb = async (appId: string): Promise<void> => {
   await db.transaction('rw', db.apps, async () => {
     await db.apps.delete(appId)
+  })
+}
+
+// App Settings (key-value store for app-related settings)
+
+export const putAppSettingToDb = async (
+  key: string,
+  value: any,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.appSettings, async () => {
+      await db.appSettings.put({ key, value })
+    })
+  } catch (e) {
+    logDb.error('[putAppSettingToDb] error:', e, key)
+    throw e
+  }
+}
+
+export const getAppSettingFromDb = async (key: string): Promise<any> => {
+  try {
+    const entry = await db.appSettings.get({ key })
+    return entry?.value
+  } catch (e) {
+    logDb.warn('[getAppSettingFromDb] Failed to read setting, returning undefined:', key, e)
+    return undefined
+  }
+}
+
+export const deleteAppSettingFromDb = async (key: string): Promise<void> => {
+  await db.transaction('rw', db.appSettings, async () => {
+    await db.appSettings.delete(key)
   })
 }
 

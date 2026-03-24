@@ -1,22 +1,28 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import {
-  deleteServiceAppFromDb,
-  getAllServiceAppsFromDb,
-  getAppFromDb,
-  putAppToDb,
-  putServiceAppToDb,
-} from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
+import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppLoadState } from '../../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
 import { ServiceMetadata } from '../../../models/AppModel/ServiceMetadata'
 import { AppStore } from '../../../models/StoreModel/AppStoreModel'
 import * as AppStoreImpl from '../../../models/StoreModel/impl/appStoreImpl'
+import {
+  deleteAppFromDb,
+  deleteAppSettingFromDb,
+  deleteServiceAppFromDb,
+  getAllServiceAppsFromDb,
+  getAppFromDb,
+  putAppSettingToDb,
+  putAppToDb,
+  putServiceAppToDb,
+} from '../../db'
+import { toPlainObject } from '../../db/serialization'
 
 const sampleUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
 
@@ -47,6 +53,9 @@ export const useAppStore = create(
     apps: {},
     serviceApps: {},
     currentTask: undefined,
+    catalog: {},
+    loadStates: {},
+    manifestSource: undefined,
 
     restore: async (appIds: string[]) => {
       const apps = await Promise.all(
@@ -248,6 +257,61 @@ export const useAppStore = create(
             )
           })
         return state
+      })
+    },
+
+    setCatalog: (entries: AppCatalogEntry[]) => {
+      set((state) => {
+        const newState = AppStoreImpl.setCatalog(state, entries)
+        state.catalog = newState.catalog
+        return state
+      })
+    },
+
+    setLoadState: (id: string, loadState: AppLoadState) => {
+      set((state) => {
+        const newState = AppStoreImpl.setLoadState(state, id, loadState)
+        state.loadStates = newState.loadStates
+        return state
+      })
+    },
+
+    setManifestSource: (source: ManifestSource | undefined) => {
+      set((state) => {
+        const newState = AppStoreImpl.setManifestSource(state, source)
+        state.manifestSource = newState.manifestSource
+        return state
+      })
+      // Persist to IndexedDB
+      if (source !== undefined) {
+        putAppSettingToDb('manifestSource', source).catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]:[setManifestSource] Failed to persist:`,
+            error,
+          )
+        })
+      } else {
+        deleteAppSettingFromDb('manifestSource').catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]:[setManifestSource] Failed to delete:`,
+            error,
+          )
+        })
+      }
+    },
+
+    remove: (id: string) => {
+      set((state) => {
+        const newState = AppStoreImpl.removeApp(state, id)
+        state.apps = newState.apps
+        state.loadStates = newState.loadStates
+        return state
+      })
+      deleteAppFromDb(id).catch((error) => {
+        logStore.error(
+          `[${useAppStore.name}]:[remove] Failed to delete app ${id} from DB:`,
+          error,
+        )
       })
     },
   })),

@@ -1,6 +1,9 @@
+import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
+import { AppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
+import { ManifestSource } from '../../AppModel/ManifestSource'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
 
@@ -40,6 +43,9 @@ export interface AppState {
   apps: Record<string, CyApp>
   serviceApps: Record<string, ServiceApp>
   currentTask?: ServiceAppTask
+  catalog: Record<string, AppCatalogEntry>
+  loadStates: Record<string, AppLoadState>
+  manifestSource?: ManifestSource
 }
 
 /**
@@ -293,5 +299,65 @@ export const updateInputColumn = (
         },
       },
     },
+  }
+}
+
+/**
+ * Replace the entire catalog with entries keyed by id
+ */
+export const setCatalog = (
+  state: AppState,
+  entries: AppCatalogEntry[],
+): AppState => {
+  const catalog: Record<string, AppCatalogEntry> = {}
+  for (const entry of entries) {
+    catalog[entry.id] = entry
+  }
+  return {
+    ...state,
+    catalog,
+  }
+}
+
+/**
+ * Set the runtime load state for a specific app
+ */
+export const setLoadState = (
+  state: AppState,
+  id: string,
+  loadState: AppLoadState,
+): AppState => {
+  return {
+    ...state,
+    loadStates: {
+      ...state.loadStates,
+      [id]: loadState,
+    },
+  }
+}
+
+/**
+ * Set or clear the manifest source
+ */
+export const setManifestSource = (
+  state: AppState,
+  source: ManifestSource | undefined,
+): AppState => {
+  return {
+    ...state,
+    manifestSource: source,
+  }
+}
+
+/**
+ * Remove an app from apps and loadStates
+ */
+export const removeApp = (state: AppState, id: string): AppState => {
+  const { [id]: _removedApp, ...restApps } = state.apps
+  const { [id]: _removedLoadState, ...restLoadStates } = state.loadStates
+  return {
+    ...state,
+    apps: restApps,
+    loadStates: restLoadStates,
   }
 }
