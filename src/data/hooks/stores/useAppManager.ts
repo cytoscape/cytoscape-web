@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { logApp } from '../../../debug'
+import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obtainCatalogEntries'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { getAppSettingFromDb } from '../../db'
 import { unmountAllApps, unmountApp } from './appLifecycle'
 // NOTE: mountApp, buildPerAppApis, processDeclarativeResources will be
 // re-introduced in Phase 4 Step 4 (startup auto-load and activation).
@@ -26,6 +28,8 @@ export const useAppManager = (): void => {
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const restore = useAppStore((state) => state.restore)
+  const setCatalog = useAppStore((state) => state.setCatalog)
+  const setManifestSource = useAppStore((state) => state.setManifestSource)
 
   // Call unmount() on all mounted apps when the page is about to unload
   useEffect(() => {
@@ -40,22 +44,49 @@ export const useAppManager = (): void => {
 
   useEffect(() => {
     if (initRef.current === false) {
-      // Pass an empty array for now — apps will be loaded dynamically in Step 4
-      restore([]).then(() => {
+      const init = async (): Promise<void> => {
+        // 1. Read persisted manifestSource from IndexedDB
+        const savedSource = await getAppSettingFromDb('manifestSource')
+        if (savedSource !== undefined) {
+          setManifestSource(savedSource)
+        }
+
+        // 2. Resolve manifest (fetch or parse inline)
+        const entries = await obtainCatalogEntries(savedSource)
+
+        // 3. Populate catalog in AppStore
+        setCatalog(entries)
         logApp.info(
-          `[${useAppManager.name}]: Apps restored from the local cache`,
+          `[${useAppManager.name}]: Catalog loaded with ${entries.length} entries`,
         )
-        // Signal that persisted app state (including Inactive status) is now
-        // available in the store. The lifecycle useEffect below depends on this
-        // flag so it does not fire before restore() completes.
+
+        // 4. Extract catalog app IDs for restore
+        const catalogAppIds = entries.map((e) => e.id)
+
+        // 5. Restore persisted app records (non-fatal on failure)
+        try {
+          await restore(catalogAppIds)
+          logApp.info(
+            `[${useAppManager.name}]: Apps restored from the local cache`,
+          )
+        } catch (error) {
+          logApp.warn(
+            `[${useAppManager.name}]: restore() failed, continuing with empty state:`,
+            error,
+          )
+        }
+
+        // 6. Unblock the lifecycle useEffect
         setRestored(true)
-      })
+      }
+
+      void init()
     }
 
     return () => {
       logApp.info(`[${useAppManager.name}]: App Manager unmounted`)
     }
-  }, [restore])
+  }, [restore, setCatalog, setManifestSource])
 
   useEffect(() => {
     // Do not process any apps until restore() has completed. Without this guard,
