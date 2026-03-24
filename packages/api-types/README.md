@@ -175,9 +175,9 @@ window.addEventListener('cywebapi:ready', () => {
 
 - [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md) — Full API reference
 - [Event Bus Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/event-bus-specification.md) — Event types, detail shapes, and subscription patterns
-- [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/adr/0001-api-result-discriminated-union.md)
-- [ADR 0002 — Public type re-export strategy](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/adr/0002-public-type-reexport-strategy.md)
-- [ADR 0003 — Framework-agnostic core layer](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/adr/0003-framework-agnostic-core-layer.md)
+- [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0001-api-result-discriminated-union.md)
+- [ADR 0002 — Public type re-export strategy](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0002-public-type-reexport-strategy.md)
+- [ADR 0003 — Framework-agnostic core layer](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md)
 
 ## License
 

@@ -16,8 +16,7 @@ This directory contains all project documentation for Cytoscape Web. Documents a
 | ---------------------------------- | ----------- | ----------------------------------------------------- | -------------- |
 | [specifications/](specifications/) | LLM + Human | Behavioral specs, validation rules, creation patterns | 6 documents    |
 | [prompts/](prompts/)               | LLM         | Workflow templates for LLM-assisted tasks             | 5 templates    |
-| [design/](design/)                 | LLM + Human | Feature and subsystem design documents                | Template ready |
-| [adr/](adr/)                       | LLM + Human | Architecture Decision Records                         | Template ready |
+| [design/](design/)                 | LLM + Human | Feature and subsystem design documents (incl. ADRs)   | Template ready |
 | [guides/](guides/)                 | Human       | Developer how-to guides and tutorials                 | Template ready |
 | [images/](images/)                 | Both        | Screenshots and diagrams                              | 1 image        |
 

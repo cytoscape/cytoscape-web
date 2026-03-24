@@ -139,7 +139,7 @@ function ok(): ApiSuccess<void>
 function fail(code: ApiErrorCode, message: string): ApiFailure
 ```
 
-All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md).
+All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md).
 
 ## Event Bus Pattern
 
@@ -355,7 +355,7 @@ exposes: {
 
 | Phase                             | Read before implementing                                                                                                                                                                                                                                                                                                                                 |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 0** (types)               | [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md), [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md), [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../../docs/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
+| **Phase 0** (types)               | [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md), [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md), [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../../docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
 | **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                                                                                  |
 | **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                                                                                        |
 | **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                                                                                  |
@@ -373,6 +373,6 @@ exposes: {
 - [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md) — Event bus full spec (store mappings, edge cases, test patterns)
 - [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md) — Phase 0 line-by-line blueprint
 - [module-federation-design.md](../../docs/design/module-federation/module-federation-design.md) — Roadmap and priorities
-- [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
-- [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
-- [ADR 0003](../../docs/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision
+- [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
+- [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
+- [ADR 0003](../../docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision

@@ -23,7 +23,7 @@ paths:
   access the same operations without React or a bundler.
 
 Both paths execute the same domain logic, which lives in framework-agnostic core functions at
-`src/app-api/core/`. See [ADR 0003](../../adr/0003-framework-agnostic-core-layer.md) for the
+`src/app-api/core/`. See [ADR 0003](adr/0003-framework-agnostic-core-layer.md) for the
 rationale and [app-api-specification.md](specifications/app-api-specification.md) for the full design.
 
 **Two-layer architecture:**
@@ -114,7 +114,7 @@ import { ApiErrorCode, ValueTypeName, VisualPropertyName } from 'cyweb/ApiTypes'
 import type { CyWebApiType, CyWebEvents } from '@cytoscape-web/api-types'
 ```
 
-See [ADR 0002](../../../docs/adr/0002-public-type-reexport-strategy.md) for the full
+See [ADR 0002](adr/0002-public-type-reexport-strategy.md) for the full
 inclusion/exclusion rationale.
 
 ##### Publish `@cytoscape-web/api-types` Package
@@ -590,7 +590,7 @@ The app API is the **only new public API** — internal hooks and stores are cre
 6. Unit tests for `ApiResult` helpers (`ok`, `fail`, type guards)
 7. Behavioral documentation (`src/app-api/api_docs/Api.md`)
 
-> Design: [phase0-shared-types-design.md](specifications/phase0-shared-types-design.md) · ADRs: [0001](../../../docs/adr/0001-api-result-discriminated-union.md), [0002](../../../docs/adr/0002-public-type-reexport-strategy.md), [0003](../../../docs/adr/0003-framework-agnostic-core-layer.md)
+> Design: [phase0-shared-types-design.md](specifications/phase0-shared-types-design.md) · ADRs: [0001](adr/0001-api-result-discriminated-union.md), [0002](adr/0002-public-type-reexport-strategy.md), [0003](adr/0003-framework-agnostic-core-layer.md)
 
 #### Step 1: App API Hook Implementation (5 sub-phases)
 

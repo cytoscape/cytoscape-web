@@ -15,7 +15,7 @@ exposing internal stores or hooks directly, the app API defines a stable contrac
 program against. This ensures that internal refactoring (store splits, hook reorganization, etc.)
 never breaks the external API.
 
-**Two-layer design (see [ADR 0003](../../../../docs/adr/0003-framework-agnostic-core-layer.md)):**
+**Two-layer design (see [ADR 0003](../adr/0003-framework-agnostic-core-layer.md)):**
 
 ```
 src/app-api/core/<domain>Api.ts    Framework-agnostic pure functions

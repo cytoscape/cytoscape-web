@@ -22,6 +22,11 @@ docs/design/
 ├── module-federation/          # Module Federation App API design
 │   ├── module-federation-audit.md      # Background audit
 │   ├── module-federation-design.md     # Entry point: priorities and roadmap
+│   ├── adr/                            # Architecture Decision Records
+│   │   ├── 0001-api-result-discriminated-union.md
+│   │   ├── 0002-public-type-reexport-strategy.md
+│   │   ├── 0003-framework-agnostic-core-layer.md
+│   │   └── README.md
 │   ├── specifications/                 # Detailed specs (designers and implementers)
 │   │   ├── app-api-specification.md
 │   │   ├── app-store-design.md
@@ -97,8 +102,7 @@ Unresolved items for future discussion.
 
 | Directory              | Scope                                                       |
 | ---------------------- | ----------------------------------------------------------- |
-| `docs/adr/`            | **Why** — Records of major architectural decisions          |
-| `docs/design/`         | **How** — Detailed design of features and subsystems        |
+| `docs/design/`         | **How** — Detailed design of features and subsystems (ADRs are under each feature subdirectory) |
 | `docs/specifications/` | **What** — Behavioral specs, validation rules, routing      |
 | `docs/prompts/`        | **Workflow** — Templates for LLM-assisted development tasks |
 

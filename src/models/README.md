@@ -22,5 +22,5 @@ models intended for external app developers. It has been superseded by
 `@cytoscape-web/api-types`, which provides a curated, dependency-safe type surface
 via `src/app-api/types/ElementTypes.ts`.
 
-See [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md) for the full
+See [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md) for the full
 rationale behind the type re-export strategy.

@@ -118,7 +118,7 @@ export const ApiErrorCode = {
 export type ApiErrorCode = (typeof ApiErrorCode)[keyof typeof ApiErrorCode]
 ```
 
-**Design decisions:** (see [ADR 0001](../../../adr/0001-api-result-discriminated-union.md) for full rationale)
+**Design decisions:** (see [ADR 0001](../adr/0001-api-result-discriminated-union.md) for full rationale)
 
 | Decision                         | Rationale                                                                                                                                                                             |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -175,7 +175,7 @@ export interface ApiFailure {
 export type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
 ````
 
-**Design decisions:** (see [ADR 0001](../../../adr/0001-api-result-discriminated-union.md) for full rationale and rejected alternatives)
+**Design decisions:** (see [ADR 0001](../adr/0001-api-result-discriminated-union.md) for full rationale and rejected alternatives)
 
 | Decision                      | Rationale                                                                                                                                                                           |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -379,7 +379,7 @@ export type { NetworkView } from '../../models/ViewModel/NetworkView'
 export type { Cx2 } from '../../models/CxModel/Cx2'
 ```
 
-**Design decisions:** (see [ADR 0002](../../../adr/0002-public-type-reexport-strategy.md) for full rationale and rejected alternatives)
+**Design decisions:** (see [ADR 0002](../adr/0002-public-type-reexport-strategy.md) for full rationale and rejected alternatives)
 
 | Decision                               | Rationale                                                                                                                                                                                                                                              |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -807,6 +807,6 @@ This phase creates the foundation for all subsequent work. Here is how later pha
 | # | Question | Owner | Resolution |
 |---|---|---|---|
 | 1 | Should `ApiResult` support a `warnings` array alongside `error`? Some operations (e.g., CX2 import) may partially succeed with warnings. | API Design | **Deferred.** Current design is success/failure binary. Warnings can be added as `ApiResult<T & { warnings?: string[] }>` in specific hooks without changing the core type. |
-| 2 | Should `ok()` and `fail()` be frozen (`Object.freeze`)? | API Design | **No.** See [ADR 0001](../../../adr/0001-api-result-discriminated-union.md). |
-| 3 | Should `ApiErrorCode` be extensible by external apps? | API Design | **No.** See [ADR 0001](../../../adr/0001-api-result-discriminated-union.md). |
+| 2 | Should `ok()` and `fail()` be frozen (`Object.freeze`)? | API Design | **No.** See [ADR 0001](../adr/0001-api-result-discriminated-union.md). |
+| 3 | Should `ApiErrorCode` be extensible by external apps? | API Design | **No.** See [ADR 0001](../adr/0001-api-result-discriminated-union.md). |
 

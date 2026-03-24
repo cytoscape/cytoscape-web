@@ -64,7 +64,7 @@ Agent instruction files (`AGENTS.md` / `CLAUDE.md`) can point to relevant ADRs. 
 
 ### Searching ADRs
 
-LLM agents can search `docs/adr/` via semantic or file search. Include sufficient keywords in titles and body text.
+LLM agents can search `docs/design/module-federation/adr/` via semantic or file search. Include sufficient keywords in titles and body text.
 
 ### When to Create an ADR
 
@@ -80,7 +80,7 @@ ADRs are **append-only**. To revise a decision, mark the existing ADR as "Supers
 
 ## Relation to This Project
 
-Cytoscape Web uses a three-layer architecture (Models / Stores / Features). ADRs record cross-layer design decisions to maintain codebase consistency. See [AGENTS.md](../../AGENTS.md) for the full architecture overview.
+Cytoscape Web uses a three-layer architecture (Models / Stores / Features). ADRs record cross-layer design decisions to maintain codebase consistency. See [AGENTS.md](../../../../AGENTS.md) for the full architecture overview.
 
 ## References
 
