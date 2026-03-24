@@ -8,12 +8,19 @@
 - Rev. 1 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude
 
 Detailed design for runtime-configurable external app registration and selective
-loading. For the current App API design, see
-[app-api-specification.md](./app-api-specification.md). For the broader Module
-Federation roadmap, see
-[module-federation-design.md](../module-federation-design.md). For the audit of
-the current limitations, see
-[module-federation-audit.md](../module-federation-audit.md).
+loading.
+
+### See Also
+
+| Document | Defines |
+| --- | --- |
+| [app-api-specification.md](./app-api-specification.md) | Public App API surface (`useElementApi`, `useNetworkApi`, …) and `ApiResult<T>` contract |
+| [event-bus-specification.md](./event-bus-specification.md) | `CyWebEvents` types, store-to-event mappings, and subscription lifecycle |
+| [app-resource-registration-minimal-app.md](../examples/app-resource-registration-minimal-app.md) | Minimal app example showing declarative `resources[]` and `AppResourceStore` usage |
+| [app-store-design.md](./app-store-design.md) | App Store submission flow, review policy, and catalog publishing |
+| [phase0-shared-types-design.md](./phase0-shared-types-design.md) | `@cytoscape-web/api-types` package and Phase 0 type design |
+| [module-federation-design.md](../module-federation-design.md) | Broader Module Federation roadmap and phase plan |
+| [module-federation-audit.md](../module-federation-audit.md) | Audit of current build-time limitations this spec addresses |
 
 ---
 
@@ -350,7 +357,8 @@ The host resolves the manifest as follows:
 - If `manifestSource` is `undefined`, the host fetches from
   `DEFAULT_MANIFEST_URL` (initially `/apps.json` — a same-origin path
   served from the bundle root via `CopyPlugin`; will be updated to the
-  App Store catalog URL when the App Store is deployed)
+  App Store catalog URL when the App Store is deployed). Defined in
+  `src/app-api/constants.ts`
 - If `manifestSource.type === 'url'`, the host fetches from the custom URL
 - If `manifestSource.type === 'inline'`, the host parses the stored JSON
   content directly (no network fetch)
@@ -481,6 +489,28 @@ store — no changes to `appLifecycle.ts`.
 synchronously. If a future resource type requires async teardown (e.g., aborting
 in-flight network requests), a dedicated async cleanup phase will be introduced
 at that time — it is out of scope for this rollout.
+
+### 6.9 CyAppWithLifecycle Contract
+
+The remote module's default export must conform to `CyAppWithLifecycle`
+(defined in `src/app-api/types/AppContext.ts`), which extends the base `CyApp`
+interface:
+
+| Field | Type | Required | Source |
+| --- | --- | --- | --- |
+| `id` | `string` | **Yes** | `CyApp` — Module Federation scope name |
+| `name` | `string` | **Yes** | `CyApp` — human-readable display name |
+| `version` | `string` | No | `CyApp` — semantic version |
+| `description` | `string` | No | `CyApp` — short description |
+| `status` | `AppStatus` | No | `CyApp` — set by host (default `Active`) |
+| `apiVersion` | `string` | No | `CyAppWithLifecycle` — target API version |
+| `resources` | `ResourceDeclaration[]` | No | `CyAppWithLifecycle` — declarative panel/menu registrations |
+| `mount` | `(context: AppContext) => void \| Promise<void>` | No | `CyAppWithLifecycle` — called on activation |
+| `unmount` | `() => void \| Promise<void>` | No | `CyAppWithLifecycle` — called on deactivation |
+
+Apps that export only `CyApp` fields (no lifecycle, no resources) continue to
+work — they are registered and appear in the UI but have no mount/unmount
+behavior.
 
 ## 7. Runtime Manifest Loading
 
@@ -620,6 +650,48 @@ The host startup sequence is:
 4. Extract catalog app IDs
 5. Call `restore(catalogAppIds)` to load persisted app records from IndexedDB
 6. Determine which restored apps should be auto-loaded
+7. For each active app: `loadRemoteApp` → register → resources → context → mount
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  useAppManager init useEffect                                   │
+│                                                                 │
+│  ① getAppSettingFromDb('manifestSource')                        │
+│     └→ hydrate AppStore.manifestSource                          │
+│                                                                 │
+│  ② obtainCatalogEntries(manifestSource)                         │
+│     ├─ undefined / url  → fetchManifest(url)                    │
+│     └─ inline           → JSON.parse(content)                   │
+│     └→ parseManifest() → validated AppCatalogEntry[]            │
+│                                                                 │
+│  ③ setCatalog(entries)                                          │
+│                                                                 │
+│  ④ restore(catalogAppIds)                                       │
+│     └→ on failure: warn + continue with empty state             │
+│                                                                 │
+│  ⑤ setRestored(true)                                            │
+│                                                                 │
+│  ⑥ Select apps with AppStatus.Active                            │
+│     └→ Promise.allSettled:                                      │
+│        for each active app:                                     │
+│          setLoadState(id, 'loading')                             │
+│          loadRemoteApp(id, url)                                 │
+│          registerApp(cyApp)                                     │
+│          processDeclarativeResources(cyApp)                     │
+│          buildPerAppApis(id) → context                          │
+│          mountApp(cyApp, context, mountedApps)                  │
+│          setLoadState(id, 'loaded')                             │
+│        on failure:                                              │
+│          setLoadState(id, 'failed')                             │
+│          setStatus(id, AppStatus.Error)                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Ordering constraint:** `initEventBus()` (see
+[event-bus-specification.md §1.9](./event-bus-specification.md)) runs in
+`src/init.tsx` **before** `useAppManager` mounts. This is unaffected by the
+changes in this spec — the manifest/restore/auto-load sequence executes inside
+a React `useEffect`, which fires after `initEventBus()` has completed.
 
 The `restore` action's contract is unchanged — it takes an array of app IDs
 and loads matching records from IndexedDB. The only difference from the current
@@ -948,6 +1020,21 @@ What is **not** changed by deactivation:
 This ensures fast re-activation without re-fetching (see Section 9.6).
 
 This deactivation path is immediate and does not require page reload.
+
+#### Cleanup Registry Summary
+
+`cleanupAllForApp(appId)` (defined in `AppCleanupRegistry.ts`) iterates all
+registered cleanup handlers synchronously. In the current codebase, two
+handlers are registered:
+
+1. **`AppResourceStore.removeAllByAppId`** — removes all `RegisteredAppResource`
+   entries (menu items and panels) owned by `appId`
+2. **`ContextMenuItemStore.removeAllByAppId`** — removes all context menu items
+   registered by `appId` (items without an `appId` are preserved)
+
+Each handler is wrapped in try/catch so one store's failure does not block
+the others. The registry is extensible — future per-app resource types only
+need a `registerAppCleanup()` call in their store.
 
 #### AppStore.apps vs appRegistry
 

@@ -170,6 +170,7 @@ _Design: §6.3, §6.4, §6.6, §6.7_
   - `putAppSettingToDb(key: string, value: any): Promise<void>`
   - `getAppSettingFromDb(key: string): Promise<any>`
   - `deleteAppSettingFromDb(key: string): Promise<void>`
+  - **Failure policy:** `getAppSettingFromDb` callers must catch and treat read failures as non-fatal — log a warning via `logDb.warn` and fall back to `undefined` (use the default manifest URL). A corrupted or inaccessible `appSettings` store must never block startup
 - [ ] `manifestSource` is persisted to `appSettings` object store with key `'manifestSource'`
   - On startup, `useAppManager` (not `restore()`) reads `manifestSource` via `getAppSettingFromDb('manifestSource')` and hydrates `AppStore.manifestSource` before resolving the manifest
   - `restore()` only handles app record recovery — it does not read `manifestSource`
@@ -324,6 +325,8 @@ _Design: §6.0 Two-Layer Separation, §13 Step 3_
 ## Step 4: Selective Startup Loading
 
 _Design: §8.1–§8.5, §9.7 rows 4–5, §13 Step 4_
+
+**Helper placement policy:** In the first rollout, orchestration helpers (`activateAndMount`, `buildPerAppApis`, `processDeclarativeResources`) remain as private functions inside `useAppManager.ts`. Extraction to separate modules is deferred until a second consumer needs them.
 
 ### Pre-read files
 
