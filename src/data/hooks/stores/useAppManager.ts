@@ -1,124 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { CyWebApi } from '../../../app-api/core'
-import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
-import { createResourceApi } from '../../../app-api/core/resourceApi'
-import type { AppContextApis } from '../../../app-api/types/AppContext'
-import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
-import type {
-  RegisterMenuItemOptions,
-  RegisterPanelOptions,
-} from '../../../app-api/types/AppResourceTypes'
-import appConfig from '../../../assets/apps.json'
 import { logApp } from '../../../debug'
-import { loadModule } from '../../../features/AppManager/ExternalComponent'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
-import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
+import { unmountAllApps, unmountApp } from './appLifecycle'
+// NOTE: mountApp, buildPerAppApis, processDeclarativeResources will be
+// re-introduced in Phase 4 Step 4 (startup auto-load and activation).
 import { useAppStore } from './AppStore'
-logApp.info(`[AppManager]: App config file loaded: `, appConfig)
 
-// appConfig contains reference list of available apps.
-const appIds: string[] = appConfig.map((app: any) => app.name)
-
-/**
- * Load external modules only once.
- *
- * Uses the low-level webpack container API (via loadModule) so that
- * the list of apps is driven entirely by apps.json — no hardcoded
- * import map required.
- *
- * @returns Array of successfully loaded CyApp objects
- */
-const loadModules = async (): Promise<CyApp[]> => {
-  if (appIds.length === 0) {
-    return []
-  }
-
-  const results = await Promise.allSettled(
-    appConfig.map(async (app: { name: string; url: string }) => {
-      const { name, url } = app
-      try {
-        const module = await loadModule(name, './AppConfig', url)
-        const cyApp: CyApp = (module as any).default
-        if (cyApp !== undefined) {
-          logApp.info(
-            `[loadModules]: Successfully loaded app ${name} from ${url}`,
-          )
-          return cyApp
-        }
-        logApp.info(
-          `[loadModules]: No default export found for ${name}/AppConfig`,
-        )
-        return undefined
-      } catch (err) {
-        logApp.warn(
-          `[loadModules]: Failed to load remote app ${name}/AppConfig:`,
-          err,
-        )
-        return undefined
-      }
-    }),
-  )
-
-  return results
-    .filter(
-      (r): r is PromiseFulfilledResult<CyApp | undefined> =>
-        r.status === 'fulfilled',
-    )
-    .map((r) => r.value)
-    .filter((app): app is CyApp => app !== undefined)
-}
-
-// This contains only active remote apps
-const loadedApps = await loadModules()
-const activatedAppIdSet = new Set<string>(loadedApps.map((app) => app.id))
 // Fast ID-to-CyApp lookup for lifecycle calls.
-// Also exported so rendering code can access fresh component lazy-loaders
-// even before the store is updated (e.g., during DB restore).
-export const appRegistry = new Map<string, CyApp>(
-  loadedApps.map((app) => [app.id, app]),
-)
-
-/**
- * Build a per-app AppContextApis object. This extends CyWebApi with
- * per-app resource and contextMenu factories bound to the given appId.
- */
-function buildPerAppApis(appId: string): AppContextApis {
-  return {
-    ...CyWebApi,
-    resource: createResourceApi(appId),
-    contextMenu: createContextMenuApi(appId),
-  }
-}
-
-/**
- * Process declarative `resources` on CyAppWithLifecycle. Registers each
- * entry in AppResourceStore before mountApp is called, so declarative
- * resources are available to renderers immediately.
- */
-function processDeclarativeResources(cyApp: CyApp): void {
-  const lifecycle = cyApp as CyAppWithLifecycle
-  if (!lifecycle.resources || lifecycle.resources.length === 0) return
-
-  const resourceApi = createResourceApi(cyApp.id)
-  for (const entry of lifecycle.resources) {
-    if (entry.slot === 'right-panel') {
-      resourceApi.registerPanel(entry as RegisterPanelOptions)
-    } else if (entry.slot === 'apps-menu') {
-      resourceApi.registerMenuItem(entry as RegisterMenuItemOptions)
-    } else {
-      logApp.warn(
-        `[useAppManager]: Unsupported slot '${entry.slot}' in declarative resources for ${cyApp.id}`,
-      )
-    }
-  }
-}
+// Starts empty — apps are loaded dynamically at runtime (Phase 4).
+export const appRegistry = new Map<string, CyApp>()
 
 export const useAppManager = (): void => {
   const initRef = useRef<boolean>(false)
-  // Track failed app operations to prevent infinite retries
-  const failedAppIds = useRef<Set<string>>(new Set())
   // Track last processed app state to prevent unnecessary re-runs
   const lastAppsState = useRef<string>('')
   // Track apps where mount() was successfully called
@@ -130,9 +25,7 @@ export const useAppManager = (): void => {
   const [restored, setRestored] = useState<boolean>(false)
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
-  const registerApp = useAppStore((state) => state.add)
   const restore = useAppStore((state) => state.restore)
-  const setStatus = useAppStore((state) => state.setStatus)
 
   // Call unmount() on all mounted apps when the page is about to unload
   useEffect(() => {
@@ -147,7 +40,8 @@ export const useAppManager = (): void => {
 
   useEffect(() => {
     if (initRef.current === false) {
-      restore(appIds).then(() => {
+      // Pass an empty array for now — apps will be loaded dynamically in Step 4
+      restore([]).then(() => {
         logApp.info(
           `[${useAppManager.name}]: Apps restored from the local cache`,
         )
@@ -183,86 +77,20 @@ export const useAppManager = (): void => {
     }
     lastAppsState.current = currentAppsState
 
-    appIds.forEach((appId: string) => {
-      // Skip if this app has failed before (circuit breaker pattern)
-      if (failedAppIds.current.has(appId)) {
-        logApp.warn(
-          `[${useAppManager.name}]: Skipping ${appId} due to previous failure`,
-        )
-        return
-      }
-
-      try {
-        if (activatedAppIdSet.has(appId)) {
-          const cyApp = loadedApps.find((app) => app.id === appId) as CyApp
-          if (!apps[appId]) {
-            // Fresh registration — app not yet in store.
-            registerApp(cyApp)
-            processDeclarativeResources(cyApp)
-            void mountApp(
-              cyApp,
-              { appId: cyApp.id, apis: buildPerAppApis(cyApp.id) },
-              mountedApps.current,
-            )
-          } else if (
-            !mountedApps.current.has(appId) &&
-            apps[appId]?.status !== AppStatus.Inactive
-          ) {
-            // App was restored from DB (missing component lazy-loaders) but not
-            // yet mounted. Re-register with the fresh module data so that
-            // component.component fields (React.lazy instances) are present.
-            // Skip if the user had previously disabled this app — mounting must
-            // only happen when the app is explicitly enabled (status !== Inactive).
-            registerApp(cyApp)
-            processDeclarativeResources(cyApp)
-            void mountApp(
-              cyApp,
-              { appId: cyApp.id, apis: buildPerAppApis(cyApp.id) },
-              mountedApps.current,
-            )
-          } else if (
-            apps[appId]?.status === AppStatus.Inactive &&
-            mountedApps.current.has(appId)
-          ) {
-            // User disabled the app via the UI — call unmount() to clean up.
-            // Must be inside the activatedAppIdSet block so cyApp is in scope.
-            void unmountApp(cyApp, mountedApps.current)
-          } else if (
-            apps[appId]?.status === AppStatus.Active &&
-            !mountedApps.current.has(appId)
-          ) {
-            // User re-enabled the app via the UI — call mount() again.
-            processDeclarativeResources(cyApp)
-            void mountApp(
-              cyApp,
-              { appId, apis: buildPerAppApis(appId) },
-              mountedApps.current,
-            )
-          }
-        } else if (apps[appId] && !activatedAppIdSet.has(appId)) {
-          // App was registered but is no longer loadable — unmount then mark as error
-          const cyApp = appRegistry.get(appId)
-          if (cyApp !== undefined) {
-            void unmountApp(cyApp, mountedApps.current)
-          }
-          setStatus(appId, AppStatus.Error)
-        } else if (
-          apps[appId] &&
-          activatedAppIdSet.has(appId) &&
-          apps[appId].status === AppStatus.Error
-        ) {
-          // Activate again
-          setStatus(appId, AppStatus.Active)
+    // Monitor unmount triggers only — mounting is handled by startup auto-load
+    // and user-initiated activation (Phase 4, Steps 4–5).
+    for (const appId of Object.keys(apps)) {
+      if (
+        apps[appId]?.status === AppStatus.Inactive &&
+        mountedApps.current.has(appId)
+      ) {
+        const cyApp = appRegistry.get(appId)
+        if (cyApp !== undefined) {
+          void unmountApp(cyApp, mountedApps.current)
         }
-      } catch (error) {
-        // Mark app as failed to prevent infinite retries
-        failedAppIds.current.add(appId)
-        logApp.error(
-          `[${useAppManager.name}]: Error processing app ${appId}, marking as failed:`,
-          error,
-        )
       }
-    })
+    }
+
     initRef.current = true
-  }, [apps, registerApp, restored, setStatus])
+  }, [apps, restored])
 }

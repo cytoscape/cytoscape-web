@@ -26,22 +26,6 @@ const isProduction = process.env.NODE_ENV === 'production'
 const packageJson = require('./package.json')
 const deps = packageJson.dependencies
 
-// External Apps
-
-// List of external app properties.
-// This is used in both build and runtime to manage the external apps
-// Override with APPS_JSON env var: APPS_JSON=./src/assets/apps.local.json npm run dev
-const appsJsonPath = process.env.APPS_JSON
-  ? path.resolve(process.env.APPS_JSON)
-  : path.resolve(__dirname, './src/assets/apps.json')
-const appConfig = require(appsJsonPath)
-const externalAppsConfig = {}
-appConfig.forEach((app) => {
-  externalAppsConfig[app.name] = `${app.name}@${app.url}`
-})
-
-console.log('App config found:', appConfig)
-console.log('These apps can be used in this build:', externalAppsConfig)
 
 module.exports = {
   // This app is only for web browsers
@@ -82,13 +66,6 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.jsx'], // need .js and .jsx for dependency files
-    // Redirect the runtime apps.json import when APPS_JSON env var is set,
-    // so that useAppManager.ts loads the same file used for MF remotes config.
-    alias: process.env.APPS_JSON
-      ? {
-          [path.resolve(__dirname, './src/assets/apps.json')]: appsJsonPath,
-        }
-      : {},
   },
   // use content hash for cache busting
   output: {
@@ -120,7 +97,6 @@ module.exports = {
     new ModuleFederationPlugin({
       name: 'cyweb',
       filename: 'remoteEntry.js',
-      remotes: externalAppsConfig,
       exposes: {
         // Public App API Types
         './ApiTypes': './src/app-api/types/index.ts',
@@ -224,7 +200,10 @@ module.exports = {
       : []),
 
     new CopyPlugin({
-      patterns: [{ from: './silent-check-sso.html', to: '.' }],
+      patterns: [
+        { from: './silent-check-sso.html', to: '.' },
+        { from: 'src/assets/apps.json', to: '.' },
+      ],
     }),
     // generate css files from the found css files in the source
     new MiniCssExtractPlugin({
