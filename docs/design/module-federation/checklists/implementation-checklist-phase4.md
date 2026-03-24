@@ -27,16 +27,24 @@ After this step, the host runs with **zero external apps** — this is the expec
 
 ### 0a — Remove webpack remotes configuration
 
-- [ ] Delete `externalAppsConfig` generation loop (`webpack.config.js:38–41`)
-- [ ] Delete the `remotes: externalAppsConfig` line from `ModuleFederationPlugin` (`webpack.config.js:123`)
 - [ ] Delete the build-time `require(appsJsonPath)` and `APPS_JSON` env var handling (`webpack.config.js:34–37`)
+- [ ] Delete `externalAppsConfig` generation loop (`webpack.config.js:38–41`)
 - [ ] Delete the `console.log` lines for app config (`webpack.config.js:43–44`)
+- [ ] Delete the `remotes: externalAppsConfig` line from `ModuleFederationPlugin` (`webpack.config.js:123`)
 - [ ] Keep `exposes` and `shared` configurations unchanged
+- [ ] Add `CopyPlugin` pattern to copy `apps.json` to the bundle root so it is served at `/apps.json`:
+  ```js
+  new CopyPlugin({
+    patterns: [{ from: 'src/assets/apps.json', to: '.' }],
+  }),
+  ```
+  This replaces the build-time `require()` with runtime `fetch('/apps.json')` (consumed in Step 2)
 
 #### Verification (0a)
 
 - [ ] `npm run build` succeeds
 - [ ] `npm run dev` starts without errors
+- [ ] `curl http://localhost:5500/apps.json` returns the manifest JSON
 
 ### 0b — Remove runtime appConfig import
 
@@ -54,8 +62,8 @@ After this step, the host runs with **zero external apps** — this is the expec
 - [ ] Remove `const loadedApps = await loadModules()` (line 74)
 - [ ] Remove `const activatedAppIdSet = new Set<string>(...)` (line 75)
 - [ ] Update the lifecycle `useEffect` to no longer reference `loadedApps` or `activatedAppIdSet`
-  - Replace `appIds.forEach(...)` loop body with a no-op or empty implementation (apps will be loaded dynamically in Step 4)
-  - Keep the `restore()` call in the init `useEffect`, but pass an empty array `[]` for now
+  - Replace the `appIds.forEach(...)` loop (line 186) with a no-op or empty implementation (apps will be loaded dynamically in Step 4)
+  - Keep the `restore()` call in the init `useEffect` (line 150), but pass an empty array `[]` for now
 
 #### Verification (0c)
 
@@ -64,7 +72,7 @@ After this step, the host runs with **zero external apps** — this is the expec
 
 ### 0d — Convert appRegistry to a dynamic Map
 
-- [ ] Change `appRegistry` from `new Map(loadedApps.map(...))` to `new Map<string, CyApp>()`
+- [ ] Change `appRegistry` from `new Map(loadedApps.map(...))` (lines 79–81) to `new Map<string, CyApp>()`
 - [ ] Keep `export const appRegistry` so rendering code can still access it
 - [ ] Ensure `unmountAllApps` in the `beforeunload` handler still works with an empty registry
 
@@ -96,7 +104,7 @@ _Design: §6.3, §6.4, §6.6, §6.7_
     - `id: string` — Module Federation scope name
     - `name?: string` — human-readable display name (falls back to `id`)
     - `url: string` — full remote entry URL
-    - `author: string` — developer or organization name (required)
+    - `author: string` — developer or organization name (defaults to `"unknown"` after normalization)
     - `description?: string`
     - `version?: string`
     - `tags?: string[]` — category tags for filtering
@@ -114,8 +122,8 @@ _Design: §6.3, §6.4, §6.6, §6.7_
 ### 1.2 — Define DEFAULT_MANIFEST_URL constant
 
 - [ ] Create `src/app-api/constants.ts` (or add to an existing constants file):
-  - `DEFAULT_MANIFEST_URL` — compile-time constant pointing to the default App Store catalog URL
-  - For development, this can initially point to `/apps.json` (same-origin relative path)
+  - `DEFAULT_MANIFEST_URL = '/apps.json'` — same-origin relative path pointing to the manifest served from the bundle root
+  - This URL will be updated to the App Store catalog URL when the App Store is deployed
 
 ### 1.3 — Extend AppStoreModel
 
@@ -192,12 +200,12 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
 
 ### 2.1 — Implement parseManifest with zod validation
 
-- [ ] Create `src/features/ServiceApps/manifest/parseManifest.ts`:
+- [ ] Create `src/features/AppManager/manifest/parseManifest.ts`:
   - Define `AppManifestEntrySchema` with zod:
     - `id`: `z.string().regex(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/).optional()`
     - `name`: `z.string().min(1).optional()`
     - `url`: `z.string().url()`
-    - `author`: `z.string().min(1)` (required)
+    - `author`: `z.string().min(1).optional().default('unknown')` (defaults to `"unknown"` for legacy manifests)
     - `description`: `z.string().optional()`
     - `version`: `z.string().optional()`
     - `tags`: `z.array(z.string()).optional()`
@@ -218,10 +226,10 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
 
 ### 2.2 — Unit tests for parseManifest
 
-- [ ] Create `src/features/ServiceApps/manifest/parseManifest.test.ts`:
+- [ ] Create `src/features/AppManager/manifest/parseManifest.test.ts`:
   - Valid manifest with `id`, `url`, and `author` → returns entries
   - Manifest with `name` only (no `id`) → uses `name` as `id` (backward compat)
-  - Entry missing `author` → skipped (required field)
+  - Entry missing `author` → defaults to `"unknown"` (backward compat with legacy `{ name, url }` format)
   - Entry missing both `id` and `name` → skipped
   - Entry with invalid `id` pattern → skipped
   - Entry with invalid `url` → skipped
@@ -237,14 +245,14 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
 
 ### 2.3 — Implement manifest fetch and resolution logic
 
-- [ ] Create `src/features/ServiceApps/manifest/fetchManifest.ts`:
+- [ ] Create `src/features/AppManager/manifest/fetchManifest.ts`:
   - `fetchManifest(url: string): Promise<AppCatalogEntry[]>`:
     - `fetch(url)` without custom cache headers
     - Parse JSON response
     - Call `parseManifest(data)`
     - On network error: log warning, return empty array
     - On JSON parse error: log warning, return empty array
-- [ ] Create `src/features/ServiceApps/manifest/obtainCatalogEntries.ts`:
+- [ ] Create `src/features/AppManager/manifest/obtainCatalogEntries.ts`:
   - `obtainCatalogEntries(source: ManifestSource | undefined): Promise<AppCatalogEntry[]>`:
     - Source-agnostic resolution:
       - `undefined` or `{ type: 'url' }` → call `fetchManifest(source?.url ?? DEFAULT_MANIFEST_URL)`
@@ -288,7 +296,7 @@ _Design: §6.0 Two-Layer Separation, §13 Step 3_
 
 ### 3.1 — Implement loadRemoteApp
 
-- [ ] Create `src/features/ServiceApps/loader/loadRemoteApp.ts`:
+- [ ] Create `src/features/AppManager/loader/loadRemoteApp.ts`:
   - `loadRemoteApp(id: string, url: string): Promise<CyApp | undefined>`:
     - Call `loadModule(id, './AppConfig', url)` from `ExternalComponent.tsx`
     - Extract `CyApp` from the default export
@@ -299,7 +307,7 @@ _Design: §6.0 Two-Layer Separation, §13 Step 3_
 
 ### 3.2 — Unit tests for loadRemoteApp
 
-- [ ] Create `src/features/ServiceApps/loader/loadRemoteApp.test.ts`:
+- [ ] Create `src/features/AppManager/loader/loadRemoteApp.test.ts`:
   - Mock `loadModule` to return a valid CyApp → returns CyApp, added to `appRegistry`
   - Mock `loadModule` to return undefined → returns undefined
   - Mock `loadModule` to throw → returns undefined, does not throw
@@ -337,6 +345,7 @@ _Design: §8.1–§8.5, §9.7 rows 4–5, §13 Step 4_
   5. For each successfully loaded app:
      - Call `registerApp(cyApp)` to add/update in `AppStore.apps`
      - Call `processDeclarativeResources(cyApp)`
+     - Build `context` via `{ appId: id, apis: buildPerAppApis(id) }`
      - Call `mountApp(cyApp, context, mountedApps)`
      - Set `loadStates[id] = 'loaded'`
   6. For each failed app:
@@ -349,7 +358,7 @@ _Design: §8.1–§8.5, §9.7 rows 4–5, §13 Step 4_
   1. Check `mountedApps.has(id)` — if true, return immediately (already mounted)
   2. Check `mountingApps.has(id)` — if true, return immediately (mount in progress)
   3. Add `id` to `mountingApps` (per-app async guard Set, declared as `useRef<Set<string>>`)
-  4. Call `registerApp(cyApp)` → `processDeclarativeResources(cyApp)` → `mountApp(cyApp, context, mountedApps)`
+  4. Call `registerApp(cyApp)` → `processDeclarativeResources(cyApp)` → build `context` via `{ appId: id, apis: buildPerAppApis(id) }` → `mountApp(cyApp, context, mountedApps)`
   5. Remove `id` from `mountingApps` on completion (success or failure)
 - [ ] Both startup auto-load (Step 4.1) and user-initiated activation (Step 5.1) call `activateAndMount`
 - [ ] Rewrite the lifecycle `useEffect` to monitor **unmount triggers only**:

@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 6 (3/23/2026): Keiichiro ONO and Claude** — `author` field relaxed from required to optional with `"unknown"` default for backward compatibility with legacy `{ name, url }` manifests (§6.4, §7.1)
 - **Rev. 5 (3/20/2026): Keiichiro ONO and Claude** — Manifest schema extension for App Store readiness: added `author` (required), `tags`, `icon`, `license`, `repository`, `compatibleHostVersions` fields to `AppCatalogEntry` (§6.4) and `AppManifestEntrySchema` (§7.1)
 - **Rev. 4 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Second code review round: `manifestSource` hydration responsibility unified to `useAppManager` (§7.2); state transition table cleanup calls updated to use `unmountApp` (§9.7 rows 6/12); `obtainCatalogEntries` introduced as source-agnostic manifest resolution entry point (§7.2); remaining `manifestUrl` naming remnants fixed throughout
 - **Rev. 3 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Responsibility boundary fixes: cleanup ownership consolidated to `unmountApp` (§9.4), restore failure policy added (§7.3), command surface and mount ownership rule added (§12.4.1, §12.4.2). `manifestUrl` generalized to `manifestSource` with inline (file upload) support (§6.5); persistence moved to IndexedDB `appSettings` store (§6.7); multi-source manifest merging added to Non-Goals (§5)
@@ -287,7 +288,7 @@ interface AppCatalogEntry {
   id: string            // Module Federation scope name (= CyApp.id = window[id])
   name?: string         // Human-readable display name (falls back to id)
   url: string           // Full remote entry URL
-  author: string        // Developer or organization name (required)
+  author: string        // Developer or organization name (defaults to "unknown" if absent)
   description?: string
   version?: string
   tags?: string[]       // Category tags for filtering (e.g., ["network-analysis", "layout"])
@@ -347,7 +348,9 @@ type ManifestSource =
 The host resolves the manifest as follows:
 
 - If `manifestSource` is `undefined`, the host fetches from
-  `DEFAULT_MANIFEST_URL` (a compile-time constant)
+  `DEFAULT_MANIFEST_URL` (initially `/apps.json` — a same-origin path
+  served from the bundle root via `CopyPlugin`; will be updated to the
+  App Store catalog URL when the App Store is deployed)
 - If `manifestSource.type === 'url'`, the host fetches from the custom URL
 - If `manifestSource.type === 'inline'`, the host parses the stored JSON
   content directly (no network fetch)
@@ -502,7 +505,7 @@ The manifest is an array of objects. Two formats are accepted:
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples",
     "compatibleHostVersions": ">=1.0.0"
   },
-  { "name": "networkWorkflows", "url": "http://localhost:7000/remoteEntry.js", "author": "Cytoscape Team" }
+  { "name": "networkWorkflows", "url": "http://localhost:7000/remoteEntry.js" }
 ]
 ```
 
@@ -513,10 +516,12 @@ Normalization rules:
   existing apps.json format)
 - If `name` is absent, `id` is used as the display name
 - After normalization, `id` must be non-empty and unique within the manifest
-- `author` is the only required metadata field beyond `url` and `id`/`name`
+- `author` defaults to `"unknown"` when absent in the manifest entry. This
+  ensures backward compatibility with legacy `{ name, url }` manifests while
+  the App Store enforces `author` on its submission side
 
-This ensures backward compatibility with the existing `{ name, url }` format
-while supporting richer metadata from the App Store.
+This ensures full backward compatibility with the existing `{ name, url }`
+format while supporting richer metadata from the App Store.
 
 #### Manifest Validation
 
@@ -529,7 +534,7 @@ const AppManifestEntrySchema = z
     id: z.string().regex(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/).optional(),
     name: z.string().min(1).optional(),
     url: z.string().url(),
-    author: z.string().min(1),
+    author: z.string().min(1).optional().default('unknown'),
     description: z.string().optional(),
     version: z.string().optional(),
     tags: z.array(z.string()).optional(),
