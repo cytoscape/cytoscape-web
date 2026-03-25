@@ -36,8 +36,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
-  const [appStateUpdated, setAppStateUpdated] = useState<boolean>(false)
-
   const { label } = props
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
@@ -163,13 +161,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
         : []
     setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
   }, [serviceApps, apps])
-
-  useEffect(() => {
-    const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
-    setAppStateUpdated(false)
-  }, [appStateUpdated])
 
   useEffect(() => {
     // Create base menu items
@@ -302,7 +293,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
-        setAppStateUpdated={setAppStateUpdated}
       />
       <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
       <ConfirmationDialog

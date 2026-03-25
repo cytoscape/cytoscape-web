@@ -10,15 +10,14 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
-import { fetchNdexSummaries } from '../data/external-api/ndex'
+import { initEventBus } from '../app-api/event-bus/initEventBus'
 import { AppConfigContext } from '../AppConfigContext'
 import {
   getUiStateFromDb,
   getWorkspaceFromDb,
   putNetworkSummaryToDb,
 } from '../data/db/'
-import { initEventBus } from '../app-api/event-bus/initEventBus'
-import { logStartup } from '../debug'
+import { fetchNdexSummaries } from '../data/external-api/ndex'
 import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../data/hooks/stores/FilterStore'
 import { useMessageStore } from '../data/hooks/stores/MessageStore'
@@ -29,10 +28,12 @@ import {
   DEFAULT_UI_STATE,
   useUiStateStore,
 } from '../data/hooks/stores/UiStateStore'
+import { useAppManager } from '../data/hooks/stores/useAppManager'
 import { useViewModelStore } from '../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { useLoadNetworkSummaries } from '../data/hooks/useLoadNetworkSummaries'
+import { logStartup } from '../debug'
 import { fetchUrlCx } from '../models/CxModel/fetchUrlCxUtil'
 import {
   DisplayMode,
@@ -40,12 +41,13 @@ import {
   FilterWidgetType,
 } from '../models/FilterModel'
 import { FilterUrlParams } from '../models/FilterModel/FilterUrlParams'
-import { MessageSeverity } from '../models/MessageModel'
 import { IdType } from '../models/IdType'
+import { MessageSeverity } from '../models/MessageModel'
 import { GraphObjectType } from '../models/NetworkModel'
 import { Panel } from '../models/UiModel/Panel'
 import { PanelState } from '../models/UiModel/PanelState'
 import { NetworkView } from '../models/ViewModel'
+import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
 import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
 import { SyncTabsAction } from './SyncTabs'
@@ -64,6 +66,7 @@ import { ToolBar } from './ToolBar'
  * The actual workspace editor content is rendered by React Router via <Outlet />
  */
 const AppShell = (): ReactElement => {
+  const appManagerCommands = useAppManager()
   const params = useParams()
   const navigate = useNavigate()
   const [search, setSearchParams] = useSearchParams()
@@ -422,27 +425,29 @@ const AppShell = (): ReactElement => {
   }, [])
 
   return (
-    <Box
-      data-testid="app-shell"
-      sx={{
-        width: '100%',
-        height: '100vh',
-        display: 'flex',
-        boxSizing: 'border-box',
-        flexDirection: 'column',
-      }}
-    >
-      <Box data-testid="app-shell-toolbar-container" sx={{ p: 0, margin: 0 }}>
-        <ToolBar />
-      </Box>
+    <AppManagerCommandsProvider value={appManagerCommands}>
       <Box
-        data-testid="app-shell-content-container"
-        sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}
+        data-testid="app-shell"
+        sx={{
+          width: '100%',
+          height: '100vh',
+          display: 'flex',
+          boxSizing: 'border-box',
+          flexDirection: 'column',
+        }}
       >
-        <Outlet />
+        <Box data-testid="app-shell-toolbar-container" sx={{ p: 0, margin: 0 }}>
+          <ToolBar />
+        </Box>
+        <Box
+          data-testid="app-shell-content-container"
+          sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}
+        >
+          <Outlet />
+        </Box>
+        <SyncTabsAction />
       </Box>
-      <SyncTabsAction />
-    </Box>
+    </AppManagerCommandsProvider>
   )
 }
 

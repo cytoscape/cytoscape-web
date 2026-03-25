@@ -39,7 +39,7 @@ export interface AppAction {
    * @param app
    * @returns
    */
-  add: (app: CyApp) => void
+  add: (app: CyApp) => Promise<void>
 
   /**
    * Fetch service metadata and add it to the store

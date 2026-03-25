@@ -119,7 +119,7 @@ export const useAppManager = (): AppManagerCommands => {
         return
       }
 
-      registerApp(cyApp)
+      await registerApp(cyApp)
       processDeclarativeResources(cyApp)
 
       const context = { appId: id, apis: buildPerAppApis(id) }

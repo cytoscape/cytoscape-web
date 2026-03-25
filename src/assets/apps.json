@@ -1,6 +1,13 @@
 [
   {
-    "name": "hello",
-    "url": "http://localhost:2222/remoteEntry.js"
+    "id": "hello",
+    "name": "Hello World App",
+    "url": "http://localhost:2222/remoteEntry.js",
+    "author": "Cytoscape Core Team",
+    "description": "A simple hello world demo app for testing Module Federation integration",
+    "version": "1.0.0",
+    "tags": ["demo", "getting-started"],
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   }
 ]

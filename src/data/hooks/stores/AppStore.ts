@@ -75,33 +75,29 @@ export const useAppStore = create(
       })
     },
 
-    add: (app: CyApp) => {
+    add: async (app: CyApp) => {
       const { id } = app
-      getAppFromDb(id).then((cachedApp: CyApp) => {
-        set((state) => {
-          const newState = AppStoreImpl.add(state, app, cachedApp)
-          if (newState.apps[id] !== state.apps[id]) {
-            // Always persist the updated app record so that newly added
-            // components are saved to DB (React.lazy refs are stripped by
-            // toPlainObject, but the {id, type} entries survive).
-            try {
-              const plainApp = toPlainObject(newState.apps[id])
-              putAppToDb(plainApp).catch((error) => {
-                logStore.error(
-                  `[${useAppStore.name}]:[add] Failed to persist app ${id}:`,
-                  error,
-                )
-              })
-            } catch (cloneError) {
+      const cachedApp = await getAppFromDb(id)
+      set((state) => {
+        const newState = AppStoreImpl.add(state, app, cachedApp)
+        if (newState.apps[id] !== state.apps[id]) {
+          try {
+            const plainApp = toPlainObject(newState.apps[id])
+            putAppToDb(plainApp).catch((error) => {
               logStore.error(
-                `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
-                cloneError,
+                `[${useAppStore.name}]:[add] Failed to persist app ${id}:`,
+                error,
               )
-            }
+            })
+          } catch (cloneError) {
+            logStore.error(
+              `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
+              cloneError,
+            )
           }
-          state.apps = newState.apps
-          return state
-        })
+        }
+        state.apps = newState.apps
+        return state
       })
     },
 
@@ -141,8 +137,9 @@ export const useAppStore = create(
       set((state) => {
         const newState = AppStoreImpl.setStatus(state, id, status)
         state.apps = newState.apps
-        const newAppState = { ...newState.apps[id] }
-        if (newAppState) {
+        const appRecord = newState.apps[id]
+        if (appRecord !== undefined) {
+          const newAppState = { ...appRecord }
           // Convert to plain object and handle errors to prevent infinite loops
           try {
             const plainApp = toPlainObject(newAppState)
