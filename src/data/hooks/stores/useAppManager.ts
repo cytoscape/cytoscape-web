@@ -16,13 +16,28 @@ import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp
 import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obtainCatalogEntries'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { getAppSettingFromDb } from '../../db'
+import { cleanupAllForApp } from './AppCleanupRegistry'
 import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
 
 // Fast ID-to-CyApp lookup for lifecycle calls.
 // Starts empty — apps are loaded dynamically at runtime (Phase 4).
 export const appRegistry = new Map<string, CyApp>()
+
+/**
+ * Command surface exposed by useAppManager.
+ * UI components call these instead of manipulating AppStore directly.
+ */
+export interface AppManagerCommands {
+  activateApp: (id: string) => Promise<void>
+  deactivateApp: (id: string) => Promise<void>
+  retryApp: (id: string) => Promise<void>
+  refreshCatalog: () => Promise<void>
+  setManifestSource: (source: ManifestSource | undefined) => void
+  removeOrphan: (id: string) => void
+}
 
 /**
  * Build a per-app AppContextApis object. Extends CyWebApi with
@@ -59,7 +74,7 @@ function processDeclarativeResources(cyApp: CyApp): void {
   }
 }
 
-export const useAppManager = (): void => {
+export const useAppManager = (): AppManagerCommands => {
   const initRef = useRef<boolean>(false)
   // Track last processed app state to prevent unnecessary re-runs
   const lastAppsState = useRef<string>('')
@@ -78,8 +93,11 @@ export const useAppManager = (): void => {
   const registerApp = useAppStore((state) => state.add)
   const setCatalog = useAppStore((state) => state.setCatalog)
   const setLoadState = useAppStore((state) => state.setLoadState)
-  const setManifestSource = useAppStore((state) => state.setManifestSource)
+  const storeSetManifestSource = useAppStore(
+    (state) => state.setManifestSource,
+  )
   const setStatus = useAppStore((state) => state.setStatus)
+  const removeApp = useAppStore((state) => state.remove)
 
   /**
    * Activate and mount a single app. Handles async guard to prevent
@@ -111,6 +129,103 @@ export const useAppManager = (): void => {
     }
   }
 
+  // ── Command implementations ──────────────────────────────────────
+
+  const activateApp = async (id: string): Promise<void> => {
+    const { catalog, loadStates, apps: currentApps } = useAppStore.getState()
+    const catalogEntry = catalog[id]
+    if (catalogEntry === undefined) {
+      logApp.warn(`[useAppManager]: activateApp: "${id}" not found in catalog`)
+      return
+    }
+
+    const currentLoadState = loadStates[id]
+    const existedBefore = currentApps[id] !== undefined
+
+    if (currentLoadState === 'loaded') {
+      // Fast re-enable path — module already in memory
+      try {
+        await activateAndMount(id)
+        setStatus(id, AppStatus.Active)
+        logApp.info(`[useAppManager]: App "${id}" re-enabled (fast path)`)
+      } catch (error) {
+        cleanupAllForApp(id)
+        setLoadState(id, 'failed')
+        logApp.warn(
+          `[useAppManager]: App "${id}" re-enable mount failed:`,
+          error,
+        )
+      }
+      return
+    }
+
+    // Full load path (unloaded or failed)
+    setLoadState(id, 'loading')
+
+    const cyApp = await loadRemoteApp(id, catalogEntry.url, appRegistry)
+    if (cyApp === undefined) {
+      setLoadState(id, 'failed')
+      if (existedBefore) {
+        setStatus(id, AppStatus.Error)
+      }
+      logApp.warn(`[useAppManager]: activateApp: failed to load "${id}"`)
+      return
+    }
+
+    try {
+      await activateAndMount(id)
+      setStatus(id, AppStatus.Active)
+      setLoadState(id, 'loaded')
+      logApp.info(`[useAppManager]: App "${id}" activated`)
+    } catch (error) {
+      cleanupAllForApp(id)
+      if (!existedBefore) {
+        removeApp(id)
+      }
+      setLoadState(id, 'failed')
+      logApp.warn(
+        `[useAppManager]: activateApp: mount failed for "${id}":`,
+        error,
+      )
+    }
+  }
+
+  const deactivateApp = async (id: string): Promise<void> => {
+    setStatus(id, AppStatus.Inactive)
+    const cyApp = appRegistry.get(id)
+    if (cyApp !== undefined && mountedApps.current.has(id)) {
+      await unmountApp(cyApp, mountedApps.current)
+    }
+    logApp.info(`[useAppManager]: App "${id}" deactivated`)
+  }
+
+  const retryApp = async (id: string): Promise<void> => {
+    await activateApp(id)
+  }
+
+  const refreshCatalog = async (): Promise<void> => {
+    const { manifestSource } = useAppStore.getState()
+    const entries = await obtainCatalogEntries(manifestSource)
+    setCatalog(entries)
+    logApp.info(
+      `[useAppManager]: Catalog refreshed with ${entries.length} entries`,
+    )
+  }
+
+  const cmdSetManifestSource = (
+    source: ManifestSource | undefined,
+  ): void => {
+    storeSetManifestSource(source)
+  }
+
+  const removeOrphan = (id: string): void => {
+    removeApp(id)
+    appRegistry.delete(id)
+    logApp.info(`[useAppManager]: Orphan app "${id}" removed`)
+  }
+
+  // ── Effects ──────────────────────────────────────────────────────
+
   // Call unmount() on all mounted apps when the page is about to unload
   useEffect(() => {
     const handleUnload = (): void => {
@@ -128,7 +243,7 @@ export const useAppManager = (): void => {
         // 1. Read persisted manifestSource from IndexedDB
         const savedSource = await getAppSettingFromDb('manifestSource')
         if (savedSource !== undefined) {
-          setManifestSource(savedSource)
+          storeSetManifestSource(savedSource)
         }
 
         // 2. Resolve manifest (fetch or parse inline)
@@ -183,7 +298,11 @@ export const useAppManager = (): void => {
         // Load all active apps in parallel
         const results = await Promise.allSettled(
           activeAppIds.map(async (id) => {
-            const cyApp = await loadRemoteApp(id, catalog[id].url, appRegistry)
+            const cyApp = await loadRemoteApp(
+              id,
+              catalog[id].url,
+              appRegistry,
+            )
             if (cyApp === undefined) {
               throw new Error(`Failed to load remote app "${id}"`)
             }
@@ -229,7 +348,7 @@ export const useAppManager = (): void => {
       logApp.info(`[${useAppManager.name}]: App Manager unmounted`)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restore, setCatalog, setManifestSource])
+  }, [restore, setCatalog, storeSetManifestSource])
 
   useEffect(() => {
     // Do not process any apps until restore() has completed. Without this guard,
@@ -267,4 +386,13 @@ export const useAppManager = (): void => {
 
     initRef.current = true
   }, [apps, restored])
+
+  return {
+    activateApp,
+    deactivateApp,
+    retryApp,
+    refreshCatalog,
+    setManifestSource: cmdSetManifestSource,
+    removeOrphan,
+  }
 }
