@@ -896,10 +896,12 @@ export const LoadFromNdexDialog = (
   )
 
   const myNetworksTab = authenticated ? (
-    <Tab
-      label={tabLabel('My Networks', myNetworksCount)}
-      sx={{ textTransform: 'none' }}
-    />
+    <Tooltip arrow placement="bottom" title="Browse your personal NDEx networks and folders">
+      <Tab
+        label={tabLabel('My Networks', myNetworksCount)}
+        sx={{ textTransform: 'none' }}
+      />
+    </Tooltip>
   ) : (
     <Tooltip
       arrow
@@ -917,10 +919,12 @@ export const LoadFromNdexDialog = (
   )
 
   const privateTab = authenticated ? (
-    <Tab
-      label={tabLabel('Private & Unlisted', privateCount)}
-      sx={{ textTransform: 'none' }}
-    />
+    <Tooltip arrow placement="bottom" title="Search for private or unlisted networks shared with you">
+      <Tab
+        label={tabLabel('Private & Unlisted', privateCount)}
+        sx={{ textTransform: 'none' }}
+      />
+    </Tooltip>
   ) : (
     <Tooltip
       arrow
@@ -1000,11 +1004,13 @@ export const LoadFromNdexDialog = (
             }}
           >
             {myNetworksTab}
-            <Tab
-              data-testid="load-from-ndex-public-tab"
-              label={tabLabel('Public', publicCount)}
-              sx={{ textTransform: 'none' }}
-            />
+            <Tooltip arrow placement="bottom" title="Query public networks in NDEx">
+              <Tab
+                data-testid="load-from-ndex-public-tab"
+                label={tabLabel('Public', publicCount)}
+                sx={{ textTransform: 'none' }}
+              />
+            </Tooltip>
             {privateTab}
           </Tabs>
         </Box>
