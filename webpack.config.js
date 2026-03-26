@@ -26,7 +26,6 @@ const isProduction = process.env.NODE_ENV === 'production'
 const packageJson = require('./package.json')
 const deps = packageJson.dependencies
 
-
 module.exports = {
   // This app is only for web browsers
   target: 'web',
@@ -128,12 +127,13 @@ module.exports = {
         // Event Bus (Step 2)
         './EventBus': './src/app-api/useCyWebEvent.ts',
 
-        // Core data models exposed to other Apps
+        // Deprecated: Core data models exposed to other Apps
         './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
         './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',
         './MessageStore': './src/data/hooks/stores/MessageStore.ts',
         './NetworkStore': './src/data/hooks/stores/NetworkStore.ts',
-        './NetworkSummaryStore': './src/data/hooks/stores/NetworkSummaryStore.ts',
+        './NetworkSummaryStore':
+          './src/data/hooks/stores/NetworkSummaryStore.ts',
         './OpaqueAspectStore': './src/data/hooks/stores/OpaqueAspectStore.ts',
         './RendererStore': './src/data/hooks/stores/RendererStore.ts',
         './TableStore': './src/data/hooks/stores/TableStore.ts',
@@ -142,10 +142,9 @@ module.exports = {
         './VisualStyleStore': './src/data/hooks/stores/VisualStyleStore.ts',
         './WorkspaceStore': './src/data/hooks/stores/WorkspaceStore.ts',
 
-        // External Apps
+        // Deprecated: Task hooks exposed to other Apps
         './CreateNetwork': './src/data/task/useCreateNetwork.tsx',
-        './CreateNetworkFromCx2':
-          './src/data/task/useCreateNetworkFromCx2.tsx',
+        './CreateNetworkFromCx2': './src/data/task/useCreateNetworkFromCx2.tsx',
       },
 
       shared: {
@@ -202,7 +201,12 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: './silent-check-sso.html', to: '.' },
-        { from: 'src/assets/apps.json', to: '.' },
+        {
+          from: isProduction
+            ? 'src/assets/apps.json'
+            : 'src/assets/apps.local.json',
+          to: 'apps.json',
+        },
       ],
     }),
     // generate css files from the found css files in the source
