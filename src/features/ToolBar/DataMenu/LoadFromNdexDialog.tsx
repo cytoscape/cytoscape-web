@@ -1,6 +1,8 @@
 import ChevronRight from '@mui/icons-material/ChevronRight'
 import FolderIcon from '@mui/icons-material/Folder'
 import Home from '@mui/icons-material/Home'
+import LockIcon from '@mui/icons-material/Lock'
+import PublicIcon from '@mui/icons-material/Public'
 import Search from '@mui/icons-material/Search'
 import {
   Box,
@@ -152,11 +154,23 @@ const FolderBreadcrumbs = (props: {
     >
       {path.map((item, index) => {
         const isLast = index === path.length - 1
-        const showHomeIcon = index === 0 && item.name.includes('My Drive')
+        
+        let icon: ReactElement | null = null
+        if (index === 0) {
+          if (item.name.includes('My Drive')) {
+            icon = <Home fontSize="small" />
+          } else if (item.name.includes('Latest Networks')) {
+            icon = <PublicIcon fontSize="small" />
+          } else if (item.name.includes('Private Networks')) {
+            icon = <LockIcon fontSize="small" />
+          } else if (item.name.startsWith('Search:')) {
+            icon = <Search fontSize="small" />
+          }
+        }
         
         const content = (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {showHomeIcon && <Home fontSize="small" />}
+            {icon}
             {item.name}
           </Box>
         )
@@ -207,7 +221,7 @@ const FolderSection = (props: {
     <>
       <TableRow>
         <TableCell
-          colSpan={6}
+          colSpan={7}
           sx={{ backgroundColor: '#f5f5f5', py: 0.5 }}
         >
           <Typography variant="subtitle2" fontWeight="bold">
@@ -225,6 +239,11 @@ const FolderSection = (props: {
         <TableCell>
           <Typography variant="caption" fontWeight="bold">
             Owner
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="caption" fontWeight="bold">
+            Visibility
           </Typography>
         </TableCell>
         <TableCell colSpan={2} />
@@ -256,6 +275,11 @@ const FolderSection = (props: {
           </TableCell>
           <TableCell sx={{ maxWidth: 100, ...cellSx }}>
             {folder.owner ?? ''}
+          </TableCell>
+          <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+              {folder.visibility}
+            </Typography>
           </TableCell>
           <TableCell colSpan={2} />
           <TableCell sx={{ maxWidth: 10, ...cellSx }}>
@@ -506,7 +530,16 @@ export const LoadFromNdexDialog = (
     
     // Properly title the search results root node
     setBreadcrumbPath([
-      { name: trimmedQuery ? `Search: "${trimmedQuery}"` : 'Latest Networks', id: null }
+      {
+        name: trimmedQuery
+          ? `Search: "${trimmedQuery}"`
+          : activeTab === 'my-networks'
+          ? 'My Drive'
+          : activeTab === 'private'
+          ? 'Private Networks'
+          : 'Latest Networks',
+        id: null,
+      },
     ])
 
     setLoading(true)
@@ -700,6 +733,11 @@ export const LoadFromNdexDialog = (
             <TableCell sx={{ maxWidth: 100, ...cellSx }}>
               {owner ?? ''}
             </TableCell>
+            <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+                {network.visibility}
+              </Typography>
+            </TableCell>
             <TableCell sx={{ maxWidth: 10, ...cellSx }}>
               {nodeCount}
             </TableCell>
@@ -737,6 +775,11 @@ export const LoadFromNdexDialog = (
             </TableCell>
             <TableCell sx={{ maxWidth: 100, ...cellSx }}>
               {owner ?? ''}
+            </TableCell>
+            <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+                {network.visibility}
+              </Typography>
             </TableCell>
             <TableCell sx={{ maxWidth: 10, ...cellSx }}>
               {nodeCount}
@@ -798,6 +841,11 @@ export const LoadFromNdexDialog = (
                 </TableCell>
                 <TableCell>
                   <Typography variant="caption" fontWeight="bold">
+                    Visibility
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="caption" fontWeight="bold">
                     Nodes
                   </Typography>
                 </TableCell>
@@ -822,7 +870,7 @@ export const LoadFromNdexDialog = (
             {networks.length > 0 && folders.length > 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   sx={{ backgroundColor: '#f5f5f5', py: 0.5 }}
                 >
                   <Typography variant="subtitle2" fontWeight="bold">
@@ -940,7 +988,11 @@ export const LoadFromNdexDialog = (
                 {
                   name: lastSearchQuery
                     ? `Search: "${lastSearchQuery}"`
-                    : 'My Drive', // If purely browsing, defaults safely to My Drive
+                    : tabIndexToKey[val] === 'my-networks'
+                    ? 'My Drive'
+                    : tabIndexToKey[val] === 'private'
+                    ? 'Private Networks'
+                    : 'Latest Networks',
                   id: null,
                 },
               ])
