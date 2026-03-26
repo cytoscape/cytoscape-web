@@ -13,6 +13,7 @@ import {
   DialogActions,
   DialogContent,
   IconButton,
+  Link,
   Tab,
   Tabs,
   TextField,
@@ -23,6 +24,7 @@ import {
 } from '@mui/material'
 import { useRef, useState } from 'react'
 
+import { DEFAULT_MANIFEST_URL } from '../../app-api/constants'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { logApp } from '../../debug'
 import { AppListPanel } from './AppListPanel'
@@ -66,6 +68,9 @@ export const AppSettingsDialog = ({
   const [urlError, setUrlError] = useState<string | undefined>()
   const [fileError, setFileError] = useState<string | undefined>()
   const [refreshing, setRefreshing] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewContent, setPreviewContent] = useState('')
+  const [previewTitle, setPreviewTitle] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSetCustomUrl = (): void => {
@@ -127,6 +132,33 @@ export const AppSettingsDialog = ({
         ? currentSource.url
         : 'Uploaded file'
 
+  const handleSourceClick = (): void => {
+    if (currentSource?.type === 'inline') {
+      try {
+        setPreviewContent(
+          JSON.stringify(JSON.parse(currentSource.content), null, 2),
+        )
+      } catch {
+        setPreviewContent(currentSource.content)
+      }
+      setPreviewTitle('Uploaded Manifest')
+      setPreviewOpen(true)
+      return
+    }
+
+    const url =
+      currentSource === undefined ? DEFAULT_MANIFEST_URL : currentSource.url
+
+    setPreviewTitle(url)
+    setPreviewContent('Loading...')
+    setPreviewOpen(true)
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => setPreviewContent(JSON.stringify(data, null, 2)))
+      .catch(() => setPreviewContent('Failed to load manifest.'))
+  }
+
   return (
     <Dialog
       data-testid="app-settings-dialog"
@@ -164,61 +196,49 @@ export const AppSettingsDialog = ({
               }}
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle2">Manifest Source</Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
+                <Typography variant="subtitle2">Manifest Source</Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 1.5,
+                    p: 1,
+                    bgcolor: 'action.hover',
+                    borderRadius: 1,
+                  }}
+                >
+                  <Link
+                    component="button"
+                    variant="body2"
+                    onClick={handleSourceClick}
                     sx={{
-                      maxWidth: 240,
+                      flexGrow: 1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      textAlign: 'left',
+                      cursor: 'pointer',
                     }}
                   >
                     {sourceLabel}
-                  </Typography>
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0 }}>
-                {currentSource !== undefined && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 1.5,
-                      p: 1,
-                      bgcolor: 'action.hover',
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        flexGrow: 1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      Current: {sourceLabel}
-                    </Typography>
+                  </Link>
+                  {currentSource !== undefined && (
                     <Tooltip title="Reset to default">
                       <IconButton size="small" onClick={handleClearSource}>
                         <ClearIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                  </Box>
-                )}
+                  )}
+                </Box>
 
                 <Box
                   sx={{
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: 1,
-                    mb: 1.5,
                   }}
                 >
                   <TextField
@@ -238,21 +258,25 @@ export const AppSettingsDialog = ({
                     size="small"
                     onClick={handleSetCustomUrl}
                     disabled={urlInput.trim() === ''}
-                    sx={{ whiteSpace: 'nowrap', mt: '4px' }}
+                    sx={{ whiteSpace: 'nowrap', height: 40 }}
                   >
                     Apply
                   </Button>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<UploadFileIcon />}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Upload manifest
-                  </Button>
+                  <Tooltip title="Upload manifest file">
+                    <IconButton
+                      size="small"
+                      onClick={() => fileInputRef.current?.click()}
+                      sx={{
+                        height: 40,
+                        width: 40,
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                      }}
+                    >
+                      <UploadFileIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -260,12 +284,12 @@ export const AppSettingsDialog = ({
                     style={{ display: 'none' }}
                     onChange={handleFileUpload}
                   />
-                  {fileError !== undefined && (
-                    <Typography variant="caption" color="error">
-                      {fileError}
-                    </Typography>
-                  )}
                 </Box>
+                {fileError !== undefined && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                    {fileError}
+                  </Typography>
+                )}
               </AccordionDetails>
             </Accordion>
           </Box>
@@ -296,6 +320,38 @@ export const AppSettingsDialog = ({
           Close
         </Button>
       </DialogActions>
+
+      <Dialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            {previewTitle}
+          </Typography>
+          <Box
+            component="pre"
+            sx={{
+              p: 1.5,
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              overflow: 'auto',
+              maxHeight: 400,
+              fontSize: '0.8rem',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              m: 0,
+            }}
+          >
+            {previewContent}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   )
 }
