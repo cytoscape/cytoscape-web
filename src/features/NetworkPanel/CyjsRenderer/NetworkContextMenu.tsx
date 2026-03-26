@@ -131,14 +131,6 @@ export const NetworkContextMenu = ({
     })
   }, [contextMenu.open, clickedOnNode, clickedOnEdge, clickedOnCanvas, contextMenu.clickedNodeId, contextMenu.clickedEdgeId, contextMenu.anchorPosition])
 
-  logUi.info('[NetworkContextMenu] Rendering menu', {
-    open: contextMenu.open,
-    clickedOnNode,
-    clickedOnEdge,
-    clickedOnCanvas,
-    isCreationEnabled,
-  })
-
   return (
     <Menu
       open={contextMenu.open}

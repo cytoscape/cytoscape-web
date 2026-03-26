@@ -255,11 +255,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={
-                    parameter.value === 'true' ||
-                    parameter.defaultValue === 'true' ||
-                    false
-                  }
+                  checked={(parameter.value ?? parameter.defaultValue) === 'true'}
                   onChange={(e) =>
                     updateServiceParameter(
                       app.url,
