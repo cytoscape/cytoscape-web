@@ -586,8 +586,13 @@ describe('fetchNdexSummaries', () => {
     rawSummary.externalId = mockNetworkId
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest
+            .fn()
+            .mockResolvedValue([rawSummary]),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -595,9 +600,9 @@ describe('fetchNdexSummaries', () => {
     const result = await fetchNdexSummaries(mockNetworkId, mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith([
-      mockNetworkId,
-    ])
+    expect(
+      mockClient.networks.v2.getNetworkSummariesByUUIDs,
+    ).toHaveBeenCalledWith([mockNetworkId])
     expect(result).toHaveLength(1)
     expect(result[0].externalId).toBe(mockNetworkId)
     expect(result[0].isNdex).toBe(true) // Should be normalized
@@ -613,8 +618,13 @@ describe('fetchNdexSummaries', () => {
     })
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue(rawSummaries),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest
+            .fn()
+            .mockResolvedValue(rawSummaries),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -622,9 +632,9 @@ describe('fetchNdexSummaries', () => {
     const result = await fetchNdexSummaries(mockNetworkIds)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith(
-      mockNetworkIds,
-    )
+    expect(
+      mockClient.networks.v2.getNetworkSummariesByUUIDs,
+    ).toHaveBeenCalledWith(mockNetworkIds)
     expect(result).toHaveLength(3)
     expect(result[0].externalId).toBe('network-1')
     expect(result[1].externalId).toBe('network-2')
@@ -640,17 +650,22 @@ describe('fetchNdexSummaries', () => {
     rawSummary.externalId = mockNetworkId
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest
+            .fn()
+            .mockResolvedValue([rawSummary]),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
 
     const result = await fetchNdexSummaries([mockNetworkId])
 
-    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith([
-      mockNetworkId,
-    ])
+    expect(
+      mockClient.networks.v2.getNetworkSummariesByUUIDs,
+    ).toHaveBeenCalledWith([mockNetworkId])
     expect(result).toHaveLength(1)
   })
 
@@ -670,8 +685,13 @@ describe('fetchNdexSummaries', () => {
     ]
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest
+            .fn()
+            .mockResolvedValue([rawSummary]),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -689,8 +709,11 @@ describe('fetchNdexSummaries', () => {
     const mockError = new Error('Network not found')
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest.fn().mockRejectedValue(mockError),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -700,9 +723,9 @@ describe('fetchNdexSummaries', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.getNetworkSummariesByUUIDs).toHaveBeenCalledWith([
-      mockNetworkId,
-    ])
+    expect(
+      mockClient.networks.v2.getNetworkSummariesByUUIDs,
+    ).toHaveBeenCalledWith([mockNetworkId])
   })
 
   it('should work without an access token', async () => {
@@ -711,8 +734,13 @@ describe('fetchNdexSummaries', () => {
     rawSummary.externalId = mockNetworkId
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest
+            .fn()
+            .mockResolvedValue([rawSummary]),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -731,8 +759,13 @@ describe('fetchNdexSummaries', () => {
     rawSummary.externalId = mockNetworkId
 
     const mockClient = {
-      getNetworkSummariesByUUIDs: jest.fn().mockResolvedValue([rawSummary]),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: jest
+            .fn()
+            .mockResolvedValue([rawSummary]),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)

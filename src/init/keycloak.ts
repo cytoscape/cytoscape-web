@@ -1,5 +1,4 @@
-// @ts-expect-error-next-line: The @js4cytoscape/ndex-client package does not provide TypeScript types, but runtime usage is known to work safely.
-import { NDEx } from '@js4cytoscape/ndex-client'
+import { NDExAuthError, NDExClient } from '@js4cytoscape/ndex-client'
 import Keycloak from 'keycloak-js'
 import { createContext } from 'react'
 
@@ -42,20 +41,24 @@ export const initializeKeycloak = () => {
   // Function to check if the user's email is verified
   const checkUserVerification = async () => {
     try {
-      const ndexClient = new NDEx(appConfig.ndexBaseUrl)
-      await ndexClient.signInFromIdToken(keycloak.token)
+      const ndexClient = new NDExClient({
+        baseURL: appConfig.ndexBaseUrl,
+        auth: {
+          type: 'oauth',
+          idToken: keycloak.token as string,
+        },
+      })
+      await ndexClient.user.authenticate()
       return {
         isVerified: true,
       }
     } catch (e) {
       // If response contains the verification error, trigger verification modal
       if (
-        e.status === 401 &&
-        e.response?.data?.errorCode === 'NDEx_User_Account_Not_Verified'
+        e instanceof NDExAuthError &&
+        e.errorCode === 'NDEx_User_Account_Not_Verified'
       ) {
-        const userInfo = parseUserInfoFromErrorMessage(
-          e.response?.data?.message,
-        )
+        const userInfo = parseUserInfoFromErrorMessage(e.message)
         return {
           isVerified: false,
           userName: userInfo?.userName,

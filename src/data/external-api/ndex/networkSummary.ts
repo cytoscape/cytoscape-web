@@ -149,7 +149,7 @@ export const fetchNdexSummaries = async (
   const ids = Array.isArray(id) ? id : [id]
 
   const summaries: NdexNetworkSummary[] =
-    await ndexClient.getNetworkSummariesByUUIDs(ids)
+    await (ndexClient.networks as any).v2.getNetworkSummariesByUUIDs(ids)
   return normalizeNdexSummaries(summaries)
 }
 

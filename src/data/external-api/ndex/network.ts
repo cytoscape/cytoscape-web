@@ -20,7 +20,8 @@ export const fetchNdexNetwork = async (
   ndexUrl?: string,
 ): Promise<Cx2> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  return await ndexClient.getCX2Network(ndexUuid)
+  const result = await (ndexClient.networks as any).getRawCX2Network(ndexUuid)
+  return result as Cx2
 }
 
 /**
@@ -39,5 +40,5 @@ export const updateNdexNetwork = async (
   ndexUrl?: string,
 ): Promise<void> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  return await ndexClient.updateNetworkFromRawCX2(networkId, cx)
+  return await ndexClient.networks.updateNetworkFromRawCX2(networkId, cx)
 }

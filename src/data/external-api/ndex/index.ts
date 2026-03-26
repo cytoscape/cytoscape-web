@@ -40,3 +40,13 @@ export {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from './errors'
+
+// File/folder operations
+export type { NdexFileItem, NdexFileSearchResult } from './files'
+export {
+  fetchFolderContents,
+  fetchFolderInfo,
+  resolveShortcut,
+  searchNdexFiles,
+} from './files'
+
