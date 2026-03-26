@@ -1,5 +1,6 @@
 import ClearIcon from '@mui/icons-material/Clear'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import {
   Accordion,
@@ -7,6 +8,7 @@ import {
   AccordionSummary,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -40,7 +42,8 @@ interface AppSettingsDialogProps {
 function validateManifestUrl(input: string): string | undefined {
   try {
     const parsed = new URL(input, window.location.origin)
-    const isDev = window.location.hostname === 'localhost' ||
+    const isDev =
+      window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1'
     if (parsed.protocol === 'https:') return undefined
     if (isDev && parsed.protocol === 'http:') return undefined
@@ -62,6 +65,7 @@ export const AppSettingsDialog = ({
   const [urlInput, setUrlInput] = useState('')
   const [urlError, setUrlError] = useState<string | undefined>()
   const [fileError, setFileError] = useState<string | undefined>()
+  const [refreshing, setRefreshing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSetCustomUrl = (): void => {
@@ -103,7 +107,10 @@ export const AppSettingsDialog = ({
         void refreshCatalog()
       } catch (err) {
         setFileError('Failed to parse manifest file')
-        logApp.warn('[AppSettingsDialog]: Failed to parse uploaded manifest:', err)
+        logApp.warn(
+          '[AppSettingsDialog]: Failed to parse uploaded manifest:',
+          err,
+        )
       }
     }
     reader.readAsText(file)
@@ -268,6 +275,19 @@ export const AppSettingsDialog = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 1.5 }}>
+        <Button
+          variant="outlined"
+          disabled={refreshing}
+          startIcon={
+            refreshing ? <CircularProgress size={16} /> : <RefreshIcon />
+          }
+          onClick={() => {
+            setRefreshing(true)
+            refreshCatalog().finally(() => setRefreshing(false))
+          }}
+        >
+          Refresh
+        </Button>
         <Button
           data-testid="app-settings-dialog-close-button"
           variant="contained"

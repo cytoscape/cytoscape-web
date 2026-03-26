@@ -1,5 +1,4 @@
 import DeleteIcon from '@mui/icons-material/Delete'
-import RefreshIcon from '@mui/icons-material/Refresh'
 import {
   Box,
   Button,
@@ -7,10 +6,10 @@ import {
   CircularProgress,
   IconButton,
   Paper,
+  Switch,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { useState } from 'react'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { AppCatalogEntry } from '../../models/AppModel/AppCatalogEntry'
@@ -63,15 +62,8 @@ export const AppListPanel = () => {
   const loadStates: Record<string, AppLoadState> = useAppStore(
     (state) => state.loadStates,
   )
-  const {
-    activateApp,
-    deactivateApp,
-    retryApp,
-    refreshCatalog,
-    removeOrphan,
-  } = useAppManagerCommands()
-
-  const [refreshing, setRefreshing] = useState(false)
+  const { activateApp, deactivateApp, retryApp, removeOrphan } =
+    useAppManagerCommands()
 
   // Build merged display list: catalog entries + orphan apps
   const displayEntries: AppDisplayEntry[] = []
@@ -110,45 +102,8 @@ export const AppListPanel = () => {
     })
   }
 
-  const handleRefresh = async (): Promise<void> => {
-    setRefreshing(true)
-    try {
-      await refreshCatalog()
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          mb: 1,
-        }}
-      >
-        <Typography variant="subtitle1" fontWeight={600}>
-          Available Apps
-        </Typography>
-        <Tooltip title="Refresh catalog">
-          <span>
-            <IconButton
-              size="small"
-              onClick={() => void handleRefresh()}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <CircularProgress size={18} />
-              ) : (
-                <RefreshIcon fontSize="small" />
-              )}
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Box>
-
       {displayEntries.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
           No apps available in catalog.
@@ -158,8 +113,7 @@ export const AppListPanel = () => {
           {displayEntries.map((entry) => {
             const action = getAction(entry)
             const isActive =
-              entry.loadState === 'loaded' &&
-              entry.status === AppStatus.Active
+              entry.loadState === 'loaded' && entry.status === AppStatus.Active
             return (
               <Paper
                 key={entry.id}
@@ -236,24 +190,18 @@ export const AppListPanel = () => {
 
                 <Box sx={{ flexShrink: 0 }}>
                   {action === 'loading' && <CircularProgress size={24} />}
-                  {action === 'enable' && (
-                    <Button
+                  {(action === 'enable' || action === 'disable') && (
+                    <Switch
                       size="small"
-                      variant="contained"
-                      disableElevation
-                      onClick={() => void activateApp(entry.id)}
-                    >
-                      Enable
-                    </Button>
-                  )}
-                  {action === 'disable' && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => void deactivateApp(entry.id)}
-                    >
-                      Disable
-                    </Button>
+                      checked={action === 'disable'}
+                      onChange={() => {
+                        if (action === 'disable') {
+                          void deactivateApp(entry.id)
+                        } else {
+                          void activateApp(entry.id)
+                        }
+                      }}
+                    />
                   )}
                   {action === 'retry' && (
                     <Button
