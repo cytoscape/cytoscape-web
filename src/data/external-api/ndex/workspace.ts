@@ -13,7 +13,7 @@ export const fetchMyNdexWorkspaces = async (
   ndexUrl?: string,
 ): Promise<any[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const myWorkspaces = await ndexClient.getUserCyWebWorkspaces()
+  const myWorkspaces = await ndexClient.workspace.getUserCyWebWorkspaces()
   return myWorkspaces as Workspace[]
 }
 
@@ -35,7 +35,8 @@ export const fetchMyNdexAccountNetworks = async (
   const offsetValue = offset ?? 0
   const limitValue = limit ?? 1000
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const networks = await ndexClient.getAccountPageNetworks(
+  const networks = await ndexClient.user.getAccountPageNetworks(
+    (await ndexClient.user.authenticate()).externalId,
     offsetValue,
     limitValue,
   )
@@ -62,7 +63,7 @@ export const searchNdexNetworks = async (
   const offsetValue = offset ?? 0
   const limitValue = limit ?? 1000
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const searchResults = await ndexClient.searchNetworks(
+  const searchResults = await ndexClient.networks.v2.searchNetworks(
     searchValue,
     offsetValue,
     limitValue,
@@ -84,7 +85,7 @@ export const deleteNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<void> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  await ndexClient.deleteCyWebWorkspace(workspaceId)
+  await ndexClient.workspace.deleteCyWebWorkspace(workspaceId)
 }
 
 /**
@@ -109,8 +110,8 @@ export const createNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<{ uuid: string }> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const response = await ndexClient.createCyWebWorkspace(workspaceData)
-  return response
+  const response = await ndexClient.workspace.createCyWebWorkspace(workspaceData)
+  return { uuid: response }
 }
 
 /**
@@ -137,5 +138,5 @@ export const updateNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<void> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  await ndexClient.updateCyWebWorkspace(workspaceId, workspaceData)
+  await ndexClient.workspace.updateCyWebWorkspace(workspaceId, workspaceData)
 }

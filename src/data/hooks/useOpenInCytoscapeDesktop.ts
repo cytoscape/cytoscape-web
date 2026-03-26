@@ -1,19 +1,18 @@
-// @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
 
 import { logApi } from '../../debug'
-import { useMessageStore } from './stores/MessageStore'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Network } from '../../models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { useMessageStore } from './stores/MessageStore'
 
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -79,7 +78,12 @@ export const useOpenNetworkInCytoscape = () => {
         severity: MessageSeverity.INFO,
       })
 
-      await cyndex.postCX2NetworkToCytoscape(cx)
+      const networkName = exportSummary?.name ?? 'Cytoscape Web Network'
+      await cyndex.postCX2NetworkToCytoscape(
+        JSON.stringify(cx),
+        networkName,
+        networkName,
+      )
 
       addMessage({
         message: 'Network successfully opened in Cytoscape Desktop.',

@@ -15,6 +15,13 @@ let baseUrl: string = appConfig.ndexBaseUrl
  * @returns The configured NDEx base URL
  */
 export const getNDExBaseUrl = (): string => {
+  if (
+    baseUrl &&
+    !baseUrl.startsWith('http://') &&
+    !baseUrl.startsWith('https://')
+  ) {
+    return `https://${baseUrl}`
+  }
   return baseUrl
 }
 

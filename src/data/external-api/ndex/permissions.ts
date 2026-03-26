@@ -29,8 +29,8 @@ export const getNdexNetworkPermission = async (
   ndexUrl?: string,
 ): Promise<string | undefined> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const permissions = await ndexClient.getNetworkPermissionsByUUIDs([networkId])
-  return permissions?.[networkId]
+  const permissions = await (ndexClient.networks as any).getNetworkPermissionsByUUIDs([networkId])
+  return (permissions as any)?.[networkId]
 }
 
 /**
