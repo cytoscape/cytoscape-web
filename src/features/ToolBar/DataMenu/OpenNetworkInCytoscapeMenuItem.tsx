@@ -1,4 +1,3 @@
-// @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
 import { Box, MenuItem, Tooltip } from '@mui/material'
 import { ReactElement } from 'react'
