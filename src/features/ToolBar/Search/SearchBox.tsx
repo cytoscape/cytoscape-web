@@ -2,12 +2,13 @@ import { Tooltip } from '@mui/material'
 import Fuse from 'fuse.js'
 import { useEffect, useRef, useState } from 'react'
 
-import { logUi } from '../../../debug'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../../debug'
 import {
   IndexedColumns,
   Indices,
@@ -15,6 +16,7 @@ import {
 } from '../../../models/FilterModel/Search'
 import { SearchState } from '../../../models/FilterModel/SearchState'
 import { IdType } from '../../../models/IdType'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Search } from './Search'
@@ -87,6 +89,7 @@ export const SearchBox = (): JSX.Element => {
   const edgeTable: Table = tables?.edgeTable
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
+  const addMessage = useMessageStore((state) => state.addMessage)
 
   const clearSearch = (): void => {
     setQuery('')
@@ -123,6 +126,18 @@ export const SearchBox = (): JSX.Element => {
     }
 
     exclusiveSelect(networkId, nodesToBeSelected, edgesToBeSelected)
+
+    if (
+      query !== '' &&
+      nodesToBeSelected.length === 0 &&
+      edgesToBeSelected.length === 0
+    ) {
+      addMessage({
+        message: `No matches found for "${query}"`,
+        severity: MessageSeverity.INFO,
+      })
+    }
+
     setSearchState(SearchState.DONE)
   }
 
