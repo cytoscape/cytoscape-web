@@ -1,5 +1,6 @@
 import { ColorType } from '../VisualPropertyValue/ColorType'
 import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
+import chroma from 'chroma-js'
 
 // Color palette arrays
 export const CompactCustomColors = [
@@ -498,5 +499,10 @@ export function pickEvenly(base: ColorPalette, count: number): ColorPalette {
       return base[idx]
     })
   }
-  return Array.from({ length: count }, (_, i) => base[i % n])
+  
+  // Use chroma.js to interpret base as a scale and sample it evenly
+  const scale = chroma.scale(base).mode('lab')
+  return Array.from({ length: count }, (_, i) => {
+    return scale(i / (count - 1)).hex() as ColorType
+  })
 }

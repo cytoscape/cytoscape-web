@@ -132,24 +132,24 @@ describe('colorUtils', () => {
       expect(result[1]).toBe('#FFFF00')
     })
 
-    it('should cycle through base when count > base length', () => {
+    it('should interpolate through base when count > base length', () => {
       const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
       const result = pickEvenly(base, 7)
       expect(result).toHaveLength(7)
-      // Should cycle: [0, 1, 2, 0, 1, 2, 0]
-      expect(result[0]).toBe('#FF0000')
-      expect(result[1]).toBe('#00FF00')
-      expect(result[2]).toBe('#0000FF')
-      expect(result[3]).toBe('#FF0000')
-      expect(result[4]).toBe('#00FF00')
-      expect(result[5]).toBe('#0000FF')
-      expect(result[6]).toBe('#FF0000')
+      // Should interpolate smoothly from red to green to blue
+      expect(result[0]).toBe('#ff0000')
+      expect(result[1]).toBe('#df8a00') // interpolated orange-ish
+      expect(result[2]).toBe('#abc900') // interpolated yellow-green
+      expect(result[3]).toBe('#00ff00') // middle is green
+      expect(result[4]).toBe('#78b785') // interpolated green-blue
+      expect(result[5]).toBe('#766ec5') // interpolated blue
+      expect(result[6]).toBe('#0000ff') // end is blue
     })
 
     it('should handle single element base', () => {
       const base: ColorPalette = ['#FF0000']
       expect(pickEvenly(base, 1)).toEqual(['#FF0000'])
-      expect(pickEvenly(base, 3)).toEqual(['#FF0000', '#FF0000', '#FF0000'])
+      expect(pickEvenly(base, 3)).toEqual(['#ff0000', '#ff0000', '#ff0000']) // chroma js returns lowercase hex
     })
 
     it('should distribute evenly across the range', () => {
@@ -158,16 +158,15 @@ describe('colorUtils', () => {
       expect(result).toEqual(base)
     })
 
-    it('should handle large count values', () => {
+    it('should handle large count values by interpolating', () => {
       const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
       const result = pickEvenly(base, 100)
       expect(result).toHaveLength(100)
-      // Should cycle through base
-      expect(result[0]).toBe('#FF0000')
-      expect(result[1]).toBe('#00FF00')
-      expect(result[2]).toBe('#0000FF')
-      expect(result[3]).toBe('#FF0000')
-      expect(result[99]).toBe('#FF0000') // 99 % 3 = 0
+      // Should start with red and end with blue
+      expect(result[0]).toBe('#ff0000')
+      expect(result[49]).toMatch(/^#[0-9a-f]{6}$/i) // interpolated middle
+      expect(result[50]).toMatch(/^#[0-9a-f]{6}$/i) // interpolated middle
+      expect(result[99]).toBe('#0000ff')
     })
 
     it('should return correct indices for edge cases', () => {
