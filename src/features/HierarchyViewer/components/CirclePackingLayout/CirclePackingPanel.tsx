@@ -117,6 +117,7 @@ export const CirclePackingPanel = ({
 
   // Filter and search state
   const searchState: SearchState = useFilterStore((state) => state.search.state)
+  const query: string = useFilterStore((state) => state.search.query)
 
   // Renderer functions
   const getRendererFunction = useRendererFunctionStore(
@@ -152,6 +153,28 @@ export const CirclePackingPanel = ({
     () => new Set<string>(selectedNodes),
     [selectedNodes],
   )
+
+  /**
+   * Find leaf nodes whose name matches the search query.
+   * These will be highlighted in red in the circle packing view.
+   */
+  const matchingLeaves = useMemo(() => {
+    if (
+      query === undefined ||
+      query === '' ||
+      circlePackingView?.hierarchy === undefined
+    ) {
+      return []
+    }
+    const leafNodes = circlePackingView.hierarchy.leaves()
+    const lowerQuery = query.toLowerCase()
+    return leafNodes
+      .filter((node) => {
+        const name = node.data.name
+        return name !== undefined && name.toLowerCase().includes(lowerQuery)
+      })
+      .map((node) => node.data.originalId ?? node.data.id)
+  }, [circlePackingView?.hierarchy, query])
 
   // ===== FUNCTIONS ====
 
@@ -712,17 +735,29 @@ export const CirclePackingPanel = ({
       .attr('cx', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.x)
       .attr('cy', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.y)
       .attr('r', (d: d3Hierarchy.HierarchyCircularNode<any>) => d.r)
-      .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-        selectedNodeSet.has(d.data.id)
-          ? CpDefaults.selectedBorderColor
-          : CpDefaults.borderColor,
-      )
-      .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) => {
-        // return d.data.id === selected || d.data.originalId === selected
-        return selectedNodeSet.has(d.data.id) ||
-          selectedNodeSet.has(d.data.originalId)
-          ? CpDefaults.borderWidthHover
-          : CpDefaults.borderWidth
+      .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+        if (selectedNodeSet.has(d.data.id)) {
+          return CpDefaults.selectedBorderColor
+        } else if (
+          [...selectedLeaves, ...matchingLeaves].includes(
+            d.data.originalId ?? d.data.id,
+          )
+        ) {
+          return CpDefaults.leafBorderColor
+        } else {
+          return CpDefaults.borderColor
+        }
+      })
+      .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+        if (
+          selectedNodeSet.has(d.data.id) ||
+          [...selectedLeaves, ...matchingLeaves].includes(
+            d.data.originalId ?? d.data.id,
+          )
+        ) {
+          return CpDefaults.borderWidthHover
+        }
+        return CpDefaults.borderWidth
       })
       .attr('fill', (d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
         return colorScale(d.depth)
@@ -864,16 +899,29 @@ export const CirclePackingPanel = ({
           .attr('fill', (d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
             return colorScale(d.depth)
           })
-          .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-            selectedNodeSet.has(d.data.id)
-              ? CpDefaults.selectedBorderColor
-              : CpDefaults.borderColor,
-          )
-          .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) => {
-            return selectedNodeSet.has(d.data.id) ||
-              selectedNodeSet.has(d.data.originalId)
-              ? CpDefaults.borderWidthHover
-              : CpDefaults.borderWidth
+          .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+            if (selectedNodeSet.has(d.data.id)) {
+              return CpDefaults.selectedBorderColor
+            } else if (
+              [...selectedLeaves, ...matchingLeaves].includes(
+                d.data.originalId ?? d.data.id,
+              )
+            ) {
+              return CpDefaults.leafBorderColor
+            } else {
+              return CpDefaults.borderColor
+            }
+          })
+          .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+            if (
+              selectedNodeSet.has(d.data.id) ||
+              [...selectedLeaves, ...matchingLeaves].includes(
+                d.data.originalId ?? d.data.id,
+              )
+            ) {
+              return CpDefaults.borderWidthHover
+            }
+            return CpDefaults.borderWidth
           })
 
         // Enter new circles (with all attributes and handlers)
@@ -886,16 +934,29 @@ export const CirclePackingPanel = ({
           .attr('fill', (d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
             return colorScale(d.depth)
           })
-          .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<any>) =>
-            selectedNodeSet.has(d.data.id)
-              ? CpDefaults.selectedBorderColor
-              : CpDefaults.borderColor,
-          )
-          .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<any>) => {
-            return selectedNodeSet.has(d.data.id) ||
-              selectedNodeSet.has(d.data.originalId)
-              ? CpDefaults.borderWidthHover
-              : CpDefaults.borderWidth
+          .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+            if (selectedNodeSet.has(d.data.id)) {
+              return CpDefaults.selectedBorderColor
+            } else if (
+              [...selectedLeaves, ...matchingLeaves].includes(
+                d.data.originalId ?? d.data.id,
+              )
+            ) {
+              return CpDefaults.leafBorderColor
+            } else {
+              return CpDefaults.borderColor
+            }
+          })
+          .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+            if (
+              selectedNodeSet.has(d.data.id) ||
+              [...selectedLeaves, ...matchingLeaves].includes(
+                d.data.originalId ?? d.data.id,
+              )
+            ) {
+              return CpDefaults.borderWidthHover
+            }
+            return CpDefaults.borderWidth
           })
           .on('mouseenter', handleCircleMouseEnter)
           .on('click', handleCircleClick)
@@ -981,7 +1042,10 @@ export const CirclePackingPanel = ({
    */
   useEffect(
     function onNodeSelection() {
-      displaySelectedNodes(selectedNodeSet, selectedLeaves)
+      displaySelectedNodes(selectedNodeSet, [
+        ...selectedLeaves,
+        ...matchingLeaves,
+      ])
 
       // Don't auto-expand on node selection - only expand on initial load with selected leaves from URL
       // The expansion is handled in onSelectedHierarchyNodeNamesChange when selected leaves are present
@@ -990,7 +1054,7 @@ export const CirclePackingPanel = ({
         setNetworkSwitched(false)
       }
     },
-    [selectedNodes, selectedLeaves],
+    [selectedNodeSet, selectedLeaves, matchingLeaves, networkSwitched],
   )
 
   /**
