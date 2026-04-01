@@ -1,3 +1,4 @@
+import safeRegex from 'safe-regex'
 import { Column, ValueTypeName } from '../../TableModel'
 import { InputColumn } from '../ServiceInputDefinition'
 import { ServiceAppParameter } from '../ServiceAppParameter'
@@ -45,6 +46,8 @@ export const inputColumnFilterFn = (
   }
 }
 
+const regexCache: Record<string, RegExp> = {}
+
 export const validateParameter = (parameter: ServiceAppParameter): boolean => {
   if (parameter.type === ParameterUiType.Text) {
     const value = parameter.value ?? parameter.defaultValue ?? ''
@@ -53,10 +56,24 @@ export const validateParameter = (parameter: ServiceAppParameter): boolean => {
     if (
       validationRegex !== undefined &&
       validationRegex !== null &&
-      validationRegex !== ''
+      validationRegex.trim().length > 0
     ) {
+      if (validationRegex.length > 1000) {
+        return false
+      }
       try {
-        const regex = new RegExp(validationRegex)
+        if (!safeRegex(validationRegex)) {
+          // Attempt to compile it. If it fails, it's just invalid syntax, 
+          // and we should be lenient (return true).
+          // If it succeeds, then it's a valid but unsafe regex (return false).
+          new RegExp(validationRegex)
+          return false
+        }
+        let regex = regexCache[validationRegex]
+        if (regex === undefined) {
+          regex = new RegExp(validationRegex)
+          regexCache[validationRegex] = regex
+        }
         return regex.test(value)
       } catch (e) {
         return true

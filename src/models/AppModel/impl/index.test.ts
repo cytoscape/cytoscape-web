@@ -64,5 +64,25 @@ describe('AppModel impl', () => {
       } as any
       expect(validateParameter(parameter)).toBe(true)
     })
+    it('should return false if regex is longer than 1000 characters', () => {
+      const longRegex = 'a'.repeat(1001)
+      const parameter: ServiceAppParameter = {
+        displayName: 'test',
+        type: ParameterUiType.Text,
+        defaultValue: 'value',
+        validationRegex: longRegex,
+      } as any
+      expect(validateParameter(parameter)).toBe(false)
+    })
+
+    it('should return false if regex is unsafe (e.g. (a+)+)', () => {
+      const parameter: ServiceAppParameter = {
+        displayName: 'test',
+        type: ParameterUiType.Text,
+        defaultValue: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac',
+        validationRegex: '(a+)+$',
+      } as any
+      expect(validateParameter(parameter)).toBe(false)
+    })
   })
 })

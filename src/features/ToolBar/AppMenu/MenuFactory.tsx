@@ -156,11 +156,19 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
       (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
     ) ?? []
 
+  const validationResults = React.useMemo(() => {
+    const results: Record<string, boolean> = {}
+    app.parameters?.forEach((p) => {
+      results[p.displayName] = validateParameter(p)
+    })
+    return results
+  }, [app.parameters])
+
   const renderParameter = (parameter: ServiceAppParameter) => {
     switch (parameter.type) {
       case ParameterUiType.Text: {
         const value = parameter.value ?? parameter.defaultValue ?? ''
-        const isValid = validateParameter(parameter)
+        const isValid = validationResults[parameter.displayName] ?? true
         return (
           <Tooltip title={parameter.description ?? ''}>
             <Box
@@ -388,8 +396,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     submitTooltip = "Unable to run service. There isn't an active network."
   }
 
-  const allParametersValid =
-    app.parameters?.every((parameter) => validateParameter(parameter)) ?? true
+  const allParametersValid = Object.values(validationResults).every((v) => v)
 
   if (!allParametersValid) {
     serviceCanBeRun = false
