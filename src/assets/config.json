@@ -1,10 +1,10 @@
 {
-  "ndexBaseUrl": "dev1.ndexbio.org",
+  "ndexBaseUrl": "dev3.ndex.ucsd.edu",
   "debug": true,
   "keycloakConfig": {
-    "url": "https://dev1.ndexbio.org/auth2",
-    "clientId": "cytoscapendex",
-    "realm": "ndex"
+    "url": "https://dev3.ndex.ucsd.edu/auth2",
+    "clientId": "cytoscape-ndex",
+    "realm": "NDEx"
   },
   "testNetworks": [
     "a9763574-c72f-11ed-a79c-005056ae23aa",
