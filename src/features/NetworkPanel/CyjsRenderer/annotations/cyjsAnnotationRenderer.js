@@ -68,14 +68,7 @@ export class CxToCyCanvas {
         ctx.lineTo(points[i]['x'], points[i]['y'])
       }
       ctx.closePath()
-      if (shapeMap['fillColor']) {
-        let fillColor = self._colorFromInt(
-          shapeMap['fillColor'],
-          shapeMap['fillOpacity'],
-        )
-        ctx.fillStyle = fillColor
-        ctx.fill()
-      }
+      this._setFill(shapeMap, ctx)
       ctx.stroke()
     }
 
@@ -122,15 +115,7 @@ export class CxToCyCanvas {
         ctx.lineTo(points[i]['x'], points[i]['y'])
       }
       ctx.closePath()
-
-      if (shapeMap['fillColor']) {
-        let fillColor = self._colorFromInt(
-          shapeMap['fillColor'],
-          shapeMap['fillOpacity'],
-        )
-        ctx.fillStyle = fillColor
-        ctx.fill()
-      }
+      this._setFill(shapeMap, ctx)
       ctx.stroke()
     }
 
@@ -272,14 +257,7 @@ export class CxToCyCanvas {
           shapeMap['height'],
         )
         ctx.closePath()
-        if (shapeMap['fillColor']) {
-          let fillColor = self._colorFromInt(
-            shapeMap['fillColor'],
-            shapeMap['fillOpacity'],
-          )
-          ctx.fillStyle = fillColor
-          ctx.fill()
-        }
+        self._setFill(shapeMap, ctx)
         ctx.stroke()
       },
       ROUNDEDRECTANGLE: function (shapeMap, ctx) {
@@ -305,14 +283,7 @@ export class CxToCyCanvas {
         ctx.lineTo(x, y + tenthWidth)
         ctx.quadraticCurveTo(x, y, x + tenthWidth, y)
         ctx.closePath()
-        if (shapeMap['fillColor']) {
-          let fillColor = self._colorFromInt(
-            shapeMap['fillColor'],
-            shapeMap['fillOpacity'],
-          )
-          ctx.fillStyle = fillColor
-          ctx.fill()
-        }
+        self._setFill(shapeMap, ctx)
         ctx.stroke()
       },
       ELLIPSE: function (shapeMap, ctx) {
@@ -323,14 +294,7 @@ export class CxToCyCanvas {
         ctx.beginPath()
         ctx.ellipse(x, y, halfWidth, halfHeight, 0, 0, 2 * Math.PI)
         ctx.closePath()
-        if (shapeMap['fillColor']) {
-          let fillColor = self._colorFromInt(
-            shapeMap['fillColor'],
-            shapeMap['fillOpacity'],
-          )
-          ctx.fillStyle = fillColor
-          ctx.fill()
-        }
+        self._setFill(shapeMap, ctx)
         ctx.stroke()
       },
       STAR5: function (shapeMap, ctx) {
@@ -363,14 +327,7 @@ export class CxToCyCanvas {
         ctx.lineTo(xMax, yMax)
         ctx.lineTo((2.0 * x + xMax) / 3.0, yMax)
         ctx.closePath()
-        if (shapeMap['fillColor']) {
-          let fillColor = self._colorFromInt(
-            shapeMap['fillColor'],
-            shapeMap['fillOpacity'],
-          )
-          ctx.fillStyle = fillColor
-          ctx.fill()
-        }
+        self._setFill(shapeMap, ctx)
       },
       CUSTOM: function (shapeMap, ctx) {
         const customShape = shapeMap['customShape']
@@ -530,17 +487,47 @@ export class CxToCyCanvas {
             }
           }
           ctx.closePath()
-          if (shapeMap['fillColor']) {
-            let fillColor = self._colorFromInt(
-              shapeMap['fillColor'],
-              shapeMap['fillOpacity'],
-            )
-            ctx.fillStyle = fillColor
-            ctx.fill()
-          }
+          self._setFill(shapeMap, ctx)
           ctx.stroke()
         }
       },
+    }
+
+    this._setFill = function (shapeMap, ctx) {
+      if (shapeMap['fillType'] === 'LinearGradient') {
+        const x = parseFloat(shapeMap['x'])
+        const y = parseFloat(shapeMap['y'])
+        const width = parseFloat(shapeMap['width'])
+        const height = parseFloat(shapeMap['height'])
+
+        // Default to horizontal gradient if no orientation specified
+        const x2 = shapeMap['orientation'] === 'vertical' ? x : x + width
+        const y2 = shapeMap['orientation'] === 'vertical' ? y + height : y
+
+        const gradient = ctx.createLinearGradient(x, y, x2, y2)
+
+        let i = 1
+        while (shapeMap['color' + i] !== undefined) {
+          const color = self._colorFromInt(
+            shapeMap['color' + i],
+            shapeMap['fillOpacity'],
+          )
+          const position = parseFloat(shapeMap['position' + i])
+          if (!isNaN(position)) {
+            gradient.addColorStop(Math.max(0, Math.min(1, position)), color)
+          }
+          i++
+        }
+        ctx.fillStyle = gradient
+        ctx.fill()
+      } else if (shapeMap['fillColor']) {
+        let fillColor = self._colorFromInt(
+          shapeMap['fillColor'],
+          shapeMap['fillOpacity'],
+        )
+        ctx.fillStyle = fillColor
+        ctx.fill()
+      }
     }
 
     this._colorFromInt = function (num, alpha) {
