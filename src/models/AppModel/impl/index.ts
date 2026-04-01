@@ -46,7 +46,8 @@ export const inputColumnFilterFn = (
   }
 }
 
-const regexCache: Record<string, RegExp> = {}
+const regexCache = new Map<string, RegExp>()
+const MAX_CACHE_SIZE = 100
 
 export const validateParameter = (parameter: ServiceAppParameter): boolean => {
   if (parameter.type === ParameterUiType.Text) {
@@ -63,16 +64,19 @@ export const validateParameter = (parameter: ServiceAppParameter): boolean => {
       }
       try {
         if (!safeRegex(validationRegex)) {
-          // Attempt to compile it. If it fails, it's just invalid syntax, 
+          // Attempt to compile it. If it fails, it's just invalid syntax,
           // and we should be lenient (return true).
           // If it succeeds, then it's a valid but unsafe regex (return false).
           new RegExp(validationRegex)
           return false
         }
-        let regex = regexCache[validationRegex]
+        let regex = regexCache.get(validationRegex)
         if (regex === undefined) {
+          if (regexCache.size >= MAX_CACHE_SIZE) {
+            regexCache.clear()
+          }
           regex = new RegExp(validationRegex)
-          regexCache[validationRegex] = regex
+          regexCache.set(validationRegex, regex)
         }
         return regex.test(value)
       } catch (e) {
