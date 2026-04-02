@@ -109,74 +109,89 @@ export const SearchBox = (): JSX.Element => {
     }
 
     setSearchState(SearchState.IN_PROGRESS)
-    // Node and edge
-    const indices: Indices<Fuse<Record<string, ValueType>>> =
-      indexRecord[networkId]
+    try {
+      // Node and edge
+      const indices: Indices<Fuse<Record<string, ValueType>>> =
+        indexRecord[networkId]
 
-    if (indices === undefined) {
-      logUi.warn(`[${startSearch.name}]: No search indices found for network ${networkId}`)
-      addMessage({
-        message: 'Search index not ready. Please wait.',
-        severity: MessageSeverity.WARNING,
-      })
-      return
+      if (indices === undefined) {
+        logUi.warn(`[${startSearch.name}]: No search indices found for network ${networkId}`)
+        addMessage({
+          message: 'Search index not ready. Please wait.',
+          severity: MessageSeverity.WARNING,
+        })
+        return
+      }
+
+      const nodeIndex = indices[GraphObjectType.NODE]
+      const edgeIndex = indices[GraphObjectType.EDGE]
+
+      const isNodeTargetSelected = searchTargets[GraphObjectType.NODE]
+      const isEdgeTargetSelected = searchTargets[GraphObjectType.EDGE]
+
+      if (isNodeTargetSelected && nodeIndex === undefined) {
+        logUi.warn(`[${startSearch.name}]: Node index undefined for network ${networkId}`)
+        addMessage({
+          message: 'Node search index not ready. Please wait.',
+          severity: MessageSeverity.WARNING,
+        })
+        return
+      }
+
+      if (isEdgeTargetSelected && edgeIndex === undefined) {
+        logUi.warn(`[${startSearch.name}]: Edge index undefined for network ${networkId}`)
+        addMessage({
+          message: 'Edge search index not ready. Please wait.',
+          severity: MessageSeverity.WARNING,
+        })
+        return
+      }
+
+      // Clear selection
+      exclusiveSelect(networkId, [], [])
+
+      const operator: Operator = searchOptions.operator
+      const exact: boolean = searchOptions.exact
+
+      let nodesToBeSelected: IdType[] = []
+      let edgesToBeSelected: IdType[] = []
+
+      logUi.info(`[${startSearch.name}]: Executing search. Query: "${query}", Targets:`, searchTargets)
+
+      if (isNodeTargetSelected) {
+        nodesToBeSelected = runSearch(nodeIndex, query, operator, exact)
+      }
+      if (isEdgeTargetSelected) {
+        edgesToBeSelected = runSearch(edgeIndex, query, operator, exact)
+      }
+
+      logUi.info(`[${startSearch.name}]: Search complete. Nodes: ${nodesToBeSelected.length}, Edges: ${edgesToBeSelected.length}`)
+
+      exclusiveSelect(networkId, nodesToBeSelected, edgesToBeSelected)
+
+      const isAnyTargetSelected = isNodeTargetSelected || isEdgeTargetSelected
+
+      if (
+        isAnyTargetSelected &&
+        query !== '' &&
+        nodesToBeSelected.length === 0 &&
+        edgesToBeSelected.length === 0
+      ) {
+        logUi.info(`[${startSearch.name}]: No results found. Showing message.`)
+        addMessage({
+          message: `No matches for search term "${query}" found in the active network`,
+          severity: MessageSeverity.INFO,
+        })
+      } else if (!isAnyTargetSelected && query !== '') {
+        logUi.warn(`[${startSearch.name}]: No search target selected.`)
+        addMessage({
+          message: 'No search target selected. Please select nodes and/or edges.',
+          severity: MessageSeverity.WARNING,
+        })
+      }
+    } finally {
+      setSearchState(SearchState.DONE)
     }
-
-    const nodeIndex = indices[GraphObjectType.NODE]
-    const edgeIndex = indices[GraphObjectType.EDGE]
-
-    if (nodeIndex === undefined || edgeIndex === undefined) {
-      logUi.warn(`[${startSearch.name}]: Node or edge index undefined for network ${networkId}`)
-      addMessage({
-        message: 'Search index incomplete. Please wait.',
-        severity: MessageSeverity.WARNING,
-      })
-      return
-    }
-
-    // Clear selection
-    exclusiveSelect(networkId, [], [])
-
-    const operator: Operator = searchOptions.operator
-    let nodesToBeSelected: IdType[] = []
-    let edgesToBeSelected: IdType[] = []
-
-    logUi.info(`[${startSearch.name}]: Executing search. Query: "${query}", Targets:`, searchTargets)
-
-    if (searchTargets[GraphObjectType.NODE]) {
-      nodesToBeSelected = runSearch(nodeIndex, query, operator, exact)
-    }
-    if (searchTargets[GraphObjectType.EDGE]) {
-      edgesToBeSelected = runSearch(edgeIndex, query, operator, exact)
-    }
-
-    logUi.info(`[${startSearch.name}]: Search complete. Nodes: ${nodesToBeSelected.length}, Edges: ${edgesToBeSelected.length}`)
-
-    exclusiveSelect(networkId, nodesToBeSelected, edgesToBeSelected)
-
-    const isSearchTargetSelected =
-      searchTargets[GraphObjectType.NODE] || searchTargets[GraphObjectType.EDGE]
-
-    if (
-      isSearchTargetSelected &&
-      query !== '' &&
-      nodesToBeSelected.length === 0 &&
-      edgesToBeSelected.length === 0
-    ) {
-      logUi.info(`[${startSearch.name}]: No results found. Showing message.`)
-      addMessage({
-        message: `No matches for search term "${query}" found in the active network`,
-        severity: MessageSeverity.INFO,
-      })
-    } else if (!isSearchTargetSelected && query !== '') {
-      logUi.warn(`[${startSearch.name}]: No search target selected.`)
-      addMessage({
-        message: 'No search target selected. Please select nodes and/or edges.',
-        severity: MessageSeverity.WARNING,
-      })
-    }
-
-    setSearchState(SearchState.DONE)
   }
 
   const reIndex = (forceUpdate: boolean): void => {
