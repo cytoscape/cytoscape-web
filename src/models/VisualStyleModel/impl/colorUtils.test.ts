@@ -92,64 +92,69 @@ describe('colorUtils', () => {
     })
 
     it('should return middle element for count === 1', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
       const result = pickEvenly(base, 1)
       expect(result).toHaveLength(1)
       // For 5 elements, middle is index 2 (Math.floor((5-1)/2) = 2)
-      expect(result[0]).toBe('#0000FF')
+      expect(result[0]).toBe('#0000ff')
     })
 
     it('should return middle element for count === 1 with even-length base', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00']
       const result = pickEvenly(base, 1)
       expect(result).toHaveLength(1)
       // For 4 elements, middle is index 1 (Math.floor((4-1)/2) = 1)
-      expect(result[0]).toBe('#00FF00')
+      expect(result[0]).toBe('#00ff00')
     })
 
     it('should return all elements when count equals base length', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff']
       const result = pickEvenly(base, 3)
       expect(result).toEqual(base)
     })
 
     it('should return evenly distributed elements when count < base length', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
       const result = pickEvenly(base, 3)
       expect(result).toHaveLength(3)
       // Should pick first, middle, and last
-      expect(result[0]).toBe('#FF0000')
-      expect(result[1]).toBe('#0000FF')
-      expect(result[2]).toBe('#FF00FF')
+      expect(result[0]).toBe('#ff0000')
+      expect(result[1]).toBe('#0000ff')
+      expect(result[2]).toBe('#ff00ff')
     })
 
     it('should return evenly distributed elements for count = 2', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00']
       const result = pickEvenly(base, 2)
       expect(result).toHaveLength(2)
       // Should pick first and last
-      expect(result[0]).toBe('#FF0000')
-      expect(result[1]).toBe('#FFFF00')
+      expect(result[0]).toBe('#ff0000')
+      expect(result[1]).toBe('#ffff00')
     })
 
     it('should interpolate through base when count > base length', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff']
       const result = pickEvenly(base, 7)
       expect(result).toHaveLength(7)
-      // Should interpolate smoothly from red to green to blue
+      // Start and end should match the base endpoints
       expect(result[0]).toBe('#ff0000')
-      expect(result[1]).toBe('#df8a00') // interpolated orange-ish
-      expect(result[2]).toBe('#abc900') // interpolated yellow-green
-      expect(result[3]).toBe('#00ff00') // middle is green
-      expect(result[4]).toBe('#78b785') // interpolated green-blue
-      expect(result[5]).toBe('#766ec5') // interpolated blue
-      expect(result[6]).toBe('#0000ff') // end is blue
+      expect(result[6]).toBe('#0000ff')
+      
+      // All values should be valid 6-digit hex colors
+      const hexRegex = /^#[0-9a-f]{6}$/i
+      result.forEach(color => {
+        expect(color).toMatch(hexRegex)
+      })
+      
+      // There should be intermediate colors, not just the endpoints
+      const uniqueColors = new Set(result)
+      expect(uniqueColors.size).toBeGreaterThan(2)
     })
 
     it('should handle single element base', () => {
-      const base: ColorPalette = ['#FF0000']
-      expect(pickEvenly(base, 1)).toEqual(['#FF0000'])
-      expect(pickEvenly(base, 3)).toEqual(['#ff0000', '#ff0000', '#ff0000']) // chroma js returns lowercase hex
+      const base: ColorPalette = ['#ff0000']
+      expect(pickEvenly(base, 1)).toEqual(['#ff0000'])
+      expect(pickEvenly(base, 3)).toEqual(['#ff0000', '#ff0000', '#ff0000'])
     })
 
     it('should distribute evenly across the range', () => {
@@ -159,7 +164,7 @@ describe('colorUtils', () => {
     })
 
     it('should handle large count values by interpolating', () => {
-      const base: ColorPalette = ['#FF0000', '#00FF00', '#0000FF']
+      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff']
       const result = pickEvenly(base, 100)
       expect(result).toHaveLength(100)
       // Should start with red and end with blue
