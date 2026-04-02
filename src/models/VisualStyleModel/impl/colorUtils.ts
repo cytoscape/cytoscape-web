@@ -1,6 +1,7 @@
-import { ColorType } from '../VisualPropertyValue/ColorType'
-import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
 import chroma from 'chroma-js'
+
+import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
+import { ColorType } from '../VisualPropertyValue/ColorType'
 
 // Color palette arrays
 export const CompactCustomColors = [
