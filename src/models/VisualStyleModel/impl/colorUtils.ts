@@ -1,5 +1,7 @@
-import { ColorType } from '../VisualPropertyValue/ColorType'
+import chroma from 'chroma-js'
+
 import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
+import { ColorType } from '../VisualPropertyValue/ColorType'
 
 // Color palette arrays
 export const CompactCustomColors = [
@@ -490,13 +492,26 @@ export function generateRandomColor(): ColorType {
  */
 export function pickEvenly(base: ColorPalette, count: number): ColorPalette {
   if (!base.length || count <= 0) return []
-  const n = base.length
-  if (count === 1) return [base[Math.floor((n - 1) / 2)]]
+  
+  const normalizedBase = base.map((c) => c.toLowerCase() as ColorType)
+  const n = normalizedBase.length
+
+  if (count === 1) return [normalizedBase[Math.floor((n - 1) / 2)]]
+  
+  if (n === 1) {
+    return Array.from({ length: count }, () => normalizedBase[0])
+  }
+
   if (count <= n) {
     return Array.from({ length: count }, (_, i) => {
       const idx = Math.round((i * (n - 1)) / (count - 1))
-      return base[idx]
+      return normalizedBase[idx]
     })
   }
-  return Array.from({ length: count }, (_, i) => base[i % n])
+  
+  // Use chroma.js to interpret base as a scale and sample it evenly
+  const scale = chroma.scale(normalizedBase).mode('lab')
+  return Array.from({ length: count }, (_, i) => {
+    return scale(i / (count - 1)).hex().toLowerCase() as ColorType
+  })
 }
