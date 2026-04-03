@@ -22,7 +22,9 @@ import Draggable from 'react-draggable'
 
 import { ColorPalettePicker } from './ColorPalettePicker'
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../../models/IdType'
+import { UndoCommandType } from '../../../../../models/StoreModel/UndoStoreModel'
 import {
   VisualProperty,
   VisualPropertyValueType,
@@ -144,6 +146,7 @@ export function ContinuousColorMappingForm(props: {
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
   )
+  const { postEdit } = useUndoStack()
 
   const valueDomain = [
     minState.value as number,
@@ -179,17 +182,37 @@ export function ContinuousColorMappingForm(props: {
           ltMinVpValue: VisualPropertyValueType,
           gtMaxVpValue: VisualPropertyValueType,
         ) => {
-          setContinuousMappingValues(
-            props.currentNetworkId,
-            props.visualProperty.name,
+          const nextMapping: ContinuousMappingFunction = {
+            ...m,
             min,
             max,
-            handles.map((h) => {
+            controlPoints: handles.map((h) => {
               return {
                 value: h.value,
                 vpValue: h.vpValue,
               }
             }),
+            ltMinVpValue,
+            gtMaxVpValue,
+          }
+
+          postEdit(
+            UndoCommandType.SET_CONTINUOUS_MAPPING,
+            `Update ${props.visualProperty.displayName} continuous mapping`,
+            [
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.mapping,
+            ],
+            [props.currentNetworkId, props.visualProperty.name, nextMapping],
+          )
+
+          setContinuousMappingValues(
+            props.currentNetworkId,
+            props.visualProperty.name,
+            min,
+            max,
+            nextMapping.controlPoints,
             ltMinVpValue,
             gtMaxVpValue,
           )
