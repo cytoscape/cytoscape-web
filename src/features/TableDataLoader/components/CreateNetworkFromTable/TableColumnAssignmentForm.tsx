@@ -196,7 +196,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
+    const rows = result.data.slice(skipNLines)
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]

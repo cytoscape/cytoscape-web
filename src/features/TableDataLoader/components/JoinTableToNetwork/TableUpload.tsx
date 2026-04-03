@@ -56,6 +56,7 @@ export function TableUpload(props: BaseMenuProps) {
 
       const result = Papa.parse(text, {
         delimiter,
+        skipEmptyLines: true,
       })
 
       const onFileValid = () => {
