@@ -29,7 +29,7 @@ export const TabPanel = (props: TabPanelProps): JSX.Element => {
         flexDirection: 'column',
       }}
     >
-      <Box sx={{ width: '100%', height: '100%', flexGrow: 1 }}>{children}</Box>
+      <Box sx={{ width: '100%', height: '100%', flexGrow: 1, minHeight: 0 }}>{children}</Box>
     </Box>
   )
 }

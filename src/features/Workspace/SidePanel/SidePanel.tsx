@@ -167,6 +167,8 @@ export const SidePanel = (): JSX.Element => {
         sx={{
           width: '100%',
           flexGrow: 1,
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {tabContents}

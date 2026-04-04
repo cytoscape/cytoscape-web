@@ -505,7 +505,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 title="Close panel"
                 show={panels.right === PanelState.OPEN}
               />
-              <Box sx={{ flexGrow: 1, width: '100%' }}>
+              <Box sx={{ flexGrow: 1, width: '100%', minHeight: 0, overflow: 'hidden' }}>
                 <SidePanel />
               </Box>
             </Box>
