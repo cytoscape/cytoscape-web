@@ -118,6 +118,18 @@ export const createNetworkDataObj = (
     } else {
       throw new Error('Illegal Input')
     }
+  } else if (inputNetwork.format === Format.edgeList) {
+    const filteredEdges = filterElements
+      ? network.edges.filter((edge) => selectedEdges.has(edge.id))
+      : network.edges
+
+    const edgeList: string[] = filteredEdges.map((edge) => {
+      const interactionValue = table?.edgeTable.rows.get(edge.id)?.interaction
+      const interaction =
+        interactionValue !== undefined ? String(interactionValue) : ''
+      return `${edge.s}\t${edge.t}\t${edge.id}\t${interaction}`
+    })
+    return edgeList
   } else {
     // output edgelist format
     throw new Error('Not implemented')
