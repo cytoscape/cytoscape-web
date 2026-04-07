@@ -500,27 +500,32 @@ export class CxToCyCanvas {
         const width = parseFloat(shapeMap['width'])
         const height = parseFloat(shapeMap['height'])
 
-        // Default to horizontal gradient if no orientation specified
-        const x2 = shapeMap['orientation'] === 'vertical' ? x : x + width
-        const y2 = shapeMap['orientation'] === 'vertical' ? y + height : y
+        if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(width) && Number.isFinite(height)) {
+          // Default to horizontal gradient if no orientation specified
+          const x2 = shapeMap['orientation'] === 'vertical' ? x : x + width
+          const y2 = shapeMap['orientation'] === 'vertical' ? y + height : y
 
-        const gradient = ctx.createLinearGradient(x, y, x2, y2)
+          const gradient = ctx.createLinearGradient(x, y, x2, y2)
 
-        let i = 1
-        while (shapeMap['color' + i] !== undefined) {
-          const color = self._colorFromInt(
-            shapeMap['color' + i],
-            shapeMap['fillOpacity'],
-          )
-          const position = parseFloat(shapeMap['position' + i])
-          if (!isNaN(position)) {
-            gradient.addColorStop(Math.max(0, Math.min(1, position)), color)
+          let i = 1
+          while (shapeMap['color' + i] !== undefined) {
+            const color = self._colorFromInt(
+              shapeMap['color' + i],
+              shapeMap['fillOpacity'] || '100',
+            )
+            const position = parseFloat(shapeMap['position' + i])
+            if (!isNaN(position)) {
+              gradient.addColorStop(Math.max(0, Math.min(1, position)), color)
+            }
+            i++
           }
-          i++
+          ctx.fillStyle = gradient
+          ctx.fill()
+          return
         }
-        ctx.fillStyle = gradient
-        ctx.fill()
-      } else if (shapeMap['fillColor']) {
+      }
+
+      if (shapeMap['fillColor']) {
         const lingradPrefix = 'lingrad('
         if (
           typeof shapeMap['fillColor'] === 'string' &&
@@ -573,7 +578,7 @@ export class CxToCyCanvas {
 
         let fillColor = self._colorFromInt(
           shapeMap['fillColor'],
-          shapeMap['fillOpacity'],
+          shapeMap['fillOpacity'] || '100',
         )
         ctx.fillStyle = fillColor
         ctx.fill()
