@@ -521,6 +521,56 @@ export class CxToCyCanvas {
         ctx.fillStyle = gradient
         ctx.fill()
       } else if (shapeMap['fillColor']) {
+        const lingradPrefix = 'lingrad('
+        if (
+          typeof shapeMap['fillColor'] === 'string' &&
+          shapeMap['fillColor'].startsWith(lingradPrefix)
+        ) {
+          const content = shapeMap['fillColor'].slice(lingradPrefix.length, -1)
+          const parts = content.split(';')
+
+          if (parts.length >= 3) {
+            const [x1_ratio, y1_ratio] = parts[0].split(',').map(parseFloat)
+            const [x2_ratio, y2_ratio] = parts[1].split(',').map(parseFloat)
+
+            const x = parseFloat(shapeMap['x'])
+            const y = parseFloat(shapeMap['y'])
+            const width = parseFloat(shapeMap['width'])
+            const height = parseFloat(shapeMap['height'])
+
+            const x1 = x + x1_ratio * width
+            const y1 = y + y1_ratio * height
+            const x2 = x + x2_ratio * width
+            const y2 = y + y2_ratio * height
+
+            if (Number.isFinite(x1) && Number.isFinite(y1) && Number.isFinite(x2) && Number.isFinite(y2)) {
+              const gradient = ctx.createLinearGradient(x1, y1, x2, y2)
+
+              for (let i = 2; i < parts.length; i++) {
+                const stopParts = parts[i].split(',')
+                if (stopParts.length < 2) continue
+                const position = parseFloat(stopParts[0])
+                const colorInt = parseInt(stopParts[1], 10)
+                const colorStr = self._colorFromInt(
+                  colorInt,
+                  shapeMap['fillOpacity'] || '100',
+                )
+
+                if (!isNaN(position)) {
+                  gradient.addColorStop(
+                    Math.max(0, Math.min(1, position)),
+                    colorStr,
+                  )
+                }
+              }
+
+              ctx.fillStyle = gradient
+              ctx.fill()
+              return
+            }
+          }
+        }
+
         let fillColor = self._colorFromInt(
           shapeMap['fillColor'],
           shapeMap['fillOpacity'],
