@@ -19,7 +19,7 @@ describe('ServiceApps', () => {
       nodeTable: { id: 'nt1', columns: [], rows: new Map() },
       edgeTable: {
         id: 'et1',
-        columns: [],
+        columns: [{ name: 'interaction', type: 'string' }] as any,
         rows: new Map([
           ['e1', { interaction: 'pd' }],
           ['e2', { interaction: 'pp' }],
@@ -43,10 +43,17 @@ describe('ServiceApps', () => {
         undefined
       )
 
-      expect(result).toEqual([
-        'n1\tn2\te1\tpd',
-        'n2\tn1\te2\tpp'
-      ])
+      expect(result).toEqual({
+        columns: [
+          { id: 'source', type: 'string' },
+          { id: 'target', type: 'string' },
+          { id: 'interaction', type: 'string' }
+        ],
+        rows: {
+          'e1': { source: 'n1', target: 'n2', interaction: 'pd' },
+          'e2': { source: 'n2', target: 'n1', interaction: 'pp' }
+        }
+      })
     })
 
     it('should filter edges in edgeList format based on selection', () => {
@@ -69,11 +76,20 @@ describe('ServiceApps', () => {
         undefined,
         mockTable,
         undefined,
-        viewModel as any as any,
+        viewModel as any,
         undefined
       )
 
-      expect(result).toEqual(['n1\tn2\te1\tpd'])
+      expect(result).toEqual({
+        columns: [
+          { id: 'source', type: 'string' },
+          { id: 'target', type: 'string' },
+          { id: 'interaction', type: 'string' }
+        ],
+        rows: {
+          'e1': { source: 'n1', target: 'n2', interaction: 'pd' }
+        }
+      })
     })
 
     it('should handle missing interaction attribute gracefully', () => {
@@ -99,7 +115,7 @@ describe('ServiceApps', () => {
         undefined
       )
 
-      expect(result[0]).toBe('n1\tn2\te1\t')
+      expect((result as any).rows['e1']).toEqual({ source: 'n1', target: 'n2' })
     })
   })
 })

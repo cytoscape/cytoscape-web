@@ -123,13 +123,41 @@ export const createNetworkDataObj = (
       ? network.edges.filter((edge) => selectedEdges.has(edge.id))
       : network.edges
 
-    const edgeList: string[] = filteredEdges.map((edge) => {
-      const interactionValue = table?.edgeTable.rows.get(edge.id)?.interaction
-      const interaction =
-        interactionValue !== undefined ? String(interactionValue) : ''
-      return `${edge.s}\t${edge.t}\t${edge.id}\t${interaction}`
+    const columns = table?.edgeTable.columns || []
+
+    const outputColumns = [
+      { id: 'source', type: 'string' },
+      { id: 'target', type: 'string' },
+      ...columns.map((c) => ({
+        id: c.name,
+        type: c.type,
+      })),
+    ]
+
+    const rows: Record<string, Record<string, any>> = {}
+
+    filteredEdges.forEach((edge) => {
+      const row = table?.edgeTable.rows.get(edge.id)
+      
+      const rowData: Record<string, any> = {
+        source: edge.s,
+        target: edge.t,
+      }
+
+      columns.forEach((c) => {
+        const val = row?.[c.name]
+        if (val !== undefined) {
+          rowData[c.name] = val
+        }
+      })
+
+      rows[edge.id] = rowData
     })
-    return edgeList
+
+    return {
+      columns: outputColumns,
+      rows,
+    }
   } else {
     // output edgelist format
     throw new Error('Not implemented')
