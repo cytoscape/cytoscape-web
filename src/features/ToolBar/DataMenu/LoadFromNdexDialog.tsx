@@ -317,7 +317,9 @@ export const LoadFromNdexDialog = (
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
 
   // UI state
-  const [activeTab, setActiveTab] = useState<SignedInTab>('my-networks')
+  const [activeTab, setActiveTab] = useState<SignedInTab>(
+    authenticated ? 'my-networks' : 'public',
+  )
   const [searchValue, setSearchValue] = useState<string>('')
   const [lastSearchQuery, setLastSearchQuery] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
@@ -332,12 +334,14 @@ export const LoadFromNdexDialog = (
   const { navigateToNetwork } = useUrlNavigation()
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
 
+  const rootName = authenticated ? 'My Drive' : 'Latest Networks'
+
   // Folder navigation state
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
     null,
   )
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbItem[]>([
-    { name: 'My Drive', id: null },
+    { name: rootName, id: null },
   ])
   const [folderContents, setFolderContents] = useState<NdexFileItem[]>([])
 
@@ -541,7 +545,7 @@ export const LoadFromNdexDialog = (
         name: trimmedQuery
           ? `Search: "${trimmedQuery}"`
           : activeTab === 'my-networks'
-          ? 'My Drive'
+          ? rootName
           : activeTab === 'private'
           ? 'Private Networks'
           : 'Latest Networks',
@@ -664,11 +668,11 @@ export const LoadFromNdexDialog = (
       setErrorMessage(undefined)
       setSuccessMessage(undefined)
       setCurrentFolderId(null)
-      setBreadcrumbPath([{ name: 'My Drive', id: null }])
+      setBreadcrumbPath([{ name: rootName, id: null }])
       setMyNetworksResults([])
       setPublicResults([])
       setPrivateResults([])
-      setActiveTab('my-networks')
+      setActiveTab(authenticated ? 'my-networks' : 'public')
     }
   }, [open])
 
@@ -949,12 +953,10 @@ export const LoadFromNdexDialog = (
   )
 
   // Map tab index to SignedInTab
-  const tabIndexToKey: SignedInTab[] = [
-    'my-networks',
-    'public',
-    'private',
-  ]
-  const currentTabIndex = tabIndexToKey.indexOf(activeTab)
+  const availableTabs: SignedInTab[] = authenticated
+    ? ['my-networks', 'public', 'private']
+    : ['public']
+  const currentTabIndex = availableTabs.indexOf(activeTab)
 
   return (
     <Dialog
@@ -993,15 +995,16 @@ export const LoadFromNdexDialog = (
             data-testid="load-from-ndex-tabs"
             value={currentTabIndex >= 0 ? currentTabIndex : 0}
             onChange={(_e, val) => {
-              setActiveTab(tabIndexToKey[val])
+              const newTab = availableTabs[val]
+              setActiveTab(newTab)
               setCurrentFolderId(null)
               setBreadcrumbPath([
                 {
                   name: lastSearchQuery
                     ? `Search: "${lastSearchQuery}"`
-                    : tabIndexToKey[val] === 'my-networks'
-                    ? 'My Drive'
-                    : tabIndexToKey[val] === 'private'
+                    : newTab === 'my-networks'
+                    ? rootName
+                    : newTab === 'private'
                     ? 'Private Networks'
                     : 'Latest Networks',
                   id: null,
@@ -1010,15 +1013,19 @@ export const LoadFromNdexDialog = (
               setErrorMessage(undefined)
             }}
           >
-            {myNetworksTab}
-            <Tooltip arrow placement="bottom" title="Query public networks in NDEx">
+            {authenticated && myNetworksTab}
+            <Tooltip
+              arrow
+              placement="bottom"
+              title="Query public networks in NDEx"
+            >
               <Tab
                 data-testid="load-from-ndex-public-tab"
                 label={tabLabel('Public', publicCount)}
                 sx={{ textTransform: 'none' }}
               />
             </Tooltip>
-            {privateTab}
+            {authenticated && privateTab}
           </Tabs>
         </Box>
 
