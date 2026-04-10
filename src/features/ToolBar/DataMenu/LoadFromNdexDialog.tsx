@@ -406,6 +406,13 @@ export const LoadFromNdexDialog = (
     try {
       const token = await getToken()
       const summaries = await fetchNdexSummaries(networkIds, token)
+
+      // Stamp the origin path so the UI can show where the network was imported from
+      const sourcePath = breadcrumbPath.map((b) => b.name).join(' / ')
+      summaries.forEach((summary) => {
+        summary.sourcePath = sourcePath
+      })
+
       addNetworks(summaries.map((summary) => summary.externalId))
       addSummaries(
         summaries.reduce(

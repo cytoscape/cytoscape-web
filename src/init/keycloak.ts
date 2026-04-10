@@ -3,6 +3,7 @@ import Keycloak from 'keycloak-js'
 import { createContext } from 'react'
 
 import appConfig from '../assets/config.json'
+import { getNDExBaseUrl } from '../data/external-api/ndex/config'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
@@ -42,7 +43,7 @@ export const initializeKeycloak = () => {
   const checkUserVerification = async () => {
     try {
       const ndexClient = new NDExClient({
-        baseURL: appConfig.ndexBaseUrl,
+        baseURL: getNDExBaseUrl(),
         auth: {
           type: 'oauth',
           idToken: keycloak.token as string,

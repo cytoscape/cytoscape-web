@@ -119,6 +119,10 @@ export interface CreateNetworkSummaryOptions {
    * Number of edges in the network (defaults to 0)
    */
   edgeCount?: number
+  /**
+   * Optional string representing the path this network was originally imported from
+   */
+  sourcePath?: string
 }
 
 /**
@@ -159,6 +163,7 @@ export const createNetworkSummary = (
     modificationTime = new Date(Date.now()),
     nodeCount = 0,
     edgeCount = 0,
+    sourcePath,
   } = options
 
   return {
@@ -188,6 +193,7 @@ export const createNetworkSummary = (
     isDeleted,
     modificationTime,
     name,
+    sourcePath,
   }
 }
 
