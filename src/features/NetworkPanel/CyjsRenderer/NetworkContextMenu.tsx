@@ -149,6 +149,25 @@ export const NetworkContextMenu = ({
           e.stopPropagation()
         },
       }}
+      slotProps={{
+        root: {
+          onMouseDown: (e) => {
+            logUi.info(
+              '[NetworkContextMenu] Root mouse down, checking whether to close context menu', {
+              target: e.target,
+              currentTarget: e.currentTarget,
+            })
+            // Only close if clicking outside of menu items (i.e., on the backdrop)
+            const target = e.target
+            if (
+              target instanceof HTMLElement &&
+              target.classList.contains('MuiModal-backdrop')
+            ) {
+              onClose()
+            }
+          },
+        },
+      }}
     >
       {/* Empty canvas: Show "Create Node" */}
       {clickedOnCanvas && (
