@@ -10,6 +10,7 @@ import {
   Checkbox,
   Chip,
   CircularProgress,
+  FormControlLabel,
   IconButton,
   Link as MuiLink,
   Table,
@@ -61,8 +62,8 @@ interface BreadcrumbItem {
   id: string | null
 }
 
-// Tabs for logged-in users
-type SignedInTab = 'my-networks' | 'public' | 'private'
+// Tabs for the network browser
+type BrowseTab = 'public' | 'private'
 
 /**
  * Split file items into folders and networks.
@@ -87,18 +88,49 @@ const splitByType = (
   return { folders, networks }
 }
 
+// ── Hoisted style objects (stable references for MUI/Emotion) ──────────
+const selectableRowSx = { cursor: 'pointer' } as const
+const disabledRowSx = {
+  backgroundColor: '#d9d9d9',
+  cursor: 'not-allowed',
+} as const
+const nameCellSx = {
+  maxWidth: 400,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const
+const ownerCellSx = {
+  maxWidth: 100,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const
+const visibilityCellSx = { maxWidth: 50, textAlign: 'center' } as const
+const visibilityTextSx = {
+  color: 'text.secondary',
+  fontWeight: 'bold',
+} as const
+const countCellSx = {
+  maxWidth: 10,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const
+const truncationNoticeSx = { textAlign: 'center', py: 2 } as const
+
 export const NetworkSearchField = (props: {
   startSearch: (searchValue: string) => Promise<void>
   handleClose: () => void
-  searchValue: string
-  onSearchValueChange: (value: string) => void
 }): ReactElement => {
+  const [searchValue, setSearchValue] = useState<string>('')
+
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ): void => {
     event.stopPropagation()
     if (event.key === 'Enter') {
-      void props.startSearch(props.searchValue)
+      void props.startSearch(searchValue)
     }
     if (event.key === 'Escape') {
       props.handleClose()
@@ -122,13 +154,13 @@ export const NetworkSearchField = (props: {
         type="text"
         fullWidth
         variant="standard"
-        onChange={(e) => props.onSearchValueChange(e.target.value)}
-        value={props.searchValue}
+        onChange={(e) => setSearchValue(e.target.value)}
+        value={searchValue}
         onKeyDown={handleKeyDown}
       />
       <IconButton
         data-testid="load-from-ndex-search-button"
-        onClick={() => props.startSearch(props.searchValue)}
+        onClick={() => props.startSearch(searchValue)}
       >
         <Search />
       </IconButton>
@@ -317,10 +349,9 @@ export const LoadFromNdexDialog = (
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
 
   // UI state
-  const [activeTab, setActiveTab] = useState<SignedInTab>(
-    authenticated ? 'my-networks' : 'public',
-  )
-  const [searchValue, setSearchValue] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<BrowseTab>('public')
+  const [onlyMine, setOnlyMine] = useState<boolean>(false)
+
   const [lastSearchQuery, setLastSearchQuery] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
@@ -334,7 +365,8 @@ export const LoadFromNdexDialog = (
   const { navigateToNetwork } = useUrlNavigation()
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
 
-  const rootName = authenticated ? 'My Drive' : 'Latest Networks'
+  const rootName =
+    activeTab === 'private' ? 'Private Networks' : 'Latest Networks'
 
   // Folder navigation state
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(
@@ -346,10 +378,6 @@ export const LoadFromNdexDialog = (
   const [folderContents, setFolderContents] = useState<NdexFileItem[]>([])
 
   // Search results state per tab
-  const [myNetworksResults, setMyNetworksResults] = useState<
-    NdexFileItem[]
-  >([])
-  const [myNetworksCount, setMyNetworksCount] = useState<number>(0)
   const [publicResults, setPublicResults] = useState<NdexFileItem[]>([])
   const [publicCount, setPublicCount] = useState<number>(0)
   const [privateResults, setPrivateResults] = useState<NdexFileItem[]>([])
@@ -363,17 +391,11 @@ export const LoadFromNdexDialog = (
     if (currentFolderId !== null) {
       return folderContents
     }
-    if (isBrowseMode && activeTab === 'my-networks') {
-      return folderContents
-    }
-    if (activeTab === 'my-networks') return myNetworksResults
     if (activeTab === 'public') return publicResults
     return privateResults
   }, [
-    isBrowseMode,
     activeTab,
     folderContents,
-    myNetworksResults,
     publicResults,
     privateResults,
     currentFolderId,
@@ -447,27 +469,7 @@ export const LoadFromNdexDialog = (
     }
   }
 
-  // Load home folder contents on dialog open (for My Networks tab default)
-  useEffect(() => {
-    if (!open || !authenticated) return
 
-    const loadHomeFolder = async (): Promise<void> => {
-      setLoading(true)
-      try {
-        const token = await getToken()
-        const items = await fetchFolderContents(null, token, ndexBaseUrl)
-        setFolderContents(items)
-        setCurrentFolderId(null)
-        setBreadcrumbPath([{ name: 'My Drive', id: null }])
-      } catch (err: any) {
-        logUi.error('Failed to load home folder', err)
-        setErrorMessage(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    void loadHomeFolder()
-  }, [open, authenticated, getToken, ndexBaseUrl])
 
   // Navigate into a folder
   const navigateToFolder = async (folderId: string): Promise<void> => {
@@ -501,11 +503,8 @@ export const LoadFromNdexDialog = (
     if (folderId === null) {
       setCurrentFolderId(null)
       setBreadcrumbPath((prev) => [prev[0]])
-      // If we are just browsing 'My Networks', we MUST still fetch the real Home folder contents (folderId=null).
-      // Otherwise, we jump directly back to our pre-fetched search results cache for Public/Private results.
-      if (!isBrowseMode || activeTab !== 'my-networks') {
-        return
-      }
+      // Jump back to the cached search results for the current tab.
+      return
     }
 
     setLoading(true)
@@ -538,17 +537,16 @@ export const LoadFromNdexDialog = (
     const trimmedQuery = query.trim()
     setLastSearchQuery(trimmedQuery)
     setErrorMessage(undefined)
-    
-    // Properly title the search results root node
+    setCurrentFolderId(null)
+
+    const tabRootName =
+      activeTab === 'private' ? 'Private Networks' : 'Latest Networks'
+
     setBreadcrumbPath([
       {
         name: trimmedQuery
           ? `Search: "${trimmedQuery}"`
-          : activeTab === 'my-networks'
-          ? rootName
-          : activeTab === 'private'
-          ? 'Private Networks'
-          : 'Latest Networks',
+          : tabRootName,
         id: null,
       },
     ])
@@ -557,58 +555,36 @@ export const LoadFromNdexDialog = (
     try {
       const token = authenticated ? await getToken() : undefined
       const userName = client?.tokenParsed?.preferred_username
+      const ownerFilter =
+        onlyMine && authenticated ? userName : undefined
 
       // Fire search requests in parallel
       const promises: Promise<any>[] = []
 
-      if (authenticated && userName) {
-        // My Networks: public + private owned by me
-        promises.push(
-          Promise.all([
-            searchNdexFiles(
-              query,
-              'PUBLIC',
-              token,
-              userName,
-              0,
-              1000,
-              ndexBaseUrl,
-            ),
-            searchNdexFiles(
-              query,
-              'PRIVATE',
-              token,
-              userName,
-              0,
-              1000,
-              ndexBaseUrl,
-            ),
-          ]).then(([pub, priv]) => {
-            const merged = [...pub.files, ...priv.files].sort(
-              (a, b) => {
-                const timeA =
-                  typeof a.modificationTime === 'number'
-                    ? a.modificationTime
-                    : new Date(a.modificationTime).getTime()
-                const timeB =
-                  typeof b.modificationTime === 'number'
-                    ? b.modificationTime
-                    : new Date(b.modificationTime).getTime()
-                return timeB - timeA
-              },
-            )
-            setMyNetworksResults(merged)
-            setMyNetworksCount(pub.numFound + priv.numFound)
-          }),
-        )
+      // Public tab (always available)
+      promises.push(
+        searchNdexFiles(
+          query,
+          'PUBLIC',
+          token,
+          ownerFilter,
+          0,
+          500,
+          ndexBaseUrl,
+        ).then((result) => {
+          setPublicResults(result.files)
+          setPublicCount(result.numFound)
+        }),
+      )
 
-        // Private & Unlisted tab
+      // Private tab (authenticated only)
+      if (authenticated) {
         promises.push(
           searchNdexFiles(
             query,
             'PRIVATE',
             token,
-            undefined,
+            ownerFilter,
             0,
             500,
             ndexBaseUrl,
@@ -618,22 +594,6 @@ export const LoadFromNdexDialog = (
           }),
         )
       }
-
-      // Public tab (always available)
-      promises.push(
-        searchNdexFiles(
-          query,
-          'PUBLIC',
-          token,
-          undefined,
-          0,
-          500,
-          ndexBaseUrl,
-        ).then((result) => {
-          setPublicResults(result.files)
-          setPublicCount(result.numFound)
-        }),
-      )
 
       const results = await Promise.allSettled(promises)
       const rejected = results.filter(
@@ -659,44 +619,40 @@ export const LoadFromNdexDialog = (
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (open) {
-      // Unconditionally fetch latest global networks to populate the tabs natively under the legacy NDEx browse model.
       void executeSearch('')
     } else {
-      setSearchValue('')
       setLastSearchQuery('')
       setSelectedNetworks([])
       setErrorMessage(undefined)
       setSuccessMessage(undefined)
       setCurrentFolderId(null)
-      setBreadcrumbPath([{ name: rootName, id: null }])
-      setMyNetworksResults([])
+      setBreadcrumbPath([{ name: 'Latest Networks', id: null }])
       setPublicResults([])
       setPrivateResults([])
-      setActiveTab(authenticated ? 'my-networks' : 'public')
+      setActiveTab('public')
+      setOnlyMine(false)
     }
   }, [open])
 
-  // Set initial tab based on auth
+  // Re-fetch when "Only mine" filter changes
   useEffect(() => {
-    if (!authenticated && open) {
-      setActiveTab('public')
-    } else if (authenticated && open) {
-      setActiveTab('my-networks')
+    if (open) {
+      void executeSearch(lastSearchQuery)
     }
-  }, [authenticated, open])
+  }, [onlyMine])
 
-  const cellSx = {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  }
+  const emptyMessage =
+    currentFolderId !== null
+      ? 'No items in this folder'
+      : isBrowseMode
+        ? 'No networks found'
+        : 'No search results'
 
-  const emptyMessage = isBrowseMode
-    ? 'No items in this folder'
-    : 'No search results'
+  const MAX_VISIBLE_ROWS = 500
 
   const renderNetworkRows = (): ReactElement[] => {
-    return networks.map((network) => {
+    const visibleNetworks = networks.slice(0, MAX_VISIBLE_ROWS)
+    const rows = visibleNetworks.map((network) => {
       const {
         uuid: externalId,
         name,
@@ -725,7 +681,7 @@ export const LoadFromNdexDialog = (
       if (networkCanBeSelected) {
         return (
           <TableRow
-            sx={{ cursor: 'pointer' }}
+            sx={selectableRowSx}
             key={externalId}
             hover
             selected={selected}
@@ -738,24 +694,24 @@ export const LoadFromNdexDialog = (
                 checked={selected}
               />
             </TableCell>
-            <TableCell sx={{ maxWidth: 400, ...cellSx }}>
+            <TableCell sx={nameCellSx}>
               {name}
             </TableCell>
-            <TableCell sx={{ maxWidth: 100, ...cellSx }}>
+            <TableCell sx={ownerCellSx}>
               {owner ?? ''}
             </TableCell>
-            <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+            <TableCell sx={visibilityCellSx}>
+              <Typography variant="caption" sx={visibilityTextSx}>
                 {network.visibility}
               </Typography>
             </TableCell>
-            <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            <TableCell sx={countCellSx}>
               {nodeCount}
             </TableCell>
-            <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            <TableCell sx={countCellSx}>
               {edgeCount ?? 0}
             </TableCell>
-            <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            <TableCell sx={countCellSx}>
               {dateDisplay}
             </TableCell>
           </TableRow>
@@ -771,40 +727,52 @@ export const LoadFromNdexDialog = (
       return (
         <Tooltip key={externalId} title={tooltipMessage}>
           <TableRow
-            sx={{
-              backgroundColor: '#d9d9d9',
-              cursor: 'not-allowed',
-            }}
+            sx={disabledRowSx}
             hover={false}
             selected={false}
           >
             <TableCell padding="checkbox">
               <Checkbox disabled />
             </TableCell>
-            <TableCell sx={{ maxWidth: 400, ...cellSx }}>
+            <TableCell sx={nameCellSx}>
               {name}
             </TableCell>
-            <TableCell sx={{ maxWidth: 100, ...cellSx }}>
+            <TableCell sx={ownerCellSx}>
               {owner ?? ''}
             </TableCell>
-            <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+            <TableCell sx={visibilityCellSx}>
+              <Typography variant="caption" sx={visibilityTextSx}>
                 {network.visibility}
               </Typography>
             </TableCell>
-            <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            <TableCell sx={countCellSx}>
               {nodeCount}
             </TableCell>
-            <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            <TableCell sx={countCellSx}>
               {edgeCount ?? 0}
             </TableCell>
-            <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            <TableCell sx={countCellSx}>
               {dateDisplay}
             </TableCell>
           </TableRow>
         </Tooltip>
       )
     })
+
+    if (networks.length > MAX_VISIBLE_ROWS) {
+      rows.push(
+        <TableRow key="__truncation_notice__">
+          <TableCell colSpan={7} sx={truncationNoticeSx}>
+            <Typography variant="body2" color="text.secondary">
+              Showing {MAX_VISIBLE_ROWS} of {networks.length} networks.
+              Use search to narrow results.
+            </Typography>
+          </TableCell>
+        </TableRow>,
+      )
+    }
+
+    return rows
   }
 
   const renderContent = (): ReactElement => {
@@ -906,29 +874,6 @@ export const LoadFromNdexDialog = (
     </Box>
   )
 
-  const myNetworksTab = authenticated ? (
-    <Tooltip arrow placement="bottom" title="Browse your personal NDEx networks and folders">
-      <Tab
-        label={tabLabel('My Networks', myNetworksCount)}
-        sx={{ textTransform: 'none' }}
-      />
-    </Tooltip>
-  ) : (
-    <Tooltip
-      arrow
-      placement="right"
-      title="Login to NDEx to access your networks"
-    >
-      <Box>
-        <Tab
-          disabled
-          label={tabLabel('My Networks', 0)}
-          sx={{ textTransform: 'none' }}
-        />
-      </Box>
-    </Tooltip>
-  )
-
   const privateTab = authenticated ? (
     <Tooltip arrow placement="bottom" title="Search for private or unlisted networks shared with you">
       <Tab
@@ -952,9 +897,9 @@ export const LoadFromNdexDialog = (
     </Tooltip>
   )
 
-  // Map tab index to SignedInTab
-  const availableTabs: SignedInTab[] = authenticated
-    ? ['my-networks', 'public', 'private']
+  // Map tab index to BrowseTab
+  const availableTabs: BrowseTab[] = authenticated
+    ? ['public', 'private']
     : ['public']
   const currentTabIndex = availableTabs.indexOf(activeTab)
 
@@ -985,12 +930,40 @@ export const LoadFromNdexDialog = (
         <NetworkSearchField
           startSearch={executeSearch}
           handleClose={handleClose}
-          searchValue={searchValue}
-          onSearchValueChange={setSearchValue}
         />
 
-        {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        {/* Only mine checkbox + Tabs */}
+        <Box
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          {authenticated && (
+            <Tooltip
+              arrow
+              placement="bottom"
+              title="When checked, only show networks you own. When unchecked, show all networks."
+            >
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    data-testid="load-from-ndex-only-mine-checkbox"
+                    checked={onlyMine}
+                    size="small"
+                  />
+                }
+                label="Only mine"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setOnlyMine(!onlyMine)
+                }}
+                sx={{ ml: 0.5, mr: 1 }}
+              />
+            </Tooltip>
+          )}
           <Tabs
             data-testid="load-from-ndex-tabs"
             value={currentTabIndex >= 0 ? currentTabIndex : 0}
@@ -998,22 +971,21 @@ export const LoadFromNdexDialog = (
               const newTab = availableTabs[val]
               setActiveTab(newTab)
               setCurrentFolderId(null)
+              const tabRootName =
+                newTab === 'private'
+                  ? 'Private Networks'
+                  : 'Latest Networks'
               setBreadcrumbPath([
                 {
                   name: lastSearchQuery
                     ? `Search: "${lastSearchQuery}"`
-                    : newTab === 'my-networks'
-                    ? rootName
-                    : newTab === 'private'
-                    ? 'Private Networks'
-                    : 'Latest Networks',
+                    : tabRootName,
                   id: null,
                 },
               ])
               setErrorMessage(undefined)
             }}
           >
-            {authenticated && myNetworksTab}
             <Tooltip
               arrow
               placement="bottom"
