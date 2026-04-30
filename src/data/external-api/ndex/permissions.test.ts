@@ -27,10 +27,11 @@ describe('getNdexNetworkPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -41,9 +42,9 @@ describe('getNdexNetworkPermission', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getNetworkPermissionsByUUIDs).toHaveBeenCalledWith([
-      mockNetworkId,
-    ])
+    expect(
+      mockClient.networks.getNetworkPermissionsByUUIDs,
+    ).toHaveBeenCalledWith([mockNetworkId])
     expect(result).toBe(PermissionType.WRITE)
   })
 
@@ -55,10 +56,11 @@ describe('getNdexNetworkPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -79,10 +81,11 @@ describe('getNdexNetworkPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -101,10 +104,11 @@ describe('getNdexNetworkPermission', () => {
     const mockPermissions = {}
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -126,10 +130,11 @@ describe('getNdexNetworkPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -150,8 +155,9 @@ describe('getNdexNetworkPermission', () => {
     const mockError = new Error('Permission check failed')
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -181,10 +187,11 @@ describe('hasNdexEditPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -202,10 +209,11 @@ describe('hasNdexEditPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -223,10 +231,11 @@ describe('hasNdexEditPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -242,10 +251,11 @@ describe('hasNdexEditPermission', () => {
     const mockPermissions = {}
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -261,8 +271,9 @@ describe('hasNdexEditPermission', () => {
     const mockError = new Error('Permission check failed')
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -281,10 +292,11 @@ describe('hasNdexEditPermission', () => {
     }
 
     const mockClient = {
-      getNetworkPermissionsByUUIDs: jest
-        .fn()
-        .mockResolvedValue(mockPermissions),
-      setAuthToken: jest.fn(),
+      networks: {
+        getNetworkPermissionsByUUIDs: jest
+          .fn()
+          .mockResolvedValue(mockPermissions),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)

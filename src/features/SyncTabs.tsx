@@ -9,6 +9,8 @@ import {
   putTimestampToDb,
 } from '../data/db'
 import { logUi } from '../debug'
+import { ServiceStatus } from '../models/AppModel/ServiceStatus'
+import { useAppStore } from '../data/hooks/stores/AppStore'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
@@ -25,6 +27,18 @@ export const SyncTabsAction = (): ReactElement => {
       if (document.hidden) {
         setLocalTimestamp(Date.now())
       } else {
+        const { currentTask } = useAppStore.getState()
+        const isTaskRunning =
+          currentTask?.status === ServiceStatus.Submitted ||
+          currentTask?.status === ServiceStatus.Processing
+
+        if (isTaskRunning) {
+          logUi.warn(
+            `[${SyncTabsAction.name}]: Page reload skipped because a service app task is running: ${currentTask.id}`,
+          )
+          return
+        }
+
         void getTimestampFromDb().then(async (timestamp) => {
           const workspace = await getWorkspaceFromDb(workspaceId)
 

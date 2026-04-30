@@ -26,17 +26,21 @@ export const fetchNdexInterconnectQuery = async (
   ndexUrl?: string,
 ): Promise<Cx2> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const searchTerms = null
+  const searchTerms = ''
   const saveResult = false
-  const outputCX2 = true
+  const outputCX2 = false
 
-  return await ndexClient.interConnectQuery(
+  const result = await ndexClient.networks.interConnectQuery(
     ndexUuid,
     searchTerms,
     saveResult,
-    parameters,
+    {
+      nodeIds: parameters.split(',').map((id) => Number(id)),
+    },
     outputCX2,
   )
+
+  return result as Cx2
 }
 
 /**
@@ -58,13 +62,12 @@ export const fetchGeneNamesFromIds = async (
   ndexUrl?: string,
 ): Promise<string[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const geneNameMap = await ndexClient.getAttributesOfSelectedNodes(
+  const geneNameMap = await ndexClient.networks.getAttributesOfSelectedNodes(
     networkUUID,
     {
-      ids,
+      ids: ids.map((id) => Number(id)),
       attributeNames: ['name'],
     },
-    accessToken,
   )
 
   const geneNames = Object.values(geneNameMap).map(

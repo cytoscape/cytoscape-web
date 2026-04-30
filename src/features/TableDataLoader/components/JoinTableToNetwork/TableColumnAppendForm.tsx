@@ -250,7 +250,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
+    const rows = result.data.slice(skipNLines)
 
     let headers: string[]
     if (useFirstRowAsColumns) {
