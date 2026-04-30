@@ -41,6 +41,7 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const getViewport = useRendererStore((state) => state.getViewport)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
+  const visualStyleOption = useUiStateStore((state) => state.ui.visualStyleOptions[currentNetworkId])
 
   // Check if current view supports creation
   const canCreateInView = (): boolean => {
@@ -74,14 +75,17 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
     // Random padding between 5 and 50, so multiple added nodes don't overlap exactly on top of each other
     const pad = Math.floor(Math.random() * 45) + 5
     // Get the default node width and height from the visual style
-    const defNodeWidth = visualStyles[currentNetworkId]?.nodeWidth?.defaultValue ?? 50
-    const defNodeHeight = visualStyles[currentNetworkId]?.nodeHeight?.defaultValue ?? 50
+    const style = visualStyles[currentNetworkId]
+    const defNodeWidth = style?.nodeWidth?.defaultValue ?? 50
+    const defNodeHeight = style?.nodeHeight?.defaultValue ?? 50
     // Calculate an offset to ensure the new node is fully visible within the viewport,
     // based on the default node size and the padding
-    const offset = Math.max(defNodeWidth as number, defNodeHeight as number) / 2 + pad
+    const nodeSizeLocked = visualStyleOption?.visualEditorProperties?.nodeSizeLocked
+    const offsetY = (defNodeHeight as number) / 2 + pad
+    const offsetX = nodeSizeLocked ? offsetY : (defNodeWidth as number) / 2 + pad // if node size locked, use height for both width and height
     // Calculate the position to place the new node in the top-left corner, adjusted for pan, zoom and offset
-    const x = -panX / zoom + offset
-    const y = -panY / zoom + offset
+    const x = -panX / zoom + offsetX
+    const y = -panY / zoom + offsetY
 
     // Create node directly with default empty attributes
     createNode(currentNetworkId, [x, y], { attributes: {} })
