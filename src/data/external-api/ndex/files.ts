@@ -22,6 +22,10 @@ export interface NdexFileItem {
   ownerUUID?: string
   visibility?: string
   edges?: number
+  nodes?: number
+  nodeCount?: number
+  cx2FileSize?: number
+  subnetworkIds?: string[]
   permission?: string
   attributes?: Record<string, any>
 }
@@ -90,7 +94,7 @@ export const fetchFolderContents = async (
 ): Promise<NdexFileItem[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const id = folderId ?? 'home'
-  const items = await ndexClient.files.getFolderList(id, undefined, 'compact')
+  const items = await ndexClient.files.getFolderList(id)
   return (items ?? [])
     .filter((item: any) => item != null && typeof item === 'object')
     .map(mapFileListItem)
@@ -155,21 +159,36 @@ export const resolveShortcut = async (
 /**
  * Maps a raw API file list item to our internal NdexFileItem type.
  */
-const mapFileListItem = (item: any): NdexFileItem => ({
-  uuid: item.uuid,
-  name: item.name ?? '',
-  type: item.type ?? 'NETWORK',
-  modificationTime: item.modificationTime,
-  owner: item.owner,
-  ownerUUID: item.ownerUUID ?? item.owner_id,
-  visibility: item.visibility,
-  edges: item.edges,
-  permission: item.permission,
-  attributes: {
-    ...item.attributes,
-    isReadOnly: item.isReadOnly,
-    isValid: item.isValid,
-    target_type: item.attributes?.target_type,
-    target_status: item.attributes?.target_status,
-  },
-})
+const mapFileListItem = (item: any): NdexFileItem => {
+  const attrs = item.attributes ?? {}
+  const nodeCount = item.nodes ?? item.nodeCount ?? attrs.nodes ?? attrs.nodeCount
+  const edgeCount = item.edges ?? item.edgeCount ?? attrs.edges ?? attrs.edgeCount
+  const cx2FileSize = item.cx2FileSize ?? attrs.cx2FileSize
+  const subnetworkIds = item.subnetworkIds ?? attrs.subnetworkIds
+
+  return {
+    uuid: item.uuid ?? item.externalId,
+    name: item.name ?? '',
+    type: item.type ?? 'NETWORK',
+    modificationTime: item.modificationTime,
+    owner: item.owner,
+    ownerUUID: item.ownerUUID ?? item.owner_id,
+    visibility: item.visibility,
+    edges: edgeCount,
+    nodes: nodeCount,
+    nodeCount: nodeCount,
+    cx2FileSize: cx2FileSize,
+    subnetworkIds: subnetworkIds,
+    permission: item.permission,
+    attributes: {
+      ...attrs,
+      isReadOnly: item.isReadOnly,
+      isValid: item.isValid,
+      target_type: attrs.target_type,
+      target_status: attrs.target_status,
+      nodeCount: nodeCount,
+      cx2FileSize: cx2FileSize,
+      subnetworkIds: subnetworkIds,
+    },
+  }
+}

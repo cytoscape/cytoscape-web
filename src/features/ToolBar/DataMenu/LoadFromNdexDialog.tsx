@@ -705,9 +705,9 @@ export const LoadFromNdexDialog = (
         modificationTime,
       } = network
 
-      const nodeCount = (network.attributes as any)?.nodeCount ?? 0
-      const cx2FileSize = (network.attributes as any)?.cx2FileSize ?? 0
-      const subnetworkIds = (network.attributes as any)?.subnetworkIds ?? []
+      const nodeCount = network.nodes ?? network.nodeCount ?? (network.attributes as any)?.nodeCount ?? 0
+      const cx2FileSize = network.cx2FileSize ?? (network.attributes as any)?.cx2FileSize ?? 0
+      const subnetworkIds = network.subnetworkIds ?? (network.attributes as any)?.subnetworkIds ?? []
 
       const selected = selectedNetworks.includes(externalId)
       const networkAlreadyLoaded = networkIds.includes(externalId)
