@@ -5,6 +5,7 @@ import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummar
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useCreateNode } from '../../../data/hooks/useCreateNode'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
@@ -39,6 +40,7 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
   )
 
   const getViewport = useRendererStore((state) => state.getViewport)
+  const visualStyles = useVisualStyleStore((state) => state.visualStyles)
 
   // Check if current view supports creation
   const canCreateInView = (): boolean => {
@@ -65,11 +67,24 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
   const handleCreateNode = (): void => {
     // Get the viewport center (pan position)
     const viewport = getViewport('cyjs', currentNetworkId)
-    const centerX = viewport?.pan.x ?? 0
-    const centerY = viewport?.pan.y ?? 0
+    const panX = viewport?.pan.x ?? 0
+    const panY = viewport?.pan.y ?? 0
+    const zoom = viewport?.zoom ?? 1
+
+    // Random padding between 5 and 50, so multiple added nodes don't overlap exactly on top of each other
+    const pad = Math.floor(Math.random() * 45) + 5
+    // Get the default node width and height from the visual style
+    const defNodeWidth = visualStyles[currentNetworkId]?.nodeWidth?.defaultValue ?? 50
+    const defNodeHeight = visualStyles[currentNetworkId]?.nodeHeight?.defaultValue ?? 50
+    // Calculate an offset to ensure the new node is fully visible within the viewport,
+    // based on the default node size and the padding
+    const offset = Math.max(defNodeWidth as number, defNodeHeight as number) / 2 + pad
+    // Calculate the position to place the new node in the top-left corner, adjusted for pan, zoom and offset
+    const x = -panX / zoom + offset
+    const y = -panY / zoom + offset
 
     // Create node directly with default empty attributes
-    createNode(currentNetworkId, [centerX, centerY], { attributes: {} })
+    createNode(currentNetworkId, [x, y], { attributes: {} })
     props.handleClose()
   }
 
