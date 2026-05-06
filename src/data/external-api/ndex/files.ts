@@ -72,10 +72,10 @@ export const searchNdexFiles = async (
 
   const result = await ndexClient.files.searchFiles(params)
   return {
-    files: ((result as any)?.files ?? result?.ResultList ?? [])
+    files: ((result as any)?.files ?? (result as any)?.ResultList ?? [])
       .filter((item: any) => item != null && typeof item === 'object')
       .map(mapFileListItem),
-    numFound: result?.numFound ?? 0,
+    numFound: (result as any)?.numFound ?? 0,
   }
 }
 
