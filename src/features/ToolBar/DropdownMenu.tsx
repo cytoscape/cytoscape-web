@@ -35,20 +35,28 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     (overlayPanelRef.current as any)?.toggle(event)
   }
 
+  // If the cytoscape container exists, use its bounding rect to position the overlay,
+  // otherwise default to covering the entire viewport
+  const cyContainer = document.getElementById('cy-container')
+  const overlayTarget = cyContainer ? cyContainer : 'body'
+  const overlayTargetRect = overlayTarget !== 'body' ? overlayTarget.getBoundingClientRect() : null
+
   return (
     <>
     {open && (
-      // Full-screen invisible overlay to capture clicks outside the menu
+      // Invisible overlay to capture clicks outside the menu
       <Box
         sx={{
-          position: 'fixed', 
-          top: 0, left: 0, 
-          width: '100vw', height: '100vh', 
+          position: 'fixed',
+          top: overlayTargetRect ? overlayTargetRect.top : 0,
+          left: overlayTargetRect ? overlayTargetRect.left : 0,
+          width: overlayTargetRect ? overlayTargetRect.width : '100vw',
+          height: overlayTargetRect ? overlayTargetRect.height : '100vh',
           zIndex: 1000, // Just below the menu
         }}
         onClick={() => {
-          (overlayPanelRef.current as any)?.hide();
-          onOpenChange?.(false);
+          ;(overlayPanelRef.current as any)?.hide()
+          onOpenChange?.(false)
         }}
       />
     )}
