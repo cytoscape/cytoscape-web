@@ -1,27 +1,16 @@
-import { MenuItem } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
+import { ReactElement } from 'react'
 
-import { BaseMenuProps } from '../BaseMenuProps'
-import { LoadFromNdexDialog } from './LoadFromNdexDialog'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const LoadFromNdexMenuItem = (props: BaseMenuProps): ReactElement => {
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
 
-  const handleCloseDialog = (): void => {
-    setOpenDialog(false)
-    props.handleClose()
-  }
-
-  const handleOpenDialog = (): void => {
-    setOpenDialog(true)
-  }
-
+export const LoadFromNdexMenuItem = (props: BaseMenuItemProps): ReactElement => {
   return (
-    <>
-      <MenuItem onClick={handleOpenDialog}>
-        Open Network(s) from NDEx...
-      </MenuItem>
-      <LoadFromNdexDialog open={openDialog} handleClose={handleCloseDialog} />
-    </>
+    <DropdownMenuItem
+      label="Open Network(s) from NDEx..."
+      icon={<CloudDownloadIcon />}
+      onClick={props.onClick}
+    />
   )
 }

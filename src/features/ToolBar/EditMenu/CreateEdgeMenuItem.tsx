@@ -1,4 +1,4 @@
-import { MenuItem, Tooltip } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -9,9 +9,11 @@ import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { NetworkView } from '../../../models'
 import { IdType } from '../../../models/IdType'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const CreateEdgeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { createEdge } = useCreateEdge()
 
   const [disabled, setDisabled] = useState<boolean>(true)
@@ -77,7 +79,7 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
     createEdge(currentNetworkId, sourceNodeId, targetNodeId, {
       attributes: {},
     })
-    props.handleClose()
+    props.onClick()
   }
 
   const isCreationEnabled = canCreateInView()
@@ -93,12 +95,12 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
           : ''
 
   return (
-    <Tooltip title={tooltipText} placement="left">
-      <span>
-        <MenuItem disabled={disabled} onClick={handleCreateEdge}>
-          Create Edge
-        </MenuItem>
-      </span>
-    </Tooltip>
+    <DropdownMenuItem
+      label="Create Edge"
+      icon={<AddIcon />}
+      disabled={disabled}
+      onClick={handleCreateEdge}
+      tooltip={tooltipText}
+    />
   )
 }

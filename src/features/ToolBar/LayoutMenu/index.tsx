@@ -1,11 +1,6 @@
-import { Box, Divider, MenuItem, Tooltip } from '@mui/material'
-import Button from '@mui/material/Button'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useEffect, useRef, useState } from 'react'
+import SettingsIcon from '@mui/icons-material/Settings'
+import { useEffect, useState } from 'react'
 
-import { logUi } from '../../../debug'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -14,6 +9,7 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
+import { logUi } from '../../../debug'
 import { LayoutAlgorithm } from '../../../models'
 import { IdType } from '../../../models/IdType'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
@@ -21,15 +17,11 @@ import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
+import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
-import { DropdownMenu } from '../DropdownMenu'
 
-interface DropdownMenuProps {
-  label: string
-  children?: React.ReactNode
-}
 
-export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
+export const LayoutMenu = (): JSX.Element => {
   const [open, setOpen] = useState(false)
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
@@ -100,8 +92,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       currentNetworkId === targetNetworkId && // the hierarchy network is the active view
       cellViewIsSelected) || // the cell view tab is selected
     targetNetworkId === '' // no network is selected
-
-  const { label } = props
 
   const handleClose = (): void => {
     setOpen(false)
@@ -215,31 +205,29 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       ...(allDisabled
         ? [
             {
-              label: '',
+              separator: (
+                sortedMenuItemsWithDividers.map((menuItem: any) => menuItem.isDivider)
+              ),
               template: (
-                <Tooltip
-                  arrow
-                  placement="right"
-                  title={
-                    targetNetworkId === ''
-                      ? 'Layouts are disabled since the network view is empty'
-                      : 'Layouts cannot be applied to the current network view'
+                <>
+                {sortedMenuItemsWithDividers.map((menuItem: any) => {
+                  if (menuItem.isDivider) {
+                    return null
                   }
-                >
-                  <Box>
-                    {sortedMenuItemsWithDividers.map((menuItem: any) => {
-                      // Render divider
-                      if (menuItem.isDivider) {
-                        return <Divider key={menuItem.key} />
+                  return (
+                    <DropdownMenuItem
+                      key={menuItem.key}
+                      label={menuItem.label}
+                      tooltip={
+                        targetNetworkId === ''
+                          ? 'Layouts are disabled since the network view is empty'
+                          : 'Layouts cannot be applied to the current network view'
                       }
-                      return (
-                        <MenuItem key={menuItem.key} disabled={true}>
-                          {menuItem.label}
-                        </MenuItem>
-                      )
-                    })}
-                  </Box>
-                </Tooltip>
+                      disabled={true}
+                    />
+                  )
+                })}
+                </>
               ),
             },
           ]
@@ -247,56 +235,38 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             // Render divider
             if (menuItem.isDivider) {
               return {
-                label: '',
-                template: <Divider key={menuItem.key} />,
+                separator: true,
               }
             }
-
             // Render normal menu item
             return {
-              label: menuItem.label,
               template: (
-                <Tooltip
-                  arrow
-                  placement="right"
-                  title={menuItem.description}
+                <DropdownMenuItem
                   key={menuItem.key}
-                >
-                  <MenuItem
-                    key={menuItem.key}
-                    disabled={menuItem.disabled}
-                    onClick={() => {
-                      handleClose()
-                      menuItem.onClick()
-                    }}
-                    style={{
-                      whiteSpace: 'normal',
-                      wordBreak: 'break-word',
-                      lineHeight: '1.2',
-                      padding: '8px 16px',
-                    }}
-                  >
-                    {menuItem.label}
-                  </MenuItem>
-                </Tooltip>
+                  label={menuItem.label}
+                  tooltip={menuItem.description}
+                  disabled={menuItem.disabled}
+                  onClick={() => {
+                    handleClose()
+                    menuItem.onClick()
+                  }}
+                />
               ),
             }
           })),
       {
-        label: '',
-        template: <Divider />,
+        separator: true,
       },
       {
-        label: 'Settings...',
         template: (
-          <MenuItem
+          <DropdownMenuItem
+            label="Settings..."
+            icon={<SettingsIcon />}
             onClick={() => {
               handleClose()
               handleOpenDialog(true)
             }}
-          >
-            Settings...
-          </MenuItem>
+          />
         ),
       },
     ]
@@ -305,8 +275,8 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   return (
     <>
       <DropdownMenu
-        id={label}
-        label={label}
+        id="layout-menu"
+        label="Layout"
         menuItems={getMenuItems()}
         open={open}
         onOpenChange={setOpen}

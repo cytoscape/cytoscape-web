@@ -484,10 +484,10 @@ const WorkSpaceEditor = (): JSX.Element => {
                 }
               />
               <JoinTableToNetworkForm
-                handleClose={() => showTableJoinForm(false)}
+                onClick={() => showTableJoinForm(false)}
               />
               <CreateNetworkFromTableForm
-                handleClose={() => showCreateNetworkFromTableForm(false)}
+                onClick={() => showCreateNetworkFromTableForm(false)}
               />
             </Suspense>
           </Allotment.Pane>

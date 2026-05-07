@@ -1,51 +1,50 @@
+import { MenuItem } from 'primereact/menuitem'
 import { useState } from 'react'
 
-import { DropdownMenuProps } from '../DropdownMenuProps'
+import { DropdownMenu } from '../DropdownMenu'
 import { CreateEdgeMenuItem } from './CreateEdgeMenuItem'
 import { CreateNodeMenuItem } from './CreateNodeMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
-import { DropdownMenu } from '../DropdownMenu'
-import { Divider } from '@mui/material'
 
-export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
-  const { label } = props
+
+export const EditMenu = () => {
   const [open, setOpen] = useState(false)
 
   const handleClose = (): void => {
     setOpen(false)
   }
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
-      template: <CreateNodeMenuItem handleClose={handleClose} />,
+      template: <CreateNodeMenuItem onClick={handleClose} />,
     },
     {
-      template: <CreateEdgeMenuItem handleClose={handleClose} />,
+      template: <CreateEdgeMenuItem onClick={handleClose} />,
     },
     {
-      template: <DeleteSelectedNodesMenuItem handleClose={handleClose} />,
+      template: <DeleteSelectedNodesMenuItem onClick={handleClose} />,
     },
     {
-      template: <DeleteSelectedEdgesMenuItem handleClose={handleClose} />,
+      template: <DeleteSelectedEdgesMenuItem onClick={handleClose} />,
     },
     {
-      template: <Divider />,
+      separator: true,
     },
     {
-      template: <UndoMenuItem handleClose={handleClose} />,
+      template: <UndoMenuItem onClick={handleClose} />,
     },
     {
-      template: <RedoMenuItem handleClose={handleClose} />,
+      template: <RedoMenuItem onClick={handleClose} />,
     },
   ]
 
   return (
     <DropdownMenu
-      id={label}
-      label={label}
+      id="edit-menu"
+      label="Edit"
       menuItems={menuItems}
       open={open}
       onOpenChange={setOpen}

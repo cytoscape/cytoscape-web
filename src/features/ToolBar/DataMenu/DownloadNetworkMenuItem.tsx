@@ -1,7 +1,6 @@
-import { MenuItem } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import DownloadIcon from '@mui/icons-material/Download'
+import { ReactElement } from 'react'
 
-import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -11,15 +10,18 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../../debug'
 import { exportCyNetworkToCx2 } from '../../../models/CxModel/impl'
 import { CyNetwork } from '../../../models/CyNetworkModel'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyleOptions'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const DownloadNetworkMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -71,7 +73,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
     const cxFile = new Blob([JSON.stringify(cx)], { type: 'text/plain' })
     link.href = URL.createObjectURL(cxFile)
     link.click()
-    props.handleClose()
+    props.onClick()
   }
 
   const handleSaveCurrentNetworkToFile = async (): Promise<void> => {
@@ -96,12 +98,12 @@ export const DownloadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
   }
 
   const menuItem = (
-    <MenuItem
+    <DropdownMenuItem
+      label="Download Network File (.cx2)"
+      icon={<DownloadIcon />}
       disabled={currentNetworkId === ''}
       onClick={handleSaveCurrentNetworkToFile}
-    >
-      Download Network File (.cx2)
-    </MenuItem>
+    />
   )
   return <>{menuItem}</>
 }

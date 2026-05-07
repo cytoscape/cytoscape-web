@@ -1,10 +1,8 @@
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  MenuItem,
   Typography,
 } from '@mui/material'
 import React from 'react'
@@ -12,7 +10,9 @@ import React from 'react'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../data/db'
 import { logUi } from '../../../debug'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 const formatDateForHash = (dateString: string): string => {
   const date = new Date(dateString)
@@ -30,7 +30,7 @@ const formatDateForHash = (dateString: string): string => {
 }
 
 export const AboutCytoscapeWebMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): React.ReactElement => {
   const [open, setOpen] = React.useState(false)
 
@@ -47,7 +47,7 @@ export const AboutCytoscapeWebMenuItem = (
 
   const handleCloseDialog = (): void => {
     setOpen(false)
-    props.handleClose()
+    props.onClick()
   }
 
   const commitHash =
@@ -63,7 +63,10 @@ export const AboutCytoscapeWebMenuItem = (
 
   return (
     <>
-      <MenuItem onClick={handleOpenDialog}>About Cytoscape Web</MenuItem>
+      <DropdownMenuItem
+        label="About Cytoscape Web"
+        onClick={handleOpenDialog}
+      />
       <Dialog open={open} onClose={handleCloseDialog}>
         <DialogContent>
           <Typography variant="h6" gutterBottom>

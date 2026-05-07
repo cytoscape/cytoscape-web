@@ -1,8 +1,9 @@
 import { MenuItem } from '@mui/material'
 import React, { lazy, Suspense } from 'react'
 
-import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
-import { BaseMenuProps } from '../../BaseMenuProps'
+import { BaseMenuItemProps } from '../../BaseMenuItemProps'
+import { DropdownMenuItem } from '../../DropdownMenu'
+
 
 // Lazy load the ExportImageMenuItem component
 const ExportImageMenuItem = lazy(() =>
@@ -13,14 +14,14 @@ const ExportImageMenuItem = lazy(() =>
 
 // Loading component
 const LoadingMenuItem = () => (
-  <MenuItem disabled>Loading export options...</MenuItem>
+  <DropdownMenuItem
+    label="Loading export options..."
+    disabled
+  />
 )
 
 // Error boundary component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
     super(props)
     this.state = { hasError: false }
@@ -44,7 +45,7 @@ class ErrorBoundary extends React.Component<
 }
 
 // Dynamic wrapper component
-const DynamicExportImageMenuItem = (props: BaseMenuProps) => {
+const DynamicExportImageMenuItem = (props: BaseMenuItemProps) => {
   return (
     <ErrorBoundary>
       <Suspense fallback={<LoadingMenuItem />}>

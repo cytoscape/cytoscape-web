@@ -1,17 +1,20 @@
-import { MenuItem } from '@mui/material'
+import GitHubIcon from '@mui/icons-material/GitHub'
 import { ReactElement } from 'react'
 
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const CodeRepositoryMenuItem = (props: BaseMenuProps): ReactElement => {
-  const handleBugReport = (): void => {
+export const CodeRepositoryMenuItem = (props: BaseMenuItemProps): ReactElement => {
+  const handleCodeRepository = (): void => {
     window.open('https://github.com/cytoscape/cytoscape-web', '_blank')
-    props.handleClose()
+    props.onClick()
   }
 
   return (
-    <MenuItem onClick={handleBugReport}>
-      Code Repository
-    </MenuItem>
+    <DropdownMenuItem
+      label="Code Repository"
+      icon={<GitHubIcon />}
+      onClick={handleCodeRepository}
+    />
   )
 }

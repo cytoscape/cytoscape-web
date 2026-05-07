@@ -1,16 +1,15 @@
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  MenuItem,
-  Tooltip,
 } from '@mui/material'
 import { ReactElement, useContext, useEffect, useState } from 'react'
 
+import { AppConfigContext } from '../../../AppConfigContext'
 import {
   fetchNdexSummaries,
   hasNdexEditPermission,
@@ -19,8 +18,6 @@ import {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from '../../../data/external-api/ndex'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { logUi } from '../../../debug'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
@@ -33,19 +30,21 @@ import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useSaveCyNetworkCopyToNDEx } from '../../../data/hooks/useSaveCyNetworkCopyToNDEx'
 import { useSaveCyNetworkToNDEx } from '../../../data/hooks/useSaveCyNetworkToNDEx'
+import { logUi } from '../../../debug'
 import { KeycloakContext } from '../../../init/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
-  const [showHcxValidationDialog, setShowHcxValidationDialog] =
-    useState<boolean>(false)
+  const [showHcxValidationDialog, setShowHcxValidationDialog] = useState<boolean>(false)
   const [editPermission, setEditPermission] = useState<boolean>(false)
   const [tooltipText, setTooltipText] = useState<string>('')
   const currentNetworkId = useWorkspaceStore(
@@ -172,7 +171,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     })
 
     setShowConfirmDialog(false)
-    props.handleClose()
+    props.onClick()
   }
 
   const saveCopyToNDEx = async (
@@ -219,10 +218,11 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     }
 
     setShowConfirmDialog(false)
-    props.handleClose()
+    props.onClick()
   }
 
   const handleClick = async (): Promise<void> => {
+    props.onClick()
     const validationResult = validationResults?.[currentNetworkId]
 
     if (validationResult !== undefined && !validationResult.isValid) {
@@ -283,30 +283,12 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     currentNetworkId !== '' &&
     (summary?.isNdex ? isModified && editPermission : authenticated)
 
-  const menuItem = (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
-    >
-      <MenuItem
-        sx={{ flexBasis: '100%', flexGrow: 3 }}
-        disabled={!enabled}
-        onClick={handleClick}
-      >
-        Save Network to NDEx
-      </MenuItem>
-    </Box>
-  )
-
   const dialog = (
     <Dialog
       data-testid="save-to-ndex-sync-dialog"
       onClose={() => {
         setShowConfirmDialog(false)
-        props.handleClose()
+        props.onClick()
       }}
       open={showConfirmDialog}
     >
@@ -362,12 +344,17 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
     </Dialog>
   )
 
-  if (enabled) {
-    return (
+  return (
+    <>
+      <DropdownMenuItem
+        label="Save Network to NDEx"
+        tooltip={tooltipText}
+        icon={<CloudUploadIcon />}
+        disabled={!enabled}
+        onClick={handleClick}
+      />
+    {enabled && (
       <>
-        <Tooltip arrow placement="right" title={tooltipText}>
-          {menuItem}
-        </Tooltip>
         {dialog}
         <HcxValidationSaveDialog
           open={showHcxValidationDialog}
@@ -376,12 +363,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuProps): ReactElement => {
           validationResult={validationResults?.[currentNetworkId]}
         />
       </>
-    )
-  } else {
-    return (
-      <Tooltip arrow placement="right" title={tooltipText}>
-        {menuItem}
-      </Tooltip>
-    )
-  }
+    )}
+    </>
+  )
 }

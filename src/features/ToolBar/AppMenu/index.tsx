@@ -1,10 +1,10 @@
-import { Divider } from '@mui/material'
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
 import { MenuItem } from 'primereact/menuitem'
 import { useEffect, useState } from 'react'
 
-import { logApp } from '../../../debug'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useServiceTaskRunner } from '../../../data/hooks/useServiceTaskRunner'
+import { logApp } from '../../../debug'
 import { ComponentType, CyApp } from '../../../models/AppModel'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
@@ -14,11 +14,11 @@ import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { DropdownMenuProps } from '../DropdownMenuProps'
-import { createMenuItems } from './MenuFactory'
 import { DropdownMenu } from '../DropdownMenu'
+import { createMenuItems } from './MenuFactory'
 
-export const AppMenu = (props: DropdownMenuProps) => {
+
+export const AppMenu = () => {
   const run = useServiceTaskRunner()
 
   const [open, setOpen] = useState<boolean>(false)
@@ -27,8 +27,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const [appStateUpdated, setAppStateUpdated] = useState<boolean>(false)
-
-  const { label } = props
 
   // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -123,39 +121,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
     setComponentList(componentList)
   }, [apps])
 
-  const getBaseMenu = (): MenuItem[] => {
-    return [
-      {
-        label: 'Manage Apps...',
-        style: { height: '2.5em' },
-        command: () => handleOpenDialog(true),
-      },
-    ]
-  }
-
-  useEffect(() => {
-    const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    const divider: MenuItem[] =
-      menuModel.length > 0 || appMenuItems.length > 0
-        ? [{ template: <Divider /> }]
-        : []
-    setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
-  }, [serviceApps, apps])
-
-  useEffect(() => {
-    const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
-    setAppStateUpdated(false)
-  }, [appStateUpdated])
-
-  useEffect(() => {
-    // Create base menu items
-    setMenuModel(getBaseMenu())
-    setOpen(false)
-  }, [])
-
   const createAppMenu = (): MenuItem[] => {
     const appMenuItems: MenuItem[] = componentList.map(
       ([appId, componentId], index) => {
@@ -170,21 +135,56 @@ export const AppMenu = (props: DropdownMenuProps) => {
     return appMenuItems
   }
 
-  // TODO test whether this behavior is still correct after refactoring (no more button click events)
+  const getBaseMenu = (): MenuItem[] => {
+    return [
+      {
+        label: 'Manage Apps...',
+        icon: <AppRegistrationIcon />,
+        style: { height: '2.5em' },
+        command: () => handleOpenDialog(true),
+      },
+    ]
+  }
+
+  const collectAndSetMenuModel = () => {
+    const appMenuItems: MenuItem[] = createAppMenu()
+    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
+    console.log('Menu model updated:', menuModel)
+    console.log('App menu items updated:', appMenuItems)
+    const divider: MenuItem[] =
+      menuModel.length > 0 || appMenuItems.length > 0
+        ? [{ separator: true }]
+        : []
+    setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
+  }
+
+  useEffect(() => {
+    collectAndSetMenuModel()
+  }, [serviceApps, apps])
+
+  useEffect(() => {
+    collectAndSetMenuModel()
+    setAppStateUpdated(false)
+  }, [appStateUpdated])
+
+  useEffect(() => {
+    // Create base menu items
+    setMenuModel(getBaseMenu())
+    setOpen(false)
+  }, [])
+
   useEffect(() => {
     if (open && !isInitialClick) {
       setIsInitialClick(true)
-      const appMenuItems: MenuItem[] = createAppMenu()
-      const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-      setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
+      collectAndSetMenuModel()
     }
   }, [open])
 
   return (
     <>
       <DropdownMenu
-        id={label}
-        label={label}
+        id="apps-menu"
+        label="Apps"
         menuItems={menuModel}
         open={open}
         onOpenChange={setOpen}

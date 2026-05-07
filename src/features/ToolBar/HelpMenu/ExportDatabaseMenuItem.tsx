@@ -1,18 +1,20 @@
-import { MenuItem } from '@mui/material'
+import DownloadIcon from '@mui/icons-material/Download'
 import { ReactElement } from 'react'
 
 import { exportDatabaseSnapshotToFile } from '../../../data/db'
-import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const ExportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const ExportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const handleExport = async (): Promise<void> => {
     try {
-      props.handleClose()
+      props.onClick()
       await exportDatabaseSnapshotToFile()
       addMessage({
         message: 'Database snapshot exported successfully.',
@@ -32,5 +34,11 @@ export const ExportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
     }
   }
 
-  return <MenuItem onClick={handleExport}>Export Database Snapshot...</MenuItem>
+  return (
+    <DropdownMenuItem
+      label="Export Database Snapshot"
+      icon={<DownloadIcon />}
+      onClick={handleExport}
+    />
+  )
 }

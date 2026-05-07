@@ -4,7 +4,7 @@ import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 export const cosmos: LayoutAlgorithm = {
   name: 'cosmos',
   engineName: 'Cosmos',
-  displayName: 'Cosmos (GPU-based, nondeterministic layout)',
+  displayName: 'Cosmos Layout (GPU-based, nondeterministic)',
   description:
     'Cosmos Layout: GPU-powered force-directed layout (nondeterministic, best for large graphs)',
   type: LayoutAlgorithmType.force,

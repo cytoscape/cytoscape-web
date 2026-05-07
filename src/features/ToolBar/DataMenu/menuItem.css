@@ -1,6 +1,18 @@
+.p-tieredmenu {
+  width: unset !important;
+}
 .p-tieredmenu .p-menuitem .p-menuitem-content .p-menuitem-link {
-    padding: 0.375rem 1rem !important; 
-  }
-  .p-tieredmenu .p-menuitem .p-menuitem-content .p-menuitem-link .p-menuitem-text {
-    line-height: 1.5rem !important;
-  }
+  padding: 0.375rem 1rem !important;
+}
+.p-tieredmenu .p-menuitem .p-menuitem-content .p-menuitem-link .p-menuitem-text {
+  line-height: 1.5rem !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+/* Change background and text color for all menu item hovers */
+.p-menubar .p-menuitem-link:hover,
+.p-tieredmenu .p-menuitem-link:hover,
+.p-contextmenu .p-menuitem-link:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important; /* Your hover background color */
+    color: rgba(0, 0, 0, 0.87) !important;            /* Your hover text color */
+}

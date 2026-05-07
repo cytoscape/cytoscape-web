@@ -10,9 +10,9 @@ import { DataMenu } from './DataMenu'
 import { EditMenu } from './EditMenu'
 import { HelpMenu } from './HelpMenu'
 import { LayoutMenu } from './LayoutMenu'
-import { LicenseMenu } from './LicenseMenu'
 import { SearchBox } from './Search'
 import { ToolsMenu } from './ToolsMenu'
+
 
 export const ToolBar = (): JSX.Element => {
   return (
@@ -24,16 +24,14 @@ export const ToolBar = (): JSX.Element => {
           sx={{ justifyContent: 'space-between', backgroundColor: '#4F4F4F' }}
         >
           <Box sx={{ display: 'flex' }}>
-            <img src={logo} />
-            <DataMenu label="Data" />
-            <EditMenu label="Edit" />
-            <LayoutMenu label="Layout" />
-            {/* <DropdownMenu label="Help" /> */}
-            <AnalysisMenu label="Analysis" />
-            <ToolsMenu label="Tools" />
-            <AppMenu label="Apps" />
-            <HelpMenu label="Help" />
-            <LicenseMenu label="License" />
+            <img src={logo} alt="Cytoscape Logo" />
+            <DataMenu />
+            <EditMenu />
+            <LayoutMenu />
+            <AnalysisMenu />
+            <ToolsMenu />
+            <AppMenu />
+            <HelpMenu />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

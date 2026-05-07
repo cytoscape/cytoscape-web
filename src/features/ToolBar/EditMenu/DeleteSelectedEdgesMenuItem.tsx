@@ -1,4 +1,4 @@
-import { MenuItem } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
@@ -6,10 +6,12 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useDeleteEdges } from '../../../data/hooks/useDeleteEdges'
 import { IdType } from '../../../models/IdType'
 import { NetworkView } from '../../../models/ViewModel'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 export const DeleteSelectedEdgesMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): ReactElement => {
   const { deleteEdges } = useDeleteEdges()
 
@@ -37,7 +39,7 @@ export const DeleteSelectedEdgesMenuItem = (
   }, [selectedEdges])
 
   const handleDeleteEdges = (): void => {
-    props.handleClose()
+    props.onClick()
 
     // Delete the selected edges
     deleteEdges(currentNetworkId, selectedEdges)
@@ -47,8 +49,11 @@ export const DeleteSelectedEdgesMenuItem = (
   }
 
   return (
-    <MenuItem disabled={disabled} onClick={handleDeleteEdges}>
-      Delete Selected Edges
-    </MenuItem>
+    <DropdownMenuItem
+      label="Delete Selected Edges"
+      icon={<DeleteIcon />}
+      disabled={disabled}
+      onClick={handleDeleteEdges}
+    />
   )
 }

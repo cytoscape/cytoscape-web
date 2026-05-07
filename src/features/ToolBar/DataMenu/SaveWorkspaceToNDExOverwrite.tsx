@@ -1,4 +1,3 @@
-import { Tooltip } from '@mui/material'
 import React, { useContext, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -8,11 +7,13 @@ import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
 import { useWorkspaceData } from '../../../data/hooks/useWorkspaceData'
 import { KeycloakContext } from '../../../init/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu';
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
+
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
@@ -73,7 +74,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         severity: MessageSeverity.ERROR,
       })
     }
-    props.handleClose()
+    props.onClick()
   }
 
   const handleSaveWorkspaceToNDEx = async (): Promise<void> => {
@@ -86,60 +87,35 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
 
   const onCloseWorkspaceNamingDialog = () => {
     setOpenNamingDialog(false)
-    props.handleClose()
+    props.onClick()
   }
   const enabled = authenticated && allNetworkId.length > 0
 
-  const menuItem = (
-    <div
-      onClick={enabled ? handleSaveWorkspaceToNDEx : undefined}
-      style={{
-        padding: '0.375rem 1rem',
-        cursor: enabled ? 'pointer' : 'not-allowed',
-        lineHeight: '1.5rem',
-        opacity: enabled ? 1 : 0.5,
-        pointerEvents: enabled ? 'auto' : 'none',
-      }}
-    >
-      Save Workspace
-    </div>
-  )
+  let tooltipTitle = ''
+  if (enabled) {
+    tooltipTitle = isRemoteWorkspace
+      ? 'Overwrite workspace to NDEx'
+      : 'Save workspace to NDEx'
+  } else if (allNetworkId.length > 0) {
+    tooltipTitle = 'Login to save/overwrite the current workspace to NDEx'
+  }
 
   return (
     <>
-      {enabled ? (
-        <>
-          <Tooltip
-            arrow
-            placement="right"
-            title={
-              isRemoteWorkspace
-                ? 'Overwrite workspace to NDEx'
-                : 'Save workspace to NDEx'
-            }
-          >
-            <span>{menuItem}</span>
-          </Tooltip>
-          <WorkspaceNamingDialog
-            openDialog={openNamingDialog}
-            onClose={onCloseWorkspaceNamingDialog}
-            ndexBaseUrl={ndexBaseUrl}
-            getToken={getToken}
-          />
-        </>
-      ) : (
-        <Tooltip
-          arrow
-          placement="right"
-          title={
-            allNetworkId.length > 0
-              ? 'Login to save/overwrite the current workspace to NDEx'
-              : ''
-          }
-        >
-          <span>{menuItem}</span>
-        </Tooltip>
-      )}
+      <DropdownMenuItem
+        label="Save Workspace"
+        tooltip={tooltipTitle}
+        disabled={!enabled}
+        onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
+      />
+    {enabled && (
+      <WorkspaceNamingDialog
+        openDialog={openNamingDialog}
+        onClose={onCloseWorkspaceNamingDialog}
+        ndexBaseUrl={ndexBaseUrl}
+        getToken={getToken}
+      />
+    )}
     </>
   )
 }

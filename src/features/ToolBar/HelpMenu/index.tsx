@@ -1,9 +1,7 @@
-import '../DataMenu/menuItem.css'
-
-import { Divider } from '@mui/material'
+import CodeIcon from '@mui/icons-material/Code'
 import { useState } from 'react'
 
-import { DropdownMenuProps } from '../DropdownMenuProps'
+import { DropdownMenu } from '../DropdownMenu'
 import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
 import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationMenuItem } from './CitationMenuItem'
@@ -11,76 +9,87 @@ import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
 import { DeveloperMenuItem } from './DeveloperMenuItem'
 import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
 import { ImportDatabaseMenuItem } from './ImportDatabaseMenuItem'
+import { LicenseDialog } from './LicenseDialog'
+import { LicenseMenuItem } from './LicenseMenuItem'
 import { TutorialMenuItem } from './TutorialMenuItem'
-import { DropdownMenu } from '../DropdownMenu'
 
-export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
-  const { label } = props
+
+export const HelpMenu = () => {
   const [open, setOpen] = useState<boolean>(false)
+  const [openLicenseDialog, setOpenLicenseDialog] = useState<boolean>(false)
 
   const handleClose = (): void => {
     setOpen(false)
   }
 
+  // License dialog handlers
+  const handleOpenLicenseDialog = (): void => {
+    handleClose()
+    setOpenLicenseDialog(true)
+  }
+  const handleCloseLicenseDialog = (): void => {
+    setOpenLicenseDialog(false)
+  }
+
   const menuItems = [
     {
-      label: 'About Cytoscape Web',
-      template: <AboutCytoscapeWebMenuItem handleClose={handleClose} />,
+      template: <AboutCytoscapeWebMenuItem onClick={handleClose} />,
     },
     {
-      label: '',
-      template: <Divider />,
+      separator: true,
     },
     {
-      label: 'Tutorial',
-      template: <TutorialMenuItem handleClose={handleClose} />,
+      template: <TutorialMenuItem onClick={handleClose} />,
     },
     {
       label: 'Developer',
+      icon: <CodeIcon sx={{mr: 1}} />,
       items: [
         {
-          label: "Developer's Guide",
-          template: <DeveloperMenuItem handleClose={handleClose} />,
+          template: <DeveloperMenuItem onClick={handleClose} />,
         },
         {
-          label: 'Export Database...',
-          template: <ExportDatabaseMenuItem handleClose={handleClose} />,
+          template: <CodeRepositoryMenuItem onClick={handleClose} />,
         },
         {
-          label: 'Import Database...',
-          template: <ImportDatabaseMenuItem handleClose={handleClose} />,
+          separator: true,
+        },
+        {
+          template: <ExportDatabaseMenuItem onClick={handleClose} />,
+        },
+        {
+          template: <ImportDatabaseMenuItem onClick={handleClose} />,
         },
       ],
     },
     {
-      label: 'Code Repository',
-      template: <CodeRepositoryMenuItem handleClose={handleClose} />,
+      template: <LicenseMenuItem onClick={handleOpenLicenseDialog} />,
     },
     {
-      label: '',
-      template: <Divider />,
+      separator: true,
     },
     {
-      label: 'Citation',
-      template: <CitationMenuItem handleClose={handleClose} />,
+      template: <CitationMenuItem onClick={handleClose} />,
     },
     {
-      label: '',
-      template: <Divider />,
+      separator: true,
     },
     {
-      label: 'Bug Report',
-      template: <BugReportMenuItem handleClose={handleClose} />,
+      template: <BugReportMenuItem onClick={handleClose} />,
     },
   ]
 
   return (
-    <DropdownMenu
-      id={label}
-      label={label}
-      menuItems={menuItems}
-      open={open}
-      onOpenChange={setOpen}
-    />
+    <>
+      <DropdownMenu
+        id="help-menu"
+        label="Help"
+        menuItems={menuItems}
+        open={open}
+        minWidth={300}
+        onOpenChange={setOpen}
+      />
+      <LicenseDialog open={openLicenseDialog} onClose={handleCloseLicenseDialog} />
+    </>
   )
 }

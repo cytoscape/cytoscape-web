@@ -1,40 +1,20 @@
-import { MenuItem } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
+import { ReactElement } from 'react'
 
-import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const RemoveAllNetworksMenuItem = (
-  props: BaseMenuProps,
-): ReactElement => {
-  const [open, setOpen] = useState(false)
+
+export const RemoveAllNetworksMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
-  const { deleteAllNetworks } = useDeleteCyNetwork()
-
-  const handleDeleteAllNetworks = (): void => {
-    props.handleClose()
-    deleteAllNetworks()
-  }
 
   return (
-    <>
-      <MenuItem
-        disabled={networkIds.length === 0}
-        onClick={() => setOpen(true)}
-      >
-        Remove All Networks
-      </MenuItem>
-      <ConfirmationDialog
-        title="Remove All Networks"
-        message="Do you really want to delete all networks from this workspace?"
-        onConfirm={handleDeleteAllNetworks}
-        open={open}
-        setOpen={setOpen}
-        buttonTitle="Yes (cannot be undone)"
-        isAlert={true}
-      />
-    </>
+    <DropdownMenuItem
+      label="Remove All Networks"
+      icon={<DeleteForeverIcon />}
+      disabled={networkIds.length === 0}
+      onClick={props.onClick}
+    />
   )
 }

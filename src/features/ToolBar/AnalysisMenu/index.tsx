@@ -1,37 +1,36 @@
+import { MenuItem } from 'primereact/menuitem'
 import { useState } from 'react'
 
 import {
   LLMQueryOptionsMenuItem,
   RunLLMQueryMenuItem,
 } from '../../LLMQuery/components'
-import { DropdownMenuProps } from '../DropdownMenuProps'
 import { DropdownMenu } from '../DropdownMenu'
 
-export const AnalysisMenu: React.FC<DropdownMenuProps> = (
-  props: DropdownMenuProps,
-) => {
-  const { label } = props
+
+export const AnalysisMenu = () => {
   const [open, setOpen] = useState(false)
 
   const handleClose = (): void => {
     setOpen(false)
   }
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
-      label: 'Run LLM Query',
-      template: <RunLLMQueryMenuItem handleClose={handleClose} />,
+      template: <RunLLMQueryMenuItem onClick={handleClose} />,
     },
     {
-      label: 'LLM Query Options',
-      template: <LLMQueryOptionsMenuItem handleClose={handleClose} />,
+      separator: true,
+    },
+    {
+      template: <LLMQueryOptionsMenuItem onClick={handleClose} />,
     },
   ]
 
   return (
     <DropdownMenu
-      id={label}
-      label={label}
+      id="analysis-menu"
+      label="Analysis"
       menuItems={menuItems}
       open={open}
       onOpenChange={setOpen}

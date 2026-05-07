@@ -1,15 +1,17 @@
-import { MenuItem } from '@mui/material'
+import UploadIcon from '@mui/icons-material/Upload'
 import { ReactElement, useState } from 'react'
 
 import { importDatabaseSnapshotFromFile } from '../../../data/db'
-import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DatabaseSnapshotFileUpload } from '../DatabaseSnapshotFileUpload'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const ImportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const ImportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const [showUpload, setShowUpload] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -42,7 +44,7 @@ export const ImportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
           severity: MessageSeverity.SUCCESS,
         })
         // Close menu and confirmation dialog before reload
-        props.handleClose()
+        props.onClick()
         setShowConfirm(false)
         // Reload the page to reflect imported data
         window.location.reload()
@@ -54,7 +56,7 @@ export const ImportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
           severity: MessageSeverity.WARNING,
         })
         // Close menu and confirmation dialog after showing error
-        props.handleClose()
+        props.onClick()
         setShowConfirm(false)
       }
     } catch (error) {
@@ -69,7 +71,7 @@ export const ImportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
         severity: MessageSeverity.ERROR,
       })
       // Close menu and confirmation dialog after showing error
-      props.handleClose()
+      props.onClick()
       setShowConfirm(false)
     } finally {
       setFile(null)
@@ -81,17 +83,17 @@ export const ImportDatabaseMenuItem = (props: BaseMenuProps): ReactElement => {
     setFile(null)
   }
 
-  const handleMenuItemClick = (event: React.MouseEvent<HTMLElement>): void => {
-    event.preventDefault()
-    event.stopPropagation()
+  const handleMenuItemClick = (): void => {
     setShowUpload(true)
   }
 
   return (
     <>
-      <MenuItem onClick={handleMenuItemClick}>
-        Import Database Snapshot...
-      </MenuItem>
+      <DropdownMenuItem
+        label="Import Database Snapshot..."
+        icon={<UploadIcon />}
+        onClick={handleMenuItemClick}
+      />
       <DatabaseSnapshotFileUpload
         show={showUpload}
         handleClose={() => {

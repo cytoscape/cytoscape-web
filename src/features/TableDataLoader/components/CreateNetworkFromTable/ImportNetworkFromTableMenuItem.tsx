@@ -5,11 +5,11 @@ import '@mantine/dropzone/styles.css'
 import { MenuItem } from '@mui/material'
 import { ReactElement } from 'react'
 
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
 
 export const CreateNetworkFromTableFileMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): ReactElement => {
   const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
 
@@ -18,7 +18,7 @@ export const CreateNetworkFromTableFileMenuItem = (
       <MenuItem
         onClick={() => {
           setShow(true)
-          props.handleClose()
+          props.onClick()
         }}
       >
         Network from File

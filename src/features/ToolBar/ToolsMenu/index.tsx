@@ -1,13 +1,10 @@
 import { useState } from 'react'
 
-import { DropdownMenuProps } from '../DropdownMenuProps'
-import { MergeNetwork } from './MergeNetwork'
 import { DropdownMenu } from '../DropdownMenu'
+import { MergeNetwork } from './MergeNetwork'
 
-export const ToolsMenu: React.FC<DropdownMenuProps> = (
-  props: DropdownMenuProps,
-) => {
-  const { label } = props
+
+export const ToolsMenu = () => {
   const [open, setOpen] = useState(false)
 
   const handleClose = (): void => {
@@ -17,14 +14,14 @@ export const ToolsMenu: React.FC<DropdownMenuProps> = (
   const menuItems = [
     {
       label: 'Merge Networks',
-      template: <MergeNetwork handleClose={handleClose} />,
+      template: <MergeNetwork onClick={handleClose} />,
     },
   ]
 
   return (
     <DropdownMenu
-      id={label}
-      label={label}
+      id="tools-menu"
+      label="Tools"
       menuItems={menuItems}
       open={open}
       onOpenChange={setOpen}

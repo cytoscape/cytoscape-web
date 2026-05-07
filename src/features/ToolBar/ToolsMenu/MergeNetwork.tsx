@@ -1,5 +1,5 @@
-import MenuItem from '@mui/material/MenuItem'
-import React, { ReactElement, useState } from 'react'
+import JoinFullOutlinedIcon from '@mui/icons-material/JoinFullOutlined'
+import { ReactElement, useState } from 'react'
 
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -17,9 +17,11 @@ import {
   Pair,
 } from '../../MergeNetworks/models/DataInterfaceForMerge'
 import { getNetTableFromSummary } from '../../MergeNetworks/utils/mergeNetworkUtil'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
+
+export const MergeNetwork = ({ onClick: handleClose }: BaseMenuItemProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   const networkIds: IdType[] = useWorkspaceStore(
     (state) => state.workspace.networkIds,
@@ -74,7 +76,11 @@ export const MergeNetwork = ({ handleClose }: BaseMenuProps): ReactElement => {
 
   return (
     <>
-      <MenuItem onClick={handleOpenDialog}>Merge Networks</MenuItem>
+      <DropdownMenuItem
+        label="Merge Networks"
+        icon={<JoinFullOutlinedIcon />}
+        onClick={handleOpenDialog}
+      />
       <MergeDialog
         open={openDialog}
         handleClose={handleCloseDialog}

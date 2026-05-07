@@ -1,4 +1,5 @@
 import { ContentCopy, Preview } from '@mui/icons-material'
+import SettingsIcon from '@mui/icons-material/Settings'
 import {
   Box,
   Button,
@@ -19,12 +20,14 @@ import { ReactElement, useState } from 'react'
 
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
+import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { LLMModel, models } from '../model/LLMModel'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { useLLMQueryStore } from '../store'
 
-export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const LLMQueryOptionsMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
   const addMessage = useMessageStore((state) => state.addMessage)
   const loading = useLLMQueryStore((state) => state.loading)
@@ -37,20 +40,9 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
   const [showDialog, setShowDialog] = useState(false)
   const [localLLMModel, setLocalLLMModel] = useState<LLMModel>(LLMModel)
   const [localLLMApiKey, setLocalLLMApiKey] = useState<string>('')
-  const [localLLMTemplate, setLocalLLMTemplate] =
-    useState<LLMTemplate>(LLMTemplate)
+  const [localLLMTemplate, setLocalLLMTemplate] = useState<LLMTemplate>(LLMTemplate)
 
   const disabled = loading
-
-  const menuItem = (
-    <MenuItem
-      data-testid="llm-query-options-menu-item"
-      disabled={disabled}
-      onClick={() => setShowDialog(true)}
-    >
-      LLM Query Options
-    </MenuItem>
-  )
 
   const copyTextToClipboard = async (text: string): Promise<void> => {
     if ('clipboard' in navigator) {
@@ -80,7 +72,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
       maxWidth="sm"
       fullWidth={true}
       open={showDialog}
-      onClose={props.handleClose}
+      onClose={props.onClick}
     >
       <DialogTitle>LLM Query Options</DialogTitle>
       <DialogContent sx={{ p: 1 }}>
@@ -181,7 +173,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
         <Button
           data-testid="llm-query-options-cancel-button"
           color="primary"
-          onClick={props.handleClose}
+          onClick={props.onClick}
         >
           Cancel
         </Button>
@@ -204,7 +196,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
             if (localLLMApiKey !== '') {
               setLLMApiKey(localLLMApiKey)
             }
-            props.handleClose()
+            props.onClick()
           }}
         >
           Confirm
@@ -213,19 +205,20 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuProps): ReactElement => {
     </Dialog>
   )
 
-  if (!disabled) {
-    return (
-      <>
-        {menuItem}
-        {dialog}
-      </>
-    )
-  } else {
-    const tooltipTitle = 'Generating response...'
-    return (
-      <Tooltip title={tooltipTitle}>
-        <Box>{menuItem}</Box>
-      </Tooltip>
-    )
-  }
+  const tooltipTitle = disabled ? 'Generating response...' : ''
+
+  return (
+    <>
+      <DropdownMenuItem
+        label="LLM Query Options..."
+        tooltip={tooltipTitle}
+        icon={<SettingsIcon />}
+        disabled={disabled}
+        onClick={() => setShowDialog(true)}
+      />
+    {!disabled && (
+      <>{dialog}</>
+    )}
+    </>
+  )
 }
