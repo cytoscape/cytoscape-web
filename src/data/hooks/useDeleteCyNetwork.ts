@@ -114,13 +114,17 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
 
     // Handle navigation if requested
     if (navigate) {
+      // Use fresh state after deletion to avoid stale workspace reference
+      const freshWorkspace = useWorkspaceStore.getState().workspace
       const nextNetworkId =
-        workspace.networkIds.filter((networkId) => networkId !== id)?.[0] ?? ''
+        freshWorkspace.networkIds.filter(
+          (networkId) => networkId !== id,
+        )?.[0] ?? ''
 
       if (nextNetworkId !== '') {
         setCurrentNetworkId(nextNetworkId)
         navigateToNetwork({
-          workspaceId: workspace.id,
+          workspaceId: freshWorkspace.id,
           networkId: nextNetworkId,
           searchParams: new URLSearchParams(location.search),
           replace: true,
@@ -128,7 +132,7 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
       } else {
         setCurrentNetworkId('')
         navigateToNetwork({
-          workspaceId: workspace.id,
+          workspaceId: freshWorkspace.id,
           networkId: '',
           searchParams: new URLSearchParams(location.search),
           replace: true,

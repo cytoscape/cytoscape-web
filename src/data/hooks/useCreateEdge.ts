@@ -178,8 +178,8 @@ export const useCreateEdge = () => {
       // Generate unique ID
       const newEdgeId = generateNextEdgeId(networkId)
 
-      // Prepare attributes with defaults
-      const attributes = options?.attributes ?? {}
+      // Prepare attributes with defaults (shallow copy to avoid mutating caller's object)
+      const attributes = { ...(options?.attributes ?? {}) }
       const tableRecord = tables[networkId]
       if (tableRecord?.edgeTable) {
         const hasNameColumn = tableRecord.edgeTable.columns.some(
