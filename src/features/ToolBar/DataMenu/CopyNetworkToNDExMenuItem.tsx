@@ -166,40 +166,29 @@ export const CopyNetworkToNDExMenuItem = (
   }
 
   const enabled = authenticated && currentNetworkId !== ''
-  const menuItem = (
-    <DropdownMenuItem
-      label="Save Copy to NDEx"
-      icon={<CloudUploadIcon />}
-      disabled={!enabled}
-      onClick={handleClick}
-    />
-  )
 
-  if (enabled) {
-    return (
-      <>
-        {menuItem}
-        <HcxValidationSaveDialog
-          open={showHcxValidationDialog}
-          onClose={() => setShowHcxValidationDialog(false)}
-          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
-          validationResult={validationResults?.[currentNetworkId]}
-        />
-      </>
-    )
-  } else {
-    return (
-      <Tooltip
-        arrow
-        placement="right"
-        title={
-          currentNetworkId !== ''
-            ? 'Login to save a copy of the current network to NDEx'
-            : ''
-        }
-      >
-        {menuItem}
-      </Tooltip>
-    )
+  let tooltipTitle = ''
+  if (!authenticated && currentNetworkId !== '') {
+    tooltipTitle = 'Login to save a copy of the current network to NDEx'
   }
+
+  return (
+    <>
+      <DropdownMenuItem
+        label="Save Copy to NDEx"
+        icon={<CloudUploadIcon />}
+        tooltip={tooltipTitle}
+        disabled={!enabled}
+        onClick={handleClick}
+      />
+    {enabled && (
+      <HcxValidationSaveDialog
+        open={showHcxValidationDialog}
+        onClose={() => setShowHcxValidationDialog(false)}
+        onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+        validationResult={validationResults?.[currentNetworkId]}
+      />
+    )}
+    </>
+  )
 }
