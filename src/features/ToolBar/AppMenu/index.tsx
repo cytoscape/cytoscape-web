@@ -149,8 +149,6 @@ export const AppMenu = () => {
   const collectAndSetMenuModel = () => {
     const appMenuItems: MenuItem[] = createAppMenu()
     const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    console.log('Menu model updated:', menuModel)
-    console.log('App menu items updated:', appMenuItems)
     const divider: MenuItem[] =
       menuModel.length > 0 || appMenuItems.length > 0
         ? [{ separator: true }]

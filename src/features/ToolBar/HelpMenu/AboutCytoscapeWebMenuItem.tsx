@@ -1,3 +1,4 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   Button,
   Dialog,
@@ -65,6 +66,7 @@ export const AboutCytoscapeWebMenuItem = (
     <>
       <DropdownMenuItem
         label="About Cytoscape Web"
+        icon={<InfoOutlinedIcon />}
         onClick={handleOpenDialog}
       />
       <Dialog open={open} onClose={handleCloseDialog}>
