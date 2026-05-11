@@ -444,7 +444,7 @@ describe('elementApi', () => {
       }
     })
 
-    it('returns ok with nodeId on success', () => {
+    it('returns ok with nodeId and node data on success', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
@@ -455,6 +455,10 @@ describe('elementApi', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.nodeId).toBe('0')
+        expect(result.data.node).toEqual({
+          attributes: {},
+          position: [100, 200],
+        })
       }
     })
 
@@ -585,7 +589,7 @@ describe('elementApi', () => {
       }
     })
 
-    it('returns ok with edgeId on success', () => {
+    it('returns ok with edgeId and edge data on success', () => {
       mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
@@ -596,6 +600,11 @@ describe('elementApi', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.edgeId).toBe('e0')
+        expect(result.data.edge).toEqual({
+          sourceId: 'n1',
+          targetId: 'n2',
+          attributes: {},
+        })
       }
     })
 
@@ -750,14 +759,14 @@ describe('elementApi', () => {
       }
     })
 
-    it('returns ok with deletion counts on success', () => {
+    it('returns ok with deletion counts and element data on success', () => {
       jest.mocked(deleteNodesCore).mockReturnValue({
         deletedNodeIds: ['n1'],
         deletedEdges: [{ id: 'e1', s: 'n1', t: 'n2' }],
-        deletedNodeViews: [],
+        deletedNodeViews: [{ id: 'n1', x: 10, y: 20, values: new Map() }],
         deletedEdgeViews: [],
-        deletedNodeRows: new Map(),
-        deletedEdgeRows: new Map(),
+        deletedNodeRows: new Map([['n1', { name: 'Node1' }]]),
+        deletedEdgeRows: new Map([['e1', { interaction: 'activates' }]]),
       })
 
       mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }], []))
@@ -767,6 +776,21 @@ describe('elementApi', () => {
       if (result.success) {
         expect(result.data.deletedNodeCount).toBe(1)
         expect(result.data.deletedEdgeCount).toBe(1)
+        expect(result.data.deletedNodes).toEqual([
+          {
+            id: 'n1',
+            attributes: { name: 'Node1' },
+            position: [10, 20],
+          },
+        ])
+        expect(result.data.deletedEdges).toEqual([
+          {
+            id: 'e1',
+            sourceId: 'n1',
+            targetId: 'n2',
+            attributes: { interaction: 'activates' },
+          },
+        ])
       }
     })
   })
@@ -803,11 +827,11 @@ describe('elementApi', () => {
       }
     })
 
-    it('returns ok with deletion count on success', () => {
+    it('returns ok with deletion count and edge data on success', () => {
       jest.mocked(deleteEdgesCore).mockReturnValue({
         deletedEdgeIds: ['e1'],
         deletedEdgeViews: [],
-        deletedEdgeRows: new Map(),
+        deletedEdgeRows: new Map([['e1', { weight: 0.5 }]]),
       })
 
       mockNetworks.set(
@@ -819,6 +843,14 @@ describe('elementApi', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.deletedEdgeCount).toBe(1)
+        expect(result.data.deletedEdges).toEqual([
+          {
+            id: 'e1',
+            sourceId: 'n1',
+            targetId: 'n2',
+            attributes: { weight: 0.5 },
+          },
+        ])
       }
     })
   })
