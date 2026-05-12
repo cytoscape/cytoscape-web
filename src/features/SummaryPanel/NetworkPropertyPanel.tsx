@@ -173,9 +173,6 @@ export const NetworkPropertyPanel = ({
     }
   }
 
-  const backgroundColor: string =
-    currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
-
   const networkModifiedIcon = networkModified ? (
     <Tooltip title="Network has been modified">
       <CircleIcon sx={{ color: theme.palette.error.main, fontSize: 10 }} />
@@ -187,7 +184,7 @@ export const NetworkPropertyPanel = ({
       <Divider />
       <Box
         sx={{
-          backgroundColor,
+          backgroundColor: (theme) => currentNetworkId === id ? theme.palette.action.selected : theme.palette.background.paper,
           width: '100%',
           display: 'flex',
           alignItems: 'center',

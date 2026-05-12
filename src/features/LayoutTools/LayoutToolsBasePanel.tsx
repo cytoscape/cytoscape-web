@@ -1,4 +1,4 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -10,7 +10,7 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
   return (
     <Accordion data-testid="layout-tools-accordion">
       <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
+        expandIcon={<ExpandLessIcon />}
         aria-controls="manual-layout"
         sx={{
           minHeight: '44px', // collapsed summary height

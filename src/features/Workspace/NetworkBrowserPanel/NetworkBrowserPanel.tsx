@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import PaletteIcon from '@mui/icons-material/Palette'
 import ShareIcon from '@mui/icons-material/Share'
-import { Box, Tab, Tabs, Theme, Typography, useTheme } from '@mui/material'
+import { Box, IconButton, Paper, Tab, Tabs, Tooltip } from '@mui/material'
 import { useEffect, useState } from 'react'
 
 import llmLogo from '../../../assets/openai.svg'
@@ -19,6 +19,9 @@ import { Summaries as SummaryList } from '../../SummaryPanel'
 import VizmapperView from '../../Vizmapper'
 import { WorkspaceNamePanel } from './WorkspaceNamePanel'
 
+
+const TABS_HEIGHT = 40
+
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
 }
@@ -32,12 +35,6 @@ interface NetworkBrowserProps {
 export const NetworkBrowserPanel = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {
-  const theme: Theme = useTheme()
-  const buttonStyle = {
-    marginRight: theme.spacing(1),
-    border: '1px solid #999999',
-  }
-
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
@@ -98,6 +95,8 @@ export const NetworkBrowserPanel = ({
           justifyContent: 'flex-start',
           p: 0,
           m: 0,
+          backgroundColor: (theme) => theme.palette.background.paper,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <Tabs
@@ -105,31 +104,32 @@ export const NetworkBrowserPanel = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            height: '2.5em',
-            minHeight: '2.5em',
             flexGrow: 1,
+            height: TABS_HEIGHT,
+            minHeight: TABS_HEIGHT,
+            '& button': {
+              minHeight: TABS_HEIGHT,
+              height: TABS_HEIGHT,
+            },
           }}
           value={currentTabIndex}
           onChange={changeTab}
         >
           <Tab
             data-testid="network-browser-panel-workspace-tab"
-            sx={{ height: '2.5em', minHeight: '2.5em' }}
             icon={<ShareIcon />}
             iconPosition="start"
-            label={<Typography variant="body2">WORKSPACE</Typography>}
+            label="WORKSPACE"
           />
           <Tab
             data-testid="network-browser-panel-style-tab"
-            sx={{ height: '2.5em', minHeight: '2.5em' }}
             icon={<PaletteIcon />}
             iconPosition="start"
-            label={<Typography variant="body2">STYLE</Typography>}
+            label="STYLE"
           />
           {showLLMQueryPanel && (
             <Tab
               data-testid="network-browser-panel-llm-query-tab"
-              sx={{ height: '2.5em', minHeight: '2.5em' }}
               icon={
                 <img
                   height="25"
@@ -139,20 +139,30 @@ export const NetworkBrowserPanel = ({
                 />
               }
               iconPosition="start"
-              label={<Typography variant="body2">LLM QUERY</Typography>}
+              label="LLM QUERY"
             />
           )}
         </Tabs>
         {panels.left === PanelState.OPEN ? (
-          <ChevronLeft
-            data-testid="network-browser-panel-close-button"
-            style={buttonStyle}
-            onClick={() => setPanelState(Panel.LEFT, PanelState.CLOSED)}
-          />
+          <Tooltip title="Close panel">
+            <IconButton
+              data-testid="network-browser-panel-close-button"
+              sx={{
+                width: 32,
+                height: 32,
+                mr: 1,
+              }}
+              onClick={() => setPanelState(Panel.LEFT, PanelState.CLOSED)}
+            >
+              <ChevronLeft />
+            </IconButton>
+          </Tooltip>
         ) : (
           <ChevronRight
             data-testid="network-browser-panel-open-button"
-            style={buttonStyle}
+            sx={{
+              mr: 1
+            }}
             onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
           />
         )}
@@ -160,17 +170,17 @@ export const NetworkBrowserPanel = ({
       <Box hidden={currentTabIndex !== 0}>
         <WorkspaceNamePanel />
       </Box>
-      <Box
+      <Paper
         sx={{
           flexGrow: 1,
-          width: '100%',
           height: '100%',
           overflowY: 'auto',
+          m: (theme) => theme.spacing(0, 1, 1, 1),
         }}
         hidden={currentTabIndex !== 0}
       >
         {currentTabIndex === 0 && <SummaryList />}
-      </Box>
+      </Paper>
       <Box hidden={currentTabIndex !== 1}>
         {currentTabIndex === 1 && (
           <VizmapperView
