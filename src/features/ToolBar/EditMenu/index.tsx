@@ -1,5 +1,3 @@
-import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
 import { useState } from 'react'
 
 import { DropdownMenuProps } from '../DropdownMenuProps'
@@ -9,54 +7,48 @@ import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
+import { DropdownMenu } from '../DropdownMenu'
+import { Divider } from '@mui/material'
 
 export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
+  const [open, setOpen] = useState(false)
 
   const handleClose = (): void => {
-    setAnchorEl(null)
+    setOpen(false)
   }
 
+  const menuItems = [
+    {
+      template: <CreateNodeMenuItem handleClose={handleClose} />,
+    },
+    {
+      template: <CreateEdgeMenuItem handleClose={handleClose} />,
+    },
+    {
+      template: <DeleteSelectedNodesMenuItem handleClose={handleClose} />,
+    },
+    {
+      template: <DeleteSelectedEdgesMenuItem handleClose={handleClose} />,
+    },
+    {
+      template: <Divider />,
+    },
+    {
+      template: <UndoMenuItem handleClose={handleClose} />,
+    },
+    {
+      template: <RedoMenuItem handleClose={handleClose} />,
+    },
+  ]
+
   return (
-    <div>
-      <Button
-        data-testid="toolbar-edit-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={handleOpenDropdownMenu}
-      >
-        {label}
-      </Button>
-      <Menu
-        data-testid="toolbar-edit-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': label,
-        }}
-      >
-        <CreateNodeMenuItem handleClose={handleClose} />
-        <CreateEdgeMenuItem handleClose={handleClose} />
-        <DeleteSelectedNodesMenuItem handleClose={handleClose} />
-        <DeleteSelectedEdgesMenuItem handleClose={handleClose} />
-        <UndoMenuItem handleClose={handleClose} />
-        <RedoMenuItem handleClose={handleClose} />
-      </Menu>
-    </div>
+    <DropdownMenu
+      id={label}
+      label={label}
+      menuItems={menuItems}
+      open={open}
+      onOpenChange={setOpen}
+    />
   )
 }
