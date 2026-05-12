@@ -1,8 +1,9 @@
 import './index.css'
 
-import CssBaseline from '@mui/material/CssBaseline'
+import { theme } from './theme'
 import { Box } from '@mui/material'
-import { createTheme, ThemeProvider } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
+import { ThemeProvider } from '@mui/material/styles'
 import React, { Suspense, useContext, useEffect } from 'react'
 import {
   createBrowserRouter,
@@ -24,17 +25,6 @@ const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(
   () => import('./features/Workspace/WorkspaceEditor'),
 )
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#337ab7',
-    },
-    secondary: {
-      main: '#f50057',
-    },
-  },
-})
 
 const routerOpts: any = {}
 
