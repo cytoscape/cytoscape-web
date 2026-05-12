@@ -1,12 +1,12 @@
 [
   {
-    "name": "simpleMenu",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-menu/remoteEntry.js",
-    "entryPoint": "SimpleMenuApp"
-  },
-  {
-    "name": "simplePanel",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-panel/remoteEntry.js",
-    "entryPoint": "SimplePanelApp"
+    "id": "hello",
+    "name": "Hello Cytoscape World Demo App",
+    "url": "http://localhost:2222/remoteEntry.js",
+    "author": "Cytoscape Core Team",
+    "description": "Reference app demonstrating core App API patterns: visual style editing, selection tracking / clearing, async layout execution, app lifecycle hooks, and both component-scoped and app-scoped event handling.",
+    "tags": ["demo", "getting-started", "reference"],
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   }
 ]
