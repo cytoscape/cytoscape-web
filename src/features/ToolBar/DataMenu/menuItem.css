@@ -1,8 +1,18 @@
-:root {
-  --menu-text-color: rgba(0, 0, 0, 0.87);
-  --menu-bg-color: #ffffff;
-  --menu-bg-color-hover: rgba(31, 120, 180, 0.1);
-  --menu-divider-color: rgba(0, 0, 0, 0.12);
+@media (prefers-color-scheme: light) {
+  :root {
+    --menu-text-color: rgba(0, 0, 0, 0.87);
+    --menu-bg-color: #ffffff;
+    --menu-bg-color-hover: rgba(31, 120, 180, 0.1);
+    --menu-divider-color: rgba(0, 0, 0, 0.12);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --menu-text-color: rgba(255, 255, 255, 0.8);
+    --menu-bg-color: #242424;
+    --menu-bg-color-hover: rgba(167, 193, 222, 0.1);
+    --menu-divider-color: rgba(116, 116, 116, 0.4);
+  }
 }
 
 .p-submenu-list, .p-tieredmenu {

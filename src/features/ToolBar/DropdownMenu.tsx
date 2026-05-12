@@ -28,6 +28,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   onOpenChange,
 }) => {
   const overlayPanelRef = useRef<OverlayPanel>(null)
+  const theme = useTheme()
 
   useEffect(() => {
     if (!open) {
@@ -89,6 +90,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             style={{ 
               minWidth: minWidth ?? 200,
               maxWidth: 600,
+              backgroundColor: theme.palette.background.paper,
               boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
             }}
             model={menuItems}

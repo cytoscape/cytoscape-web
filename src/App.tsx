@@ -1,10 +1,9 @@
 import './index.css'
 
-import { theme } from './theme'
 import { Box } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import React, { Suspense, useContext, useEffect } from 'react'
+import React, { Suspense, useContext, useEffect, useState } from 'react'
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -13,13 +12,14 @@ import {
 } from 'react-router-dom'
 
 import appConfig from './assets/config.json'
+import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { MessagePanel } from './features/Messages'
 import { RedirectPanel } from './features/RedirectPanel'
-import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { KeycloakContext } from './init/keycloak'
+import { currentTheme } from './theme'
 
 const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(
@@ -86,6 +86,8 @@ const router = createBrowserRouter(
 )
 
 export const App = (): React.ReactElement => {
+  const [ theme, setTheme ] = useState(currentTheme);
+
   const client = useContext(KeycloakContext)
   const setClient = useCredentialStore((state) => state.setClient)
 
@@ -98,6 +100,16 @@ export const App = (): React.ReactElement => {
     // Temporarily disable history clearing to preserve URLs on reload
     // initHistoryClearing()
   }, [])
+
+  useEffect(() => {
+    // Listen for changes in the user's theme preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleThemeChange = () => setTheme(currentTheme());
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => {
+      mediaQuery.removeEventListener('change', handleThemeChange);
+    };
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>
