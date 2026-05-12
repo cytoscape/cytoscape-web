@@ -131,10 +131,13 @@ Returns an edge's source/target IDs and table attributes.
 | `NETWORK_NOT_FOUND` | `networkId` does not exist                 |
 | `EDGE_NOT_FOUND`    | `edgeId` does not exist in the network     |
 
-#### `createNode(networkId, position, options?): ApiResult<{ nodeId: IdType }>`
+#### `createNode(networkId, position, options?): ApiResult<{ nodeId: IdType; node: NodeData }>`
 
 Creates a new node at the given `[x, y, z?]` position. Adds an undo entry and,
 unless `autoSelect: false`, exclusively selects the new node.
+
+Returns the generated `nodeId` and a `node` object containing the final
+`attributes` and `position` that were written to the stores.
 
 If the node table has a `name` column and no `name` attribute is provided,
 defaults to `"Node <id>"`.
@@ -147,10 +150,13 @@ call required).
 | ------------------- | -------------------------- |
 | `NETWORK_NOT_FOUND` | `networkId` does not exist |
 
-#### `createEdge(networkId, sourceNodeId, targetNodeId, options?): ApiResult<{ edgeId: IdType }>`
+#### `createEdge(networkId, sourceNodeId, targetNodeId, options?): ApiResult<{ edgeId: IdType; edge: EdgeData }>`
 
 Creates a new edge. Edge IDs use the pattern `e<n>`. Adds an undo entry and,
 unless `autoSelect: false`, exclusively selects the new edge.
+
+Returns the generated `edgeId` and an `edge` object containing `sourceId`,
+`targetId`, and the final `attributes` that were written to the stores.
 
 If the edge table has a `name` column and no `name` attribute is provided,
 defaults to `"<source> (interacts with) <target>"`.
@@ -174,10 +180,16 @@ columns in the edge table if they exist. Adds an undo entry.
 | `EDGE_NOT_FOUND`    | `edgeId` does not exist                      |
 | `NODE_NOT_FOUND`    | `newSourceId` or `newTargetId` not found     |
 
-#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount }>`
+#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges }>`
 
 Deletes the specified nodes and any incident edges. Visual style bypasses for the
 deleted elements are cleaned up. Adds an undo entry.
+
+Returns:
+- `deletedNodeCount` / `deletedEdgeCount` — counts of removed elements
+- `deletedNodes: Array<{ id, attributes, position }>` — full `NodeData` for each deleted node
+- `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each
+  incidentally-deleted edge (edges connected to the deleted nodes)
 
 | Error Code          | Condition                               |
 | ------------------- | --------------------------------------- |
@@ -185,9 +197,13 @@ deleted elements are cleaned up. Adds an undo entry.
 | `INVALID_INPUT`     | `nodeIds` is empty                      |
 | `NODE_NOT_FOUND`    | None of the specified nodes exist       |
 
-#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount }>`
+#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges }>`
 
 Deletes the specified edges. Visual style bypasses are cleaned up. Adds an undo entry.
+
+Returns:
+- `deletedEdgeCount` — number of removed edges
+- `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each deleted edge
 
 | Error Code          | Condition                               |
 | ------------------- | --------------------------------------- |

@@ -69,14 +69,14 @@ export interface ElementApi {
     networkId: IdType,
     position: [number, number, number?],
     options?: CreateNodeOptions,
-  ): ApiResult<{ nodeId: IdType }>
+  ): ApiResult<{ nodeId: IdType; node: NodeData }>
 
   createEdge(
     networkId: IdType,
     sourceNodeId: IdType,
     targetNodeId: IdType,
     options?: CreateEdgeOptions,
-  ): ApiResult<{ edgeId: IdType }>
+  ): ApiResult<{ edgeId: IdType; edge: EdgeData }>
 
   // --- Update ---
   moveEdge(
@@ -90,12 +90,20 @@ export interface ElementApi {
   deleteNodes(
     networkId: IdType,
     nodeIds: IdType[],
-  ): ApiResult<{ deletedNodeCount: number; deletedEdgeCount: number }>
+  ): ApiResult<{
+    deletedNodeCount: number
+    deletedEdgeCount: number
+    deletedNodes: Array<{ id: IdType } & NodeData>
+    deletedEdges: Array<{ id: IdType } & EdgeData>
+  }>
 
   deleteEdges(
     networkId: IdType,
     edgeIds: IdType[],
-  ): ApiResult<{ deletedEdgeCount: number }>
+  ): ApiResult<{
+    deletedEdgeCount: number
+    deletedEdges: Array<{ id: IdType } & EdgeData>
+  }>
 
   generateNextNodeId(networkId: IdType): IdType
   generateNextEdgeId(networkId: IdType): IdType
@@ -307,7 +315,7 @@ export const elementApi: ElementApi = {
     }
   },
 
-  createNode(networkId, position, options): ApiResult<{ nodeId: IdType }> {
+  createNode(networkId, position, options): ApiResult<{ nodeId: IdType; node: NodeData }> {
     try {
       const networkState = useNetworkStore.getState()
       const network = networkState.networks.get(networkId)
@@ -371,7 +379,7 @@ export const elementApi: ElementApi = {
         [networkId, [newNodeId], position, attributes],
       )
 
-      return ok({ nodeId: newNodeId })
+      return ok({ nodeId: newNodeId, node: { attributes, position } })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
@@ -382,7 +390,7 @@ export const elementApi: ElementApi = {
     sourceNodeId,
     targetNodeId,
     options,
-  ): ApiResult<{ edgeId: IdType }> {
+  ): ApiResult<{ edgeId: IdType; edge: EdgeData }> {
     try {
       const networkState = useNetworkStore.getState()
       const network = networkState.networks.get(networkId)
@@ -466,7 +474,14 @@ export const elementApi: ElementApi = {
         [networkId, [newEdgeId], sourceNodeId, targetNodeId, attributes],
       )
 
-      return ok({ edgeId: newEdgeId })
+      return ok({
+        edgeId: newEdgeId,
+        edge: {
+          sourceId: sourceNodeId,
+          targetId: targetNodeId,
+          attributes,
+        },
+      })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
@@ -547,7 +562,12 @@ export const elementApi: ElementApi = {
   deleteNodes(
     networkId,
     nodeIds,
-  ): ApiResult<{ deletedNodeCount: number; deletedEdgeCount: number }> {
+  ): ApiResult<{
+    deletedNodeCount: number
+    deletedEdgeCount: number
+    deletedNodes: Array<{ id: IdType } & NodeData>
+    deletedEdges: Array<{ id: IdType } & EdgeData>
+  }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -653,9 +673,39 @@ export const elementApi: ElementApi = {
         [networkId, result.deletedNodeIds],
       )
 
+      // Reshape internal result into public API types
+      const deletedNodes: Array<{ id: IdType } & NodeData> =
+        result.deletedNodeIds.map((nodeId) => {
+          const row = result.deletedNodeRows.get(nodeId) ?? {}
+          const nodeView = result.deletedNodeViews.find((v) => v.id === nodeId)
+          const position: [number, number, number?] = nodeView
+            ? nodeView.z !== undefined
+              ? [nodeView.x, nodeView.y, nodeView.z]
+              : [nodeView.x, nodeView.y]
+            : [0, 0]
+          return {
+            id: nodeId,
+            attributes: row as Record<AttributeName, ValueType>,
+            position,
+          }
+        })
+
+      const deletedEdgesData: Array<{ id: IdType } & EdgeData> =
+        result.deletedEdges.map((edge) => {
+          const row = result.deletedEdgeRows.get(edge.id) ?? {}
+          return {
+            id: edge.id,
+            sourceId: edge.s,
+            targetId: edge.t,
+            attributes: row as Record<AttributeName, ValueType>,
+          }
+        })
+
       return ok({
         deletedNodeCount: result.deletedNodeIds.length,
         deletedEdgeCount: result.deletedEdges.length,
+        deletedNodes,
+        deletedEdges: deletedEdgesData,
       })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
@@ -665,7 +715,10 @@ export const elementApi: ElementApi = {
   deleteEdges(
     networkId,
     edgeIds,
-  ): ApiResult<{ deletedEdgeCount: number }> {
+  ): ApiResult<{
+    deletedEdgeCount: number
+    deletedEdges: Array<{ id: IdType } & EdgeData>
+  }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -759,7 +812,22 @@ export const elementApi: ElementApi = {
         [networkId, result.deletedEdgeIds],
       )
 
-      return ok({ deletedEdgeCount: result.deletedEdgeIds.length })
+      // Reshape internal result into public API types
+      const deletedEdgesData: Array<{ id: IdType } & EdgeData> =
+        edgesToDelete.map((edge) => {
+          const row = result.deletedEdgeRows.get(edge.id) ?? {}
+          return {
+            id: edge.id,
+            sourceId: edge.s,
+            targetId: edge.t,
+            attributes: row as Record<AttributeName, ValueType>,
+          }
+        })
+
+      return ok({
+        deletedEdgeCount: result.deletedEdgeIds.length,
+        deletedEdges: deletedEdgesData,
+      })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
