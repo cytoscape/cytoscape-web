@@ -26,6 +26,8 @@ src/app-api/
 │   ├── layoutApi.ts            ← dispatches layout:started / layout:completed events directly
 │   ├── viewportApi.ts
 │   ├── exportApi.ts
+│   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
+│   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   └── index.ts                 ← Assembles CyWebApi object; assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
 │   ├── CyWebEvents.ts           ← CyWebEvents interface (8 event types + detail shapes)
@@ -39,6 +41,7 @@ src/app-api/
 ├── useLayoutApi.ts
 ├── useViewportApi.ts
 ├── useExportApi.ts
+├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
@@ -67,10 +70,11 @@ src/app-api/
 8. **`dispatchCyWebEvent` is the only dispatch site** — All 6 store-subscription-driven events go
    through `event-bus/dispatchCyWebEvent.ts`. Never call `window.dispatchEvent(new CustomEvent(...))`
    directly anywhere else.
-9. **`initEventBus()` is called once after hydration** — In `src/init.tsx`, the call order is:
-   (1) stores hydrate from IndexedDB, (2) `initEventBus()`, (3) `window.CyWebApi = CyWebApi`,
-   (4) `window.dispatchEvent(new CustomEvent('cywebapi:ready'))`. Startup suppression is automatic:
-   Zustand `subscribeWithSelector` only fires on changes after subscription, not on initial state.
+9. **`initEventBus()` is called once after hydration** — `window.CyWebApi = CyWebApi` is assigned
+   in `src/init.tsx` (before React renders). `initEventBus()` and `cywebapi:ready` are called in
+   `src/features/AppShell.tsx` immediately after `setWorkspace(workspace)` completes, so
+   subscriptions are never active during the IndexedDB → store hydration transition and no
+   spurious `network:created` / `network:switched` events fire on startup.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
     fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
     promise resolution. Errors do NOT dispatch `layout:completed`.
@@ -135,7 +139,7 @@ function ok(): ApiSuccess<void>
 function fail(code: ApiErrorCode, message: string): ApiFailure
 ```
 
-All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md).
+All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md).
 
 ## Event Bus Pattern
 
@@ -303,16 +307,18 @@ Add new app API entries to `webpack.config.js` `ModuleFederationPlugin.exposes`:
 ```javascript
 exposes: {
   // Public App API (hook-based, for React apps via Module Federation)
-  './ApiTypes':       './src/app-api/types/index.ts',
-  './ElementApi':     './src/app-api/useElementApi.ts',
-  './NetworkApi':     './src/app-api/useNetworkApi.ts',
-  './SelectionApi':   './src/app-api/useSelectionApi.ts',
-  './TableApi':       './src/app-api/useTableApi.ts',
-  './VisualStyleApi': './src/app-api/useVisualStyleApi.ts',
-  './LayoutApi':      './src/app-api/useLayoutApi.ts',
-  './ViewportApi':    './src/app-api/useViewportApi.ts',
-  './ExportApi':      './src/app-api/useExportApi.ts',
-  './EventBus':       './src/app-api/useCyWebEvent.ts',
+  './ApiTypes':        './src/app-api/types/index.ts',
+  './ElementApi':      './src/app-api/useElementApi.ts',
+  './NetworkApi':      './src/app-api/useNetworkApi.ts',
+  './SelectionApi':    './src/app-api/useSelectionApi.ts',
+  './TableApi':        './src/app-api/useTableApi.ts',
+  './VisualStyleApi':  './src/app-api/useVisualStyleApi.ts',
+  './LayoutApi':       './src/app-api/useLayoutApi.ts',
+  './ViewportApi':     './src/app-api/useViewportApi.ts',
+  './ExportApi':       './src/app-api/useExportApi.ts',
+  './WorkspaceApi':    './src/app-api/useWorkspaceApi.ts',
+  './AppIdContext':    './src/app-api/AppIdContext.tsx',
+  './EventBus':        './src/app-api/useCyWebEvent.ts',
   // Note: window.CyWebApi is NOT a Module Federation expose —
   // it is assigned globally in src/init.tsx for non-React consumers.
 },
@@ -322,7 +328,7 @@ exposes: {
 
 | From `core/` files, you CAN import                          | You CANNOT import                               |
 | ----------------------------------------------------------- | ----------------------------------------------- |
-| `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) | Anything from `react` or `react-dom`            |
+| `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) — including `WorkspaceStore`, `NetworkSummaryStore` | Anything from `react` or `react-dom`            |
 | `src/models/` (types and pure functions)                    | Internal React hooks (`src/data/hooks/use*.ts`) |
 | `./types/` (barrel export)                                  | React components (`src/features/`)              |
 | `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)   | Other app API hooks (no cross-dependencies)     |
@@ -349,13 +355,17 @@ exposes: {
 
 | Phase                             | Read before implementing                                                                                                                                                                                                                                                                                                                                 |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 0** (types)               | [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md), [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md), [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../../docs/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
+| **Phase 0** (types)               | [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md), [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md), [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../../docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
 | **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                                                                                  |
 | **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                                                                                        |
 | **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                                                                                  |
 | **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                                                                                     |
 | **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                                                                                          |
+| **Phase 1f** (Workspace)          | `src/models/StoreModel/WorkspaceStoreModel.ts`, `src/models/StoreModel/NetworkSummaryStoreModel.ts`, `src/models/WorkspaceModel/Workspace.ts`, app-api-spec §1.5.10 + §3.9                                                                                                                                                                               |
+| **Phase 1a+** (Element bypass)    | `src/app-api/core/elementApi.ts`, `src/app-api/core/visualStyleApi.ts`, app-api-spec §1.5.1 (CreateNodeOptions/CreateEdgeOptions)                                                                                                                                                                                                                        |
+| **Phase 1h** (Context Menu)       | `src/data/hooks/stores/` (any store for pattern), context menu components in `src/features/`, app-api-spec §1.5.11, `src/models/StoreModel/ContextMenuItemStoreModel.ts` (to be created)                                                                                                                                                                 |
 | **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                   |
+| **Phase 3.6** (Graph Traversal)   | `src/app-api/core/elementApi.ts` (getNodeIds, getEdgeIds, getConnectedEdges, getConnectedNodes, getOutgoers, getIncomers, getSuccessors, getPredecessors, getRoots, getLeaves), `src/app-api/api_docs/Api.md` §Graph Traversal                                                                                                                         |
 
 ## Parent Documents
 
@@ -363,6 +373,6 @@ exposes: {
 - [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md) — Event bus full spec (store mappings, edge cases, test patterns)
 - [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md) — Phase 0 line-by-line blueprint
 - [module-federation-design.md](../../docs/design/module-federation/module-federation-design.md) — Roadmap and priorities
-- [ADR 0001](../../docs/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
-- [ADR 0002](../../docs/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
-- [ADR 0003](../../docs/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision
+- [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
+- [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
+- [ADR 0003](../../docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision
