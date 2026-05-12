@@ -67,7 +67,7 @@ export const SidePanel = (): JSX.Element => {
 
   const handleChange = (event: SyntheticEvent, newValue: number): void => {
     setValue(newValue)
-    // When clicking the "Sub Network Viewer" tab (index 0), activate the network view
+    // When clicking the "Subnetwork Viewer" tab (index 0), activate the network view
     if (newValue === 0) {
       const networkIdToActivate = getNetworkIdToActivate()
       if (networkIdToActivate) {
@@ -89,6 +89,7 @@ export const SidePanel = (): JSX.Element => {
         flexDirection: 'column',
         margin: 0,
         padding: 0,
+        borderLeft: (theme) => `1px solid ${theme.palette.divider}`,
       }}
     >
       <Box
@@ -125,7 +126,7 @@ export const SidePanel = (): JSX.Element => {
               key={index}
               label={tabContent.props.label}
               onClick={() => {
-                // When clicking the "Sub Network Viewer" tab (index 0), activate the network view
+                // When clicking the "Subnetwork Viewer" tab (index 0), activate the network view
                 // This handles the case where the tab is already selected (onChange won't fire)
                 if (index === 0) {
                   const networkIdToActivate = getNetworkIdToActivate()

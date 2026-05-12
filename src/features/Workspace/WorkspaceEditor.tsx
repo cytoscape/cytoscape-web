@@ -1,5 +1,5 @@
 import { ChevronRight } from '@mui/icons-material'
-import { Box, Tooltip } from '@mui/material'
+import { Box, Button, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
@@ -413,11 +413,17 @@ const WorkSpaceEditor = (): JSX.Element => {
                   }}
                 >
                   <Tooltip title="Open network panel" arrow placement="right">
-                    <ChevronRight
+                    <Button
                       data-testid="workspace-editor-open-left-panel-button"
-                      sx={{ cursor: 'pointer' }}
+                      sx={{
+                        height: '100%',
+                        border: 'none',
+                        color: (theme) => theme.palette.text.secondary,
+                      }}
                       onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
-                    />
+                    >
+                      <ChevronRight />
+                    </Button>
                   </Tooltip>
                 </Box>
               ) : (
@@ -430,6 +436,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
+                    borderRight: (theme) => `1px solid ${theme.palette.divider}`,
                   }}
                 >
                   <Box
@@ -443,7 +450,9 @@ const WorkSpaceEditor = (): JSX.Element => {
                       allotmentDimensions={allotmentDimensions}
                     />
                   </Box>
-                  <Box sx={{ borderTop: '1px solid #AAAAAA' }}>
+                  <Box sx={{
+                    borderTop: (theme) => `1px solid ${theme.palette.divider}`
+                  }}>
                     <LayoutToolsBasePanel />
                   </Box>
                 </Box>

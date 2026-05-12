@@ -66,7 +66,7 @@ export const getTabContents = (selectedIndex: number): JSX.Element[] => {
 
   return [
     <TabPanel
-      label="Sub Network Viewer"
+      label="Subnetwork Viewer"
       key={0}
       index={0}
       value={selectedIndex}

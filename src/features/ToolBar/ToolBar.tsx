@@ -17,11 +17,15 @@ import { ToolsMenu } from './ToolsMenu'
 export const ToolBar = (): JSX.Element => {
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
+      <AppBar position="static" sx={{ boxShadow: 'none' }}>
         <Toolbar
           data-testid="toolbar"
           variant="dense"
-          sx={{ justifyContent: 'space-between', backgroundColor: '#4F4F4F' }}
+          sx={{ 
+            justifyContent: 'space-between',
+            backgroundColor: (theme) => theme.palette.common.black,
+            borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : theme.palette.grey[700]}`,
+          }}
         >
           <Box sx={{ display: 'flex' }}>
             <img src={logo} alt="Cytoscape Logo" />

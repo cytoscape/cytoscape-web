@@ -95,16 +95,16 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
   const { children, value, index, ...other } = props
 
   return (
-    <div
+    <Box
       role="tabpanel"
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
-      style={{ flexGrow: 1 }}
+      sx={{ flexGrow: 1 }}
       {...other}
     >
       {value === index && <Box>{children}</Box>}
-    </div>
+    </Box>
   )
 }
 
