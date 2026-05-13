@@ -17,14 +17,21 @@ import { ToolsMenu } from './ToolsMenu'
 export const ToolBar = (): JSX.Element => {
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" sx={{ boxShadow: 'none' }}>
+      <AppBar
+        position="static" 
+        sx={{
+          backgroundColor: (theme) => theme.palette.grey[800],
+          boxShadow: 'none',
+          p: (theme) => theme.spacing(0.5),
+        }}
+      >
         <Toolbar
           data-testid="toolbar"
           variant="dense"
           sx={{ 
             justifyContent: 'space-between',
-            backgroundColor: (theme) => theme.palette.common.black,
-            borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : theme.palette.grey[700]}`,
+            backgroundColor: (theme) => theme.palette.grey[800],
+            borderRadius: (theme) => theme.spacing(1),
           }}
         >
           <Box sx={{ display: 'flex' }}>

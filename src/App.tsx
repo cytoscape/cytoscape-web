@@ -21,6 +21,7 @@ import { RedirectPanel } from './features/RedirectPanel'
 import { KeycloakContext } from './init/keycloak'
 import { currentTheme } from './theme'
 
+
 const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(
   () => import('./features/Workspace/WorkspaceEditor'),

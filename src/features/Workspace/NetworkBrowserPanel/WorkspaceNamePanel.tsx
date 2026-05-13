@@ -39,7 +39,7 @@ export const WorkspaceNamePanel = () => {
             }}
             variant="subtitle2"
           >
-            {workspace.name}
+            {workspace.id !== '' ?  workspace.name : <>&nbsp;</>}
           </Typography>
         </Box>
       </Tooltip>

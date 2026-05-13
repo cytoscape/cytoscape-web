@@ -1,4 +1,5 @@
-import { ChevronRight } from '@mui/icons-material'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { Box, Button, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
 import isEqual from 'lodash/isEqual'
@@ -57,6 +58,8 @@ import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
+
+
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
@@ -399,7 +402,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         >
           <Allotment>
             <Allotment.Pane
-              maxSize={panels.left === PanelState.OPEN ? 450 : 18}
+              maxSize={panels.left === PanelState.OPEN ? 450 : 40}
             >
               {panels.left === PanelState.CLOSED ? (
                 <Box
@@ -407,22 +410,30 @@ const WorkSpaceEditor = (): JSX.Element => {
                   sx={{
                     height: '100%',
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    p: (theme) => theme.spacing(0, 0.5, 0.625, 0.5),
+                    backgroundColor: (theme) => theme.palette.grey[800],
                   }}
                 >
                   <Tooltip title="Open network panel" arrow placement="right">
                     <Button
+                      variant="contained"
                       data-testid="workspace-editor-open-left-panel-button"
                       sx={{
                         height: '100%',
+                        minWidth: 32,
+                        maxWidth: 32,
+                        p: 0,
                         border: 'none',
+                        borderRadius: (theme) => theme.spacing(1),
+                        backgroundColor: (theme) => theme.palette.background.paper,
                         color: (theme) => theme.palette.text.secondary,
+                        '&:hover': {
+                          backgroundColor: (theme) => theme.palette.background.paper,
+                        },
                       }}
                       onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
                     >
-                      <ChevronRight />
+                      <ChevronRightIcon />
                     </Button>
                   </Tooltip>
                 </Box>
@@ -436,7 +447,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
-                    borderRight: (theme) => `1px solid ${theme.palette.divider}`,
                   }}
                 >
                   <Box
@@ -451,7 +461,8 @@ const WorkSpaceEditor = (): JSX.Element => {
                     />
                   </Box>
                   <Box sx={{
-                    borderTop: (theme) => `1px solid ${theme.palette.divider}`
+                    p: (theme) => theme.spacing(0.125, 0.5, 0.5, 0.5),
+                    backgroundColor: (theme) => theme.palette.grey[800],
                   }}>
                     <LayoutToolsBasePanel />
                   </Box>
@@ -469,36 +480,80 @@ const WorkSpaceEditor = (): JSX.Element => {
           <Allotment.Pane
             data-testid="workspace-editor-bottom-pane"
             minSize={28}
-            preferredSize={'20%'} // 20% of the total height is the default size
+            preferredSize={'25%'} // percentage of the total height of the workspace
             maxSize={
               // Max size is determined by the window height
-              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 18
+              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 40
             }
           >
-            <Suspense
-              fallback={
-                <div data-testid="workspace-editor-table-browser-loading">
-                  {`Loading from NDEx`}
-                </div>
-              }
-              key={currentNetworkId}
-            >
-              <TableBrowser
-                setHeight={setTableBrowserHeight}
-                height={tableBrowserHeight}
-                currentNetworkId={
-                  activeNetworkView === undefined || activeNetworkView === ''
-                    ? currentNetworkId
-                    : activeNetworkView
-                }
-              />
-              <JoinTableToNetworkForm
-                onClick={() => showTableJoinForm(false)}
-              />
-              <CreateNetworkFromTableForm
-                onClick={() => showCreateNetworkFromTableForm(false)}
-              />
-            </Suspense>
+            {panels.bottom === PanelState.CLOSED ? (
+              <Box
+                data-testid="workspace-editor-bottom-panel-closed"
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  p: (theme) => theme.spacing(0, 0.5, 1, 0.5),
+                  backgroundColor: (theme) => theme.palette.grey[800],
+                }}
+              >
+                <Tooltip title="Open table panel" arrow placement="top">
+                  <Button
+                    variant="contained"
+                    data-testid="workspace-editor-open-bottom-panel-button"
+                    sx={{
+                      height: 32,
+                      width: '100%',
+                      p: 0,
+                      border: 'none',
+                      borderRadius: (theme) => theme.spacing(1),
+                      backgroundColor: (theme) => theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.secondary,
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.background.paper,
+                      },
+                    }}
+                    onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+                  >
+                    <ExpandLessIcon />
+                  </Button>
+                </Tooltip>
+              </Box>
+            ) : (
+              <Box
+                data-testid="workspace-editor-bottom-panel-open"
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  p: (theme) => theme.spacing(0.5, 0.5, 1, 0.5),
+                  backgroundColor: (theme) => theme.palette.grey[800],
+                }}
+              >
+                <Suspense
+                  fallback={
+                    <div data-testid="workspace-editor-table-browser-loading">
+                      {`Loading from NDEx`}
+                    </div>
+                  }
+                  key={currentNetworkId}
+                >
+                  <TableBrowser
+                    setHeight={setTableBrowserHeight}
+                    height={tableBrowserHeight}
+                    currentNetworkId={
+                      activeNetworkView === undefined || activeNetworkView === ''
+                        ? currentNetworkId
+                        : activeNetworkView
+                    }
+                  />
+                  <JoinTableToNetworkForm
+                    onClick={() => showTableJoinForm(false)}
+                  />
+                  <CreateNetworkFromTableForm
+                    onClick={() => showCreateNetworkFromTableForm(false)}
+                  />
+                </Suspense>
+              </Box>
+            )}
           </Allotment.Pane>
         </Allotment>
 
@@ -511,6 +566,8 @@ const WorkSpaceEditor = (): JSX.Element => {
                 display: 'flex',
                 flexDirection: 'column',
                 minWidth: 0, // For shrink to hide
+                p: (theme) => theme.spacing(0, 0.5, 1, 0.5),
+                backgroundColor: (theme) => theme.palette.grey[800],
               }}
             >
               <OpenRightPanelButton
@@ -518,7 +575,12 @@ const WorkSpaceEditor = (): JSX.Element => {
                 title="Close panel"
                 show={panels.right === PanelState.OPEN}
               />
-              <Box sx={{ flexGrow: 1, width: '100%' }}>
+              <Box sx={{
+                flexGrow: 1,
+                width: '100%',
+                backgroundColor: (theme) => theme.palette.background.paper,
+                borderRadius: (theme) => theme.spacing(1),
+              }}>
                 <SidePanel />
               </Box>
             </Box>

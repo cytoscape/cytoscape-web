@@ -1312,6 +1312,8 @@ const CyjsRenderer = ({
           width: '100%',
           height: '100%',
           backgroundColor: 'rgba(0,0,0,0)',
+          borderRadius: (theme) => theme.spacing(1),
+          overflow: 'hidden',
           zIndex: 0,
           // Cursor is applied directly to Cytoscape container via useEffect
           cursor: edgeCreationMode.active ? 'crosshair' : 'default',
@@ -1329,7 +1331,8 @@ const CyjsRenderer = ({
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             color: 'white',
             padding: '0.5em 1em',
-            borderRadius: '4px',
+            borderRadius: (theme) => theme.spacing(1),
+            overflow: 'hidden',
             zIndex: 1000,
             pointerEvents: 'none',
           }}

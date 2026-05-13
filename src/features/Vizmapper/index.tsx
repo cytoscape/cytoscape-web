@@ -264,6 +264,8 @@ export default function VizmapperView(props: {
       sx={{
         width: '100%',
         height: '100%',
+        backgroundColor: (theme) => theme.palette.background.default,
+        borderRadius: (theme) => theme.spacing(1),
       }}
     >
       <Tabs

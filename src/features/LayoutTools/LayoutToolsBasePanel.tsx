@@ -8,17 +8,25 @@ import { LayoutToolsPanel } from './LayoutToolsPanel'
 
 export const LayoutToolsBasePanel = (): JSX.Element => {
   return (
-    <Accordion data-testid="layout-tools-accordion">
+    <Accordion
+      data-testid="layout-tools-accordion"
+      sx={{
+        borderRadius: (theme) => `${theme.spacing(1)} !important`,
+        backgroundColor: (theme) => theme.palette.background.paper,
+        backgroundImage: 'none',
+      }}
+    >
       <AccordionSummary
         expandIcon={<ExpandLessIcon />}
         aria-controls="manual-layout"
         sx={{
-          minHeight: '44px', // collapsed summary height
+          minHeight: '40px', // collapsed summary height
           '&.Mui-expanded': {
-            minHeight: '44px', // expanded summary height
+            minHeight: '40px', // expanded summary height
+            borderRadius: (theme) => `${theme.spacing(1)} !important`,
           },
           '.MuiAccordionSummary-content': {
-            margin: 0,
+            marginTop: '12px !important',
           },
         }}
       >

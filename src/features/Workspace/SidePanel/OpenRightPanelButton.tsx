@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
-import { Button, IconButton, Tooltip } from '@mui/material'
+import { Box, Button, IconButton, Tooltip } from '@mui/material'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { Panel } from '../../../models/UiModel/Panel'
@@ -29,25 +29,35 @@ export const OpenRightPanelButton = ({
   return (
     <Tooltip title={title}>
       {toOpen ? (
-        <Button
-          data-testid="side-panel-open-button"
-          onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
+        <Box
           sx={{
             position: 'absolute',
-            top: (theme) => theme.spacing(6),
+            top: (theme) => theme.spacing(7),
             right: 0,
-            minWidth: 28,
-            width: 28,
-            height: 40,
-            px: 0,
-            borderRadius: 0,
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            backgroundColor: (theme) => theme.palette.background.paper,
-            color: (theme) => theme.palette.text.secondary,
+            p: (theme) => theme.spacing(0.5, 0.5, 0.5, 0.5),
+            mt: (theme) => theme.spacing(-0.5),
+            borderRadius: (theme) => theme.spacing(1.25, 0, 0, 1.25),
+            backgroundColor: (theme) => theme.palette.grey[800],
           }}
         >
-          <ChevronLeft />
-        </Button>
+          <IconButton
+            data-testid="side-panel-open-button"
+            onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
+            sx={{
+              minWidth: 28,
+              width: 28,
+              height: 40,
+              px: 0,
+              borderRadius: (theme) => theme.spacing(1, 0, 0, 1),
+              backgroundColor: (theme) => theme.palette.background.paper,
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.background.paper,
+              },
+            }}
+          >
+            <ChevronLeft />
+          </IconButton>
+          </Box>
       ) : (
         // Button for closing the panel
         <IconButton
@@ -60,6 +70,9 @@ export const OpenRightPanelButton = ({
             width: 32,
             height: 32,
             zIndex: 1000,
+            '&:hover': {
+              backgroundColor: 'transparent',
+            },
           }}
         >
           <ChevronRight />

@@ -14,8 +14,8 @@ import {
   HeaderClickedEventArgs,
   Item,
 } from '@glideapps/glide-data-grid'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
-import { Button, Tooltip } from '@mui/material'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import { Button, IconButton, Tooltip } from '@mui/material'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import Tab from '@mui/material/Tab'
@@ -83,8 +83,8 @@ export interface TableColumn {
 }
 
 // Used for calculating proper height for the Data Grid
-const TOOLBAR_HEIGHT = 36
 const TABS_HEIGHT = 32
+const TOOLBAR_HEIGHT = 36
 
 // Adjust Data Grid size
 const GRID_GAP = TOOLBAR_HEIGHT * 2 - 1
@@ -1698,7 +1698,9 @@ export default function TableBrowser(props: {
         display: 'flex',
         flexDirection: 'column',
         padding: 0,
-        borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        overflow: 'clip',
+        borderRadius: (theme) => theme.spacing(1),
+        backgroundColor: (theme) => theme.palette.background.paper,
       }}
     >
       <Box
@@ -1708,6 +1710,7 @@ export default function TableBrowser(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          borderRadius: (theme) => theme.spacing(1),
           backgroundColor: (theme) => theme.palette.background.paper,
         }}
       >
@@ -1765,21 +1768,25 @@ export default function TableBrowser(props: {
             label="Network"
           />
         </Tabs>
-        {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
-          <KeyboardArrowUp
-            onClick={() => {
-              setPanelState(Panel.BOTTOM, PanelState.OPEN)
-              props.setHeight(200)
+        <Tooltip title="Close panel">
+          <IconButton
+            data-testid="network-browser-panel-close-button"
+            sx={{
+              width: 32,
+              height: 32,
+              mr: 1,
+              '&:hover': {
+                backgroundColor: 'transparent',
+              },
             }}
-          />
-        ) : (
-          <KeyboardArrowDown
             onClick={() => {
               setPanelState(Panel.BOTTOM, PanelState.CLOSED)
               props.setHeight(0)
             }}
-          />
-        )}
+          >
+            <KeyboardArrowDownIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}

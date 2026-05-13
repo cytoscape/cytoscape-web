@@ -25,7 +25,12 @@ export const LayoutToolsPanel = (): JSX.Element => {
   return (
     <Box
       data-testid="layout-tools-panel"
-      sx={{ width: '100%', height: '100%', paddingBottom: 1 }}
+      sx={{
+        width: '100%',
+        height: '100%',
+        paddingBottom: 1,
+        borderRadius: (theme) => theme.spacing(1),
+      }}
     >
       <Scaling networkId={targetNetworkId} />
     </Box>
