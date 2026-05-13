@@ -41,7 +41,6 @@ export const NetworkTab = ({
         height: '100%',
         width: '100%',
         padding: (theme) => theme.spacing(0, 0.5, 0, 0.5),
-        backgroundColor: (theme) => theme.palette.grey[800],
         border: (theme) =>  isActive ? `3px solid ${theme.palette.secondary.main}` : '0px solid transparent',
         // Adjust the hidden bottom border to be 4px
         borderBottom: (theme) => isActive ? `4px solid ${theme.palette.secondary.main}` : '4px solid transparent',

@@ -20,7 +20,7 @@ export const ToolBar = (): JSX.Element => {
       <AppBar
         position="static" 
         sx={{
-          backgroundColor: (theme) => theme.palette.grey[800],
+          backgroundColor: 'inherit',
           boxShadow: 'none',
           p: (theme) => theme.spacing(0.5),
         }}
@@ -30,7 +30,6 @@ export const ToolBar = (): JSX.Element => {
           variant="dense"
           sx={{ 
             justifyContent: 'space-between',
-            backgroundColor: (theme) => theme.palette.grey[800],
             borderRadius: (theme) => theme.spacing(1),
           }}
         >

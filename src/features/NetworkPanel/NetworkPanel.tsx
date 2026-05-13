@@ -151,7 +151,6 @@ function NetworkMessagePanel({ message }: { message: string }): ReactElement {
         height: '100%',
         display: 'flex',
         padding: (theme) => theme.spacing(0, 0.5, 0.5, 0.5),
-        backgroundColor: (theme) => theme.palette.grey[800],
       }}
     >
       <MessagePanel message={message} />

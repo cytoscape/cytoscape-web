@@ -387,6 +387,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         height: '100%',
         width: '100%',
         overflow: 'hidden',
+        backgroundColor: (theme) => theme.palette.grey[800],
       }}
     >
       <Allotment data-testid="workspace-editor">
@@ -411,7 +412,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                     height: '100%',
                     display: 'flex',
                     p: (theme) => theme.spacing(0, 0.5, 0.625, 0.5),
-                    backgroundColor: (theme) => theme.palette.grey[800],
                   }}
                 >
                   <Tooltip title="Open network panel" arrow placement="right">
@@ -462,7 +462,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                   </Box>
                   <Box sx={{
                     p: (theme) => theme.spacing(0.125, 0.5, 0.5, 0.5),
-                    backgroundColor: (theme) => theme.palette.grey[800],
                   }}>
                     <LayoutToolsBasePanel />
                   </Box>
@@ -493,7 +492,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                   width: '100%',
                   display: 'flex',
                   p: (theme) => theme.spacing(0, 0.5, 1, 0.5),
-                  backgroundColor: (theme) => theme.palette.grey[800],
                 }}
               >
                 <Tooltip title="Open table panel" arrow placement="top">
@@ -525,7 +523,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                   height: '100%',
                   display: 'flex',
                   p: (theme) => theme.spacing(0.5, 0.5, 1, 0.5),
-                  backgroundColor: (theme) => theme.palette.grey[800],
                 }}
               >
                 <Suspense
@@ -567,7 +564,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                 flexDirection: 'column',
                 minWidth: 0, // For shrink to hide
                 p: (theme) => theme.spacing(0, 0.5, 1, 0.5),
-                backgroundColor: (theme) => theme.palette.grey[800],
               }}
             >
               <OpenRightPanelButton

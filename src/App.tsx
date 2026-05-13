@@ -23,9 +23,7 @@ import { currentTheme } from './theme'
 
 
 const AppShell = React.lazy(() => import('./features/AppShell'))
-const WorkspaceEditor = React.lazy(
-  () => import('./features/Workspace/WorkspaceEditor'),
-)
+const WorkspaceEditor = React.lazy(() => import('./features/Workspace/WorkspaceEditor'))
 
 const routerOpts: any = {}
 

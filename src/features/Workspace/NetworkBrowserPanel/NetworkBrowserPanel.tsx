@@ -86,7 +86,6 @@ export const NetworkBrowserPanel = ({
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: (theme) => theme.palette.grey[800],
       }}
     >
       <Box
