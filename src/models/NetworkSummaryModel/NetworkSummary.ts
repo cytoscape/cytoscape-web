@@ -30,4 +30,5 @@ export interface NetworkSummary {
   externalId: string
   isDeleted: boolean
   modificationTime: Date
+  sourcePath?: string
 }

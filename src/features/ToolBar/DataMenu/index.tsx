@@ -1,11 +1,7 @@
 import './menuItem.css'
 
 import { Divider } from '@mui/material'
-import Button from '@mui/material/Button'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
 
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { DropdownMenuProps } from '../DropdownMenuProps'
@@ -23,18 +19,16 @@ import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
+import { DropdownMenu } from '../DropdownMenu'
 
 export const DataMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
 ) => {
   const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const op = useRef(null)
-  const open = Boolean(anchorEl)
+  const [open, setOpen] = useState(false)
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
-    setAnchorEl(null)
+    setOpen(false)
   }
 
   const menuItems = [
@@ -133,24 +127,12 @@ export const DataMenu: React.FC<DropdownMenuProps> = (
   ]
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-data-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={op} unstyled>
-        <TieredMenu style={{ width: 350 }} model={menuItems} />
-      </OverlayPanel>
-    </PrimeReactProvider>
+    <DropdownMenu
+      id={label}
+      label={label}
+      menuItems={menuItems}
+      open={open}
+      onOpenChange={setOpen}
+    />
   )
 }

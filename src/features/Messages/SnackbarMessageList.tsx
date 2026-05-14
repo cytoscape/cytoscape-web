@@ -66,7 +66,7 @@ export const SnackbarMessageList = (): React.ReactElement => {
   return (
     <Snackbar
       data-testid="snackbar-message-list"
-      sx={{ zIndex: 9999999 }}
+      sx={{ zIndex: 9999999, top: '64px !important' }}
       open={open}
       onClose={handleSnackbarClose}
       autoHideDuration={autoHideDuration}

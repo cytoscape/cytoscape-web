@@ -1,29 +1,21 @@
-import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 import {
   LLMQueryOptionsMenuItem,
   RunLLMQueryMenuItem,
 } from '../../LLMQuery/components'
 import { DropdownMenuProps } from '../DropdownMenuProps'
+import { DropdownMenu } from '../DropdownMenu'
 
 export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   props: DropdownMenuProps,
 ) => {
   const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
+  const [open, setOpen] = useState(false)
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
-    setAnchorEl(null)
+    setOpen(false)
   }
-
-  const op = useRef(null)
 
   const menuItems = [
     {
@@ -37,24 +29,12 @@ export const AnalysisMenu: React.FC<DropdownMenuProps> = (
   ]
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-analysis-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={op} unstyled>
-        <TieredMenu model={menuItems} />
-      </OverlayPanel>
-    </PrimeReactProvider>
+    <DropdownMenu
+      id={label}
+      label={label}
+      menuItems={menuItems}
+      open={open}
+      onOpenChange={setOpen}
+    />
   )
 }

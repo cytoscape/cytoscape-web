@@ -9,6 +9,7 @@ import {
 } from '@mantine/core'
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
+import Papa from 'papaparse'
 import { PrimeReactProvider } from 'primereact/api'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -38,6 +39,10 @@ import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { generateUniqueName } from '../../utils/generateUniqueName'
 import { createDataFromLocalSif } from '../../utils/sifUtils'
 import { validateSif } from '../../utils/sifUtils'
+import {
+  convertFileDelimiterToEffective,
+  detectBestDelimiter,
+} from '../TableDataLoader/model/impl/DelimiterUtils'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
@@ -351,38 +356,33 @@ export function FileUpload(props: FileUploadProps) {
           return
         }
 
-        // Acceptable delimiters: comma, semicolon, tab, space
-        const possibleDelimiters = [',', ';', '\t', ' ']
-        let detectedDelimiter = null
-        let columnCount = 1
-        for (const delimiter of possibleDelimiters) {
-          const count = firstLine.split(delimiter).length
-          if (count > 1) {
-            detectedDelimiter = delimiter
-            columnCount = count
-            break
-          }
-        }
+        // Use the robust delimiter detection utility
+        const parseResult = detectBestDelimiter(text)
+        let columnCount = 0
 
-        if (!detectedDelimiter && firstLine.length > 0) {
-          addMessage({
-            duration: 3000,
-            message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
-            severity: MessageSeverity.ERROR,
-          })
-          return
-        }
+        if (parseResult.data.length > 0) {
+          const firstRow = parseResult.data[0] as string[]
+          columnCount = firstRow.length
 
-        // Optionally, check that the next line has the same number of columns
-        if (lines.length > 1 && detectedDelimiter) {
-          const secondLineCount = lines[1].split(detectedDelimiter).length
-          if (secondLineCount !== columnCount) {
+          if (columnCount <= 1 && firstLine.length > 0) {
             addMessage({
               duration: 3000,
-              message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
+              message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
               severity: MessageSeverity.ERROR,
             })
             return
+          }
+
+          if (parseResult.data.length > 1) {
+            const secondRow = parseResult.data[1] as string[]
+            if (secondRow.length !== columnCount) {
+              addMessage({
+                duration: 3000,
+                message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
+                severity: MessageSeverity.ERROR,
+              })
+              return
+            }
           }
         }
         handleTableFile(file, text)

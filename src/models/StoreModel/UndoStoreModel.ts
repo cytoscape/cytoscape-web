@@ -27,6 +27,7 @@ export const UndoCommandType = {
   CREATE_NODES: 'CREATE_NODES',
   CREATE_EDGES: 'CREATE_EDGES',
   MOVE_EDGES: 'MOVE_EDGES',
+  SET_CONTINUOUS_MAPPING: 'SET_CONTINUOUS_MAPPING',
 } as const
 
 export type UndoCommandType =

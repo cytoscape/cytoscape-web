@@ -118,6 +118,46 @@ export const createNetworkDataObj = (
     } else {
       throw new Error('Illegal Input')
     }
+  } else if (inputNetwork.format === Format.edgeList) {
+    const filteredEdges = filterElements
+      ? network.edges.filter((edge) => selectedEdges.has(edge.id))
+      : network.edges
+
+    const columns = table?.edgeTable.columns || []
+
+    const outputColumns = [
+      { id: 'source', type: 'string' },
+      { id: 'target', type: 'string' },
+      ...columns.map((c) => ({
+        id: c.name,
+        type: c.type,
+      })),
+    ]
+
+    const rows: Record<string, Record<string, any>> = {}
+
+    filteredEdges.forEach((edge) => {
+      const row = table?.edgeTable.rows.get(edge.id)
+      
+      const rowData: Record<string, any> = {
+        source: edge.s,
+        target: edge.t,
+      }
+
+      columns.forEach((c) => {
+        const val = row?.[c.name]
+        if (val !== undefined) {
+          rowData[c.name] = val
+        }
+      })
+
+      rows[edge.id] = rowData
+    })
+
+    return {
+      columns: outputColumns,
+      rows,
+    }
   } else {
     // output edgelist format
     throw new Error('Not implemented')

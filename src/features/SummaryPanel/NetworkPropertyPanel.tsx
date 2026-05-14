@@ -235,6 +235,28 @@ export const NetworkPropertyPanel = ({
             </Box>
             {networkModifiedIcon}
           </Box>
+          {summary.sourcePath && (
+            <Tooltip
+              title="Import path from NDEx. This location is a snapshot and may not reflect recent moves or folder changes in NDEx."
+              placement="bottom-start"
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  color: theme.palette.text.disabled,
+                  ml: 0.5,
+                  mb: 0.5,
+                  fontSize: 10,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                Imported from: {summary.sourcePath}
+              </Typography>
+            </Tooltip>
+          )}
           <Box
             sx={{
               display: 'flex',

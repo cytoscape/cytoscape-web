@@ -382,6 +382,9 @@ export const useUndoStack = () => {
       [UndoCommandType.DELETE_DISCRETE_VALUE_MAP]: (params: any[]) => {
         setMapping(params[0], params[1], params[2])
       },
+      [UndoCommandType.SET_CONTINUOUS_MAPPING]: (params: any[]) => {
+        setMapping(params[0], params[1], params[2])
+      },
     }
 
     const lastEdit = undoStack[undoStack.length - 1]
@@ -654,6 +657,9 @@ export const useUndoStack = () => {
       },
       [UndoCommandType.DELETE_DISCRETE_VALUE]: (params: any[]) => {
         deleteDiscreteMappingValue(params[0], params[1], params[2])
+      },
+      [UndoCommandType.SET_CONTINUOUS_MAPPING]: (params: any[]) => {
+        setMapping(params[0], params[1], params[2])
       },
     }
     const lastEdit = redoStack[redoStack.length - 1]

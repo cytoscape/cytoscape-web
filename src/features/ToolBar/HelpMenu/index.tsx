@@ -1,11 +1,7 @@
 import '../DataMenu/menuItem.css'
 
 import { Divider } from '@mui/material'
-import Button from '@mui/material/Button'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useRef } from 'react'
+import { useState } from 'react'
 
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
@@ -16,13 +12,14 @@ import { DeveloperMenuItem } from './DeveloperMenuItem'
 import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
 import { ImportDatabaseMenuItem } from './ImportDatabaseMenuItem'
 import { TutorialMenuItem } from './TutorialMenuItem'
+import { DropdownMenu } from '../DropdownMenu'
 
 export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
   const { label } = props
-  const op = useRef(null)
+  const [open, setOpen] = useState<boolean>(false)
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
+    setOpen(false)
   }
 
   const menuItems = [
@@ -78,22 +75,12 @@ export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
   ]
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-help-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-haspopup="true"
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={op} unstyled>
-        <TieredMenu style={{ width: 350 }} model={menuItems} />
-      </OverlayPanel>
-    </PrimeReactProvider>
+    <DropdownMenu
+      id={label}
+      label={label}
+      menuItems={menuItems}
+      open={open}
+      onOpenChange={setOpen}
+    />
   )
 }

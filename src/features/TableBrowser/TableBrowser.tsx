@@ -1769,7 +1769,7 @@ export default function TableBrowser(props: {
             '& button': {
               minHeight: TABS_HEIGHT,
               height: TABS_HEIGHT,
-              width: 200,
+              width: 200, // Reverting to original width as it fits better with counts
             },
             height: TABS_HEIGHT,
             minHeight: TABS_HEIGHT,
@@ -1777,11 +1777,55 @@ export default function TableBrowser(props: {
         >
           <Tab
             data-testid="table-browser-nodes-tab"
-            label={<Typography variant="caption">Nodes</Typography>}
+            label={
+              <Tooltip
+                title={
+                  selectedNodes.length > 0
+                    ? `The table is showing ${selectedNodes.length} selected nodes. Deselect all nodes in the network view to show the complete list of nodes.`
+                    : 'The table is showing all nodes in the network. Select one or more nodes in the network to filter this table.'
+                }
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: '100%',
+                    width: '100%',
+                    justifyContent: 'center',
+                  }}
+                >
+                  Nodes
+                  {selectedNodes.length > 0 ? ` (${selectedNodes.length})` : ''}
+                </Typography>
+              </Tooltip>
+            }
           />
           <Tab
             data-testid="table-browser-edges-tab"
-            label={<Typography variant="caption">Edges</Typography>}
+            label={
+              <Tooltip
+                title={
+                  selectedEdges.length > 0
+                    ? `The table is showing ${selectedEdges.length} selected edges. Deselect all edges in the network view to show the complete list of edges.`
+                    : 'The table is showing all edges in the network. Select one or more edges in the network to filter this table.'
+                }
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: '100%',
+                    width: '100%',
+                    justifyContent: 'center',
+                  }}
+                >
+                  Edges
+                  {selectedEdges.length > 0 ? ` (${selectedEdges.length})` : ''}
+                </Typography>
+              </Tooltip>
+            }
           />
           <Tab
             data-testid="table-browser-network-tab"

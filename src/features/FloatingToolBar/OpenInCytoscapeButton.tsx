@@ -1,4 +1,3 @@
-// @ts-expect-error-next-line
 import { CyNDEx } from '@js4cytoscape/ndex-client'
 import { OpenInNew } from '@mui/icons-material'
 import { IconButton, Tooltip } from '@mui/material'

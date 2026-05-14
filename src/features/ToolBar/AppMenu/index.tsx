@@ -1,8 +1,6 @@
-import { Button, Divider, useTheme } from '@mui/material'
+import { Divider } from '@mui/material'
 import { MenuItem } from 'primereact/menuitem'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { AppIdProvider } from '../../../app-api/AppIdContext'
 import { CyWebApi } from '../../../app-api/core'
@@ -26,19 +24,17 @@ import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { DropdownMenuProps } from '../DropdownMenuProps'
 import { createMenuItems } from './MenuFactory'
+import { DropdownMenu } from '../DropdownMenu'
 
 export const AppMenu = (props: DropdownMenuProps) => {
-  const theme = useTheme()
-
   const run = useServiceTaskRunner()
 
+  const [open, setOpen] = useState<boolean>(false)
   const [isInitialClick, setIsInitialClick] = useState<boolean>(false)
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
 
   // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -62,23 +58,17 @@ export const AppMenu = (props: DropdownMenuProps) => {
    */
   const [menuModel, setMenuModel] = useState<MenuItem[]>([])
 
-  const menuRef = useRef(null)
-
   const serviceApps: Record<string, ServiceApp> = useAppStore(
     (state) => state.serviceApps,
   )
 
   const handleOpenDialog = (isDialogOpen: boolean): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
     setOpenDialog(isDialogOpen)
   }
 
   const handleRun = async (url: string): Promise<void> => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
 
     // Now run the task
     setOpenTaskDialog(true)
@@ -103,9 +93,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
   }
 
   const handleClose = (): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
   }
 
   useEffect(() => {
@@ -165,8 +153,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
   useEffect(() => {
     // Create base menu items
     setMenuModel(getBaseMenu())
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
   }, [])
 
   // Read runtime menu resources from AppResourceStore
@@ -254,42 +241,25 @@ export const AppMenu = (props: DropdownMenuProps) => {
     return [...runtimeMenuItems, ...manifestMenuItems]
   }
 
-  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    if (menuRef.current === null) {
-      return
-    }
-    if (!isInitialClick) {
+  // TODO test whether this behavior is still correct after refactoring (no more button click events)
+  useEffect(() => {
+    if (open && !isInitialClick) {
       setIsInitialClick(true)
       const appMenuItems: MenuItem[] = createAppMenu()
       const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
       setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
     }
-
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.toggle(e)
-  }
+  }, [open])
 
   return (
     <>
-      <Button
-        data-testid="toolbar-app-menu-button"
-        sx={{
-          color: theme.palette.common.white,
-          textTransform: 'none',
-        }}
+      <DropdownMenu
         id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => {
-          handleClick(e)
-        }}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={menuRef} unstyled>
-        <TieredMenu style={{ width: 350 }} model={menuModel} />
-      </OverlayPanel>
+        label={label}
+        menuItems={menuModel}
+        open={open}
+        onOpenChange={setOpen}
+      />
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}

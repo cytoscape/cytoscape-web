@@ -22,6 +22,7 @@ import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultR
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
+import { DropdownMenu } from '../DropdownMenu'
 
 interface DropdownMenuProps {
   label: string
@@ -29,6 +30,7 @@ interface DropdownMenuProps {
 }
 
 export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
+  const [open, setOpen] = useState(false)
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   // Counter to trigger fit function after layout is applied
@@ -100,21 +102,13 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     targetNetworkId === '' // no network is selected
 
   const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-
-  const menuRef = useRef(null)
 
   const handleClose = (): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
   }
 
   const handleOpenDialog = (open: boolean): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
     setOpenDialog(open)
   }
 
@@ -309,34 +303,14 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   }
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-layout-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
+    <>
+      <DropdownMenu
         id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => {
-          if (menuRef.current === null) {
-            return
-          }
-          const menuRefCurrent = menuRef.current as any
-          menuRefCurrent.toggle(e)
-        }}
-      >
-        {label}
-      </Button>
-      <OverlayPanel
-        ref={menuRef}
-        unstyled
-        style={{ minWidth: '25em', maxWidth: '25em' }}
-      >
-        <TieredMenu model={getMenuItems()} style={{ width: '100%' }} />
-      </OverlayPanel>
+        label={label}
+        menuItems={getMenuItems()}
+        open={open}
+        onOpenChange={setOpen}
+      />
       <LayoutOptionDialog
         afterLayout={afterLayout}
         network={target}
@@ -344,6 +318,6 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
         setOpen={setOpenDialog}
         allDisabled={allDisabled}
       />
-    </PrimeReactProvider>
+    </>
   )
 }

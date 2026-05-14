@@ -149,8 +149,14 @@ export const fetchNdexSummaries = async (
   const ids = Array.isArray(id) ? id : [id]
 
   const summaries: NdexNetworkSummary[] =
-    await ndexClient.getNetworkSummariesByUUIDs(ids)
-  return normalizeNdexSummaries(summaries)
+    await (ndexClient.networks as any).v2.getNetworkSummariesByUUIDs(ids)
+
+  // The NDEx v2 API may return additional related summaries (e.g. subnetworks,
+  // collection members) beyond the requested UUIDs. Filter to only the IDs
+  // that were explicitly requested.
+  const requestedIdSet = new Set(ids)
+  const filtered = summaries.filter((s) => requestedIdSet.has(s.externalId))
+  return normalizeNdexSummaries(filtered)
 }
 
 /**

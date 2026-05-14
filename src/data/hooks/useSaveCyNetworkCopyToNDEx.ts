@@ -1,10 +1,4 @@
 import {
-  fetchNdexSummaries,
-  getNdexClient,
-  getNetworkValidationStatus,
-} from '../external-api/ndex'
-import { putNetworkSummaryToDb } from '../db'
-import {
   Network,
   NetworkSummary,
   NetworkView,
@@ -16,10 +10,16 @@ import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import { useDeleteCyNetwork } from './useDeleteCyNetwork'
+import { putNetworkSummaryToDb } from '../db'
+import {
+  fetchNdexSummaries,
+  getNdexClient,
+  getNetworkValidationStatus,
+} from '../external-api/ndex'
 import { useUrlNavigation } from './navigation/useUrlNavigation'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
+import { useDeleteCyNetwork } from './useDeleteCyNetwork'
 
 /**
  * Hook that returns a function to save a copy of a CyNetwork to NDEx.
@@ -73,7 +73,7 @@ export const useSaveCyNetworkCopyToNDEx = () => {
       deleteOriginal ? summary.name : `Copy of ${summary.name}`,
     )
     const ndexClient = getNdexClient(accessToken)
-    const { uuid } = await ndexClient.createNetworkFromRawCX2(cx)
+    const { uuid } = await ndexClient.networks.createNetworkFromRawCX2(cx)
     const summaryIsValid = await getNetworkValidationStatus(
       uuid as string,
       accessToken,
