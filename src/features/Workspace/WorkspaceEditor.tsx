@@ -542,12 +542,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                         : activeNetworkView
                     }
                   />
-                  <JoinTableToNetworkForm
-                    onClick={() => showTableJoinForm(false)}
-                  />
-                  <CreateNetworkFromTableForm
-                    onClick={() => showCreateNetworkFromTableForm(false)}
-                  />
                 </Suspense>
               </Box>
             )}
@@ -588,6 +582,12 @@ const WorkSpaceEditor = (): JSX.Element => {
         toOpen={true}
         title="Open panel"
         show={panels.right === PanelState.CLOSED}
+      />
+      <JoinTableToNetworkForm
+        onClick={() => showTableJoinForm(false)}
+      />
+      <CreateNetworkFromTableForm
+        onClick={() => showCreateNetworkFromTableForm(false)}
       />
     </Box>
   )
