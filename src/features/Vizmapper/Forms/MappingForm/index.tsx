@@ -364,17 +364,8 @@ function MappingFormContent(props: {
         >{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           data-testid="mapping-form-remove-button"
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#F50157',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="outlined"
+          color="error"
           disabled={props.visualProperty.mapping == null}
           size="small"
           onClick={() => {

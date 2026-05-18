@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogTitle,
   Link,
+  Paper,
   Typography,
 } from '@mui/material'
 import { ReactElement, useMemo, useState } from 'react'
@@ -174,26 +175,34 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
           </Box>
         </DialogTitle>
 
-        <DialogContent dividers>
-          {CITATIONS.map((citation, index) => (
-            <Box key={index} mb={3}>
-              <CitationText citation={citation} />
+        <DialogContent sx={{ pb: 0 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              my: 1,
+              p: 2,
+              backgroundColor: (theme) => theme.palette.background.default,
+            }}
+          >
+            {CITATIONS.map((citation, index) => (
+              <Box key={index} mb={3}>
+                <CitationText citation={citation} />
+              </Box>
+            ))}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                onClick={handleCopyAllCitations}
+              >
+                Copy Both Citations
+              </Button>
             </Box>
-          ))}
-
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, mb: 1 }}>
-            <Button
-              variant="contained"
-              startIcon={<ContentCopyIcon />}
-              onClick={handleCopyAllCitations}
-            >
-              Copy Both Citations
-            </Button>
-          </Box>
+          </Paper>
         </DialogContent>
 
-        <DialogActions sx={{ padding: '16px 24px' }}>
-          <Button onClick={handleCloseDialog} color="primary">
+        <DialogActions sx={{ m: 0, padding: (theme) => theme.spacing(2, 3) }}>
+          <Button variant="contained" onClick={handleCloseDialog}>
             Close
           </Button>
         </DialogActions>

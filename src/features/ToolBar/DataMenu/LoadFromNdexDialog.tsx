@@ -101,9 +101,13 @@ const ownerCellSx = {
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 } as const
-const visibilityCellSx = { maxWidth: 50, textAlign: 'center' } as const
+const visibilityCellSx = {
+  maxWidth: 50,
+  textAlign: 'center',
+  color: 'inherit'
+} as const
 const visibilityTextSx = {
-  color: 'text.secondary',
+  color: 'inherit',
   fontWeight: 'bold',
 } as const
 const countCellSx = {
@@ -932,6 +936,29 @@ export const LoadFromNdexDialog = (
         />
 
         {/* Only mine checkbox + Tabs */}
+        {authenticated && (
+          <Tooltip
+            arrow
+            placement="bottom"
+            title="When checked, only show networks you own. When unchecked, show all networks."
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  data-testid="load-from-ndex-only-mine-checkbox"
+                  checked={onlyMine}
+                  size="small"
+                />
+              }
+              label="Only mine"
+              onClick={(e) => {
+                e.stopPropagation()
+                setOnlyMine(!onlyMine)
+              }}
+              sx={{ ml: 0.5, mr: 1 }}
+            />
+          </Tooltip>
+        )}
         <Box
           sx={{
             borderBottom: 1,
@@ -940,29 +967,6 @@ export const LoadFromNdexDialog = (
             alignItems: 'center',
           }}
         >
-          {authenticated && (
-            <Tooltip
-              arrow
-              placement="bottom"
-              title="When checked, only show networks you own. When unchecked, show all networks."
-            >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    data-testid="load-from-ndex-only-mine-checkbox"
-                    checked={onlyMine}
-                    size="small"
-                  />
-                }
-                label="Only mine"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setOnlyMine(!onlyMine)
-                }}
-                sx={{ ml: 0.5, mr: 1 }}
-              />
-            </Tooltip>
-          )}
           <Tabs
             data-testid="load-from-ndex-tabs"
             value={currentTabIndex >= 0 ? currentTabIndex : 0}
@@ -1023,6 +1027,7 @@ export const LoadFromNdexDialog = (
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
             data-testid="load-from-ndex-cancel-button"
+            variant="outlined"
             color="primary"
             onClick={handleClose}
             sx={{ mr: 1 }}
@@ -1031,16 +1036,7 @@ export const LoadFromNdexDialog = (
           </Button>
           <Button
             data-testid="load-from-ndex-open-button"
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="contained"
             disabled={selectedNetworks.length === 0}
             onClick={() => {
               setErrorMessage(undefined)
@@ -1054,7 +1050,7 @@ export const LoadFromNdexDialog = (
               handleClose()
             }}
           >
-            {`Open ${selectedNetworks.length} Network${selectedNetworks.length > 1 ? 's' : ''}`}
+            {`Open ${selectedNetworks.length > 0 ? selectedNetworks.length : ''} Network${selectedNetworks.length !== 1 ? 's' : ''}`}
           </Button>
         </Box>
       </DialogActions>

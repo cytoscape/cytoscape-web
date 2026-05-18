@@ -326,13 +326,13 @@ export const NetworkPropertyPanel = ({
         </Suspense>
         <ConfirmationDialog
           title="Remove Network From Workspace"
-          message={`Do you really want to delete the network, ${summary.name}?`}
+          message={`Do you really want to delete the network "${summary.name}"?`}
           onCancel={onCancelDelete}
           onConfirm={onConfirmDelete}
           open={openConfirmation}
           setOpen={setOpenConfirmation}
           buttonTitle="Yes (cannot be undone)"
-          isAlert={true}
+          isAlert
         />
       </Box>
     </>

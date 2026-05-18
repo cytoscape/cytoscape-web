@@ -48,7 +48,7 @@ export const HcxValidationWarningsDialog = (
       <DialogActions>
         <Button
           data-testid="hcx-validation-warnings-dialog-close"
-          color="primary"
+          variant="contained"
           onClick={() => onClose()}
         >
           Close

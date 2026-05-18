@@ -714,8 +714,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
           <Button
             data-testid="table-column-append-cancel-button"
             disabled={loading}
-            variant="default"
-            color="primary"
+            variant="outlined"
             onClick={() => handleCancel()}
           >
             Cancel
@@ -726,15 +725,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
           >
             <Button
               data-testid="table-column-append-confirm-button"
-              styles={(theme) => ({
-                root: {
-                  color: '#FFFFFF',
-                  backgroundColor: '#337ab7',
-                  '&:hover': {
-                    backgroundColor: '#285a9b',
-                  },
-                },
-              })}
+              variant="contained"
               loading={loading}
               disabled={submitDisabled}
               onClick={() => handleConfirm()}

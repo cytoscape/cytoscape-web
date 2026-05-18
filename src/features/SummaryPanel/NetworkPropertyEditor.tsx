@@ -235,13 +235,13 @@ const NetworkPropertyEditor = (
             py: 1,
             borderTop: '1px solid #e0e0e0',
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             backgroundColor: '#fafafa',
           }}
         >
           <Button
             data-testid="network-property-editor-cancel-button"
-            color="primary"
+            variant="outlined"
             onClick={(e) => {
               setLocalSummaryState(summary)
               onClose(e)
@@ -252,16 +252,7 @@ const NetworkPropertyEditor = (
           </Button>
           <Button
             data-testid="network-property-editor-confirm-button"
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="contained"
             onClick={(e) => {
               if (isEqual(localSummaryState, summary)) {
                 onClose(e)

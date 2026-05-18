@@ -252,17 +252,16 @@ export function ColorPalettePicker({
             color: '#595858',
           }}
         >
-          <Button color="primary" onClick={hideColorPickerMenu} size="small">
+          <Button
+            color="primary"
+            variant="outlined"
+            onClick={hideColorPickerMenu}
+            size="small"
+          >
             Cancel
           </Button>
           <Button
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-            }}
+            variant="contained"
             onClick={handleConfirm}
             size="small"
           >

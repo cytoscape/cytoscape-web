@@ -75,7 +75,7 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuItemProps): ReactElement 
       onClose={props.onClick}
     >
       <DialogTitle>LLM Query Options</DialogTitle>
-      <DialogContent sx={{ p: 1 }}>
+      <DialogContent sx={{ p: 4 }}>
         <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
           <InputLabel>LLM Model</InputLabel>
           <Select
@@ -157,38 +157,31 @@ export const LLMQueryOptionsMenuItem = (props: BaseMenuItemProps): ReactElement 
             </Tooltip>
           </ButtonGroup>
         </Box>
-        <Box
-          sx={{
-            mt: 2,
-            maxHeight: 300,
-            overflowY: 'auto',
-            p: 2,
-            whiteSpace: 'pre-line',
-          }}
-        >
-          {(showTemplatePreview && localLLMTemplate?.rawText) ?? ''}
-        </Box>
+        {showTemplatePreview && localLLMTemplate?.rawText && (
+          <Box
+            sx={{
+              mt: 2,
+              maxHeight: 300,
+              overflowY: 'auto',
+              p: 2,
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {localLLMTemplate?.rawText}
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button
           data-testid="llm-query-options-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={props.onClick}
         >
           Cancel
         </Button>
         <Button
           data-testid="llm-query-options-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             setShowDialog(false)
             setLLMModel(localLLMModel)

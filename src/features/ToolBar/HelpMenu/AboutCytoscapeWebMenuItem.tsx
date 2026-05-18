@@ -1,9 +1,11 @@
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import {
   Button,
   Dialog,
   DialogActions,
   DialogContent,
+  Paper,
   Typography,
 } from '@mui/material'
 import React from 'react'
@@ -71,43 +73,48 @@ export const AboutCytoscapeWebMenuItem = (
       />
       <Dialog open={open} onClose={handleCloseDialog}>
         <DialogContent>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" sx={{ mb: 4 }}>
             Cytoscape Web
           </Typography>
-          <Typography variant="body1" gutterBottom>
-            Version: {packageInfo.version}
+          <Typography variant="body1">
+            A web-based network visualization and analysis platform.
           </Typography>
-          <Typography variant="body2" gutterBottom>
-            Build ID: {commitHash}
-          </Typography>
-          <Typography variant="body2" gutterBottom>
-            Build Date: {buildDate}
-          </Typography>
-          <Typography variant="body2" gutterBottom>
-            Cache Version: {getDatabaseVersion()}
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            A web-based network visualization and analysis platform
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Close
-          </Button>
-          <Button
-            onClick={handleCopyInfo}
+          <Paper
+            variant="outlined"
             sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
+              mt: 4,
+              p: 2,
+              backgroundColor: (theme) => theme.palette.background.default,
             }}
           >
-            Copy
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              Version: {packageInfo.version}
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              Build ID: {commitHash}
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              Build Date: {buildDate}
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              Cache Version: {getDatabaseVersion()}
+            </Typography>
+            <Button
+              onClick={handleCopyInfo}
+              variant="outlined"
+              startIcon={<ContentCopyIcon />}
+              sx={{ mt: 2 }}
+            >
+              Copy
+            </Button>
+          </Paper>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={handleCloseDialog}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

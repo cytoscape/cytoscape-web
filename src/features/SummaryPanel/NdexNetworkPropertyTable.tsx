@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add'
 import Delete from '@mui/icons-material/Delete'
 import {
   Box,
@@ -245,6 +246,7 @@ const NetworkPropertyTable = (props: {
         data-testid="ndex-network-property-add-button"
         sx={{ mt: 1, width: 'fit-content' }}
         variant="contained"
+        startIcon={<AddIcon />}
         onClick={() => addNetworkProperty()}
       >
         Add new property

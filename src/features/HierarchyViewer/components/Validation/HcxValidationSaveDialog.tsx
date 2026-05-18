@@ -52,23 +52,14 @@ export const HcxValidationSaveDialog = (
       <DialogActions>
         <Button
           data-testid="hcx-validation-save-dialog-cancel"
-          color="primary"
+          variant="outlined"
           onClick={() => onClose()}
         >
           Cancel
         </Button>
         <Button
           data-testid="hcx-validation-save-dialog-submit"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           onClick={() => onSubmit()}
         >
           Save To NDEx

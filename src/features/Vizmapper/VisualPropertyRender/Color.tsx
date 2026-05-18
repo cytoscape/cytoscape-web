@@ -121,10 +121,10 @@ export function ColorPicker(props: {
           />
         )}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
         <Button
           data-testid="color-picker-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalColorValue(currentValue ?? `#ffffff`)
@@ -134,13 +134,7 @@ export function ColorPicker(props: {
         </Button>
         <Button
           data-testid="color-picker-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localColorValue)
             props.closePopover('confirm')
