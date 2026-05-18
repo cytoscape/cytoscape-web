@@ -73,6 +73,18 @@ export const lightTheme = createTheme({
         },
       },
     },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&.Mui-selected': {
+            backgroundColor: 'rgba(31, 120, 180, 0.2)', // same as action.selected
+            '&:hover': {
+              backgroundColor: 'rgba(31, 120, 180, 0.3)', // slightly darker on hover
+            },
+          },
+        },
+      },
+    },
     MuiToggleButton: {
       styleOverrides: {
         root: {

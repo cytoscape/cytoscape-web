@@ -89,11 +89,6 @@ const splitByType = (
 }
 
 // ── Hoisted style objects (stable references for MUI/Emotion) ──────────
-const selectableRowSx = { cursor: 'pointer' } as const
-const disabledRowSx = {
-  backgroundColor: '#d9d9d9',
-  cursor: 'not-allowed',
-} as const
 const nameCellSx = {
   maxWidth: 400,
   overflow: 'hidden',
@@ -290,7 +285,6 @@ const FolderSection = (props: {
           key={folder.uuid}
           sx={{
             cursor: 'pointer',
-            '&:hover': { backgroundColor: '#e3f2fd' },
           }}
           hover
           onClick={() => onFolderClick(folder.uuid)}
@@ -681,11 +675,13 @@ export const LoadFromNdexDialog = (
       if (networkCanBeSelected) {
         return (
           <TableRow
-            sx={selectableRowSx}
             key={externalId}
             hover
             selected={selected}
             onClick={() => toggleSelectedNetwork(externalId)}
+            sx={{
+              cursor: 'pointer',
+            }}
           >
             <TableCell padding="checkbox">
               <Checkbox
@@ -727,17 +723,20 @@ export const LoadFromNdexDialog = (
       return (
         <Tooltip key={externalId} title={tooltipMessage}>
           <TableRow
-            sx={disabledRowSx}
             hover={false}
             selected={false}
+            sx={{
+              color: (theme) => theme.palette.text.disabled,
+              cursor: 'not-allowed',
+            }}
           >
             <TableCell padding="checkbox">
               <Checkbox disabled />
             </TableCell>
-            <TableCell sx={nameCellSx}>
+            <TableCell sx={{ color: 'inherit', ...nameCellSx }}>
               {name}
             </TableCell>
-            <TableCell sx={ownerCellSx}>
+            <TableCell sx={{ color: 'inherit', ...ownerCellSx }}>
               {owner ?? ''}
             </TableCell>
             <TableCell sx={visibilityCellSx}>
@@ -745,13 +744,13 @@ export const LoadFromNdexDialog = (
                 {network.visibility}
               </Typography>
             </TableCell>
-            <TableCell sx={countCellSx}>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
               {nodeCount}
             </TableCell>
-            <TableCell sx={countCellSx}>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
               {edgeCount ?? 0}
             </TableCell>
-            <TableCell sx={countCellSx}>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
               {dateDisplay}
             </TableCell>
           </TableRow>
