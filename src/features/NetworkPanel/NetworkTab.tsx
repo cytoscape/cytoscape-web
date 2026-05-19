@@ -53,6 +53,7 @@ export const NetworkTab = ({
           height: '100%',
           width: '100%',
           backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
+          border: (theme) => `1px solid ${theme.palette.grey[600]}`,
           borderRadius: (theme) => theme.spacing(1),
         }}
         // First click on an inactive renderer should only activate this tab and
