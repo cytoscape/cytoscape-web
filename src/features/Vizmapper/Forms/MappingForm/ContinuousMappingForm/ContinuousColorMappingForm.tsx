@@ -13,6 +13,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { scaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
 import { color } from 'd3-color'
@@ -20,7 +21,6 @@ import debounce from 'lodash/debounce'
 import * as React from 'react'
 import Draggable from 'react-draggable'
 
-import { ColorPalettePicker } from './ColorPalettePicker'
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { useUndoStack } from '../../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../../models/IdType'
@@ -33,14 +33,17 @@ import { ContinuousMappingFunction } from '../../../../../models/VisualStyleMode
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ColorGradient } from './ColorGradient'
+import { ColorPalettePicker } from './ColorPalettePicker'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
 import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
+
 
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
+  const theme = useTheme()
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
@@ -358,7 +361,12 @@ export function ContinuousColorMappingForm(props: {
   }, [maxState])
 
   return (
-    <Paper sx={{ backgroundColor: '#D9D9D9', p: 2, pr: 8, pl: 8 }}>
+    <Paper sx={{
+      backgroundColor: (theme) => theme.palette.background.default,
+      p: 2,
+      pr: 8,
+      pl: 8
+    }}>
       <ColorPalettePicker
         currentPaletteName={buttonText}
         onPaletteSelect={handlePaletteSelect}
@@ -421,6 +429,8 @@ export function ContinuousColorMappingForm(props: {
                   verticalPadding={GRADIENT_AXIS_VERTICAL_PADDING}
                   valuePixelScale={valuePixelScale}
                   colorScale={colorScale}
+                  labelColor={theme.palette.text.secondary}
+                  strokeColor={theme.palette.text.secondary}
                   cm={m}
                 />
               </Paper>
@@ -475,7 +485,6 @@ export function ContinuousColorMappingForm(props: {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        border: '0.5px solid #03082d',
                         zIndex:
                           lastDraggedHandleId === h.id
                             ? 3
@@ -493,11 +502,11 @@ export function ContinuousColorMappingForm(props: {
                             position: 'absolute',
                             top: -10,
                             right: -10,
-                            color: '#03082d',
+                            color: (theme) => theme.palette.text.secondary,
                             fontSize: 22,
                             '&:hover': {
                               cursor: 'pointer',
-                              color: '#3d0303',
+                              color: (theme) => theme.palette.text.primary,
                             },
                           }}
                         />
@@ -507,7 +516,7 @@ export function ContinuousColorMappingForm(props: {
                             position: 'absolute',
                             top: -10,
                             right: -10,
-                            color: 'rgba(0, 0, 0, 0.3)',
+                            color: (theme) => theme.palette.text.secondary,
                             fontSize: 22,
                             pointerEvents: 'none',
                           }}
@@ -563,7 +572,7 @@ export function ContinuousColorMappingForm(props: {
                       <ArrowDropDownIcon
                         sx={{
                           fontSize: '40px',
-                          color: isEndHandle ? '#D9D9D9' : '#03082d',
+                          color: (theme) => isEndHandle ? theme.palette.text.disabled : theme.palette.text.secondary,
                           zIndex: 3,
                         }}
                       />
@@ -653,14 +662,11 @@ export function ContinuousColorMappingForm(props: {
           ml: 3,
           mr: 3,
           justifyContent: 'space-evenly',
-          backgroundColor: '#fcfffc',
-          color: '#595858',
         }}
       >
         <Button
           onClick={showCreateHandleMenu}
           variant="outlined"
-          sx={{ color: '#63a5e8' }}
           size="small"
           startIcon={<AddCircleIcon />}
         >
@@ -769,7 +775,6 @@ export function ContinuousColorMappingForm(props: {
         </Popover>
         <Button
           onClick={showMinMaxMenu}
-          sx={{ color: '#63a5e8' }}
           variant="outlined"
           size="small"
           startIcon={<EditIcon />}

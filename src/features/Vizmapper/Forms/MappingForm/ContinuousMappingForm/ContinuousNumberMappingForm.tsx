@@ -10,10 +10,10 @@ import {
   IconButton,
   Paper,
   Popover,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
 import debounce from 'lodash/debounce'
@@ -39,6 +39,7 @@ export function ContinuousNumberMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
+  const theme = useTheme()
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
@@ -337,7 +338,12 @@ export function ContinuousNumberMappingForm(props: {
   }, [maxState])
 
   return (
-    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
+    <Paper
+      sx={{
+        backgroundColor: (theme) => theme.palette.background.default,
+        pb: 2
+      }}
+    >
       <Box
         sx={{
           display: 'flex',
@@ -374,6 +380,8 @@ export function ContinuousNumberMappingForm(props: {
                   bottom: LINE_CHART_MARGIN_BOTTOM,
                   left: LINE_CHART_MARGIN_LEFT,
                 }}
+                labelColor={theme.palette.text.secondary}
+                strokeColor={theme.palette.text.secondary}
                 data={data as Array<[number, number]>}
                 domain={valueDomain}
                 range={vpValueDomain}
@@ -465,7 +473,6 @@ export function ContinuousNumberMappingForm(props: {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          border: '0.5px solid #03082d',
                         }}
                       >
                         <Box
@@ -475,7 +482,7 @@ export function ContinuousNumberMappingForm(props: {
                             width: 2,
                             top: HANDLE_VERTICAL_OFFSET,
                             height: pixelPositionY,
-                            backgroundColor: '#03082d',
+                            backgroundColor: (theme) => theme.palette.text.disabled,
                             '&:hover': {
                               cursor: isEndHandle ? 'ns-resize' : 'move',
                             },
@@ -488,10 +495,14 @@ export function ContinuousNumberMappingForm(props: {
                               position: 'absolute',
                               top: -20,
                               right: -20,
+                              color: (theme) => theme.palette.text.secondary,
+                              '&:hover': {
+                                color: (theme) => theme.palette.text.primary,
+                              },
                             }}
                             onClick={() => deleteHandle(h.id)}
                           >
-                            <Close sx={{ color: '#03082d' }} />
+                            <Close />
                           </IconButton>
                         ) : !isEndHandle ? (
                           <IconButton
@@ -499,12 +510,15 @@ export function ContinuousNumberMappingForm(props: {
                               position: 'absolute',
                               top: -20,
                               right: -20,
+                              color: (theme) => theme.palette.text.secondary,
+                              '&:hover': {
+                                color: (theme) => theme.palette.text.primary,
+                              },
                             }}
                             onClick={() => deleteHandle(h.id)}
                           >
                             <Close
                               sx={{
-                                color: 'rgba(0, 0, 0, 0.3)',
                                 pointerEvents: 'none',
                               }}
                             />
@@ -585,6 +599,7 @@ export function ContinuousNumberMappingForm(props: {
                         sx={{
                           position: 'relative',
                           top: -114,
+                          color: (theme) => theme.palette.text.primary,
                           '&:hover': {
                             cursor: isEndHandle ? 'ns-resize' : 'move',
                           },
@@ -595,7 +610,6 @@ export function ContinuousNumberMappingForm(props: {
                             fontSize: '60px',
                             opacity: 1,
                             zIndex: 3,
-                            color: '#03082d',
                           }}
                         />
                       </IconButton>
@@ -686,14 +700,11 @@ export function ContinuousNumberMappingForm(props: {
           ml: 3,
           mr: 3,
           justifyContent: 'space-evenly',
-          backgroundColor: '#fcfffc',
-          color: '#595858',
         }}
       >
         <Button
           onClick={showCreateHandleMenu}
           variant="outlined"
-          sx={{ color: '#63a5e8' }}
           size="small"
           startIcon={<AddCircleIcon />}
         >
@@ -803,7 +814,6 @@ export function ContinuousNumberMappingForm(props: {
         </Popover>
         <Button
           onClick={showMinMaxMenu}
-          sx={{ color: '#63a5e8' }}
           variant="outlined"
           size="small"
           startIcon={<EditIcon />}

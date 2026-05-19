@@ -2,6 +2,7 @@ import { MantineProvider, NumberInput } from '@mantine/core'
 import { Box, Button,ButtonBase, Popover } from '@mui/material'
 import React from 'react'
 
+
 // A button that displays a number input value, the user can click this button to open up a dropdown form that allows the user to input a number and cancel/confirm
 export function ExpandableNumberInput(props: {
   value: number
@@ -13,7 +14,7 @@ export function ExpandableNumberInput(props: {
   const { value, onConfirm } = props
   const [localValue, setLocalValue] = React.useState<number>(value as number)
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
-
+  
   React.useEffect(() => {
     setLocalValue(value as number)
   }, [value])
@@ -70,12 +71,11 @@ export function ExpandableNumberInput(props: {
             width: 45,
             height: 25,
             zIndex: 4,
-
             '&:hover': {
               pointer: 'cursor',
             },
             overflow: 'hidden',
-            border: props.disabled ? 'none' : '1px solid #d6d6d6',
+            border: (theme) => props.disabled ? 'none' : `1px solid ${theme.palette.divider}`,
             borderRadius: '4px',
             display: 'flex',
             justifyContent: 'center',
@@ -120,10 +120,18 @@ export function ExpandableNumberInput(props: {
             alignItems: 'center',
           }}
         >
-          <Button color="error" onClick={handleCancel}>
+          <Button
+            variant="text"
+            color="error"
+            onClick={handleCancel}
+          >
             Cancel
           </Button>
-          <Button disabled={!isValid(localValue)} onClick={handleConfirm}>
+          <Button
+            variant="text"
+            disabled={!isValid(localValue)}
+            onClick={handleConfirm}
+          >
             Confirm
           </Button>
         </Box>

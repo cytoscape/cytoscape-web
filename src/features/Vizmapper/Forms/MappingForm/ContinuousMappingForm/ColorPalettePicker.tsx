@@ -92,15 +92,12 @@ export function ColorPalettePicker({
         ml: 3,
         mr: 3,
         justifyContent: 'center',
-        backgroundColor: '#fcfffc',
-        color: '#595858',
       }}
     >
       Current Palette:&ensp;
       <Button
         onClick={showColorPickerMenu}
         variant="outlined"
-        sx={{ color: '#63a5e8' }}
         size="small"
         startIcon={<Palette />}
       >
@@ -213,8 +210,6 @@ export function ColorPalettePicker({
             ml: 3,
             mr: 3,
             justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
           }}
         >
           <FormGroup>
@@ -248,8 +243,6 @@ export function ColorPalettePicker({
             ml: 3,
             mr: 3,
             justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
           }}
         >
           <Button
