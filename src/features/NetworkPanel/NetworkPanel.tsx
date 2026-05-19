@@ -1,3 +1,4 @@
+import { Box } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -14,7 +15,6 @@ import { VisualStyle } from '../../models/VisualStyleModel'
 import { MessagePanel } from '../Messages'
 import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
-import { Box } from '@mui/material'
 
 interface NetworkPanelProps {
   networkId: IdType

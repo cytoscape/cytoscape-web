@@ -11,9 +11,10 @@
 /**
 /* For allotment version 1.18.1
 */
-:root {
+
+/* :root {
   --separator-border: rgba(128, 128, 128, 0.35);
-}
+} */
 
 .allotment-module_splitView__L-yRc {
   height: 100%;

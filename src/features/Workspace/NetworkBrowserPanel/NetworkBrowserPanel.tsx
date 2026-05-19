@@ -99,7 +99,6 @@ export const NetworkBrowserPanel = ({
           p: 0,
           m: 0,
           backgroundColor: (theme) => theme.palette.background.paper,
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           borderRadius: (theme) => theme.spacing(1),
         }}
       >
@@ -203,6 +202,7 @@ export const NetworkBrowserPanel = ({
             height: '100%',
             width: '100%',
             overflowY: 'auto',
+            borderRadius: (theme) => theme.spacing(1),
           }}
           hidden={currentTabIndex !== 0}
         >

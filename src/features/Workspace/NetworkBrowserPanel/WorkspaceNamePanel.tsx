@@ -16,6 +16,7 @@ export const WorkspaceNamePanel = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
       }}
     >
       <Tooltip

@@ -5,13 +5,11 @@ import {
   Box,
   Chip,
   CircularProgress,
-  Divider,
   IconButton,
   Theme,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
 import { lazy, ReactElement, Suspense, useState } from 'react'
 
@@ -22,9 +20,9 @@ import { NetworkSummary } from '../../models/NetworkSummaryModel'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
-import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { Network } from '../../models'
 import { ConfirmationDialog } from '../ConfirmationDialog'
 import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
@@ -181,7 +179,6 @@ export const NetworkPropertyPanel = ({
 
   return (
     <>
-      <Divider />
       <Box
         sx={{
           backgroundColor: (theme) => currentNetworkId === id ? theme.palette.action.selected : theme.palette.background.paper,
@@ -190,6 +187,7 @@ export const NetworkPropertyPanel = ({
           alignItems: 'center',
           '&:hover': { cursor: 'pointer' },
           p: 1,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
         onClick={() => {
           setCurrentNetworkId(id)

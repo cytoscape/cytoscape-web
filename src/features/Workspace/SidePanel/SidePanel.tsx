@@ -89,7 +89,6 @@ export const SidePanel = (): JSX.Element => {
         flexDirection: 'column',
         margin: 0,
         padding: 0,
-        borderLeft: (theme) => `1px solid ${theme.palette.divider}`,
       }}
     >
       <Box
