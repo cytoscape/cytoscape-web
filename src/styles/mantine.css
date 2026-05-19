@@ -5,7 +5,44 @@
  *            to better match the MUI theme used in the application.
  */
 
-/** Input */
+/* Dialog */
+
+.mantine-Modal-content {
+  background-color: var(--mui-palette-background-paper);
+  color: var(--mui-palette-text-primary);
+}
+.mantine-Modal-content .mantine-Paper-root {
+  background-color: inherit;
+  color: inherit;
+  box-shadow: none;
+}
+.mantine-Modal-header, .mantine-Dropzone-root, .mantine-Dropzone-inner {
+  background-color: transparent;
+  color: inherit;
+}
+.mantine-Modal-header .mantine-Title-root {
+  color: var(--mui-palette-text-primary) !important;
+}
+.mantine-Modal-close svg {
+  color: var(--mui-palette-text-secondary);
+}
+.mantine-Modal-close:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-Modal-close svg:hover {
+  color: var(--mui-palette-text-primary);
+}
+.mantine-Dropzone-root {
+  border-color: var(--mui-palette-divider);
+}
+.mantine-Dropzone-root:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-Modal-content .mantine-Text-root {
+  color: var(--mui-palette-text-primary);
+}
+
+/* Input */
 
 .mantine-Input-input {
   background-color: var(--mui-palette-background-paper);
