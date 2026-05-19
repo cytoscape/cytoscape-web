@@ -1,5 +1,4 @@
 import AddIcon from '@mui/icons-material/Add'
-import ClearIcon from '@mui/icons-material/Clear'
 import {
   Box,
   Button,

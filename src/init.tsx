@@ -1,4 +1,4 @@
-import './index.css'
+import './styles/index.css'
 
 import { enableMapSet } from 'immer'
 import React from 'react'

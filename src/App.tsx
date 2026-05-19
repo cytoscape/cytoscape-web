@@ -1,4 +1,4 @@
-import './index.css'
+import './styles/index.css'
 
 import { Box } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
