@@ -1,8 +1,8 @@
-import AddCircleIcon from '@mui/icons-material/AddCircle'
+import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
-import Close from '@mui/icons-material/DisabledByDefault'
+import ClearIcon from '@mui/icons-material/Clear'
 import EditIcon from '@mui/icons-material/Edit'
 import {
   Box,
@@ -339,9 +339,11 @@ export function ContinuousNumberMappingForm(props: {
 
   return (
     <Paper
+      variant="outlined"
       sx={{
         backgroundColor: (theme) => theme.palette.background.default,
-        pb: 2
+        pt: 1,
+        pb: 2,
       }}
     >
       <Box
@@ -350,11 +352,11 @@ export function ContinuousNumberMappingForm(props: {
           alignItems: 'center',
           justifyContent: 'center',
           pt: 10,
-          pb: 2,
+          pb: 1,
         }}
       >
         <Paper
-          elevation={4}
+          variant="outlined"
           sx={{
             display: 'flex',
             position: 'relative',
@@ -493,31 +495,40 @@ export function ContinuousNumberMappingForm(props: {
                           <IconButton
                             sx={{
                               position: 'absolute',
-                              top: -20,
-                              right: -20,
-                              color: (theme) => theme.palette.text.secondary,
+                              top: -10,
+                              right: -10,
+                              width: 20,
+                              height: 20,
+                              backgroundColor: (theme) => theme.palette.text.secondary,
+                              color: (theme) => theme.palette.background.default,
                               '&:hover': {
-                                color: (theme) => theme.palette.text.primary,
+                                cursor: 'pointer',
+                                backgroundColor: (theme) => theme.palette.text.primary,
+                                color: (theme) => theme.palette.background.paper,
                               },
                             }}
                             onClick={() => deleteHandle(h.id)}
                           >
-                            <Close />
+                            <ClearIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         ) : !isEndHandle ? (
                           <IconButton
                             sx={{
                               position: 'absolute',
-                              top: -20,
-                              right: -20,
-                              color: (theme) => theme.palette.text.secondary,
+                              top: -10,
+                              right: -10,
+                              width: 20,
+                              height: 20,
+                              backgroundColor: (theme) => theme.palette.text.secondary,
+                              color: (theme) => theme.palette.background.default,
                               '&:hover': {
-                                color: (theme) => theme.palette.text.primary,
+                                backgroundColor: (theme) => theme.palette.text.primary,
+                                color: (theme) => theme.palette.background.paper,
                               },
                             }}
                             onClick={() => deleteHandle(h.id)}
                           >
-                            <Close
+                            <ClearIcon
                               sx={{
                                 pointerEvents: 'none',
                               }}
@@ -624,6 +635,7 @@ export function ContinuousNumberMappingForm(props: {
             title={`${m.attribute} values less than the minmum (${minState.value}) will be mapped to this height value (${m.ltMinVpValue}).`}
           >
             <Paper
+              variant="outlined"
               sx={{
                 width: 50,
                 height: 50,
@@ -636,7 +648,7 @@ export function ContinuousNumberMappingForm(props: {
               }}
             >
               <ArrowLeftIcon
-                sx={{ fontSize: 40, position: 'absolute', left: -25 }}
+                sx={{ fontSize: 40, position: 'absolute', left: -27, color: (theme) => theme.palette.text.disabled }}
               />
               <VisualPropertyValueForm
                 currentValue={m.ltMinVpValue}
@@ -660,6 +672,7 @@ export function ContinuousNumberMappingForm(props: {
             title={`${m.attribute} values greater than the maximum (${maxState.value}) will be mapped to this height value (${m.gtMaxVpValue}).`}
           >
             <Paper
+              variant="outlined"
               sx={{
                 width: 50,
                 height: 50,
@@ -672,7 +685,7 @@ export function ContinuousNumberMappingForm(props: {
               }}
             >
               <ArrowRightIcon
-                sx={{ fontSize: 40, position: 'absolute', left: 35 }}
+                sx={{ fontSize: 40, position: 'absolute', left: 35, color: (theme) => theme.palette.text.disabled }}
               />
               <VisualPropertyValueForm
                 currentValue={m.gtMaxVpValue}
@@ -693,10 +706,10 @@ export function ContinuousNumberMappingForm(props: {
         </Paper>
       </Box>
       <Paper
+        variant="outlined"
         sx={{
           display: 'flex',
           p: 1,
-          m: 1,
           ml: 3,
           mr: 3,
           justifyContent: 'space-evenly',
@@ -706,7 +719,7 @@ export function ContinuousNumberMappingForm(props: {
           onClick={showCreateHandleMenu}
           variant="outlined"
           size="small"
-          startIcon={<AddCircleIcon />}
+          startIcon={<AddIcon />}
         >
           New Handle
         </Button>

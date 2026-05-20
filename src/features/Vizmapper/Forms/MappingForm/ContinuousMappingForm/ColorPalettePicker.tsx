@@ -85,16 +85,17 @@ export function ColorPalettePicker({
 
   return (
     <Paper
+      variant="outlined"
       sx={{
         display: 'flex',
-        p: 1,
-        m: 1,
-        ml: 3,
-        mr: 3,
-        justifyContent: 'center',
+        py: 1,
+        px: 2,
+        gap: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
       }}
     >
-      Current Palette:&ensp;
+      <span>Current Palette:</span>
       <Button
         onClick={showColorPickerMenu}
         variant="outlined"

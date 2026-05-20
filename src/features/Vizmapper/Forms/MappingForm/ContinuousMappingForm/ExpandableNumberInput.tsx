@@ -115,22 +115,28 @@ export function ExpandableNumberInput(props: {
         />
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
           }}
         >
           <Button
             variant="text"
-            color="error"
             onClick={handleCancel}
+            sx={{
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: (theme) => theme.spacing(0, 0, 0, 1),
+            }}
           >
             Cancel
           </Button>
           <Button
-            variant="text"
+            variant="contained"
             disabled={!isValid(localValue)}
             onClick={handleConfirm}
+            sx={{
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: (theme) => theme.spacing(0, 0, 1, 0),
+            }}
           >
             Confirm
           </Button>

@@ -1,10 +1,9 @@
+import DeleteIcon from '@mui/icons-material/Delete'
 import {
   Box,
   Button,
-  Checkbox,
   Divider,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Popover,
@@ -48,6 +47,7 @@ import {
 } from '../VisualPropertyViewBox'
 import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { DiscreteMappingForm } from './DiscreteMappingForm'
+
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingIcon />,
@@ -364,10 +364,11 @@ function MappingFormContent(props: {
         >{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           data-testid="mapping-form-remove-button"
-          variant="outlined"
+          variant="contained"
           color="error"
           disabled={props.visualProperty.mapping == null}
           size="small"
+          startIcon={<DeleteIcon />}
           onClick={() => {
             postEdit(
               UndoCommandType.REMOVE_MAPPING,

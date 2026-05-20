@@ -1,8 +1,8 @@
-import AddCircleIcon from '@mui/icons-material/AddCircle'
+import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
-import Delete from '@mui/icons-material/DisabledByDefault'
+import ClearIcon from '@mui/icons-material/Clear'
 import EditIcon from '@mui/icons-material/Edit'
 import {
   Box,
@@ -361,12 +361,14 @@ export function ContinuousColorMappingForm(props: {
   }, [maxState])
 
   return (
-    <Paper sx={{
-      backgroundColor: (theme) => theme.palette.background.default,
-      p: 2,
-      pr: 8,
-      pl: 8
-    }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        backgroundColor: (theme) => theme.palette.background.default,
+        px: 8,
+        py: 1,
+      }}
+    >
       <ColorPalettePicker
         currentPaletteName={buttonText}
         onPaletteSelect={handlePaletteSelect}
@@ -375,12 +377,13 @@ export function ContinuousColorMappingForm(props: {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          pt: 11.5,
-          mb: 3,
+          mt: 12,
+          mb: 1,
           justifyContent: 'center',
         }}
       >
         <Paper
+          variant="outlined"
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -388,7 +391,6 @@ export function ContinuousColorMappingForm(props: {
             position: 'relative',
             userSelect: 'none',
           }}
-          elevation={4}
         >
           <Box sx={{ p: 1.5 }}>
             <Tooltip
@@ -477,7 +479,8 @@ export function ContinuousColorMappingForm(props: {
                     }}
                   >
                     <Paper
-                      elevation={4}
+                      variant={isEndHandle ? 'outlined' : 'elevation'}
+                      elevation={isEndHandle ? 0 : 4}
                       sx={{
                         p: 0.5,
                         position: 'relative',
@@ -494,7 +497,8 @@ export function ContinuousColorMappingForm(props: {
                       }}
                     >
                       {handles.length >= 3 && !isEndHandle ? (
-                        <Delete
+                        <IconButton
+                          size="small"
                           onClick={() => {
                             deleteHandle(h.id)
                           }}
@@ -502,22 +506,29 @@ export function ContinuousColorMappingForm(props: {
                             position: 'absolute',
                             top: -10,
                             right: -10,
-                            color: (theme) => theme.palette.text.secondary,
-                            fontSize: 22,
+                            width: 20,
+                            height: 20,
+                            backgroundColor: (theme) => theme.palette.text.secondary,
+                            color: (theme) => theme.palette.background.default,
                             '&:hover': {
                               cursor: 'pointer',
-                              color: (theme) => theme.palette.text.primary,
+                              backgroundColor: (theme) => theme.palette.text.primary,
+                              color: (theme) => theme.palette.background.paper,
                             },
                           }}
-                        />
+                        >
+                          <ClearIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
                       ) : !isEndHandle ? (
-                        <Delete
+                        <ClearIcon
                           sx={{
                             position: 'absolute',
                             top: -10,
                             right: -10,
-                            color: (theme) => theme.palette.text.secondary,
-                            fontSize: 22,
+                            width: 20,
+                            height: 20,
+                            fontSize: 16,
+                            color: (theme) => theme.palette.text.disabled,
                             pointerEvents: 'none',
                           }}
                         />
@@ -585,6 +596,7 @@ export function ContinuousColorMappingForm(props: {
               title={`${m.attribute} values less than the min (${minState.value}) will be mapped to this color.`}
             >
               <Paper
+                variant="outlined"
                 sx={{
                   width: 50,
                   height: 50,
@@ -597,7 +609,7 @@ export function ContinuousColorMappingForm(props: {
                 }}
               >
                 <ArrowLeftIcon
-                  sx={{ fontSize: 40, position: 'absolute', left: -25 }}
+                  sx={{ fontSize: 40, position: 'absolute', left: -27, color: (theme) => theme.palette.text.disabled }}
                 />
                 <VisualPropertyValueForm
                   currentValue={m.ltMinVpValue}
@@ -619,20 +631,20 @@ export function ContinuousColorMappingForm(props: {
               title={`${m.attribute} values greater than the max (${maxState.value}) will be mapped to this color.`}
             >
               <Paper
+                variant="outlined"
                 sx={{
                   width: 50,
                   height: 50,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-
                   position: 'relative',
                   top: -120,
                   left: 580,
                 }}
               >
                 <ArrowRightIcon
-                  sx={{ fontSize: 40, position: 'absolute', left: 35 }}
+                  sx={{ fontSize: 40, position: 'absolute', left: 35, color: (theme) => theme.palette.text.disabled }}
                 />
                 <VisualPropertyValueForm
                   currentValue={m.gtMaxVpValue}
@@ -655,12 +667,10 @@ export function ContinuousColorMappingForm(props: {
       </Box>
 
       <Paper
+        variant="outlined"
         sx={{
           display: 'flex',
           p: 1,
-          m: 1,
-          ml: 3,
-          mr: 3,
           justifyContent: 'space-evenly',
         }}
       >
@@ -668,7 +678,7 @@ export function ContinuousColorMappingForm(props: {
           onClick={showCreateHandleMenu}
           variant="outlined"
           size="small"
-          startIcon={<AddCircleIcon />}
+          startIcon={<AddIcon />}
         >
           New Handle
         </Button>
