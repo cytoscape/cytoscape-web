@@ -20,7 +20,7 @@ import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleSt
 import { useUndoStack } from '../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../models/IdType'
 import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { AttributeName, ValueTypeName } from '../../../../models/TableModel'
+import { AttributeName } from '../../../../models/TableModel'
 import {
   EdgeVisualPropertyName,
   NodeVisualPropertyName,
@@ -38,9 +38,9 @@ import {
   LockSizeCheckbox,
 } from '../../VisualPropertyRender/Checkbox'
 import {
-  ContinuousMappingFunctionIcon,
-  DiscreteMappingFunctionIcon,
-  PassthroughMappingFunctionIcon,
+  ContinuousMappingIcon,
+  DiscreteMappingIcon,
+  PassthroughMappingIcon,
 } from '../../VisualStyleIcons'
 import {
   EmptyVisualPropertyViewBox,
@@ -50,9 +50,9 @@ import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
-  [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
-  [MappingFunctionType.Discrete]: <DiscreteMappingFunctionIcon />,
-  [MappingFunctionType.Continuous]: <ContinuousMappingFunctionIcon />,
+  [MappingFunctionType.Passthrough]: <PassthroughMappingIcon />,
+  [MappingFunctionType.Discrete]: <DiscreteMappingIcon />,
+  [MappingFunctionType.Continuous]: <ContinuousMappingIcon />,
 }
 
 function MappingFormContent(props: {
