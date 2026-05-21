@@ -1,39 +1,43 @@
-# Cytoscape Web App Store — Design Exploration
+# Cytoscape App Store - Web App Extension Design
 
-> **Status: Brainstorming / Future Work**
+> **Status: Design Proposal / Future Work**
 >
-> This document captures design ideas for a **Cytoscape Web App Store** — an
-> external service that is **not part of this repository** and will be
-> implemented as a separate project. Nothing described here is planned for
-> implementation within cytoscape-web itself.
+> This document describes how the existing Cytoscape App Store can be extended
+> to accept **Cytoscape Web apps** in addition to existing Cytoscape Desktop
+> apps. The App Store itself is an external service and is not implemented in
+> this repository.
 >
-> The purpose of this document is to record the results of early design
-> discussions so that they are available as a starting point when work on the
-> App Store begins. Treat every section as a proposal, not a commitment.
-> Requirements, architecture, and technology choices are all subject to change.
+> Cytoscape Web host behavior is intentionally unchanged. The App Store
+> publishes a runtime manifest in the existing `AppCatalogEntry[]` shape, and
+> Cytoscape Web consumes it through the existing `obtainCatalogEntries()`
+> pipeline.
 
-- Rev. 1 (3/20/2026): Keiichiro ONO and Claude — Initial brainstorming
+- Rev. 2 (5/21/2026): Keiichiro ONO and Codex - Recast as a Desktop App Store
+  platform extension with Store-owned GitHub Actions builds
+- Rev. 1 (3/20/2026): Keiichiro ONO and Claude - Initial brainstorming
 
 ---
 
 ## TL;DR
 
-- **No build-time app list.** Phase 4 removes the static app list dependency.
-  The host loads manifests dynamically from the official store, any URL, or a
-  local file — no code changes needed to switch sources.
-- **Bundles are small and easy to distribute.** A typical Module Federation
-  `remoteEntry.js` + chunks is a few hundred KB. Apps can be served from the
-  official CDN, GitHub Pages, or any static host.
-- **Official App Store uses a managed CDN model.** Reviewed bundles are served
-  from `apps.cytoscape.org/web/` to guarantee integrity.
-- **Human review required for every release.** CI runs automated checks
-  (build, security, compatibility) first; a core team member must then
-  approve before publication. No auto-approve regardless of version type.
-- **Leverage the GitHub ecosystem.** GitHub Actions for CI, Releases for
-  update ingestion, repository metadata extraction, and direct Issues links
-  minimize custom infrastructure.
-- **Defense in depth via runtime sandboxing.** CSP, API Proxy capability
-  control, and DOM scope isolation limit damage from code that passes review.
+- **Extend the existing Desktop App Store.** Desktop JAR distribution remains
+  intact. Web apps become a second platform/artifact type in the same App Store
+  ecosystem.
+- **Store-owned builds from GitHub.** Developers submit a public GitHub
+  repository URL plus an immutable ref or tag. The App Store's own GitHub
+  Actions workflow clones, builds, validates, and packages the app.
+- **Managed CDN publishing.** Reviewed web bundles are served from
+  `https://apps.cytoscape.org/web/{appId}/{version}/` so the code that was
+  reviewed is the code users load.
+- **Host contract stays stable.** Cytoscape Web reads `GET /web/manifest`,
+  receives `AppCatalogEntry[]`, and loads selected apps dynamically via Module
+  Federation. No App Store-specific host code is required.
+- **Human review is mandatory.** Automated checks reduce reviewer burden, but
+  every initial submission and update needs explicit core-team approval before
+  CDN publication.
+- **Internal Store metadata is not host metadata.** Build reports, checksums,
+  commit SHAs, review state, and scanner output stay in the App Store backend;
+  the Cytoscape Web manifest exposes only runtime fields.
 
 ---
 
@@ -41,83 +45,278 @@
 
 Phase 4 of the Module Federation design (see
 [runtime-app-registration-specification.md](runtime-app-registration-specification.md))
-introduces runtime app registration: the host fetches a manifest at startup,
-presents a catalog to the user, and dynamically loads selected apps via Module
-Federation. The manifest is a static JSON array of `AppCatalogEntry` objects.
+introduces runtime app registration. The host fetches a manifest at startup,
+shows a catalog in the app manager UI, and dynamically loads only selected apps
+by injecting each app's `remoteEntry.js`.
 
-The next logical step is to provide a centralized **App Store** where
-third-party developers can publish apps and users can discover them. The
-existing Cytoscape Desktop App Store (<https://apps.cytoscape.org/>) serves as
-a reference point, but the web version differs fundamentally in its
-distribution model: instead of downloadable JAR files, apps are Module
-Federation remotes served as JavaScript bundles.
+The host-side manifest contract already exists:
+
+- `AppCatalogEntry.id` is the Module Federation scope and must match
+  `CyApp.id`
+- `AppCatalogEntry.url` points to the app's `remoteEntry.js`
+- `obtainCatalogEntries()` resolves the default URL, custom URL, or uploaded
+  inline manifest
+- `parseManifest()` validates and normalizes the manifest before storing it in
+  `AppStore.catalog`
+
+The current default manifest URL is `/apps.json`; once the App Store web
+catalog is deployed, `DEFAULT_MANIFEST_URL` can point at the official App Store
+manifest endpoint.
+
+The existing Cytoscape Desktop App Store at <https://apps.cytoscape.org/>
+already provides a public catalog for Desktop apps. This design extends that
+store so that it can also publish Cytoscape Web apps. The distribution model is
+different: Desktop apps are downloadable JAR files, while Web apps are
+JavaScript Module Federation remotes served from a controlled CDN.
 
 ## 2. Goals
 
-1. Allow third-party developers to submit and publish Cytoscape Web apps
-2. Provide a human review process before apps become publicly available
-3. Serve a manifest endpoint that Cytoscape Web can consume directly
-4. Host reviewed app bundles on a CDN so that bundle integrity is guaranteed
-5. Leverage the GitHub ecosystem to minimize custom infrastructure
+1. Let third-party developers submit Cytoscape Web apps using a public GitHub
+   repository URL and immutable version ref
+2. Build Web app bundles in App Store-owned GitHub Actions, not developer-owned
+   release workflows
+3. Preserve the existing Desktop App Store and add Web as a second platform
+4. Publish a `GET /web/manifest` endpoint that Cytoscape Web can consume
+   directly
+5. Host reviewed Web bundles on an App Store-controlled CDN
+6. Require human review before every Web app release is published
+7. Keep App Store implementation choices separate from Cytoscape Web host code
 
-## 3. Hosting Model: CDN-Hosted (Managed)
+## 3. Non-Goals
 
-Two hosting models were evaluated:
+- No backend implementation in this repository
+- No change to Cytoscape Web's App API, app manager, or Module Federation
+  loader contract
+- No replacement of Desktop App Store JAR submission or download behavior
+- No private or organization-scoped Web apps in the first design
+- No automatic publication from developer-owned release assets
+- No guarantee that the first App Store implementation will include runtime
+  sandboxing beyond current host behavior
+
+## 4. Platform Model
+
+The App Store should model Desktop and Web as platform-specific release types
+under a shared catalog identity.
+
+| Concern | Desktop App | Web App |
+| --- | --- | --- |
+| Runtime | Cytoscape Desktop JVM | Cytoscape Web browser host |
+| Artifact | JAR file | `remoteEntry.js` plus chunks/assets |
+| Install/load | Download/install locally | User enables app; host loads remote URL |
+| Hosting | App Store hosts downloadable JARs | App Store CDN hosts immutable bundle dirs |
+| Compatibility | Cytoscape Desktop versions | Cytoscape Web/App API versions |
+| Store metric | Download count | Activation/load count |
+| Support link | Existing Desktop support channels | GitHub Issues on source repository |
+
+Desktop entries remain unaffected. Web-specific metadata and artifacts are
+added alongside existing Desktop data rather than changing the Desktop
+distribution model.
+
+## 5. Hosting Model: Managed CDN
+
+Two Web hosting models were evaluated:
 
 | Model | Description | Pros | Cons |
-|-------|-------------|------|------|
-| **A. URL Registry** | Store only records metadata + URLs; developers host their own bundles | Lightweight infra | Cannot guarantee bundle integrity after review |
-| **B. CDN Hosted** | Store accepts bundle uploads and serves them from its own CDN | Reviewed code is immutable; URL stability guaranteed | Requires upload pipeline and storage infra |
+| --- | --- | --- | --- |
+| URL registry | Store records metadata and developer-hosted URLs | Minimal infrastructure | Reviewed code can be replaced after approval |
+| Managed CDN | Store builds/copies reviewed bundles to its own CDN | Reviewed code is immutable and stable | Requires build, storage, and publish pipeline |
 
-**Decision: Model B (CDN Hosted)** — If bundles are hosted externally,
-developers can silently replace reviewed code with malicious updates, making
-the review process meaningless. The App Store must control the serving
-infrastructure to ensure that what was reviewed is what users load.
+**Decision: Managed CDN.** If Web bundles are served from arbitrary external
+URLs, a developer or compromised host can replace reviewed code without another
+review. The App Store must control the final serving URL for published Web app
+versions.
 
-### CDN URL Structure
+Published URLs are versioned and immutable:
 
-```
+```text
 https://apps.cytoscape.org/web/{appId}/{version}/remoteEntry.js
 https://apps.cytoscape.org/web/{appId}/{version}/chunks/*.js
+https://apps.cytoscape.org/web/{appId}/{version}/assets/*
 ```
 
-Each published version is immutable once deployed. Updates require a new
-version submission.
+Reusing an already published `{appId, version}` is rejected. Updates require a
+new version submission.
 
-## 4. Architecture Overview
+## 6. End-to-End Architecture
 
 ```mermaid
-graph TD
-    subgraph AppStore["App Store"]
-        UI["Frontend UIs"]
-        API["REST API"]
-        CDN["CDN"]
-        UI --> API --> CDN
-    end
+flowchart TD
+    DevRepo["Developer public GitHub repo"]
+    Submission["Store submission<br/>repositoryUrl + ref/tag + version"]
+    Build["Store-owned GitHub Actions build"]
+    Checks["Automated checks<br/>build, federation, security, compatibility"]
+    Review["Human review"]
+    CDN["App Store CDN<br/>/web/{appId}/{version}/"]
+    Manifest["GET /web/manifest<br/>AppCatalogEntry[]"]
+    Host["Cytoscape Web host"]
 
-    Host["Cytoscape Web"]
-
-    API -- "GET /manifest" --> Host
-    Host -- "load bundle" --> CDN
+    DevRepo --> Submission
+    Submission --> Build
+    Build --> Checks
+    Checks --> Review
+    Review -->|approved| CDN
+    CDN --> Manifest
+    Manifest --> Host
+    Host -->|user enables app| CDN
 ```
 
-**App Store layers:**
+**App Store components:**
 
-| Layer | Components |
-|-------|-----------|
-| Frontend UIs | Developer Portal, Review Dashboard, Public Catalog |
-| REST API | `POST /apps`, `POST /apps/:id/versions`, `PATCH /apps/:id/review`, `GET /manifest`, `GET /apps/:id`, `GET /apps` |
-| CDN | `/{appId}/{version}/remoteEntry.js`, `/{appId}/{version}/chunks/*.js` |
+| Layer | Responsibilities |
+| --- | --- |
+| Public catalog | Combined Desktop/Web search, app detail pages, ratings, metrics |
+| Developer portal | Web app submission form, build status, review feedback |
+| Review dashboard | Automated report review, approval/rejection, publish action |
+| Store API | Submission records, release records, manifest generation |
+| GitHub Actions | Store-owned clone/build/validation jobs |
+| CDN/storage | Immutable Web bundle hosting |
 
-**Cytoscape Web flow:** `obtainCatalogEntries` → fetch manifest → populate catalog → user activates → load `remoteEntry.js` from CDN
+The build and publish steps are deliberately separate. The build job has no
+production deploy credentials. CDN publishing runs only after human approval.
 
-## 5. Manifest Integration
+## 7. Web Submission Contract
 
-The App Store's `GET /manifest` endpoint returns an array of
-`AppCatalogEntry` objects as defined in the runtime app registration
-specification (§6.4). This means the host requires **zero App Store–specific
-code** — it simply fetches the manifest URL and processes it through the
-existing `obtainCatalogEntries` pipeline.
+Developers submit a Web app version through the App Store UI or API with:
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `repositoryUrl` | Yes | Public GitHub repository URL |
+| `ref` or `tag` | Yes | Immutable commit SHA preferred; tags are resolved to commit SHA |
+| `version` | Yes | Requested published app version |
+| `app-store.json` | Recommended | Cytoscape Web metadata and build hints |
+
+The submitted repository must satisfy these runtime requirements:
+
+- It builds a Module Federation remote containing `remoteEntry.js`
+- It exposes `./AppConfig`
+- The default export from `./AppConfig` conforms to `CyAppWithLifecycle` or the
+  base `CyApp` shape
+- `CyApp.id === manifest.id === Module Federation scope`
+- The app uses `@cytoscape-web/api-types` for public types
+- New app code uses public `cyweb/*Api` modules or `AppContext.apis`
+- Deprecated raw store exposes are not used by default; any raw store import in
+  a new Store submission is a review warning and requires explicit reviewer
+  acceptance
+
+### 7.1 `app-store.json`
+
+`app-store.json` is an optional repository file for Store-specific metadata.
+It supplements `package.json`, `README.md`, `LICENSE`, and GitHub Topics.
+
+```json
+{
+  "id": "myApp",
+  "name": "My Cytoscape Web App",
+  "description": "Network analysis tools for Cytoscape Web.",
+  "icon": "./assets/icon.png",
+  "tags": ["network-analysis", "clustering"],
+  "compatibleHostVersions": ">=1.0.0",
+  "federationName": "myApp",
+  "exposedModule": "./AppConfig",
+  "build": {
+    "installCommand": "npm ci",
+    "buildCommand": "npm run build",
+    "outputDir": "dist"
+  }
+}
+```
+
+Current host constraints:
+
+- `federationName` must equal `id`
+- `exposedModule` must be `./AppConfig`
+- `id` must match the JavaScript identifier pattern accepted by
+  `parseManifest()`: `/^[a-zA-Z_$][a-zA-Z0-9_$]*$/`
+- `name` is display-only and may contain spaces or Unicode
+
+If `app-store.json` is absent, the Store can infer metadata from
+`package.json`, repository metadata, and reviewer input, but it still must
+derive a valid `id`, build command, and output directory.
+
+### 7.2 Metadata Extraction
+
+The App Store can reduce manual entry by extracting:
+
+| Source | Extracted fields |
+| --- | --- |
+| `app-store.json` | `id`, display metadata, compatibility, build hints |
+| `package.json` | `name`, `version`, `description`, `license`, `author` |
+| `README.md` | Store page description |
+| `LICENSE` | License text/type |
+| GitHub Topics | Tags/categories |
+| GitHub API | Contributors, last commit date, open issues, archived state |
+
+Reviewer-approved values become Store records. Generated Cytoscape Web
+manifests are projections from those records, not raw repository files.
+
+## 8. Store-Owned Build Pipeline
+
+The App Store owns the build workflow for Web apps. It must not depend on
+developer-owned GitHub Actions workflows or developer-uploaded release assets
+for publication.
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Store as App Store
+    participant Actions as Store GitHub Actions
+    participant Review as Reviewer
+    participant CDN as CDN
+
+    Dev->>Store: Submit repositoryUrl, ref/tag, version
+    Store->>Actions: Dispatch build with immutable ref
+    Actions->>Actions: Clone repository and resolve commit SHA
+    Actions->>Actions: Install, build, validate, scan
+    Actions->>Store: Upload build report and artifact bundle
+    Review->>Store: Approve or reject
+    Store->>CDN: Publish approved artifact
+    Store->>Store: Include version in /web/manifest
+```
+
+### 8.1 Build Steps
+
+The Store-owned workflow should:
+
+1. Validate that `repositoryUrl` is a public GitHub URL
+2. Resolve the submitted `ref` or `tag` to a commit SHA and record it
+3. Check out exactly that commit
+4. Install dependencies with the configured command, preferably lockfile-based
+5. Run the configured build command
+6. Locate `remoteEntry.js` in the output directory
+7. Copy `remoteEntry.js`, chunks, and static assets into a staging artifact
+8. Run automated compatibility and security checks
+9. Produce a build report for reviewers
+
+### 8.2 Build Artifact Contract
+
+A successful build produces:
+
+- `remoteEntry.js`
+- all chunks and assets required by that remote
+- a manifest of artifact files and checksums
+- a build report containing:
+  - repository URL
+  - resolved commit SHA
+  - submitted ref/tag
+  - requested version
+  - lockfile hash
+  - output file list and checksums
+  - bundle size summary
+  - dependency/security scan output
+  - Module Federation compatibility result
+  - dangerous API and network-domain scan results
+
+The staged artifact is not public until a reviewer approves publication.
+
+## 9. Manifest Integration
+
+The App Store's Web manifest endpoint returns an array of `AppCatalogEntry`
+objects as defined in the runtime app registration specification.
+
+```http
+GET https://apps.cytoscape.org/web/manifest
+Content-Type: application/json
+```
 
 ```json
 [
@@ -132,285 +331,246 @@ existing `obtainCatalogEntries` pipeline.
     "icon": "https://apps.cytoscape.org/icons/hello.png",
     "license": "MIT",
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples",
-    "compatibleHostVersions": ">=1.0.0"
+    "compatibleHostVersions": ">=1.0.0",
+    "dependencies": []
   }
 ]
 ```
 
-The `DEFAULT_MANIFEST_URL` constant in Cytoscape Web will point to this
-endpoint once the App Store is deployed.
+Required runtime fields:
 
-## 6. GitHub Ecosystem Integration
+- `id`
+- `url`
+- `author`
 
-A central design principle is to leverage existing GitHub infrastructure
-rather than building custom equivalents.
+Optional runtime fields:
 
-### 6.1 Automated Review via GitHub Actions
+- `name`
+- `description`
+- `version`
+- `tags`
+- `icon`
+- `license`
+- `repository`
+- `compatibleHostVersions`
+- `dependencies`
 
-CI checks run on every app submission:
+The Store backend may store richer records, but only the runtime manifest fields
+above are returned to Cytoscape Web. Internal metadata such as commit SHA,
+review state, build logs, checksums, scanner results, and reviewer notes stays
+inside the App Store.
 
-```yaml
-# .github/workflows/app-review.yml
-on:
-  pull_request:
-    paths: ['apps/*/manifest.json']
+## 10. Internal Store Schema Boundary
 
-jobs:
-  validate:
-    steps:
-      # 1. Schema validation
-      #    - manifest.json conforms to expected schema
+The App Store should use a Desktop/Web superset internally. A conceptual record
+shape is:
 
-      # 2. Clone app repository
-      #    - Clone the GitHub repository referenced in manifest.json
+```typescript
+interface StoreAppRecord {
+  id: string
+  name: string
+  platforms: Array<'desktop' | 'web'>
+  desktop?: {
+    jarReleases: DesktopRelease[]
+  }
+  web?: {
+    publishedVersions: WebRelease[]
+    repositoryUrl: string
+  }
+}
 
-      # 3. Build verification
-      #    - npm install && npm run build succeeds
-
-      # 4. Bundle analysis
-      #    - Bundle size check
-      #    - Static analysis for dangerous API usage
-
-      # 5. Federation compatibility
-      #    - remoteEntry.js is generated correctly
-      #    - Shared singletons (React, MUI) version compatibility
-
-      # 6. Security scan
-      #    - npm audit for known vulnerabilities
-      #    - Detection of eval(), innerHTML, document.cookie usage
-
-      # 7. Sandbox test
-      #    - Load the app in a headless host instance
-      #    - Verify it mounts and unmounts without errors
-```
-
-Human reviewers only need to examine PRs that pass all automated checks,
-significantly reducing review burden.
-
-### 6.2 Release-Driven Updates
-
-App updates are triggered by GitHub Releases on the app's source repository:
-
-```mermaid
-sequenceDiagram
-    participant Dev as Developer Repository
-    participant GH as GitHub
-    participant Store as App Store
-    participant CDN as CDN
-
-    Dev->>GH: git tag v1.2.0 → create Release
-    Note over GH: Release Assets:<br/>remoteEntry.js, *.chunk.js
-    GH->>Store: Webhook (release event)
-    Store->>Store: Version validation<br/>(is this a reviewed app?)
-    Store->>CDN: Copy Release Assets
-    Store->>Store: Update published-manifest.json
-```
-
-**Review policy:**
-
-All submissions — initial and updates alike — go through a two-stage review:
-
-1. **Automated review (CI)** — schema validation, build verification, bundle
-   analysis, security scan, federation compatibility check (see §6.1)
-2. **Human review** — a core team member inspects the submission and
-   approves or rejects it
-
-No version is published to the CDN without explicit human approval. Automated
-checks serve to **reduce reviewer burden** (reviewers only examine submissions
-that pass CI), not to replace human judgment.
-
-**CI risk flags** that reviewers should pay special attention to:
-
-- New `fetch()` or `XMLHttpRequest` calls to previously unseen domains
-- Addition of `eval()`, `Function()`, or `innerHTML` assignments
-- New access to `document.cookie`, `localStorage`, or `sessionStorage`
-- Significant bundle size increase (>50% or >500 KB absolute)
-
-These flags are surfaced in the CI report but do not automatically block
-publication — the human reviewer makes the final call.
-
-### 6.3 Source Repository Metadata
-
-The App Store automatically extracts metadata from the app's GitHub
-repository, reducing manual data entry:
-
-| Source | Extracted fields |
-|--------|-----------------|
-| `package.json` | `name`, `version`, `description`, `license`, `author` |
-| `README.md` | Store page description (rendered) |
-| `app-store.json` | Cytoscape-specific metadata (see below) |
-| `LICENSE` | License type |
-| GitHub Topics | Tags |
-| GitHub API | Contributors, last commit date, open issues, CI status |
-
-**`app-store.json`** — optional Cytoscape Web–specific config in the app repo:
-
-```json
-{
-  "id": "my-app",
-  "icon": "./assets/icon.png",
-  "tags": ["network-analysis", "clustering"],
-  "minHostApiVersion": "1.0.0",
-  "federationName": "myApp",
-  "exposedModule": "./AppConfig"
+interface WebRelease {
+  appId: string
+  version: string
+  repositoryUrl: string
+  submittedRef: string
+  commitSha: string
+  cdnBaseUrl: string
+  remoteEntryUrl: string
+  artifactChecksums: Record<string, string>
+  buildReportId: string
+  reviewStatus: 'pending' | 'approved' | 'rejected'
 }
 ```
 
-### 6.4 Issue Tracking Integration
+This is not a required backend implementation. It documents the boundary:
+Store records may be rich, but `GET /web/manifest` is a stable projection into
+`AppCatalogEntry[]`.
 
-The App Store links directly to the app's GitHub repository for support:
+## 11. Review Policy
 
-- "Report a Bug" → `https://github.com/{owner}/{repo}/issues/new?template=bug_report.md`
-- "Request a Feature" → `https://github.com/{owner}/{repo}/issues/new?template=feature_request.md`
+All initial submissions and updates go through two stages:
 
-No custom forum or comment system is needed.
+1. **Automated review** - schema validation, build verification, Module
+   Federation compatibility, security/dependency scans, and risk reports
+2. **Human review** - a core team member approves or rejects the version
 
-## 7. App Lifecycle
+No Web app version is published to the CDN without explicit human approval.
+There is no auto-approve path for patch, minor, or update releases.
+
+### 11.1 Automated Checks
+
+Automated review should include:
+
+- Repository/ref validation
+- Install and build success
+- `remoteEntry.js` existence
+- `./AppConfig` load test
+- `CyApp.id`, manifest `id`, and Module Federation scope match
+- React, ReactDOM, and MUI shared dependency compatibility
+- `@cytoscape-web/api-types` availability and version report
+- Public App API usage scan
+- Deprecated raw store expose usage scan
+- Bundle size report and large-increase warning
+- Dependency vulnerability scan
+- License report
+- Detection/reporting for:
+  - `eval()` or `Function()`
+  - direct `innerHTML` assignment
+  - `document.cookie`
+  - `localStorage` or `sessionStorage`
+  - new `fetch()` or `XMLHttpRequest` domains
+
+These checks can block publication when they fail hard requirements such as
+build success or app identity matching. Risk flags that require judgment are
+surfaced to human reviewers.
+
+### 11.2 Human Review Focus
+
+Reviewers should inspect:
+
+- App purpose and user-facing behavior
+- Requested permissions or API usage
+- New network domains
+- DOM manipulation outside plugin-controlled resources
+- Lifecycle cleanup in `mount()` and `unmount()`
+- Bundle size changes
+- License compatibility
+- Any raw store import or deprecated Module Federation expose usage
+
+## 12. App Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PendingReview: Developer submits bundle
+    [*] --> Submitted: Developer submits repo/ref/version
+    Submitted --> BuildFailed: Store-owned build fails
+    Submitted --> PendingReview: Automated checks pass
+    BuildFailed --> Submitted: Developer resubmits
     PendingReview --> Rejected: Reviewer rejects
-    Rejected --> PendingReview: Developer resubmits
+    Rejected --> Submitted: Developer resubmits
     PendingReview --> Approved: Reviewer approves
-    Approved --> Published: Publish to CDN<br/>(included in manifest)
-    Published --> UpdatePending: Developer submits update
-    UpdatePending --> Published: Review or auto-approve
-    UpdatePending --> Rejected: Reviewer rejects update
+    Approved --> Published: Publish immutable CDN version
+    Published --> UpdateSubmitted: Developer submits new version
+    UpdateSubmitted --> BuildFailed: Store-owned build fails
+    UpdateSubmitted --> PendingReview: Automated checks pass
 ```
 
-### 7.1 App Detail Page
+Published versions remain immutable. Rejection or build failure never updates
+`/web/manifest`.
 
-The public catalog page for each app displays:
+## 13. App Detail Page
+
+The shared public catalog can display platform-specific sections.
 
 | Field | Source |
-|-------|--------|
-| Name, icon, description | Manifest / `app-store.json` |
-| Author | GitHub profile |
-| Version history | GitHub Releases |
-| License | `LICENSE` / `package.json` |
-| Tags / categories | `app-store.json` / GitHub Topics |
-| Activation count | App Store tracking |
-| Rating (5-star) | App Store (user submissions) |
+| --- | --- |
+| Name, icon, description | Store record, `app-store.json`, `package.json` |
+| Platform badges | Store record (`desktop`, `web`) |
+| Web version history | Store Web release records |
+| Desktop version history | Existing Desktop release records |
+| License | `LICENSE`, `package.json`, reviewer-approved metadata |
+| Tags/categories | `app-store.json`, GitHub Topics, reviewer edits |
 | Repository link | GitHub URL |
 | Last commit date | GitHub API |
 | Open issues count | GitHub API |
-| CI status | GitHub Status API |
-| Security status | GitHub Advisory API |
-| Bundle size | Measured at build time |
+| CI/build status | Store-owned build report |
+| Security status | Dependency/advisory scan report |
+| Bundle size | Measured at Store build time |
+| Desktop download count | Existing App Store metric |
+| Web activation count | Web host reporting or CDN/manifest telemetry |
+| Rating | Existing rating system, scoped clearly by platform if needed |
 
-### 7.2 Repository Health Monitoring
+Issue links can point directly to the developer repository:
 
-The App Store periodically checks registered repositories for signs of
-abandonment or security issues:
+- "Report a Bug" -> `https://github.com/{owner}/{repo}/issues/new`
+- "Request a Feature" -> `https://github.com/{owner}/{repo}/issues/new`
 
-- **Stale repository** — no commits for an extended period → display warning
-  on the store page
-- **Security advisory** — GitHub Advisory DB flags a dependency vulnerability
-  → notify developer (auto-create GitHub Issue), display warning on store
-  page, optionally unpublish if critical and unpatched
-- **Archived repository** — GitHub API reports the repo as archived → mark
-  app as unmaintained in the store
+## 14. Repository Health Monitoring
 
-## 8. Security Considerations
+The App Store can periodically check registered Web app repositories for:
 
-### 8.1 Bundle Integrity
+- **Stale repository** - no commits for an extended period; show warning
+- **Archived repository** - GitHub reports the repo as archived; mark app as
+  unmaintained
+- **Security advisory** - dependency vulnerability appears; notify developer
+  and display a warning
+- **Deleted or unavailable repository** - keep published immutable versions,
+  but block new submissions until the source is restored or reviewed
 
-- All bundles served from the App Store CDN are immutable once published
-- CORS headers are configured on the CDN to allow loading from Cytoscape Web
-  origins
-- Subresource Integrity (SRI) hashes can be included in the manifest for
-  additional verification (future consideration)
+Critical unresolved security issues may lead to manual unpublishing, but that
+policy should be explicit and reviewer-driven.
 
-### 8.2 Review Scope
+## 15. Security Considerations
 
-Human and automated review should cover:
+### 15.1 Build and Publish Separation
 
-- DOM manipulation scope (does the app touch elements outside its panel?)
-- Network requests (unexpected external communication?)
-- `window` side effects (global state pollution?)
-- Shared singleton compatibility (React, ReactDOM, MUI versions)
-- Bundle size reasonableness
+- Store-owned build jobs run without production CDN deploy credentials
+- Build artifacts are staged privately with checksums
+- CDN publish requires approval and a separate publish job
+- Publish jobs copy only the approved staged artifact for the approved
+  `{appId, version}`
 
-### 8.3 Defense in Depth: Runtime Sandboxing
+### 15.2 Bundle Integrity
 
-Code review alone — whether by humans, static analysis, or LLMs — cannot
-reliably catch all malicious or buggy behavior. Obfuscated payloads,
-compromised dependencies, and conditional logic can evade any review process.
-The security model must therefore include **runtime constraints** so that even
-if a malicious app passes review, the damage is contained.
+- Published CDN directories are immutable
+- CORS headers allow Cytoscape Web origins to fetch remote bundles
+- Artifact checksums are retained in Store records
+- Subresource Integrity hashes may be exposed in a future host manifest
+  extension, but they are not part of the current `AppCatalogEntry` contract
 
-Recommended layers:
+### 15.3 Runtime Trust Boundary
 
-1. **Content Security Policy (CSP)** — Restrict which domains apps can
-   communicate with. The host sets a strict CSP that whitelists only the App
-   Store CDN and known API endpoints:
+Loading a Module Federation remote executes third-party JavaScript in the
+browser context. Review and Store-owned builds reduce supply-chain risk but do
+not create a full sandbox.
 
-   ```
-   script-src 'self' https://apps.cytoscape.org;
-   connect-src 'self' https://apps.cytoscape.org https://*.ndexbio.org;
-   ```
+Potential future runtime defenses:
 
-2. **API Proxy with capability control** — Wrap the `apis` object passed to
-   `mount()` in a `Proxy` that intercepts and logs all calls. Apps only
-   receive access to APIs declared in their manifest; undeclared access
-   attempts are blocked and reported:
+- Content Security Policy allowlisting for Store CDN and known API endpoints
+- API proxy/capability filtering around `AppContext.apis`
+- DOM containment for plugin resources
+- Network request monitoring for app contexts
+- Manifest signing or SRI support
 
-   ```typescript
-   const sandboxedApis = new Proxy(apis, {
-     get(target, prop) {
-       if (!allowedApis.has(prop)) {
-         logApp.warn(`[sandbox]: ${appId} attempted undeclared API access: ${String(prop)}`)
-         return undefined
-       }
-       return target[prop]
-     }
-   })
-   ```
+Those defenses are compatible with this Store design but are not required for
+the first documentation update.
 
-3. **DOM scope isolation** — Render each app inside a Shadow DOM boundary or
-   a dedicated container with strict CSS containment. This prevents apps from
-   manipulating host UI elements outside their panel.
+## 16. Acceptance Scenarios
 
-4. **Network request monitoring** — Intercept `fetch` and `XMLHttpRequest`
-   within app contexts to log or block requests to unexpected domains.
+- A valid public GitHub repo and tag builds successfully, passes review,
+  publishes to `https://apps.cytoscape.org/web/{appId}/{version}/`, and appears
+  in `GET /web/manifest`
+- A repo that fails to produce `remoteEntry.js` is not publishable
+- A remote that does not expose `./AppConfig` is not publishable
+- A remote whose exported `CyApp.id` does not match the submitted Store app id
+  is not publishable
+- Build failure or security scan failure keeps the submission unpublished and
+  does not update `/web/manifest`
+- Reusing an already published `{appId, version}` is rejected
+- Desktop app entries and JAR download behavior remain unaffected
+- Cytoscape Web can load the generated manifest with the current
+  `parseManifest()` and `obtainCatalogEntries()` behavior
 
-These runtime constraints complement the review process: reviews catch
-intentional abuse, runtime sandboxing limits accidental or undetected harm.
+## 17. Open Questions
 
-## 9. Differences from the Desktop App Store
-
-| Aspect | Desktop (apps.cytoscape.org) | Web (proposed) |
-|--------|----------------------------|----------------|
-| Distribution artifact | JAR file | `remoteEntry.js` + chunks |
-| Installation | Download → local filesystem | URL reference (zero-install) |
-| Hosting | App Store hosts JARs | App Store CDN hosts bundles |
-| Runtime isolation | JVM sandbox | Browser JS sandbox + CSP + API Proxy |
-| Version management | JAR replacement | Immutable versioned URLs |
-| Submission | Web form upload | App Store portal |
-| Review | Manual | CI automated checks + human review (all updates) |
-| CI/CD | Custom | GitHub Actions |
-| Support channels | BioStars integration | GitHub Issues (direct) |
-| Categories | 70+ tag-based | Tag-based (from `app-store.json` + GitHub Topics) |
-| Ratings | 5-star system | 5-star system (retained) |
-| Download stats | Download count | Activation count |
-
-## 10. Open Questions
-
-1. **Rating and activation tracking** — Should the App Store provide an API
-   for Cytoscape Web to report activations, or should this be tracked
-   passively (e.g., via manifest fetch logs)?
-2. **SRI hashes** — Should Subresource Integrity hashes be included in the
-   manifest to allow the host to verify bundle integrity before execution?
-3. **App Store web app technology** — What framework/stack should the App
-   Store itself be built with?
-4. **CDN provider** — S3 + CloudFront, Cloudflare R2, Netlify, Vercel, or
-   GitHub Pages for the CDN layer?
-5. **Private apps** — Should the store support private or organization-scoped
-   apps that are only visible to specific teams?
-6. **Deprecation policy** — How long should unmaintained apps remain
-   published? Should there be automatic delisting after a period of
-   inactivity?
-7. **Versioned manifests** — Should the manifest endpoint support version
-   negotiation (e.g., `GET /manifest?hostVersion=1.2.0`) to filter
-   incompatible apps server-side?
+1. **Activation tracking** - Should Web activation counts come from an explicit
+   Cytoscape Web telemetry API, CDN logs, or manifest fetch/load events?
+2. **CDN provider** - Which storage/CDN backend should host immutable Web
+   bundles?
+3. **SRI and signing** - Should future `AppCatalogEntry` extensions include
+   SRI hashes or signatures?
+4. **Unpublish policy** - What severity of security issue warrants removing a
+   published Web version from the manifest?
+5. **Version negotiation** - Should `GET /web/manifest?hostVersion=...` filter
+   incompatible apps server-side, or should the host continue to filter locally?
+6. **Private apps** - Should organization-scoped Web apps be supported later?
