@@ -56,13 +56,13 @@ export const AppListPanel = ({ setAppStateUpdated }: AppListPanelProps) => {
             }
           >
             <ListItemText
-              primary={<Typography variant="h6">{app.name}</Typography>}
+              primary={<Typography variant="h6" color="text.primary">{app.name}</Typography>}
               secondary={
                 <Typography
                   sx={{ display: 'inline' }}
                   component="span"
                   variant="body1"
-                  color="text.primary"
+                  color="text.secondary"
                 >
                   {app.description}
                 </Typography>

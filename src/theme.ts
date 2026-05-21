@@ -36,7 +36,7 @@ export const theme = extendTheme({
         },
         text: {
           secondary: 'rgba(0, 0, 0, 0.7)',
-          disabled: 'rgba(0, 0, 0, 0.4)',
+          disabled: 'rgba(0, 0, 0, 0.25)',
         },
       },
     },
@@ -50,8 +50,8 @@ export const theme = extendTheme({
           main: '#3a88fe',
         },
         background: {
-          default: '#121212',
-          paper: '#242424',
+          default: '#1c1c1c',
+          paper: '#252525',
         },
         action: {
           hover: 'rgba(167, 193, 222, 0.1)',
@@ -59,9 +59,9 @@ export const theme = extendTheme({
         },
         divider: 'rgba(116, 116, 116, 0.4)',
         text: {
-          primary: '#ffffff',
-          secondary: 'rgba(255, 255, 255, 0.8)',
-          disabled: 'rgba(255, 255, 255, 0.5)',
+          primary: '#f5f5f5',
+          secondary: 'rgba(255, 255, 255, 0.7)',
+          disabled: 'rgba(255, 255, 255, 0.25)',
         },
       },
     },
@@ -73,6 +73,13 @@ export const theme = extendTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
           backgroundImage: 'none',
         },
       },

@@ -70,7 +70,7 @@ const CitationText = ({
 }: {
   citation: CitationData
 }): ReactElement => (
-  <Typography variant="body1" component="div">
+  <Typography variant="body1" color="textSecondary" component="div">
     {citation.authors} {citation.title}
     {citation.journal && (
       <Typography component="span" sx={{ fontStyle: 'italic' }}>

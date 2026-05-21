@@ -45,7 +45,7 @@ export const ServiceList = () => {
                     sx={{ display: 'inline' }}
                     component="span"
                     variant="body1"
-                    color="text.primary"
+                    color="text.secondary"
                   >
                     {serviceApp.description}
                   </Typography>

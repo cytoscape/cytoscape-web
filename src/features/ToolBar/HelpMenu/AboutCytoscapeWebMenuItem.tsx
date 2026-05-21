@@ -85,6 +85,7 @@ export const AboutCytoscapeWebMenuItem = (
               mt: 4,
               p: 2,
               backgroundColor: (theme) => theme.palette.background.default,
+              color: (theme) => theme.palette.text.secondary,
             }}
           >
             <Typography variant="body1" sx={{ mb: 1 }}>
