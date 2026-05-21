@@ -700,7 +700,7 @@ export function ContinuousColorMappingForm(props: {
               p: 1,
               display: 'flex',
               flexDirection: 'column',
-              width: 180,
+              width: 200,
             }}
           >
             <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
@@ -713,37 +713,38 @@ export function ContinuousColorMappingForm(props: {
               >
                 <Box
                   sx={{
-                    maxWidth: 80,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {m.attribute}
+                  {m.attribute}:
                 </Box>
                 <ExpandableNumberInput
                   value={addHandleFormValue}
                   onConfirm={(newValue) => setAddHandleFormValue(newValue)}
                   min={minState.value as number}
                   max={maxState.value as number}
-                ></ExpandableNumberInput>
+                />
               </Box>
               <Box
                 sx={{
                   mt: 1,
                   display: 'flex',
                   justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
               >
                 <Box
                   sx={{
-                    maxWidth: 80,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {props.visualProperty.displayName}
+                  {props.visualProperty.displayName}:
                 </Box>
                 <VisualPropertyValueForm
                   currentValue={addHandleFormVpValue}
@@ -809,10 +810,11 @@ export function ContinuousColorMappingForm(props: {
               <Typography
                 variant="body1"
                 sx={{
-                  maxWidth: 180,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  fontSize: '0.875rem',
+                  mb: 1,
                 }}
               >
                 {m.attribute}
@@ -822,33 +824,35 @@ export function ContinuousColorMappingForm(props: {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  fontSize: '0.875rem',
                 }}
               >
-                {'Minimum Value'}
+                Minimum Value:
                 <ExpandableNumberInput
                   max={maxState.value as number}
                   value={minState.value as number}
                   onConfirm={(newValue) =>
                     setMinState({ ...minState, value: newValue })
                   }
-                ></ExpandableNumberInput>
+                />
               </Box>
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mt: 1,
+                  mt: 0.5,
+                  fontSize: '0.875rem',
                 }}
               >
-                {'Maximum Value'}
+                Maximum Value:
                 <ExpandableNumberInput
                   min={minState.value as number}
                   value={maxState.value as number}
                   onConfirm={(newValue) =>
                     setMaxState({ ...maxState, value: newValue })
                   }
-                ></ExpandableNumberInput>
+                />
               </Box>
             </Box>
           </Box>

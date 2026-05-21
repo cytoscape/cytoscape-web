@@ -65,7 +65,14 @@ export function ExpandableNumberInput(props: {
 
   return (
     <MantineProvider>
-      <ButtonBase disabled={props.disabled} onClick={(e) => showPopover(e)}>
+      <ButtonBase
+        disabled={props.disabled}
+        onClick={(e) => showPopover(e)}
+        sx={{
+          fontSize: '0.875rem',
+          textAlign: 'right',
+        }}
+      >
         <Box
           sx={{
             width: 45,
@@ -124,7 +131,7 @@ export function ExpandableNumberInput(props: {
             onClick={handleCancel}
             sx={{
               border: (theme) => `1px solid ${theme.palette.divider}`,
-              borderRadius: (theme) => theme.spacing(0, 0, 0, 1),
+              borderRadius: (theme) => theme.spacing(0, 0, 0, 0.5),
             }}
           >
             Cancel
@@ -135,7 +142,7 @@ export function ExpandableNumberInput(props: {
             onClick={handleConfirm}
             sx={{
               border: (theme) => `1px solid ${theme.palette.divider}`,
-              borderRadius: (theme) => theme.spacing(0, 0, 1, 0),
+              borderRadius: (theme) => theme.spacing(0, 0, 0.5, 0),
             }}
           >
             Confirm

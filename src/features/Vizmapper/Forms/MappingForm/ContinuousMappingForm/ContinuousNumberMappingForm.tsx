@@ -741,10 +741,16 @@ export function ContinuousNumberMappingForm(props: {
               p: 1,
               display: 'flex',
               flexDirection: 'column',
-              width: 180,
+              width: 200,
             }}
           >
-            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box
+              sx={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.5,
+              }}
+            >
               <Box
                 sx={{
                   display: 'flex',
@@ -754,13 +760,13 @@ export function ContinuousNumberMappingForm(props: {
               >
                 <Box
                   sx={{
-                    maxWidth: 80,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {m.attribute}
+                  {m.attribute}:
                 </Box>
                 <ExpandableNumberInput
                   min={minState.value as number}
@@ -769,7 +775,7 @@ export function ContinuousNumberMappingForm(props: {
                   onConfirm={(newVal) => {
                     setAddHandleFormValue(newVal)
                   }}
-                ></ExpandableNumberInput>
+                />
               </Box>
 
               <Box
@@ -781,20 +787,20 @@ export function ContinuousNumberMappingForm(props: {
               >
                 <Box
                   sx={{
-                    maxWidth: 80,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {props.visualProperty.displayName}
+                  {props.visualProperty.displayName}:
                 </Box>
                 <ExpandableNumberInput
                   value={addHandleFormVpValue}
                   onConfirm={(newVal) => {
                     setAddHandleFormVpValue(newVal)
                   }}
-                ></ExpandableNumberInput>
+                />
               </Box>
             </Box>
             {!(
@@ -820,6 +826,7 @@ export function ContinuousNumberMappingForm(props: {
                 hideCreateHandleMenu()
               }}
               size="small"
+              sx={{ mt: 1 }}
             >
               Add Handle
             </Button>
@@ -851,15 +858,22 @@ export function ContinuousNumberMappingForm(props: {
               <Typography
                 variant="body1"
                 sx={{
-                  maxWidth: 180,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  fontSize: '0.875rem',
+                  mb: 1,
                 }}
               >
                 {m.attribute}
               </Typography>
-              <Box sx={{ p: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.5,
+                }}
+              >
                 <Box
                   sx={{
                     display: 'flex',
@@ -867,7 +881,9 @@ export function ContinuousNumberMappingForm(props: {
                     alignItems: 'center',
                   }}
                 >
-                  <Typography variant="body2">Minimum Value</Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    Minimum Value:
+                  </Typography>
 
                   <ExpandableNumberInput
                     value={minState.value as number}
@@ -878,7 +894,7 @@ export function ContinuousNumberMappingForm(props: {
                         value: newVal,
                       })
                     }}
-                  ></ExpandableNumberInput>
+                  />
                 </Box>
                 <Box
                   sx={{
@@ -887,7 +903,9 @@ export function ContinuousNumberMappingForm(props: {
                     alignItems: 'center',
                   }}
                 >
-                  <Typography variant="body2">Maximum Value</Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    Maximum Value:
+                  </Typography>
 
                   <ExpandableNumberInput
                     value={maxState.value as number}
