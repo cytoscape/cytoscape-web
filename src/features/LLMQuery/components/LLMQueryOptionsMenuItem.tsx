@@ -1,224 +1,23 @@
-import { ContentCopy, Preview } from '@mui/icons-material'
 import SettingsIcon from '@mui/icons-material/Settings'
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Tooltip,
-} from '@mui/material'
-import { ReactElement, useState } from 'react'
+import { ReactElement } from 'react'
 
-import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
-import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
 import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
-import { LLMModel, models } from '../model/LLMModel'
-import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { useLLMQueryStore } from '../store'
 
 
 export const LLMQueryOptionsMenuItem = (props: BaseMenuItemProps): ReactElement => {
-  const [showTemplatePreview, setShowTemplatePreview] = useState(false)
-  const addMessage = useMessageStore((state) => state.addMessage)
   const loading = useLLMQueryStore((state) => state.loading)
-  const setLLMModel = useLLMQueryStore((state) => state.setLLMModel)
-  const setLLMApiKey = useLLMQueryStore((state) => state.setLLMApiKey)
-  const LLMModel = useLLMQueryStore((state) => state.LLMModel)
-  const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
-  const setLLMTemplate = useLLMQueryStore((state) => state.setLLMTemplate)
 
-  const [showDialog, setShowDialog] = useState(false)
-  const [localLLMModel, setLocalLLMModel] = useState<LLMModel>(LLMModel)
-  const [localLLMApiKey, setLocalLLMApiKey] = useState<string>('')
-  const [localLLMTemplate, setLocalLLMTemplate] = useState<LLMTemplate>(LLMTemplate)
-
-  const disabled = loading
-
-  const copyTextToClipboard = async (text: string): Promise<void> => {
-    if ('clipboard' in navigator) {
-      return await navigator.clipboard.writeText(text)
-    }
-  }
-
-  const handleCopyTemplateClick = (): void => {
-    void copyTextToClipboard(localLLMTemplate.rawText).then(() => {
-      addMessage({
-        message: `LLM prompt copied to clipboard`,
-        duration: 4000,
-        severity: MessageSeverity.INFO,
-      })
-    })
-  }
-
-  const dialog = (
-    <Dialog
-      data-testid="llm-query-options-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-      maxWidth="sm"
-      fullWidth={true}
-      open={showDialog}
-      onClose={props.onClick}
-    >
-      <DialogTitle>LLM Query Options</DialogTitle>
-      <DialogContent sx={{ p: 1 }}>
-        <FormControl sx={{ mb: 1, mt: 1 }} fullWidth>
-          <InputLabel>LLM Model</InputLabel>
-          <Select
-            data-testid="llm-query-options-model-select"
-            size="small"
-            value={localLLMModel}
-            label="LLM Model"
-            onChange={(e) => setLocalLLMModel(e.target.value)}
-          >
-            {models.map((m) => {
-              return (
-                <MenuItem key={m} value={m}>
-                  {m}
-                </MenuItem>
-              )
-            })}
-          </Select>
-        </FormControl>
-        <Tooltip title="You need to add an API key generated in your PAID account">
-          <TextField
-            data-testid="llm-query-options-api-key-input"
-            size="small"
-            value={localLLMApiKey}
-            fullWidth
-            label="OpenAI API Key"
-            onChange={(e) => setLocalLLMApiKey(e.target.value)}
-          ></TextField>
-        </Tooltip>
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-          <FormControl fullWidth>
-            <InputLabel>Prompt</InputLabel>
-            <Select
-              data-testid="llm-query-options-template-select"
-              size="small"
-              value={localLLMTemplate.name}
-              label="Prompt"
-              onChange={(e) => {
-                const nextTemplate = templates.find(
-                  (t) => t.name === e.target.value,
-                )
-                if (nextTemplate !== undefined) {
-                  setLocalLLMTemplate(nextTemplate)
-                }
-              }}
-            >
-              {templates.map((t) => {
-                return (
-                  <MenuItem key={t.name} value={t.name}>
-                    {t.name}
-                  </MenuItem>
-                )
-              })}
-            </Select>
-          </FormControl>
-          <ButtonGroup size="small" variant="contained" sx={{ ml: 1 }}>
-            <Tooltip title="Preview selected prompt">
-              <IconButton
-                data-testid="llm-query-options-preview-button"
-                sx={{
-                  color: showTemplatePreview ? 'primary.main' : 'inherit',
-                }}
-                aria-label="preview"
-                onClick={() => {
-                  setShowTemplatePreview(!showTemplatePreview)
-                }}
-              >
-                <Preview />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Copy selected prompt text">
-              <IconButton
-                data-testid="llm-query-options-copy-button"
-                aria-label="copy"
-                onClick={handleCopyTemplateClick}
-              >
-                <ContentCopy />
-              </IconButton>
-            </Tooltip>
-          </ButtonGroup>
-        </Box>
-        <Box
-          sx={{
-            mt: 2,
-            maxHeight: 300,
-            overflowY: 'auto',
-            p: 2,
-            whiteSpace: 'pre-line',
-          }}
-        >
-          {(showTemplatePreview && localLLMTemplate?.rawText) ?? ''}
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          data-testid="llm-query-options-cancel-button"
-          color="primary"
-          onClick={props.onClick}
-        >
-          Cancel
-        </Button>
-        <Button
-          data-testid="llm-query-options-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
-          onClick={() => {
-            setShowDialog(false)
-            setLLMModel(localLLMModel)
-            setLLMTemplate(localLLMTemplate)
-            if (localLLMApiKey !== '') {
-              setLLMApiKey(localLLMApiKey)
-            }
-            props.onClick()
-          }}
-        >
-          Confirm
-        </Button>
-      </DialogActions>
-    </Dialog>
-  )
-
-  const tooltipTitle = disabled ? 'Generating response...' : ''
+  const tooltipTitle = loading ? 'Generating response...' : ''
 
   return (
-    <>
-      <DropdownMenuItem
-        label="LLM Query Options..."
-        tooltip={tooltipTitle}
-        icon={<SettingsIcon />}
-        disabled={disabled}
-        onClick={() => setShowDialog(true)}
-      />
-    {!disabled && (
-      <>{dialog}</>
-    )}
-    </>
+    <DropdownMenuItem
+      label="LLM Query Options..."
+      tooltip={tooltipTitle}
+      icon={<SettingsIcon />}
+      disabled={loading}
+      onClick={props.onClick}
+    />
   )
 }
