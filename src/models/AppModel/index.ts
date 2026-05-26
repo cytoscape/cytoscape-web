@@ -1,4 +1,7 @@
+export { AppCatalogEntry } from './AppCatalogEntry'
 export { AppComponent } from './AppComponent'
+export { AppLoadState } from './AppLoadState'
 export { ComponentType } from './ComponentType'
 export { CyApp } from './CyApp'
+export { ManifestSource } from './ManifestSource'
 export { RootMenu } from './RootMenu'

@@ -118,6 +118,8 @@ export const useUpdateNetwork = (): (({
           hasLayout: anyNodeHasPosition,
           description: localDescription,
           modificationTime: new Date(Date.now()),
+          nodeCount: localNodeCount,
+          edgeCount: localEdgeCount,
         })
         setVisualStyleOptions(networkId, visualStyleOptions)
         setTables(networkId, nodeTable, edgeTable)

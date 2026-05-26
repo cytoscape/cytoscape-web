@@ -1,3 +1,9 @@
+/**
+ * @deprecated The Module Federation exposure of this store (cyweb/NetworkStore) is deprecated for external apps.
+ * This store is still actively used internally by the host application — it is NOT being removed.
+ * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
+ * This cyweb/NetworkStore Module Federation export will be removed after 2 release cycles.
+ */
 import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
@@ -172,6 +178,32 @@ export const useNetworkStore = create(
             }
             return state
           })
+        },
+        moveEdge: (
+          networkId: IdType,
+          edgeId: IdType,
+          newSourceId: IdType,
+          newTargetId: IdType,
+        ): { oldSourceId: IdType; oldTargetId: IdType } => {
+          const network = get().networks.get(networkId)
+          if (network === undefined) {
+            throw new Error(`Network ${networkId} not found`)
+          }
+          const result = NetworkFn.moveEdge(
+            network,
+            edgeId,
+            newSourceId,
+            newTargetId,
+          )
+          set((state) => {
+            state.lastUpdated = {
+              networkId,
+              type: UpdateEventType.ADD,
+              payload: [edgeId],
+            }
+            return state
+          })
+          return result
         },
 
         addEdge: (networkId: IdType, id: IdType, s: IdType, t: IdType) => {
