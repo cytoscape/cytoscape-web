@@ -202,7 +202,7 @@ export const NetworkBrowserPanel = ({
             height: '100%',
             width: '100%',
             overflowY: 'auto',
-            borderRadius: (theme) => theme.spacing(1),
+            borderRadius: (theme) => theme.spacing(0, 0, 1, 1),
           }}
           hidden={currentTabIndex !== 0}
         >

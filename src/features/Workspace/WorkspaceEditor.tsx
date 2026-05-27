@@ -430,6 +430,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                         '&:hover': {
                           backgroundColor: (theme) => theme.palette.background.paper,
                         },
+                        boxShadow: 'none',
                       }}
                       onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
                     >
@@ -509,6 +510,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                       '&:hover': {
                         backgroundColor: (theme) => theme.palette.background.paper,
                       },
+                      boxShadow: 'none',
                     }}
                     onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
                   >

@@ -14,6 +14,7 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
         borderRadius: (theme) => `${theme.spacing(1)} !important`,
         backgroundColor: (theme) => theme.palette.background.paper,
         backgroundImage: 'none',
+        boxShadow: 'none',
       }}
     >
       <AccordionSummary
