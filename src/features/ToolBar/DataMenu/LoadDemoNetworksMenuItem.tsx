@@ -1,18 +1,19 @@
-import { MenuItem } from '@mui/material'
 import { ReactElement, useContext } from 'react'
 
-import { fetchNdexSummaries } from '../../../data/external-api/ndex'
 import { AppConfigContext } from '../../../AppConfigContext'
+import { fetchNdexSummaries } from '../../../data/external-api/ndex'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { NetworkSummary } from '../../../models'
 import { IdType } from '../../../models/IdType'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 export const LoadDemoNetworksMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): ReactElement => {
   const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
     (state) => state.addNetworkIds,
@@ -50,10 +51,13 @@ export const LoadDemoNetworksMenuItem = (
       searchParams: new URLSearchParams(location.search),
       replace: false,
     })
-    props.handleClose()
+    props.onClick()
   }
 
   return (
-    <MenuItem onClick={handleAddDemoNetworks}>Open Sample Networks</MenuItem>
+    <DropdownMenuItem
+      label="Open Sample Networks"
+      onClick={handleAddDemoNetworks}
+    />
   )
 }

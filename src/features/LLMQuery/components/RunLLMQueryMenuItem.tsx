@@ -1,4 +1,4 @@
-import { Box, MenuItem, Tooltip } from '@mui/material'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import { ReactElement } from 'react'
 
 import { fetchGeneNamesFromIds } from '../../../data/external-api/ndex'
@@ -18,11 +18,13 @@ import {
   SubsystemTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
-import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
+import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 
-export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -152,7 +154,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       duration: 6000,
       severity: MessageSeverity.INFO,
     })
-    props.handleClose()
+    props.onClick()
 
     try {
       const message = LLMTemplate.fn(geneNames.join(', '))
@@ -176,27 +178,22 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     setLoading(false)
   }
 
-  const menuItem = (
-    <MenuItem
-      data-testid="run-llm-query-menu-item"
-      disabled={disabled}
-      onClick={runLLMQuery}
-    >
-      Run LLM Query
-    </MenuItem>
-  )
-  if (!disabled) {
-    return menuItem
-  } else {
-    const tooltipTitle = loading
+  let tooltipTitle = ''
+  if (disabled) {
+    tooltipTitle = loading
       ? 'Generating response...'
       : LLMApiKey === ''
         ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
         : 'LLM query is only available for HCX networks'
-    return (
-      <Tooltip arrow title={tooltipTitle} placement="right">
-        <Box>{menuItem}</Box>
-      </Tooltip>
-    )
   }
+
+  return (
+    <DropdownMenuItem
+      label="Run LLM Query"
+      tooltip={tooltipTitle}
+      icon={<AutoAwesomeIcon />}
+      disabled={disabled}
+      onClick={runLLMQuery}
+    />
+  )
 }

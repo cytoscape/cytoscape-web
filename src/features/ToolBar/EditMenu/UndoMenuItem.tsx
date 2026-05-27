@@ -1,4 +1,4 @@
-import { MenuItem } from '@mui/material'
+import UndoIcon from '@mui/icons-material/Undo'
 import { ReactElement } from 'react'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
@@ -6,9 +6,11 @@ import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { IdType } from '../../../models'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const UndoMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { undoLastEdit } = useUndoStack()
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
@@ -28,7 +30,7 @@ export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const handleUndo = (): void => {
     undoLastEdit()
-    props.handleClose()
+    props.onClick()
   }
 
   const disabled = (undoRedoStack?.undoStack ?? []).length === 0
@@ -37,8 +39,11 @@ export const UndoMenuItem = (props: BaseMenuProps): ReactElement => {
       ?.description ?? ''
 
   return (
-    <MenuItem disabled={disabled} onClick={handleUndo}>
-      {disabled ? 'Undo' : `Undo - ${description}`}
-    </MenuItem>
+    <DropdownMenuItem
+      label={disabled ? 'Undo' : `Undo - ${description}`}
+      icon={<UndoIcon />}
+      disabled={disabled}
+      onClick={handleUndo}
+    />
   )
 }

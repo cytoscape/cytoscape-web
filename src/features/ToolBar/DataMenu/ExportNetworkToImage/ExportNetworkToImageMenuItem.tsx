@@ -1,3 +1,4 @@
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import {
   Box,
   Button,
@@ -5,8 +6,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
   MenuItem,
   Select,
   TextField,
@@ -16,7 +15,9 @@ import { lazy, ReactElement, Suspense, useRef, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
-import { BaseMenuProps } from '../../BaseMenuProps'
+import { BaseMenuItemProps } from '../../BaseMenuItemProps'
+import { DropdownMenuItem } from '../../DropdownMenu'
+
 
 // Lazy load export forms - only load when user opens export dialog
 const PdfExportForm = lazy(() => import('./PdfExportForm'))
@@ -43,6 +44,7 @@ const FileTypes = {
 } as const
 
 type FileType = (typeof FileTypes)[keyof typeof FileTypes]
+
 
 export const ExportImage = (props: ExportImageProps): ReactElement => {
   const [loading, setLoading] = useState(false)
@@ -177,18 +179,17 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
   )
 }
 
-export const ExportImageMenuItem = (props: BaseMenuProps): ReactElement => {
+export const ExportImageMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const [show, setShow] = useState(false)
 
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
   const menuItem = (
-    <MenuItem
+    <DropdownMenuItem
+      label="Network to Image..."
+      icon={<ImageOutlinedIcon />}
       disabled={networkIds.length === 0}
-      component="label"
       onClick={() => setShow(true)}
-    >
-      Network to Image...
-    </MenuItem>
+    />
   )
 
   return (

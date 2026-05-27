@@ -1,4 +1,5 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote'
 import {
   Box,
   Button,
@@ -7,15 +8,16 @@ import {
   DialogContent,
   DialogTitle,
   Link,
-  MenuItem,
   Typography,
 } from '@mui/material'
 import { ReactElement, useMemo, useState } from 'react'
 
-import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 interface CitationData {
   authors: string
@@ -98,7 +100,7 @@ const CitationText = ({
   </Typography>
 )
 
-export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
+export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState(false)
   const addMessage = useMessageStore((state) => state.addMessage)
 
@@ -123,7 +125,7 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
 
   const handleCloseDialog = (): void => {
     setOpenDialog(false)
-    props.handleClose()
+    props.onClick()
   }
 
   const handleCopyAllCitations = async (): Promise<void> => {
@@ -149,7 +151,11 @@ export const CitationMenuItem = (props: BaseMenuProps): ReactElement => {
 
   return (
     <>
-      <MenuItem onClick={handleOpenDialog}>Citation</MenuItem>
+      <DropdownMenuItem
+        label="Citation"
+        icon={<FormatQuoteIcon />}
+        onClick={handleOpenDialog}
+      />
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}

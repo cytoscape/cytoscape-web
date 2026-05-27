@@ -1,12 +1,12 @@
-import { Box, MenuItem, Tooltip } from '@mui/material'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import { Tooltip } from '@mui/material'
 import { ReactElement, useContext, useState } from 'react'
 
+import { AppConfigContext } from '../../../AppConfigContext'
 import {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from '../../../data/external-api/ndex'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
@@ -20,6 +20,7 @@ import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useLoadNetworkSummaries } from '../../../data/hooks/useLoadNetworkSummaries'
 import { useSaveCyNetworkCopyToNDEx } from '../../../data/hooks/useSaveCyNetworkCopyToNDEx'
+import { logUi } from '../../../debug'
 import { KeycloakContext } from '../../../init/keycloak'
 import { NetworkSummary } from '../../../models'
 import { IdType } from '../../../models/IdType'
@@ -29,10 +30,12 @@ import { NetworkView } from '../../../models/ViewModel'
 import { waitSeconds } from '../../../utils/waitSeconds'
 import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 export const CopyNetworkToNDExMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
@@ -144,7 +147,7 @@ export const CopyNetworkToNDExMenuItem = (
       }
     }
 
-    props.handleClose()
+    props.onClick()
   }
 
   const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
@@ -152,6 +155,7 @@ export const CopyNetworkToNDExMenuItem = (
   }
 
   const handleClick = async (): Promise<void> => {
+    props.onClick()
     const validationResult = validationResults?.[currentNetworkId]
 
     if (validationResult !== undefined && !validationResult.isValid) {
@@ -162,49 +166,29 @@ export const CopyNetworkToNDExMenuItem = (
   }
 
   const enabled = authenticated && currentNetworkId !== ''
-  const menuItem = (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
-    >
-      <MenuItem
-        sx={{ flexBasis: '100%', flexGrow: 3 }}
+
+  let tooltipTitle = ''
+  if (!authenticated && currentNetworkId !== '') {
+    tooltipTitle = 'Login to save a copy of the current network to NDEx'
+  }
+
+  return (
+    <>
+      <DropdownMenuItem
+        label="Save Copy to NDEx"
+        icon={<CloudUploadIcon />}
+        tooltip={tooltipTitle}
         disabled={!enabled}
         onClick={handleClick}
-      >
-        Save Copy to NDEx
-      </MenuItem>
-    </Box>
+      />
+    {enabled && (
+      <HcxValidationSaveDialog
+        open={showHcxValidationDialog}
+        onClose={() => setShowHcxValidationDialog(false)}
+        onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+        validationResult={validationResults?.[currentNetworkId]}
+      />
+    )}
+    </>
   )
-
-  if (enabled) {
-    return (
-      <>
-        {menuItem}
-        <HcxValidationSaveDialog
-          open={showHcxValidationDialog}
-          onClose={() => setShowHcxValidationDialog(false)}
-          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
-          validationResult={validationResults?.[currentNetworkId]}
-        />
-      </>
-    )
-  } else {
-    return (
-      <Tooltip
-        arrow
-        placement="right"
-        title={
-          currentNetworkId !== ''
-            ? 'Login to save a copy of the current network to NDEx'
-            : ''
-        }
-      >
-        {menuItem}
-      </Tooltip>
-    )
-  }
 }

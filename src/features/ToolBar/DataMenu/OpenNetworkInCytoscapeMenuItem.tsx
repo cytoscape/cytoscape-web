@@ -1,5 +1,5 @@
 import { CyNDEx } from '@js4cytoscape/ndex-client'
-import { Box, MenuItem, Tooltip } from '@mui/material'
+import LaptopChromebookIcon from '@mui/icons-material/LaptopChromebook'
 import { ReactElement } from 'react'
 
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
@@ -14,11 +14,13 @@ import { useOpenNetworkInCytoscape } from '../../../data/hooks/useOpenInCytoscap
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { useFeatureAvailability } from '../../FeatureAvailability'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 export const OpenNetworkInCytoscapeMenuItem = ({
-  handleClose,
-}: BaseMenuProps): ReactElement => {
+  onClick: handleClose,
+}: BaseMenuItemProps): ReactElement => {
   const cyndex = new CyNDEx()
   const openNetworkInCytoscape = useOpenNetworkInCytoscape()
   const featureAvailabilityState = useFeatureAvailability()
@@ -63,19 +65,13 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     featureAvailabilityState.state.isCyDeskAvailable === false ||
     currentNetworkId === ''
 
-  const menuItem = (
-    <MenuItem onClick={handleOpenNetworkInCytoscape} disabled={disabled}>
-      Open Network in Cytoscape Desktop
-    </MenuItem>
-  )
-
   return (
-    <Tooltip
-      arrow
-      placement="right"
-      title={currentNetworkId === '' ? '' : featureAvailabilityState.tooltip}
-    >
-      <Box>{menuItem}</Box>
-    </Tooltip>
+    <DropdownMenuItem
+      label="Open Network in Cytoscape Desktop"
+      tooltip={currentNetworkId === '' ? '' : featureAvailabilityState.tooltip}
+      icon={<LaptopChromebookIcon />}
+      disabled={disabled}
+      onClick={handleOpenNetworkInCytoscape}
+    />
   )
 }

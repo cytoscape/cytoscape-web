@@ -1,9 +1,12 @@
 /* eslint-disable react/no-unescaped-entities */
+import BugReportIcon from '@mui/icons-material/BugReport'
 import CloseIcon from '@mui/icons-material/Close'
-import { Button, Dialog, DialogContent, DialogTitle, IconButton,MenuItem } from '@mui/material'
+import { Button, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material'
 import { ReactElement, useEffect,useState } from 'react'
 
-import packageInfo from '../../../../package.json';
+import packageInfo from '../../../../package.json'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
 
 function getIssueEnvironment(): string {
@@ -34,27 +37,23 @@ function getIssueEnvironment(): string {
     return "Cytoscape Web Version: " + (cyVersion ? cyVersion : "") + "\n\nOperating System: " + (osVersionInfo ? osVersionInfo : "") + "\n\nBrowser Version: " + (browserVersionInfo ? browserVersionInfo : "");
 }
 
-interface BugReportMenuItemProps {
-  handleClose?: () => void;
-}
-
-export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): ReactElement => {
-  const [open, setOpen] = useState(false)
+export const BugReportMenuItem = ({ onClick }: BaseMenuItemProps): ReactElement => {
+  const [openDialog, setOpenDialog] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleOpen = () => {
-    setOpen(true)
+  const handleOpenDialog = () => {
+    setOpenDialog(true)
   }
 
   const handleDialogClose = () => {
-    setOpen(false)
-    if (handleClose) {
-      handleClose();
+    setOpenDialog(false)
+    if (onClick) {
+      onClick();
     }
   }
 
   useEffect(() => {
-    if (open) {
+    if (openDialog) {
       setIsLoading(true);
       // Initialize Atlassian issue collector when dialog is opened
       (window as any).ATL_JQ_PAGE_PROPS = {
@@ -81,14 +80,16 @@ export const BugReportMenuItem = ({ handleClose }: BugReportMenuItemProps): Reac
       script.async = true
       document.body.appendChild(script)
     }
-  }, [open])
+  }, [openDialog])
 
   return (
     <>
-      <MenuItem onClick={handleOpen}>
-        Report a Bug
-      </MenuItem>
-      <Dialog open={open} onClose={handleDialogClose} maxWidth="md" fullWidth>
+      <DropdownMenuItem
+        label="Report a Bug"
+        icon={<BugReportIcon />}
+        onClick={handleOpenDialog}
+      />
+      <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="md" fullWidth>
         <DialogTitle>
           Report a Bug
           <IconButton

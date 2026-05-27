@@ -19,13 +19,13 @@ import Papa from 'papaparse'
 
 import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../../models/MessageModel'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import {
   JoinTableToNetworkStep,
   useJoinTableToNetworkStore,
 } from '../../store/joinTableToNetworkStore'
 
-export function TableUpload(props: BaseMenuProps) {
+export function TableUpload(props: BaseMenuItemProps) {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
   const goToStep = useJoinTableToNetworkStore((state) => state.goToStep)
   const setRawText = useJoinTableToNetworkStore((state) => state.setRawText)

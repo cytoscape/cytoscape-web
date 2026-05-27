@@ -1,38 +1,21 @@
-import { Box, MenuItem, Tooltip } from '@mui/material'
-import { ReactElement, useContext, useState } from 'react'
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
+import { ReactElement, useContext } from 'react'
 
 import { KeycloakContext } from '../../../init/keycloak'
-import { BaseMenuProps } from '../BaseMenuProps'
-import { LoadWorkspaceDialog } from './LoadWorkspaceDialog'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const LoadWorkspaceMenuItem = (props: BaseMenuProps): ReactElement => {
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
+export const LoadWorkspaceMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const client = useContext(KeycloakContext)
   const authenticated: boolean = client?.authenticated ?? false
 
-  const handleCloseDialog = (): void => {
-    setOpenDialog(false)
-    props.handleClose()
-  }
-
-  const handleOpenDialog = (): void => {
-    setOpenDialog(true)
-  }
-
   return (
-    <>
-      <Tooltip
-        arrow
-        placement="right"
-        title={authenticated ? '' : 'Login to see your own workspace'}
-      >
-        <Box>
-          <MenuItem disabled={!authenticated} onClick={handleOpenDialog}>
-            Open Workspace from NDEx...
-          </MenuItem>
-        </Box>
-      </Tooltip>
-      <LoadWorkspaceDialog open={openDialog} handleClose={handleCloseDialog} />
-    </>
+    <DropdownMenuItem
+      label="Open Workspace from NDEx..."
+      tooltip={authenticated ? '' : 'Login to see your own workspace'}
+      icon={<CloudDownloadIcon />}
+      disabled={!authenticated}
+      onClick={props.onClick}
+    />
   )
 }

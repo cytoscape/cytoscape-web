@@ -4,21 +4,20 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   Typography,
 } from '@mui/material'
-import { ReactElement, useState } from 'react'
+import { ReactElement } from 'react'
 
 import { logUi } from '../../../debug'
 
 interface LicenseDialogProps {
   open: boolean
-  setOpen: (open: boolean) => void
+  onClose: () => void
 }
 
 export const LicenseDialog = ({
   open,
-  setOpen,
+  onClose,
 }: LicenseDialogProps): ReactElement => {
   const LicenseText = `
   MIT License
@@ -43,7 +42,7 @@ export const LicenseDialog = ({
   `
 
   const handleCloseDialog = (): void => {
-    setOpen(false)
+    onClose()
   }
 
   const handleCopyText = (): void => {

@@ -33,7 +33,7 @@ import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { Column as CyWebColumn, ValueTypeName } from '../../../../models/TableModel'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
 import { DelimiterType } from '../../model/DelimiterType'
@@ -61,7 +61,7 @@ import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import { ColumnAppendForm, ColumnAppendTypeRender } from './ColumnAppendForm'
 
-export function TableColumnAppendForm(props: BaseMenuProps) {
+export function TableColumnAppendForm(props: BaseMenuItemProps) {
   const [loading, setLoading] = useState(false)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -204,7 +204,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     setNetworkModified(currentNetworkId, true)
     setLoading(false)
     reset()
-    props.handleClose()
+    props.onClick()
   }
 
   const handleSelectNoneClick = () => {
@@ -221,7 +221,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
 
   const handleCancel = () => {
     reset()
-    props.handleClose()
+    props.onClick()
   }
 
   const handleColumnClick = (column: ColumnAppendState) => {

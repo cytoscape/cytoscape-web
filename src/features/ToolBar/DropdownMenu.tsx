@@ -1,3 +1,5 @@
+import './DataMenu/menuItem.css'
+
 import { Button, Tooltip } from '@mui/material'
 import { Box } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
@@ -13,6 +15,7 @@ interface DropdownMenuProps {
   label: string
   menuItems: any[]
   open?: boolean
+  minWidth?: number
   onOpenChange?: (open: boolean) => void
 }
 
@@ -21,6 +24,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   label,
   menuItems,
   open = false,
+  minWidth,
   onOpenChange,
 }) => {
   const overlayPanelRef = useRef<OverlayPanel>(null)
@@ -83,8 +87,8 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         >
           <TieredMenu
             style={{ 
-              minWidth: 350,
-              maxWidth: 500,
+              minWidth: minWidth ?? 200,
+              maxWidth: 600,
               boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
             }}
             model={menuItems}

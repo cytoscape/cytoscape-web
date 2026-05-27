@@ -1,15 +1,16 @@
-import { Tooltip } from '@mui/material'
 import React, { useContext, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { KeycloakContext } from '../../../init/keycloak'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
+
 export const SaveWorkspaceToNDExMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): React.ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
@@ -25,53 +26,34 @@ export const SaveWorkspaceToNDExMenuItem = (
   }
   const handleCloseDialog = (): void => {
     setOpenDialog(false)
-    props.handleClose()
+    props.onClick()
   }
 
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
 
   const enabled = authenticated && allNetworkId.length > 0
 
-  const menuItem = (
-    <div
-      onClick={enabled ? handleSaveWorkspaceToNDEx : undefined}
-      style={{
-        padding: '0.375rem 1rem',
-        cursor: enabled ? 'pointer' : 'not-allowed',
-        lineHeight: '1.5rem',
-        opacity: enabled ? 1 : 0.5,
-        pointerEvents: enabled ? 'auto' : 'none',
-      }}
-    >
-      Save Workspace As...
-    </div>
-  )
+  let tooltipTitle = ''
+  if (!enabled && allNetworkId.length > 0) {
+    tooltipTitle = 'Login to save a copy of the current workspace to NDEx'
+  }
 
   return (
     <>
-      {enabled ? (
-        <>
-          {menuItem}
-          <WorkspaceNamingDialog
-            openDialog={openDialog}
-            onClose={handleCloseDialog}
-            ndexBaseUrl={ndexBaseUrl}
-            getToken={getToken}
-          />
-        </>
-      ) : (
-        <Tooltip
-          arrow
-          placement="right"
-          title={
-            allNetworkId.length > 0
-              ? 'Login to save a copy of the current workspace to NDEx'
-              : ''
-          }
-        >
-          <span>{menuItem}</span>
-        </Tooltip>
-      )}
+      <DropdownMenuItem
+        label="Save Workspace As..."
+        tooltip={tooltipTitle}
+        disabled={!enabled}
+        onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
+      />
+    {enabled && (
+      <WorkspaceNamingDialog
+        openDialog={openDialog}
+        onClose={handleCloseDialog}
+        ndexBaseUrl={ndexBaseUrl}
+        getToken={getToken}
+      />
+    )}
     </>
   )
 }

@@ -47,7 +47,7 @@ import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { ValueTypeName } from '../../../../models/TableModel'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
 import { DelimiterType } from '../../model/DelimiterType'
@@ -82,7 +82,7 @@ import {
 } from './ColumnMeaningForm'
 import { NetworkNameInput } from './NetworkNameInput'
 
-export function TableColumnAssignmentForm(props: BaseMenuProps) {
+export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
   const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
@@ -374,7 +374,7 @@ export function TableColumnAssignmentForm(props: BaseMenuProps) {
 
     setLoading(false)
     reset()
-    props.handleClose()
+    props.onClick()
   }, [rows, columns, name])
 
   const handleSelectNoneClick = () => {

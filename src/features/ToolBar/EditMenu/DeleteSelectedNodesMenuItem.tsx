@@ -1,4 +1,4 @@
-import { MenuItem } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
@@ -7,10 +7,12 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useDeleteNodes } from '../../../data/hooks/useDeleteNodes'
 import { NetworkView } from '../../../models'
 import { IdType } from '../../../models/IdType'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
+
 
 export const DeleteSelectedNodesMenuItem = (
-  props: BaseMenuProps,
+  props: BaseMenuItemProps,
 ): ReactElement => {
   const { deleteNodes } = useDeleteNodes()
 
@@ -49,7 +51,7 @@ export const DeleteSelectedNodesMenuItem = (
   }, [selectedNodes, targetNetworkId])
 
   const handleDeleteNodes = (): void => {
-    props.handleClose()
+    props.onClick()
 
     // Delete the selected nodes
     deleteNodes(currentNetworkId, selectedNodes)
@@ -59,8 +61,11 @@ export const DeleteSelectedNodesMenuItem = (
   }
 
   return (
-    <MenuItem disabled={disabled} onClick={handleDeleteNodes}>
-      Delete Selected Nodes
-    </MenuItem>
+    <DropdownMenuItem
+      label="Delete Selected Nodes"
+      icon={<DeleteIcon />}
+      disabled={disabled}
+      onClick={handleDeleteNodes}
+    />
   )
 }

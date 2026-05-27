@@ -12,14 +12,14 @@ import { IconWindowMaximize,IconWindowMinimize } from '@tabler/icons-react'
 import { PrimeReactProvider } from 'primereact/api'
 import { useState } from 'react'
 
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../../store/createNetworkFromTableStore'
 import { TableColumnAssignmentForm } from './TableColumnAssignmentForm'
 
-export function CreateNetworkFromTableForm(props: BaseMenuProps) {
+export function CreateNetworkFromTableForm(props: BaseMenuItemProps) {
   const step = useCreateNetworkFromTableStore((state) => state.step)
   const show = useCreateNetworkFromTableStore((state) => state.show)
   const [fullScreen, setFullScreen] = useState(false)
@@ -83,7 +83,7 @@ export function CreateNetworkFromTableForm(props: BaseMenuProps) {
               size="auto"
               withinPortal={false}
               opened={show}
-              onClose={props.handleClose}
+              onClose={props.onClick}
             >
               <Paper p="md" shadow="md" mih={600} miw={1000}>
                 {content}

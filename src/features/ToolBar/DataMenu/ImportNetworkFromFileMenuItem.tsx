@@ -1,28 +1,16 @@
-import { Button, MenuItem } from '@mui/material'
-import { ReactElement, useRef, useState } from 'react'
+import ShareIcon from '@mui/icons-material/Share'
+import { ReactElement } from 'react'
 
-import { BaseMenuProps } from '../BaseMenuProps'
-import { FileUpload } from '../FileUpload'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const UploadNetworkMenuItem = (props: BaseMenuProps): ReactElement => {
-  const [show, setShow] = useState(false)
 
-  const menuItem = (
-    <MenuItem component="label" onClick={() => setShow(true)}>
-      Network from File...
-    </MenuItem>
-  )
-
+export const UploadNetworkMenuItem = (props: BaseMenuItemProps): ReactElement => {
   return (
-    <>
-      {menuItem}
-      <FileUpload
-        show={show}
-        handleClose={() => {
-          props.handleClose()
-          setShow(false)
-        }}
-      />
-    </>
+    <DropdownMenuItem
+      label="Network from File..."
+      icon={<ShareIcon />}
+      onClick={props.onClick}
+    />
   )
 }

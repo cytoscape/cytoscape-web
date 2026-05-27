@@ -1,4 +1,4 @@
-import { MenuItem, Tooltip } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -11,9 +11,11 @@ import { useCreateNode } from '../../../data/hooks/useCreateNode'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { IdType } from '../../../models/IdType'
 import { NetworkView } from '../../../models/ViewModel'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
+
+export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { createNode } = useCreateNode()
 
   const [disabled, setDisabled] = useState<boolean>(false)
@@ -89,7 +91,7 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
 
     // Create node directly with default empty attributes
     createNode(currentNetworkId, [x, y], { attributes: {} })
-    props.handleClose()
+    props.onClick()
   }
 
   const isCreationEnabled = canCreateInView()
@@ -101,12 +103,12 @@ export const CreateNodeMenuItem = (props: BaseMenuProps): ReactElement => {
       : ''
 
   return (
-    <Tooltip title={tooltipText} placement="left">
-      <span>
-        <MenuItem disabled={disabled} onClick={handleCreateNode}>
-          Create Node
-        </MenuItem>
-      </span>
-    </Tooltip>
+    <DropdownMenuItem
+      label="Create Node"
+      icon={<AddIcon />}
+      disabled={disabled}
+      onClick={handleCreateNode}
+      tooltip={tooltipText}
+    />
   )
 }

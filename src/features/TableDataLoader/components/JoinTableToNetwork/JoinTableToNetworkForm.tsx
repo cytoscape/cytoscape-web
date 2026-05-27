@@ -16,7 +16,7 @@ import { IconWindowMaximize,IconWindowMinimize } from '@tabler/icons-react'
 import { PrimeReactProvider } from 'primereact/api'
 import { useState } from 'react'
 
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import {
   JoinTableToNetworkStep,
   useJoinTableToNetworkStore,
@@ -25,7 +25,7 @@ import { TableColumnAssignmentForm } from '../CreateNetworkFromTable/TableColumn
 import { TableUpload } from '../JoinTableToNetwork/TableUpload'
 import { TableColumnAppendForm } from './TableColumnAppendForm'
 
-export function JoinTableToNetworkForm(props: BaseMenuProps) {
+export function JoinTableToNetworkForm(props: BaseMenuItemProps) {
   const step = useJoinTableToNetworkStore((state) => state.step)
   const show = useJoinTableToNetworkStore((state) => state.show)
   const setShow = useJoinTableToNetworkStore((state) => state.setShow)
@@ -93,7 +93,7 @@ export function JoinTableToNetworkForm(props: BaseMenuProps) {
             withinPortal={false}
             opened={show}
             onClose={() => {
-              props.handleClose()
+              props.onClick()
               setShow(false)
             }}
           >

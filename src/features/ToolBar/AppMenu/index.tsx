@@ -1,4 +1,4 @@
-import { Divider } from '@mui/material'
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
 import { MenuItem } from 'primereact/menuitem'
 import { useEffect, useState } from 'react'
 
@@ -22,11 +22,11 @@ import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { DropdownMenuProps } from '../DropdownMenuProps'
-import { createMenuItems } from './MenuFactory'
 import { DropdownMenu } from '../DropdownMenu'
+import { createMenuItems } from './MenuFactory'
 
-export const AppMenu = (props: DropdownMenuProps) => {
+
+export const AppMenu = () => {
   const run = useServiceTaskRunner()
 
   const [open, setOpen] = useState<boolean>(false)
@@ -34,7 +34,6 @@ export const AppMenu = (props: DropdownMenuProps) => {
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
-  const { label } = props
 
   // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -134,6 +133,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
     return [
       {
         label: 'Manage Apps...',
+        icon: <AppRegistrationIcon />,
         style: { height: '2.5em' },
         command: () => handleOpenDialog(true),
       },
@@ -145,7 +145,7 @@ export const AppMenu = (props: DropdownMenuProps) => {
     const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
     const divider: MenuItem[] =
       menuModel.length > 0 || appMenuItems.length > 0
-        ? [{ template: <Divider /> }]
+        ? [{ separator: true }]
         : []
     setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
   }, [serviceApps, apps])
@@ -254,8 +254,8 @@ export const AppMenu = (props: DropdownMenuProps) => {
   return (
     <>
       <DropdownMenu
-        id={label}
-        label={label}
+        id="apps-menu"
+        label="Apps"
         menuItems={menuModel}
         open={open}
         onOpenChange={setOpen}
