@@ -13,8 +13,8 @@ import {
   GridSelection,
   Item,
 } from '@glideapps/glide-data-grid'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
-import { Button, ButtonGroup, Tooltip } from '@mui/material'
+import { KeyboardArrowDown, KeyboardArrowUp, CheckBoxOutlined as CheckBoxOutlinedIcon } from '@mui/icons-material'
+import { Button, ButtonGroup, Tooltip, Menu, MenuItem, Divider, ListItemIcon, ListItemText } from '@mui/material'
 import Box from '@mui/material/Box'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -172,6 +172,15 @@ export default function TableBrowser(props: {
   const [columnFormError, setColumnFormError] = React.useState<
     string | undefined
   >(undefined)
+
+  const [contextMenu, setContextMenu] = React.useState<{
+    anchorPosition: { top: number; left: number }
+    cell: Item
+  } | null>(null)
+
+  const handleContextMenuClose = React.useCallback(() => {
+    setContextMenu(null)
+  }, [])
 
   const [nodeSelection, setNodeSelection] = React.useState<GridSelection>({
     columns: CompactSelection.empty(),
@@ -798,8 +807,15 @@ export default function TableBrowser(props: {
   const onCellContextMenu = React.useCallback(
     (cell: Item, event: CellClickedEventArgs): void => {
       event.preventDefault()
+      setContextMenu({
+        anchorPosition: {
+          top: event.bounds.y + event.bounds.height,
+          left: event.bounds.x + event.localEventX,
+        },
+        cell,
+      })
     },
-    [props.currentNetworkId, currentTable, tables],
+    [],
   )
 
   const onCellEdited = React.useCallback(
@@ -1848,6 +1864,7 @@ export default function TableBrowser(props: {
           rowMarkers={'checkbox'}
           rowMarkerWidth={35}
           rowMarkerStartIndex={minNodeId}
+          onCellContextMenu={onCellContextMenu}
           onPaste={onPaste}
           getCellsForSelection={true}
           onColumnMoved={onColMoved}
@@ -1878,6 +1895,7 @@ export default function TableBrowser(props: {
           rowMarkers={'checkbox'}
           rowMarkerWidth={35}
           rowMarkerStartIndex={minEdgeId}
+          onCellContextMenu={onCellContextMenu}
           onPaste={onPaste}
           getCellsForSelection={true}
           onColumnMoved={onColMoved}
@@ -1896,6 +1914,119 @@ export default function TableBrowser(props: {
       <TabPanel value={currentTabIndex} index={2}>
         <NetworkInfoPanel height={props.height - TOOLBAR_HEIGHT - 1} />
       </TabPanel>
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleContextMenuClose}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null ? contextMenu.anchorPosition : undefined
+        }
+        MenuListProps={{
+          'aria-labelledby': 'table-browser-context-menu',
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            if (contextMenu === null) return
+            const [, rowIndex] = contextMenu.cell
+            const rowData = rows?.[rowIndex]
+            if (rowData?.id != null) {
+              if (currentTable === nodeTable) {
+                exclusiveSelect(props.currentNetworkId, [rowData.id], [])
+              } else {
+                exclusiveSelect(props.currentNetworkId, [], [rowData.id])
+              }
+            }
+            handleContextMenuClose()
+          }}
+        >
+          {`Select This ${currentTable === nodeTable ? 'Node' : 'Edge'} in Viewport`}
+        </MenuItem>
+
+        <MenuItem
+          disabled={selection.rows.length === 0 && selection.current === undefined}
+          onClick={() => {
+            const rowsToSelect = new Set(selection.rows.toArray())
+            
+            if (selection.current) {
+              const ranges = selection.current.rangeStack.length > 0 
+                ? selection.current.rangeStack 
+                : [selection.current.range]
+                
+              ranges.forEach((range) => {
+                for (let r = range.y; r < range.y + range.height; r++) {
+                  rowsToSelect.add(r)
+                }
+              })
+            }
+
+            const rowIds = Array.from(rowsToSelect)
+              .map((r) => rows?.[r]?.id)
+              .filter((id) => id !== undefined)
+            if (currentTable === nodeTable) {
+              exclusiveSelect(props.currentNetworkId, rowIds as string[], [])
+            } else {
+              exclusiveSelect(props.currentNetworkId, [], rowIds as string[])
+            }
+            setSelection({
+              ...selection,
+              rows: CompactSelection.empty(),
+            })
+            handleContextMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <CheckBoxOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>
+            {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'} from selection`}
+          </ListItemText>
+        </MenuItem>
+
+        <Divider />
+
+        <MenuItem
+          onClick={() => {
+            if (contextMenu === null) return
+            const [, rowIndex] = contextMenu.cell
+            setSelection({
+              ...selection,
+              rows: selection.rows.add(rowIndex),
+            })
+            handleContextMenuClose()
+          }}
+        >
+          Select Entire Row
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            if (contextMenu === null) return
+            const [colIndex] = contextMenu.cell
+            setSelection({
+              ...selection,
+              columns: selection.columns.add(colIndex),
+            })
+            handleContextMenuClose()
+          }}
+        >
+          Select Entire Column
+        </MenuItem>
+
+        <Divider />
+
+        <MenuItem
+          onClick={() => {
+            setSelection({
+              rows: CompactSelection.empty(),
+              columns: CompactSelection.empty(),
+            })
+            handleContextMenuClose()
+          }}
+        >
+          Clear All Selections
+        </MenuItem>
+      </Menu>
     </Box>
   )
 }
