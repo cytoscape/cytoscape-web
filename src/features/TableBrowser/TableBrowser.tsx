@@ -11,11 +11,10 @@ import {
   GridColumn,
   GridColumnIcon,
   GridSelection,
-  HeaderClickedEventArgs,
   Item,
 } from '@glideapps/glide-data-grid'
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
-import { Button, ButtonGroup, Tooltip } from '@mui/material'
+import { KeyboardArrowDown, KeyboardArrowUp, CheckBoxOutlined as CheckBoxOutlinedIcon, ContentCopy, ContentPaste } from '@mui/icons-material'
+import { Button, ButtonGroup, Tooltip, Menu, MenuItem, Divider, ListItemIcon, ListItemText } from '@mui/material'
 import Box from '@mui/material/Box'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -174,6 +173,15 @@ export default function TableBrowser(props: {
     string | undefined
   >(undefined)
 
+  const [contextMenu, setContextMenu] = React.useState<{
+    anchorPosition: { top: number; left: number }
+    cell: Item
+  } | null>(null)
+
+  const handleContextMenuClose = React.useCallback(() => {
+    setContextMenu(null)
+  }, [])
+
   const [nodeSelection, setNodeSelection] = React.useState<GridSelection>({
     columns: CompactSelection.empty(),
     rows: CompactSelection.empty(),
@@ -188,9 +196,12 @@ export default function TableBrowser(props: {
   const setSelection =
     currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
 
-  const [selectedCellColumn, setSelectedCellColumn] = React.useState<
-    number | null
-  >(null)
+  const onGridSelectionChange = React.useCallback(
+    (newSelection: GridSelection) => {
+      setSelection(newSelection)
+    },
+    [setSelection],
+  )
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
@@ -229,6 +240,7 @@ export default function TableBrowser(props: {
 
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const setCellValue = useTableStore((state) => state.setValue)
+  const setValues = useTableStore((state) => state.setValues)
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
   const duplicateColumn = useTableStore((state) => state.duplicateColumn)
@@ -795,8 +807,15 @@ export default function TableBrowser(props: {
   const onCellContextMenu = React.useCallback(
     (cell: Item, event: CellClickedEventArgs): void => {
       event.preventDefault()
+      setContextMenu({
+        anchorPosition: {
+          top: event.bounds.y + event.bounds.height,
+          left: event.bounds.x + event.localEventX,
+        },
+        cell,
+      })
     },
-    [props.currentNetworkId, currentTable, tables],
+    [],
   )
 
   const onCellEdited = React.useCallback(
@@ -910,62 +929,77 @@ export default function TableBrowser(props: {
     [props.currentNetworkId, currentTable, tables, sort, rows],
   )
 
-  const onHeaderClicked = React.useCallback(
-    (col: number, event: HeaderClickedEventArgs): void => {
-      setSelection({
-        ...selection,
-        columns: CompactSelection.fromSingleSelection(col),
-      })
-    },
-    [selection],
-  )
+  const onPaste = React.useCallback(
+    (target: Item, values: readonly (readonly string[])[]) => {
+      const [startCol, startRow] = target
+      const cellEdits: CellEdit[] = []
+      const prevCellEdits: CellEdit[] = []
 
-  const onCellClicked = React.useCallback(
-    (cell: Item, event: CellClickedEventArgs): void => {
-      const rowIndex = cell[1]
-      const columnIndex = cell[0]
+      for (let dy = 0; dy < values.length; dy++) {
+        const rowIndex = startRow + dy
+        const rowData = rows?.[rowIndex]
+        if (rowData == null) continue
 
-      if (event.shiftKey) {
-        // Handle shift-click for range selection
-        const start = Math.min(selection.rows.first() ?? 0, rowIndex)
-        const end = Math.max(selection.rows.last() ?? 0, rowIndex)
-        setSelection({
-          ...selection,
-          rows: CompactSelection.fromSingleSelection(start).add([
-            start,
-            end + 1,
-          ]),
-        })
-      } else if (event.ctrlKey || event.metaKey) {
-        // Handle ctrl/cmd-click for toggle selection
-        const newRows = selection.rows.hasIndex(rowIndex)
-          ? selection.rows.remove(rowIndex)
-          : selection.rows.add(rowIndex)
-        setSelection({
-          ...selection,
-          rows: newRows,
-        })
-      } else {
-        // Handle single row selection
-        setSelection({
-          rows: CompactSelection.fromSingleSelection(cell[1]),
-          columns: CompactSelection.empty(),
-          current: {
-            cell,
-            range: {
-              x: cell[0],
-              y: cell[1],
-              width: 1,
-              height: 1,
-            },
-            rangeStack: [],
-          },
-        })
+        for (let dx = 0; dx < values[dy].length; dx++) {
+          const colIndex = startCol + dx
+          const column = allColumns?.[colIndex]
+          if (column == null || (column as any).isVirtual) continue
+
+          const pastedString = values[dy][dx]
+          if (!serializedStringIsValid(column.type, pastedString)) continue
+
+          const newValue = deserializeValue(column.type, pastedString)
+          const prevValue = (rowData as any)?.[column.id] as ValueType
+
+          cellEdits.push({
+            row: rowData.id,
+            column: column.id,
+            value: newValue as ValueType,
+          })
+          prevCellEdits.push({
+            row: rowData.id,
+            column: column.id,
+            value: prevValue,
+          })
+        }
       }
 
-      setSelectedCellColumn(columnIndex)
+      if (cellEdits.length > 0) {
+        postEdit(
+          UndoCommandType.APPLY_VALUE_TO_SELECTED,
+          'Paste cell values',
+          [
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            prevCellEdits,
+          ],
+          [
+            props.currentNetworkId,
+            currentTable === nodeTable ? 'node' : 'edge',
+            cellEdits,
+          ],
+        )
+        setValues(
+          props.currentNetworkId,
+          currentTable === nodeTable ? 'node' : 'edge',
+          cellEdits,
+        )
+        setNetworkModified(networkId, true)
+      }
+
+      return false
     },
-    [selection],
+    [
+      rows,
+      allColumns,
+      props.currentNetworkId,
+      currentTable,
+      nodeTable,
+      postEdit,
+      setValues,
+      setNetworkModified,
+      networkId,
+    ],
   )
 
   const selectedColumn =
@@ -1396,12 +1430,7 @@ export default function TableBrowser(props: {
       </>
     ) : null
 
-  const selectedCell =
-    selection.rows.length > 0 &&
-    selectedCellColumn !== null &&
-    selectedCellColumn >= 0
-      ? [selectedCellColumn, selection.rows.first()!]
-      : null
+  const selectedCell = selection.current?.cell ?? null
 
   // Check if the selected cell is in a virtual column
   const isSelectedCellVirtual =
@@ -1425,8 +1454,7 @@ export default function TableBrowser(props: {
               onClick={() => {
                 const [columnIndex, rowIndex] = selectedCell
                 const rowData = rows?.[rowIndex]
-                // const cxId = rowData?.id
-                const column = columns?.[columnIndex]
+                const column = allColumns?.[columnIndex]
                 const columnKey = column.id
                 const cellValue = (rowData as any)?.[columnKey]
                 const cellEdits: CellEdit[] = []
@@ -1474,8 +1502,7 @@ export default function TableBrowser(props: {
               onClick={() => {
                 const [columnIndex, rowIndex] = selectedCell
                 const rowData = rows?.[rowIndex]
-                // const cxId = rowData?.id
-                const column = columns?.[columnIndex]
+                const column = allColumns?.[columnIndex]
                 const columnKey = column.id
                 const cellValue = (rowData as any)?.[columnKey]
                 const cellEdits: CellEdit[] = []
@@ -1524,28 +1551,42 @@ export default function TableBrowser(props: {
                 currentTable === nodeTable ? 'nodes' : 'edges'
               }`}
             </Button>
-            <Button
-              onClick={() => {
-                const rowsToSelect = selection.rows.toArray()
-                const rowIds = rowsToSelect
-                  .map((r) => rows?.[r].id)
-                  .filter((id) => id !== undefined)
-                if (currentTable === nodeTable) {
-                  exclusiveSelect(props.currentNetworkId, rowIds, [])
-                } else {
-                  exclusiveSelect(props.currentNetworkId, [], rowIds)
-                }
-                setSelection({
-                  ...selection,
-                  rows: CompactSelection.empty(),
-                })
-              }}
-            >
-              {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
-            </Button>
           </ButtonGroup>
         </Box>
       </>
+    ) : null
+
+  const selectedRowToolbar =
+    selection.rows.length > 0 ? (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          bgColor: '#d9d9d9',
+        }}
+      >
+        <ButtonGroup size="small">
+          <Button
+            onClick={() => {
+              const rowsToSelect = selection.rows.toArray()
+              const rowIds = rowsToSelect
+                .map((r) => rows?.[r].id)
+                .filter((id) => id !== undefined)
+              if (currentTable === nodeTable) {
+                exclusiveSelect(props.currentNetworkId, rowIds, [])
+              } else {
+                exclusiveSelect(props.currentNetworkId, [], rowIds)
+              }
+              setSelection({
+                ...selection,
+                rows: CompactSelection.empty(),
+              })
+            }}
+          >
+            {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
+          </Button>
+        </ButtonGroup>
+      </Box>
     ) : null
 
   const tableBrowserToolbar = (
@@ -1686,52 +1727,15 @@ export default function TableBrowser(props: {
       />
       {selectedColumnToolbar}
       {selectedCellToolbar}
+      {selectedRowToolbar}
     </Box>
   )
 
-  const onKeyDown = (key: string) => {
-    let nextCell: Item = [0, 0]
-    switch (key) {
-      case 'ArrowUp':
-        nextCell = [
-          selection.current?.cell?.[0] ?? 0,
-          Math.max(0, (selection.current?.cell?.[1] ?? 0) - 1),
-        ]
-        break
-      case 'ArrowDown':
-        nextCell = [
-          selection.current?.cell?.[0] ?? 0,
-          Math.min((selection.current?.cell?.[1] ?? 0) + 1, rows.length - 1),
-        ]
-        break
-      case 'ArrowLeft':
-        nextCell = [
-          Math.max(0, (selection.current?.cell?.[0] ?? 0) - 1),
-          selection.current?.cell?.[1] ?? 0,
-        ]
-        break
-      case 'ArrowRight':
-        nextCell = [
-          Math.min((selection.current?.cell?.[0] ?? 0) + 1, columns.length - 1),
-          selection.current?.cell?.[1] ?? 0,
-        ]
-        break
-    }
-    setSelection({
-      rows: CompactSelection.empty(),
-      columns: CompactSelection.empty(),
-      current: {
-        cell: nextCell,
-        range: {
-          x: nextCell[0],
-          y: nextCell[1],
-          width: 1,
-          height: 1,
-        },
-        rangeStack: [],
-      },
-    })
-  }
+
+  const isContextCellVirtual =
+    contextMenu !== null &&
+    allColumns[contextMenu.cell[0]] &&
+    (allColumns[contextMenu.cell[0]] as any).isVirtual === true
 
   return (
     <Box
@@ -1854,17 +1858,20 @@ export default function TableBrowser(props: {
         {tableBrowserToolbar}
         <DataEditor
           data-testid="table-browser-node-editor"
-          onKeyDown={(e) => onKeyDown(e.key)}
-          // rowSelectionBlending="mixed"
           ref={nodeDataEditorRef}
-          onCellClicked={onCellClicked}
+          gridSelection={selection}
+          onGridSelectionChange={onGridSelectionChange}
+          rowSelectionBlending="mixed"
+          rangeSelectionBlending="mixed"
+          columnSelectionBlending="mixed"
+          rangeSelect="rect"
           rowSelect={'multi'}
           rowMarkers={'checkbox'}
-          rowMarkerWidth={1}
+          rowMarkerWidth={35}
           rowMarkerStartIndex={minNodeId}
-          onPaste={true}
+          onCellContextMenu={onCellContextMenu}
+          onPaste={onPaste}
           getCellsForSelection={true}
-          onHeaderClicked={onHeaderClicked}
           onColumnMoved={onColMoved}
           onItemHovered={(e) => onItemHovered(e.location)}
           overscrollX={10}
@@ -1876,24 +1883,26 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={columns}
           rows={maxNodeId - minNodeId + 1}
-          gridSelection={selection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         {tableBrowserToolbar}
         <DataEditor
           data-testid="table-browser-edge-editor"
-          onKeyDown={(e) => onKeyDown(e.key)}
-          // rowSelectionBlending="mixed"
           ref={edgeDataEditorRef}
-          onCellClicked={onCellClicked}
+          gridSelection={selection}
+          onGridSelectionChange={onGridSelectionChange}
+          rowSelectionBlending="mixed"
+          rangeSelectionBlending="mixed"
+          columnSelectionBlending="mixed"
+          rangeSelect="rect"
           rowSelect={'multi'}
           rowMarkers={'checkbox'}
-          rowMarkerWidth={1}
+          rowMarkerWidth={35}
           rowMarkerStartIndex={minEdgeId}
+          onCellContextMenu={onCellContextMenu}
+          onPaste={onPaste}
           getCellsForSelection={true}
-          onPaste={true}
-          onHeaderClicked={onHeaderClicked}
           onColumnMoved={onColMoved}
           onItemHovered={(e) => onItemHovered(e.location)}
           overscrollX={10}
@@ -1905,12 +1914,246 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={allColumns}
           rows={maxEdgeId - minEdgeId + 1}
-          gridSelection={selection}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
         <NetworkInfoPanel height={props.height - TOOLBAR_HEIGHT - 1} />
       </TabPanel>
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleContextMenuClose}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null ? contextMenu.anchorPosition : undefined
+        }
+        MenuListProps={{
+          'aria-labelledby': 'table-browser-context-menu',
+        }}
+      >
+        <Tooltip title={isContextCellVirtual ? "Cannot apply to virtual columns" : ""} placement="right">
+          <span>
+            <MenuItem
+              disabled={isContextCellVirtual}
+              onClick={() => {
+                if (contextMenu === null) return
+                const [columnIndex, rowIndex] = contextMenu.cell
+                const rowData = rows?.[rowIndex]
+                const column = allColumns?.[columnIndex]
+                const columnKey = column.id
+                const cellValue = (rowData as any)?.[columnKey]
+                const cellEdits: CellEdit[] = []
+                const prevColumnValues: CellEdit[] = []
+                Array.from(currentTable.rows.entries()).map(([k, v]) => {
+                  cellEdits.push({
+                    row: k,
+                    column: columnKey,
+                    value: cellValue,
+                  })
+                  prevColumnValues.push({
+                    row: k,
+                    column: columnKey,
+                    value: (v as any)?.[columnKey] as ValueType,
+                  })
+                })
+                postEdit(
+                  UndoCommandType.APPLY_VALUE_TO_COLUMN,
+                  'Apply value to column',
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    prevColumnValues,
+                  ],
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    cellEdits,
+                  ],
+                )
+                applyValueToElemenets(
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  columnKey,
+                  cellValue,
+                  undefined,
+                )
+                setNetworkModified(networkId, true)
+                handleContextMenuClose()
+              }}
+            >
+              Apply to entire column
+            </MenuItem>
+          </span>
+        </Tooltip>
+
+        <Tooltip title={isContextCellVirtual ? "Cannot apply to virtual columns" : ""} placement="right">
+          <span>
+            <MenuItem
+              disabled={isContextCellVirtual}
+              onClick={() => {
+                if (contextMenu === null) return
+                const [columnIndex, rowIndex] = contextMenu.cell
+                const rowData = rows?.[rowIndex]
+                const column = allColumns?.[columnIndex]
+                const columnKey = column.id
+                const cellValue = (rowData as any)?.[columnKey]
+                const cellEdits: CellEdit[] = []
+                const prevColumnValues: CellEdit[] = []
+                rows.forEach((r) => {
+                  const rowId = r.id
+                  cellEdits.push({
+                    row: rowId,
+                    column: columnKey,
+                    value: cellValue,
+                  })
+                  prevColumnValues.push({
+                    row: rowId,
+                    column: columnKey,
+                    value: (r as any)?.[columnKey] as ValueType,
+                  })
+                })
+                postEdit(
+                  UndoCommandType.APPLY_VALUE_TO_SELECTED,
+                  'Apply value to selected elements',
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    prevColumnValues,
+                  ],
+                  [
+                    props.currentNetworkId,
+                    currentTable === nodeTable ? 'node' : 'edge',
+                    cellEdits,
+                  ],
+                )
+                applyValueToElemenets(
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  columnKey,
+                  cellValue,
+                  rows.map((r) => r.id),
+                )
+                setNetworkModified(networkId, true)
+                handleContextMenuClose()
+              }}
+            >
+              Apply to selected {currentTable === nodeTable ? 'nodes' : 'edges'}
+            </MenuItem>
+          </span>
+        </Tooltip>
+
+        <Divider />
+
+        <MenuItem
+          onClick={() => {
+            if (contextMenu === null) return
+            const [columnIndex, rowIndex] = contextMenu.cell
+            const rowData = rows?.[rowIndex]
+            const column = allColumns?.[columnIndex]
+            const columnKey = column.id
+            const cellValue = (rowData as any)?.[columnKey]
+            navigator.clipboard.writeText(String(cellValue ?? ''))
+            handleContextMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <ContentCopy fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Copy</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            const activeRef = currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
+            // emit paste assumes the grid has focus or the browser permits it.
+            // Note: Users may need to Ctrl+V instead if browser blocks programmatic paste.
+            activeRef.current?.emit('paste').catch(() => {
+              console.warn('Programmatic paste blocked by browser. Please use Ctrl+V.')
+            })
+            handleContextMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <ContentPaste fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Paste</ListItemText>
+        </MenuItem>
+
+        <Divider />
+
+        <MenuItem
+          disabled={selection.current === undefined}
+          onClick={() => {
+            const activeRef = currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
+            activeRef.current?.emit('copy')
+            handleContextMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <ContentCopy fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Copy Selected</ListItemText>
+        </MenuItem>
+
+        <Divider />
+
+        <MenuItem
+          onClick={() => {
+            if (contextMenu === null) return
+            const [, rowIndex] = contextMenu.cell
+            const rowData = rows?.[rowIndex]
+            if (rowData?.id != null) {
+              if (currentTable === nodeTable) {
+                exclusiveSelect(props.currentNetworkId, [rowData.id], [])
+              } else {
+                exclusiveSelect(props.currentNetworkId, [], [rowData.id])
+              }
+            }
+            handleContextMenuClose()
+          }}
+        >
+          {`Select This ${currentTable === nodeTable ? 'Node' : 'Edge'} in Viewport`}
+        </MenuItem>
+
+        <MenuItem
+          disabled={selection.rows.length === 0 && selection.current === undefined}
+          onClick={() => {
+            const rowsToSelect = new Set(selection.rows.toArray())
+            
+            if (selection.current) {
+              const ranges = selection.current.rangeStack.length > 0 
+                ? selection.current.rangeStack 
+                : [selection.current.range]
+                
+              ranges.forEach((range) => {
+                for (let r = range.y; r < range.y + range.height; r++) {
+                  rowsToSelect.add(r)
+                }
+              })
+            }
+
+            const rowIds = Array.from(rowsToSelect)
+              .map((r) => rows?.[r]?.id)
+              .filter((id) => id !== undefined)
+            if (currentTable === nodeTable) {
+              exclusiveSelect(props.currentNetworkId, rowIds as string[], [])
+            } else {
+              exclusiveSelect(props.currentNetworkId, [], rowIds as string[])
+            }
+            setSelection({
+              ...selection,
+              rows: CompactSelection.empty(),
+            })
+            handleContextMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <CheckBoxOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>
+            {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'} from selection`}
+          </ListItemText>
+        </MenuItem>
+      </Menu>
     </Box>
   )
 }
