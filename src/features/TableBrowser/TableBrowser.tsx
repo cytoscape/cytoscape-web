@@ -1699,7 +1699,6 @@ export default function TableBrowser(props: {
         flexDirection: 'column',
         padding: 0,
         overflow: 'clip',
-        borderRadius: (theme) => theme.spacing(1),
         backgroundColor: (theme) => theme.palette.background.paper,
       }}
     >
@@ -1710,7 +1709,6 @@ export default function TableBrowser(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderRadius: (theme) => theme.spacing(1),
           backgroundColor: (theme) => theme.palette.background.paper,
         }}
       >
@@ -1775,6 +1773,7 @@ export default function TableBrowser(props: {
               width: 32,
               height: 32,
               mr: 1,
+              color: (theme) => theme.palette.text.secondary,
               '&:hover': {
                 backgroundColor: 'transparent',
               },

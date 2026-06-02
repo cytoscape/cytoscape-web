@@ -2,6 +2,7 @@ import { styled } from '@mui/material/styles'
 
 export const Search = styled('div')(({ theme }) => ({
   position: 'relative',
+  border: `1px solid ${theme.palette.divider}`,
   borderRadius: theme.spacing(2),
   backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.background.paper,
   marginLeft: 0,

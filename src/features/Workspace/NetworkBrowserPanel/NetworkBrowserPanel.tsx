@@ -80,7 +80,6 @@ export const NetworkBrowserPanel = ({
     <Box
       data-testid="network-browser-panel"
       sx={{
-        p: (theme) => theme.spacing(0, 0.5, 0.5, 0.5),
         margin: 0,
         height: '100%',
         boxSizing: 'border-box',
@@ -99,7 +98,6 @@ export const NetworkBrowserPanel = ({
           p: 0,
           m: 0,
           backgroundColor: (theme) => theme.palette.background.paper,
-          borderRadius: (theme) => theme.spacing(1),
         }}
       >
         <Box
@@ -112,7 +110,6 @@ export const NetworkBrowserPanel = ({
             m: 0,
             backgroundColor: (theme) => theme.palette.background.paper,
             borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-            borderRadius: (theme) => theme.spacing(1, 1, 0, 0),
           }}
         >
           <Tabs
@@ -168,6 +165,7 @@ export const NetworkBrowserPanel = ({
                   width: 32,
                   height: 32,
                   mr: 1,
+                  color: (theme) => theme.palette.text.secondary,
                   '&:hover': {
                     backgroundColor: 'transparent',
                   },
@@ -202,7 +200,6 @@ export const NetworkBrowserPanel = ({
             height: '100%',
             width: '100%',
             overflowY: 'auto',
-            borderRadius: (theme) => theme.spacing(0, 0, 1, 1),
           }}
           hidden={currentTabIndex !== 0}
         >

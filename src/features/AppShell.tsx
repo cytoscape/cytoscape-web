@@ -423,7 +423,6 @@ const AppShell = (): ReactElement => {
         display: 'flex',
         boxSizing: 'border-box',
         flexDirection: 'column',
-        backgroundColor: (theme) => theme.palette.grey[800],
       }}
     >
       <Box data-testid="app-shell-toolbar-container" sx={{ p: 0, margin: 0 }}>

@@ -18,14 +18,12 @@ export const MessagePanel = (props: MessagePanelProps): ReactElement => {
         display: 'grid',
         padding: '1em',
         backgroundColor: (theme) => theme.palette.background.paper,
-        borderRadius: (theme) => theme.spacing(1),
       }}
     >
       <Box
         sx={{
           margin: 'auto',
           color: (theme) => theme.palette.text.disabled,
-          borderRadius: (theme) => theme.spacing(1),
         }}
       >
         <h2>{props.message}</h2>

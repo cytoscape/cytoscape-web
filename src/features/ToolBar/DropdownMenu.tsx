@@ -67,7 +67,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         <Button
           data-testid={`toolbar-${id}-menu-button`}
           sx={{
-            color: 'white',
+            color: (theme) => theme.palette.common.white,
             textTransform: 'none',
           }}
           id={`${id}-dropdown`}

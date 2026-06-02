@@ -34,10 +34,10 @@ export const OpenRightPanelButton = ({
             position: 'absolute',
             top: (theme) => theme.spacing(7),
             right: 0,
-            p: (theme) => theme.spacing(0.5, 0.5, 0.5, 0.5),
+            p: (theme) => theme.spacing(0.5, 0, 0.5, 0.5),
             mt: (theme) => theme.spacing(-0.5),
             borderRadius: (theme) => theme.spacing(1.25, 0, 0, 1.25),
-            backgroundColor: (theme) => theme.palette.grey[800],
+            backgroundColor: (theme) => theme.palette.divider,
           }}
         >
           <IconButton
@@ -49,6 +49,7 @@ export const OpenRightPanelButton = ({
               height: 40,
               px: 0,
               borderRadius: (theme) => theme.spacing(1, 0, 0, 1),
+              color: (theme) => theme.palette.text.secondary,
               backgroundColor: (theme) => theme.palette.background.paper,
               '&:hover': {
                 backgroundColor: (theme) => theme.palette.background.paper,
@@ -70,6 +71,7 @@ export const OpenRightPanelButton = ({
             width: 32,
             height: 32,
             zIndex: 1000,
+            color: (theme) => theme.palette.text.secondary,
             '&:hover': {
               backgroundColor: 'transparent',
             },

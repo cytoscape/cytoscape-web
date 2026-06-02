@@ -11,7 +11,6 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
     <Accordion
       data-testid="layout-tools-accordion"
       sx={{
-        borderRadius: (theme) => `${theme.spacing(1)} !important`,
         backgroundColor: (theme) => theme.palette.background.paper,
         backgroundImage: 'none',
         boxShadow: 'none',
@@ -24,7 +23,6 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
           minHeight: '40px', // collapsed summary height
           '&.Mui-expanded': {
             minHeight: '40px', // expanded summary height
-            borderRadius: (theme) => `${theme.spacing(1)} !important`,
           },
           '.MuiAccordionSummary-content': {
             marginTop: '12px !important',

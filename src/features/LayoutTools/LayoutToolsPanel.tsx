@@ -29,7 +29,7 @@ export const LayoutToolsPanel = (): JSX.Element => {
         width: '100%',
         height: '100%',
         paddingBottom: 1,
-        borderRadius: (theme) => theme.spacing(1),
+        borderRadius: 0,
       }}
     >
       <Scaling networkId={targetNetworkId} />

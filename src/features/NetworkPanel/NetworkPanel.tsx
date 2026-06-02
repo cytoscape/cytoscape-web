@@ -1,4 +1,3 @@
-import { Box } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -71,7 +70,7 @@ const NetworkPanel = ({
   const workspace = useWorkspaceStore((state) => state.workspace)
 
   if (failedToLoad) {
-    return <NetworkMessagePanel message="Failed to load network data" />
+    return <MessagePanel message="Failed to load network data" />
   }
 
   // If we have a networkId prop, we're expecting a network to load
@@ -86,7 +85,7 @@ const NetworkPanel = ({
 
     // If network isn't loaded yet, show loading state
     if (targetNetwork.id === '') {
-      return <NetworkMessagePanel message="Loading network data..." />
+      return <MessagePanel message="Loading network data..." />
     }
 
     // Network is loaded, continue to render it
@@ -131,31 +130,16 @@ const NetworkPanel = ({
   // If workspace hasn't been initialized yet (id is empty), show loading state
   // This prevents "No network selected" from flashing during initial load
   if (workspace.id === '') {
-    return <NetworkMessagePanel message="Loading network data..." />
+    return <MessagePanel message="Loading network data..." />
   }
 
   // Workspace is initialized but no network is selected
   if (workspace.networkIds.length === 0) {
-    return <NetworkMessagePanel message="No network selected" />
+    return <MessagePanel message="No network selected" />
   }
 
   // This should not be reached, but TypeScript needs it
-  return <NetworkMessagePanel message="No network selected" />
-}
-
-function NetworkMessagePanel({ message }: { message: string }): ReactElement {
-  return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        padding: (theme) => theme.spacing(0, 0.5, 0.5, 0.5),
-      }}
-    >
-      <MessagePanel message={message} />
-    </Box>
-  )
+  return <MessagePanel message="No network selected" />
 }
 
 export default NetworkPanel

@@ -387,7 +387,6 @@ const WorkSpaceEditor = (): JSX.Element => {
         height: '100%',
         width: '100%',
         overflow: 'hidden',
-        backgroundColor: (theme) => theme.palette.grey[800],
       }}
     >
       <Allotment data-testid="workspace-editor">
@@ -403,51 +402,37 @@ const WorkSpaceEditor = (): JSX.Element => {
         >
           <Allotment>
             <Allotment.Pane
-              maxSize={panels.left === PanelState.OPEN ? 450 : 40}
+              maxSize={panels.left === PanelState.OPEN ? 450 : 30}
             >
               {panels.left === PanelState.CLOSED ? (
-                <Box
-                  data-testid="workspace-editor-left-panel-closed"
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    p: (theme) => theme.spacing(0, 0.5, 0.625, 0.5),
-                  }}
-                >
-                  <Tooltip title="Open network panel" arrow placement="right">
-                    <Button
-                      variant="contained"
-                      data-testid="workspace-editor-open-left-panel-button"
-                      sx={{
-                        height: '100%',
-                        minWidth: 32,
-                        maxWidth: 32,
-                        p: 0,
-                        border: 'none',
-                        borderRadius: (theme) => theme.spacing(1),
-                        backgroundColor: (theme) => theme.palette.background.paper,
-                        color: (theme) => theme.palette.text.secondary,
-                        '&:hover': {
-                          backgroundColor: (theme) => theme.palette.background.paper,
-                        },
-                        boxShadow: 'none',
-                      }}
-                      onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
-                    >
-                      <ChevronRightIcon />
-                    </Button>
-                  </Tooltip>
-                </Box>
+                <Tooltip title="Open network panel" arrow placement="right">
+                  <Box
+                    data-testid="workspace-editor-left-panel-closed"
+                    onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: (theme) => theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.secondary,
+                      borderRight: (theme) => `2px solid ${theme.palette.divider}`,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ChevronRightIcon />
+                  </Box>
+                </Tooltip>
               ) : (
                 <Box
                   data-testid="workspace-editor-left-panel-open"
                   sx={{
                     width: '100%',
                     height: '100%',
-                    boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
+                    borderRight: (theme) => `4px solid ${theme.palette.divider}`,
                   }}
                 >
                   <Box
@@ -462,7 +447,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                     />
                   </Box>
                   <Box sx={{
-                    p: (theme) => theme.spacing(0.125, 0.5, 0.5, 0.5),
+                    borderTop: (theme) => `2px solid ${theme.palette.divider}`,
                   }}>
                     <LayoutToolsBasePanel />
                   </Box>
@@ -483,48 +468,35 @@ const WorkSpaceEditor = (): JSX.Element => {
             preferredSize={'25%'} // percentage of the total height of the workspace
             maxSize={
               // Max size is determined by the window height
-              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 40
+              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 28
             }
           >
             {panels.bottom === PanelState.CLOSED ? (
-              <Box
-                data-testid="workspace-editor-bottom-panel-closed"
-                sx={{
-                  width: '100%',
-                  display: 'flex',
-                  p: (theme) => theme.spacing(0, 0.5, 1, 0.5),
-                }}
-              >
-                <Tooltip title="Open table panel" arrow placement="top">
-                  <Button
-                    variant="contained"
-                    data-testid="workspace-editor-open-bottom-panel-button"
-                    sx={{
-                      height: 32,
-                      width: '100%',
-                      p: 0,
-                      border: 'none',
-                      borderRadius: (theme) => theme.spacing(1),
-                      backgroundColor: (theme) => theme.palette.background.paper,
-                      color: (theme) => theme.palette.text.secondary,
-                      '&:hover': {
-                        backgroundColor: (theme) => theme.palette.background.paper,
-                      },
-                      boxShadow: 'none',
-                    }}
-                    onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
-                  >
-                    <ExpandLessIcon />
-                  </Button>
-                </Tooltip>
-              </Box>
+              <Tooltip title="Open table panel" arrow placement="top">
+                <Box
+                  data-testid="workspace-editor-bottom-panel-closed"
+                  onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: (theme) => theme.palette.background.paper,
+                    color: (theme) => theme.palette.text.secondary,
+                    borderTop: (theme) => `2px solid ${theme.palette.divider}`,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ExpandLessIcon />
+                </Box>
+              </Tooltip>
             ) : (
               <Box
                 data-testid="workspace-editor-bottom-panel-open"
                 sx={{
                   height: '100%',
                   display: 'flex',
-                  p: (theme) => theme.spacing(0.5, 0.5, 1, 0.5),
+                  borderTop: (theme) => `4px solid ${theme.palette.divider}`,
                 }}
               >
                 <Suspense
@@ -559,7 +531,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                 display: 'flex',
                 flexDirection: 'column',
                 minWidth: 0, // For shrink to hide
-                p: (theme) => theme.spacing(0, 0.5, 1, 0.5),
+                borderLeft: (theme) => `4px solid ${theme.palette.divider}`,
               }}
             >
               <OpenRightPanelButton
@@ -570,8 +542,9 @@ const WorkSpaceEditor = (): JSX.Element => {
               <Box sx={{
                 flexGrow: 1,
                 width: '100%',
+                minHeight: 0,
+                overflow: 'hidden',
                 backgroundColor: (theme) => theme.palette.background.paper,
-                borderRadius: (theme) => theme.spacing(1),
               }}>
                 <SidePanel />
               </Box>

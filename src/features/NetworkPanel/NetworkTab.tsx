@@ -40,7 +40,7 @@ export const NetworkTab = ({
         boxSizing: 'border-box',
         height: '100%',
         width: '100%',
-        padding: (theme) => theme.spacing(0, 0.5, 0, 0.5),
+        backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
         border: (theme) =>  isActive ? `3px solid ${theme.palette.secondary.main}` : '0px solid transparent',
         // Adjust the hidden bottom border to be 4px
         borderBottom: (theme) => isActive ? `4px solid ${theme.palette.secondary.main}` : '4px solid transparent',
@@ -52,9 +52,6 @@ export const NetworkTab = ({
         sx={{
           height: '100%',
           width: '100%',
-          backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
-          border: (theme) => `1px solid ${theme.palette.grey[600]}`,
-          borderRadius: (theme) => theme.spacing(1),
         }}
         // First click on an inactive renderer should only activate this tab and
         // must not trigger renderer-level click handlers (e.g. CP background reset).

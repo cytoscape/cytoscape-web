@@ -18,11 +18,9 @@ export const ToolBar = (): JSX.Element => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar
-        position="static" 
+        position="static"
         sx={{
-          backgroundColor: 'inherit',
           boxShadow: 'none',
-          p: (theme) => theme.spacing(0.5),
         }}
       >
         <Toolbar
@@ -30,7 +28,8 @@ export const ToolBar = (): JSX.Element => {
           variant="dense"
           sx={{ 
             justifyContent: 'space-between',
-            borderRadius: (theme) => theme.spacing(1),
+            backgroundColor: (theme) => theme.palette.grey[800],
+            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >
           <Box sx={{ display: 'flex' }}>
