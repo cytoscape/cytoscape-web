@@ -29,6 +29,7 @@ export const theme = extendTheme({
         background: {
           default: '#f5f5f5',
           paper: '#ffffff',
+          header: '#e6eaed',
         },
         action: {
           hover: 'rgba(31, 120, 180, 0.1)',
@@ -52,6 +53,7 @@ export const theme = extendTheme({
         background: {
           default: '#1c1c1c',
           paper: '#252525',
+          header: '#2c2d2e',
         },
         action: {
           hover: 'rgba(167, 193, 222, 0.1)',

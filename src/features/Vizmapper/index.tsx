@@ -279,9 +279,7 @@ export default function VizmapperView(props: {
           },
           minHeight: 34,
           height: 34,
-          backgroundColor: (theme) => theme.palette.background.paper,
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          backgroundColor: (theme) => theme.palette.background.default,
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >

@@ -182,6 +182,8 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
               my: 1,
               p: 2,
               backgroundColor: (theme) => theme.palette.background.default,
+              border: 'none',
+              borderRadius: 2,
             }}
           >
             {CITATIONS.map((citation, index) => (

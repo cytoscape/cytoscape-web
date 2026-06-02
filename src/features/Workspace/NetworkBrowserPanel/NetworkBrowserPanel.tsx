@@ -108,8 +108,7 @@ export const NetworkBrowserPanel = ({
             width: '100%',
             p: 0,
             m: 0,
-            backgroundColor: (theme) => theme.palette.background.paper,
-            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+            backgroundColor: (theme) => theme.palette.background.header,
           }}
         >
           <Tabs

@@ -1704,12 +1704,10 @@ export default function TableBrowser(props: {
     >
       <Box
         sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: (theme) => theme.palette.background.paper,
+          backgroundColor: (theme) => theme.palette.background.header,
         }}
       >
         <Tabs

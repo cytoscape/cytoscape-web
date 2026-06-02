@@ -187,7 +187,7 @@ export const NetworkPropertyPanel = ({
           alignItems: 'center',
           '&:hover': { cursor: 'pointer' },
           p: 1,
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
         }}
         onClick={() => {
           setCurrentNetworkId(id)

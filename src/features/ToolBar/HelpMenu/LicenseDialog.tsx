@@ -69,6 +69,8 @@ export const LicenseDialog = ({
             p: 2,
             backgroundColor: (theme) => theme.palette.background.default,
             color: (theme) => theme.palette.text.secondary,
+            border: 'none',
+            borderRadius: 2,
           }}
         >
           <Typography variant="body1" gutterBottom>
