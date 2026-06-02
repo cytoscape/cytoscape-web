@@ -27,6 +27,9 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
           '.MuiAccordionSummary-content': {
             marginTop: '12px !important',
           },
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            color: (theme) => theme.palette.text.secondary,
+          },
         }}
       >
         <Typography>Layout Tools</Typography>
