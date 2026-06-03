@@ -302,7 +302,8 @@ export default function VizmapperView(props: {
         pt: 1.5,
         pb: 0,
         ml: 0.5, 
-        minHeight: '40px' 
+        minHeight: '40px' ,
+        borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
       }}>
         <Box
           sx={{

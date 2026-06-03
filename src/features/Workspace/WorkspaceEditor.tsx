@@ -418,6 +418,9 @@ const WorkSpaceEditor = (): JSX.Element => {
                       color: (theme) => theme.palette.text.secondary,
                       borderRight: (theme) => `2px solid ${theme.palette.divider}`,
                       cursor: 'pointer',
+                      '&:hover': {
+                        color: (theme) => theme.palette.button.hover,
+                      },
                     }}
                   >
                     <ChevronRightIcon />
@@ -485,6 +488,9 @@ const WorkSpaceEditor = (): JSX.Element => {
                     color: (theme) => theme.palette.text.secondary,
                     borderTop: (theme) => `2px solid ${theme.palette.divider}`,
                     cursor: 'pointer',
+                    '&:hover': {
+                        color: (theme) => theme.palette.button.hover,
+                      },
                   }}
                 >
                   <ExpandLessIcon />
