@@ -166,6 +166,7 @@ export const NetworkBrowserPanel = ({
                   mr: 1,
                   color: (theme) => theme.palette.text.secondary,
                   '&:hover': {
+                    color: (theme) => theme.palette.text.primary,
                     backgroundColor: 'transparent',
                   },
                 }}
@@ -178,7 +179,11 @@ export const NetworkBrowserPanel = ({
             <ChevronRight
               data-testid="network-browser-panel-open-button"
               sx={{
-                mr: 1
+                mr: 1,
+                color: (theme) => theme.palette.text.secondary,
+                '&:hover': {
+                  color: (theme) => theme.palette.text.primary,
+                },
               }}
               onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
             />

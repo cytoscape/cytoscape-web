@@ -52,6 +52,7 @@ export const OpenRightPanelButton = ({
               color: (theme) => theme.palette.text.secondary,
               backgroundColor: (theme) => theme.palette.background.paper,
               '&:hover': {
+                color: (theme) => theme.palette.text.primary,
                 backgroundColor: (theme) => theme.palette.background.paper,
               },
             }}
@@ -73,6 +74,7 @@ export const OpenRightPanelButton = ({
             zIndex: 1000,
             color: (theme) => theme.palette.text.secondary,
             '&:hover': {
+              color: (theme) => theme.palette.text.primary,
               backgroundColor: 'transparent',
             },
           }}

@@ -226,7 +226,12 @@ export const NetworkPropertyPanel = ({
                   }
                 />
               </Tooltip>
-              <Typography variant={'body2'}>{summary.name}</Typography>
+              <Typography
+                variant={'body2'}
+                sx={{ color: theme.palette.text.primary }}
+              >
+                {summary.name}
+              </Typography>
             </Box>
             {networkModifiedIcon}
           </Box>
@@ -260,7 +265,7 @@ export const NetworkPropertyPanel = ({
             }}
           >
             <Typography
-              variant={'subtitle2'}
+              variant={'body2'}
               sx={{ width: '100%', color: theme.palette.text.secondary }}
             >
               {`N: ${nodeCount} (${
@@ -286,7 +291,7 @@ export const NetworkPropertyPanel = ({
                   showEditNetworkSummaryForm(e)
                 }}
               >
-                <EditIcon sx={{ fontSize: 18 }} />
+                <EditIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Remove the network from workspace">
@@ -298,7 +303,7 @@ export const NetworkPropertyPanel = ({
                   onClickDelete(e)
                 }}
               >
-                <DeleteIcon sx={{ fontSize: 18 }} />
+                <DeleteIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
               </IconButton>
             </Tooltip>
           </Box>

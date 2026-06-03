@@ -172,23 +172,14 @@ export const LLMQueryOptionsDialog = (props: LLMQueryOptionsDialogProps): JSX.El
       <DialogActions>
         <Button
           data-testid="llm-query-options-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={handleClose}
         >
           Cancel
         </Button>
         <Button
           data-testid="llm-query-options-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             setLLMModel(localLLMModel)
             setLLMTemplate(localLLMTemplate)

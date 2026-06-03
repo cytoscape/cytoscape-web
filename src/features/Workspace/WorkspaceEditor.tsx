@@ -415,7 +415,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                       borderRight: (theme) => `2px solid ${theme.palette.divider}`,
                       cursor: 'pointer',
                       '&:hover': {
-                        color: (theme) => theme.palette.button.hover,
+                        color: (theme) => theme.palette.text.primary,
                       },
                     }}
                   >
@@ -485,7 +485,7 @@ const WorkSpaceEditor = (): JSX.Element => {
                     borderTop: (theme) => `2px solid ${theme.palette.divider}`,
                     cursor: 'pointer',
                     '&:hover': {
-                        color: (theme) => theme.palette.button.hover,
+                        color: (theme) => theme.palette.text.primary,
                       },
                   }}
                 >

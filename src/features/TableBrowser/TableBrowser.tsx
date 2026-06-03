@@ -13,12 +13,13 @@ import {
   GridSelection,
   Item,
 } from '@glideapps/glide-data-grid'
-import { CheckBoxOutlined as CheckBoxOutlinedIcon, ContentCopy, ContentPaste,KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
-import { Button, ButtonGroup, Divider, ListItemIcon, ListItemText,Menu, MenuItem, Tooltip } from '@mui/material'
+import { CheckBoxOutlined as CheckBoxOutlinedIcon, ContentCopy, ContentPaste } from '@mui/icons-material'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import { Button, Divider, IconButton, ListItemIcon, ListItemText,Menu, MenuItem, Tooltip } from '@mui/material'
 import Box from '@mui/material/Box'
+import { useTheme } from '@mui/material/styles'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
-import Typography from '@mui/material/Typography'
 import orderBy from 'lodash/orderBy'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
@@ -67,6 +68,7 @@ import {
   EditTableColumnForm,
 } from './TableColumnForm'
 
+
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
@@ -88,6 +90,26 @@ const TABS_HEIGHT = 32
 // Adjust Data Grid size
 const GRID_GAP = TOOLBAR_HEIGHT * 2 - 1
 
+const ButtonTooltip = ({ title, children }: { title: string; children: React.ReactElement }) => (
+  <Tooltip
+    title={title}
+    placement="top"
+    PopperProps={{
+      modifiers: [
+        {
+          name: 'offset',
+          options: {
+            offset: [0, -16],
+          },
+        },
+      ],
+    }}
+  >
+    <span>{children}</span>
+  </Tooltip>
+)
+
+
 const TextButton = ({ onClick, children,}: { onClick: () => void; children: React.ReactNode }) => (
   <Button 
     variant="outlined"
@@ -95,7 +117,7 @@ const TextButton = ({ onClick, children,}: { onClick: () => void; children: Reac
     onClick={onClick}
     sx={{
       textTransform: 'none',
-      color: (theme) => theme.palette.text.secondary,
+      color: (theme) => theme.palette.text.primary,
       borderColor: (theme) => theme.palette.text.secondary,
       borderRadius: 4,
     }}
@@ -145,11 +167,11 @@ export default function TableBrowser(props: {
   const { width } = useWindowSize()
   const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
-  const setPanelState: (panel: Panel, panelState: PanelState) => void =
-    useUiStateStore((state) => state.setPanelState)
-  const { panels } = ui
+  const setPanelState: (panel: Panel, panelState: PanelState) => void = useUiStateStore((state) => state.setPanelState)
   const setUi = useUiStateStore((state) => state.setUi)
   const currentTabIndex = ui.tableUi.activeTabIndex
+
+  const theme = useTheme()
 
   const networkModified = useWorkspaceStore(
     (state) => state.workspace.networkModified,
@@ -1038,25 +1060,12 @@ export default function TableBrowser(props: {
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
-            bgColor: '#d9d9d9',
+            alignItems: 'center',
+            gap: 1,
           }}
         >
-          <Tooltip
-            title="Sort Ascending"
-            placement="bottom"
-            PopperProps={{
-              modifiers: [
-                {
-                  name: 'offset',
-                  options: {
-                    offset: [0, -24],
-                  },
-                },
-              ],
-            }}
-          >
+          <ButtonTooltip title="Sort ascending">
             <Button
-              sx={{ mr: 1 }}
               onClick={() => {
                 if (selectedColumn != null) {
                   const columnKey = selectedColumn.id
@@ -1083,25 +1092,11 @@ export default function TableBrowser(props: {
                 }
               }}
             >
-              <SortAscIcon />
+              <SortAscIcon fill={theme.palette.text.primary} />
             </Button>
-          </Tooltip>
-          <Tooltip
-            title="Sort Descending"
-            placement="bottom"
-            PopperProps={{
-              modifiers: [
-                {
-                  name: 'offset',
-                  options: {
-                    offset: [0, -24],
-                  },
-                },
-              ],
-            }}
-          >
+          </ButtonTooltip>
+          <ButtonTooltip title="Sort descending">
             <Button
-              sx={{ mr: 1 }}
               onClick={() => {
                 if (selectedColumn != null) {
                   const columnKey = selectedColumn.id
@@ -1126,25 +1121,11 @@ export default function TableBrowser(props: {
                 }
               }}
             >
-              <SortDescIcon />
+              <SortDescIcon fill={theme.palette.text.primary} />
             </Button>
-          </Tooltip>
-          <Tooltip
-            title="Duplicate column"
-            placement="bottom"
-            PopperProps={{
-              modifiers: [
-                {
-                  name: 'offset',
-                  options: {
-                    offset: [0, -24],
-                  },
-                },
-              ],
-            }}
-          >
+          </ButtonTooltip>
+          <ButtonTooltip title="Duplicate column">
             <Button
-              sx={{ mr: 1 }}
               onClick={() => {
                 if (
                   selectedColumn !== null &&
@@ -1219,55 +1200,28 @@ export default function TableBrowser(props: {
               }}
               disabled={(selectedColumn as any)?.isVirtual}
             >
-              <DuplicateIcon />
+              <DuplicateIcon fill={theme.palette.text.primary} />
             </Button>
-          </Tooltip>
-          <Tooltip
-            title="Rename column"
-            placement="bottom"
-            PopperProps={{
-              modifiers: [
-                {
-                  name: 'offset',
-                  options: {
-                    offset: [0, -24],
-                  },
-                },
-              ],
-            }}
-          >
+          </ButtonTooltip>
+          <ButtonTooltip title="Rename column">
             <Button
-              sx={{ mr: 1 }}
               onClick={() => setShowEditColumnForm(true)}
               disabled={(selectedColumn as any)?.isVirtual}
             >
-              <EditIcon />
+              <EditIcon fill={theme.palette.text.primary} />
             </Button>
-          </Tooltip>
-          <Tooltip
-            title="Delete column"
-            placement="bottom"
-            PopperProps={{
-              modifiers: [
-                {
-                  name: 'offset',
-                  options: {
-                    offset: [0, -24],
-                  },
-                },
-              ],
-            }}
-          >
+          </ButtonTooltip>
+          <ButtonTooltip title="Delete column">
             <Button
-              color="error"
               onClick={() => {
                 setShowDeleteColumnForm(true)
               }}
               disabled={(selectedColumn as any)?.isVirtual}
+              sx={{ color: (theme) => theme.palette.text.primary }}
             >
               <span className="icon">&#46;</span>
             </Button>
-          </Tooltip>
+          </ButtonTooltip>
         </Box>
         <EditTableColumnForm
           error={columnFormError}
@@ -1458,8 +1412,8 @@ export default function TableBrowser(props: {
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'space-between',
-            bgColor: '#d9d9d9',
+            gap: 1,
+            backgroundColor: 'transparent',
             minWidth: '540px',
           }}
         >
@@ -1509,7 +1463,7 @@ export default function TableBrowser(props: {
               setNetworkModified(networkId, true)
             }}
           >
-            Apply value to column
+            Apply Value to Column
           </TextButton>
           <TextButton
             onClick={() => {
@@ -1560,8 +1514,8 @@ export default function TableBrowser(props: {
               setNetworkModified(networkId, true)
             }}
           >
-            {`Apply value to selected ${
-              currentTable === nodeTable ? 'nodes' : 'edges'
+            {`Apply Value to Selected ${
+              currentTable === nodeTable ? 'Nodes' : 'Edges'
             }`}
           </TextButton>
         </Box>
@@ -1574,7 +1528,8 @@ export default function TableBrowser(props: {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          bgColor: '#d9d9d9',
+          gap: 1,
+          backgroundColor: 'transparent',
         }}
       >
         <TextButton
@@ -1594,7 +1549,7 @@ export default function TableBrowser(props: {
             })
           }}
         >
-          {`Select ${currentTable === nodeTable ? 'nodes' : 'edges'}`}{' '}
+          {`Select ${currentTable === nodeTable ? 'Nodes' : 'Edges'}`}{' '}
         </TextButton>
       </Box>
     ) : null
@@ -1602,57 +1557,30 @@ export default function TableBrowser(props: {
   const tableBrowserToolbar = (
     <Box
       sx={{
-        position: 'relative',
-        zIndex: 1,
-        height: TOOLBAR_HEIGHT,
         display: 'flex',
         alignItems: 'center',
+        gap: 1,
+        backgroundColor: 'transparent',
       }}
     >
-      <Tooltip
-        title="Insert New Column"
-        placement="bottom"
-        PopperProps={{
-          modifiers: [
-            {
-              name: 'offset',
-              options: {
-                offset: [0, -24],
-              },
-            },
-          ],
-        }}
-      >
+      <ButtonTooltip title="Insert new column">
         <Button
-          sx={{ mr: 1 }}
           disabled={tables[props.currentNetworkId] === undefined}
           onClick={() => setShowCreateColumnForm(true)}
+          sx={{ color: (theme) => theme.palette.text.primary }}
         >
           <span className="icon">&#8209;</span>
         </Button>
-      </Tooltip>
-      <Tooltip
-        title="Import Table from File ..."
-        placement="bottom"
-        PopperProps={{
-          modifiers: [
-            {
-              name: 'offset',
-              options: {
-                offset: [0, -24],
-              },
-            },
-          ],
-        }}
-      >
+      </ButtonTooltip>
+      <ButtonTooltip title="Import table from file...">
         <Button
           disabled={tables[props.currentNetworkId] === undefined}
-          sx={{ mr: 1 }}
           onClick={() => showTableJoinForm(true)}
+          sx={{ color: (theme) => theme.palette.text.primary }}
         >
           <span className="icon">&#44;</span>
         </Button>
-      </Tooltip>
+      </ButtonTooltip>
       <CreateTableColumnForm
         error={createColumnFormError}
         open={showCreateColumnForm}
@@ -1741,11 +1669,29 @@ export default function TableBrowser(props: {
     </Box>
   )
 
-
   const isContextCellVirtual =
     contextMenu !== null &&
     allColumns[contextMenu.cell[0]] &&
     (allColumns[contextMenu.cell[0]] as any).isVirtual === true
+
+  const dataEditorTheme = {
+    bgHeader: theme.palette.background.default,
+    bgHeaderHovered: theme.palette.action.hover,
+    bgHeaderHasFocus: theme.palette.action.focus,
+    textHeader: theme.palette.text.primary,
+    textHeaderSelected: theme.palette.primary.contrastText,
+    bgIconHeader: theme.palette.text.disabled,
+    fgIconHeader: theme.palette.background.default,
+    bgCell: theme.palette.background.paper,
+    bgCellMedium: theme.palette.background.paper,
+    bgCellLight: theme.palette.background.paper,
+    accentColor: theme.palette.primary.main,
+    accentLight: theme.palette.action.selected,
+    textDark: theme.palette.text.secondary,
+    textMedium: theme.palette.text.disabled,
+    textLight: theme.palette.text.disabled,
+    borderColor: theme.palette.divider,
+  }
 
   return (
     <Box
@@ -1757,18 +1703,17 @@ export default function TableBrowser(props: {
         display: 'flex',
         flexDirection: 'column',
         padding: 0,
+        overflow: 'clip',
+        backgroundColor: (theme) => theme.palette.background.paper,
+
       }}
     >
       <Box
         sx={{
-          position: 'relative', // create a new stacking context
-          zIndex: 2,
-          borderBottom: 1,
-          borderColor: 'divider',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: '#2F80ED',
+          backgroundColor: (theme) => theme.palette.background.header,
         }}
       >
         <Tabs
@@ -1776,17 +1721,14 @@ export default function TableBrowser(props: {
           value={currentTabIndex}
           onChange={handleChange}
           aria-label="tabs"
-          TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
           sx={{
-            fontSize: 12,
-            '& button.Mui-selected': { color: 'white' },
+            height: TABS_HEIGHT,
+            minHeight: TABS_HEIGHT,
             '& button': {
               minHeight: TABS_HEIGHT,
               height: TABS_HEIGHT,
               width: 200, // Reverting to original width as it fits better with counts
             },
-            height: TABS_HEIGHT,
-            minHeight: TABS_HEIGHT,
           }}
         >
           <Tab
@@ -1799,19 +1741,10 @@ export default function TableBrowser(props: {
                     : 'The table is showing all nodes in the network. Select one or more nodes in the network to filter this table.'
                 }
               >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '100%',
-                    width: '100%',
-                    justifyContent: 'center',
-                  }}
-                >
+                <>
                   Nodes
                   {selectedNodes.length > 0 ? ` (${selectedNodes.length})` : ''}
-                </Typography>
+                </>
               </Tooltip>
             }
           />
@@ -1825,44 +1758,39 @@ export default function TableBrowser(props: {
                     : 'The table is showing all edges in the network. Select one or more edges in the network to filter this table.'
                 }
               >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: '100%',
-                    width: '100%',
-                    justifyContent: 'center',
-                  }}
-                >
+                <>
                   Edges
                   {selectedEdges.length > 0 ? ` (${selectedEdges.length})` : ''}
-                </Typography>
+                </>
               </Tooltip>
             }
           />
           <Tab
             data-testid="table-browser-network-tab"
-            label={<Typography variant="caption">Network</Typography>}
+            label="Network"
           />
         </Tabs>
-        {panels[Panel.BOTTOM] === PanelState.CLOSED ? (
-          <KeyboardArrowUp
-            sx={{ color: 'white' }}
-            onClick={() => {
-              setPanelState(Panel.BOTTOM, PanelState.OPEN)
-              props.setHeight(200)
+        <Tooltip title="Close panel">
+          <IconButton
+            data-testid="network-browser-panel-close-button"
+            sx={{
+              width: 32,
+              height: 32,
+              mr: 1,
+              color: (theme) => theme.palette.text.secondary,
+              '&:hover': {
+                color: (theme) => theme.palette.text.primary,
+                backgroundColor: 'transparent',
+              },
             }}
-          />
-        ) : (
-          <KeyboardArrowDown
-            sx={{ color: 'white' }}
             onClick={() => {
               setPanelState(Panel.BOTTOM, PanelState.CLOSED)
               props.setHeight(0)
             }}
-          />
-        )}
+          >
+            <KeyboardArrowDownIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
       <TabPanel value={currentTabIndex} index={0}>
         {tableBrowserToolbar}
@@ -1893,6 +1821,7 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={columns}
           rows={maxNodeId - minNodeId + 1}
+          theme={dataEditorTheme}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
@@ -1924,6 +1853,7 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={allColumns}
           rows={maxEdgeId - minEdgeId + 1}
+          theme={dataEditorTheme}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>

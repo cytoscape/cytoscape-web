@@ -36,14 +36,10 @@ export const theme = extendTheme({
           selected: 'rgba(31, 120, 180, 0.2)',
         },
         text: {
-          secondary: 'rgba(0, 0, 0, 0.7)',
+          primary: 'rgba(0, 0, 0, 0.9)',
+          secondary: 'rgba(0, 0, 0, 0.6)',
           disabled: 'rgba(0, 0, 0, 0.25)',
         },
-        button: {
-          main: 'rgba(0, 0, 0, 0.7)',
-          hover: '#000000',
-          selected: '#000000',
-        }
       },
     },
     dark: {
@@ -66,15 +62,10 @@ export const theme = extendTheme({
         },
         divider: 'rgba(116, 116, 116, 0.4)',
         text: {
-          primary: '#c5c5c5',
-          secondary: 'rgba(255, 255, 255, 0.7)',
+          primary: '#d5d5d5',
+          secondary: 'rgba(255, 255, 255, 0.5)',
           disabled: 'rgba(255, 255, 255, 0.25)',
         },
-        button: {
-          main: '#c5c5c5',
-          hover: '#ffffff',
-          selected: '#ffffff',
-        }
       },
     },
   },
@@ -96,38 +87,12 @@ export const theme = extendTheme({
         },
       },
     },
-    MuiButton: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          color: theme.palette.button.main,
-          '&:hover': {
-            color: theme.palette.button.hover,
-          },
-          '&.Mui-selected': {
-            color: theme.palette.button.selected,
-          },
-        }),
-      },
-    },
-    MuiIconButton: {
-      styleOverrides: {
-        root: ({ theme }) => ({
-          color: theme.palette.button.main,
-          '&:hover': {
-            color: theme.palette.button.hover,
-          },
-          '&.Mui-selected': {
-            color: theme.palette.button.selected,
-          },
-        }),
-      },
-    },
     MuiAccordionSummary: {
       styleOverrides: {
         expandIconWrapper: ({ theme }) => ({
-          color: theme.palette.button.main,
+          color: theme.palette.text.secondary,
           '&:hover': {
-            color: theme.palette.button.hover,
+            color: theme.palette.text.primary,
           },
         }),
       },
