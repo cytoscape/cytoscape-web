@@ -122,6 +122,16 @@ export const theme = extendTheme({
         }),
       },
     },
+    MuiAccordionSummary: {
+      styleOverrides: {
+        expandIconWrapper: ({ theme }) => ({
+          color: theme.palette.button.main,
+          '&:hover': {
+            color: theme.palette.button.hover,
+          },
+        }),
+      },
+    },
     MuiLink: {
       styleOverrides: {
         root: {
