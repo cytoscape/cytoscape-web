@@ -12,7 +12,7 @@ export const StyledInputBase = styled(InputBase)(({ theme }) => ({
     width: '100%',
     color: theme.palette.text.primary,
     '&::placeholder': {
-      color: theme.palette.text.disabled,
+      color: theme.palette.text.secondary,
       opacity: 1,
     },
   },
