@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { logApp } from '../../../debug'
 import ExternalComponent from '../../../features/AppManager/ExternalComponent'
 import { useAppStore } from './AppStore'
+import { appRegistry } from './useAppManager'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import { CyApp } from '../../../models/AppModel/CyApp'
 
@@ -31,10 +32,15 @@ export const useAppPanel = (): any[] => {
           component.type === 'panel' &&
           panelsCreated.has(component.id) === false
         ) {
-          const MenuComponent: any = ExternalComponent(
-            app.id,
-            './' + component.id,
-          )
+          // Prefer the lazy component from appRegistry (always fresh, survives
+          // DB restore), then the stored one, then fall back to MF load.
+          const freshComponent = appRegistry
+            .get(app.id)
+            ?.components?.find((c) => c.id === component.id)
+          const MenuComponent: any =
+            freshComponent?.component ??
+            component.component ??
+            ExternalComponent(app.id, './' + component.id)
           setPanels([...panels, MenuComponent])
           // Add this component's ID to the local state
           setPanelsCreated(new Set<string>([...panelsCreated, component.id]))

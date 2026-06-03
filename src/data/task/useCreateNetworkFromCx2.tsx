@@ -1,3 +1,9 @@
+/**
+ * @deprecated The Module Federation exposure of this hook (cyweb/CreateNetworkFromCx2) is deprecated for external apps.
+ * This hook is still used internally by the host application — it is NOT being removed.
+ * External apps should use `cyweb/NetworkApi` (`useNetworkApi`) instead of importing this hook directly.
+ * This cyweb/CreateNetworkFromCx2 Module Federation export will be removed after 2 release cycles.
+ */
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -22,6 +28,17 @@ interface CreateNetworkFromCx2Props {
    * CX2 data to convert into a full network with view.
    */
   cxData: Cx2
+  /**
+   * Whether to add the new network to the workspace and set it as the current network.
+   * @default true
+   */
+  addToWorkspace?: boolean
+  /**
+   * Whether to navigate to the new network after creation.
+   * Requires addToWorkspace to be true to have effect.
+   * @default true
+   */
+  navigate?: boolean
 }
 
 /**
@@ -49,7 +66,11 @@ export const useCreateNetworkFromCx2 = (): ((
   const workspace = useWorkspaceStore((state) => state.workspace)
 
   const createNetworkFromCx = useCallback(
-    ({ cxData }: CreateNetworkFromCx2Props) => {
+    ({
+      cxData,
+      addToWorkspace = true,
+      navigate = true,
+    }: CreateNetworkFromCx2Props) => {
       // Convert CX2 to a fully populated CyNetwork
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
@@ -96,17 +117,22 @@ export const useCreateNetworkFromCx2 = (): ((
       addViewModel(network.id, networkViews[0]) // For now, just store the first view
       addSummary(network.id, summary)
 
-      // Add network to workspace
-      addNetworkIds(network.id)
+      if (addToWorkspace) {
+        // Add network to workspace
+        addNetworkIds(network.id)
 
-      // Select it as the current network
-      setCurrentNetworkId(network.id)
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: network.id,
-        searchParams: new URLSearchParams(location.search),
-        replace: false,
-      })
+        // Select it as the current network
+        setCurrentNetworkId(network.id)
+
+        if (navigate) {
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: network.id,
+            searchParams: new URLSearchParams(location.search),
+            replace: false,
+          })
+        }
+      }
 
       return cyNetwork
     },

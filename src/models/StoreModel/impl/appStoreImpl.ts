@@ -1,12 +1,51 @@
+import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
+import { AppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
+import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
+import { ManifestSource } from '../../AppModel/ManifestSource'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
+
+/**
+ * Return a copy of the components array with the `component` field
+ * (React.lazy instance) removed.  React.lazy objects are plain JS objects
+ * that React mutates internally (`_status`, `_result`).  If they end up
+ * inside an Immer-managed state tree, Immer will `Object.freeze()` them
+ * and React will crash with "Cannot assign to read only property".
+ *
+ * The live React.lazy refs remain available in `appRegistry` (the
+ * module-level Map exported from useAppManager.ts) and are looked up at
+ * render time by AppMenu and TabContents.
+ */
+const stripLazyRefs = (
+  components: ComponentMetadata[],
+): ComponentMetadata[] => {
+  if (components === undefined || components === null) {
+    return []
+  }
+  return components.map(({ component: _lazy, ...rest }) => rest)
+}
+
+/**
+ * Return a copy of the CyApp with `resources` removed.
+ * `resources` contains React.lazy() components that must not be frozen
+ * by Immer. The live `resources` array is available from the original
+ * CyApp in `appRegistry` and is processed by `processDeclarativeResources`
+ * in useAppManager.ts (which stores them in the Immer-free AppResourceStore).
+ */
+const stripResources = (app: CyApp): Omit<CyApp, 'resources'> => {
+  const { resources: _resources, ...rest } = app as any
+  return rest
+}
 
 export interface AppState {
   apps: Record<string, CyApp>
   serviceApps: Record<string, ServiceApp>
   currentTask?: ServiceAppTask
+  catalog: Record<string, AppCatalogEntry>
+  loadStates: Record<string, AppLoadState>
+  manifestSource?: ManifestSource
 }
 
 /**
@@ -37,38 +76,67 @@ export const restore = (
 }
 
 /**
- * Add an app
+ * Add an app.
+ *
+ * When the app already exists in the store (e.g. after restore()), refresh
+ * `components` and `version` from the live module.  DB-restored entries lose
+ * React.lazy refs (stripped by toPlainObject) and may be missing components
+ * that were added since the last persist.
+ *
+ * When a cachedApp from IndexedDB is provided for a brand-new registration,
+ * use the cached status (so user-toggled Active/Inactive survives) but still
+ * take `components` from the freshly loaded module for the same reasons.
  */
 export const add = (
   state: AppState,
   app: CyApp,
   cachedApp: CyApp | undefined,
 ): AppState => {
-  // Add app only when it is not already present
-  if (state.apps[app.id] !== undefined) {
-    return state
-  }
+  // Strip React.lazy refs and resources so Immer never freezes them
+  const safeComponents = stripLazyRefs(app.components ?? [])
+  const safeApp = stripResources(app)
 
-  // Try DB first
-  if (cachedApp !== undefined) {
-    return {
-      ...state,
-      apps: {
-        ...state.apps,
-        [app.id]: cachedApp,
-      },
-    }
-  } else {
+  // Already in store — refresh components & version from the live module
+  if (state.apps[app.id] !== undefined) {
     return {
       ...state,
       apps: {
         ...state.apps,
         [app.id]: {
-          ...app,
-          status: app.status || AppStatus.Inactive,
+          ...state.apps[app.id],
+          components: safeComponents,
+          version: app.version,
         },
       },
     }
+  }
+
+  // First registration: use DB cache for persisted fields (status) but
+  // always take components from the fresh module
+  if (cachedApp !== undefined) {
+    return {
+      ...state,
+      apps: {
+        ...state.apps,
+        [app.id]: {
+          ...cachedApp,
+          components: safeComponents,
+        },
+      },
+    }
+  }
+
+  // Brand-new app with no DB history
+  return {
+    ...state,
+    apps: {
+      ...state.apps,
+      [app.id]: {
+        ...safeApp,
+        components: safeComponents,
+        status: app.status || AppStatus.Inactive,
+      },
+    },
   }
 }
 
@@ -96,10 +164,7 @@ export const addService = (
 /**
  * Remove a service app
  */
-export const removeService = (
-  state: AppState,
-  url: string,
-): AppState => {
+export const removeService = (state: AppState, url: string): AppState => {
   const { [url]: deleted, ...restServiceApps } = state.serviceApps
   return {
     ...state,
@@ -237,3 +302,62 @@ export const updateInputColumn = (
   }
 }
 
+/**
+ * Replace the entire catalog with entries keyed by id
+ */
+export const setCatalog = (
+  state: AppState,
+  entries: AppCatalogEntry[],
+): AppState => {
+  const catalog: Record<string, AppCatalogEntry> = {}
+  for (const entry of entries) {
+    catalog[entry.id] = entry
+  }
+  return {
+    ...state,
+    catalog,
+  }
+}
+
+/**
+ * Set the runtime load state for a specific app
+ */
+export const setLoadState = (
+  state: AppState,
+  id: string,
+  loadState: AppLoadState,
+): AppState => {
+  return {
+    ...state,
+    loadStates: {
+      ...state.loadStates,
+      [id]: loadState,
+    },
+  }
+}
+
+/**
+ * Set or clear the manifest source
+ */
+export const setManifestSource = (
+  state: AppState,
+  source: ManifestSource | undefined,
+): AppState => {
+  return {
+    ...state,
+    manifestSource: source,
+  }
+}
+
+/**
+ * Remove an app from apps and loadStates
+ */
+export const removeApp = (state: AppState, id: string): AppState => {
+  const { [id]: _removedApp, ...restApps } = state.apps
+  const { [id]: _removedLoadState, ...restLoadStates } = state.loadStates
+  return {
+    ...state,
+    apps: restApps,
+    loadStates: restLoadStates,
+  }
+}

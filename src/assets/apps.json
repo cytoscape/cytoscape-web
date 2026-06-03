@@ -1,12 +1,35 @@
 [
   {
-    "name": "simpleMenu",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-menu/remoteEntry.js",
-    "entryPoint": "SimpleMenuApp"
+    "id": "hello",
+    "name": "Hello Cytoscape World App",
+    "url": "https://cytoscape.org/cytoscape-web-app-examples/hello-world/remoteEntry.js",
+    "author": "Cytoscape Core Team",
+    "description": "Reference app demonstrating core App API patterns: visual style editing, selection tracking / clearing, async layout execution, app lifecycle hooks, and both component-scoped and app-scoped event handling.",
+    "version": "1.0.0",
+    "tags": ["demo", "getting-started", "reference"],
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   },
   {
-    "name": "simplePanel",
-    "url": "https://cytoscape.org/cytoscape-web-app-examples/simple-panel/remoteEntry.js",
-    "entryPoint": "SimplePanelApp"
+    "id": "networkWorkflows",
+    "name": "Network Workflow Examples",
+    "url": "https://cytoscape.org/cytoscape-web-app-examples/network-workflows/remoteEntry.js",
+    "author": "Cytoscape Core Team",
+    "description": "Network creation, CX2 import, and external integration examples.",
+    "version": "1.0.0",
+    "tags": ["workflow", "network-creation", "cx2", "jupyter"],
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
+  },
+  {
+    "id": "networkStatistics",
+    "name": "Network Statistics",
+    "url": "https://cytoscape.org/cytoscape-web-app-examples/network-statistics/remoteEntry.js",
+    "author": "Cytoscape Core Team",
+    "description": "Logs network topology statistics (density, degree distribution, roots, leaves) to the browser console on every network switch. A non-React example using only mount/unmount lifecycle hooks.",
+    "version": "1.0.0",
+    "tags": ["statistics", "non-react", "headless"],
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   }
 ]

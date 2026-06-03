@@ -114,9 +114,6 @@ export const Error = (): ReactElement => {
               snapshot = errorSnapshot
               snapshotType = 'partial'
               snapshotSizeBytes = new Blob([JSON.stringify(errorSnapshot)]).size
-              setReportSent(true)
-              setIsSendingReport(false)
-              return
             }
           } else {
             // No network ID available, send error report with failure message
@@ -134,9 +131,6 @@ export const Error = (): ReactElement => {
             snapshot = errorSnapshot
             snapshotType = 'partial'
             snapshotSizeBytes = new Blob([JSON.stringify(errorSnapshot)]).size
-            setReportSent(true)
-            setIsSendingReport(false)
-            return
           }
         }
       } catch (snapshotError) {
@@ -153,9 +147,6 @@ export const Error = (): ReactElement => {
         snapshot = errorSnapshot
         snapshotType = 'partial'
         snapshotSizeBytes = new Blob([JSON.stringify(errorSnapshot)]).size
-        setReportSent(true)
-        setIsSendingReport(false)
-        return
       }
 
       const routeMatch = location.pathname.match(

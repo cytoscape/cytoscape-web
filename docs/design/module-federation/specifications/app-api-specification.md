@@ -15,7 +15,7 @@ exposing internal stores or hooks directly, the app API defines a stable contrac
 program against. This ensures that internal refactoring (store splits, hook reorganization, etc.)
 never breaks the external API.
 
-**Two-layer design (see [ADR 0003](../../../../docs/adr/0003-framework-agnostic-core-layer.md)):**
+**Two-layer design (see [ADR 0003](../adr/0003-framework-agnostic-core-layer.md)):**
 
 ```
 src/app-api/core/<domain>Api.ts    Framework-agnostic pure functions
@@ -69,6 +69,7 @@ src/app-api/
 │   ├── layoutApi.ts               # Layout execution — plain functions; dispatches layout:started / layout:completed events
 │   ├── viewportApi.ts             # Viewport control — plain functions
 │   ├── exportApi.ts               # CX2 export — plain functions
+│   ├── workspaceApi.ts            # Workspace state reads + network switching — plain functions
 │   └── index.ts                   # Assembles CyWebApi; assigned to window.CyWebApi in init.tsx
 ├── event-bus/                     # Event bus — Phase 1 Step 2 (see event-bus-specification.md)
 │   ├── CyWebEvents.ts             # CyWebEvents interface + CyWebEventMap type
@@ -82,6 +83,7 @@ src/app-api/
 ├── useLayoutApi.ts                # React Hook: returns layoutApi (~1 line)
 ├── useViewportApi.ts              # React Hook: returns viewportApi (~1 line)
 ├── useExportApi.ts                # React Hook: returns exportApi (~1 line)
+├── useWorkspaceApi.ts             # React Hook: returns workspaceApi (~1 line)
 ├── useCyWebEvent.ts               # React Hook: typed window.addEventListener wrapper — exposed as cyweb/EventBus
 └── index.ts                       # Barrel export
 ```
@@ -124,6 +126,7 @@ const ApiErrorCode = {
   LayoutEngineNotFound: 'LAYOUT_ENGINE_NOT_FOUND',
   FunctionNotAvailable: 'FUNCTION_NOT_AVAILABLE',
   NoCurrentNetwork: 'NO_CURRENT_NETWORK',
+  ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
 } as const
 ```
 
@@ -180,11 +183,15 @@ interface EdgeData {
 
 interface CreateNodeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically at creation. @default undefined */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean // default: true
 }
 
 interface CreateEdgeOptions {
   attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses applied atomically at creation. @default undefined */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean // default: true
 }
 
@@ -239,7 +246,7 @@ const useElementApi: () => ElementApi // React hook — returns elementApi from 
 
 - **`getNode`**: Reads attributes from `TableStore.getState()` and position from `ViewModelStore.getState()`. Validates node existence in `NetworkStore.getState()`. Returns `NodeNotFound` if the node does not exist.
 - **`getEdge`**: Reads source/target from `NetworkStore.getState()` and attributes from `TableStore.getState()`. Returns `EdgeNotFound` if the edge does not exist.
-- **`createNode` / `createEdge`**: Coordinates `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` directly via `.getState()`, replicating the logic of `useCreateNode()` / `useCreateEdge()`. The `skipUndo` option is never passed — undo always records.
+- **`createNode` / `createEdge`**: Coordinates `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` directly via `.getState()`, replicating the logic of `useCreateNode()` / `useCreateEdge()`. The `skipUndo` option is never passed — undo always records. If `options.bypass` is non-empty, `visualStyleApi.setBypass()` is called immediately after element creation so that bypass values are applied atomically in the same operation.
 - **`moveEdge`**: Atomically updates an edge's source and/or target node using Cytoscape.js's native `edge.move()` on the headless core. This preserves the edge ID, so all data keyed by edge ID — table row attributes, visual style bypasses, and edge views — remains intact without any migration. Only the network topology store is mutated. A new `MOVE_EDGES` undo command records `(networkId, edgeId, oldSource, oldTarget)` for rollback. Returns `EdgeNotFound` or `NodeNotFound` on invalid IDs. See [§ 3.1.1](#311-moveedge--detailed-implementation-design) for the full implementation design.
 
 #### 1.5.2 Network API
@@ -577,6 +584,7 @@ const useExportApi: () => ExportApi // React hook — returns exportApi from cor
 #### 1.5.9 App Lifecycle API
 
 **New contract** — extends the `CyApp` interface with lifecycle callbacks.
+**Phase: 1g** (moved from Phase 3; implemented after Phase 1f once all domain APIs are assembled).
 
 ```typescript
 // src/app-api/types/AppContext.ts
@@ -585,17 +593,11 @@ interface AppContext {
   /** The unique ID of this app instance */
   appId: string
 
-  /** Pre-instantiated app API instances */
-  apis: {
-    element: ElementApi
-    network: NetworkApi
-    selection: SelectionApi
-    table: TableApi
-    visualStyle: VisualStyleApi
-    layout: LayoutApi
-    viewport: ViewportApi
-    export: ExportApi
-  }
+  /**
+   * All app API instances — same singleton as window.CyWebApi at runtime.
+   * Typed as CyWebApiType to make the relationship explicit.
+   */
+  apis: CyWebApiType  // imported from '../core'
 }
 
 // Extended CyApp interface (backward-compatible)
@@ -616,13 +618,153 @@ interface CyAppWithLifecycle extends CyApp {
 }
 ```
 
-**Implementation strategy:**
+**Implementation strategy (Phase 1g):**
 
-- The host calls `mount(context)` after an app is activated and its React components are registered. The `AppContext.apis` object contains pre-instantiated app API instances that provide non-hook access to all operations (the host creates them within a React rendering context and passes the resolved objects).
-- The host calls `unmount()` when the app is deactivated or the page is unloading. The host guarantees `unmount()` is always called.
+- `AppContext.apis` is typed as `CyWebApiType` and set to `CyWebApi` (from `src/app-api/core`) — the same singleton as `window.CyWebApi`. No React context or separate instantiation is needed.
+- The host (`src/data/hooks/stores/useAppManager.ts`) calls `mount({ appId: cyApp.id, apis: CyWebApi })` after `registerApp(cyApp)`, if the app implements `CyAppWithLifecycle.mount`.
+- The host calls `unmount()` when the app is deactivated or the page is unloading (`beforeunload`). The host guarantees `unmount()` is always called for apps where `mount` was invoked.
 - Both callbacks are optional — existing apps without lifecycle methods continue to work unchanged.
 - If `mount()` returns a `Promise`, the host awaits it before marking the app as ready.
 - `AppContext` and `CyAppWithLifecycle` types are exported via `cyweb/ApiTypes`.
+
+#### 1.5.10 Workspace API
+
+Reads: `WorkspaceStore.workspace` and `NetworkSummaryStore.summaries`
+
+```typescript
+// src/app-api/useWorkspaceApi.ts
+
+interface WorkspaceInfo {
+  workspaceId: IdType
+  name: string
+  currentNetworkId: IdType   // '' when no networks are open
+  networkCount: number
+}
+
+interface WorkspaceNetworkInfo {
+  networkId: IdType
+  name: string
+  description: string
+  nodeCount: number
+  edgeCount: number
+  isModified: boolean        // true when the network has unsaved local changes
+}
+
+interface WorkspaceApi {
+  // --- Read ---
+
+  /** Returns workspace metadata (id, name, current network id, count). */
+  getWorkspaceInfo(): ApiResult<WorkspaceInfo>
+
+  /** Returns the ordered list of network IDs in the workspace. */
+  getNetworkIds(): ApiResult<{ networkIds: IdType[] }>
+
+  /**
+   * Returns summary metadata for all networks in the workspace.
+   * Networks whose summary is not found in NetworkSummaryStore are silently omitted.
+   */
+  getNetworkList(): ApiResult<WorkspaceNetworkInfo[]>
+
+  /**
+   * Returns summary metadata for a single network.
+   * fail(NetworkNotFound) if networkId is not in the workspace.
+   */
+  getNetworkSummary(networkId: IdType): ApiResult<WorkspaceNetworkInfo>
+
+  /**
+   * Returns the currently active network ID.
+   * fail(NoCurrentNetwork) if no networks are open.
+   */
+  getCurrentNetworkId(): ApiResult<{ networkId: IdType }>
+
+  // --- Write ---
+
+  /**
+   * Switches the active network.
+   * Fires the 'network:switched' event via the existing initEventBus subscription.
+   * fail(NetworkNotFound) if networkId is not in the workspace.
+   * fail(InvalidInput) if networkId is empty.
+   */
+  switchCurrentNetwork(networkId: IdType): ApiResult
+
+  /**
+   * Renames the workspace.
+   * fail(InvalidInput) if name is empty or whitespace-only.
+   */
+  setWorkspaceName(name: string): ApiResult
+}
+
+const useWorkspaceApi: () => WorkspaceApi // React hook — returns workspaceApi from core/
+```
+
+**Implementation location:** `src/app-api/core/workspaceApi.ts`
+
+**Implementation strategy (core functions — no React, uses `.getState()`):**
+
+- **`getWorkspaceInfo`**: Reads `WorkspaceStore.getState().workspace`. Always succeeds.
+- **`getNetworkIds`**: Returns `[...workspace.networkIds]` (shallow copy to prevent mutation).
+- **`getNetworkList`**: Joins `workspace.networkIds` with `NetworkSummaryStore.getState().summaries`. Networks with no summary entry are silently omitted; callers should not assume all IDs in `getNetworkIds()` have summaries.
+- **`getNetworkSummary`**: Validates `networkId ∈ workspace.networkIds` before reading the summary. Returns `NetworkNotFound` if either check fails.
+- **`getCurrentNetworkId`**: Returns `NoCurrentNetwork` when `workspace.networkIds.length === 0 || workspace.currentNetworkId === ''`.
+- **`switchCurrentNetwork`**: Validates `networkId ∈ workspace.networkIds`, then calls `WorkspaceStore.getState().setCurrentNetworkId(networkId)`. The `network:switched` event is dispatched automatically by the existing `initEventBus` Zustand subscription — no explicit dispatch is needed here.
+- **`setWorkspaceName`**: Validates `name.trim() !== ''`, then calls `WorkspaceStore.getState().setName(name.trim())`.
+
+#### 1.5.11 Context Menu API
+
+Extends the host's context menu with app-registered items. Apps can add items to node, edge, or canvas background context menus and remove them when the app unmounts.
+
+> **Phase 2 update:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were deleted.
+> Context menu access is now per-app via `AppContext.apis.contextMenu` in `mount()` or
+> `useAppContext().apis.contextMenu` in plugin components. The anonymous singleton on
+> `window.CyWebApi.contextMenu` remains for non-React consumers.
+
+```typescript
+// src/app-api/core/contextMenuApi.ts
+
+interface ContextMenuTarget {
+  type: 'node' | 'edge' | 'canvas'
+  /** Present for node/edge; absent for canvas targets. */
+  id?: IdType
+  networkId: IdType
+}
+
+interface ContextMenuItemConfig {
+  /** Display label shown in the context menu. Must be non-empty. */
+  label: string
+  /** Callback invoked when the user clicks the item. */
+  handler: (target: ContextMenuTarget) => void
+  /**
+   * Which context menus this item appears in.
+   * @default ['node', 'edge']
+   */
+  targetTypes?: Array<'node' | 'edge' | 'canvas'>
+}
+
+interface ContextMenuApi {
+  addContextMenuItem(config: ContextMenuItemConfig): ApiResult<{ itemId: string }>
+  removeContextMenuItem(itemId: string): ApiResult
+}
+
+// Per-app factory — items carry bound appId, auto-cleaned on app disable
+function createContextMenuApi(appId: string): ContextMenuApi
+
+// Anonymous singleton — for window.CyWebApi only (no auto-cleanup)
+const contextMenuApi: ContextMenuApi
+```
+
+**Two access paths:**
+
+| Path | Factory | Auto-cleanup | Use case |
+|------|---------|-------------|----------|
+| `context.apis.contextMenu` | `createContextMenuApi(appId)` | Yes — `removeAllByAppId` on disable | Plugin apps in `mount()` or components |
+| `window.CyWebApi.contextMenu` | anonymous singleton | No — items persist until explicit removal | Browser console, extensions |
+
+Items registered via the per-app factory carry `appId` and are automatically
+removed when the app is disabled (via `AppCleanupRegistry`). Explicit removal
+in `unmount()` is redundant but harmless.
+
+**Host store:** `ContextMenuItemStore` has `removeAllByAppId(appId)` which skips
+items with `appId === undefined` (anonymous singleton items).
 
 ### 1.6 Sync/Async Policy
 
@@ -639,7 +781,7 @@ App API operations use a **mixed sync/async** return type strategy based on the 
 
 | Return Type                  | Operations                                                                                                                                                                                                                                                                                                                                                                                                                | Internal Mechanism                                                                                                                                          |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ApiResult<T>` (sync)        | `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`, `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`, `exclusiveSelect`, `additiveSelect`, `getSelection`, `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`, `setDefault`, `setBypass`, `createDiscreteMapping`, `getNodePositions`, `updateNodePositions`, `getAvailableLayouts`, `exportToCx2` | Zustand store read/write — state mutation is synchronous; IndexedDB persistence runs asynchronously but is not awaited                                      |
+| `ApiResult<T>` (sync)        | `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`, `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`, `exclusiveSelect`, `additiveSelect`, `getSelection`, `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`, `setDefault`, `setBypass`, `createDiscreteMapping`, `getNodePositions`, `updateNodePositions`, `getAvailableLayouts`, `exportToCx2`, `getWorkspaceInfo`, `getNetworkIds`, `getNetworkList`, `getNetworkSummary`, `getCurrentNetworkId`, `switchCurrentNetwork`, `setWorkspaceName`, `addContextMenuItem`, `removeContextMenuItem` | Zustand store read/write — state mutation is synchronous; IndexedDB persistence runs asynchronously but is not awaited                                      |
 | `Promise<ApiResult>` (async) | `applyLayout`                                                                                                                                                                                                                                                                                                                                                                                                             | `LayoutEngine.apply()` is callback-based (CyjsLayout listens for `layoutstop` event; CosmosLayout uses a timer)                                             |
 | `Promise<ApiResult>` (async) | `fit`                                                                                                                                                                                                                                                                                                                                                                                                                     | `RendererFunctionStore` delegates to Cytoscape.js `cy.fit()`, which may involve animation; wrapping in a Promise future-proofs against animated transitions |
 
@@ -741,7 +883,7 @@ The App API employs an **Evergreen (Backward Compatible)** versioning strategy. 
 
 ### 2.1 New Expose Entries
 
-Add 9 app API entries to `webpack.config.js` `exposes`. These are the **only recommended public API** for new external apps:
+Add 10 app API entries to `webpack.config.js` `exposes`. These are the **only recommended public API** for new external apps:
 
 ```javascript
 exposes: {
@@ -754,6 +896,7 @@ exposes: {
   './LayoutApi':      './src/app-api/useLayoutApi.ts',
   './ViewportApi':    './src/app-api/useViewportApi.ts',
   './ExportApi':      './src/app-api/useExportApi.ts',
+  './WorkspaceApi':   './src/app-api/useWorkspaceApi.ts',
   './ApiTypes':       './src/app-api/types/index.ts',
 
   // === @deprecated — Raw stores (backward compatibility only) ===
@@ -782,6 +925,7 @@ import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
 import { useLayoutApi } from 'cyweb/LayoutApi'
 import { useViewportApi } from 'cyweb/ViewportApi'
 import { useExportApi } from 'cyweb/ExportApi'
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 import type { ApiResult, IdType, VisualPropertyName } from 'cyweb/ApiTypes'
 
 // Usage inside a React component or hook:
@@ -825,12 +969,14 @@ import { useNetworkStore } from 'cyweb/NetworkStore'
 | Module Federation   | `cyweb/LayoutApi`         | `useLayoutApi()`      | applyLayout, getAvailableLayouts                                                                                        |
 | Module Federation   | `cyweb/ViewportApi`       | `useViewportApi()`    | fit, getNodePositions, updateNodePositions                                                                              |
 | Module Federation   | `cyweb/ExportApi`         | `useExportApi()`      | exportToCx2                                                                                                             |
+| Module Federation   | `cyweb/WorkspaceApi`      | `useWorkspaceApi()`   | getWorkspaceInfo, getNetworkIds, getNetworkList, getNetworkSummary, getCurrentNetworkId, switchCurrentNetwork, setWorkspaceName |
 | Module Federation   | `cyweb/EventBus`          | `useCyWebEvent()`     | Subscribe to typed window events (network, selection, layout, style, data)                                              |
-| Module Federation   | `cyweb/ApiTypes`          | —                     | IdType, ApiResult, ApiErrorCode, VisualPropertyName, ValueTypeName, CyNetwork, Cx2, AppContext, CyAppWithLifecycle, ... |
+| Module Federation   | `cyweb/ApiTypes`          | —                     | IdType, ApiResult, ApiErrorCode, VisualPropertyName, ValueTypeName, CyNetwork, Cx2, WorkspaceInfo, WorkspaceNetworkInfo, AppContext, CyAppWithLifecycle, ... |
 | Global (vanilla JS) | `window.CyWebApi.element` | plain object          | Same as ElementApi operations                                                                                           |
 | Global (vanilla JS) | `window.CyWebApi.network` | plain object          | Same as NetworkApi operations                                                                                           |
 | Global (vanilla JS) | `window.CyWebApi.layout`  | plain object          | Same as LayoutApi operations                                                                                            |
-| Global (vanilla JS) | `window.CyWebApi.*`       | plain object          | All 8 domain APIs — same operations, same `ApiResult<T>` returns                                                        |
+| Global (vanilla JS) | `window.CyWebApi.workspace` | plain object        | Same as WorkspaceApi operations                                                                                         |
+| Global (vanilla JS) | `window.CyWebApi.*`       | plain object          | All 9 domain APIs — same operations, same `ApiResult<T>` returns                                                        |
 
 ### 2.4 Backward Compatibility Strategy
 
@@ -855,6 +1001,7 @@ With the app API in place, the use case coverage from Audit Section 5 changes:
 | **E: Data Import/Export** — import CX2 + export CX2                     | Partial: No export | Full (`NetworkApi` + `ExportApi`)                                    |
 | **F: Graph Structure Modification** — add/remove nodes and edges        | [No]               | Full (`ElementApi` + `TableApi` + `VisualStyleApi` + `ViewportApi`)  |
 | **G: LLM Agent-Driven Generation** — agent creates networks via relay   | [No]               | Full (`NetworkApi` + `ElementApi` + `LayoutApi` + `ApiTypes`)        |
+| **H: Workspace Browsing** — list open networks, display names/counts, switch active network | [No] | Full (`WorkspaceApi`) |
 
 ### 2.6 Implementation Phases
 
@@ -869,24 +1016,29 @@ plain Jest tests) and `src/app-api/use<Domain>Api.ts` (thin hook wrapper).
 | 4     | Table + Visual Style        | `src/app-api/core/tableApi.ts`, `src/app-api/core/visualStyleApi.ts`, hook wrappers                                        |
 | 5     | Layout + Export             | `src/app-api/core/layoutApi.ts`, `src/app-api/core/exportApi.ts`, hook wrappers                                            |
 | 5.5   | Global assembly             | `src/app-api/core/index.ts` (CyWebApi object), `window.CyWebApi` assignment in `src/init.tsx`                              |
-| 6     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`                                       |
-| 7     | App Lifecycle (Phase 3)     | `src/app-api/types/AppContext.ts`, extend `CyApp` interface, host-side lifecycle manager; `AppContext.apis` uses core objs |
+| 6     | Workspace API               | `src/app-api/core/workspaceApi.ts`, `src/app-api/useWorkspaceApi.ts`, add `workspace` to `CyWebApi`                        |
+| 1g    | App Lifecycle (Phase 1g)    | `src/data/hooks/stores/useAppManager.ts` wiring; `AppContext.apis` typed as `CyWebApiType`; `mount`/`unmount` tests        |
+| 1a+   | Element bypass              | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `core/elementApi.ts`                  |
+| 1h    | Context Menu API (Phase 1h) | `src/data/hooks/stores/ContextMenuItemStore.ts`; `core/contextMenuApi.ts` (factory + singleton); host UI wiring. `useContextMenuApi.ts` deleted in Phase 2. |
+| 7     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`                                       |
 
 ### 2.7 `window.CyWebApi` Global API
 
-`window.CyWebApi` is a singleton object assembled from the 8 core domain objects. It is assigned in
+`window.CyWebApi` is a singleton object assembled from the 9 core domain objects. It is assigned in
 `src/init.tsx` after all Zustand stores are initialized.
 
 ```typescript
 // src/app-api/core/index.ts
+import { contextMenuApi } from './contextMenuApi'
 import { elementApi } from './elementApi'
+import { exportApi } from './exportApi'
+import { layoutApi } from './layoutApi'
 import { networkApi } from './networkApi'
 import { selectionApi } from './selectionApi'
 import { tableApi } from './tableApi'
-import { visualStyleApi } from './visualStyleApi'
-import { layoutApi } from './layoutApi'
 import { viewportApi } from './viewportApi'
-import { exportApi } from './exportApi'
+import { visualStyleApi } from './visualStyleApi'
+import { workspaceApi } from './workspaceApi'
 
 export const CyWebApi = {
   version: '0.1.0-alpha.0' as string, // Synced with @cytoscape-web/api-types; cast to string so `as const` does not widen to a literal type. Reaches '1.0.0' at stable release (Phase 6 complete).
@@ -898,6 +1050,8 @@ export const CyWebApi = {
   layout: layoutApi,
   viewport: viewportApi,
   export: exportApi,
+  workspace: workspaceApi,
+  contextMenu: contextMenuApi,
 } as const
 
 export type CyWebApiType = typeof CyWebApi
@@ -924,7 +1078,7 @@ window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 
 | Phase            | Event                     | Available operations                                            | Not yet available |
 | ---------------- | ------------------------- | --------------------------------------------------------------- | ----------------- |
-| App initialized  | `cywebapi:ready`          | element, network, selection, table, visualStyle, layout, export | `viewport.fit()`  |
+| App initialized  | `cywebapi:ready`          | element, network, selection, table, visualStyle, layout, export, workspace, contextMenu | `viewport.fit()`  |
 | Renderer mounted | `cywebapi:renderer-ready` | All operations                                                  | —                 |
 
 `viewport.fit()` requires the Cytoscape.js renderer to be registered in `RendererFunctionStore`.
@@ -946,6 +1100,8 @@ window.dispatchEvent(
         'visualStyle',
         'layout',
         'export',
+        'workspace',
+        'contextMenu',
       ],
     },
   }),
@@ -1005,18 +1161,18 @@ declare global {
 }
 ```
 
-#### `AppContext` relationship (Phase 3)
+#### `AppContext` relationship (Phase 1g)
 
-When Phase 3 App Lifecycle is implemented, `AppContext.apis` is a direct reference to
-`window.CyWebApi` — not a new set of instances created inside React context:
+`AppContext.apis` is a direct reference to `window.CyWebApi` — not a new set of instances
+created inside React context. The host (`useAppManager.ts`) passes `CyWebApi` directly:
 
 ```typescript
-// Phase 3 host-side lifecycle implementation
-mount({ appId: app.id, apis: window.CyWebApi })
+// Phase 1g host-side lifecycle wiring (useAppManager.ts)
+mount({ appId: app.id, apis: CyWebApi })  // CyWebApi imported from src/app-api/core
 ```
 
-This eliminates the complexity of "pre-instantiated app API instances" noted in § 1.5.9.
-`AppContext.apis` and `window.CyWebApi` are the same object at runtime.
+`AppContext.apis` is typed as `CyWebApiType` (the same interface as `window.CyWebApi`) to make
+this relationship explicit. Both refer to the same singleton object at runtime.
 
 #### Security model
 
@@ -1685,11 +1841,33 @@ viewport API are not undoable (unlike `applyLayout`).
 
 ---
 
-### 3.9 Internal Hook / Store Return Type Reference
+### 3.9 Workspace API — `useWorkspaceApi`
+
+**Internal targets:** `WorkspaceStore.workspace`, `NetworkSummaryStore.summaries` (direct reads and `setCurrentNetworkId`, `setName`)
+
+| App API Method | Internal Target | Input Transformation | Output Transformation | Error → ApiErrorCode |
+| --- | --- | --- | --- | --- |
+| `getWorkspaceInfo()` | Direct read: `WorkspaceStore.getState().workspace` | None | Assemble `{workspaceId, name, currentNetworkId, networkCount}` → `ok(WorkspaceInfo)` | Catch → `OperationFailed` |
+| `getNetworkIds()` | Direct read: `WorkspaceStore.getState().workspace.networkIds` | None | `[...networkIds]` → `ok({networkIds})` | Catch → `OperationFailed` |
+| `getNetworkList()` | Direct reads: `WorkspaceStore.getState().workspace`, `NetworkSummaryStore.getState().summaries` | None | Join ids with summaries; omit missing summaries → `ok(WorkspaceNetworkInfo[])` | Catch → `OperationFailed` |
+| `getNetworkSummary(networkId)` | Direct reads: `WorkspaceStore.getState().workspace`, `NetworkSummaryStore.getState().summaries` | Validate `networkId ∈ workspace.networkIds` | Assemble `WorkspaceNetworkInfo` → `ok(...)` | `networkId ∉ workspace.networkIds` → `NetworkNotFound`. Summary missing → `NetworkNotFound`. Catch → `OperationFailed` |
+| `getCurrentNetworkId()` | Direct read: `WorkspaceStore.getState().workspace.currentNetworkId` | None | `ok({networkId: workspace.currentNetworkId})` | `networkIds.length === 0 \|\| currentNetworkId === ''` → `NoCurrentNetwork`. Catch → `OperationFailed` |
+| `switchCurrentNetwork(networkId)` | `WorkspaceStore.getState().setCurrentNetworkId(networkId)` | Validate non-empty; validate `networkId ∈ workspace.networkIds` | `ok()` | Empty string → `InvalidInput`. `networkId ∉ workspace.networkIds` → `NetworkNotFound`. Catch → `OperationFailed` |
+| `setWorkspaceName(name)` | `WorkspaceStore.getState().setName(name.trim())` | Validate non-empty after trim | `ok()` | Empty/whitespace-only → `InvalidInput`. Catch → `OperationFailed` |
+
+**Stores involved (2):** `WorkspaceStore`, `NetworkSummaryStore`
+
+**Undo behavior:** None — workspace state changes (renaming, switching active network) are not undoable operations in Cytoscape Web's undo stack.
+
+**Event side-effects:** `switchCurrentNetwork` calls `WorkspaceStore.setCurrentNetworkId()`, which triggers the `network:switched` event via the existing `initEventBus` Zustand subscription. No direct `dispatchCyWebEvent` call is needed in `workspaceApi.ts`. `setWorkspaceName` has no associated public event.
+
+---
+
+### 3.10 Internal Hook / Store Return Type Reference
 
 This subsection documents the return type interfaces of every internal hook and store method that the app API wraps. Implementers need these to build the `ApiResult<T>` conversion layer correctly.
 
-#### 3.9.1 Element Hooks (`src/data/hooks/`)
+#### 3.10.1 Element Hooks (`src/data/hooks/`)
 
 **`useCreateNode` → `createNode()`**
 
@@ -1820,7 +1998,7 @@ interface DeleteEdgesResult {
 - `result.success === true` → `ok({ nodeId })` / `ok({ edgeId })` / `ok({ deletedNodeCount, deletedEdgeCount })` / `ok({ deletedEdgeCount })`
 - `result.success === false` → `fail(...)` with `ApiErrorCode` inferred from `result.error` string
 
-#### 3.9.2 Network API Hook (`src/data/task/`)
+#### 3.10.2 Network API Hook (`src/data/task/`)
 
 **`useCreateNetworkFromCx2`**
 
@@ -1860,7 +2038,7 @@ export interface CyNetwork {
 
 **Side effects:** The internal hook always adds the network to the workspace and navigates to it. The app API needs either optional parameters added to the internal hook, or must conditionally skip navigation after calling it (see §3.2).
 
-#### 3.9.3 Selection — `ViewModelStore` Methods
+#### 3.10.3 Selection — `ViewModelStore` Methods
 
 Selection is handled directly by `ViewModelStore` (defined in `src/models/StoreModel/ViewModelStoreModel.ts`). There is no standalone `useSelection` hook.
 
@@ -1887,7 +2065,7 @@ interface NetworkView {
 
 **Error behavior:** Silent no-op if `networkId` not found. The app API must check `getViewModel(networkId)` before calling mutations and return `NetworkNotFound` explicitly.
 
-#### 3.9.4 Table — `TableStore` Methods
+#### 3.10.4 Table — `TableStore` Methods
 
 All `TableStore` mutation methods return `void` (defined in `src/models/StoreModel/TableStoreModel.ts`):
 
@@ -1925,7 +2103,7 @@ export interface TableRecord {
 
 **Error behavior:** Inconsistent — some methods throw on missing `networkId`, others silently no-op. The app API must normalize by checking `tables[networkId]` before every call.
 
-#### 3.9.5 Visual Style — `VisualStyleStore` Methods
+#### 3.10.5 Visual Style — `VisualStyleStore` Methods
 
 All methods return `void` (defined in `src/models/StoreModel/VisualStyleStoreModel.ts`):
 
@@ -1943,7 +2121,7 @@ removeMapping(networkId, vpName: VisualPropertyName): void
 
 **Error behavior:** Zero null-checks. If `visualStyles[networkId]` is `undefined`, the delegated `VisualStyleImpl` function receives `undefined` and will throw. The app API must validate before every call.
 
-#### 3.9.6 Layout — `LayoutEngine.apply()`
+#### 3.10.6 Layout — `LayoutEngine.apply()`
 
 Layout is not a store action — it's a method on `LayoutEngine` (defined in `src/models/LayoutModel/LayoutEngine.ts`):
 
@@ -1967,7 +2145,7 @@ export interface LayoutEngine {
 
 Available engines are stored in `LayoutStore.layoutEngines: LayoutEngine[]`.
 
-#### 3.9.7 Viewport — `RendererFunctionStore` + `RendererStore`
+#### 3.10.7 Viewport — `RendererFunctionStore` + `RendererStore`
 
 **`RendererFunctionStore`** (defined in `src/data/hooks/stores/RendererFunctionStore.ts`):
 
@@ -2012,7 +2190,7 @@ export interface ViewPort {
 
 Default renderer ID: `'cyjs'`.
 
-#### 3.9.8 Export — Pure Function
+#### 3.10.8 Export — Pure Function
 
 `exportCyNetworkToCx2` is a pure function (not a hook), located in `src/models/CxModel/impl/exporter.ts`:
 
@@ -2026,7 +2204,7 @@ exportCyNetworkToCx2(
 
 Returns `Cx2` (the CX2 format data). Throws on error. The app API assembles the `CyNetwork` from 6 store reads (see §3.8).
 
-#### 3.9.9 Undo — `useUndoStack`
+#### 3.10.9 Undo — `useUndoStack`
 
 `useUndoStack` (defined in `src/data/hooks/useUndoStack.tsx`) returns:
 
@@ -2094,7 +2272,7 @@ must call `postEdit` from the app API. For `applyLayout`, use
 `[networkId, prevPositions]` for undo params and `[networkId, positionMap]`
 for redo params.
 
-#### 3.9.10 Return Type Summary
+#### 3.10.10 Return Type Summary
 
 | Internal Target                        | Return Type                | Pattern                                                   | App API Conversion                                                       |
 | -------------------------------------- | -------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -2169,6 +2347,7 @@ describe('use<Domain>Api', () => {
 | `useLayoutApi`      | Layout completes, positions updated               | LayoutEngineNotFound, NetworkNotFound, FunctionNotAvailable | Async callback resolution, `fitAfterLayout` optional                                |
 | `useViewportApi`    | Fit, position read/write                          | FunctionNotAvailable, NetworkNotFound                       | `fit()` returns Promise                                                             |
 | `useExportApi`      | CX2 assembly from 6 stores                        | NetworkNotFound (any store entry)                           | Multi-store assembly validation                                                     |
+| `useWorkspaceApi`   | Workspace reads (info, network list, current id) and writes (switch, rename) | NetworkNotFound, NoCurrentNetwork, InvalidInput | Silent omission of missing NetworkSummary entries in `getNetworkList` |
 
 ---
 
@@ -2266,6 +2445,28 @@ _Fully specified in [phase0-shared-types-design.md](phase0-shared-types-design.m
 | Modify | `webpack.config.js`                  | Add `'./LayoutApi'`, `'./ExportApi'` entries. Mark legacy stores `@deprecated`                          |
 | Modify | `src/app-api/api_docs/Api.md`        | Complete app API hook documentation                                                                     |
 
+### Phase 1f: Workspace API
+
+| Action | File | Notes |
+| ------ | ---- | ----- |
+| Create | `src/app-api/core/workspaceApi.ts`      | Framework-agnostic; coordinates `WorkspaceStore` + `NetworkSummaryStore` via `.getState()` — 7 methods. No React imports. |
+| Create | `src/app-api/core/workspaceApi.test.ts` | Plain Jest tests for all core methods per § 4.3 |
+| Create | `src/app-api/useWorkspaceApi.ts`        | Thin hook: `export const useWorkspaceApi = (): WorkspaceApi => workspaceApi` |
+| Create | `src/app-api/useWorkspaceApi.test.ts`   | Trivial hook test: verifies hook returns core `workspaceApi` object |
+| Modify | `src/app-api/core/index.ts`             | Add `workspace: workspaceApi` to `CyWebApi` |
+| Modify | `src/app-api/index.ts`                  | Export `useWorkspaceApi` |
+| Modify | `src/app-api/types/index.ts`            | Export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi` |
+| Modify | `src/app-api/types/AppContext.ts`       | Add `workspace: WorkspaceApi` to `AppContext.apis` |
+| Modify | `webpack.config.js`                     | Add `'./WorkspaceApi'` entry |
+
+### Phase 1g: App Lifecycle
+
+| Action | File                                                       | Notes |
+| ------ | ---------------------------------------------------------- | ----- |
+| Modify | `src/app-api/types/AppContext.ts`                          | Replace inline `apis` type with `CyWebApiType` imported from `../core`; add JSDoc noting it equals `window.CyWebApi` |
+| Modify | `src/data/hooks/stores/useAppManager.ts`                   | Import `CyAppWithLifecycle` + `CyWebApi`; call `mount({ appId, apis: CyWebApi })` after `registerApp`; call `unmount()` on `beforeunload` and `AppStatus.Error` transition |
+| Create | `src/data/hooks/stores/useAppManager.lifecycle.test.ts`    | Plain Jest tests: `mount` called with correct context; `mount` not called for plain `CyApp`; async `mount` awaited; `unmount` on `beforeunload`; `unmount` on `AppStatus.Error` |
+
 ---
 
 ## 6. Internal Store Validation Gap Summary
@@ -2282,5 +2483,6 @@ The following table summarizes the validation behavior of each internal store. T
 | `LayoutStore`           | N/A (no per-network state)                                                       | None             | Safe — state is global                                              |
 | `OpaqueAspectStore`     | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
 | `NetworkSummaryStore`   | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
+| `WorkspaceStore`        | N/A (no per-network state; `workspace` is a single object)                       | None             | Safe — `workspace` is always defined; `networkIds` is always an array |
 
 **App API rule:** Always check store state existence _before_ calling mutation methods. Never rely on store-level null-safety.

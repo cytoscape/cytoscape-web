@@ -281,3 +281,46 @@ export const getInternalNetworkDataStore = (network: Network): any => {
   const networkImpl = network as NetworkImpl
   return networkImpl.store
 }
+
+/**
+ * Move an edge to new source/target endpoints, preserving the edge ID.
+ *
+ * @param network The network containing the edge
+ * @param edgeId The ID of the edge to move
+ * @param newSourceId The new source node ID
+ * @param newTargetId The new target node ID
+ * @returns The old source and target IDs before the move
+ */
+export const moveEdge = (
+  network: Network,
+  edgeId: IdType,
+  newSourceId: IdType,
+  newTargetId: IdType,
+): { oldSourceId: IdType; oldTargetId: IdType } => {
+  const networkImpl = network as NetworkImpl
+  const store = networkImpl.store
+  const edge = store.$id(edgeId)
+
+  if (edge.empty()) {
+    throw new Error(`Edge ${edgeId} not found in network ${network.id}`)
+  }
+
+  const oldSourceId = edge.source().id()
+  const oldTargetId = edge.target().id()
+
+  if (store.$id(newSourceId).empty()) {
+    throw new Error(
+      `Source node ${newSourceId} not found in network ${network.id}`,
+    )
+  }
+  if (store.$id(newTargetId).empty()) {
+    throw new Error(
+      `Target node ${newTargetId} not found in network ${network.id}`,
+    )
+  }
+
+  // Cytoscape.js edge.move() atomically updates source/target, preserving edge ID
+  edge.move({ source: newSourceId, target: newTargetId })
+
+  return { oldSourceId, oldTargetId }
+}

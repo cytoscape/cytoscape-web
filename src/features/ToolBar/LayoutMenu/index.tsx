@@ -203,34 +203,28 @@ export const LayoutMenu = (): JSX.Element => {
     // Use the new array with dividers in the return value
     return [
       ...(allDisabled
-        ? [
-            {
-              separator: (
-                sortedMenuItemsWithDividers.map((menuItem: any) => menuItem.isDivider)
-              ),
+        ? sortedMenuItemsWithDividers.map((menuItem: any) => {
+            // Render divider
+            if (menuItem.isDivider) {
+              return {
+                separator: true,
+              }
+            }
+            return {
               template: (
-                <>
-                {sortedMenuItemsWithDividers.map((menuItem: any) => {
-                  if (menuItem.isDivider) {
-                    return null
+                <DropdownMenuItem
+                  key={menuItem.key}
+                  label={menuItem.label}
+                  tooltip={
+                    targetNetworkId === ''
+                      ? 'Layouts are disabled since the network view is empty'
+                      : 'Layouts cannot be applied to the current network view'
                   }
-                  return (
-                    <DropdownMenuItem
-                      key={menuItem.key}
-                      label={menuItem.label}
-                      tooltip={
-                        targetNetworkId === ''
-                          ? 'Layouts are disabled since the network view is empty'
-                          : 'Layouts cannot be applied to the current network view'
-                      }
-                      disabled={true}
-                    />
-                  )
-                })}
-                </>
+                  disabled={true}
+                />
               ),
-            },
-          ]
+            }
+        })
         : sortedMenuItemsWithDividers.map((menuItem: any) => {
             // Render divider
             if (menuItem.isDivider) {

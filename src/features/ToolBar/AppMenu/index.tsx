@@ -2,16 +2,24 @@ import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
 import { MenuItem } from 'primereact/menuitem'
 import { useEffect, useState } from 'react'
 
+import { AppIdProvider } from '../../../app-api/AppIdContext'
+import { CyWebApi } from '../../../app-api/core'
+import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { createResourceApi } from '../../../app-api/core/resourceApi'
+import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
+import { appRegistry } from '../../../data/hooks/stores/useAppManager'
 import { useServiceTaskRunner } from '../../../data/hooks/useServiceTaskRunner'
 import { logApp } from '../../../debug'
 import { ComponentType, CyApp } from '../../../models/AppModel'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
+import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import ExternalComponent from '../../AppManager/ExternalComponent'
+import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { DropdownMenu } from '../DropdownMenu'
@@ -26,7 +34,6 @@ export const AppMenu = () => {
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
-  const [appStateUpdated, setAppStateUpdated] = useState<boolean>(false)
 
   // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
@@ -34,7 +41,9 @@ export const AppMenu = () => {
   // For the task status dialog
   const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
 
-  const [componentList, setComponentList] = useState<[string, string][]>([])
+  const [componentList, setComponentList] = useState<
+    [string, ComponentMetadata][]
+  >([])
 
   // For the notification dialog
   const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
@@ -98,21 +107,20 @@ export const AppMenu = () => {
       return
     }
 
-    const componentList: [string, string][] = []
+    const componentList: [string, ComponentMetadata][] = []
     // Extract component list from the apps
     activeIds.forEach((appId: string) => {
       const app: CyApp = apps[appId]
       const { components } = app
       if (components !== undefined) {
         components.forEach((component: ComponentMetadata) => {
-          const componentId: string = component.id
           const componentType: string = component.type
           if (
             componentType === ComponentType.Menu &&
             app.status === AppStatus.Active
           ) {
             // Add menu only
-            componentList.push([appId, componentId])
+            componentList.push([appId, component])
           }
         })
       }
@@ -120,20 +128,6 @@ export const AppMenu = () => {
 
     setComponentList(componentList)
   }, [apps])
-
-  const createAppMenu = (): MenuItem[] => {
-    const appMenuItems: MenuItem[] = componentList.map(
-      ([appId, componentId], index) => {
-        const MenuComponent = ExternalComponent(appId, './' + componentId)
-        const menuItem: MenuItem = {
-          template: <MenuComponent key={index} handleClose={handleClose} />,
-        }
-        return menuItem
-      },
-    )
-
-    return appMenuItems
-  }
 
   const getBaseMenu = (): MenuItem[] => {
     return [
@@ -146,7 +140,7 @@ export const AppMenu = () => {
     ]
   }
 
-  const collectAndSetMenuModel = () => {
+  useEffect(() => {
     const appMenuItems: MenuItem[] = createAppMenu()
     const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
     const divider: MenuItem[] =
@@ -154,16 +148,7 @@ export const AppMenu = () => {
         ? [{ separator: true }]
         : []
     setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
-  }
-
-  useEffect(() => {
-    collectAndSetMenuModel()
   }, [serviceApps, apps])
-
-  useEffect(() => {
-    collectAndSetMenuModel()
-    setAppStateUpdated(false)
-  }, [appStateUpdated])
 
   useEffect(() => {
     // Create base menu items
@@ -171,10 +156,98 @@ export const AppMenu = () => {
     setOpen(false)
   }, [])
 
+  // Read runtime menu resources from AppResourceStore
+  const runtimeResources = useAppResourceStore((state) => state.resources)
+
+  const createAppMenu = (): MenuItem[] => {
+    // 1. Collect runtime 'apps-menu' resources
+    const runtimeMenuItems: MenuItem[] = runtimeResources
+      .filter((r: RegisteredAppResource) => {
+        if (r.slot !== 'apps-menu') return false
+        if (apps[r.appId]?.status !== AppStatus.Active) return false
+        return true
+      })
+      .map((r: RegisteredAppResource) => {
+        const MenuComponent = r.component as React.ComponentType<any>
+        const perAppApis = {
+          ...CyWebApi,
+          resource: createResourceApi(r.appId),
+          contextMenu: createContextMenuApi(r.appId),
+        }
+
+        const wrapped = r.closeOnAction ? (
+          <div
+            key={`${r.appId}::apps-menu::${r.id}`}
+            onClick={() => {
+              queueMicrotask(() => handleClose())
+            }}
+          >
+            <AppIdProvider value={{ appId: r.appId, apis: perAppApis }}>
+              <PluginErrorBoundary
+                appId={r.appId}
+                slot="apps-menu"
+                customFallback={r.errorFallback as any}
+              >
+                <MenuComponent handleClose={handleClose} />
+              </PluginErrorBoundary>
+            </AppIdProvider>
+          </div>
+        ) : (
+          <AppIdProvider
+            key={`${r.appId}::apps-menu::${r.id}`}
+            value={{ appId: r.appId, apis: perAppApis }}
+          >
+            <PluginErrorBoundary
+              appId={r.appId}
+              slot="apps-menu"
+              customFallback={r.errorFallback as any}
+            >
+              <MenuComponent handleClose={handleClose} />
+            </PluginErrorBoundary>
+          </AppIdProvider>
+        )
+
+        return { template: wrapped } as MenuItem
+      })
+
+    // Track runtime ids for deduplication
+    const runtimeIds = new Set(
+      runtimeResources
+        .filter((r) => r.slot === 'apps-menu')
+        .map((r) => `${r.appId}::apps-menu::${r.id}`),
+    )
+
+    // 2. Collect manifest menu items (legacy CyApp.components)
+    const manifestMenuItems: MenuItem[] = componentList
+      .filter(([appId, component]) => {
+        const manifestId = `${appId}::apps-menu::${component.id}`
+        return !runtimeIds.has(manifestId)
+      })
+      .map(([appId, component], index) => {
+        const freshComponent = appRegistry
+          .get(appId)
+          ?.components?.find((c) => c.id === component.id)
+        const MenuComponent: any =
+          freshComponent?.component ??
+          component.component ??
+          ExternalComponent(appId, './' + component.id)
+        const menuItem: MenuItem = {
+          template: <MenuComponent key={index} handleClose={handleClose} />,
+        }
+        return menuItem
+      })
+
+    // 3. Merge: runtime first, then manifest
+    return [...runtimeMenuItems, ...manifestMenuItems]
+  }
+
+  // TODO test whether this behavior is still correct after refactoring (no more button click events)
   useEffect(() => {
     if (open && !isInitialClick) {
       setIsInitialClick(true)
-      collectAndSetMenuModel()
+      const appMenuItems: MenuItem[] = createAppMenu()
+      const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
+      setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
     }
   }, [open])
 
@@ -190,7 +263,6 @@ export const AppMenu = () => {
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
-        setAppStateUpdated={setAppStateUpdated}
       />
       <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
       <ConfirmationDialog

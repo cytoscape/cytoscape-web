@@ -1,4 +1,5 @@
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
+import React from 'react'
 
 import { BaseMenuItemProps } from "../BaseMenuItemProps"
 import { DropdownMenuItem } from "../DropdownMenu"

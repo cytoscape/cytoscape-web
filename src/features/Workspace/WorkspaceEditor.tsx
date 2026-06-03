@@ -1,6 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import { Box, Button, Tooltip } from '@mui/material'
+import { Box, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
 import isEqual from 'lodash/isEqual'
 import omit from 'lodash/omit'
@@ -48,11 +48,10 @@ const JoinTableToNetworkForm = lazy(() =>
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
 import { AppConfigContext } from '../../AppConfigContext'
-import { logUi } from '../../debug'
-import { useAppManager } from '../../data/hooks/stores/useAppManager'
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
+import { logUi } from '../../debug'
 import { CyNetwork, VisualStyle } from '../../models'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { MessageSeverity } from '../../models/MessageModel'
@@ -82,9 +81,6 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  * - Right Panel: Side panel with additional tools (collapsible)
  */
 const WorkSpaceEditor = (): JSX.Element => {
-  // Subscribers to the stores
-  useAppManager() // Register dynamically loaded apps to the store
-
   // Subscribers for optional features
   useHierarchyViewerManager()
 
@@ -366,7 +362,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           } else {
             setActiveNetworkView(networkIdFromParams)
           }
-          // eslint-disable-next-line react-hooks/exhaustive-deps
+           
         })
         .catch((error) => {
           logUi.error(

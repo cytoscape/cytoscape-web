@@ -436,7 +436,6 @@ export const LoadFromNdexDialog = (
       summaries.forEach((summary) => {
         summary.sourcePath = sourcePath
       })
-
       addNetworks(summaries.map((summary) => summary.externalId))
       addSummaries(
         summaries.reduce(
