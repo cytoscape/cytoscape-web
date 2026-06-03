@@ -165,162 +165,162 @@ export const orientationToPositionMap: Record<
 }
 
 export const nodeLabelPositionMap: any = {
-  center: {
-    center: {
-      center: {
-        center: { 'text-halign': 'center', 'text-valign': 'center' }, //  1
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
-      },
+  top: {
+    left: {
       top: {
-        center: { 'text-halign': 'center', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
+        left: { 'text-halign': 'left-inside', 'text-valign': 'top-inside' },
+        center: { 'text-halign': 'left', 'text-valign': 'top-inside' },
+        right: { 'text-halign': 'left', 'text-valign': 'top-inside' },
+      },
+      center: {
+        left: { 'text-halign': 'left-inside', 'text-valign': 'top' },
+        center: { 'text-halign': 'left', 'text-valign': 'top' },
+        right: { 'text-halign': 'left', 'text-valign': 'top' },
       },
       bottom: {
-        center: { 'text-halign': 'center', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
+        left: { 'text-halign': 'left-inside', 'text-valign': 'top' },
+        center: { 'text-halign': 'left', 'text-valign': 'top' },
+        right: { 'text-halign': 'left', 'text-valign': 'top' },
       },
     },
-    left: {
-      center: {
-        center: { 'text-halign': 'left', 'text-valign': 'center' },
-        left: { 'text-halign': 'center', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
-      },
+    center: {
       top: {
-        center: { 'text-halign': 'left', 'text-valign': 'center' },
-        left: { 'text-halign': 'center', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'top-inside' },
+        center: { 'text-halign': 'center', 'text-valign': 'top-inside' },
+        right: { 'text-halign': 'left', 'text-valign': 'top-inside' },
+      },
+      center: {
+        left: { 'text-halign': 'right', 'text-valign': 'top' },
+        center: { 'text-halign': 'center', 'text-valign': 'top' },
+        right: { 'text-halign': 'left', 'text-valign': 'top' },
       },
       bottom: {
-        center: { 'text-halign': 'left', 'text-valign': 'center' },
-        left: { 'text-halign': 'center', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'top' },
+        center: { 'text-halign': 'center', 'text-valign': 'top' },
+        right: { 'text-halign': 'left', 'text-valign': 'top' },
       },
     },
     right: {
-      center: {
-        center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
-        right: { 'text-halign': 'center', 'text-valign': 'center' },
-      },
       top: {
-        center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
-        right: { 'text-halign': 'center', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'top-inside' },
+        center: { 'text-halign': 'right', 'text-valign': 'top-inside' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'top-inside' },
+      },
+      center: {
+        left: { 'text-halign': 'right', 'text-valign': 'top' },
+        center: { 'text-halign': 'right', 'text-valign': 'top' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'top' },
       },
       bottom: {
-        center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'center', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'top' },
+        left: { 'text-halign': 'right', 'text-valign': 'top' },
+        center: { 'text-halign': 'right', 'text-valign': 'top' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'top' },
       },
     },
   },
-  top: {
-    center: {
-      center: {
-        center: { 'text-halign': 'center', 'text-valign': 'top' },
-        left: { 'text-halign': 'right', 'text-valign': 'top' },
-        right: { 'text-halign': 'left', 'text-valign': 'top' },
-      },
-      top: {
-        center: { 'text-halign': 'center', 'text-valign': 'center' },
-        left: { 'text-halign': 'left', 'text-valign': 'top' },
-        right: { 'text-halign': 'right', 'text-valign': 'top' },
-      },
-      bottom: {
-        center: { 'text-halign': 'center', 'text-valign': 'top' },
-        left: { 'text-halign': 'left', 'text-valign': 'top' },
-        right: { 'text-halign': 'right', 'text-valign': 'top' },
-      },
-    },
+  center: {
     left: {
-      center: {
-        center: { 'text-halign': 'left', 'text-valign': 'top' },
-        left: { 'text-halign': 'center', 'text-valign': 'top' },
-        right: { 'text-halign': 'left', 'text-valign': 'top' },
-      },
       top: {
+        left: { 'text-halign': 'left-inside', 'text-valign': 'center' },
         center: { 'text-halign': 'left', 'text-valign': 'center' },
-        left: { 'text-halign': 'center', 'text-valign': 'center' },
+        right: { 'text-halign': 'left', 'text-valign': 'center' },
+      },
+      center: {
+        left: { 'text-halign': 'left-inside', 'text-valign': 'center' },
+        center: { 'text-halign': 'left', 'text-valign': 'center' },
         right: { 'text-halign': 'left', 'text-valign': 'center' },
       },
       bottom: {
-        center: { 'text-halign': 'left', 'text-valign': 'top' },
-        left: { 'text-halign': 'center', 'text-valign': 'top' },
-        right: { 'text-halign': 'left', 'text-valign': 'top' },
+        left: { 'text-halign': 'left-inside', 'text-valign': 'center' },
+        center: { 'text-halign': 'left', 'text-valign': 'center' },
+        right: { 'text-halign': 'left', 'text-valign': 'center' },
+      },
+    },
+    center: {
+      top: {
+        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        center: { 'text-halign': 'center', 'text-valign': 'center' },
+        right: { 'text-halign': 'left', 'text-valign': 'center' },
+      },
+      center: {
+        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        center: { 'text-halign': 'center', 'text-valign': 'center' },
+        right: { 'text-halign': 'left', 'text-valign': 'center' },
+      },
+      bottom: {
+        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        center: { 'text-halign': 'center', 'text-valign': 'center' },
+        right: { 'text-halign': 'left', 'text-valign': 'center' },
       },
     },
     right: {
-      center: {
-        center: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        right: { 'text-halign': 'center', 'text-valign': 'bottom' },
-      },
       top: {
-        center: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        right: { 'text-halign': 'center', 'text-valign': 'bottom' },
+        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        center: { 'text-halign': 'right', 'text-valign': 'center' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'center' },
+      },
+      center: {
+        left: { 'text-halign': 'right', 'text-valign': 'center' },
+        center: { 'text-halign': 'right', 'text-valign': 'center' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'center' },
       },
       bottom: {
+        left: { 'text-halign': 'right', 'text-valign': 'center' },
         center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'top' },
-        right: { 'text-halign': 'center', 'text-valign': 'center' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'center' },
       },
     },
   },
   bottom: {
-    center: {
-      center: {
-        center: { 'text-halign': 'center', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
+    left: {
+      top: {
+        left: { 'text-halign': 'left-inside', 'text-valign': 'bottom' },
+        center: { 'text-halign': 'left', 'text-valign': 'bottom' },
         right: { 'text-halign': 'left', 'text-valign': 'bottom' },
       },
-      top: {
-        center: { 'text-halign': 'center', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
+      center: {
+        left: { 'text-halign': 'left-inside', 'text-valign': 'bottom' },
+        center: { 'text-halign': 'left', 'text-valign': 'bottom' },
         right: { 'text-halign': 'left', 'text-valign': 'bottom' },
       },
       bottom: {
-        center: { 'text-halign': 'center', 'text-valign': 'center' },
-        left: { 'text-halign': 'left', 'text-valign': 'bottom' },
-        right: { 'text-halign': 'right', 'text-valign': 'bottom' },
+        left: { 'text-halign': 'left-inside', 'text-valign': 'bottom-inside' },
+        center: { 'text-halign': 'left', 'text-valign': 'bottom-inside' },
+        right: { 'text-halign': 'left', 'text-valign': 'bottom-inside' },
       },
     },
-    left: {
-      center: {
-        center: { 'text-halign': 'left', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'left', 'text-valign': 'bottom' },
-        right: { 'text-halign': 'center', 'text-valign': 'bottom' },
-      },
+    center: {
       top: {
-        center: { 'text-halign': 'left', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'center', 'text-valign': 'bottom' },
+        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
+        center: { 'text-halign': 'center', 'text-valign': 'bottom' },
+        right: { 'text-halign': 'left', 'text-valign': 'bottom' },
+      },
+      center: {
+        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
+        center: { 'text-halign': 'center', 'text-valign': 'bottom' },
         right: { 'text-halign': 'left', 'text-valign': 'bottom' },
       },
       bottom: {
-        center: { 'text-halign': 'left', 'text-valign': 'center' },
-        left: { 'text-halign': 'center', 'text-valign': 'center' },
-        right: { 'text-halign': 'left', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'bottom-inside' },
+        center: { 'text-halign': 'center', 'text-valign': 'bottom-inside' },
+        right: { 'text-halign': 'left', 'text-valign': 'bottom-inside' },
       },
     },
     right: {
-      center: {
-        center: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        left: { 'text-halign': 'center', 'text-valign': 'bottom' },
-        right: { 'text-halign': 'right', 'text-valign': 'bottom' },
-      },
       top: {
-        center: { 'text-halign': 'right', 'text-valign': 'bottom' },
         left: { 'text-halign': 'right', 'text-valign': 'bottom' },
-        right: { 'text-halign': 'center', 'text-valign': 'center' },
+        center: { 'text-halign': 'right', 'text-valign': 'bottom' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'bottom' },
+      },
+      center: {
+        left: { 'text-halign': 'right', 'text-valign': 'bottom' },
+        center: { 'text-halign': 'right', 'text-valign': 'bottom' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'bottom' },
       },
       bottom: {
-        center: { 'text-halign': 'right', 'text-valign': 'center' },
-        left: { 'text-halign': 'right', 'text-valign': 'center' },
-        right: { 'text-halign': 'center', 'text-valign': 'center' },
+        left: { 'text-halign': 'right', 'text-valign': 'bottom-inside' },
+        center: { 'text-halign': 'right', 'text-valign': 'bottom-inside' },
+        right: { 'text-halign': 'right-inside', 'text-valign': 'bottom-inside' },
       },
     },
   },
