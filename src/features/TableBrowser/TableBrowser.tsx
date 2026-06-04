@@ -105,12 +105,47 @@ const ButtonTooltip = ({ title, children }: { title: string; children: React.Rea
       ],
     }}
   >
-    <span>{children}</span>
+    {children}
   </Tooltip>
 )
 
+const ToolbarIconButton = ({
+  title,
+  disabled = false,
+  onClick,
+  children,
+}: { 
+  title: string
+  disabled?: boolean
+  onClick: () => void
+  children: React.ReactElement
+}) => (
+  <ButtonTooltip title={title}>
+    <span>
+      <Button 
+        disabled={disabled}
+        onClick={onClick}
+        sx={{
+          minWidth: 48,
+          maxWidth: 48,
+          height: 48,
+          p: 0,
+          color: (theme) => theme.palette.text.primary,
+        }}
+      >
+        {children}
+      </Button>
+    </span>
+  </ButtonTooltip>
+)
 
-const TextButton = ({ onClick, children,}: { onClick: () => void; children: React.ReactNode }) => (
+const ToolbarTextButton = ({
+  onClick,
+  children,
+}: { 
+  onClick: () => void
+  children: React.ReactNode 
+}) => (
   <Button 
     variant="outlined"
     size="small"
@@ -1061,167 +1096,161 @@ export default function TableBrowser(props: {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 1,
+            gap: 2,
           }}
         >
-          <ButtonTooltip title="Sort ascending">
-            <Button
-              onClick={() => {
-                if (selectedColumn != null) {
-                  const columnKey = selectedColumn.id
-                  const columnType = selectedColumn.type
+          <ToolbarIconButton
+            title="Sort ascending"
+            onClick={() => {
+              if (selectedColumn != null) {
+                const columnKey = selectedColumn.id
+                const columnType = selectedColumn.type
 
-                  setSort({
-                    column: columnKey,
-                    direction: 'asc',
-                    valueType: columnType,
+                setSort({
+                  column: columnKey,
+                  direction: 'asc',
+                  valueType: columnType,
+                })
+
+                // Use utility function to update tableDisplayConfiguration with sort info
+                const newTableDisplayConfiguration =
+                  createUpdatedTableDisplayConfiguration({
+                    sortColumn: columnKey,
+                    sortDirection: 'ascending',
                   })
 
-                  // Use utility function to update tableDisplayConfiguration with sort info
-                  const newTableDisplayConfiguration =
-                    createUpdatedTableDisplayConfiguration({
-                      sortColumn: columnKey,
-                      sortDirection: 'ascending',
-                    })
+                setTableDisplayConfiguration(
+                  networkId,
+                  newTableDisplayConfiguration,
+                )
+                setNetworkModified(networkId, true)
+              }
+            }}
+          >
+            <SortAscIcon fill={theme.palette.text.primary} />
+          </ToolbarIconButton>
+          <ToolbarIconButton
+            title="Sort descending"
+            onClick={() => {
+              if (selectedColumn != null) {
+                const columnKey = selectedColumn.id
+                const columnType = selectedColumn.type
+                setSort({
+                  column: columnKey,
+                  direction: 'desc',
+                  valueType: columnType,
+                })
 
-                  setTableDisplayConfiguration(
-                    networkId,
-                    newTableDisplayConfiguration,
-                  )
-                  setNetworkModified(networkId, true)
-                }
-              }}
-            >
-              <SortAscIcon fill={theme.palette.text.primary} />
-            </Button>
-          </ButtonTooltip>
-          <ButtonTooltip title="Sort descending">
-            <Button
-              onClick={() => {
-                if (selectedColumn != null) {
-                  const columnKey = selectedColumn.id
-                  const columnType = selectedColumn.type
-                  setSort({
-                    column: columnKey,
-                    direction: 'desc',
-                    valueType: columnType,
+                // Use utility function to update tableDisplayConfiguration with sort info
+                const newTableDisplayConfiguration =
+                  createUpdatedTableDisplayConfiguration({
+                    sortColumn: columnKey,
+                    sortDirection: 'descending',
                   })
+                setTableDisplayConfiguration(
+                  networkId,
+                  newTableDisplayConfiguration,
+                )
+                setNetworkModified(networkId, true)
+              }
+            }}
+          >
+            <SortDescIcon fill={theme.palette.text.primary} />
+          </ToolbarIconButton>
+          <ToolbarIconButton
+            title="Duplicate column"
+            onClick={() => {
+              if (
+                selectedColumn !== null &&
+                !(selectedColumn as any)?.isVirtual
+              ) {
+                const columnKey = selectedColumn.id
+                duplicateColumn(
+                  props.currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  columnKey,
+                )
+                setNetworkModified(networkId, true)
 
-                  // Use utility function to update tableDisplayConfiguration with sort info
-                  const newTableDisplayConfiguration =
-                    createUpdatedTableDisplayConfiguration({
-                      sortColumn: columnKey,
-                      sortDirection: 'descending',
-                    })
-                  setTableDisplayConfiguration(
-                    networkId,
-                    newTableDisplayConfiguration,
-                  )
-                  setNetworkModified(networkId, true)
+                setSelection({
+                  ...selection,
+                  columns: CompactSelection.fromSingleSelection(
+                    selectedColumn.index + 1, // select the newly created column
+                  ),
+                })
+
+                // Update tableDisplayConfiguration for duplicate
+                // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
+                const defaultConfig = {
+                  columnConfiguration:
+                    (currentTable === nodeTable
+                      ? nodeTable
+                      : edgeTable
+                    )?.columns?.map((col) => ({
+                      attributeName: col.name,
+                      visible: true,
+                      columnWidth: undefined,
+                    })) ?? [],
+                  sortColumn: undefined,
+                  sortDirection: undefined,
                 }
-              }}
-            >
-              <SortDescIcon fill={theme.palette.text.primary} />
-            </Button>
-          </ButtonTooltip>
-          <ButtonTooltip title="Duplicate column">
-            <Button
-              onClick={() => {
-                if (
-                  selectedColumn !== null &&
-                  !(selectedColumn as any)?.isVirtual
-                ) {
-                  const columnKey = selectedColumn.id
-                  duplicateColumn(
-                    props.currentNetworkId,
-                    currentTable === nodeTable ? 'node' : 'edge',
-                    columnKey,
-                  )
-                  setNetworkModified(networkId, true)
-
-                  setSelection({
-                    ...selection,
-                    columns: CompactSelection.fromSingleSelection(
-                      selectedColumn.index + 1, // select the newly created column
+                const currentConfig =
+                  currentTable === nodeTable
+                    ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+                    : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
+                // Find the duplicated column in the config
+                const duplicatedCol = currentConfig.columnConfiguration.find(
+                  (col) => col.attributeName === columnKey,
+                )
+                // The new column will have a new name, which should be the next column in the table
+                // We'll assume the duplicated column is inserted right after the original
+                // Find the new column name by checking the columns array
+                const allColumnNames = columns.map((c) => c.id)
+                const originalIndex = allColumnNames.indexOf(columnKey)
+                const newColumnName = allColumnNames[originalIndex + 1]
+                if (duplicatedCol && newColumnName) {
+                  const newColConfig = [
+                    ...currentConfig.columnConfiguration.slice(
+                      0,
+                      originalIndex + 1,
                     ),
-                  })
-
-                  // Update tableDisplayConfiguration for duplicate
-                  // Temporary fix: fallback to table columns if tableDisplayConfiguration is missing
-                  const defaultConfig = {
-                    columnConfiguration:
-                      (currentTable === nodeTable
-                        ? nodeTable
-                        : edgeTable
-                      )?.columns?.map((col) => ({
-                        attributeName: col.name,
-                        visible: true,
-                        columnWidth: undefined,
-                      })) ?? [],
-                    sortColumn: undefined,
-                    sortDirection: undefined,
-                  }
-                  const currentConfig =
-                    currentTable === nodeTable
-                      ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
-                      : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
-                  // Find the duplicated column in the config
-                  const duplicatedCol = currentConfig.columnConfiguration.find(
-                    (col) => col.attributeName === columnKey,
+                    { ...duplicatedCol, attributeName: newColumnName },
+                    ...currentConfig.columnConfiguration.slice(
+                      originalIndex + 1,
+                    ),
+                  ]
+                  const newTableDisplayConfiguration =
+                    createUpdatedTableDisplayConfiguration({
+                      columnConfiguration: newColConfig,
+                    })
+                  setTableDisplayConfiguration(
+                    networkId,
+                    newTableDisplayConfiguration,
                   )
-                  // The new column will have a new name, which should be the next column in the table
-                  // We'll assume the duplicated column is inserted right after the original
-                  // Find the new column name by checking the columns array
-                  const allColumnNames = columns.map((c) => c.id)
-                  const originalIndex = allColumnNames.indexOf(columnKey)
-                  const newColumnName = allColumnNames[originalIndex + 1]
-                  if (duplicatedCol && newColumnName) {
-                    const newColConfig = [
-                      ...currentConfig.columnConfiguration.slice(
-                        0,
-                        originalIndex + 1,
-                      ),
-                      { ...duplicatedCol, attributeName: newColumnName },
-                      ...currentConfig.columnConfiguration.slice(
-                        originalIndex + 1,
-                      ),
-                    ]
-                    const newTableDisplayConfiguration =
-                      createUpdatedTableDisplayConfiguration({
-                        columnConfiguration: newColConfig,
-                      })
-                    setTableDisplayConfiguration(
-                      networkId,
-                      newTableDisplayConfiguration,
-                    )
-                    setNetworkModified(networkId, true)
-                  }
+                  setNetworkModified(networkId, true)
                 }
-              }}
-              disabled={(selectedColumn as any)?.isVirtual}
-            >
-              <DuplicateIcon fill={theme.palette.text.primary} />
-            </Button>
-          </ButtonTooltip>
-          <ButtonTooltip title="Rename column">
-            <Button
-              onClick={() => setShowEditColumnForm(true)}
-              disabled={(selectedColumn as any)?.isVirtual}
-            >
-              <EditIcon fill={theme.palette.text.primary} />
-            </Button>
-          </ButtonTooltip>
-          <ButtonTooltip title="Delete column">
-            <Button
-              onClick={() => {
-                setShowDeleteColumnForm(true)
-              }}
-              disabled={(selectedColumn as any)?.isVirtual}
-              sx={{ color: (theme) => theme.palette.text.primary }}
-            >
-              <span className="icon">&#46;</span>
-            </Button>
-          </ButtonTooltip>
+              }
+            }}
+            disabled={(selectedColumn as any)?.isVirtual}
+          >
+            <DuplicateIcon fill={theme.palette.text.primary} />
+          </ToolbarIconButton>
+          <ToolbarIconButton
+            title="Rename column"
+            onClick={() => setShowEditColumnForm(true)}
+            disabled={(selectedColumn as any)?.isVirtual}
+          >
+            <EditIcon fill={theme.palette.text.primary} />
+          </ToolbarIconButton>
+          <ToolbarIconButton
+            title="Delete column"
+            onClick={() => {
+              setShowDeleteColumnForm(true)
+            }}
+            disabled={(selectedColumn as any)?.isVirtual}
+          >
+            <span className="icon">&#46;</span>
+          </ToolbarIconButton>
         </Box>
         <EditTableColumnForm
           error={columnFormError}
@@ -1413,11 +1442,12 @@ export default function TableBrowser(props: {
           sx={{
             display: 'flex',
             gap: 1,
+            ml: 2,
             backgroundColor: 'transparent',
             minWidth: '540px',
           }}
         >
-          <TextButton
+          <ToolbarTextButton
             onClick={() => {
               const [columnIndex, rowIndex] = selectedCell
               const rowData = rows?.[rowIndex]
@@ -1464,8 +1494,8 @@ export default function TableBrowser(props: {
             }}
           >
             Apply Value to Column
-          </TextButton>
-          <TextButton
+          </ToolbarTextButton>
+          <ToolbarTextButton
             onClick={() => {
               const [columnIndex, rowIndex] = selectedCell
               const rowData = rows?.[rowIndex]
@@ -1517,7 +1547,7 @@ export default function TableBrowser(props: {
             {`Apply Value to Selected ${
               currentTable === nodeTable ? 'Nodes' : 'Edges'
             }`}
-          </TextButton>
+          </ToolbarTextButton>
         </Box>
       </>
     ) : null
@@ -1529,10 +1559,11 @@ export default function TableBrowser(props: {
           display: 'flex',
           alignItems: 'center',
           gap: 1,
+          ml: 2,
           backgroundColor: 'transparent',
         }}
       >
-        <TextButton
+        <ToolbarTextButton
           onClick={() => {
             const rowsToSelect = selection.rows.toArray()
             const rowIds = rowsToSelect
@@ -1550,7 +1581,7 @@ export default function TableBrowser(props: {
           }}
         >
           {`Select ${currentTable === nodeTable ? 'Nodes' : 'Edges'}`}{' '}
-        </TextButton>
+        </ToolbarTextButton>
       </Box>
     ) : null
 
@@ -1559,28 +1590,25 @@ export default function TableBrowser(props: {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1,
+        gap: 2,
+        ml: 1,
         backgroundColor: 'transparent',
       }}
     >
-      <ButtonTooltip title="Insert new column">
-        <Button
-          disabled={tables[props.currentNetworkId] === undefined}
-          onClick={() => setShowCreateColumnForm(true)}
-          sx={{ color: (theme) => theme.palette.text.primary }}
-        >
-          <span className="icon">&#8209;</span>
-        </Button>
-      </ButtonTooltip>
-      <ButtonTooltip title="Import table from file...">
-        <Button
-          disabled={tables[props.currentNetworkId] === undefined}
-          onClick={() => showTableJoinForm(true)}
-          sx={{ color: (theme) => theme.palette.text.primary }}
-        >
-          <span className="icon">&#44;</span>
-        </Button>
-      </ButtonTooltip>
+      <ToolbarIconButton
+        title="Insert new column"
+        disabled={tables[props.currentNetworkId] === undefined}
+        onClick={() => setShowCreateColumnForm(true)}
+      >
+        <span className="icon">&#8209;</span>
+      </ToolbarIconButton>
+      <ToolbarIconButton
+        title="Import table from file..."
+        disabled={tables[props.currentNetworkId] === undefined}
+        onClick={() => showTableJoinForm(true)}
+      >
+        <span className="icon">&#44;</span>
+      </ToolbarIconButton>
       <CreateTableColumnForm
         error={createColumnFormError}
         open={showCreateColumnForm}
