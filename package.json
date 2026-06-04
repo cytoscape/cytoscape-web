@@ -33,6 +33,7 @@
     "build": "NODE_OPTIONS=--max-old-space-size=6144 vite build",
     "build:netlify": "NODE_OPTIONS=--max-old-space-size=6144 BUILD=netlify vite build",
     "dev": "vite --host --open",
+    "watch": "vite --host --open",
     "dev:local": "vite --host --open",
     "build:analyze": "NODE_OPTIONS=--max-old-space-size=6144 vite build",
     "build:api-types": "npm run build --workspace=packages/api-types",
