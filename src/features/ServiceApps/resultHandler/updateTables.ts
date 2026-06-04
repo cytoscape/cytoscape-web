@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
 
-import { logApp } from '../../../debug'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { logApp } from '../../../debug'
 import { Column, Table, ValueType } from '../../../models'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
@@ -95,6 +96,42 @@ export const useUpdateTables = (): (({
       }
 
       setTable(networkId, id, nextTable)
+
+      // Update table display configuration so the new columns show up in TableBrowser
+      const newColumnsAdded = updatedColumns.length > originalTable.columns.length
+      if (newColumnsAdded) {
+        const uiStateStore = useUiStateStore.getState()
+        const currentConfig = uiStateStore.ui.visualStyleOptions?.[networkId]?.visualEditorProperties?.tableDisplayConfiguration
+        
+        if (currentConfig) {
+          const isNodeTable = id === TableType.NODE
+          const tableConfigToUpdate = isNodeTable ? currentConfig.nodeTable : currentConfig.edgeTable
+          
+          if (tableConfigToUpdate) {
+            const nextColumnConfig = [...(tableConfigToUpdate.columnConfiguration ?? [])]
+            
+            // Add any newly created columns to the display configuration
+            updatedColumns.forEach(col => {
+              if (!nextColumnConfig.find(c => c.attributeName === col.name)) {
+                nextColumnConfig.push({
+                  attributeName: col.name,
+                  visible: true,
+                  columnWidth: undefined,
+                })
+              }
+            })
+
+            const newTableDisplayConfiguration = {
+              ...currentConfig,
+              [isNodeTable ? 'nodeTable' : 'edgeTable']: {
+                ...tableConfigToUpdate,
+                columnConfiguration: nextColumnConfig
+              }
+            }
+            uiStateStore.setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
+          }
+        }
+      }
     },
     [setTable],
   )
