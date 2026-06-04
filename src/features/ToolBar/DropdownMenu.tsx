@@ -7,6 +7,8 @@ import { TieredMenu } from 'primereact/tieredmenu'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
+import { darkPalette } from '../../theme'
+
 
 interface DropdownMenuProps {
   id: string
@@ -67,7 +69,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         <Button
           data-testid={`toolbar-${id}-menu-button`}
           sx={{
-            color: (theme) => theme.palette.common.white,
+            color: darkPalette.text.primary,
             textTransform: 'none',
           }}
           id={`${id}-dropdown`}

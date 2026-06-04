@@ -28,7 +28,7 @@ export const ToolBar = (): JSX.Element => {
           variant="dense"
           sx={{ 
             justifyContent: 'space-between',
-            backgroundColor: (theme) => theme.palette.grey[800],
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.grey[900],
             borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >
