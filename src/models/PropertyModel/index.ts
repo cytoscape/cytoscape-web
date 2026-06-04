@@ -1,3 +1,3 @@
-export { DiscreteRange } from './DiscreteRange'
-export { NumberRange } from './NumberRange'
-export { Property } from './Property'
+export type { DiscreteRange } from './DiscreteRange'
+export type { NumberRange } from './NumberRange'
+export type { Property } from './Property'

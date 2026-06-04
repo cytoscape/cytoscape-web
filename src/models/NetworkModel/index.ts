@@ -5,11 +5,11 @@
  */
 import * as NetworkFn from './impl/networkImpl'
 
-export { NetworkAttributes } from '../TableModel/NetworkAttributes'
-export { Edge } from './Edge'
-export { GraphObject } from './GraphObject'
+export type { NetworkAttributes } from '../TableModel/NetworkAttributes'
+export type { Edge } from './Edge'
+export type { GraphObject } from './GraphObject'
 export { GraphObjectType } from './GraphObjectType'
-export { Network } from './Network'
-export { Node } from './Node'
+export type { Network } from './Network'
+export type { Node } from './Node'
 
 export { NetworkFn as default }

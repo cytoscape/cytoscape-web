@@ -24,7 +24,10 @@ import {
 } from '@mui/material'
 import { useRef, useState } from 'react'
 
-import { DEFAULT_MANIFEST_URL } from '../../app-api/constants'
+import {
+  DEFAULT_MANIFEST_URL,
+  EXTERNAL_APPS_ENABLED,
+} from '../../app-api/constants'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { logApp } from '../../debug'
 import { AppListPanel } from './AppListPanel'
@@ -74,6 +77,8 @@ export const AppSettingsDialog = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSetCustomUrl = (): void => {
+    if (!EXTERNAL_APPS_ENABLED) return
+
     const error = validateManifestUrl(urlInput)
     if (error !== undefined) {
       setUrlError(error)
@@ -86,6 +91,8 @@ export const AppSettingsDialog = ({
   }
 
   const handleClearSource = (): void => {
+    if (!EXTERNAL_APPS_ENABLED) return
+
     setManifestSource(undefined)
     setUrlInput('')
     setUrlError(undefined)
@@ -94,6 +101,8 @@ export const AppSettingsDialog = ({
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    if (!EXTERNAL_APPS_ENABLED) return
+
     const file = e.target.files?.[0]
     if (file === undefined) return
 
@@ -133,6 +142,15 @@ export const AppSettingsDialog = ({
         : 'Uploaded file'
 
   const handleSourceClick = (): void => {
+    if (!EXTERNAL_APPS_ENABLED) {
+      setPreviewTitle('External Apps Disabled')
+      setPreviewContent(
+        'This standalone build does not load external app manifests or remote plugins.',
+      )
+      setPreviewOpen(true)
+      return
+    }
+
     if (currentSource?.type === 'inline') {
       try {
         setPreviewContent(
@@ -199,6 +217,15 @@ export const AppSettingsDialog = ({
                 <Typography variant="subtitle2">Manifest Source</Typography>
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 0 }}>
+                {!EXTERNAL_APPS_ENABLED && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1.5 }}
+                  >
+                    External app loading is disabled in this standalone build.
+                  </Typography>
+                )}
                 <Box
                   sx={{
                     display: 'flex',
@@ -223,11 +250,15 @@ export const AppSettingsDialog = ({
                       cursor: 'pointer',
                     }}
                   >
-                    {sourceLabel}
+                    {EXTERNAL_APPS_ENABLED ? sourceLabel : 'Standalone build'}
                   </Link>
                   {currentSource !== undefined && (
                     <Tooltip title="Reset to default">
-                      <IconButton size="small" onClick={handleClearSource}>
+                      <IconButton
+                        size="small"
+                        onClick={handleClearSource}
+                        disabled={!EXTERNAL_APPS_ENABLED}
+                      >
                         <ClearIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -245,6 +276,7 @@ export const AppSettingsDialog = ({
                     size="small"
                     label="Custom manifest URL"
                     value={urlInput}
+                    disabled={!EXTERNAL_APPS_ENABLED}
                     onChange={(e) => {
                       setUrlInput(e.target.value)
                       setUrlError(undefined)
@@ -257,7 +289,7 @@ export const AppSettingsDialog = ({
                     variant="outlined"
                     size="small"
                     onClick={handleSetCustomUrl}
-                    disabled={urlInput.trim() === ''}
+                    disabled={!EXTERNAL_APPS_ENABLED || urlInput.trim() === ''}
                     sx={{ whiteSpace: 'nowrap', height: 40 }}
                   >
                     Apply
@@ -265,6 +297,7 @@ export const AppSettingsDialog = ({
                   <Tooltip title="Upload manifest file">
                     <IconButton
                       size="small"
+                      disabled={!EXTERNAL_APPS_ENABLED}
                       onClick={() => fileInputRef.current?.click()}
                       sx={{
                         height: 40,
@@ -282,6 +315,7 @@ export const AppSettingsDialog = ({
                     type="file"
                     accept=".json"
                     style={{ display: 'none' }}
+                    disabled={!EXTERNAL_APPS_ENABLED}
                     onChange={handleFileUpload}
                   />
                 </Box>
@@ -301,7 +335,7 @@ export const AppSettingsDialog = ({
       <DialogActions sx={{ px: 3, py: 1.5 }}>
         <Button
           variant="outlined"
-          disabled={refreshing}
+          disabled={!EXTERNAL_APPS_ENABLED || refreshing}
           startIcon={
             refreshing ? <CircularProgress size={16} /> : <RefreshIcon />
           }
