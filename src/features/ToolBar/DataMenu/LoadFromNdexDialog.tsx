@@ -253,14 +253,17 @@ const FolderSection = (props: {
       <TableRow>
         <TableCell
           colSpan={7}
-          sx={{ backgroundColor: '#f5f5f5', py: 0.5 }}
+          sx={{
+            py: 0.5,
+            backgroundColor: (theme) => theme.palette.background.default,
+          }}
         >
           <Typography variant="subtitle2" fontWeight="bold">
             Folders
           </Typography>
         </TableCell>
       </TableRow>
-      <TableRow sx={{ backgroundColor: '#fafafa' }}>
+      <TableRow>
         <TableCell padding="checkbox" />
         <TableCell>
           <Typography variant="caption" fontWeight="bold">
@@ -298,7 +301,7 @@ const FolderSection = (props: {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <FolderIcon
                 fontSize="small"
-                sx={{ color: '#90a4ae' }}
+                sx={{ color: 'primary.light' }}
               />
               {folder.name}
             </Box>
@@ -804,38 +807,43 @@ export const LoadFromNdexDialog = (
     }
 
     return (
-      <TableContainer sx={{ height: 420 }}>
+      <TableContainer
+        sx={{ 
+          height: 420,
+          borderRadius: 1,
+        }}
+      >
         <Table size="small" stickyHeader>
           {networks.length > 0 && (
             <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" />
-                <TableCell>
+              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.header }}>
+                <TableCell padding="checkbox" sx={{ backgroundColor: 'inherit' }} />
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Network
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Owner
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Visibility
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Nodes
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Edges
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Last modified
                   </Typography>
@@ -852,7 +860,10 @@ export const LoadFromNdexDialog = (
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  sx={{ backgroundColor: '#f5f5f5', py: 0.5 }}
+                  sx={{ 
+                    py: 0.5,
+                    backgroundColor: (theme) => theme.palette.background.default,
+                  }}
                 >
                   <Typography variant="subtitle2" fontWeight="bold">
                     Networks
@@ -954,7 +965,7 @@ export const LoadFromNdexDialog = (
                 e.stopPropagation()
                 setOnlyMine(!onlyMine)
               }}
-              sx={{ ml: 0.5, mr: 1 }}
+              sx={{ my: 1 }}
             />
           </Tooltip>
         )}
