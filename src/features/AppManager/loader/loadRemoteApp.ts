@@ -1,4 +1,5 @@
 import { logApp } from '../../../debug'
+import { loadModule } from '../ExternalComponent'
 import { CyApp } from '../../../models/AppModel/CyApp'
 
 /**
@@ -17,9 +18,31 @@ export async function loadRemoteApp(
   url: string,
   appRegistry: Map<string, CyApp>,
 ): Promise<CyApp | undefined> {
-  void appRegistry
-  logApp.warn(
-    `[loadRemoteApp]: Ignoring external app "${id}" from ${url} because standalone mode disables remote app loading`,
-  )
-  return undefined
+  try {
+    const remoteAppModule = await loadModule(id, './AppConfig', url)
+    const remoteApp = (remoteAppModule as { default?: CyApp }).default
+
+    if (remoteApp === undefined) {
+      logApp.warn(
+        `[loadRemoteApp]: Remote app "${id}" from ${url} did not expose a default AppConfig export`,
+      )
+      return undefined
+    }
+
+    if (remoteApp.id !== id) {
+      logApp.warn(
+        `[loadRemoteApp]: Remote app id mismatch. Expected "${id}", received "${remoteApp.id}" from ${url}`,
+      )
+      return undefined
+    }
+
+    appRegistry.set(id, remoteApp)
+    return remoteApp
+  } catch (error) {
+    logApp.warn(
+      `[loadRemoteApp]: Failed to load remote app "${id}" from ${url}:`,
+      error,
+    )
+    return undefined
+  }
 }
