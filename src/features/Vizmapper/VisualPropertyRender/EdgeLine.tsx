@@ -49,7 +49,7 @@ export function EdgeLinePicker(props: {
         {sortedEdgeLines.map((edgeLine: EdgeLineType) => (
           <Box
             sx={{
-              color: localValue === edgeLine ? 'blue' : 'black',
+              color: (theme) => (localValue === edgeLine ? theme.palette.primary.main : theme.palette.text.secondary),
               fontWeight: localValue === edgeLine ? 'bold' : 'normal',
               '&:hover': { cursor: 'pointer' },
             }}
@@ -71,9 +71,9 @@ export function EdgeLinePicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
         <Button
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? EdgeLineType.Solid)
@@ -82,13 +82,7 @@ export function EdgeLinePicker(props: {
           Cancel
         </Button>
         <Button
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add'
 import Delete from '@mui/icons-material/Delete'
 import {
   Box,
@@ -157,12 +158,23 @@ const NetworkPropertyTable = (props: {
 
   return (
     <Paper
+      variant="outlined"
       data-testid="ndex-network-property-table"
-      sx={{ backgroundColor: '#D9D9D9', p: 1, pr: 2, pl: 2 }}
+      sx={{ 
+        mt: 2,
+        px: 2,
+        py: 1,
+        backgroundColor: (theme) => theme.palette.background.header,
+        border: 'none',
+      }}
     >
-      <Typography gutterBottom>Network Properties</Typography>
+      <Typography gutterBottom>Network Properties:</Typography>
       <TableContainer
-        sx={{ height: 300, overflowY: 'scroll' }}
+        sx={{
+          height: 300,
+          overflowY: 'scroll',
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
         component={Paper}
       >
         <Table stickyHeader size="small">
@@ -232,7 +244,7 @@ const NetworkPropertyTable = (props: {
                       data-testid={`ndex-network-property-delete-button-${index}`}
                       onClick={() => deleteNetworkProperty(index)}
                     >
-                      <Delete />
+                      <Delete sx={{ color: (theme) => theme.palette.text.primary }} />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -245,6 +257,7 @@ const NetworkPropertyTable = (props: {
         data-testid="ndex-network-property-add-button"
         sx={{ mt: 1, width: 'fit-content' }}
         variant="contained"
+        startIcon={<AddIcon />}
         onClick={() => addNetworkProperty()}
       >
         Add new property

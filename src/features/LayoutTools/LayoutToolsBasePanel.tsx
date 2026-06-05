@@ -1,4 +1,4 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -8,17 +8,27 @@ import { LayoutToolsPanel } from './LayoutToolsPanel'
 
 export const LayoutToolsBasePanel = (): JSX.Element => {
   return (
-    <Accordion data-testid="layout-tools-accordion">
+    <Accordion
+      data-testid="layout-tools-accordion"
+      sx={{
+        backgroundColor: (theme) => theme.palette.background.paper,
+        backgroundImage: 'none',
+        boxShadow: 'none',
+      }}
+    >
       <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
+        expandIcon={<ExpandLessIcon />}
         aria-controls="manual-layout"
         sx={{
-          minHeight: '44px', // collapsed summary height
+          minHeight: '40px', // collapsed summary height
           '&.Mui-expanded': {
-            minHeight: '44px', // expanded summary height
+            minHeight: '40px', // expanded summary height
           },
           '.MuiAccordionSummary-content': {
-            margin: 0,
+            marginTop: '12px !important',
+          },
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            color: (theme) => theme.palette.text.secondary,
           },
         }}
       >

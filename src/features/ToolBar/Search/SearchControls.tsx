@@ -2,6 +2,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import SearchIcon from '@mui/icons-material/Search'
 import TuneIcon from '@mui/icons-material/Tune'
 import { Box, IconButton } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { Settings } from './Settings'
@@ -37,27 +38,29 @@ export const SearchControls = ({
 }: SearchControlsProps): JSX.Element => {
   const open = Boolean(anchorEl)
 
+  const theme = useTheme()
+
   return (
     <>
       <Box sx={baseStyle}>
         {searchTerm !== '' ? (
           <DeleteIcon
             data-testid="search-clear-button"
-            sx={{ cursor: 'pointer', color: '#424242' }}
+            sx={{ cursor: 'pointer', color: theme.palette.text.primary }}
             onClick={clearSearch}
           />
         ) : null}
 
         <IconButton
           data-testid="search-submit-button"
-          sx={{ color: '#424242' }}
+          sx={{ color: theme.palette.text.primary }}
           onClick={startSearch}
         >
           <SearchIcon />
         </IconButton>
         <IconButton
           data-testid="search-settings-button"
-          sx={{ color: '#424242' }}
+          sx={{ color: theme.palette.text.primary }}
           onClick={handleOpenSettings}
         >
           <TuneIcon />

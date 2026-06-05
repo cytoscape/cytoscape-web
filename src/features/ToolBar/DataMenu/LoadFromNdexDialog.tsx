@@ -89,11 +89,6 @@ const splitByType = (
 }
 
 // ── Hoisted style objects (stable references for MUI/Emotion) ──────────
-const selectableRowSx = { cursor: 'pointer' } as const
-const disabledRowSx = {
-  backgroundColor: '#d9d9d9',
-  cursor: 'not-allowed',
-} as const
 const nameCellSx = {
   maxWidth: 400,
   overflow: 'hidden',
@@ -106,9 +101,13 @@ const ownerCellSx = {
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 } as const
-const visibilityCellSx = { maxWidth: 50, textAlign: 'center' } as const
+const visibilityCellSx = {
+  maxWidth: 50,
+  textAlign: 'center',
+  color: 'inherit'
+} as const
 const visibilityTextSx = {
-  color: 'text.secondary',
+  color: 'inherit',
   fontWeight: 'bold',
 } as const
 const countCellSx = {
@@ -254,14 +253,17 @@ const FolderSection = (props: {
       <TableRow>
         <TableCell
           colSpan={7}
-          sx={{ backgroundColor: '#f5f5f5', py: 0.5 }}
+          sx={{
+            py: 0.5,
+            backgroundColor: (theme) => theme.palette.background.default,
+          }}
         >
           <Typography variant="subtitle2" fontWeight="bold">
             Folders
           </Typography>
         </TableCell>
       </TableRow>
-      <TableRow sx={{ backgroundColor: '#fafafa' }}>
+      <TableRow>
         <TableCell padding="checkbox" />
         <TableCell>
           <Typography variant="caption" fontWeight="bold">
@@ -290,7 +292,6 @@ const FolderSection = (props: {
           key={folder.uuid}
           sx={{
             cursor: 'pointer',
-            '&:hover': { backgroundColor: '#e3f2fd' },
           }}
           hover
           onClick={() => onFolderClick(folder.uuid)}
@@ -300,7 +301,7 @@ const FolderSection = (props: {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <FolderIcon
                 fontSize="small"
-                sx={{ color: '#90a4ae' }}
+                sx={{ color: 'primary.light' }}
               />
               {folder.name}
             </Box>
@@ -680,11 +681,13 @@ export const LoadFromNdexDialog = (
       if (networkCanBeSelected) {
         return (
           <TableRow
-            sx={selectableRowSx}
             key={externalId}
             hover
             selected={selected}
             onClick={() => toggleSelectedNetwork(externalId)}
+            sx={{
+              cursor: 'pointer',
+            }}
           >
             <TableCell padding="checkbox">
               <Checkbox
@@ -726,17 +729,20 @@ export const LoadFromNdexDialog = (
       return (
         <Tooltip key={externalId} title={tooltipMessage}>
           <TableRow
-            sx={disabledRowSx}
             hover={false}
             selected={false}
+            sx={{
+              color: (theme) => theme.palette.text.disabled,
+              cursor: 'not-allowed',
+            }}
           >
             <TableCell padding="checkbox">
               <Checkbox disabled />
             </TableCell>
-            <TableCell sx={nameCellSx}>
+            <TableCell sx={{ color: 'inherit', ...nameCellSx }}>
               {name}
             </TableCell>
-            <TableCell sx={ownerCellSx}>
+            <TableCell sx={{ color: 'inherit', ...ownerCellSx }}>
               {owner ?? ''}
             </TableCell>
             <TableCell sx={visibilityCellSx}>
@@ -744,13 +750,13 @@ export const LoadFromNdexDialog = (
                 {network.visibility}
               </Typography>
             </TableCell>
-            <TableCell sx={countCellSx}>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
               {nodeCount}
             </TableCell>
-            <TableCell sx={countCellSx}>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
               {edgeCount ?? 0}
             </TableCell>
-            <TableCell sx={countCellSx}>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
               {dateDisplay}
             </TableCell>
           </TableRow>
@@ -801,38 +807,43 @@ export const LoadFromNdexDialog = (
     }
 
     return (
-      <TableContainer sx={{ height: 420 }}>
+      <TableContainer
+        sx={{ 
+          height: 420,
+          borderRadius: 1,
+        }}
+      >
         <Table size="small" stickyHeader>
           {networks.length > 0 && (
             <TableHead>
-              <TableRow>
-                <TableCell padding="checkbox" />
-                <TableCell>
+              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.header }}>
+                <TableCell padding="checkbox" sx={{ backgroundColor: 'inherit' }} />
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Network
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Owner
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Visibility
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Nodes
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Edges
                   </Typography>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Last modified
                   </Typography>
@@ -849,7 +860,10 @@ export const LoadFromNdexDialog = (
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  sx={{ backgroundColor: '#f5f5f5', py: 0.5 }}
+                  sx={{ 
+                    py: 0.5,
+                    backgroundColor: (theme) => theme.palette.background.default,
+                  }}
                 >
                   <Typography variant="subtitle2" fontWeight="bold">
                     Networks
@@ -932,6 +946,29 @@ export const LoadFromNdexDialog = (
         />
 
         {/* Only mine checkbox + Tabs */}
+        {authenticated && (
+          <Tooltip
+            arrow
+            placement="bottom"
+            title="When checked, only show networks you own. When unchecked, show all networks."
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  data-testid="load-from-ndex-only-mine-checkbox"
+                  checked={onlyMine}
+                  size="small"
+                />
+              }
+              label="Only mine"
+              onClick={(e) => {
+                e.stopPropagation()
+                setOnlyMine(!onlyMine)
+              }}
+              sx={{ my: 1 }}
+            />
+          </Tooltip>
+        )}
         <Box
           sx={{
             borderBottom: 1,
@@ -940,29 +977,6 @@ export const LoadFromNdexDialog = (
             alignItems: 'center',
           }}
         >
-          {authenticated && (
-            <Tooltip
-              arrow
-              placement="bottom"
-              title="When checked, only show networks you own. When unchecked, show all networks."
-            >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    data-testid="load-from-ndex-only-mine-checkbox"
-                    checked={onlyMine}
-                    size="small"
-                  />
-                }
-                label="Only mine"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setOnlyMine(!onlyMine)
-                }}
-                sx={{ ml: 0.5, mr: 1 }}
-              />
-            </Tooltip>
-          )}
           <Tabs
             data-testid="load-from-ndex-tabs"
             value={currentTabIndex >= 0 ? currentTabIndex : 0}
@@ -1023,6 +1037,7 @@ export const LoadFromNdexDialog = (
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
             data-testid="load-from-ndex-cancel-button"
+            variant="outlined"
             color="primary"
             onClick={handleClose}
             sx={{ mr: 1 }}
@@ -1031,16 +1046,7 @@ export const LoadFromNdexDialog = (
           </Button>
           <Button
             data-testid="load-from-ndex-open-button"
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="contained"
             disabled={selectedNetworks.length === 0}
             onClick={() => {
               setErrorMessage(undefined)
@@ -1054,7 +1060,7 @@ export const LoadFromNdexDialog = (
               handleClose()
             }}
           >
-            {`Open ${selectedNetworks.length} Network${selectedNetworks.length > 1 ? 's' : ''}`}
+            {`Open ${selectedNetworks.length > 0 ? selectedNetworks.length : ''} Network${selectedNetworks.length !== 1 ? 's' : ''}`}
           </Button>
         </Box>
       </DialogActions>

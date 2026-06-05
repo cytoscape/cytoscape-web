@@ -303,36 +303,18 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
       <DialogActions>
         <Button
           data-testid="save-to-ndex-overwrite-button"
+          variant="outlined"
+          color="error"
           onClick={async () => {
             const accessToken = await getToken()
             await overwriteNDExNetwork(accessToken)
-          }}
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#fc266f',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
           }}
         >
           No, overwrite the network in NDEx
         </Button>
         <Button
           data-testid="save-to-ndex-copy-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           onClick={async () => {
             const accessToken = await getToken()
             await saveCopyToNDEx(accessToken, false)
