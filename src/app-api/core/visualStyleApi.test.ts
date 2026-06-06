@@ -12,7 +12,7 @@ const VPN = VisualPropertyName
 const mockSetDefault = jest.fn()
 const mockSetBypass = jest.fn()
 const mockDeleteBypass = jest.fn()
-const mockCreateDiscreteMapping = jest.fn()
+const mockSetMapping = jest.fn()
 const mockCreateContinuousMapping = jest.fn()
 const mockCreatePassthroughMapping = jest.fn()
 const mockRemoveMapping = jest.fn()
@@ -27,7 +27,7 @@ jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
       setDefault: mockSetDefault,
       setBypass: mockSetBypass,
       deleteBypass: mockDeleteBypass,
-      createDiscreteMapping: mockCreateDiscreteMapping,
+      setMapping: mockSetMapping,
       createContinuousMapping: mockCreateContinuousMapping,
       createPassthroughMapping: mockCreatePassthroughMapping,
       removeMapping: mockRemoveMapping,
@@ -157,8 +157,10 @@ describe('deleteBypass', () => {
 // --- createDiscreteMapping ---------------------------------------------------
 
 describe('createDiscreteMapping', () => {
-  it('calls createDiscreteMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = {}
+  it('calls setMapping and returns ok() when network exists', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5' },
+    }
 
     const result = visualStyleApi.createDiscreteMapping(
       'net1',
@@ -168,11 +170,10 @@ describe('createDiscreteMapping', () => {
     )
 
     expect(result.success).toBe(true)
-    expect(mockCreateDiscreteMapping).toHaveBeenCalledWith(
+    expect(mockSetMapping).toHaveBeenCalledWith(
       'net1',
       VPN.NodeBackgroundColor,
-      'type',
-      'string',
+      expect.objectContaining({ attribute: 'type', type: 'discrete' }),
     )
   })
 
