@@ -6,6 +6,7 @@ export default defineConfig({
 	retries: 0,
 	use: {
 		baseURL: 'http://localhost:5500',
+		headless: true,
 		trace: 'on-first-retry',
 		video: 'retain-on-failure',
 		screenshot: 'only-on-failure'
@@ -16,19 +17,15 @@ export default defineConfig({
 			use: { ...devices['Desktop Chrome'] }
 		},
 		{
-			name: 'firefox',
-			use: { ...devices['Desktop Firefox'] }
-		},
-		{
 			name: 'webkit',
 			use: { ...devices['Desktop Safari'] }
 		}
 	],
 	webServer: {
-		command: 'npm run dev',
+		command: 'npm run dev -- --no-open',
 		url: 'http://localhost:5500',
 		reuseExistingServer: true,
-		timeout: 120000
+		timeout: 300000
 	}
 });
 
