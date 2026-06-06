@@ -2,8 +2,8 @@ import { expect, test } from './fixtures'
 
 test.describe('Cookie Consent', () => {
   test.beforeEach(async ({ context }) => {
-    // Clear cookies so consent banner always appears
-    await context.clearCookies()
+    // Clear only the consent cookie so the banner appears without disrupting Keycloak session
+    await context.clearCookies({ name: 'cytoscapeWebCookieConsent' })
   })
 
   test('consent banner is visible on fresh load', async ({ page }) => {
