@@ -346,8 +346,8 @@ function MappingFormContent(props: {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: mappingDimensions[mappingType][0],
-        height: mappingDimensions[mappingType][1],
+        width: (mappingDimensions[mappingType] || mappingDimensions[''])[0],
+        height: (mappingDimensions[mappingType] || mappingDimensions[''])[1],
         overflow: 'hidden',
         p: 2,
       }}

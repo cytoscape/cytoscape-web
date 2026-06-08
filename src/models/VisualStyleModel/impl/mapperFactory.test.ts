@@ -3,6 +3,7 @@ import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMa
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
+import { Mapper } from '../VisualMappingFunction/Mapper'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import {
   createContinuousMapper,
@@ -165,6 +166,87 @@ describe('MapperFactory', () => {
       // Should normalize string boolean values
       expect(mapper('true')).toBe('element')
       expect(mapper('false')).toBe('none')
+    })
+
+    describe('CustomGraphic Passthrough', () => {
+      let mapping: PassthroughMappingFunction
+      let mapper: Mapper
+
+      beforeEach(() => {
+        mapping = {
+          type: MappingFunctionType.Passthrough,
+          attribute: 'image',
+          visualPropertyType: VisualPropertyValueTypeName.CustomGraphic,
+          defaultValue: { type: 'none', name: 'none', properties: {} } as any,
+          attributeType: ValueTypeName.String,
+        }
+        mapper = createPassthroughMapper(mapping)
+      })
+
+      it('should parse HTTP/HTTPS URLs to images', () => {
+        const url1 = 'https://example.com/img.png'
+        const url2 = 'http://example.com/img.png'
+        expect(mapper(url1)).toMatchObject({ type: 'image', properties: { url: url1 } })
+        expect(mapper(url2)).toMatchObject({ type: 'image', properties: { url: url2 } })
+      })
+
+      it('should parse data URIs to images', () => {
+        const dataUri = 'data:image/png;base64,iVBOR...'
+        expect(mapper(dataUri)).toMatchObject({ type: 'image', properties: { url: dataUri } })
+      })
+
+      it('should parse raw SVGs to images with data URI', () => {
+        const svg = '<svg><rect/></svg>'
+        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent(svg)
+        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+      })
+
+      it('should parse SVGs with leading whitespace', () => {
+        const svg = '  <svg><rect/></svg>  '
+        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent('<svg><rect/></svg>')
+        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+      })
+
+      it('should reject file: URLs and return default', () => {
+        const result = mapper('file:/Users/foo/img.png')
+        expect(result).toEqual(mapping.defaultValue)
+      })
+
+      it('should reject blob: URLs and return default', () => {
+        const result = mapper('blob:http://localhost/abc-123')
+        expect(result).toEqual(mapping.defaultValue)
+      })
+
+      it('should parse valid pie JSON to pie chart', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"]}'
+        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.PieChart', properties: { cy_dataColumns: ["a"] } })
+      })
+
+      it('should parse valid ring JSON to ring chart', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"],"cy_holeSize":0.4}'
+        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.RingChart', properties: { cy_holeSize: 0.4 } })
+      })
+
+      it('should return default for malformed JSON', () => {
+        expect(mapper('{ broken json')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for valid JSON but wrong shape', () => {
+        expect(mapper('{"foo":"bar"}')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for empty string', () => {
+        expect(mapper('')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for null/undefined', () => {
+        expect(mapper(null as any)).toEqual(mapping.defaultValue)
+        expect(mapper(undefined as any)).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for unrecognized strings', () => {
+        expect(mapper('not-a-url')).toEqual(mapping.defaultValue)
+      })
     })
   })
 

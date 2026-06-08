@@ -8,9 +8,11 @@ import {
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import {
   VALID_PIE_CHART_SLICE_INDEX_RANGE,
   computeCustomGraphicsProperties,
+  computeImageProperties,
   computePieChartProperties,
   computeRingChartProperties,
   getCustomGraphicNodeVps,
@@ -135,8 +137,17 @@ describe('CustomGraphicsImpl', () => {
 
     it('should have correct total count of properties', () => {
       const keys = getCustomGraphicsPropertyKeys()
-      // 3 main properties + 16 color properties + 16 size properties = 35
-      expect(keys.length).toBe(35)
+      // 3 main properties + 16 color properties + 16 size properties + 5 image properties = 40
+      expect(keys.length).toBe(40)
+    })
+
+    it('should include image properties', () => {
+      const keys = getCustomGraphicsPropertyKeys()
+      expect(keys).toContain(SpecialPropertyName.BackgroundImage)
+      expect(keys).toContain(SpecialPropertyName.BackgroundFit)
+      expect(keys).toContain(SpecialPropertyName.BackgroundWidth)
+      expect(keys).toContain(SpecialPropertyName.BackgroundHeight)
+      expect(keys).toContain(SpecialPropertyName.BackgroundImageCrossorigin)
     })
 
     it('should not have duplicate keys', () => {
@@ -405,6 +416,78 @@ describe('CustomGraphicsImpl', () => {
 
       // Should not return this because bypass has None type
       expect(result).toBeUndefined()
+    })
+
+    it('should return valid custom graphic with passthrough mapping even if default is None', () => {
+      const vps: VisualProperty<VisualPropertyValueType>[] = [
+        {
+          name: NodeVisualPropertyName.NodeImageChart1,
+          group: 'node' as any,
+          displayName: 'Chart 1',
+          type: 'customGraphic' as any,
+          defaultValue: {
+            type: 'none',
+            name: CustomGraphicsNameType.None,
+            properties: {},
+          } as CustomGraphicsType,
+          bypassMap: new Map(),
+          mapping: {
+            type: MappingFunctionType.Passthrough,
+            attribute: 'image',
+            visualPropertyType: 'customGraphic' as any,
+            defaultValue: { type: 'none', name: 'none', properties: {} } as any,
+          } as any,
+        },
+      ]
+
+      const result = getFirstValidCustomGraphicVp(vps)
+
+      expect(result).toBeDefined()
+      if (result) {
+        expect(result.name).toBe(NodeVisualPropertyName.NodeImageChart1)
+      }
+    })
+
+    it('should prefer explicit default over passthrough', () => {
+      const vps: VisualProperty<VisualPropertyValueType>[] = [
+        {
+          name: NodeVisualPropertyName.NodeImageChart1,
+          group: 'node' as any,
+          displayName: 'Chart 1',
+          type: 'customGraphic' as any,
+          defaultValue: {
+            type: 'chart',
+            name: CustomGraphicsNameType.PieChart,
+            properties: {} as any,
+          } as CustomGraphicsType,
+          bypassMap: new Map(),
+        },
+        {
+          name: NodeVisualPropertyName.NodeImageChart2,
+          group: 'node' as any,
+          displayName: 'Chart 2',
+          type: 'customGraphic' as any,
+          defaultValue: {
+            type: 'none',
+            name: CustomGraphicsNameType.None,
+            properties: {},
+          } as CustomGraphicsType,
+          bypassMap: new Map(),
+          mapping: {
+            type: MappingFunctionType.Passthrough,
+            attribute: 'image',
+            visualPropertyType: 'customGraphic' as any,
+            defaultValue: { type: 'none', name: 'none', properties: {} } as any,
+          } as any,
+        },
+      ]
+
+      const result = getFirstValidCustomGraphicVp(vps)
+
+      expect(result).toBeDefined()
+      if (result) {
+        expect(result.name).toBe(NodeVisualPropertyName.NodeImageChart1)
+      }
     })
   })
 
@@ -768,6 +851,90 @@ describe('CustomGraphicsImpl', () => {
     })
   })
 
+  describe('computeImageProperties', () => {
+    it('should compute image properties from URL', () => {
+      const id = '1'
+      const value: CustomGraphicsType = {
+        type: 'image',
+        name: CustomGraphicsNameType.Image,
+        properties: {
+          url: 'http://example.com/img.png',
+        },
+      }
+      const row = {}
+      const widthVp = {
+        name: 'nodeWidth' as any,
+        group: 'node' as any,
+        displayName: 'Width',
+        type: 'number' as any,
+        defaultValue: 100,
+        bypassMap: new Map(),
+      }
+      const heightVp = {
+        name: 'nodeHeight' as any,
+        group: 'node' as any,
+        displayName: 'Height',
+        type: 'number' as any,
+        defaultValue: 100,
+        bypassMap: new Map(),
+      }
+      const mappers = new Map()
+
+      const result = computeImageProperties(
+        id,
+        value,
+        row,
+        widthVp,
+        heightVp,
+        mappers,
+      )
+
+      expect(Array.isArray(result)).toBe(true)
+      expect(result.length).toBeGreaterThan(0)
+      const bgImage = result.find(([name]) => name === SpecialPropertyName.BackgroundImage)
+      expect(bgImage).toBeDefined()
+      expect(bgImage?.[1]).toBe('http://example.com/img.png')
+    })
+
+    it('should return empty array if URL is missing', () => {
+      const id = '1'
+      const value: CustomGraphicsType = {
+        type: 'image',
+        name: CustomGraphicsNameType.Image,
+        properties: {},
+      }
+      const row = {}
+      const widthVp = {
+        name: 'nodeWidth' as any,
+        group: 'node' as any,
+        displayName: 'Width',
+        type: 'number' as any,
+        defaultValue: 100,
+        bypassMap: new Map(),
+      }
+      const heightVp = {
+        name: 'nodeHeight' as any,
+        group: 'node' as any,
+        displayName: 'Height',
+        type: 'number' as any,
+        defaultValue: 100,
+        bypassMap: new Map(),
+      }
+      const mappers = new Map()
+
+      const result = computeImageProperties(
+        id,
+        value,
+        row,
+        widthVp,
+        heightVp,
+        mappers,
+      )
+
+      expect(result).toEqual([])
+    })
+  })
+
   describe('computeCustomGraphicsProperties', () => {
     it('should compute properties for pie chart', () => {
       const id = '1'
@@ -858,12 +1025,14 @@ describe('CustomGraphicsImpl', () => {
       expect(Array.isArray(result)).toBe(true)
     })
 
-    it('should return empty array for image type (not implemented)', () => {
+    it('should compute properties for image type', () => {
       const id = '1'
       const value: CustomGraphicsType = {
         type: 'image',
         name: CustomGraphicsNameType.Image,
-        properties: {},
+        properties: {
+          url: 'http://example.com/img.png',
+        },
       }
       const row = {}
       const widthVp = {
@@ -893,7 +1062,8 @@ describe('CustomGraphicsImpl', () => {
         mappers,
       )
 
-      expect(result).toEqual([])
+      expect(Array.isArray(result)).toBe(true)
+      expect(result.length).toBeGreaterThan(0)
     })
   })
 })
