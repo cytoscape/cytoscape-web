@@ -52,6 +52,8 @@ export const SpecialPropertyName = {
   BackgroundWidth: 'backgroundWidth',
   BackgroundHeight: 'backgroundHeight',
   BackgroundImageCrossorigin: 'backgroundImageCrossorigin',
+  BackgroundPositionX: 'backgroundPositionX',
+  BackgroundPositionY: 'backgroundPositionY',
 } as const
 
 export type SpecialPropertyName =

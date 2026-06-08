@@ -394,7 +394,35 @@ export const computeImageProperties = (
   const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
   const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
 
-  pairs.push([SpecialPropertyName.BackgroundImage, imageProps.url])
+  let finalUrl = imageProps.url
+  if (finalUrl.startsWith('data:image/svg+xml')) {
+    try {
+      const commaIdx = finalUrl.indexOf(',')
+      if (commaIdx !== -1) {
+        const metadata = finalUrl.substring(0, commaIdx)
+        const data = finalUrl.substring(commaIdx + 1)
+        
+        let rawSvg = ''
+        if (metadata.includes('base64')) {
+          rawSvg = atob(data)
+        } else {
+          rawSvg = decodeURIComponent(data)
+        }
+        
+        const size = Math.min(width, height)
+        const offsetX = (width - size) / 2
+        const offsetY = (height - size) / 2
+        
+        const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><svg x="${offsetX}" y="${offsetY}" width="${size}" height="${size}">${rawSvg}</svg></svg>`
+        
+        finalUrl = 'data:image/svg+xml,' + encodeURIComponent(wrapperSvg)
+      }
+    } catch (e) {
+      console.warn('Failed to wrap SVG custom graphic', e)
+    }
+  }
+
+  pairs.push([SpecialPropertyName.BackgroundImage, finalUrl])
   pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
   pairs.push([SpecialPropertyName.BackgroundImageCrossorigin, 'null'])
   pairs.push([SpecialPropertyName.BackgroundWidth, `${width}px`])

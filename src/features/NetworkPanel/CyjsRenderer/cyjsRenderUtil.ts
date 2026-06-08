@@ -394,6 +394,14 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
           selectorStr: SpecialPropertyName.BackgroundImageCrossorigin,
           styleStr: 'background-image-crossorigin',
         },
+        {
+          selectorStr: SpecialPropertyName.BackgroundPositionX,
+          styleStr: 'background-position-x',
+        },
+        {
+          selectorStr: SpecialPropertyName.BackgroundPositionY,
+          styleStr: 'background-position-y',
+        },
       ]
 
       imageProps.forEach(({ selectorStr, styleStr }) => {
