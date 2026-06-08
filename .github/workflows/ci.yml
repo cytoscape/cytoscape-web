@@ -10,12 +10,13 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: 'npm'
 
       - name: Install dependencies
@@ -25,9 +26,14 @@ jobs:
         run: npm run test:unit
 
   integration-tests:
-    name: Integration Tests (Playwright)
+    name: Integration Tests (${{ matrix.browser }})
     needs: unit-tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
       options: --user 1001
@@ -36,20 +42,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run integration tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --project=${{ matrix.browser }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.browser }}
           path: playwright-report/
           retention-days: 7
 
@@ -57,6 +63,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-results
+          name: test-results-${{ matrix.browser }}
           path: test-results/
           retention-days: 7

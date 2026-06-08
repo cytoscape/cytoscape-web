@@ -61,11 +61,19 @@ This will start a local test server and opens a new browser tab.
 
 ### Build dependencies
 
-Install `node` and `npm`. The easiest way is to download both from [offical website](https://nodejs.org/en/).
+The required Node.js version is specified in `.nvmrc` at the repo root. Use [nvm](https://github.com/nvm-sh/nvm) or [mise](https://mise.jdx.dev/) to manage Node versions.
 
-- Node.js 16.8.0 or later version is required.
+**nvm** (install nvm first if needed — see [nvm install guide](https://github.com/nvm-sh/nvm#installing-and-updating)):
+```bash
+nvm install   # downloads the version from .nvmrc if not already cached, then activates it
+```
 
-After installation, run `node -v` and `npm -v` to check.
+**mise** (install mise first if needed — see [mise install guide](https://mise.jdx.dev/getting-started.html)):
+```bash
+mise install  # installs and activates the version from .nvmrc
+```
+
+After switching, run `node -v` and `npm -v` to confirm. The correct version is enforced at install time — running `npm install` with the wrong Node version will fail.
 
 ### Build instructions
 
@@ -75,7 +83,20 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 - `build`: build the app for production
 - `lint`: lint code according to the eslint config
 - `format`: format source code according to eslint and prettier configs
-- `test`: run tests
+- `test:unit`: run Jest unit tests
+- `test:e2e`: run Playwright end-to-end tests (all configured browsers)
+
+#### Running E2E tests against a specific browser locally
+
+By default `test:e2e` runs all browser projects defined in `playwright.config.ts`. To target a specific browser, pass `--project` after `--`:
+
+```bash
+npm run test:e2e -- --project=chromium
+npm run test:e2e -- --project=webkit
+npm run test:e2e -- --project=chromium --project=webkit
+```
+
+Available project names match those in `playwright.config.ts` (`chromium`, `webkit`). This is useful locally if not all Playwright browsers are installed — run `npx playwright install` to install missing browsers.
 
 ### Windows-Specific Setup Instructions
 

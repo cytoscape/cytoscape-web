@@ -20,6 +20,9 @@
     "url": "https://cytoscape.org"
   },
   "homepage": "http://web.cytoscape.org",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/cytoscape/cytoscape-web.git"
