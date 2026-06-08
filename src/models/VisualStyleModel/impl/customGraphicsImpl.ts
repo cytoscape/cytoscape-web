@@ -3,14 +3,17 @@
 
 export const VALID_PIE_CHART_SLICE_INDEX_RANGE = [1, 16] as const
 
+import { logModel } from '../../../debug'
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Mapper } from '../VisualMappingFunction'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualProperty } from '../VisualProperty'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import {
   CustomGraphicsNameType,
   CustomGraphicsType,
+  ImagePropertiesType,
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
@@ -38,7 +41,7 @@ export const getPieBackgroundColorViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.warn(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -73,7 +76,7 @@ export const getPieBackgroundSizeViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.warn(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -129,6 +132,13 @@ export const getCustomGraphicsPropertyKeys = (): string[] => {
     propertyKeys.push(getPieBackgroundSizeViewModelProp(i))
   }
 
+  // Image properties
+  propertyKeys.push(SpecialPropertyName.BackgroundImage)
+  propertyKeys.push(SpecialPropertyName.BackgroundFit)
+  propertyKeys.push(SpecialPropertyName.BackgroundWidth)
+  propertyKeys.push(SpecialPropertyName.BackgroundHeight)
+  propertyKeys.push(SpecialPropertyName.BackgroundImageCrossorigin)
+
   return propertyKeys
 }
 
@@ -156,6 +166,15 @@ export const getFirstValidCustomGraphicVp = (
   })
   if (fullyValid) {
     return fullyValid as VisualProperty<CustomGraphicsType>
+  }
+
+  // A slot with a passthrough mapping is valid — the mapper will produce
+  // CustomGraphicsType objects at runtime from raw string values
+  const passthroughValid = customGraphicNodeVps.find((vp) => {
+    return vp.mapping?.type === MappingFunctionType.Passthrough
+  })
+  if (passthroughValid) {
+    return passthroughValid as VisualProperty<CustomGraphicsType>
   }
 
   // If none of the preferred types are fully valid, pick the first “empty” graphic (None)
@@ -361,10 +380,27 @@ export const computeImageProperties = (
   id: IdType,
   value: CustomGraphicsType,
   row: Record<AttributeName, ValueType>,
-  customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
-) => {
-  computeCustomGraphicSizeProperties(id, customGraphicsSizeVp, mappers, row)
+): [string, VisualPropertyValueType][] => {
+  const pairs: [string, VisualPropertyValueType][] = []
+  const imageProps = value.properties as ImagePropertiesType
+
+  if (!imageProps.url) {
+    return pairs
+  }
+
+  const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
+  const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+
+  pairs.push([SpecialPropertyName.BackgroundImage, imageProps.url])
+  pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
+  pairs.push([SpecialPropertyName.BackgroundImageCrossorigin, 'null'])
+  pairs.push([SpecialPropertyName.BackgroundWidth, `${width}px`])
+  pairs.push([SpecialPropertyName.BackgroundHeight, `${height}px`])
+
+  return pairs
 }
 
 export const computeCustomGraphicsProperties = (
@@ -388,7 +424,7 @@ export const computeCustomGraphicsProperties = (
       mappers,
     )
   } else if (value.name === CustomGraphicsNameType.Image) {
-    return []
+    return computeImageProperties(id, value, row, widthVp, heightVp, mappers)
   }
 
   return []

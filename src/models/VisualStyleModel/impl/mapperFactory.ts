@@ -1,5 +1,7 @@
 import * as d3Scale from 'd3-scale'
 
+import { logUi } from '../../../debug'
+
 import { ValueType } from '../../TableModel'
 import { VisibilityType } from '../../VisualStyleModel/VisualPropertyValue/VisibilityType'
 import {
@@ -10,6 +12,11 @@ import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappin
 import { Mapper } from '../VisualMappingFunction/Mapper'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
 import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
+import {
+  CustomGraphicsNameType,
+  CustomGraphicsType,
+  CustomGraphicsTypeType,
+} from '../VisualPropertyValue/CustomGraphicsType'
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 
@@ -44,6 +51,83 @@ const enumValueNormalizationFn = (
   }
   return value
 }
+
+const customGraphicPassthroughFn = (
+  pm: PassthroughMappingFunction,
+  value: VisualPropertyValueType,
+): VisualPropertyValueType => {
+  if (value == null || value === '') {
+    return pm.defaultValue
+  }
+
+  const str = String(value).trim()
+
+  // 1. Reject file: and blob: URLs
+  if (str.startsWith('blob:')) {
+    logUi.warn(
+      'Blob URLs are ephemeral and cannot be used for custom graphics:',
+      str.substring(0, 80),
+    )
+    return pm.defaultValue
+  }
+  if (str.startsWith('file:')) {
+    logUi.warn(
+      'Local file URLs are not supported for custom graphics:',
+      str.substring(0, 80),
+    )
+    return pm.defaultValue
+  }
+
+  // 2. Raw SVG detection
+  if (str.startsWith('<svg')) {
+    const dataUri = 'data:image/svg+xml,' + encodeURIComponent(str)
+    return {
+      type: CustomGraphicsTypeType.Image,
+      name: CustomGraphicsNameType.Image,
+      properties: { url: dataUri },
+    } as CustomGraphicsType
+  }
+
+  // 3. HTTP/HTTPS URL or data: URI → image
+  if (
+    str.startsWith('http://') ||
+    str.startsWith('https://') ||
+    str.startsWith('data:')
+  ) {
+    return {
+      type: CustomGraphicsTypeType.Image,
+      name: CustomGraphicsNameType.Image,
+      properties: { url: str },
+    } as CustomGraphicsType
+  }
+
+  // 4. JSON chart object
+  if (str.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(str)
+      // Distinguish chart types by checking for chart-specific fields
+      if (
+        Array.isArray(parsed.cy_dataColumns) &&
+        Array.isArray(parsed.cy_colors)
+      ) {
+        const isRing = parsed.cy_holeSize !== undefined
+        return {
+          type: CustomGraphicsTypeType.Chart,
+          name: isRing
+            ? CustomGraphicsNameType.RingChart
+            : CustomGraphicsNameType.PieChart,
+          properties: parsed,
+        } as CustomGraphicsType
+      }
+    } catch {
+      // Malformed JSON — fall through to default
+    }
+  }
+
+  // 5. Unrecognized string — return default silently
+  return pm.defaultValue
+}
+
 /**
  * Derive the mapping function from given VMF object
  */
@@ -58,6 +142,9 @@ export const createPassthroughMapper = (
   pm: PassthroughMappingFunction,
 ): Mapper => {
   return (value: ValueType): VisualPropertyValueType => {
+    if (pm.visualPropertyType === VisualPropertyValueTypeName.CustomGraphic) {
+      return customGraphicPassthroughFn(pm, value as VisualPropertyValueType)
+    }
     if (enumTypes.has(pm.visualPropertyType)) {
       return enumValueNormalizationFn(pm, value as VisualPropertyValueType)
     } else {

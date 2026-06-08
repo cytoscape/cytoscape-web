@@ -27,6 +27,7 @@ const valueType2BaseType: Record<
   [VisualPropertyValueTypeName.Number]: 'number',
   [VisualPropertyValueTypeName.Boolean]: 'string',
   [VisualPropertyValueTypeName.String]: 'string',
+  [VisualPropertyValueTypeName.CustomGraphic]: 'string',
 }
 
 // This function will be redundant once continuous discrete mapping ui is available

@@ -38,7 +38,8 @@ export interface CustomGraphicsType {
   properties:
     | PieChartPropertiesType
     | RingChartPropertiesType
-    | NonePropertiesType //| ImagePropertiesType
+    | NonePropertiesType
+    | ImagePropertiesType
 }
 
 export interface PieChartPropertiesType {
@@ -60,9 +61,6 @@ export interface RingChartPropertiesType {
 
 export type NonePropertiesType = Record<string, never>
 
-// TODO
-// export interface ImagePropertiesType {
-//   tag: string
-//   url: string
-//   id: number
-// }
+export interface ImagePropertiesType {
+  url: string
+}
