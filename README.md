@@ -86,17 +86,34 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 - `test:unit`: run Jest unit tests
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
 
+#### Installing Playwright browsers
+
+Playwright manages its own browser binaries separately from system browsers. After `npm install`, install the browsers before running E2E tests:
+
+```bash
+# Install all three browsers (Chromium, Firefox, WebKit)
+npx playwright install
+
+# Or install a single browser
+npx playwright install chromium
+npx playwright install firefox
+npx playwright install webkit
+```
+
+You only need to re-run this when the `@playwright/test` version changes (e.g., after `npm install` pulls a new version).
+
 #### Running E2E tests against a specific browser locally
 
 By default `test:e2e` runs all browser projects defined in `playwright.config.ts`. To target a specific browser, pass `--project` after `--`:
 
 ```bash
 npm run test:e2e -- --project=chromium
+npm run test:e2e -- --project=firefox
 npm run test:e2e -- --project=webkit
 npm run test:e2e -- --project=chromium --project=webkit
 ```
 
-Available project names match those in `playwright.config.ts` (`chromium`, `webkit`). This is useful locally if not all Playwright browsers are installed — run `npx playwright install` to install missing browsers.
+Available project names are `chromium`, `firefox`, and `webkit` (matching `playwright.config.ts`).
 
 ### Windows-Specific Setup Instructions
 

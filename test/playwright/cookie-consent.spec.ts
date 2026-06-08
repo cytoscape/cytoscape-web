@@ -1,22 +1,28 @@
 import { expect, test } from './fixtures'
 
 test.describe('Cookie Consent', () => {
-  test.beforeEach(async ({ context, page }) => {
+  test.beforeEach(async ({ context, page, browserName }) => {
     // Clear only the consent cookie so the banner appears without disrupting Keycloak session
     await context.clearCookies({ name: 'cytoscapeWebCookieConsent' })
 
-    // Intercept Keycloak silent-SSO auth so the iframe gets an immediate login_required
-    // response instead of a real round-trip. Without this, WebKit's ITP causes the iframe
-    // to time out and keycloak-js fires its silentCheckSsoFallback — a top-level page
-    // redirect that races against the banner visibility check.
-    await page.route('**/protocol/openid-connect/auth**', async (route) => {
-      const url = new URL(route.request().url())
-      const redirectUri = url.searchParams.get('redirect_uri') ?? '/'
-      const state = url.searchParams.get('state') ?? ''
-      await route.redirect(
-        `${redirectUri}#error=login_required&state=${state}`,
-      )
-    })
+    // WebKit's ITP blocks cross-origin cookies in iframes, so the silent-SSO iframe
+    // times out and keycloak-js fires its silentCheckSsoFallback — a top-level page
+    // redirect that races against the banner visibility check. Intercept the auth request
+    // so the iframe gets an immediate login_required response and navigates back to
+    // silent-check-sso.html (same origin) where it can postMessage to the parent.
+    // Chromium and Firefox handle the iframe path natively so they don't need this.
+    if (browserName === 'webkit') {
+      await page.route('**/protocol/openid-connect/auth**', async (route) => {
+        const url = new URL(route.request().url())
+        const redirectUri = url.searchParams.get('redirect_uri') ?? '/'
+        const state = url.searchParams.get('state') ?? ''
+        const targetUrl = `${redirectUri}#error=login_required&state=${state}`
+        await route.fulfill({
+          contentType: 'text/html',
+          body: `<html><head><script>window.location.replace(${JSON.stringify(targetUrl)})</script></head></html>`,
+        })
+      })
+    }
   })
 
   test('consent banner is visible on fresh load', async ({ page }) => {
