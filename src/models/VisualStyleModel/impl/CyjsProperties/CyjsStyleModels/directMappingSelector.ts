@@ -49,11 +49,7 @@ export const SpecialPropertyName = {
   // Image background properties
   BackgroundImage: 'backgroundImage',
   BackgroundFit: 'backgroundFit',
-  BackgroundWidth: 'backgroundWidth',
-  BackgroundHeight: 'backgroundHeight',
   BackgroundImageCrossorigin: 'backgroundImageCrossorigin',
-  BackgroundPositionX: 'backgroundPositionX',
-  BackgroundPositionY: 'backgroundPositionY',
 } as const
 
 export type SpecialPropertyName =

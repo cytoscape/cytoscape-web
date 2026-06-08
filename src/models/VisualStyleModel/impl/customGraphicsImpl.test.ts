@@ -137,16 +137,14 @@ describe('CustomGraphicsImpl', () => {
 
     it('should have correct total count of properties', () => {
       const keys = getCustomGraphicsPropertyKeys()
-      // 3 main properties + 16 color properties + 16 size properties + 5 image properties = 40
-      expect(keys.length).toBe(40)
+      // 3 main properties + 16 color properties + 16 size properties + 3 image properties = 38
+      expect(keys.length).toBe(38)
     })
 
     it('should include image properties', () => {
       const keys = getCustomGraphicsPropertyKeys()
       expect(keys).toContain(SpecialPropertyName.BackgroundImage)
       expect(keys).toContain(SpecialPropertyName.BackgroundFit)
-      expect(keys).toContain(SpecialPropertyName.BackgroundWidth)
-      expect(keys).toContain(SpecialPropertyName.BackgroundHeight)
       expect(keys).toContain(SpecialPropertyName.BackgroundImageCrossorigin)
     })
 

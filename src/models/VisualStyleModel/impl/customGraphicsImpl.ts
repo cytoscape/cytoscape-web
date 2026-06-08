@@ -135,8 +135,6 @@ export const getCustomGraphicsPropertyKeys = (): string[] => {
   // Image properties
   propertyKeys.push(SpecialPropertyName.BackgroundImage)
   propertyKeys.push(SpecialPropertyName.BackgroundFit)
-  propertyKeys.push(SpecialPropertyName.BackgroundWidth)
-  propertyKeys.push(SpecialPropertyName.BackgroundHeight)
   propertyKeys.push(SpecialPropertyName.BackgroundImageCrossorigin)
 
   return propertyKeys
@@ -413,8 +411,6 @@ export const computeImageProperties = (
   pairs.push([SpecialPropertyName.BackgroundImage, finalUrl])
   pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
   pairs.push([SpecialPropertyName.BackgroundImageCrossorigin, 'null'])
-  pairs.push([SpecialPropertyName.BackgroundWidth, `${width}px`])
-  pairs.push([SpecialPropertyName.BackgroundHeight, `${height}px`])
 
   return pairs
 }

@@ -381,26 +381,9 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         {
           selectorStr: SpecialPropertyName.BackgroundFit,
           styleStr: 'background-fit',
-        },
-        {
-          selectorStr: SpecialPropertyName.BackgroundWidth,
-          styleStr: 'background-width',
-        },
-        {
-          selectorStr: SpecialPropertyName.BackgroundHeight,
-          styleStr: 'background-height',
-        },
         {
           selectorStr: SpecialPropertyName.BackgroundImageCrossorigin,
           styleStr: 'background-image-crossorigin',
-        },
-        {
-          selectorStr: SpecialPropertyName.BackgroundPositionX,
-          styleStr: 'background-position-x',
-        },
-        {
-          selectorStr: SpecialPropertyName.BackgroundPositionY,
-          styleStr: 'background-position-y',
         },
       ]
 
@@ -551,8 +534,6 @@ const updateCyElements = <T extends View>(
         console.log('Image properties applied to node:', cyId, {
           backgroundImage: obj.data(SpecialPropertyName.BackgroundImage),
           backgroundFit: obj.data(SpecialPropertyName.BackgroundFit),
-          backgroundWidth: obj.data(SpecialPropertyName.BackgroundWidth),
-          backgroundHeight: obj.data(SpecialPropertyName.BackgroundHeight),
           backgroundImageCrossorigin: obj.data(SpecialPropertyName.BackgroundImageCrossorigin)
         })
       }
