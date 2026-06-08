@@ -13,12 +13,9 @@ test.describe('Cookie Consent', () => {
       const url = new URL(route.request().url())
       const redirectUri = url.searchParams.get('redirect_uri') ?? '/'
       const state = url.searchParams.get('state') ?? ''
-      await route.fulfill({
-        status: 302,
-        headers: {
-          location: `${redirectUri}#error=login_required&state=${state}`,
-        },
-      })
+      await route.redirect(
+        `${redirectUri}#error=login_required&state=${state}`,
+      )
     })
   })
 
