@@ -156,8 +156,6 @@ const NetworkPropertyEditor = (
             <Box
               sx={{
                 height: 290,
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                borderRadius: 1,
                 overflow: 'hidden',
               }}
             >

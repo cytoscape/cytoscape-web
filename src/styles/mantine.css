@@ -56,7 +56,7 @@
   border-color: var(--mui-palette-primary-main);
 }
 
-/** Number Input Controls (up/down buttons) */
+/** Number Input Control (up/down buttons) */
 
 .mantine-NumberInput-control {
   border-inline-start: 1px solid var(--mui-palette-divider);
@@ -68,5 +68,36 @@
   color: var(--mui-palette-text-secondary);
 }
 .mantine-NumberInput-control:hover svg {
+  color: var(--mui-palette-text-primary);
+}
+
+/** Rich Text Editor */
+
+.mantine-RichTextEditor-root {
+  border-color: rgba(var(--mui-palette-common-onBackgroundChannel) / 0.23);
+}
+.mantine-RichTextEditor-root:hover {
+  border-color: var(--mui-palette-common-onBackgroundChannel);
+}
+.mantine-RichTextEditor-root:focus-within {
+  border-color: var(--mui-palette-primary-main);
+}
+.mantine-RichTextEditor-toolbar, .mantine-RichTextEditor-content, .mantine-RichTextEditor-controlsGroup, .mantine-RichTextEditor-control {
+  background-color: inherit;
+  color: var(--mui-palette-text-primary);
+}
+.mantine-RichTextEditor-toolbar {
+  border-bottom: 1px solid rgba(var(--mui-palette-common-onBackgroundChannel) / 0.23);
+}
+.mantine-RichTextEditor-control {
+  border-color: rgba(var(--mui-palette-common-onBackgroundChannel) / 0.23);
+}
+.mantine-RichTextEditor-control:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-RichTextEditor-control svg {
+  color: var(--mui-palette-text-secondary);
+}
+.mantine-RichTextEditor-control:hover svg {
   color: var(--mui-palette-text-primary);
 }
