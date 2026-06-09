@@ -29,7 +29,10 @@ The App Store runs as a separate web app and sends an install request to an alre
 
 The App Store redirects or links to Cytoscape Web with an install parameter, such as:
 
-`?installAppManifest=https%3A%2F%2Fapps.cytoscape.org%2Fweb%2Fhello%2Fmanifest.json`
+`?installApp=https%3A%2F%2Fapps.cytoscape.org%2Fweb%2Fhello%2Fmanifest.json`
+
+(The parameter name `installApp` is the canonical one adopted by
+[workspace-app-install-design.md](./workspace-app-install-design.md) §7.2.)
 
 Cytoscape Web consumes the parameter during startup or route initialization, validates the app entry, adds it to the in-memory catalog, and then removes the parameter from the URL.
 

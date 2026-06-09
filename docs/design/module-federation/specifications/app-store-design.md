@@ -12,6 +12,9 @@
 > Cytoscape Web consumes it through the existing `obtainCatalogEntries()`
 > pipeline.
 
+- Rev. 3 (6/9/2026): Keiichiro ONO and Claude (Fable 5) - Add per-app
+  single-entry install manifest endpoints (§9.1) consumed by the host's
+  install intent and App Manager Install from URL
 - Rev. 2 (5/21/2026): Keiichiro ONO and Codex - Recast as a Desktop App Store
   platform extension with Store-owned GitHub Actions builds
 - Rev. 1 (3/20/2026): Keiichiro ONO and Claude - Initial brainstorming
@@ -132,6 +135,14 @@ Published URLs are versioned and immutable:
 https://apps.cytoscape.org/web/{appId}/{version}/remoteEntry.js
 https://apps.cytoscape.org/web/{appId}/{version}/chunks/*.js
 https://apps.cytoscape.org/web/{appId}/{version}/assets/*
+https://apps.cytoscape.org/web/{appId}/{version}/manifest.json
+```
+
+One additional unversioned path exists per app — a mutable pointer that always
+describes the latest published version (see §9.1):
+
+```text
+https://apps.cytoscape.org/web/{appId}/manifest.json
 ```
 
 Reusing an already published `{appId, version}` is rejected. Updates require a
@@ -360,6 +371,30 @@ above are returned to Cytoscape Web. Internal metadata such as commit SHA,
 review state, build logs, checksums, scanner results, and reviewer notes stays
 inside the App Store.
 
+### 9.1 Per-app install manifest
+
+The host-side install intent (`?installApp=<manifestUrl>`) and the App
+Manager's manual **Install from URL** action (see
+[workspace-app-install-design.md](./workspace-app-install-design.md) §7.2 and
+§12.8) consume a **single-entry manifest** describing one app. For every app
+with at least one published Web version, the Store publishes:
+
+```http
+GET https://apps.cytoscape.org/web/{appId}/manifest.json
+```
+
+a **one-element** `AppCatalogEntry[]` array (same schema as `/web/manifest`)
+describing the latest published version. An immutable per-version variant is
+published alongside each release:
+
+```http
+GET https://apps.cytoscape.org/web/{appId}/{version}/manifest.json
+```
+
+The App Store **Install** button links to Cytoscape Web with the
+latest-version manifest URL as the install intent. Returning an array rather
+than a bare object lets the host reuse `parseManifest()` unchanged.
+
 ## 10. Internal Store Schema Boundary
 
 The App Store should use a Desktop/Web superset internally. A conceptual record
@@ -560,6 +595,9 @@ the first documentation update.
 - Desktop app entries and JAR download behavior remain unaffected
 - Cytoscape Web can load the generated manifest with the current
   `parseManifest()` and `obtainCatalogEntries()` behavior
+- Every published app exposes `/web/{appId}/manifest.json` (latest) and
+  `/web/{appId}/{version}/manifest.json` (immutable), each a one-element
+  `AppCatalogEntry[]` consumable by `parseManifest()` (§9.1)
 
 ## 17. Open Questions
 

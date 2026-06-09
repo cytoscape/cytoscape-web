@@ -13,6 +13,10 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 2 (6/9/2026): Keiichiro ONO and Claude (Fable 5) — Document the existing
+  NDEx workspace save/load path (§2.4) and rebuild §11 on top of it as Stage 1;
+  add catalog re-merge rule (§8.2), hydration-gate hardening (§8.3), and the
+  App Manager **Install from URL** entry point (§12.8)
 - Rev. 1 (5/28/2026): Keiichiro ONO and Claude (Opus 4.8) — Initial design
 
 ### See Also
@@ -102,6 +106,27 @@ components?, status? }` — **no URL**.
 global `apps` and `serviceApps` tables) — it is not workspace-scoped.
 `exportApplicationState()` additionally folds in full Zustand store states.
 
+### 2.4 Existing NDEx workspace save/load
+
+Saving a workspace to NDEx **already exists** and already carries app
+information:
+
+- `useSaveWorkspaceToNDEx` (`src/data/hooks/useSaveWorkspaceToNDEx.ts`) uploads
+  the workspace to the NDEx v3 `workspaces` endpoint via
+  `createNdexWorkspace` / `updateNdexWorkspace`
+  (`src/data/external-api/ndex/workspace.ts`) with
+  `options: { currentNetwork, activeApps: string[], serviceApps: string[] }`.
+- `useLoadWorkspace` (`src/data/hooks/useLoadWorkspace.ts`) restores a remote
+  workspace: it clears the local DB, writes the workspace record, applies
+  `options.activeApps` to the persisted `CyApp` statuses, and reloads the page.
+- The ndex-client `CyWebWorkspace` type has an open index signature
+  (`[key: string]: any`), so `options` is extensible on the client side.
+
+`options.activeApps` carries app **ids only** — no URL (P8). A restored
+workspace can therefore only reactivate apps whose URL is resolvable from the
+manifest, which is the NDEx-path twin of P1. §11 builds on this existing
+pipeline instead of inventing a new one.
+
 ---
 
 ## 3. Problems
@@ -115,6 +140,7 @@ global `apps` and `serviceApps` tables) — it is not workspace-scoped.
 | P5 | **Snapshot is whole-DB, not workspace-scoped.** A per-workspace NDEx3 snapshot must embed that workspace's installed apps (URL + metadata). |
 | P6 | **No trust boundary for external entries.** Install and snapshot-restore can introduce arbitrary `remoteEntry.js` URLs (arbitrary third-party JS). Origin allow-listing and `compatibleHostVersions` enforcement are missing on these paths. |
 | P7 | **No uninstall affordance.** The App Manager UI can enable/disable an app and remove a legacy *orphan*, but there is no way to uninstall a properly installed app from the workspace. Once dynamic install exists, removal is the natural counterpart. |
+| P8 | **NDEx workspace save carries app ids only.** The existing NDEx save/load (§2.4) stores `options.activeApps: string[]` — no URL — so the NDEx restore path has the same URL-loss defect as P1: a restored workspace can only reactivate manifest-listed apps. |
 
 ---
 
@@ -135,6 +161,8 @@ global `apps` and `serviceApps` tables) — it is not workspace-scoped.
    `loadRemoteApp` → `mountApp`) with minimal change.
 7. Provide an **uninstall** affordance in the App Manager UI for
    workspace-installed apps, distinct from disable, with confirmation.
+8. Provide a manual **Install from URL** entry point in the App Manager UI
+   that reuses the same validated install pipeline (§12.8).
 
 ---
 
@@ -314,14 +342,39 @@ otherwise the manifest entry wins. Because installed apps now appear in the
 merged catalog, the existing `restore(catalogAppIds)` and auto-load passes work
 unchanged for them.
 
-### 8.2 Ordering dependency
+### 8.2 Re-merge on every catalog rebuild
+
+`AppStore.setCatalog` **replaces** the entire catalog (`appStoreImpl.setCatalog`
+builds a fresh record). The §8.1 merge must therefore run at every call site
+that rebuilds the catalog, not only at startup:
+
+| Trigger | Code path |
+| --- | --- |
+| Startup init | `useAppManager` init → `obtainCatalogEntries()` → merge → `setCatalog()` |
+| Manual **Refresh** button | `refreshCatalog()` |
+| Manifest source change | `AppSettingsDialog` → `setManifestSource()` → `refreshCatalog()` |
+
+Centralize the merge in one helper (e.g.
+`composeCatalog(manifestEntries, workspace.installedApps)`) shared by all three
+paths; otherwise a manual Refresh silently drops installed apps from the
+available list until the next reload.
+
+### 8.3 Ordering dependency (highest implementation risk)
 
 `workspace.installedApps` must be hydrated **before** `setCatalog`/`restore`.
 Today `useAppManager` init and workspace hydration run independently; this
 design introduces an explicit ordering (or a readiness gate) so the merged
-catalog is complete before restore. This is the main sequencing change.
+catalog is complete before restore. This is the main sequencing change and
+should be implemented and verified **first**.
 
-### 8.3 Status reconciliation
+The gate must also cover the **install path**, not just startup: the
+`WorkspaceStore` persist wrapper skips the IndexedDB write while the workspace
+is not yet hydrated (`workspace.id === ''`). An `installApp` call landing in
+that window updates the in-memory list but silently fails to persist — the
+install vanishes on reload. `installApp` (and the `?installApp=` intent handler
+in `AppShell`, §7.2) must await workspace hydration before writing.
+
+### 8.4 Status reconciliation
 
 `InstalledApp.status` is the durable status. On restore it seeds `CyApp.status`
 so the existing "auto-load Active apps" pass behaves correctly. Activation /
@@ -381,10 +434,43 @@ setInstalledAppStatus(id: string, status: AppStatus): void
 
 ---
 
-## 11. Workspace Snapshot & NDEx3
+## 11. Workspace Snapshot & NDEx
 
 The installed-app list is intentionally workspace-nested so it serializes with
-the workspace.
+the workspace. NDEx support is delivered in two stages; Stage 1 extends the
+existing, working save/load pipeline (§2.4) instead of building a new one.
+
+### 11.1 Stage 1: extend the existing NDEx workspace `options`
+
+`useSaveWorkspaceToNDEx` already uploads
+`options: { currentNetwork, activeApps, serviceApps }` to the NDEx v3
+`workspaces` endpoint (§2.4). Stage 1 adds the full installed list, resolving
+P8:
+
+```typescript
+options: {
+  currentNetwork: string
+  activeApps: string[]          // kept for backward compatibility
+  serviceApps: string[]
+  installedApps: InstalledApp[] // NEW — full entries, URL included
+}
+```
+
+- **Save**: serialize `workspace.installedApps` into `options.installedApps`.
+  `activeApps` is still written so older hosts can read newer workspaces.
+- **Restore**: `useLoadWorkspace` passes each `options.installedApps[]` entry
+  through the §9 gate and writes it into the restored workspace's
+  `installedApps` with `source: 'snapshot'`. Entries failing validation are
+  reported and skipped. Apps present only in `activeApps` (legacy workspaces)
+  behave exactly as today: they reactivate only if the manifest can resolve
+  their URL.
+- **Activation on restore**: see §11.3.
+- **Precondition to verify**: the NDEx server must persist `options` as opaque
+  JSON. The current free-form `options` payload suggests it does; confirm
+  before implementation. The ndex-client `CyWebWorkspace` type already permits
+  the extra field (`[key: string]: any`).
+
+### 11.2 Stage 2: full workspace snapshot (future)
 
 - **Export**: a workspace-scoped serializer (distinct from the whole-DB
   `exportDatabaseSnapshot()`) emits only the current workspace's networks,
@@ -397,17 +483,36 @@ the workspace.
   imported as `source: 'snapshot'`, `status: 'inactive'`, and are surfaced for
   explicit user activation. Failing entries are reported and skipped.
 
-Open question O3 (§14) covers whether NDEx stores the snapshot as a CX2 opaque
-aspect or a sidecar artifact.
+Open question O3 (§14) covers whether NDEx stores the full snapshot as a CX2
+opaque aspect or a sidecar artifact. Stage 1 is unaffected: `installedApps`
+rides in the existing workspace `options`.
+
+### 11.3 Restore activation policy
+
+§9 rule 4 requires snapshot-restored apps to be imported inactive and never
+auto-executed. Today's NDEx restore behaves differently: `options.activeApps`
+marks apps Active, so they auto-load after the post-restore reload. The two
+must be reconciled. The conservative default for Stage 1:
+
+- Apps resolvable from the current manifest (`apps.json` or the configured
+  manifest source) keep today's behavior — saved Active status is honored and
+  they auto-load. Their URL comes from the manifest, not the remote payload.
+- Workspace-installed entries restored via `options.installedApps` are
+  imported **inactive** per §9 rule 4 and surfaced for explicit activation,
+  even if they were Active when saved.
+
+Whether allow-listed origins (App Store CDN) may honor saved Active status —
+restoring the seamless cross-device UX — is open question O5 (§14).
 
 ---
 
 ## 12. App Manager UI: Install & Uninstall
 
 The App Manager dialog (`AppSettingsDialog` → `AppListPanel`) gains an uninstall
-affordance for workspace-installed apps. Installing itself happens outside this
-dialog (App Store + URL intent, §7); this section covers how installed apps are
-presented and removed.
+affordance for workspace-installed apps and a manual **Install from URL** entry
+point (§12.8). The primary install transport remains the App Store URL intent
+(§7); this section covers how installed apps are presented, added manually, and
+removed.
 
 ### 12.1 Today
 
@@ -485,6 +590,7 @@ orphan `removeOrphan` remains unconfirmed; only true uninstall is confirmed.)
 | File | Change |
 | --- | --- |
 | `AppListPanel.tsx` | `AppDisplayEntry` gains `source` and `removable`; `getAction()` is split into a primary-action selector and a `removable` predicate; add the overflow menu and the confirmation dialog |
+| `AppSettingsDialog.tsx` | Add the **Install from URL** action on the Apps tab (§12.8), distinct from the existing manifest-source controls |
 | `useAppManager.ts` | Implement `uninstallApp(id)`; add `installApp`/`uninstallApp` to `AppManagerCommands` |
 | `WorkspaceStore.ts` | `removeInstalledApp(id)` / `setInstalledAppStatus(id, status)` actions (§10.2) |
 | catalog merge (§8.1) | Propagate `source` onto each merged catalog entry so the panel can decide removability |
@@ -502,24 +608,56 @@ surface, so the new commands flow through automatically.
    `appRegistry`.
 4. Delete any legacy global `apps` record (`deleteAppFromDb(id)`).
 
+### 12.8 Install from URL
+
+The dialog's existing **Custom manifest URL** field is not an install: it
+replaces the manifest source for the *whole* catalog, and setting it hides the
+default `apps.json` entries. To let a user add a single app directly — the App
+Store flow without leaving Cytoscape Web, or a development build — the Apps tab
+gains an **Install from URL** action:
+
+1. The user pastes the URL of a **single-entry manifest** (`manifest.json`,
+   a one-element `AppCatalogEntry[]`) — the same artifact the `?installApp=`
+   intent points at (§7.2, [app-store-design.md](./app-store-design.md) §9.1).
+2. The host fetches it and runs the §7.1 pipeline: `parseManifest()`
+   validation → origin allow-list → `compatibleHostVersions` →
+   `installApp(entry)` with `source: 'appstore'`.
+3. The app appears in the list as installed (inactive unless the user enables
+   it). Failures surface inline: invalid manifest, disallowed origin, or
+   incompatible host version.
+
+This reuses `installApp` unchanged (§7.4 — transport-agnostic), and the §9
+gate applies as-is.
+
+**Origin policy.** Restricting installs to the App Store CDN would block
+developers from testing their own apps. The allow-list (§9) is therefore
+configurable in `config.json`: production builds ship with the App Store CDN
+origin(s); deployments may add development origins (e.g. `localhost` dev
+servers). Manual installs from origins outside the configured list are
+rejected with an explanatory error — there is no warning-and-proceed bypass.
+
 ---
 
 ## 13. Implementation Plan
 
 1. **Model + migration** — add `InstalledApp` and `Workspace.installedApps`;
    DB v9→v10 migration moving/cleaning the legacy `apps` store.
-2. **Catalog composition** — merge `manifest ∪ workspace.installedApps` at
-   startup; resolve the hydration ordering dependency (§8.2).
+2. **Catalog composition** — merge `manifest ∪ workspace.installedApps` via a
+   shared helper applied on every catalog rebuild (§8.2); resolve and verify
+   the hydration ordering dependency (§8.3) before anything else — it is the
+   highest-risk step.
 3. **Commands** — `installApp` / `uninstallApp` in `useAppManager`;
    `WorkspaceStore` actions for `installedApps` (§10.2).
 4. **Install intent** — `AppShell` consumes `?installApp=<manifestUrl>`,
    fetches + validates + installs, then strips the param (idempotent).
 5. **App Manager UI** — overflow menu + confirmation for uninstall in
-   `AppListPanel`; `source`/`removable` on display entries (§12).
+   `AppListPanel`; `source`/`removable` on display entries; **Install from
+   URL** action (§12, §12.8).
 6. **Trust boundary** — origin allow-list (config), `compatibleHostVersions`
    enforcement, conservative snapshot-restore behavior.
-7. **Workspace snapshot serializer** — workspace-scoped export/import including
-   `installedApps`; wire to the NDEx3 upload path (future).
+7. **NDEx integration** — Stage 1: extend the existing NDEx workspace
+   `options` with `installedApps` and gate the restore path (§11.1, §11.3).
+   Stage 2: workspace-scoped snapshot serializer (§11.2, future).
 
 Each step is independently testable; steps 1–2 alone fix the core
 restore-after-reload defect (P1–P3).
@@ -533,11 +671,18 @@ restore-after-reload defect (P1–P3).
    correct, or should the newer semver win?
 2. **Migration of legacy global apps** — should the v9→v10 migration target the
    most recently active workspace, every workspace, or only the current one?
-3. **NDEx3 carrier** — store the workspace snapshot (including `installedApps`)
-   as a CX2 opaque aspect, or as a separate NDEx artifact?
+3. **NDEx full-snapshot carrier (Stage 2)** — store the full workspace
+   snapshot as a CX2 opaque aspect, or as a separate NDEx artifact? Stage 1 is
+   unaffected: `installedApps` rides in the existing workspace `options`
+   (§11.1).
 4. **Cross-host-version restore** — when a snapshot is restored on an older or
    newer host, how aggressively should incompatible apps be hidden vs. shown
    with a warning?
+5. **Restore activation for trusted origins** — should NDEx-restored installed
+   apps whose `entry.url` passes the origin allow-list honor their saved
+   Active status (preserving today's seamless `activeApps` UX), or always
+   import as inactive per §9 rule 4? Until resolved, the conservative default
+   applies (§11.3).
 
 > **Resolved (Rev. 1):** Disable and Uninstall are both exposed as distinct
 > operations (§12.2); the overflow menu surfaces Uninstall only for
@@ -563,4 +708,15 @@ restore-after-reload defect (P1–P3).
   (`appstore` / `snapshot`); manifest rows expose the toggle only.
 - Selecting `Uninstall` shows a confirmation dialog; cancelling leaves the app
   installed and unchanged.
+- Pasting a valid single-entry manifest URL into **Install from URL** installs
+  the app exactly as the `?installApp=` intent would; a URL on a
+  non-allow-listed origin is rejected with an explanatory error and nothing is
+  persisted.
+- Pressing **Refresh** (or changing the manifest source) re-merges
+  `workspace.installedApps` into the rebuilt catalog; installed apps never
+  disappear from the available list.
+- Saving a workspace to NDEx writes `options.installedApps` (full entries,
+  with `activeApps` still included); restoring it on another device imports
+  the installed list through the §9 gate as inactive entries, while a legacy
+  workspace carrying only `activeApps` behaves exactly as today.
 - Apps loaded from `apps.json` continue to behave exactly as before.
