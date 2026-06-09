@@ -4,7 +4,7 @@ import { styled } from '@mui/material/styles'
 export const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
   height: 30,
   width: 30,
-  //   backgroundColor: '#F2F2F2',
+  border: theme.palette.mode === 'dark' ? `1px solid ${theme.palette.divider}` : 'none',
   borderRadius: '20%',
   boxShadow: theme.shadows[2],
   '&:hover': {
@@ -20,7 +20,7 @@ export const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
 export const EmptyVisualPropertyViewBox = styled(Box)(({ theme }) => ({
   height: 30,
   width: 30,
-  backgroundColor: '#D9D9D9',
+  backgroundColor: theme.palette.action.disabledBackground,
   boxShadow: theme.shadows[2],
   cursor: 'pointer',
   '&:hover': {

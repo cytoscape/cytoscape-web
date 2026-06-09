@@ -60,27 +60,18 @@ export const ConfirmationDialog = (
       <DialogActions>
         <Button
           data-testid="confirmation-dialog-cancel"
+          variant="outlined"
           onClick={handleCancel}
-          color="primary"
         >
           Cancel
         </Button>
         <Button
           data-testid="confirmation-dialog-confirm"
+          variant="contained"
+          color={isAlert ? "error" : "primary"}
           onClick={handleConfirm}
           disabled={confirmDisabled ?? false}
           autoFocus
-          sx={{
-            color: isAlert ? '#F50157' : '#FFFFFF',
-            backgroundColor: isAlert ? 'transparent' : '#337ab7',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: isAlert ? '#fc266f' : '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
         >
           {buttonTitle === undefined || buttonTitle === '' ? 'OK' : buttonTitle}
         </Button>

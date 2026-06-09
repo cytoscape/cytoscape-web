@@ -66,19 +66,12 @@ export const UpdateNetworkDialog = (props: {
           onClick={() => {
             props.onClose()
           }}
-          color="primary"
         >
           Cancel
         </Button>
         <Button
           data-testid="update-network-dialog-update"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           disabled={!authenticated || loading}
           onClick={async () => {
             setLoading(true)

@@ -306,17 +306,8 @@ export function DiscreteMappingForm(props: {
         <Box>
           <Button
             size="small"
-            sx={{
-              color: '#F50157',
-              backgroundColor: 'transparent',
-              '&:hover': {
-                color: '#FFFFFF',
-                backgroundColor: '#F50157',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="outlined"
+            color="error"
             disabled={selectedDiscreteMappingEntries.size === 0}
             onClick={() => {
               postEdit(

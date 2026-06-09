@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogTitle,
   Link,
+  Paper,
   Typography,
 } from '@mui/material'
 import { ReactElement, useMemo, useState } from 'react'
@@ -69,7 +70,7 @@ const CitationText = ({
 }: {
   citation: CitationData
 }): ReactElement => (
-  <Typography variant="body1" component="div">
+  <Typography variant="body1" color="textSecondary" component="div">
     {citation.authors} {citation.title}
     {citation.journal && (
       <Typography component="span" sx={{ fontStyle: 'italic' }}>
@@ -174,26 +175,33 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
           </Box>
         </DialogTitle>
 
-        <DialogContent dividers>
-          {CITATIONS.map((citation, index) => (
-            <Box key={index} mb={3}>
-              <CitationText citation={citation} />
+        <DialogContent sx={{ pb: 0 }}>
+          <Paper
+            variant="filled"
+            sx={{
+              my: 1,
+              p: 2,
+            }}
+          >
+            {CITATIONS.map((citation, index) => (
+              <Box key={index} mb={3}>
+                <CitationText citation={citation} />
+              </Box>
+            ))}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopyIcon />}
+                onClick={handleCopyAllCitations}
+              >
+                Copy Both Citations
+              </Button>
             </Box>
-          ))}
-
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, mb: 1 }}>
-            <Button
-              variant="contained"
-              startIcon={<ContentCopyIcon />}
-              onClick={handleCopyAllCitations}
-            >
-              Copy Both Citations
-            </Button>
-          </Box>
+          </Paper>
         </DialogContent>
 
-        <DialogActions sx={{ padding: '16px 24px' }}>
-          <Button onClick={handleCloseDialog} color="primary">
+        <DialogActions sx={{ m: 0, padding: (theme) => theme.spacing(2, 3) }}>
+          <Button variant="contained" onClick={handleCloseDialog}>
             Close
           </Button>
         </DialogActions>

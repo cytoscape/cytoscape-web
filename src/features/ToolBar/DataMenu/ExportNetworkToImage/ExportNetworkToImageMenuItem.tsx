@@ -152,6 +152,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
       <DialogActions sx={{ pr: 1 }}>
         <Button
           data-testid="export-network-to-image-cancel-button"
+          variant="outlined"
           color="primary"
           onClick={props.handleClose}
         >
@@ -159,16 +160,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
         </Button>
         <Button
           data-testid="export-network-to-image-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           disabled={loading}
           onClick={handleConfirm}
         >

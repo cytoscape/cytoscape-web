@@ -87,7 +87,7 @@ export function NodeShapePicker(props: {
           <Box
             data-testid={`node-shape-picker-option-${shape}`}
             sx={{
-              color: localValue === shape ? 'blue' : 'black',
+              color: (theme) => (localValue === shape ? theme.palette.primary.main : theme.palette.text.secondary),
               fontWeight: localValue === shape ? 'bold' : 'normal',
               p: 1,
               '&:hover': { cursor: 'pointer' },
@@ -110,10 +110,10 @@ export function NodeShapePicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
         <Button
           data-testid="node-shape-picker-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? NodeShapeType.Rectangle)
@@ -123,13 +123,7 @@ export function NodeShapePicker(props: {
         </Button>
         <Button
           data-testid="node-shape-picker-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

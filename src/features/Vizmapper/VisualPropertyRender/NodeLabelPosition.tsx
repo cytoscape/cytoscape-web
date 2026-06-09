@@ -118,9 +118,9 @@ export function NodeLabelPositionPicker(props: {
         </Box>
       </MantineProvider>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1, mt: 2 }}>
         <Button
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
@@ -129,13 +129,7 @@ export function NodeLabelPositionPicker(props: {
           Cancel
         </Button>
         <Button
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

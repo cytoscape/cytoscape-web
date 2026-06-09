@@ -1,10 +1,9 @@
+import AddIcon from '@mui/icons-material/Add'
 import {
   Box,
   Button,
   TextField,
-  Theme,
   Typography,
-  useTheme,
 } from '@mui/material'
 import { useState } from 'react'
 
@@ -14,8 +13,6 @@ import { ExampleServicePanel } from './ExampleServicePanel'
 import { ServiceList } from './ServiceList'
 
 export const ServiceListPanel = () => {
-  const theme: Theme = useTheme()
-
   const [newUrl, setNewUrl] = useState<string>('')
 
   // Warning message to display when the user tries to add
@@ -94,25 +91,22 @@ export const ServiceListPanel = () => {
           label="Enter new external service URL"
           value={newUrl}
           onChange={(e) => setNewUrl(e.target.value)}
-          style={{ marginRight: theme.spacing(1) }}
           size="small"
-          sx={{ flexGrow: 1 }}
+          sx={{ mr: 1, flexGrow: 1 }}
         />
         <Button
           variant="outlined"
-          color="inherit"
           onClick={handleClearUrl}
           disabled={newUrl.trim() === ''}
-          sx={{ marginRight: theme.spacing(1), width: '4em' }}
+          sx={{ mr: 1 }}
         >
           Clear
         </Button>
         <Button
           variant="outlined"
-          color="primary"
+          startIcon={<AddIcon />}
           onClick={handleAddServiceApp}
           disabled={newUrl.trim() === ''}
-          sx={{ width: '4em' }}
         >
           Add
         </Button>

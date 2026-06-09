@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Chip,
-  Divider,
   Paper,
   Popover,
   TextField,
@@ -88,7 +87,7 @@ const NetworkPropertyEditor = (
         horizontal: 'right',
       }}
     >
-      <Paper
+      <Box
         sx={{
           width: 850,
           height: 810,
@@ -127,7 +126,7 @@ const NetworkPropertyEditor = (
                   name: e.target.value,
                 })
               }}
-            ></TextField>
+            />
             <TextField
               data-testid="network-property-editor-version-input"
               size="small"
@@ -142,9 +141,8 @@ const NetworkPropertyEditor = (
               }}
             />
           </Box>
-
-          <Typography sx={{ ml: 1.5, pt: 1 }} gutterBottom>
-            Description
+          <Typography gutterBottom sx={{ mt: 2 }}>
+            Description:
           </Typography>
           <MantineProvider>
             <style>
@@ -158,8 +156,6 @@ const NetworkPropertyEditor = (
             <Box
               sx={{
                 height: 290,
-                border: '1px solid #e0e0e0',
-                borderRadius: 1,
                 overflow: 'hidden',
               }}
             >
@@ -218,7 +214,6 @@ const NetworkPropertyEditor = (
             </Box>
           </MantineProvider>
 
-          <Divider sx={{ mt: 2, mb: 1 }} />
           <NdexNetworkPropertyTable
             networkProperties={localSummaryState.properties}
             setNetworkProperties={(nextProperties) => {
@@ -233,15 +228,14 @@ const NetworkPropertyEditor = (
           sx={{
             px: 2,
             py: 1,
-            borderTop: '1px solid #e0e0e0',
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
             display: 'flex',
-            justifyContent: 'space-between',
-            backgroundColor: '#fafafa',
+            justifyContent: 'flex-end',
           }}
         >
           <Button
             data-testid="network-property-editor-cancel-button"
-            color="primary"
+            variant="outlined"
             onClick={(e) => {
               setLocalSummaryState(summary)
               onClose(e)
@@ -252,16 +246,7 @@ const NetworkPropertyEditor = (
           </Button>
           <Button
             data-testid="network-property-editor-confirm-button"
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="contained"
             onClick={(e) => {
               if (isEqual(localSummaryState, summary)) {
                 onClose(e)
@@ -284,7 +269,7 @@ const NetworkPropertyEditor = (
             Confirm
           </Button>
         </Box>
-      </Paper>
+      </Box>
     </Popover>
   )
 }

@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
-import { Tooltip } from '@mui/material'
+import { Box, Button, IconButton, Tooltip } from '@mui/material'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { Panel } from '../../../models/UiModel/Panel'
@@ -9,21 +9,6 @@ interface OpenRightPanelButtonProps {
   show: boolean
   toOpen: boolean
   title: string
-}
-
-const buttonStyleOpen = {
-  position: 'absolute',
-  top: '55px',
-  right: '5px',
-  border: '1px solid #999999',
-}
-
-const buttonStyleClose = {
-  position: 'absolute',
-  top: '8px',
-  left: '5px',
-  border: '1px solid #999999',
-  zIndex: 1000,
 }
 
 /**
@@ -44,18 +29,58 @@ export const OpenRightPanelButton = ({
   return (
     <Tooltip title={title}>
       {toOpen ? (
-        <ChevronLeft
-          data-testid="side-panel-open-button"
-          sx={buttonStyleOpen}
-          onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
-        />
+        <Box
+          sx={{
+            position: 'absolute',
+            top: (theme) => theme.spacing(7),
+            right: 0,
+            p: (theme) => theme.spacing(0.5, 0, 0.5, 0.5),
+            mt: (theme) => theme.spacing(-0.5),
+            borderRadius: (theme) => theme.spacing(1.25, 0, 0, 1.25),
+            backgroundColor: (theme) => theme.palette.divider,
+          }}
+        >
+          <IconButton
+            data-testid="side-panel-open-button"
+            onClick={() => setPanelState(Panel.RIGHT, PanelState.OPEN)}
+            sx={{
+              minWidth: 28,
+              width: 28,
+              height: 40,
+              px: 0,
+              borderRadius: (theme) => theme.spacing(1, 0, 0, 1),
+              color: (theme) => theme.palette.text.secondary,
+              backgroundColor: (theme) => theme.palette.background.paper,
+              '&:hover': {
+                color: (theme) => theme.palette.text.primary,
+                backgroundColor: (theme) => theme.palette.background.paper,
+              },
+            }}
+          >
+            <ChevronLeft />
+          </IconButton>
+          </Box>
       ) : (
         // Button for closing the panel
-        <ChevronRight
+        <IconButton
           data-testid="side-panel-close-button"
-          sx={buttonStyleClose}
           onClick={() => setPanelState(Panel.RIGHT, PanelState.CLOSED)}
-        />
+          sx={{
+            position: 'absolute',
+            top: (theme) => theme.spacing(0.5),
+            left: (theme) => theme.spacing(1),
+            width: 32,
+            height: 32,
+            zIndex: 1000,
+            color: (theme) => theme.palette.text.secondary,
+            '&:hover': {
+              color: (theme) => theme.palette.text.primary,
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
+          <ChevronRight />
+        </IconButton>
       )}
     </Tooltip>
   )
