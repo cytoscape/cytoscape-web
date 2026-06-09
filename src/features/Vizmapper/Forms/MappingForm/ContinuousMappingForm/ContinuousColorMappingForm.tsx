@@ -362,9 +362,8 @@ export function ContinuousColorMappingForm(props: {
 
   return (
     <Paper
-      variant="outlined"
+      variant="filled"
       sx={{
-        backgroundColor: (theme) => theme.palette.background.default,
         px: 8,
         py: 1,
       }}

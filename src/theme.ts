@@ -17,7 +17,7 @@ export const lightPalette = {
   background: {
     default: '#f5f5f5',
     paper: '#ffffff',
-    header: '#e6eaed',
+    subtle: '#e6eaed',
   },
   action: {
     hover: 'rgba(31, 120, 180, 0.1)',
@@ -111,6 +111,16 @@ export const theme = extendTheme({
           },
         },
       },
+    },
+    MuiPaper: {
+      variants: [
+        {
+          props: { variant: 'filled' },
+          style: ({ theme }) => ({
+            backgroundColor: theme.palette.background.default,
+          }),
+        },
+      ],
     },
     MuiTooltip: {
       styleOverrides: {

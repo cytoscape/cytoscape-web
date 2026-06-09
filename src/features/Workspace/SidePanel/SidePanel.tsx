@@ -125,7 +125,7 @@ export const SidePanel = (): JSX.Element => {
           p: 0,
           paddingLeft: '2.5em',
           m: 0,
-          backgroundColor: (theme) => theme.palette.background.header,
+          backgroundColor: (theme) => theme.palette.background.subtle,
         }}
       >
         <Tabs

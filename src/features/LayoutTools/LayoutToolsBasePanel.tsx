@@ -11,7 +11,6 @@ export const LayoutToolsBasePanel = (): JSX.Element => {
     <Accordion
       data-testid="layout-tools-accordion"
       sx={{
-        backgroundColor: (theme) => theme.palette.background.paper,
         backgroundImage: 'none',
         boxShadow: 'none',
       }}

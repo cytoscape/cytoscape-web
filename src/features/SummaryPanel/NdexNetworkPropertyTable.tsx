@@ -158,14 +158,13 @@ const NetworkPropertyTable = (props: {
 
   return (
     <Paper
-      variant="outlined"
+      variant="filled"
       data-testid="ndex-network-property-table"
       sx={{ 
         mt: 2,
         px: 2,
         py: 1,
-        backgroundColor: (theme) => theme.palette.background.header,
-        border: 'none',
+        backgroundColor: (theme) => theme.palette.background.subtle,
       }}
     >
       <Typography gutterBottom>Network Properties:</Typography>
@@ -174,6 +173,7 @@ const NetworkPropertyTable = (props: {
           height: 300,
           overflowY: 'scroll',
           border: (theme) => `1px solid ${theme.palette.divider}`,
+          boxShadow: 'none',
         }}
         component={Paper}
       >

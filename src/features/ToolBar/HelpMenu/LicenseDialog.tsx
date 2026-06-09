@@ -63,14 +63,11 @@ export const LicenseDialog = ({
       <DialogTitle>MIT License</DialogTitle>
       <DialogContent>
         <Paper
-          variant="outlined"
+          variant="filled"
           sx={{
             my: 1,
             p: 2,
-            backgroundColor: (theme) => theme.palette.background.default,
             color: (theme) => theme.palette.text.secondary,
-            border: 'none',
-            borderRadius: 2,
           }}
         >
           <Typography variant="body1" gutterBottom>

@@ -80,14 +80,11 @@ export const AboutCytoscapeWebMenuItem = (
             A web-based network visualization and analysis platform.
           </Typography>
           <Paper
-            variant="outlined"
+            variant="filled"
             sx={{
               mt: 4,
               p: 2,
-              backgroundColor: (theme) => theme.palette.background.default,
               color: (theme) => theme.palette.text.secondary,
-              border: 'none',
-              borderRadius: 2,
             }}
           >
             <Typography variant="body1" sx={{ mb: 1 }}>

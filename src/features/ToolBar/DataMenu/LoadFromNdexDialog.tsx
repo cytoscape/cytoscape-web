@@ -816,7 +816,7 @@ export const LoadFromNdexDialog = (
         <Table size="small" stickyHeader>
           {networks.length > 0 && (
             <TableHead>
-              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.header }}>
+              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.subtle }}>
                 <TableCell padding="checkbox" sx={{ backgroundColor: 'inherit' }} />
                 <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">

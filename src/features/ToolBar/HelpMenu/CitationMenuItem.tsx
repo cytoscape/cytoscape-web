@@ -177,13 +177,10 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
 
         <DialogContent sx={{ pb: 0 }}>
           <Paper
-            variant="outlined"
+            variant="filled"
             sx={{
               my: 1,
               p: 2,
-              backgroundColor: (theme) => theme.palette.background.default,
-              border: 'none',
-              borderRadius: 2,
             }}
           >
             {CITATIONS.map((citation, index) => (

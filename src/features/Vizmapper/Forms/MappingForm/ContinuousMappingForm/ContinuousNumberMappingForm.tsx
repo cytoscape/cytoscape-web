@@ -339,9 +339,8 @@ export function ContinuousNumberMappingForm(props: {
 
   return (
     <Paper
-      variant="outlined"
+      variant="filled"
       sx={{
-        backgroundColor: (theme) => theme.palette.background.default,
         pt: 1,
         pb: 2,
       }}

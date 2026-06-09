@@ -1741,7 +1741,7 @@ export default function TableBrowser(props: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: (theme) => theme.palette.background.header,
+          backgroundColor: (theme) => theme.palette.background.subtle,
         }}
       >
         <Tabs
