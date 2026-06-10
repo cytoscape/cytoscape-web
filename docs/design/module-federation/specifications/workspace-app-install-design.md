@@ -514,6 +514,40 @@ point (§12.8). The primary install transport remains the App Store URL intent
 (§7); this section covers how installed apps are presented, added manually, and
 removed.
 
+Target layout of the Apps tab after this design (mock):
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│              APPS                         SERVICE APPS           │
+├──────────────────────────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────────────────────────────┐ │
+│ │ Hello Cytoscape World App  v1.0.0  (active)                  │ │
+│ │ Reference app demonstrating App API patterns…   ( ●)         │ │
+│ └──────────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────────┐ │
+│ │ Network Statistics  v1.0.0  [App Store]                      │ │
+│ │ Logs network topology statistics…               (○ )    ⠇    │ │
+│ └──────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│ ┌ Install from URL ────────────────────────────────────────────┐ │
+│ │ [ https://apps.cytoscape.org/…/manifest.json ]  [ Install ]  │ │
+│ └──────────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────────┐ │
+│ │ Manifest Source                                            ▾ │ │
+│ └──────────────────────────────────────────────────────────────┘ │
+│                                           [ Refresh ]  [ Close ] │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+Differences from the current dialog:
+
+- The `[App Store]` chip and the kebab menu (`⠇`) appear only on
+  workspace-installed rows (§12.3–§12.5); manifest rows keep the toggle alone,
+  exactly as today.
+- **Install from URL** is the new manual install entry point (§12.8), separate
+  from the **Manifest Source** accordion, which keeps its existing
+  catalog-source behavior unchanged.
+
 ### 12.1 Today
 
 `AppListPanel` renders a merged list of catalog entries and *orphan* apps, with a
