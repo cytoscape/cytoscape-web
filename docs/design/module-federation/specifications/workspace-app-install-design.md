@@ -290,13 +290,13 @@ sequenceDiagram
     participant Mgr as useAppManager
     participant WS as WorkspaceStore
 
-    Store->>Browser: Open /?installApp=<manifestUrl>
+    Store->>Browser: Open /?installApp=#lt;manifestUrl#gt;
     Browser->>Shell: Initial load (search params)
     Shell->>Shell: Read installApp param
     Shell->>Mgr: fetch + parseManifest(manifestUrl) → entry
     Mgr->>Mgr: validate + origin allow-list + version check
     Mgr->>WS: installApp(entry) → workspace.installedApps (persist)
-    Mgr->>Mgr: merge into catalog; optionally activateApp(id)
+    Mgr->>Mgr: merge into catalog, optionally activateApp(id)
     Shell->>Browser: Remove installApp from URL (history-clean)
 ```
 
