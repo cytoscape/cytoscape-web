@@ -25,6 +25,7 @@ import {
   VALID_PIE_CHART_SLICE_INDEX_RANGE,
 } from './customGraphicsImpl'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { DEFAULT_CUSTOM_GRAPHICS } from './defaultVisualStyle'
 import { createVisualStyle } from './visualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/customGraphicsImpl.test.ts

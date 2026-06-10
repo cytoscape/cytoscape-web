@@ -416,7 +416,7 @@ export const computeImageProperties = (
         finalUrl = 'data:image/svg+xml,' + encodeURIComponent(wrapperSvg)
       }
     } catch (e) {
-      console.warn('Failed to wrap SVG custom graphic', e)
+      logModel.warn('Failed to wrap SVG custom graphic', e)
     }
   }
 

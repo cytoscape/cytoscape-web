@@ -6,7 +6,47 @@ import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/Visu
 import { PieChartRender as PieChartRenderComponent } from './PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from './RingChartRender'
 import { CHART_CONSTANTS } from './utils/constants'
-import { isPieChartProperties, isRingChartProperties } from './utils/typeGuards'
+import {
+  isImageProperties,
+  isPieChartProperties,
+  isRingChartProperties,
+} from './utils/typeGuards'
+
+/** Small helper that renders an image with error handling */
+function ImageRender({ url }: { url: string }): React.ReactElement {
+  const [hasError, setHasError] = React.useState(false)
+
+  React.useEffect(() => {
+    setHasError(false)
+  }, [url])
+
+  if (hasError) {
+    return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
+  }
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+      }}
+    >
+      <img
+        src={url}
+        alt="Custom Graphic"
+        onError={() => setHasError(true)}
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+        }}
+      />
+    </Box>
+  )
+}
 
 /** Read-only render of chart properties */
 export function CustomGraphicRender(props: {
@@ -80,6 +120,18 @@ export function CustomGraphicRender(props: {
     }
   }
 
-  // Fallback for other types (like Image in the future)
+  // Render image
+  if (value.name === CustomGraphicsNameType.Image) {
+    if (isImageProperties(value.properties)) {
+      const imageProperties = value.properties
+      if (imageProperties.url && imageProperties.url.trim().length > 0) {
+        return (
+          <ImageRender url={imageProperties.url} />
+        )
+      }
+    }
+  }
+
+  // Fallback for other types
   return <Box sx={{ p: 1, textAlign: 'center' }}></Box>
 }
