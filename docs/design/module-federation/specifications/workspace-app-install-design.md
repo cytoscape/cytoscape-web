@@ -557,13 +557,13 @@ through an **overflow (kebab) menu**:
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ Network Statistics  v1.0.0  [App Store]                        │
-│ Logs network topology statistics ...            ( ●)   ⠇       │
+│ Network Statistics  v1.0.0  [App Store]                      │
+│ Logs network topology statistics ...            ( ●)    ⠇    │
 └──────────────────────────────────────────────────────────────┘
-                                                  toggle  └─ menu:
-                                                            • Uninstall
-                                                            • App details   (future)
-                                                            • Report a bug  (future)
+                                                 toggle   └─ menu:
+                                                             • Uninstall
+                                                             • App details   (future)
+                                                             • Report a bug  (future)
 ```
 
 - The overflow menu appears only when the row is removable (§12.3). Manifest
