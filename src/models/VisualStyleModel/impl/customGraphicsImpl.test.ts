@@ -1,3 +1,4 @@
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualProperty } from '../VisualProperty'
 import { NodeVisualPropertyName } from '../VisualPropertyName'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
@@ -7,10 +8,7 @@ import {
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
-import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
-import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import {
-  VALID_PIE_CHART_SLICE_INDEX_RANGE,
   computeCustomGraphicsProperties,
   computeImageProperties,
   computePieChartProperties,
@@ -22,7 +20,9 @@ import {
   getPieBackgroundColorViewModelProp,
   getPieBackgroundSizeViewModelProp,
   getSizePropertyForCustomGraphic,
+  VALID_PIE_CHART_SLICE_INDEX_RANGE,
 } from './customGraphicsImpl'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
 import { DEFAULT_CUSTOM_GRAPHICS } from './defaultVisualStyle'
 import { createVisualStyle } from './visualStyleFnImpl'
 

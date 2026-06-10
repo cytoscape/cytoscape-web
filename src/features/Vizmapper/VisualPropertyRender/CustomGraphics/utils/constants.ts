@@ -30,3 +30,15 @@ export const STYLES = {
   ROTATION: -90, // Start from 12 o'clock
 } as const
 
+export const IMAGE_CONSTANTS = {
+  MAX_FILE_SIZE_BYTES: 2 * 1024 * 1024, // 2 MB
+  MAX_FILE_SIZE_LABEL: '2 MB',
+  ACCEPTED_TYPES: [
+    'image/png',
+    'image/jpeg',
+    'image/svg+xml',
+    'image/gif',
+    'image/webp',
+  ],
+  ACCEPTED_EXTENSIONS: '.png,.jpg,.jpeg,.svg,.gif,.webp',
+} as const

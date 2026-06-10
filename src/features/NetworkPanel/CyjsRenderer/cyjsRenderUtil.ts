@@ -381,6 +381,7 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
         {
           selectorStr: SpecialPropertyName.BackgroundFit,
           styleStr: 'background-fit',
+        },
         {
           selectorStr: SpecialPropertyName.BackgroundImageCrossorigin,
           styleStr: 'background-image-crossorigin',
@@ -530,13 +531,7 @@ const updateCyElements = <T extends View>(
           obj.removeData(key as any)
         }
       })
-      if (view.values.has(SpecialPropertyName.BackgroundImage as any)) {
-        console.log('Image properties applied to node:', cyId, {
-          backgroundImage: obj.data(SpecialPropertyName.BackgroundImage),
-          backgroundFit: obj.data(SpecialPropertyName.BackgroundFit),
-          backgroundImageCrossorigin: obj.data(SpecialPropertyName.BackgroundImageCrossorigin)
-        })
-      }
+
 
       // If node size is locked, set width equal to height.
       if (visualEditorProperties?.nodeSizeLocked) {
