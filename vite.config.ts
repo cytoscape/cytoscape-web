@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 import federation from '@originjs/vite-plugin-federation'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-swc'
 import { defineConfig, Plugin, PluginOption } from 'vite'
 
 import config from './src/assets/config.json'
@@ -45,7 +45,7 @@ function serveAppsConfigInDev(appsConfigPath: string): Plugin {
   }
 }
 
-export default defineConfig(async ({ command }) => {
+export default defineConfig(async ({ command, mode }) => {
   const appsConfigPath = path.resolve(
     __dirname,
     command === 'build' ? 'src/assets/apps.json' : 'src/assets/apps.local.json',
@@ -139,7 +139,15 @@ export default defineConfig(async ({ command }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      // Fast minifier (Vite's default; Terser is the slow opt-in). Stated
+      // explicitly so it can't silently regress to Terser.
+      minify: 'esbuild',
+      // Source maps in development builds only. Production omits them —
+      // matching the old webpack config (`devtool: false` in production) and
+      // shaving ~15% off the build by skipping multi-MB .map generation for
+      // the vendor chunks. (The dev server emits source maps regardless of
+      // this setting.)
+      sourcemap: mode !== 'production',
       rollupOptions: {
         output: {
           // Split vendor code so app-source changes don't bust the vendor
