@@ -1,13 +1,12 @@
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { loadModule } from '../ExternalComponent'
 import { loadRemoteApp } from './loadRemoteApp'
 
 jest.mock('../ExternalComponent', () => ({
   loadModule: jest.fn(),
 }))
 
-const mockedLoadModule = jest.mocked(
-  require('../ExternalComponent').loadModule,
-)
+const mockedLoadModule = jest.mocked(loadModule)
 
 describe('loadRemoteApp', () => {
   let appRegistry: Map<string, CyApp>
@@ -46,6 +45,58 @@ describe('loadRemoteApp', () => {
         id: 'differentApp',
       },
     })
+
+    const result = await loadRemoteApp(
+      'myApp',
+      'http://localhost:2222/remoteEntry.js',
+      appRegistry,
+    )
+
+    expect(result).toBeUndefined()
+    expect(appRegistry.size).toBe(0)
+  })
+
+  it('returns undefined when the AppConfig module has no default export', async () => {
+    mockedLoadModule.mockResolvedValue({})
+
+    const result = await loadRemoteApp(
+      'myApp',
+      'http://localhost:2222/remoteEntry.js',
+      appRegistry,
+    )
+
+    expect(result).toBeUndefined()
+    expect(appRegistry.size).toBe(0)
+  })
+
+  it('returns undefined when loadModule resolves undefined', async () => {
+    mockedLoadModule.mockResolvedValue(undefined)
+
+    const result = await loadRemoteApp(
+      'myApp',
+      'http://localhost:2222/remoteEntry.js',
+      appRegistry,
+    )
+
+    expect(result).toBeUndefined()
+    expect(appRegistry.size).toBe(0)
+  })
+
+  it('returns undefined when loadModule resolves null', async () => {
+    mockedLoadModule.mockResolvedValue(null)
+
+    const result = await loadRemoteApp(
+      'myApp',
+      'http://localhost:2222/remoteEntry.js',
+      appRegistry,
+    )
+
+    expect(result).toBeUndefined()
+    expect(appRegistry.size).toBe(0)
+  })
+
+  it('returns undefined when loadModule rejects (network error)', async () => {
+    mockedLoadModule.mockRejectedValue(new Error('network error'))
 
     const result = await loadRemoteApp(
       'myApp',
