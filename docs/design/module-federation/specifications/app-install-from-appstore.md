@@ -1,5 +1,13 @@
 # Cytoscape Web App Install Integration Options
 
+> **Status: Decision made.** Cytoscape Web adopted **Option 2 (URL Parameter
+> Install Intent)** as the primary transport, with persistence handled
+> host-side via `Workspace.installedApps` — see
+> [workspace-app-install-design.md](./workspace-app-install-design.md) §1.1.
+> The "Persistent install state: Weak" rating for Options 1–2 below predates
+> that host-side persistence layer. This document is retained as the record
+> of the options analysis.
+
 ## Context
 
 The App Store needs a way to add a selected Web App to Cytoscape Web’s runtime app catalog, alongside apps loaded from `apps.json` or the official Store manifest.

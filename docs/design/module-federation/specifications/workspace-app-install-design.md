@@ -37,6 +37,46 @@
 
 ---
 
+## TL;DR
+
+- **The problem:** an app installed dynamically from the App Store cannot
+  survive a reload. The only place that knows its `remoteEntry.js` URL is the
+  session catalog, which is rebuilt from `apps.json` every startup — so any
+  app that is not in the manifest silently disappears. There is no persisted
+  "installed" concept, app state is global rather than per-workspace, and the
+  existing NDEx workspace save carries app **ids only** (same URL-loss defect
+  on the cloud path).
+- **The fix:** installed apps become first-class, persisted, workspace-scoped
+  state — `Workspace.installedApps: InstalledApp[]`, where each record embeds
+  the full catalog entry (URL included) plus `status` and provenance
+  (`source: 'manifest' | 'appstore' | 'snapshot'`).
+- **Catalog composition:** at startup the available-app catalog is the union
+  **`manifest ∪ workspace.installedApps`**, merged behind a readiness gate
+  that waits for workspace hydration. The existing lifecycle
+  (`restore` → auto-load → `activateApp` → `loadRemoteApp` → `mountApp`) is
+  reused unchanged.
+- **How apps get installed:** the App Store **Install** button opens
+  Cytoscape Web with `?installApp=<manifestUrl>` (consumed by `AppShell`), and
+  the App Manager gains a manual **Install from URL** field plus an
+  **Uninstall** action with confirmation. Both paths call the same
+  `installApp()` command.
+- **Trust boundary:** every externally supplied entry passes
+  `parseManifest()` validation, an origin allow-list
+  (`appInstallAllowedOrigins` in `config.json`), and a semver
+  `compatibleHostVersions` check. On restore, allow-listed entries keep their
+  saved Active status (apps auto-load as today); anything else arrives
+  inactive with a warning.
+- **One source of truth:** manifest apps also get an `InstalledApp` record
+  when activated, so `workspace.installedApps` holds *all* durable app state.
+  The legacy global `apps` IndexedDB store is absorbed by an idempotent
+  runtime migration at startup — no DB version bump.
+- **Cloud round-trip (Stage 1):** `installedApps` is added to the existing
+  NDEx workspace `options` payload, so an installed app travels with the
+  workspace and restores on any device. A full workspace snapshot is Stage 2
+  (future).
+
+---
+
 ## 1. Overview
 
 Today, the runtime catalog of available apps is rebuilt every session from the
