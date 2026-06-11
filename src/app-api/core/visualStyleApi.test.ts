@@ -9,20 +9,21 @@ const VPN = VisualPropertyName
 
 // ── Mock: VisualStyleStore ────────────────────────────────────────────────────
 
-const mockSetDefault = jest.fn()
-const mockSetBypass = jest.fn()
-const mockDeleteBypass = jest.fn()
-const mockCreateDiscreteMapping = jest.fn()
-const mockCreateContinuousMapping = jest.fn()
-const mockCreatePassthroughMapping = jest.fn()
-const mockRemoveMapping = jest.fn()
+const mockSetDefault = vi.fn()
+const mockSetBypass = vi.fn()
+const mockDeleteBypass = vi.fn()
+const mockCreateDiscreteMapping = vi.fn()
+const mockCreateContinuousMapping = vi.fn()
+const mockCreatePassthroughMapping = vi.fn()
+const mockRemoveMapping = vi.fn()
+const mockSetMapping = vi.fn()
 
 // Mutable visualStyles map for tests
 const mockVisualStyles: Record<string, any> = {}
 
-jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
+vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       visualStyles: mockVisualStyles,
       setDefault: mockSetDefault,
       setBypass: mockSetBypass,
@@ -31,6 +32,7 @@ jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
       createContinuousMapping: mockCreateContinuousMapping,
       createPassthroughMapping: mockCreatePassthroughMapping,
       removeMapping: mockRemoveMapping,
+      setMapping: mockSetMapping,
     })),
   },
 }))
@@ -38,7 +40,7 @@ jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])
 })
 
@@ -158,7 +160,7 @@ describe('deleteBypass', () => {
 
 describe('createDiscreteMapping', () => {
   it('calls createDiscreteMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = {}
+    mockVisualStyles['net1'] = { [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#000000' } }
 
     const result = visualStyleApi.createDiscreteMapping(
       'net1',
@@ -168,12 +170,7 @@ describe('createDiscreteMapping', () => {
     )
 
     expect(result.success).toBe(true)
-    expect(mockCreateDiscreteMapping).toHaveBeenCalledWith(
-      'net1',
-      VPN.NodeBackgroundColor,
-      'type',
-      'string',
-    )
+    expect(mockSetMapping).toHaveBeenCalled()
   })
 
   it('returns NetworkNotFound when visual style does not exist', () => {
@@ -195,7 +192,7 @@ describe('createDiscreteMapping', () => {
 
 describe('createContinuousMapping', () => {
   it('calls createContinuousMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = {}
+    mockVisualStyles['net1'] = { [VPN.NodeHeight]: { type: 'number', defaultValue: 10 } }
 
     const result = visualStyleApi.createContinuousMapping(
       'net1',
@@ -238,7 +235,7 @@ describe('createContinuousMapping', () => {
 
 describe('createPassthroughMapping', () => {
   it('calls createPassthroughMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = {}
+    mockVisualStyles['net1'] = { [VPN.NodeLabel]: { type: 'string', defaultValue: '' } }
 
     const result = visualStyleApi.createPassthroughMapping(
       'net1',

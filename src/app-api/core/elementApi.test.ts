@@ -13,17 +13,17 @@ import { elementApi } from './elementApi'
 
 const mockNetworks = new Map()
 const mockNetworkActions = {
-  deleteNodes: jest.fn().mockReturnValue([]),
-  addNode: jest.fn(),
-  addEdge: jest.fn(),
-  addEdges: jest.fn(),
-  deleteEdges: jest.fn(),
-  moveEdge: jest.fn(),
+  deleteNodes: vi.fn().mockReturnValue([]),
+  addNode: vi.fn(),
+  addEdge: vi.fn(),
+  addEdges: vi.fn(),
+  deleteEdges: vi.fn(),
+  moveEdge: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/NetworkStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   useNetworkStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockNetworkActions,
       networks: mockNetworks,
     })),
@@ -32,15 +32,15 @@ jest.mock('../../data/hooks/stores/NetworkStore', () => ({
 
 const mockTables: Record<string, any> = {}
 const mockTableActions = {
-  deleteRows: jest.fn(),
-  editRows: jest.fn(),
-  setValue: jest.fn(),
-  setValues: jest.fn(),
+  deleteRows: vi.fn(),
+  editRows: vi.fn(),
+  setValue: vi.fn(),
+  setValues: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/TableStore', () => ({
+vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockTableActions,
       tables: mockTables,
     })),
@@ -49,16 +49,16 @@ jest.mock('../../data/hooks/stores/TableStore', () => ({
 
 const mockViewModels: Record<string, any> = {}
 const mockViewModelActions = {
-  deleteObjects: jest.fn(),
-  addNodeView: jest.fn(),
-  addEdgeView: jest.fn(),
-  exclusiveSelect: jest.fn(),
-  getViewModel: jest.fn(),
+  deleteObjects: vi.fn(),
+  addNodeView: vi.fn(),
+  addEdgeView: vi.fn(),
+  exclusiveSelect: vi.fn(),
+  getViewModel: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockViewModelActions,
       viewModels: mockViewModels,
     })),
@@ -67,53 +67,53 @@ jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
 
 const mockVisualStyles: Record<string, any> = {}
 const mockVisualStyleActions = {
-  deleteBypass: jest.fn(),
-  setBypass: jest.fn(),
+  deleteBypass: vi.fn(),
+  setBypass: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
+vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockVisualStyleActions,
       visualStyles: mockVisualStyles,
     })),
   },
 }))
 
-const mockSummaryActions = { update: jest.fn() }
+const mockSummaryActions = { update: vi.fn() }
 
-jest.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
   useNetworkSummaryStore: {
-    getState: jest.fn(() => mockSummaryActions),
+    getState: vi.fn(() => mockSummaryActions),
   },
 }))
 
 const mockUndoStacks: Record<string, any> = {}
 const mockUndoActions = {
-  setUndoStack: jest.fn(),
-  setRedoStack: jest.fn(),
+  setUndoStack: vi.fn(),
+  setRedoStack: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/UndoStore', () => ({
+vi.mock('../../data/hooks/stores/UndoStore', () => ({
   useUndoStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockUndoActions,
       undoRedoStacks: mockUndoStacks,
     })),
   },
 }))
 
-jest.mock('../../data/hooks/stores/UiStateStore', () => ({
+vi.mock('../../data/hooks/stores/UiStateStore', () => ({
   useUiStateStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ui: { activeNetworkView: '' },
     })),
   },
 }))
 
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: { currentNetworkId: 'net1' },
     })),
   },
@@ -250,16 +250,16 @@ const mockCyInstance = {
   edges: () => makeCyCollection(mockCyEdges),
 }
 
-jest.mock('../../models/NetworkModel/impl/networkImpl', () => ({
-  getInternalNetworkDataStore: jest.fn(() => mockCyInstance),
+vi.mock('../../models/NetworkModel/impl/networkImpl', () => ({
+  getInternalNetworkDataStore: vi.fn(() => mockCyInstance),
 }))
 
 // ── Mock pure functions ───────────────────────────────────────────────────────
 
-jest.mock('../../models/CyNetworkModel', () => ({
-  createNodesCore: jest.fn(),
-  createEdgesCore: jest.fn(),
-  deleteNodesCore: jest.fn().mockReturnValue({
+vi.mock('../../models/CyNetworkModel', () => ({
+  createNodesCore: vi.fn(),
+  createEdgesCore: vi.fn(),
+  deleteNodesCore: vi.fn().mockReturnValue({
     deletedNodeIds: [],
     deletedEdges: [],
     deletedNodeViews: [],
@@ -267,7 +267,7 @@ jest.mock('../../models/CyNetworkModel', () => ({
     deletedNodeRows: new Map(),
     deletedEdgeRows: new Map(),
   }),
-  deleteEdgesCore: jest.fn().mockReturnValue({
+  deleteEdgesCore: vi.fn().mockReturnValue({
     deletedEdgeIds: [],
     deletedEdgeViews: [],
     deletedEdgeRows: new Map(),
@@ -288,7 +288,7 @@ function resetMocks() {
   Object.keys(mockUndoStacks).forEach((k) => delete mockUndoStacks[k])
   mockCyNodes.length = 0
   mockCyEdges.length = 0
-  jest.clearAllMocks()
+  vi.clearAllMocks()
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -760,7 +760,7 @@ describe('elementApi', () => {
     })
 
     it('returns ok with deletion counts and element data on success', () => {
-      jest.mocked(deleteNodesCore).mockReturnValue({
+      vi.mocked(deleteNodesCore).mockReturnValue({
         deletedNodeIds: ['n1'],
         deletedEdges: [{ id: 'e1', s: 'n1', t: 'n2' }],
         deletedNodeViews: [{ id: 'n1', x: 10, y: 20, values: new Map() }],
@@ -828,7 +828,7 @@ describe('elementApi', () => {
     })
 
     it('returns ok with deletion count and edge data on success', () => {
-      jest.mocked(deleteEdgesCore).mockReturnValue({
+      vi.mocked(deleteEdgesCore).mockReturnValue({
         deletedEdgeIds: ['e1'],
         deletedEdgeViews: [],
         deletedEdgeRows: new Map([['e1', { weight: 0.5 }]]),

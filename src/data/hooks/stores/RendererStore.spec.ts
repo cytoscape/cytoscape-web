@@ -6,7 +6,7 @@ import { ViewPort } from '../../../models/RendererModel/ViewPort'
 import { useRendererStore } from './RendererStore'
 
 // Mock DefaultRenderer to avoid module import issues
-jest.mock('../../../features/DefaultRenderer', () => ({
+vi.mock('../../../features/DefaultRenderer', () => ({
   DefaultRenderer: {
     id: 'default-renderer',
     name: 'Default Renderer',

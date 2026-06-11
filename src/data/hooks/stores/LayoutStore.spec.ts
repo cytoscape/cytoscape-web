@@ -6,7 +6,7 @@ import { ValueType } from '../../../models/TableModel'
 import { useLayoutStore } from './LayoutStore'
 
 // Mock the layout selection module to avoid module import issues
-jest.mock('../../../models/LayoutModel/impl/layoutSelection', () => {
+vi.mock('../../../models/LayoutModel/impl/layoutSelection', () => {
   const mockGridAlgorithm = {
     name: 'grid',
     engineName: 'cyjs',
@@ -49,7 +49,7 @@ jest.mock('../../../models/LayoutModel/impl/layoutSelection', () => {
       description: 'Default hierarchical layout',
       parameters: {},
     },
-    getLayout: jest.fn((engineName: string, algorithmName: string) => {
+    getLayout: vi.fn((engineName: string, algorithmName: string) => {
       if (engineName === 'cyjs' && algorithmName === 'grid') {
         return mockGridAlgorithm
       }

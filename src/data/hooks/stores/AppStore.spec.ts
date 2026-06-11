@@ -8,21 +8,38 @@ import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 import { useAppStore } from './AppStore'
 
 // Mock the database operations
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  getAppFromDb: jest.fn().mockResolvedValue(undefined),
-  putAppToDb: jest.fn().mockResolvedValue(undefined),
-  getAllServiceAppsFromDb: jest.fn().mockResolvedValue([]),
-  putServiceAppToDb: jest.fn().mockResolvedValue(undefined),
-  deleteServiceAppFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    getAppFromDb: vi.fn(),
+    putAppToDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock fetch for serviceFetcher
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 describe('useAppStore', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   const createTestApp = (id: string): CyApp => {
@@ -50,12 +67,13 @@ describe('useAppStore', () => {
   describe('restore', () => {
     it('should restore apps from database', async () => {
       const { result } = renderHook(() => useAppStore())
-      const { getAppFromDb } = require('../../db')
+      const db = await import('../../db')
+      const { getAppFromDb } = db
       const app1 = createTestApp('app-1')
       const app2 = createTestApp('app-2')
 
-      getAppFromDb.mockResolvedValueOnce(app1)
-      getAppFromDb.mockResolvedValueOnce(app2)
+      vi.mocked(getAppFromDb).mockResolvedValueOnce(app1 as any)
+      vi.mocked(getAppFromDb).mockResolvedValueOnce(app2 as any)
 
       await act(async () => {
         await result.current.restore(['app-1', 'app-2'])
@@ -121,7 +139,7 @@ describe('useAppStore', () => {
       const url = 'https://example.com/service'
       const serviceApp = createTestServiceApp(url)
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -143,7 +161,7 @@ describe('useAppStore', () => {
       const url = 'https://example.com/service'
       const serviceApp = createTestServiceApp(url)
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -168,7 +186,7 @@ describe('useAppStore', () => {
       const url = 'https://example.com/service'
       const serviceApp = createTestServiceApp(url)
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -271,7 +289,7 @@ describe('useAppStore', () => {
         citation: '',
       } as ServiceApp
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -344,7 +362,7 @@ describe('useAppStore', () => {
       } as ServiceApp
 
       // Mock fetch to return the metadata
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,

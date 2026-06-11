@@ -6,8 +6,8 @@ import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkTab } from './NetworkTab'
 
 // Mock FloatingToolBar to allow testing click events
-const mockFloatingToolBarButtonClick = jest.fn()
-jest.mock('../FloatingToolBar/FloatingToolBar', () => ({
+const mockFloatingToolBarButtonClick = vi.fn()
+vi.mock('../FloatingToolBar/FloatingToolBar', () => ({
   FloatingToolBar: ({ rendererId }: { rendererId: string }) => (
     <div data-testid="floating-toolbar">
       <button
@@ -28,8 +28,8 @@ describe('NetworkTab click behavior', () => {
     edges: [],
   }
 
-  const rendererClick = jest.fn()
-  const handleClick = jest.fn()
+  const rendererClick = vi.fn()
+  const handleClick = vi.fn()
 
   const testRenderer: Renderer = {
     id: 'test-renderer',
@@ -53,7 +53,7 @@ describe('NetworkTab click behavior', () => {
     )
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockFloatingToolBarButtonClick.mockClear()
   })
 

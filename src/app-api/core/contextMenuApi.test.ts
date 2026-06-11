@@ -8,12 +8,12 @@ import { contextMenuApi, createContextMenuApi } from './contextMenuApi'
 
 const mockItems: any[] = []
 const mockContextMenuItemActions = {
-  addItem: jest.fn((item) => mockItems.push(item)),
-  removeItem: jest.fn((itemId) => {
+  addItem: vi.fn((item) => mockItems.push(item)),
+  removeItem: vi.fn((itemId) => {
     const idx = mockItems.findIndex((i) => i.itemId === itemId)
     if (idx !== -1) mockItems.splice(idx, 1)
   }),
-  removeAllByAppId: jest.fn((appId) => {
+  removeAllByAppId: vi.fn((appId) => {
     const filtered = mockItems.filter(
       (i) => i.appId === undefined || i.appId !== appId,
     )
@@ -22,9 +22,9 @@ const mockContextMenuItemActions = {
   }),
 }
 
-jest.mock('../../data/hooks/stores/ContextMenuItemStore', () => ({
+vi.mock('../../data/hooks/stores/ContextMenuItemStore', () => ({
   useContextMenuItemStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockContextMenuItemActions,
       get items() {
         return mockItems
@@ -37,7 +37,7 @@ jest.mock('../../data/hooks/stores/ContextMenuItemStore', () => ({
 
 function resetMocks() {
   mockItems.length = 0
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   mockContextMenuItemActions.addItem.mockImplementation((item) =>
     mockItems.push(item),
   )
@@ -61,7 +61,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
   it('stores appId on registered items', () => {
     const api = createContextMenuApi('app1')
-    api.addContextMenuItem({ label: 'Test', handler: jest.fn() })
+    api.addContextMenuItem({ label: 'Test', handler: vi.fn() })
 
     expect(mockItems).toHaveLength(1)
     expect(mockItems[0].appId).toBe('app1')
@@ -71,7 +71,7 @@ describe('createContextMenuApi (per-app factory)', () => {
     const api = createContextMenuApi('app1')
     const result = api.addContextMenuItem({
       label: 'My Item',
-      handler: jest.fn(),
+      handler: vi.fn(),
     })
 
     expect(result.success).toBe(true)
@@ -83,7 +83,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
   it('returns fail(InvalidInput) when label is empty string', () => {
     const api = createContextMenuApi('app1')
-    const result = api.addContextMenuItem({ label: '', handler: jest.fn() })
+    const result = api.addContextMenuItem({ label: '', handler: vi.fn() })
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -95,7 +95,7 @@ describe('createContextMenuApi (per-app factory)', () => {
     const api = createContextMenuApi('app1')
     const result = api.addContextMenuItem({
       label: '   ',
-      handler: jest.fn(),
+      handler: vi.fn(),
     })
 
     expect(result.success).toBe(false)
@@ -106,7 +106,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
   it('defaults targetTypes to ["node", "edge"] when omitted', () => {
     const api = createContextMenuApi('app1')
-    api.addContextMenuItem({ label: 'My Item', handler: jest.fn() })
+    api.addContextMenuItem({ label: 'My Item', handler: vi.fn() })
 
     expect(mockContextMenuItemActions.addItem).toHaveBeenCalledWith(
       expect.objectContaining({ targetTypes: ['node', 'edge'] }),
@@ -115,7 +115,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
   it('trims label before storing', () => {
     const api = createContextMenuApi('app1')
-    api.addContextMenuItem({ label: '  My Item  ', handler: jest.fn() })
+    api.addContextMenuItem({ label: '  My Item  ', handler: vi.fn() })
 
     expect(mockContextMenuItemActions.addItem).toHaveBeenCalledWith(
       expect.objectContaining({ label: 'My Item' }),
@@ -126,7 +126,7 @@ describe('createContextMenuApi (per-app factory)', () => {
     const api = createContextMenuApi('app1')
     const result = api.addContextMenuItem({
       label: 'Test',
-      handler: jest.fn(),
+      handler: vi.fn(),
     })
     if (!result.success) throw new Error('setup failed')
 
@@ -152,7 +152,7 @@ describe('contextMenuApi (anonymous singleton)', () => {
   beforeEach(() => resetMocks())
 
   it('stores no appId on registered items (undefined)', () => {
-    contextMenuApi.addContextMenuItem({ label: 'Test', handler: jest.fn() })
+    contextMenuApi.addContextMenuItem({ label: 'Test', handler: vi.fn() })
 
     expect(mockItems).toHaveLength(1)
     expect(mockItems[0].appId).toBeUndefined()
@@ -161,7 +161,7 @@ describe('contextMenuApi (anonymous singleton)', () => {
   it('returns ok({ itemId }) with a non-empty UUID', () => {
     const result = contextMenuApi.addContextMenuItem({
       label: 'My Item',
-      handler: jest.fn(),
+      handler: vi.fn(),
     })
 
     expect(result.success).toBe(true)
@@ -173,7 +173,7 @@ describe('contextMenuApi (anonymous singleton)', () => {
   it('validation semantics are preserved (empty label fails)', () => {
     const result = contextMenuApi.addContextMenuItem({
       label: '',
-      handler: jest.fn(),
+      handler: vi.fn(),
     })
 
     expect(result.success).toBe(false)
@@ -191,9 +191,9 @@ describe('removeAllByAppId interaction', () => {
   it('removeAllByAppId removes only items with matching appId', () => {
     const api1 = createContextMenuApi('app1')
     const api2 = createContextMenuApi('app2')
-    api1.addContextMenuItem({ label: 'A', handler: jest.fn() })
-    api2.addContextMenuItem({ label: 'B', handler: jest.fn() })
-    contextMenuApi.addContextMenuItem({ label: 'C', handler: jest.fn() }) // anonymous
+    api1.addContextMenuItem({ label: 'A', handler: vi.fn() })
+    api2.addContextMenuItem({ label: 'B', handler: vi.fn() })
+    contextMenuApi.addContextMenuItem({ label: 'C', handler: vi.fn() }) // anonymous
 
     mockContextMenuItemActions.removeAllByAppId('app1')
 
@@ -202,7 +202,7 @@ describe('removeAllByAppId interaction', () => {
   })
 
   it('removeAllByAppId does not remove anonymous items', () => {
-    contextMenuApi.addContextMenuItem({ label: 'Anon', handler: jest.fn() })
+    contextMenuApi.addContextMenuItem({ label: 'Anon', handler: vi.fn() })
 
     mockContextMenuItemActions.removeAllByAppId('app1')
 

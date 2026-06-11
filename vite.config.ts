@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -141,6 +142,11 @@ export default defineConfig(({ command }) => {
       'process.env.REACT_APP_VERSION': JSON.stringify(packageJson.version),
       REACT_APP_BUILD_TIME: JSON.stringify(buildTime),
       REACT_APP_VERSION: JSON.stringify(packageJson.version),
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./vitest-setup.ts'],
     },
   }
 })

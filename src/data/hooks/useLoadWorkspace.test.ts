@@ -1,3 +1,4 @@
+import * as db from '../db';
 import {
   deleteDb,
   getAllAppsFromDb,
@@ -7,6 +8,14 @@ import {
   putAppToDb,
   putServiceAppToDb,
 } from '../db'
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    putAppToDb: vi.fn(actual.putAppToDb)
+  };
+});
+
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -14,7 +23,7 @@ import { useLoadWorkspace, RemoteWorkspace } from './useLoadWorkspace'
 import { serviceFetcher } from './stores/AppStore'
 
 // Mock window.location.reload
-const mockReload = jest.fn()
+const mockReload = vi.fn()
 Object.defineProperty(window, 'location', {
   value: {
     reload: mockReload,
@@ -23,8 +32,8 @@ Object.defineProperty(window, 'location', {
 })
 
 // Mock serviceFetcher
-const mockServiceFetcher = jest.fn()
-jest.mock('./stores/AppStore', () => ({
+const mockServiceFetcher = vi.fn()
+vi.mock('./stores/AppStore', () => ({
   serviceFetcher: (...args: any[]) => mockServiceFetcher(...args),
 }))
 
@@ -241,9 +250,7 @@ describe('useLoadWorkspace', () => {
 
   it('should continue with workspace write even if app updates fail', async () => {
     // Mock putAppToDb to fail
-    const originalPutAppToDb = require('../db').putAppToDb
-    jest
-      .spyOn(require('../db'), 'putAppToDb')
+    vi.mocked(putAppToDb)
       .mockRejectedValueOnce(new Error('DB error'))
 
     const loadWorkspace = useLoadWorkspace()
@@ -262,7 +269,7 @@ describe('useLoadWorkspace', () => {
     const savedWorkspace = await getWorkspaceFromDb('workspace-1')
     expect(savedWorkspace).toBeDefined()
 
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   it('should complete successfully without errors', async () => {
@@ -295,8 +302,7 @@ describe('useLoadWorkspace', () => {
   })
 
   it('should use custom service fetcher when provided', async () => {
-    const customFetcher = jest
-      .fn()
+    const customFetcher = vi.fn()
       .mockResolvedValue(createServiceApp('https://custom.com'))
     const loadWorkspace = useLoadWorkspace(customFetcher)
     const workspace = createRemoteWorkspace(

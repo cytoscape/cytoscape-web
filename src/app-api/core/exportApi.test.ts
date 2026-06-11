@@ -3,68 +3,64 @@
 
 import { ApiErrorCode } from '../types/ApiResult'
 import { exportApi } from './exportApi'
+import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 
 // ── Mock: exportCyNetworkToCx2 ────────────────────────────────────────────────
 
-jest.mock('../../models/CxModel/impl/exporter', () => ({
-  exportCyNetworkToCx2: jest.fn(),
+vi.mock('../../models/CxModel/impl/exporter', () => ({
+  exportCyNetworkToCx2: vi.fn(),
 }))
 
 // Access the auto-mocked function after registration (avoids const-TDZ in hoisted factory)
-let mockExportCyNetworkToCx2: jest.Mock
-beforeAll(() => {
-  mockExportCyNetworkToCx2 =
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('../../models/CxModel/impl/exporter').exportCyNetworkToCx2
-})
+const mockExportCyNetworkToCx2 = vi.mocked(exportCyNetworkToCx2)
 
 // ── Mock: NetworkStore ────────────────────────────────────────────────────────
 
 const mockNetworks = new Map<string, any>()
-jest.mock('../../data/hooks/stores/NetworkStore', () => ({
-  useNetworkStore: { getState: jest.fn(() => ({ networks: mockNetworks })) },
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: { getState: vi.fn(() => ({ networks: mockNetworks })) },
 }))
 
 // ── Mock: TableStore ──────────────────────────────────────────────────────────
 
 const mockTables: Record<string, any> = {}
-jest.mock('../../data/hooks/stores/TableStore', () => ({
-  useTableStore: { getState: jest.fn(() => ({ tables: mockTables })) },
+vi.mock('../../data/hooks/stores/TableStore', () => ({
+  useTableStore: { getState: vi.fn(() => ({ tables: mockTables })) },
 }))
 
 // ── Mock: VisualStyleStore ────────────────────────────────────────────────────
 
 const mockVisualStyles: Record<string, any> = {}
-jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
+vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
-    getState: jest.fn(() => ({ visualStyles: mockVisualStyles })),
+    getState: vi.fn(() => ({ visualStyles: mockVisualStyles })),
   },
 }))
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
 
-const mockGetViewModel = jest.fn()
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+const mockGetViewModel = vi.fn()
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => ({ getViewModel: mockGetViewModel })),
+    getState: vi.fn(() => ({ getViewModel: mockGetViewModel })),
   },
 }))
 
 // ── Mock: OpaqueAspectStore ───────────────────────────────────────────────────
 
 const mockOpaqueAspects: Record<string, any> = {}
-jest.mock('../../data/hooks/stores/OpaqueAspectStore', () => ({
+vi.mock('../../data/hooks/stores/OpaqueAspectStore', () => ({
   useOpaqueAspectStore: {
-    getState: jest.fn(() => ({ opaqueAspects: mockOpaqueAspects })),
+    getState: vi.fn(() => ({ opaqueAspects: mockOpaqueAspects })),
   },
 }))
 
 // ── Mock: NetworkSummaryStore ─────────────────────────────────────────────────
 
 const mockSummaries: Record<string, any> = {}
-jest.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
   useNetworkSummaryStore: {
-    getState: jest.fn(() => ({ summaries: mockSummaries })),
+    getState: vi.fn(() => ({ summaries: mockSummaries })),
   },
 }))
 
@@ -78,7 +74,7 @@ const mockViewModel = { id: 'viewModel', nodeViews: {} }
 const mockCx2Result = [{ CXVersion: '2.0' }]
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   mockNetworks.clear()
   Object.keys(mockTables).forEach((k) => delete mockTables[k])
   Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])

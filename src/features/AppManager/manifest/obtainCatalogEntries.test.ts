@@ -2,11 +2,11 @@ import { EXTERNAL_APPS_ENABLED } from '../../../app-api/constants'
 import { fetchManifest } from './fetchManifest'
 import { obtainCatalogEntries } from './obtainCatalogEntries'
 
-jest.mock('./fetchManifest', () => ({
-  fetchManifest: jest.fn(),
+vi.mock('./fetchManifest', () => ({
+  fetchManifest: vi.fn(),
 }))
 
-const mockFetchManifest = fetchManifest as jest.MockedFunction<
+const mockFetchManifest = fetchManifest as import('vitest').MockedFunction<
   typeof fetchManifest
 >
 

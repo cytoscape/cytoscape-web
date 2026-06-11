@@ -11,27 +11,34 @@ import { useViewModelStore } from './stores/ViewModelStore'
 import { useCreateEdge } from './useCreateEdge'
 
 // Mock the database operations
-jest.mock('../db', () => ({
-  ...jest.requireActual('../db'),
-  putNetworkToDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworksFromDb: jest.fn().mockResolvedValue(undefined),
-  putTableToDb: jest.fn().mockResolvedValue(undefined),
-  deleteTableFromDb: jest.fn().mockResolvedValue(undefined),
-  clearTablesFromDb: jest.fn().mockResolvedValue(undefined),
-  putViewModelToDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkViewToDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkViewsToDb: jest.fn().mockResolvedValue(undefined),
-  deleteViewModelFromDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkViewsFromDb: jest.fn().mockResolvedValue(undefined),
-  clearViewModelsFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworkViewsFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock workspace store
-jest.mock('./stores/WorkspaceStore', () => ({
+vi.mock('./stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },
@@ -40,9 +47,9 @@ jest.mock('./stores/WorkspaceStore', () => ({
 }))
 
 // Mock undo stack
-jest.mock('./useUndoStack', () => ({
+vi.mock('./useUndoStack', () => ({
   useUndoStack: () => ({
-    postEdit: jest.fn(),
+    postEdit: vi.fn(),
   }),
 }))
 

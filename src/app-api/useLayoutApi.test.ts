@@ -3,12 +3,12 @@
 import { renderHook } from '@testing-library/react'
 
 // Mock LayoutStore to avoid @cosmograph/cosmos ESM incompatibility in Jest
-jest.mock('../data/hooks/stores/LayoutStore', () => ({
+vi.mock('../data/hooks/stores/LayoutStore', () => ({
   useLayoutStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       layoutEngines: [],
       preferredLayout: {},
-      setIsRunning: jest.fn(),
+      setIsRunning: vi.fn(),
     })),
   },
 }))
