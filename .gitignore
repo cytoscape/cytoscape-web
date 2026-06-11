@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Bundle analyzer report (npm run build:analyze)
+/ba/
 *.local
 yarn.lock
 
