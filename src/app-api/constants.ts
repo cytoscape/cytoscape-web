@@ -5,4 +5,4 @@
  */
 export const DEFAULT_MANIFEST_URL = '/apps.json'
 
-export const EXTERNAL_APPS_ENABLED = false
+export const EXTERNAL_APPS_ENABLED = true
