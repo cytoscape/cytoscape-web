@@ -63,4 +63,6 @@ export type NonePropertiesType = Record<string, never>
 
 export interface ImagePropertiesType {
   url: string
+  tag?: string
+  id?: number
 }

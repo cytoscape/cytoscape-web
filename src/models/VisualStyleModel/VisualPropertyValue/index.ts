@@ -1,6 +1,12 @@
 export type { ColorPalette, PaletteDefinition,PaletteMetadata } from './ColorPalette'
 export type { ColorType } from './ColorType'
-export type { CustomGraphicsType } from './CustomGraphicsType'
+export type {
+  CustomGraphicsType,
+  ImagePropertiesType,
+  NonePropertiesType,
+  PieChartPropertiesType,
+  RingChartPropertiesType,
+} from './CustomGraphicsType'
 export { EdgeArrowShapeType } from './EdgeArrowShapeType'
 export { EdgeFillType } from './EdgeFillType'
 export { EdgeLineType } from './EdgeLineType'
