@@ -30,7 +30,7 @@
     "check:agents": "node scripts/generate-agents-from-claude.js && git diff --exit-code -- AGENTS.md",
     "test:unit": "jest",
     "test:e2e": "playwright test",
-    "build:bundle": "cross-env NODE_OPTIONS=--max-old-space-size=6144 vite build",
+    "build:bundle": "cross-env vite build",
     "copy:dist": "cpy \"silent-check-sso.html\" \"src/assets/apps.json\" dist --flat",
     "copy:netlify": "cpy \"netlify/_redirects\" dist --flat",
     "build": "run-s build:bundle copy:dist",
