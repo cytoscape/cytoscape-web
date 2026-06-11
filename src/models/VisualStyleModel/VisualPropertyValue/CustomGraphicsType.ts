@@ -63,4 +63,6 @@ export interface NonePropertiesType {}
 
 export interface ImagePropertiesType {
   url: string
+  tag?: string
+  id?: number
 }

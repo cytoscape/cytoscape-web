@@ -20,7 +20,10 @@ import {
   VisibilityType,
   VisualPropertyValueType,
 } from '../VisualPropertyValue'
-import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
+import {
+  CustomGraphicsPositionType,
+  ImagePropertiesType,
+} from '../VisualPropertyValue/CustomGraphicsType'
 import {
   DEFAULT_CUSTOM_GRAPHICS,
   DEFAULT_CUSTOM_GRAPHICS_POSITION,
@@ -109,6 +112,43 @@ export const vpToCX = (
 
   if (vpName === 'nodeLabelFont' || vpName === 'edgeLabelFont') {
     return Object.assign({}, defaultFontValue, { FONT_FAMILY: vpValue })
+  }
+
+  // Cytoscape Desktop expects Custom Graphic Sizes to be floating point Doubles (e.g., 50.0).
+  // JavaScript's JSON.stringify truncates `.0` from whole numbers (50.0 -> 50),
+  // which causes Cytoscape Desktop's CX2 importer to crash with a ClassCastException (Integer cannot be cast to Double).
+  // Exporting as a formatted string ("50.0") forces Cytoscape Desktop to gracefully parse it as a Double.
+  if (vpName.startsWith('nodeImageChartSize')) {
+    const num = vpValue as number
+    return num.toFixed(1) as any
+  }
+
+  // Cytoscape Desktop throws a NullPointerException during view creation if an image Custom Graphic
+  // is missing the 'tag' or 'id' properties. We inject them here to ensure compatibility.
+  if (vpName.startsWith('nodeImageChart') && !vpName.includes('Size') && !vpName.includes('Position')) {
+    const cg = vpValue as CustomGraphicsType
+    if (cg.type === 'image') {
+      const imgProps = cg.properties as ImagePropertiesType
+      
+      // Generate a deterministic unique ID based on the URL to prevent collisions
+      // if multiple different images are exported. Cytoscape Desktop requires unique IDs.
+      let urlHash = 0
+      const url = imgProps.url || ''
+      for (let i = 0; i < url.length; i++) {
+        urlHash = (urlHash << 5) - urlHash + url.charCodeAt(i)
+        urlHash |= 0
+      }
+      const uniqueId = Math.abs(urlHash) || 1
+
+      return {
+        ...cg,
+        properties: {
+          ...cg.properties,
+          tag: imgProps.tag ?? 'bitmap image',
+          id: imgProps.id ?? uniqueId,
+        },
+      } as any
+    }
   }
 
   return vpValue as CXVisualPropertyValue
@@ -232,7 +272,7 @@ export const VPNumberConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): number =>
-      cxVPValue as number,
+      typeof cxVPValue === 'string' ? parseFloat(cxVPValue) : (cxVPValue as number),
   }
 }
 export const VPFontTypeConverter = (
@@ -328,8 +368,12 @@ export const VPCustomGraphicsSizeConverter = (
 ): CXVisualPropertyConverter<number> => {
   return {
     cxVPName,
-    valueConverter: (cxVPValue?: CXVisualPropertyValue): number =>
-      cxVPValue ? (cxVPValue as number) : DEFAULT_CUSTOM_GRAPHICS_SIZE,
+    valueConverter: (cxVPValue?: CXVisualPropertyValue): number => {
+      if (cxVPValue == null) return DEFAULT_CUSTOM_GRAPHICS_SIZE
+      return typeof cxVPValue === 'string'
+        ? parseFloat(cxVPValue)
+        : (cxVPValue as number)
+    },
   }
 }
 
