@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 import { federation } from '@module-federation/vite'
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react'
 import { defineConfig, Plugin, PluginOption } from 'vite'
 
 import config from './src/assets/config.json'

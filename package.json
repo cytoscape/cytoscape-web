@@ -74,7 +74,7 @@
     "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",
-    "@vitejs/plugin-react-swc": "^4.3.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "@welldone-software/why-did-you-render": "^8.0.3",
     "baseline-browser-mapping": "^2.8.32",
     "cpy-cli": "^7.0.0",
