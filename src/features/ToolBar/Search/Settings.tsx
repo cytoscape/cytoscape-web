@@ -1,6 +1,5 @@
-import { Theme, useTheme } from '@mui/material'
+import { Theme, Unstable_Grid2 as Grid, useTheme } from '@mui/material'
 import Popover from '@mui/material/Popover'
-import Grid from '@mui/material/Unstable_Grid2'
 
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { SearchButtons } from './SearchButtons'
