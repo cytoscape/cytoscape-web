@@ -69,6 +69,7 @@
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "^18.0.6",
     "@types/safe-regex": "^1.1.6",
+    "@types/semver": "^7.7.1",
     "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.3",
     "@typescript-eslint/parser": "^8.46.3",
@@ -183,6 +184,7 @@
     "react-router-dom": "^6.20.1",
     "react-spring": "^9.6.1",
     "safe-regex": "^2.1.1",
+    "semver": "^7.8.4",
     "uuid": "^9.0.0",
     "zod": "^3.25.56",
     "zustand": "^4.4.7"

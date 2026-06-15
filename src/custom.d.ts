@@ -17,6 +17,9 @@ declare module '*.json' {
   export default value
 }
 
+// Constants injected by webpack DefinePlugin (see webpack.config.js)
+declare const REACT_APP_VERSION: string
+
 // global variables for debugging
 interface Window {
   debug: any

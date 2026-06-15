@@ -38,27 +38,27 @@ _Design: §9 rules 2–3_
 
 ### 0a — Add semver dependency
 
-- [ ] `npm install semver` (dependencies) and `npm install -D @types/semver`
-- [ ] Verify `semver.satisfies('1.0.7', '>=1.0.0')` works in a scratch unit test or REPL
+- [x] `npm install semver` (dependencies) and `npm install -D @types/semver` — `semver ^7.8.4`, `@types/semver ^7.7.1`
+- [x] Verify `semver.satisfies('1.0.7', '>=1.0.0')` works in a scratch unit test or REPL — returns `true`
 
 ### 0b — Add the allow-list config key
 
-- [ ] Add to `src/assets/config.json`:
+- [x] Add to `src/assets/config.json`:
   ```json
   "appInstallAllowedOrigins": ["https://apps.cytoscape.org"]
   ```
-- [ ] Add `appInstallAllowedOrigins: string[]` to the `AppConfig` type in `src/AppConfigContext.ts` (with a default in the fallback config object if one exists)
+- [x] Add `appInstallAllowedOrigins: string[]` to the `AppConfig` type in `src/AppConfigContext.ts` (with a default in the fallback config object if one exists) — added to both `AppConfig` and `defaultAppConfig`
 
 ### 0c — Host version availability
 
-- [ ] Confirm `REACT_APP_VERSION` is declared for TypeScript (e.g. `declare const REACT_APP_VERSION: string` in `src/custom.d.ts`); add the declaration if missing
-- [ ] Confirm the value resolves to `package.json` version at runtime (injected by `DefinePlugin`)
+- [x] Confirm `REACT_APP_VERSION` is declared for TypeScript (e.g. `declare const REACT_APP_VERSION: string` in `src/custom.d.ts`); add the declaration if missing — added global declaration (existing one in `loadingScreen.ts` is module-scoped)
+- [x] Confirm the value resolves to `package.json` version at runtime (injected by `DefinePlugin`)
 
 #### Verification (Step 0)
 
-- [ ] `npm run lint` passes
-- [ ] `npm run build` succeeds
-- [ ] `npm run test:unit` passes (no regressions)
+- [x] `npm run lint` passes — no new errors from this step (repo has a pre-existing lint baseline unrelated to Step 0)
+- [x] `npm run build` succeeds
+- [x] `npm run test:unit` passes (no regressions) — 2021/2022 pass; the 1 failure (`visualStyleApi › createDiscreteMapping`) pre-exists this change (reproduced with changes stashed)
 
 ---
 
