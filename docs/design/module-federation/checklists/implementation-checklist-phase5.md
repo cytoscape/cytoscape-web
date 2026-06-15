@@ -79,29 +79,29 @@ _Design: §6.1, §6.2, §10.2_
 
 ### 1.1 — Create InstalledApp model
 
-- [ ] Create `src/models/AppModel/InstalledApp.ts`:
+- [x] Create `src/models/AppModel/InstalledApp.ts`:
   - `export type AppSource = 'manifest' | 'appstore' | 'snapshot'`
   - `InstalledApp` interface per §6.1: `entry: AppCatalogEntry`, `status: AppStatus`, `source: AppSource`, `installedAt: string` (ISO timestamp)
-- [ ] Export from the `src/models/AppModel/index.ts` barrel
+- [x] Export from the `src/models/AppModel/index.ts` barrel
 
 ### 1.2 — Extend Workspace model
 
-- [ ] Add `installedApps?: InstalledApp[]` to `src/models/WorkspaceModel/Workspace.ts`
-- [ ] No DB schema change and no version bump (§10.1) — the field rides inside the existing `workspace` record via `putWorkspaceToDb`
+- [x] Add `installedApps?: InstalledApp[]` to `src/models/WorkspaceModel/Workspace.ts`
+- [x] No DB schema change and no version bump (§10.1) — the field rides inside the existing `workspace` record via `putWorkspaceToDb`
 
 ### 1.3 — WorkspaceStore actions
 
-- [ ] Add to `WorkspaceStore` model type (`src/models/StoreModel/WorkspaceStoreModel.ts`):
+- [x] Add to `WorkspaceStore` model type (`src/models/StoreModel/WorkspaceStoreModel.ts`):
   - `addInstalledApp: (app: InstalledApp) => void` — **upsert by `entry.id`** (replaces an existing record with the same id; this is what makes install idempotent)
   - `removeInstalledApp: (id: string) => void`
   - `setInstalledAppStatus: (id: string, status: AppStatus) => void` — no-op with a `logStore.warn` if the id is absent
-- [ ] Add pure functions in `src/models/WorkspaceModel/impl/workspaceImpl.ts` following the existing `WorkspaceImpl.*` pattern
-- [ ] Implement the actions in `src/data/hooks/stores/WorkspaceStore.ts` delegating to the impl functions; the existing persist wrapper writes through to IndexedDB automatically
-- [ ] **Constraint:** these actions must only be called after workspace hydration — the persist wrapper silently skips the write while `workspace.id === ''` (§8.3). Callers are gated in Step 3.
+- [x] Add pure functions in `src/models/WorkspaceModel/impl/workspaceImpl.ts` following the existing `WorkspaceImpl.*` pattern — `addInstalledApp` preserves position on replace, appends new
+- [x] Implement the actions in `src/data/hooks/stores/WorkspaceStore.ts` delegating to the impl functions; the existing persist wrapper writes through to IndexedDB automatically
+- [x] **Constraint:** these actions must only be called after workspace hydration — the persist wrapper silently skips the write while `workspace.id === ''` (§8.3). Callers are gated in Step 3. — documented in the model type and store comments
 
 ### 1.4 — Unit tests
 
-- [ ] Create/extend the WorkspaceStore spec (`.spec.ts` convention for stores, `renderHook` + `act`):
+- [x] Create/extend the WorkspaceStore spec (`.spec.ts` convention for stores, `renderHook` + `act`):
   - `addInstalledApp` adds a record; calling it again with the same id replaces (no duplicate)
   - `removeInstalledApp` removes by id; unknown id is a safe no-op
   - `setInstalledAppStatus` updates status; unknown id warns and does not throw
@@ -109,9 +109,9 @@ _Design: §6.1, §6.2, §10.2_
 
 #### Verification (Step 1)
 
-- [ ] `npm run lint` passes
-- [ ] `npm run build` succeeds
-- [ ] `npm run test:unit` passes
+- [x] `npm run lint` passes — no new errors from this step (import sort autofixed; the 2 remaining warnings in touched files pre-exist)
+- [x] `npm run build` succeeds
+- [x] `npm run test:unit` passes — 2029/2030 (the lone `visualStyleApi › createDiscreteMapping` failure pre-exists Step 0); 8 new WorkspaceStore tests pass
 
 ---
 
