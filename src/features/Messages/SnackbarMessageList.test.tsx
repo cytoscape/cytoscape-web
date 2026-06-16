@@ -46,13 +46,13 @@ describe('SnackbarMessageList persistent messages', () => {
       await Promise.resolve()
     })
 
-    expect(screen.getByText('Persistent message')).toBeInTheDocument()
+    expect(screen.getByText('Persistent message')).toBeTruthy()
 
     act(() => {
       vi.advanceTimersByTime(10000)
     })
 
-    expect(screen.getByText('Persistent message')).toBeInTheDocument()
+    expect(screen.getByText('Persistent message')).toBeTruthy()
 
     await act(async () => {
       fireEvent.click(screen.getByRole('alert'))
@@ -60,7 +60,7 @@ describe('SnackbarMessageList persistent messages', () => {
       await Promise.resolve()
     })
 
-    expect(screen.queryByText('Persistent message')).not.toBeInTheDocument()
+    expect(screen.queryByText('Persistent message')).toBeNull()
 
     // Unmount before cleanup to avoid act warnings
     unmount()
