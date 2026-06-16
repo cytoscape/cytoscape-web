@@ -5,7 +5,8 @@ import path from 'path'
 
 import federation from '@originjs/vite-plugin-federation'
 import react from '@vitejs/plugin-react-swc'
-import { defineConfig, Plugin, PluginOption } from 'vite'
+import { Plugin, PluginOption } from 'vite'
+import { defineConfig, ViteUserConfig } from 'vitest/config'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
@@ -120,7 +121,7 @@ export default defineConfig(async ({ command, mode }) => {
     )
   }
 
-  return {
+  const resolved: ViteUserConfig = {
     base: config.urlBaseName !== '' ? config.urlBaseName : '/',
     plugins,
     resolve: {
@@ -136,7 +137,7 @@ export default defineConfig(async ({ command, mode }) => {
     // Strip console.* calls from production bundles (parity with the old
     // Terser `drop_console: true`). Dev keeps them for debugging.
     esbuild: {
-      drop: command === 'build' ? ['console'] : [],
+      drop: (command === 'build' ? ['console'] : []) as ('console' | 'debugger')[],
     },
     build: {
       outDir: 'dist',
@@ -154,7 +155,7 @@ export default defineConfig(async ({ command, mode }) => {
           // Split vendor code so app-source changes don't bust the vendor
           // cache, and isolate the heavy image-export deps into their own
           // chunk (parity with the old webpack splitChunks cacheGroups).
-          manualChunks(id) {
+          manualChunks(id: string) {
             if (id.includes('node_modules')) {
               if (
                 id.includes('cytoscape-pdf-export') ||
@@ -182,4 +183,6 @@ export default defineConfig(async ({ command, mode }) => {
       setupFiles: ['./vitest-setup.ts'],
     },
   }
+
+  return resolved
 })
