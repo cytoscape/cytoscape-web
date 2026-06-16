@@ -128,24 +128,24 @@ _Design: §9 rules 1–3_
 
 ### 2.1 — Implement the install gate
 
-- [ ] Create `src/features/AppManager/install/installGate.ts` with pure, framework-free functions:
+- [x] Create `src/features/AppManager/install/installGate.ts` with pure, framework-free functions:
   - `parseSingleEntryManifest(data: unknown): AppCatalogEntry | undefined` — run `parseManifest(data)` unchanged; use the **first** entry, warn if more than one, return `undefined` when empty
   - `isAllowedOrigin(url: string, allowedOrigins: string[]): boolean` — compare `new URL(url).origin` against the configured list; when `window.location.hostname` is `localhost`/`127.0.0.1`, additionally allow localhost origins (same precedent as `validateManifestUrl`); invalid URLs return `false`
-  - `isHostCompatible(range: string | undefined): boolean` — `undefined`/empty range → `true`; otherwise `semver.satisfies(REACT_APP_VERSION, range)`; an unparsable range logs a warning and returns `true` (do not brick installs on bad metadata)
+  - `isHostCompatible(range: string | undefined, hostVersion?): boolean` — `undefined`/empty range → `true`; unparsable range → warn + `true`; otherwise `semver.satisfies`. Host version read via `typeof REACT_APP_VERSION` guard (undefined in tests); optional `hostVersion` param injected for testability
 
 ### 2.2 — Unit tests
 
-- [ ] Create `src/features/AppManager/install/installGate.test.ts`:
-  - Single valid entry → returned; empty array → `undefined`; two entries → first returned with warning
-  - Allowed origin exact match → `true`; subdomain/different port → `false`; invalid URL string → `false`
-  - localhost origin allowed only when the host itself runs on localhost (mock `window.location`)
-  - `isHostCompatible(undefined)` → `true`; satisfied range → `true`; unsatisfied range → `false`; garbage range → `true` with warning
+- [x] Create `src/features/AppManager/install/installGate.test.ts` — 18 tests:
+  - Single valid entry → returned; empty array → `undefined`; non-array → `undefined`; two entries → first returned with warning
+  - Allowed origin exact match → `true`; different host/port → `false`; invalid URL string → `false`
+  - localhost origin allowed only when the host itself runs on localhost (mock `window.location`); allow-listed origin still allowed when host is not localhost
+  - `isHostCompatible(undefined)` → `true`; whitespace range → `true`; satisfied range → `true`; unsatisfied range → `false`; garbage range → `true` with warning; unknown host version → `true`
 
 #### Verification (Step 2)
 
-- [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="installGate"` passes
-- [ ] `npm run build` succeeds
+- [x] `npm run lint` passes — new files clean (no errors or warnings)
+- [x] `npm run test:unit -- --testPathPattern="installGate"` passes — 18/18
+- [x] `npm run build` succeeds — semver import and `typeof REACT_APP_VERSION` guard compile cleanly
 
 ---
 
