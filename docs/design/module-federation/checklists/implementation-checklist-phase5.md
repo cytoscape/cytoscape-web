@@ -306,22 +306,22 @@ _Design: §7.2_
 
 ### 6.1 — Consume `?installApp=<manifestUrl>`
 
-- [ ] Define `INSTALL_APP_QUERY_KEY = 'installApp'`
-- [ ] In `initializeAppShell`, **after** `setWorkspace(workspace)` (guarantees the persist wrapper accepts writes, §8.3):
+- [x] Define `INSTALL_APP_QUERY_KEY = 'installApp'`
+- [x] In `initializeAppShell`, **after** `setWorkspace(workspace)` (guarantees the persist wrapper accepts writes, §8.3) — placed just after the event-bus init so the bus is ready when activation mounts the remote:
   1. `const manifestUrl = search.get(INSTALL_APP_QUERY_KEY)` — skip silently when absent
   2. `fetch(manifestUrl)` → JSON → `parseSingleEntryManifest` (Step 2)
   3. On success: `installApp(entry, { activate: true })` — the App Store **Install** button implies activation (§7.3 typical UX); the §9 gate inside `installApp` still applies and downgrades to inactive on version incompatibility
-  4. On any failure (fetch error, invalid manifest, disallowed origin): `addMessage` with `MessageSeverity.ERROR`; never throw — AppShell init must continue
-- [ ] Confirm the param is removed by the existing `navigate({ pathname, search: '' }, { replace: true })` at the end of init (no extra strip logic needed)
-- [ ] Idempotency: re-opening the same intent URL must not duplicate the entry (covered by `addInstalledApp` upsert — verify, don't assume)
+  4. On any failure (fetch error, invalid manifest, disallowed origin): `addMessage` with `MessageSeverity.ERROR`; never throw — AppShell init must continue. (origin/version messaging is emitted by `installApp` itself, so the AppShell catch only handles fetch/parse errors — no double message)
+- [x] Confirm the param is removed by the existing `navigate({ pathname, search: '' }, { replace: true })` at the end of init (no extra strip logic needed)
+- [x] Idempotency: re-opening the same intent URL must not duplicate the entry (covered by `addInstalledApp` upsert — verified by the Step 1 WorkspaceStore.spec and Step 5 useAppManager idempotency tests)
 
 #### Verification (Step 6)
 
-- [ ] `npm run lint` passes; `npm run build` succeeds
-- [ ] Manual test: open `http://localhost:5500/?installApp=<url-encoded manifest URL>` (serve a single-entry manifest from a localhost dev server) → app installs, activates, URL param disappears
-- [ ] Manual test: same URL again → no duplicate row, no error
-- [ ] Manual test: manifest URL on a non-allow-listed origin (e.g. a tunnel URL) → error message shown, nothing persisted
-- [ ] Manual test: unreachable manifest URL → error message, app shell loads normally
+- [x] `npm run lint` passes; `npm run build` succeeds — no new lint errors (3 pre-existing warnings); full test:unit 2070/2071, no regressions (lone pre-existing `visualStyleApi` failure)
+- [x] Manual test: open `http://localhost:5500/?installApp=<url-encoded manifest URL>` (serve a single-entry manifest from a localhost dev server) → app installs, activates, URL param disappears
+- [x] Manual test: same URL again → no duplicate row, no error
+- [x] Manual test: manifest URL on a non-allow-listed origin (e.g. a tunnel URL) → error message shown, nothing persisted
+- [x] Manual test: unreachable manifest URL → error message, app shell loads normally
 
 ---
 
