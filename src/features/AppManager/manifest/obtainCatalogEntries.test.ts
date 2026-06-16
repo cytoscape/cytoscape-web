@@ -10,14 +10,14 @@ import { parseManifest } from './parseManifest'
 vi.mock('./fetchManifest', () => ({
   fetchManifest: vi.fn(),
 }))
-jest.mock('./parseManifest', () => ({
-  parseManifest: jest.fn(),
+vi.mock('./parseManifest', () => ({
+  parseManifest: vi.fn(),
 }))
 
 const mockFetchManifest = fetchManifest as import('vitest').MockedFunction<
   typeof fetchManifest
 >
-const mockParseManifest = parseManifest as jest.MockedFunction<
+const mockParseManifest = parseManifest as vi.MockedFunction<
   typeof parseManifest
 >
 
