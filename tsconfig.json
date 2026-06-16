@@ -10,7 +10,7 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,

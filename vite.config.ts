@@ -5,7 +5,8 @@ import path from 'path'
 
 import { federation } from '@module-federation/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, Plugin, PluginOption } from 'vite'
+import { defineConfig, type ConfigEnv, type Connect, type Plugin, type PluginOption, type UserConfig, type ViteDevServer } from 'vite'
+import type { ServerResponse } from 'node:http'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
@@ -32,8 +33,8 @@ function serveAppsConfigInDev(appsConfigPath: string): Plugin {
   return {
     name: 'serve-apps-config-in-dev',
     apply: 'serve',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
         if (req.url === '/apps.json') {
           res.setHeader('Content-Type', 'application/json')
           res.end(fs.readFileSync(appsConfigPath, 'utf8'))
@@ -46,7 +47,7 @@ function serveAppsConfigInDev(appsConfigPath: string): Plugin {
   }
 }
 
-export default defineConfig(async ({ command, mode }) => {
+export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const appsConfigPath = path.resolve(
     __dirname,
     command === 'build' ? 'src/assets/apps.json' : 'src/assets/apps.local.json',
@@ -117,7 +118,7 @@ export default defineConfig(async ({ command, mode }) => {
     )
   }
 
-  const resolved: ViteUserConfig = {
+  const resolved: UserConfig = {
     base: config.urlBaseName !== '' ? config.urlBaseName : '/',
     plugins,
     resolve: {
