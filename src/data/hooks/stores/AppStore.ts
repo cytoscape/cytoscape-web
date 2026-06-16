@@ -6,6 +6,7 @@ import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppLoadState } from '../../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { AppSource } from '../../../models/AppModel/InstalledApp'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
@@ -54,6 +55,7 @@ export const useAppStore = create(
     serviceApps: {},
     currentTask: undefined,
     catalog: {},
+    catalogSources: {},
     loadStates: {},
     manifestSource: undefined,
 
@@ -257,10 +259,14 @@ export const useAppStore = create(
       })
     },
 
-    setCatalog: (entries: AppCatalogEntry[]) => {
+    setCatalog: (
+      entries: AppCatalogEntry[],
+      sources?: Record<string, AppSource>,
+    ) => {
       set((state) => {
-        const newState = AppStoreImpl.setCatalog(state, entries)
+        const newState = AppStoreImpl.setCatalog(state, entries, sources)
         state.catalog = newState.catalog
+        state.catalogSources = newState.catalogSources
         return state
       })
     },

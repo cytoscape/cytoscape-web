@@ -13,6 +13,7 @@ import type {
 } from '../../../app-api/types/AppResourceTypes'
 import { logApp } from '../../../debug'
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
+import { composeCatalog } from '../../../features/AppManager/manifest/composeCatalog'
 import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obtainCatalogEntries'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
@@ -21,6 +22,8 @@ import { getAppSettingFromDb } from '../../db'
 import { cleanupAllForApp } from './AppCleanupRegistry'
 import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
+import { waitForWorkspaceHydration } from './waitForWorkspaceHydration'
+import { useWorkspaceStore } from './WorkspaceStore'
 
 // Fast ID-to-CyApp lookup for lifecycle calls.
 // Starts empty — apps are loaded dynamically at runtime (Phase 4).
@@ -205,8 +208,11 @@ export const useAppManager = (): AppManagerCommands => {
 
   const refreshCatalog = async (): Promise<void> => {
     const { manifestSource } = useAppStore.getState()
-    const entries = await obtainCatalogEntries(manifestSource)
-    setCatalog(entries)
+    const manifestEntries = await obtainCatalogEntries(manifestSource)
+    const installedApps =
+      useWorkspaceStore.getState().workspace.installedApps ?? []
+    const { entries, sources } = composeCatalog(manifestEntries, installedApps)
+    setCatalog(entries, sources)
     logApp.info(
       `[useAppManager]: Catalog refreshed with ${entries.length} entries`,
     )
@@ -247,18 +253,28 @@ export const useAppManager = (): AppManagerCommands => {
         }
 
         // 2. Resolve manifest (fetch or parse inline)
-        const entries = await obtainCatalogEntries(savedSource)
+        const manifestEntries = await obtainCatalogEntries(savedSource)
 
-        // 3. Populate catalog in AppStore
-        setCatalog(entries)
+        // 3. Wait for workspace hydration so workspace.installedApps is
+        //    available before composing/restoring the catalog (§8.3).
+        await waitForWorkspaceHydration()
+        const installedApps =
+          useWorkspaceStore.getState().workspace.installedApps ?? []
+
+        // 4. Populate catalog in AppStore as manifest ∪ installedApps (§8.1)
+        const { entries, sources } = composeCatalog(
+          manifestEntries,
+          installedApps,
+        )
+        setCatalog(entries, sources)
         logApp.info(
           `[${useAppManager.name}]: Catalog loaded with ${entries.length} entries`,
         )
 
-        // 4. Extract catalog app IDs for restore
+        // 6. Extract catalog app IDs for restore
         const catalogAppIds = entries.map((e) => e.id)
 
-        // 5. Restore persisted app records (non-fatal on failure)
+        // 7. Restore persisted app records (non-fatal on failure)
         try {
           await restore(catalogAppIds)
           logApp.info(
@@ -271,17 +287,21 @@ export const useAppManager = (): AppManagerCommands => {
           )
         }
 
-        // 6. Unblock the lifecycle useEffect
+        // 8. Unblock the lifecycle useEffect
         setRestored(true)
 
-        // 7. Startup auto-load: select previously active apps and load them
-        const restoredApps = useAppStore.getState().apps
+        // 9. Startup auto-load: the active set comes from the workspace's
+        //    installed apps (the durable source of truth, §8.4), not the
+        //    legacy global apps store.
+        const installedAppList =
+          useWorkspaceStore.getState().workspace.installedApps ?? []
         const catalog = useAppStore.getState().catalog
-        const activeAppIds = Object.keys(restoredApps).filter(
-          (id) =>
-            restoredApps[id]?.status === AppStatus.Active &&
-            catalog[id] !== undefined,
-        )
+        const activeAppIds = installedAppList
+          .filter(
+            (a) =>
+              a.status === AppStatus.Active && catalog[a.entry.id] !== undefined,
+          )
+          .map((a) => a.entry.id)
 
         if (activeAppIds.length === 0) {
           logApp.info(

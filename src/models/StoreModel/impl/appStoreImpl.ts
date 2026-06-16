@@ -3,6 +3,7 @@ import { AppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
+import { AppSource } from '../../AppModel/InstalledApp'
 import { ManifestSource } from '../../AppModel/ManifestSource'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
@@ -44,6 +45,7 @@ export interface AppState {
   serviceApps: Record<string, ServiceApp>
   currentTask?: ServiceAppTask
   catalog: Record<string, AppCatalogEntry>
+  catalogSources: Record<string, AppSource>
   loadStates: Record<string, AppLoadState>
   manifestSource?: ManifestSource
 }
@@ -303,19 +305,25 @@ export const updateInputColumn = (
 }
 
 /**
- * Replace the entire catalog with entries keyed by id
+ * Replace the entire catalog with entries keyed by id, along with each
+ * entry's provenance. When `sources` is omitted, every entry defaults to
+ * `'manifest'`.
  */
 export const setCatalog = (
   state: AppState,
   entries: AppCatalogEntry[],
+  sources?: Record<string, AppSource>,
 ): AppState => {
   const catalog: Record<string, AppCatalogEntry> = {}
+  const catalogSources: Record<string, AppSource> = {}
   for (const entry of entries) {
     catalog[entry.id] = entry
+    catalogSources[entry.id] = sources?.[entry.id] ?? 'manifest'
   }
   return {
     ...state,
     catalog,
+    catalogSources,
   }
 }
 

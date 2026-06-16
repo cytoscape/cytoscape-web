@@ -22,6 +22,7 @@ const createDefaultState = (): AppState => {
     serviceApps: {},
     currentTask: undefined,
     catalog: {},
+    catalogSources: {},
     loadStates: {},
     manifestSource: undefined,
   }

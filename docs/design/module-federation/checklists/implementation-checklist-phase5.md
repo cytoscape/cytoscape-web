@@ -165,38 +165,43 @@ _Design: §8.1, §8.2, §8.3 — **highest implementation risk; verify this step
 
 ### 3.1 — composeCatalog helper
 
-- [ ] Create `src/features/AppManager/manifest/composeCatalog.ts`:
+- [x] Create `src/features/AppManager/manifest/composeCatalog.ts`:
   - `composeCatalog(manifestEntries: AppCatalogEntry[], installedApps: InstalledApp[]): { entries: AppCatalogEntry[]; sources: Record<string, AppSource> }`
   - Union by `id`; on collision the installed entry wins for `source: 'appstore' | 'snapshot'` (immutable version pin), the manifest entry wins for `source: 'manifest'` (§8.1, resolved O1)
   - Manifest-only ids get `source: 'manifest'` in the sources map
-- [ ] Add `catalogSources: Record<string, AppSource>` to `AppState` (`AppStoreModel.ts`) and populate it together with `setCatalog` (extend the action or add `setCatalogSources`) — the App Manager UI consumes this in Step 7
+- [x] Add `catalogSources: Record<string, AppSource>` to `AppState` (`AppStoreModel.ts`) and populate it together with `setCatalog` — extended `setCatalog(entries, sources?)` to set both atomically (defaults each entry to `'manifest'` when `sources` omitted); added to both the model and impl `AppState` definitions
 
 ### 3.2 — Readiness gate (workspace hydration before catalog/restore)
 
-- [ ] Implement `waitForWorkspaceHydration(): Promise<void>` — resolve immediately if `useWorkspaceStore.getState().workspace.id !== ''`, otherwise subscribe (via `subscribeWithSelector`) until it becomes non-empty; log via `logApp` if the wait exceeds a sanity timeout (warn only, do not reject)
-- [ ] In the `useAppManager` init effect, `await waitForWorkspaceHydration()` **before** `setCatalog`/`restore` so the merged catalog is complete before restore and auto-load (§8.3)
-- [ ] Confirm `AppShell`'s `initializeAppShell` still calls `setWorkspace` unconditionally on startup (it is the gate's release)
+- [x] Implement `waitForWorkspaceHydration(): Promise<void>` — resolve immediately if `useWorkspaceStore.getState().workspace.id !== ''`, otherwise subscribe (via `subscribeWithSelector`) until it becomes non-empty; log via `logApp` if the wait exceeds a sanity timeout (warn only, do not reject) — includes a race guard
+- [x] In the `useAppManager` init effect, `await waitForWorkspaceHydration()` **before** `setCatalog`/`restore` so the merged catalog is complete before restore and auto-load (§8.3)
+- [x] Confirm `AppShell`'s `initializeAppShell` still calls `setWorkspace` unconditionally on startup (it is the gate's release) — confirmed at `AppShell.tsx` (`setWorkspace(workspace)` near the end of `initializeAppShell`)
 
 ### 3.3 — Re-merge on every catalog rebuild
 
-- [ ] init: `obtainCatalogEntries()` → `composeCatalog(manifest, workspace.installedApps)` → `setCatalog`
-- [ ] `refreshCatalog()`: same composition (read `installedApps` via `useWorkspaceStore.getState()`)
-- [ ] Manifest source change (`AppSettingsDialog` → `setManifestSource` → `refreshCatalog`): covered by the same helper — verify no remaining direct `setCatalog(manifestEntriesOnly)` call site (§8.2)
+- [x] init: `obtainCatalogEntries()` → `composeCatalog(manifest, workspace.installedApps)` → `setCatalog`
+- [x] `refreshCatalog()`: same composition (read `installedApps` via `useWorkspaceStore.getState()`)
+- [x] Manifest source change (`AppSettingsDialog` → `setManifestSource` → `refreshCatalog`): covered by the same helper — verified the only `setCatalog` call sites are init and `refreshCatalog`, both now via `composeCatalog` (§8.2)
 
 ### 3.4 — Auto-load reads installedApps
 
-- [ ] In the startup auto-load pass, derive `activeAppIds` from `workspace.installedApps` (`status === Active && catalog[id] !== undefined`) instead of the DB-restored `apps` records (§8.4); keep the legacy `restore()` read until Step 5 removes the global-store writes
+- [x] In the startup auto-load pass, derive `activeAppIds` from `workspace.installedApps` (`status === Active && catalog[id] !== undefined`) instead of the DB-restored `apps` records (§8.4); keep the legacy `restore()` read until Step 5 removes the global-store writes
+
+> **Transitional note:** until Step 4's runtime migration populates
+> `installedApps`, previously-active apps from the legacy global `apps` store
+> do not auto-load (the active set is now read from `installedApps`, which is
+> empty pre-migration). This is the intended §3.4 sequencing.
 
 ### 3.5 — Unit tests
 
-- [ ] `composeCatalog.test.ts`: manifest-only / installed-only / collision with `appstore` source (installed wins) / collision with `manifest` source (manifest wins) / sources map correctness
-- [ ] Init-order test (mock stores): catalog is not set before workspace hydration completes
+- [x] `composeCatalog.test.ts` (8 tests): manifest-only / installed-only / collision with `appstore` source (installed wins) / collision with `snapshot` source / collision with `manifest` source (manifest wins) / no duplication / sources map correctness
+- [x] Init-order test (`waitForWorkspaceHydration.test.ts`, 3 tests): resolves immediately when hydrated; waits until hydrated; gates a setCatalog-style action until hydration completes
 
 #### Verification (Step 3)
 
-- [ ] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes
-- [ ] Manual test: add a fake `InstalledApp` to the workspace record in IndexedDB (DevTools), reload → the app appears in the App Manager list even though it is absent from `apps.json` (**this is the core P1–P3 fix**)
-- [ ] Manual test: press **Refresh** in the App Manager → the installed app does not disappear from the list (§8.2)
+- [x] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes — new files clean; build ok; 2057/2058 (the lone pre-existing `visualStyleApi` failure); 11 new tests pass
+- [x] Manual test: add a fake `InstalledApp` to the workspace record in IndexedDB (DevTools), reload → the app appears in the App Manager list even though it is absent from `apps.json` (**this is the core P1–P3 fix**)
+- [x] Manual test: press **Refresh** in the App Manager → the installed app does not disappear from the list (§8.2)
 
 ---
 
