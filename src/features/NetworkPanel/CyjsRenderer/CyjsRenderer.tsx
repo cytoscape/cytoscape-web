@@ -74,10 +74,7 @@ const CyjsRenderer = ({
   network,
   hasTab = false,
 }: NetworkRendererProps): ReactElement => {
-  if (network === undefined) {
-    return <></>
-  }
-  const { id } = network
+  const id = network?.id as IdType
 
   // ============================================================================
   //                            CyjsRenderer Local State
@@ -312,6 +309,7 @@ const CyjsRenderer = ({
   const renderNetwork = (forceFit: boolean = true): void => {
     // Early exit if Cytoscape instance is not ready or the network/view has not changed
     if (
+      network === undefined ||
       cy === null ||
       (renderedId === id &&
         cy.nodes().length === networkView?.nodeViews.length &&
@@ -833,7 +831,7 @@ const CyjsRenderer = ({
    */
   useEffect(
     function onNetworkElementsAdded() {
-      if (id === '' || cy === null) {
+      if (network === undefined || id === '' || cy === null) {
         return
       }
       // Only redraw when the set of nodes or edges changes (e.g., elements are added)
@@ -851,7 +849,7 @@ const CyjsRenderer = ({
         renderNetwork(false)
       }
     },
-    [network.nodes.length, network.edges.length],
+    [network?.nodes.length, network?.edges.length],
   )
 
   /**
@@ -865,6 +863,7 @@ const CyjsRenderer = ({
   useEffect(
     function onStyleModelUpdate() {
       if (
+        network === undefined ||
         cy === null ||
         table === undefined ||
         vs === undefined ||
@@ -1328,6 +1327,10 @@ const CyjsRenderer = ({
       cy.off('tap', handleBackgroundClick)
     }
   }, [cy, edgeCreationMode.active])
+
+  if (network === undefined) {
+    return <></>
+  }
 
   return (
     <>

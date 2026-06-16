@@ -58,12 +58,17 @@ export const NetAttDropDownTemplate = React.memo(
     const setHasDuplication = useNodesDuplicationStore(
       (state) => state.setHasDuplication,
     )
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // one that matches the current table view.
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const setMatchingTable =
       type === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : type === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     // Handler for 'Dropdown' changes
     const onDropdownChange = (
       e: SelectChangeEvent<any>,

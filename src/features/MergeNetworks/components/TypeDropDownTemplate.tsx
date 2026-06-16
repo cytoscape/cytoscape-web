@@ -29,12 +29,17 @@ export const TypeDropDownTemplate = React.memo(
       label: type,
       value: type,
     }))
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // one that matches the current table view.
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const setMatchingTable =
       type === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : type === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     const onDropDownChange = (
       e: SelectChangeEvent<any>,
       rowData: MatchingTableRow,

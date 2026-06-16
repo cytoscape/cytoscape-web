@@ -44,10 +44,14 @@ export function ContinuousColorMappingForm(props: {
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
-  if (m == null) {
-    return <Box></Box>
+  // Fall back to a harmless empty mapping so the hooks below can run
+  // unconditionally; the component still bails out before rendering when
+  // the real mapping is missing (see the early return above the JSX below).
+  const { min, max, controlPoints } = m ?? {
+    min: { value: 0, vpValue: '' },
+    max: { value: 0, vpValue: '' },
+    controlPoints: [] as ContinuousFunctionControlPoint[],
   }
-  const { min, max, controlPoints } = m
 
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
@@ -356,6 +360,10 @@ export function ContinuousColorMappingForm(props: {
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
   }, [maxState])
+
+  if (m == null) {
+    return <Box></Box>
+  }
 
   return (
     <Paper sx={{ backgroundColor: '#D9D9D9', p: 2, pr: 8, pl: 8 }}>

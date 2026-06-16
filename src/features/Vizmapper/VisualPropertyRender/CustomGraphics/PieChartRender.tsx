@@ -39,17 +39,6 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
 
   const { cy_startAngle, cy_colors, cy_dataColumns } = properties
 
-  // If no data columns, show empty state
-  if (!cy_dataColumns.length) {
-    return (
-      <EmptyChartState
-        size={chartSize}
-        containerWidth={containerWidth}
-        containerHeight={adjustedContainerHeight}
-      />
-    )
-  }
-
   // Calculate slice angles (equal distribution for preview)
   const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
   const { outerRadius, viewBoxSize } = calculateRadii(chartSize)
@@ -100,6 +89,17 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
     },
     [cytoscapeStartAngle, sliceAngle, outerRadius, useStroke],
   )
+
+  // If no data columns, show empty state
+  if (!cy_dataColumns.length) {
+    return (
+      <EmptyChartState
+        size={chartSize}
+        containerWidth={containerWidth}
+        containerHeight={adjustedContainerHeight}
+      />
+    )
+  }
 
   return (
     <Box
