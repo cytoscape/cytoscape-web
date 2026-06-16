@@ -1,10 +1,10 @@
 import { ZoomOutMap } from '@mui/icons-material'
 import { Box, IconButton, Tooltip } from '@mui/material'
 
-import { logUi } from '../../debug'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../debug'
 import { IdType } from '../../models'
 
 interface FitButtonProps {

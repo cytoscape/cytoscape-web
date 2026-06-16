@@ -9,19 +9,19 @@ import {
   TableType,
   ValueType,
 } from '../../models'
+import {
+  createEdgesCore,
+  type CreateEdgesParams,
+  createNodesCore,
+  type CreateNodesParams,
+  deleteEdgesCore,
+  deleteNodesCore,
+  type EdgeOperationStoreActions,
+  type NodeOperationStoreActions,
+} from '../../models/CyNetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
-import {
-  deleteNodesCore,
-  createNodesCore,
-  deleteEdgesCore,
-  createEdgesCore,
-  type NodeOperationStoreActions,
-  type EdgeOperationStoreActions,
-  type CreateNodesParams,
-  type CreateEdgesParams,
-} from '../../models/CyNetworkModel'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from './stores/RendererFunctionStore'
@@ -94,9 +94,6 @@ export const useUndoStack = () => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-
-  const activeNetworkViewTabIndex =
-    useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
 
   const targetNetworkId: IdType =
     activeNetworkViewId === '' ? currentNetworkId : activeNetworkViewId

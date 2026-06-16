@@ -58,7 +58,7 @@ export interface RingChartPropertiesType {
   cy_dataColumns: AttributeName[]
 }
 
-export interface NonePropertiesType {}
+export type NonePropertiesType = Record<string, never>
 
 // TODO
 // export interface ImagePropertiesType {

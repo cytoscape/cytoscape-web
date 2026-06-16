@@ -4,19 +4,16 @@ import {
   Alert,
   Box,
   Button,
-  Center,
   Divider,
   Group,
   Group as MantineGroup,
   NumberInput,
   Popover,
   Radio,
-  Select,
   Space,
   Switch,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from '@mantine/core'
 import {
@@ -27,16 +24,8 @@ import {
 import Papa from 'papaparse'
 import { Column } from 'primereact/column'
 import { DataTable, DataTableValue } from 'primereact/datatable'
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { AppConfigContext } from '../../../../AppConfigContext'
 import { putNetworkSummaryToDb } from '../../../../data/db'
 import { useUrlNavigation } from '../../../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../../../data/hooks/stores/NetworkStore'
@@ -52,10 +41,6 @@ import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
 import { DelimiterType } from '../../model/DelimiterType'
 import {
-  convertFileDelimiterToEffective,
-  convertFileDelimiterToStorageValue,
-} from '../../model/impl/DelimiterUtils'
-import {
   createNetworkFromTableData,
   DEFAULT_COLUMN_DATA_TYPE,
   DEFAULT_COLUMN_MEANING,
@@ -68,13 +53,14 @@ import {
   valueTypeName2Label,
 } from '../../model/impl/CreateNetworkFromTable'
 import {
+  convertFileDelimiterToEffective,
+  convertFileDelimiterToStorageValue,
+} from '../../model/impl/DelimiterUtils'
+import {
   generateInferredColumnAssignment,
   validateColumnValues,
 } from '../../model/impl/ParseValues'
-import {
-  CreateNetworkFromTableStep,
-  useCreateNetworkFromTableStore,
-} from '../../store/createNetworkFromTableStore'
+import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import {
   ColumnAssignmentTypeForm,
@@ -132,8 +118,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     return (result.data as DataTableValue[]).map((row) => {
       if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
         const newRow: Record<string, any> = {}
@@ -153,13 +137,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     })
   })
   const [columns, setColumns] = useState<ColumnAssignmentState[]>(() => {
-    const result = Papa.parse(text, {
-      header: useFirstRowAsColumns,
-      skipEmptyLines: true,
-      delimiter: effectiveFileDelimiter,
-    })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     const nextColumns = generateInferredColumnAssignment(
       rows as DataTableValue[],
     )
@@ -171,7 +148,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     (state) => state.setCurrentNetworkId,
   )
 
-  const ui = useUiStateStore((state) => state.ui)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
   )
@@ -187,8 +163,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
   const addNetworkToWorkspace = useWorkspaceStore(
     (state) => state.addNetworkIds,
   )
-
-  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
 
   useEffect(() => {
     const result = Papa.parse(text, {
@@ -710,7 +684,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
           >
             <Button
               data-testid="table-column-assignment-confirm-button"
-              styles={(theme) => ({
+              styles={() => ({
                 root: {
                   color: '#FFFFFF',
                   backgroundColor: '#337ab7',

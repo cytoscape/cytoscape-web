@@ -7,11 +7,6 @@
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import {
-  clearVisualStyleFromDb,
-  deleteVisualStyleFromDb,
-  putVisualStyleToDb,
-} from '../../db'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { VisualStyleStore } from '../../../models/StoreModel/VisualStyleStoreModel'
@@ -26,14 +21,13 @@ import {
   VisualStyle,
 } from '../../../models/VisualStyleModel'
 import * as VisualStyleImpl from '../../../models/VisualStyleModel/impl/visualStyleImpl'
-import {
-  ContinuousMappingFunction,
-  DiscreteMappingFunction,
-  MappingFunctionType,
-  PassthroughMappingFunction,
-} from '../../../models/VisualStyleModel/VisualMappingFunction'
-import { ContinuousFunctionControlPoint } from '../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { MappingFunctionType } from '../../../models/VisualStyleModel/VisualMappingFunction'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import {
+  clearVisualStyleFromDb,
+  deleteVisualStyleFromDb,
+  putVisualStyleToDb,
+} from '../../db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 /**
@@ -201,7 +195,6 @@ export const useVisualStyleStore = create(
         vpType,
         attributeName,
         attributeValues,
-        attributeType,
       ) {
         set((state) => {
           state.visualStyles[networkId] =

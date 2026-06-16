@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   PieChartPropertiesType,
@@ -7,12 +8,11 @@ import {
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { PieChartRender as PieChartRenderComponent } from '../PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from '../RingChartRender'
-import { CustomGraphicKind } from './SelectTypeStep'
-import { CHART_CONSTANTS, COLORS } from '../utils/constants'
 import {
   isPieChartProperties,
   isRingChartProperties,
 } from '../utils/typeGuards'
+import { CustomGraphicKind } from './SelectTypeStep'
 
 interface CustomGraphicPreviewProps {
   kind: CustomGraphicKind

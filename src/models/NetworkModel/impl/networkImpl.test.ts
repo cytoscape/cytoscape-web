@@ -8,8 +8,7 @@ import { describe, expect, it } from 'vitest'
  */
 import { Cx2 } from '../../CxModel/Cx2'
 import { createNetworkFromCx } from '../../CxModel/impl/converters'
-import { IdType } from '../../IdType'
-import { Edge,Network, Node } from '../index'
+import { Edge, Node } from '../index'
 import NetworkFn from '../index'
 
 describe('Network Implementation', () => {

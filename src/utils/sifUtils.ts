@@ -1,11 +1,7 @@
-import { v4 as uuidv4 } from 'uuid'
-
 import { CyNetwork } from '../models/CyNetworkModel'
 import NetworkFn, { Edge,Network, Node } from '../models/NetworkModel'
 import TableFn, { Table } from '../models/TableModel'
-import { AttributeName } from '../models/TableModel/AttributeName'
 import { Column } from '../models/TableModel/Column'
-import { ValueType } from '../models/TableModel/ValueType'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../models/VisualStyleModel'
 import { VisualStyleOptions } from '../models/VisualStyleModel/VisualStyleOptions'
@@ -79,7 +75,7 @@ export const createDataFromLocalSif = async (
   localNetworkId: string,
   sifText: string,
 ): Promise<CyNetwork> => {
-  const { nodeIdMap, nodeNames, edges } = parseSif(sifText)
+  const { nodeNames, edges } = parseSif(sifText)
   // Create node list with integer string IDs
   const nodeList: Node[] = nodeNames.map((name, idx) => ({
     id: idx.toString(),

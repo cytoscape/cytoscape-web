@@ -24,8 +24,6 @@ import {
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 
-const sampleUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
-
 export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
   // Fetch the service app metadata from the given URL
 

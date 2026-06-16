@@ -18,7 +18,6 @@ import { IdType } from '../../../../models/IdType'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
 import { Table, ValueType } from '../../../../models/TableModel'
-import { NetworkView } from '../../../../models/ViewModel'
 import {
   DiscreteMappingFunction,
   VisualPropertyValueType,
@@ -57,11 +56,9 @@ export const CheckboxFilter = ({
 
   const setBypassMap = useVisualStyleStore((state) => state.setBypassMap)
 
-  const getViewModel = useViewModelStore((state) => state.getViewModel)
   const visualStyleExists = useVisualStyleStore(
     (state) => state.visualStyles[targetNetworkId] !== undefined,
   )
-  const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
   const discreteFilterDetails = filterConfig.discreteFilterDetails ?? []
@@ -82,16 +79,11 @@ export const CheckboxFilter = ({
       return
     }
 
-    let filtered: IdType[] = []
     // Current range stored in the config
     const discreteRange: DiscreteRange<ValueType> =
       filterConfig.range as DiscreteRange<ValueType>
     const basicFilter: Filter = getBasicFilter()
-    filtered = basicFilter.applyDiscreteFilter(
-      discreteRange,
-      table,
-      attributeName,
-    )
+    basicFilter.applyDiscreteFilter(discreteRange, table, attributeName)
 
     const idsToFilter: IdType[] = []
     const idsToExclude: IdType[] = []

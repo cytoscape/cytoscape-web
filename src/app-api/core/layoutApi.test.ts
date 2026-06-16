@@ -230,7 +230,7 @@ describe('applyLayout — happy path', () => {
     })
     // Engine immediately calls callback with new positions
     mockLayoutEngines[0].apply.mockImplementation(
-      (nodes: any, edges: any, callback: any, algorithm: any) => {
+      (nodes: any, edges: any, callback: any) => {
         callback(new Map([['node1', [10, 20]]]))
       },
     )

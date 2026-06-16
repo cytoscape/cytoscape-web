@@ -263,6 +263,9 @@ describe('FilterStoreImpl', () => {
       state = updateRange(state, 'filter-1', { min: 10, max: 90 })
       state = deleteFilterConfig(state, 'filter-1')
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.search).toBe(originalSearch)
       expect(original.filterConfigs).toBe(originalFilterConfigs)

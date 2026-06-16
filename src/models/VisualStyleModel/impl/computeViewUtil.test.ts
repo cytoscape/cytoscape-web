@@ -4,8 +4,6 @@ import { Edge,Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { Column,Table } from '../../TableModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
-import { NetworkView } from '../../ViewModel'
-import { VisualPropertyName } from '../VisualPropertyName'
 import { VisualStyle } from '../VisualStyle'
 import {
   createNewNetworkView,

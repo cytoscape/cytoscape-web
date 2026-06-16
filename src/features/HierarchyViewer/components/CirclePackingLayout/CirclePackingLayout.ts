@@ -107,7 +107,7 @@ export const createTreeLayout = async ({
 
     // hierarchyRootNode.sum((d: D3TreeNode) => d.members.length)
     hierarchyRootNode
-      .sum((d: D3TreeNode) => 1)
+      .sum(() => 1)
       .sort((a, b) => {
         const valA = a.value as number
         const valB = b.value as number

@@ -1,9 +1,9 @@
 import { VisualPropertyName } from '..'
+import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './customGraphicsImpl'
 import {
   CyjsVisualPropertyName as CyVpName,
   CyjsVisualPropertyType,
 } from './CyjsProperties/cyjsVisualPropertyName'
-import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './customGraphicsImpl'
 
 const VpName2CyjsVpName: Record<VisualPropertyName, CyjsVisualPropertyType> = {
   nodeShape: CyVpName.Shape,

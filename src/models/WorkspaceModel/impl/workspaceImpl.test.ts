@@ -514,6 +514,9 @@ describe('WorkspaceImpl', () => {
       workspace = setCurrentNetworkId(workspace, 'network-1')
       workspace = setNetworkModified(workspace, 'network-1', true)
 
+      // The chained operations produce a new workspace object
+      expect(workspace).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.id).toBe(originalId)
       expect(original.name).toBe(originalName)

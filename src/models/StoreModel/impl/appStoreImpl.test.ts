@@ -399,6 +399,9 @@ describe('AppStoreImpl', () => {
       state = clearCurrentTask(state)
       state = removeService(state, 'https://example.com/service')
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.apps).toBe(originalApps)
       expect(original.serviceApps).toBe(originalServiceApps)

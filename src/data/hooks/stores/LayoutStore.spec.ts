@@ -1,8 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
 
-import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
-import { Property } from '../../../models/PropertyModel/Property'
-import { ValueType } from '../../../models/TableModel'
 import { useLayoutStore } from './LayoutStore'
 
 // Mock the layout selection module to avoid module import issues

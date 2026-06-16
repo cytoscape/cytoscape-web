@@ -1,8 +1,9 @@
 import safeRegex from 'safe-regex'
+
 import { Column, ValueTypeName } from '../../TableModel'
-import { InputColumn } from '../ServiceInputDefinition'
-import { ServiceAppParameter } from '../ServiceAppParameter'
 import { ParameterUiType } from '../ParameterUiType'
+import { ServiceAppParameter } from '../ServiceAppParameter'
+import { InputColumn } from '../ServiceInputDefinition'
 
 export const isList = (vtn: ValueTypeName): boolean => {
   return vtn.includes('list_of')
@@ -79,7 +80,7 @@ export const validateParameter = (parameter: ServiceAppParameter): boolean => {
           regexCache.set(validationRegex, regex)
         }
         return regex.test(value)
-      } catch (e) {
+      } catch {
         return true
       }
     }

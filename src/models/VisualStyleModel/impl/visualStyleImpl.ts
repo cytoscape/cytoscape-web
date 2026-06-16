@@ -464,11 +464,11 @@ export const removeMapping = (
   vpName: VisualPropertyName,
 ): VisualStyle => {
   const visualProperty = visualStyle[vpName]
-  const { mapping, ...rest } = visualProperty
 
   const updatedProperty: VisualProperty<VisualPropertyValueType> = {
-    ...rest,
+    ...visualProperty,
   } as VisualProperty<VisualPropertyValueType>
+  delete (updatedProperty as { mapping?: unknown }).mapping
 
   return {
     ...visualStyle,

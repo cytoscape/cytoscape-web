@@ -1,6 +1,5 @@
 import './index.css'
 
-import { theme } from './theme'
 import { Box } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
@@ -13,13 +12,14 @@ import {
 } from 'react-router-dom'
 
 import appConfig from './assets/config.json'
+import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { MessagePanel } from './features/Messages'
 import { RedirectPanel } from './features/RedirectPanel'
-import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { KeycloakContext } from './init/keycloak'
+import { theme } from './theme'
 
 const AppShell = React.lazy(() => import('./features/AppShell'))
 const WorkspaceEditor = React.lazy(

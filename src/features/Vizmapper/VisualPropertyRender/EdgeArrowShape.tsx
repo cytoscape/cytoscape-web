@@ -67,7 +67,7 @@ export function EdgeArrowShapePicker(props: {
   onValueChange: (edgeArrowShape: EdgeArrowShapeType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedEdgeArrowShapes = Object.values(EdgeArrowShapeType).sort()
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? EdgeArrowShapeType.None,

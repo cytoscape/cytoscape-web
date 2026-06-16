@@ -69,7 +69,7 @@ const AppShell = (): ReactElement => {
   const appManagerCommands = useAppManager()
   const params = useParams()
   const navigate = useNavigate()
-  const [search, setSearchParams] = useSearchParams()
+  const [search] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const setWorkspace = useWorkspaceStore((state) => state.set)

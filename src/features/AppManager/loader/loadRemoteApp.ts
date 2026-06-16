@@ -1,6 +1,6 @@
 import { logApp } from '../../../debug'
-import { loadModule } from '../ExternalComponent'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { loadModule } from '../ExternalComponent'
 
 /**
  * Load a federated remote app by injecting its remoteEntry.js script and

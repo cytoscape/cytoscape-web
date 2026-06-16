@@ -262,7 +262,8 @@ export const deleteSummary = (
   state: NetworkSummaryState,
   networkId: IdType,
 ): NetworkSummaryState => {
-  const { [networkId]: deleted, ...restSummaries } = state.summaries
+  const restSummaries = { ...state.summaries }
+  delete restSummaries[networkId]
   return {
     ...state,
     summaries: restSummaries,

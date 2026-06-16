@@ -1,17 +1,15 @@
 import { act, renderHook } from '@testing-library/react'
 
 import { IdType } from '../../../models/IdType'
+import { ValueTypeName } from '../../../models/TableModel'
+import { createVisualStyle } from '../../../models/VisualStyleModel/impl/visualStyleFnImpl'
 import {
-  MappingFunctionType,
-  DiscreteMappingFunction,
   ContinuousMappingFunction,
+  DiscreteMappingFunction,
+  MappingFunctionType,
   PassthroughMappingFunction,
 } from '../../../models/VisualStyleModel/VisualMappingFunction'
-import { VisualPropertyName } from '../../../models/VisualStyleModel/VisualPropertyName'
-import { VisualStyle } from '../../../models/VisualStyleModel/VisualStyle'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
-import { createVisualStyle } from '../../../models/VisualStyleModel/impl/visualStyleFnImpl'
-import { ValueTypeName } from '../../../models/TableModel'
 import { useVisualStyleStore } from './VisualStyleStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests

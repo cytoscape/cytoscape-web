@@ -1,14 +1,11 @@
+import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
+import { PaletteDefinition } from '../VisualPropertyValue/ColorPalette'
+import { ColorType } from '../VisualPropertyValue/ColorType'
 import {
-  SequentialCustomColors,
   DivergingCustomColors,
+  SequentialCustomColors,
   VirdisCustomColors,
 } from './colorUtils'
-import { ColorType } from '../VisualPropertyValue/ColorType'
-import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
-import {
-  PaletteDefinition,
-  PaletteMetadata,
-} from '../VisualPropertyValue/ColorPalette'
 
 // Expanded palettes (ColorBrewer-like) for CustomGraphics
 export const PALETTES: Record<string, PaletteDefinition> = {

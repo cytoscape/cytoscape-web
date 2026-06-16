@@ -1,9 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
 
 import { IdType } from '../../../models/IdType'
+import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
-import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import {
   TableDisplayConfiguration,
   VisualStyleOptions,

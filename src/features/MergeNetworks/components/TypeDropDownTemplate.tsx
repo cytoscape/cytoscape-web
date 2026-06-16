@@ -20,7 +20,9 @@ export const TypeDropDownTemplate = React.memo(
   ({ type, rowData, rowIndex, netLst }: typeDropDownTemplateProps) => {
     const typeLst: Set<ValueTypeName | 'None'> = new Set(
       netLst
-        .filter((pair) => rowData.typeRecord.hasOwnProperty(pair[1]))
+        .filter((pair) =>
+          Object.prototype.hasOwnProperty.call(rowData.typeRecord, pair[1]),
+        )
         .map((pair) => rowData.typeRecord[pair[1]]),
     )
     const typeOptions = getAllConvertiableTypes(typeLst).map((type) => ({
@@ -63,3 +65,5 @@ export const TypeDropDownTemplate = React.memo(
     )
   },
 )
+
+TypeDropDownTemplate.displayName = 'TypeDropDownTemplate'

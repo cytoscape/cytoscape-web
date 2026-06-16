@@ -13,7 +13,7 @@ import {
   createTable,
   insertRows,
 } from '../../../models/TableModel/impl/inMemoryTable'
-import { NetworkRecord, Pair } from '../models/DataInterfaceForMerge'
+import { Pair } from '../models/DataInterfaceForMerge'
 import { MatchingTableRow } from '../models/MatchingTable'
 import { getResonableCompatibleConvertionType } from './attributesOperationsUtil'
 

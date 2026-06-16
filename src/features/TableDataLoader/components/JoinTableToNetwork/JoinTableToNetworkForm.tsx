@@ -1,13 +1,9 @@
 import {
   ActionIcon,
-  Center,
-  Container,
   Group,
   MantineProvider,
   Modal,
   Paper,
-  RemoveScroll,
-  Space,
   Title,
   Tooltip,
 } from '@mantine/core'
@@ -21,7 +17,6 @@ import {
   JoinTableToNetworkStep,
   useJoinTableToNetworkStore,
 } from '../../store/joinTableToNetworkStore'
-import { TableColumnAssignmentForm } from '../CreateNetworkFromTable/TableColumnAssignmentForm'
 import { TableUpload } from '../JoinTableToNetwork/TableUpload'
 import { TableColumnAppendForm } from './TableColumnAppendForm'
 
@@ -32,7 +27,7 @@ export function JoinTableToNetworkForm(props: BaseMenuItemProps) {
   const [fullScreen, setFullScreen] = useState(false)
 
   const stepContentMap = {
-    [JoinTableToNetworkStep.FileUpload]: <TableUpload {...props}></TableUpload>,
+    [JoinTableToNetworkStep.FileUpload]: <TableUpload></TableUpload>,
     [JoinTableToNetworkStep.ColumnAppendForm]: (
       <TableColumnAppendForm {...props} />
     ),

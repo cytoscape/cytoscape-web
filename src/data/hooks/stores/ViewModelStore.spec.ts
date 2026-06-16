@@ -1,10 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
 
 import { IdType } from '../../../models/IdType'
-import { isEdgeId } from '../../../models/NetworkModel/impl/networkImpl'
-import { NetworkView, NodeView, EdgeView } from '../../../models/ViewModel'
-import { createViewModel } from '../../../models/ViewModel/impl/viewModelImpl'
 import NetworkFn from '../../../models/NetworkModel'
+import { EdgeView,NetworkView, NodeView } from '../../../models/ViewModel'
+import { createViewModel } from '../../../models/ViewModel/impl/viewModelImpl'
 import { useViewModelStore } from './ViewModelStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests

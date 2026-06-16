@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
-import { CyApp } from '../../../models'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface URLData {
@@ -23,7 +22,7 @@ export const useOpenURL = (): (({
     )
   }
   const openURL = useCallback(
-    ({ responseObj, networkId }: ActionHandlerProps) => {
+    ({ responseObj }: ActionHandlerProps) => {
       if (!isValidURLData(responseObj)) {
         logApp.warn(`[${openURL.name}]: Invalid URL data:`, responseObj)
         return

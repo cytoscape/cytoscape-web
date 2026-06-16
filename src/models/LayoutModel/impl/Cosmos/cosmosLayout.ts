@@ -2,7 +2,6 @@ import { Graph } from '@cosmograph/cosmos'
 
 import { IdType } from '../../../IdType'
 import { Edge,Node } from '../../../NetworkModel'
-import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
 import { CosmosAlgorithms } from './Algorithms/cosmosAlgorithms'
 
@@ -21,7 +20,6 @@ export const CosmosLayout: LayoutEngine = {
     nodes: Node[],
     edges: Edge[],
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
-    algorithm: LayoutAlgorithm,
   ): void => {
     const config = CosmosAlgorithms.cosmos.parameters
     const graph = new Graph(dummyContainer, config)

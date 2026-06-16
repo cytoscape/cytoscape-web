@@ -407,16 +407,6 @@ describe('CyDB regressions', () => {
     // Problem 5: getNetworkViewId might work for viewId access, but any code expecting
     // Map objects will fail. Let's simulate what happens when we try to use the viewList
     // without deserialization in putNetworkViewToDb logic:
-    let found = false
-    viewListWithoutDeserialization.forEach((v: any, idx: number) => {
-      const key1 = v.viewId
-      const key2 = secondView.viewId
-      if (key1 === key2) {
-        // This comparison works, but if we try to do anything with Map properties...
-        found = true
-      }
-    })
-
     // Problem 6: If we try to call getNetworkViewId with serialized views, it might work
     // for basic properties, but any code that accesses Map properties will fail
     const viewId = getNetworkViewId(secondView, viewListWithoutDeserialization)

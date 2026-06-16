@@ -13,7 +13,6 @@ import {
   ReactElement,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -22,18 +21,19 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
-import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
+import { useCreateNode } from '../../../data/hooks/useCreateNode'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
+import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
-import { ValueType } from '../../../models/TableModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
@@ -45,10 +45,8 @@ import {
 import { CxToCyCanvas } from './annotations/cyjsAnnotationRenderer'
 import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
+import { ContextMenuState,NetworkContextMenu } from './NetworkContextMenu'
 import { registerCyExtensions } from './registerCyExtensions'
-import { NetworkContextMenu, ContextMenuState } from './NetworkContextMenu'
-import { useCreateNode } from '../../../data/hooks/useCreateNode'
-import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 
 registerCyExtensions()
 import { logUi } from '../../../debug'
@@ -74,7 +72,6 @@ interface NetworkRendererProps {
  */
 const CyjsRenderer = ({
   network,
-  displayMode = DisplayMode.SELECT,
   hasTab = false,
 }: NetworkRendererProps): ReactElement => {
   if (network === undefined) {
@@ -374,7 +371,7 @@ const CyjsRenderer = ({
     // Box selection: handle selection after box selection ends (debounced)
     cy.on(
       'boxend',
-      debounce((event: EventObject) => {
+      debounce(() => {
         const selectedNodes: IdType[] = []
         const selectedEdges: IdType[] = []
         cy.elements()

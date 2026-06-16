@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { Operator } from '../../../models/FilterModel/Search'
 import {
   Column,
   Table,

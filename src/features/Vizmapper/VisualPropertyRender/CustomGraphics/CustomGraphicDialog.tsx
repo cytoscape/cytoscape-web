@@ -1,45 +1,40 @@
-import * as React from 'react'
+import DonutLargeIcon from '@mui/icons-material/DonutLarge'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ListAltIcon from '@mui/icons-material/ListAlt'
+import PaletteIcon from '@mui/icons-material/Palette'
+import PieChartIcon from '@mui/icons-material/PieChart'
+import SettingsIcon from '@mui/icons-material/Settings'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
   Box,
   Button,
-  Typography,
-  IconButton,
-  Alert,
-  Stepper,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Step,
   StepLabel,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
+  Stepper,
+  Typography,
 } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import PieChartIcon from '@mui/icons-material/PieChart'
-import DonutLargeIcon from '@mui/icons-material/DonutLarge'
-import ListAltIcon from '@mui/icons-material/ListAlt'
-import SettingsIcon from '@mui/icons-material/Settings'
-import PaletteIcon from '@mui/icons-material/Palette'
+import * as React from 'react'
+
 import { IdType } from '../../../../models/IdType'
+import { AttributeName } from '../../../../models/TableModel/AttributeName'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
+import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import {
-  PieChartPropertiesType,
-  RingChartPropertiesType,
-} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-
-import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
 import { AttributesForm } from './Forms/AttributesForm'
 import { ColorsForm } from './Forms/ColorsForm'
 import { PropertiesForm } from './Forms/PropertiesForm'
 import { useCustomGraphicState } from './hooks/useCustomGraphicState'
 import { CHART_CONSTANTS, COLORS } from './utils/constants'
 import { isRingChartProperties } from './utils/typeGuards'
-import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { AttributeName } from '../../../../models/TableModel/AttributeName'
+import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
 
 /** Props for the custom graphics dialog */
 interface CustomGraphicDialogProps {

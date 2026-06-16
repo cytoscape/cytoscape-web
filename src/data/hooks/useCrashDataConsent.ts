@@ -8,7 +8,7 @@
  * Users can decline if they choose.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback,useEffect, useState } from 'react'
 
 const CONSENT_STORAGE_KEY = 'cytoscapeWebCrashDataConsent'
 const CONSENT_EXPIRY_DAYS = 365
@@ -61,7 +61,7 @@ export const setCrashDataConsent = (status: 'accepted' | 'declined'): void => {
       timestamp: new Date().toISOString(),
     }
     localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(consent))
-  } catch (error) {
+  } catch {
     // Handle quota exceeded or other errors silently
   }
 }

@@ -30,7 +30,6 @@ export function ColorGradient(props: ColorGradiientProps): React.ReactElement {
     horizontalPadding,
     verticalPadding,
     valuePixelScale,
-    colorScale,
     cm,
   } = props
 

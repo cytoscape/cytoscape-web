@@ -1,16 +1,12 @@
-import * as React from 'react'
-import {
-  Box,
-  Typography,
-  Button,
-} from '@mui/material'
 import PaletteIcon from '@mui/icons-material/Palette'
+import { Box, Button } from '@mui/material'
+import * as React from 'react'
+
 import { IdType } from '../../../../../models/IdType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { COLORS } from '../utils/constants'
-import { PaletteForm } from './PaletteForm'
 import { CustomColorsForm } from './CustomColorsForm'
+import { PaletteForm } from './PaletteForm'
 
 interface ColorsFormProps {
   dataColumns: AttributeName[]

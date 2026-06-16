@@ -1,39 +1,39 @@
-import * as React from 'react'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import PaletteIcon from '@mui/icons-material/Palette'
 import {
-  Box,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  SelectChangeEvent,
-  Button,
-  Tooltip,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Chip,
   Alert,
-  Popover,
-  Tabs,
-  Tab,
+  Box,
+  Button,
   Card,
   CardContent,
+  Chip,
+  FormControl,
+  FormControlLabel,
+  IconButton,
+  MenuItem,
+  Popover,
+  Radio,
+  RadioGroup,
+  Select,
+  SelectChangeEvent,
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import AddIcon from '@mui/icons-material/Add'
-import PaletteIcon from '@mui/icons-material/Palette'
-import { IdType } from '../../../../../models/IdType'
+import * as React from 'react'
+
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
+import { IdType } from '../../../../../models/IdType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { generateRandomColor } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { getNumericColumnNames } from '../utils/numericColumnUtils'
-import { CHART_CONSTANTS, COLORS } from '../utils/constants'
-import { OrderControls, DataTableHeader, DataTableRow } from '../components'
 import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
+import { generateRandomColor } from '../../../../../models/VisualStyleModel/impl/colorUtils'
 import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
+import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import { DataTableHeader, DataTableRow,OrderControls } from '../components'
+import { CHART_CONSTANTS, COLORS } from '../utils/constants'
+import { getNumericColumnNames } from '../utils/numericColumnUtils'
 
 interface AttributesAndColorsFormProps {
   dataColumns: AttributeName[]

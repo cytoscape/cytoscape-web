@@ -8,17 +8,17 @@ import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
+import { logStore } from '../../../debug'
+import { IdType } from '../../../models/IdType'
+import { ViewModelStore } from '../../../models/StoreModel/ViewModelStoreModel'
+import { NetworkView, NodeView } from '../../../models/ViewModel'
+import * as ViewModelImpl from '../../../models/ViewModel/impl/viewModelImpl'
 import {
   clearNetworkViewsFromDb,
   deleteNetworkViewsFromDb,
   putNetworkViewsToDb,
   putNetworkViewToDb,
 } from '../../db'
-import { logStore } from '../../../debug'
-import { IdType } from '../../../models/IdType'
-import { ViewModelStore } from '../../../models/StoreModel/ViewModelStoreModel'
-import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
-import * as ViewModelImpl from '../../../models/ViewModel/impl/viewModelImpl'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 // Re-export for compatibility
@@ -55,7 +55,7 @@ const persist =
 export const useViewModelStore = create(
   subscribeWithSelector(
     immer<ViewModelStore>(
-      persist((set, get) => ({
+      persist((set) => ({
         viewModels: {},
 
         add: (networkId: IdType, networkView: NetworkView) => {
@@ -197,7 +197,7 @@ export const useViewModelStore = create(
             return state
           })
         },
-        setNodePosition(networkId, eleId, position, targetViewId) {
+        setNodePosition(networkId, eleId, position) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
               state.viewModels[networkId]
@@ -212,7 +212,7 @@ export const useViewModelStore = create(
             return state
           })
         },
-        updateNodePositions(networkId, positions, targetViewId) {
+        updateNodePositions(networkId, positions) {
           set((state) => {
             const viewList: NetworkView[] | undefined =
               state.viewModels[networkId]
@@ -242,7 +242,7 @@ export const useViewModelStore = create(
             return state
           })
         },
-        delete(networkId, targetViewId?) {
+        delete(networkId) {
           void deleteNetworkViewsFromDb(networkId).then(() => {})
           set((state) => {
             delete state.viewModels[networkId]

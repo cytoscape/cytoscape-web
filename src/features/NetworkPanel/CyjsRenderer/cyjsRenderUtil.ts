@@ -28,12 +28,12 @@ import VisualStyleFn, {
   VisualStyle,
 } from '../../../models/VisualStyleModel'
 import {
+  getCustomGraphicsPropertyKeys,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
-  VALID_PIE_CHART_SLICE_INDEX_RANGE,
-  getCustomGraphicsPropertyKeys,
   getPieBackgroundColorViewModelProp,
   getPieBackgroundSizeViewModelProp,
+  VALID_PIE_CHART_SLICE_INDEX_RANGE,
 } from '../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/cyjsDirectMapper'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/directMappingSelector'
@@ -124,7 +124,7 @@ const vpHandlers = new Map<
 // Handler for node label position: computes and sets alignment, margin, and justification.
 vpHandlers.set(
   VisualPropertyName.NodeLabelPosition,
-  (obj, key, value, view) => {
+  (obj, key, value) => {
     const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
     obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
     obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
@@ -163,14 +163,14 @@ vpHandlers.set(
 )
 
 // Handler for node shape: maps application node shape to Cytoscape.js node shape.
-vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
+vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value) => {
   obj.data(key, transformNodeShape(value as NodeShapeType))
 })
 
 // Handler for node label rotation: converts degrees to radians for Cytoscape.js.
 vpHandlers.set(
   VisualPropertyName.NodeLabelRotation,
-  (obj, key, value, view) => {
+  (obj, key, value) => {
     obj.data(key, transformRotation(value))
   },
 )
@@ -178,7 +178,7 @@ vpHandlers.set(
 // Handler for edge label rotation: converts degrees to radians for Cytoscape.js.
 vpHandlers.set(
   VisualPropertyName.EdgeLabelRotation,
-  (obj, key, value, view) => {
+  (obj, key, value) => {
     obj.data(key, transformRotation(value))
   },
 )

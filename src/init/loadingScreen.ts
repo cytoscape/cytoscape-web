@@ -94,7 +94,7 @@ export const updateVersionText = (): void => {
       try {
         const buildDate = new Date(buildTime)
         formattedBuildTime = buildDate.toLocaleString()
-      } catch (dateParseError) {
+      } catch {
         // If parsing fails, use the raw string
         formattedBuildTime = buildTime
       }

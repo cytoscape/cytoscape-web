@@ -596,9 +596,7 @@ export function DoubleLineIcon(props: IconProps): React.ReactElement {
   )
 }
 
-export function PassthroughMappingFunctionIcon(
-  props: IconProps,
-): React.ReactElement {
+export function PassthroughMappingFunctionIcon(): React.ReactElement {
   return (
     <img
       style={{ width: 20, height: 20 }}
@@ -607,17 +605,13 @@ export function PassthroughMappingFunctionIcon(
   )
 }
 
-export function DiscreteMappingFunctionIcon(
-  props: IconProps,
-): React.ReactElement {
+export function DiscreteMappingFunctionIcon(): React.ReactElement {
   return (
     <img style={{ width: 20, height: 20 }} src={discreteMappingFunctionIcon} />
   )
 }
 
-export function ContinuousMappingFunctionIcon(
-  props: IconProps,
-): React.ReactElement {
+export function ContinuousMappingFunctionIcon(): React.ReactElement {
   return (
     <img
       style={{ width: 20, height: 20 }}

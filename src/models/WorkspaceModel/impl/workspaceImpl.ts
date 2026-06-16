@@ -168,7 +168,8 @@ export const deleteNetworkModifiedStatus = (
   workspace: Workspace,
   networkId: IdType,
 ): Workspace => {
-  const { [networkId]: _, ...rest } = workspace.networkModified
+  const rest = { ...workspace.networkModified }
+  delete rest[networkId]
   return {
     ...workspace,
     networkModified: rest,

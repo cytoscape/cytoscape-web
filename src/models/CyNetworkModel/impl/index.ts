@@ -1,16 +1,15 @@
 export {
-  deleteNodesCore,
-  createNodesCore,
-  type NodeOperationStoreActions,
-  type DeleteNodesResult,
-  type CreateNodesParams,
-} from './nodeOperations'
-
-export {
-  deleteEdgesCore,
   createEdgesCore,
-  type EdgeOperationStoreActions,
-  type DeleteEdgesResult,
   type CreateEdgesParams,
+  deleteEdgesCore,
+  type DeleteEdgesResult,
+  type EdgeOperationStoreActions,
 } from './edgeOperations'
+export {
+  createNodesCore,
+  type CreateNodesParams,
+  deleteNodesCore,
+  type DeleteNodesResult,
+  type NodeOperationStoreActions,
+} from './nodeOperations'
 

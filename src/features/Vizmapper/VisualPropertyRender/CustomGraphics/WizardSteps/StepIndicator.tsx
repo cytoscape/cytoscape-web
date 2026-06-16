@@ -1,14 +1,11 @@
-import * as React from 'react'
-import { Box, Typography, Button } from '@mui/material'
-import PieChartIcon from '@mui/icons-material/PieChart'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
+import PieChartIcon from '@mui/icons-material/PieChart'
 import SettingsIcon from '@mui/icons-material/Settings'
+import { Box, Button,Typography } from '@mui/material'
+import * as React from 'react'
+
 import { CustomGraphicKind } from './SelectTypeStep'
-import {
-  PieChartPropertiesType,
-  RingChartPropertiesType,
-} from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 export interface Step {
   id: number
@@ -56,7 +53,7 @@ export function StepIndicator({
         borderColor: 'divider',
       }}
     >
-      {steps.map((step, index) => {
+      {steps.map((step) => {
         const isCurrent = step.id === currentStep
         const isAccessible =
           step.isAccessible(formState, currentStep) && step.id <= currentStep

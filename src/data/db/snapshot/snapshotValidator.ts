@@ -39,12 +39,10 @@ export interface SnapshotValidationResult {
  * Validates the structure of a database snapshot object.
  *
  * @param snapshot - The database snapshot object to validate
- * @param currentVersion - Current database schema version
  * @returns Validation result with errors and warnings
  */
 export const validateSnapshotStructure = (
   snapshot: any,
-  currentVersion: number,
 ): SnapshotValidationResult => {
   const errors: string[] = []
   const warnings: string[] = []

@@ -1,8 +1,7 @@
-import cytoscape from 'cytoscape'
 import { describe, expect, it } from 'vitest'
 
 import { IdType } from '../../IdType'
-import NetworkFn, { Edge, Network } from '../../NetworkModel'
+import NetworkFn, { Network } from '../../NetworkModel'
 import { UpdateEventType } from '../NetworkStoreModel'
 import {
   add,
@@ -239,6 +238,9 @@ describe('NetworkStoreImpl', () => {
       state = setNetwork(state, 'network-2', createTestNetwork('network-2'))
       state = deleteNetwork(state, 'network-1')
       state = deleteAll(state)
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.networks).toBe(originalNetworks)

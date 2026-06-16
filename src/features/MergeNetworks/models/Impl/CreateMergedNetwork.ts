@@ -5,6 +5,7 @@ import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { IdType } from '../../../../models/IdType'
 import { NetworkAttributes } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { Column } from '../../../../models/TableModel/Column'
 import ViewModelFn, { NetworkView } from '../../../../models/ViewModel'
@@ -16,7 +17,6 @@ import { differenceMerge } from './DifferenceMerge'
 import { intersectionMerge } from './IntersectionMerge'
 import { mergeNetSummary } from './MergeNetSummary'
 import { unionMerge } from './UnionMerge'
-import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 export const createMergedNetwork = async (
   fromNetworks: IdType[],

@@ -10,7 +10,6 @@ import {
   IconButton,
   Paper,
   Popover,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
@@ -404,10 +403,10 @@ export function ContinuousNumberMappingForm(props: {
                       bottom: LINE_CHART_HEIGHT - LINE_CHART_MARGIN_BOTTOM,
                     }}
                     handle=".handle"
-                    onStart={(e) => {
+                    onStart={() => {
                       setlastDraggedHandleId(h.id)
                     }}
-                    onStop={(e) => {
+                    onStop={() => {
                       setlastDraggedHandleId(h.id)
                     }}
                     onDrag={(e, data) => {

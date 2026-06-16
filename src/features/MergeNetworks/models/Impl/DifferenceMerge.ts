@@ -1,9 +1,8 @@
 import { IdType } from '../../../../models/IdType'
-import NetworkFn, { Edge, Network, Node } from '../../../../models/NetworkModel'
+import NetworkFn, { Edge, Network } from '../../../../models/NetworkModel'
 import TableFn from '../../../../models/TableModel'
 import { Column } from '../../../../models/TableModel/Column'
 import {
-  ListOfValueType,
   SingleValueType,
   ValueType,
 } from '../../../../models/TableModel/ValueType'
@@ -103,7 +102,7 @@ export function differenceMerge(
       throw new Error('Node not found in the node table')
     const sourceNodeKey = getKeybyAttribute(sourceEntry[colName])
     const targetNodeKey = getKeybyAttribute(targetEntry[colName])
-    const edgeInteraction = String(edgeEntry['interaction']) ?? 'None'
+    const edgeInteraction = String(edgeEntry['interaction'])
     return [sourceNodeKey, targetNodeKey, edgeInteraction]
   }
 

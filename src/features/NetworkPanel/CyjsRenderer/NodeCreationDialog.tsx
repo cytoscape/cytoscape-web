@@ -1,16 +1,15 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  List,
-  Alert,
-} from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import { ReactElement, useState, useEffect } from 'react'
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
+} from '@mui/material'
+import { ReactElement, useEffect,useState } from 'react'
 
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../models/IdType'
@@ -231,7 +230,7 @@ export const NodeCreationDialog = ({
                       All fields are optional. Default values are already populated.
                     </Typography>
                     <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                      <strong>List fields:</strong> Enter comma-separated values (e.g., "value1, value2" or "1, 2, 3").
+                      <strong>List fields:</strong> Enter comma-separated values (e.g., &quot;value1, value2&quot; or &quot;1, 2, 3&quot;).
                     </Typography>
                   </Alert>
                   <Box

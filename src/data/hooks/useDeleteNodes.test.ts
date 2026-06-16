@@ -350,18 +350,11 @@ describe('useDeleteNodes', () => {
       const { result: hookResult } = renderHook(() => useDeleteNodes())
       const { result: tableResult } = renderHook(() => useTableStore())
 
-      // Check initial state
-      const tableRecordBefore = tableResult.current.tables[networkId]
-      const rowsBefore = Array.from(
-        tableRecordBefore?.nodeTable?.rows.keys() || [],
-      )
-
       act(() => {
         hookResult.current.deleteNodes(networkId, ['0'])
       })
 
       const tableRecord = tableResult.current.tables[networkId]
-      const rowsAfter = Array.from(tableRecord?.nodeTable?.rows.keys() || [])
 
       expect(tableRecord?.nodeTable?.rows.has('0')).toBe(false)
       expect(tableRecord?.nodeTable?.rows.has('1')).toBe(true)

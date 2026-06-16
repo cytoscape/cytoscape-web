@@ -17,7 +17,7 @@ export interface KeycloakConfig {
  */
 export interface AppConfig {
   ndexBaseUrl: string
-  options?: {}
+  options?: Record<string, unknown>
   defaultServices: string[]
   keycloakConfig: KeycloakConfig
   maxNetworkElementsThreshold: number

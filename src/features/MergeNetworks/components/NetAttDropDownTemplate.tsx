@@ -31,7 +31,6 @@ export const NetAttDropDownTemplate = React.memo(
     rowIndex,
     column,
     type,
-    netLst,
   }: netAttDropDownTemplateProps) => {
     const emptyOption = { label: 'None', value: 'None' }
     const tableType =
@@ -53,7 +52,6 @@ export const NetAttDropDownTemplate = React.memo(
       rowData.nameRecord[column] && rowData.nameRecord[column] !== 'None'
         ? rowData.nameRecord[column]
         : ''
-    const netIdLst = netLst.map((pair) => pair[1])
     const setMatchingCols = useMatchingColumnsStore(
       (state) => state.setMatchingCols,
     )
@@ -124,3 +122,5 @@ export const NetAttDropDownTemplate = React.memo(
     )
   },
 )
+
+NetAttDropDownTemplate.displayName = 'NetAttDropDownTemplate'

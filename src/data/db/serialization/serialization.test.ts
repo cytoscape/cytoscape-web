@@ -541,7 +541,7 @@ describe('db-util', () => {
         },
       ]
 
-      testCases.forEach(({ input, expected, description }) => {
+      testCases.forEach(({ input }) => {
         // Test NetworkView deserialization
         const networkView = {
           values: input,

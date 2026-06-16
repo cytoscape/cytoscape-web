@@ -24,21 +24,18 @@
  * ```
  */
 
-import { IdType } from '../../models/IdType'
-import { ValueType } from '../../models/TableModel'
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { TableType } from '../../models/StoreModel/TableStoreModel'
-import { Edge, EdgeView, NodeView } from '../../models'
-import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import {
   deleteNodesCore,
   type NodeOperationStoreActions,
 } from '../../models/CyNetworkModel'
+import { IdType } from '../../models/IdType'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useUndoStack } from './useUndoStack'
 
 export interface DeleteNodesOptions {

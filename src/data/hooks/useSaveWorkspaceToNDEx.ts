@@ -1,10 +1,3 @@
-import {
-  createNdexWorkspace,
-  TimeOutErrorIndicator,
-  TimeOutErrorMessage,
-  updateNdexWorkspace,
-} from '../external-api/ndex'
-import { getWorkspaceFromDb } from '../db'
 import { logApi } from '../../debug'
 import {
   CyApp,
@@ -19,6 +12,13 @@ import { MessageSeverity } from '../../models/MessageModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { getWorkspaceFromDb } from '../db'
+import {
+  createNdexWorkspace,
+  TimeOutErrorIndicator,
+  TimeOutErrorMessage,
+  updateNdexWorkspace,
+} from '../external-api/ndex'
 import { useMessageStore } from './stores/MessageStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useLoadCyNetwork } from './useLoadCyNetwork'

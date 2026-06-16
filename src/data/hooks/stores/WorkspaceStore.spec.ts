@@ -1,6 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
 
-import { IdType } from '../../../models/IdType'
 import { Workspace } from '../../../models/WorkspaceModel'
 import { useWorkspaceStore } from './WorkspaceStore'
 

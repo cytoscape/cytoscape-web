@@ -39,8 +39,8 @@ export function checkAttribute(
   for (const netId of netIds) {
     for (const row of nodeMatchingTable.matchingTableRows) {
       if (
-        !row.nameRecord.hasOwnProperty(netId) ||
-        !row.typeRecord.hasOwnProperty(netId) ||
+        !Object.prototype.hasOwnProperty.call(row.nameRecord, netId) ||
+        !Object.prototype.hasOwnProperty.call(row.typeRecord, netId) ||
         (row.nameRecord[netId] !== 'None' &&
           !networkRecords[netId]?.nodeTable?.columns.some(
             (col) =>
@@ -53,8 +53,8 @@ export function checkAttribute(
     }
     for (const row of edgeMatchingTable.matchingTableRows) {
       if (
-        !row.nameRecord.hasOwnProperty(netId) ||
-        !row.typeRecord.hasOwnProperty(netId) ||
+        !Object.prototype.hasOwnProperty.call(row.nameRecord, netId) ||
+        !Object.prototype.hasOwnProperty.call(row.typeRecord, netId) ||
         (row.nameRecord[netId] !== 'None' &&
           !networkRecords[netId]?.edgeTable?.columns.some(
             (col) =>
@@ -81,10 +81,13 @@ export function castAttributes(
       ? matchingTable.matchingTableRows.slice(1)
       : matchingTable.matchingTableRows) {
       if (
-        row.nameRecord.hasOwnProperty(netId) &&
+        Object.prototype.hasOwnProperty.call(row.nameRecord, netId) &&
         row.nameRecord[netId] !== 'None' &&
         row.nameRecord[netId] !== '' &&
-        toMergeAttr.hasOwnProperty(row.nameRecord[netId])
+        Object.prototype.hasOwnProperty.call(
+          toMergeAttr,
+          row.nameRecord[netId],
+        )
       ) {
         const val = toMergeAttr[row.nameRecord[netId]]
         if (
@@ -191,16 +194,18 @@ function singleValueTypeCoercion(
       case ValueTypeName.Boolean:
         if (typeof val === 'boolean') return val
         throw new Error(`Cannot convert ${val} to Boolean`)
-      case ValueTypeName.Double:
+      case ValueTypeName.Double: {
         const doubleVal = Number(val)
         if (isNaN(doubleVal)) throw new Error(`Cannot convert ${val} to Double`)
         return doubleVal
+      }
       case ValueTypeName.Long:
-      case ValueTypeName.Integer:
+      case ValueTypeName.Integer: {
         const intVal = parseInt(String(val), 10)
         if (isNaN(intVal))
           throw new Error(`Cannot convert ${val} to Integer/Long`)
         return intVal
+      }
       default:
         throw new Error(`Unsupported type ${mergedType}`)
     }
@@ -345,7 +350,7 @@ export function mergeAttributes(
 ): Record<string, ValueType> {
   const mergedRow = { ...orinalRow }
   Object.entries(castedRecord).forEach(([key, value]) => {
-    if (!mergedRow.hasOwnProperty(key)) {
+    if (!Object.prototype.hasOwnProperty.call(mergedRow, key)) {
       mergedRow[key] = value
     } else if (Array.isArray(mergedRow[key]) && Array.isArray(value)) {
       if (

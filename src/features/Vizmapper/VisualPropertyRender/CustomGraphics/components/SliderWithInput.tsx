@@ -1,5 +1,5 @@
-import * as React from 'react'
 import { Box, Slider, TextField } from '@mui/material'
+import * as React from 'react'
 
 interface SliderWithInputProps {
   value: number

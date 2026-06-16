@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unescaped-entities */
+ 
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import { ReactElement } from 'react'
 

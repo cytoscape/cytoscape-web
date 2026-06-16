@@ -4,7 +4,6 @@
 
 import { v4 as uuidv4 } from 'uuid'
 
-import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
@@ -14,6 +13,7 @@ import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { validateCX2 } from '../../models/CxModel/impl/validator'

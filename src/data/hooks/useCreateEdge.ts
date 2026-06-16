@@ -20,23 +20,20 @@
  * ```
  */
 
-import { IdType } from '../../models/IdType'
-import { ValueType } from '../../models/TableModel'
-import { AttributeName } from '../../models/TableModel/AttributeName'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { TableType } from '../../models/StoreModel/TableStoreModel'
-import { EdgeView } from '../../models/ViewModel'
 import {
   createEdgesCore,
-  type EdgeOperationStoreActions,
   type CreateEdgesParams,
+  type EdgeOperationStoreActions,
 } from '../../models/CyNetworkModel'
+import { IdType } from '../../models/IdType'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { ValueType } from '../../models/TableModel'
+import { AttributeName } from '../../models/TableModel/AttributeName'
 import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useUndoStack } from './useUndoStack'
 
 export interface CreateEdgeOptions {

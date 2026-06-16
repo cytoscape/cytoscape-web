@@ -208,7 +208,7 @@ const filterTable = (
           // Filter the columns for the current row
           const filteredRow = selectedColumns.reduce(
             (colAcc, columnName) => {
-              if (row.hasOwnProperty(columnName)) {
+              if (Object.prototype.hasOwnProperty.call(row, columnName)) {
                 colAcc[columnName] = row[columnName]
               }
               return colAcc
@@ -228,7 +228,7 @@ const filterTable = (
       (acc, [nodeId, row]) => {
         const filteredRow = selectedColumns.reduce(
           (colAcc, columnName) => {
-            if (row.hasOwnProperty(columnName)) {
+            if (Object.prototype.hasOwnProperty.call(row, columnName)) {
               colAcc[columnName] = row[columnName]
             }
             return colAcc

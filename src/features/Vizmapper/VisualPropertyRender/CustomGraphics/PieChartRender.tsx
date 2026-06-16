@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { PieChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   calculateChartDimensions,
@@ -7,7 +8,7 @@ import {
   calculateSliceAngle,
   degreesToRadians,
 } from './utils/chartRenderUtils'
-import { CHART_CONSTANTS, COLORS, STYLES } from './utils/constants'
+import { COLORS, STYLES } from './utils/constants'
 import { EmptyChartState } from './WizardSteps/EmptyChartState'
 
 interface PieChartRenderProps {

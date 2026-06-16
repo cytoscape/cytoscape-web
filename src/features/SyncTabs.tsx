@@ -8,9 +8,9 @@ import {
   getWorkspaceFromDb,
   putTimestampToDb,
 } from '../data/db'
+import { useAppStore } from '../data/hooks/stores/AppStore'
 import { logUi } from '../debug'
 import { ServiceStatus } from '../models/AppModel/ServiceStatus'
-import { useAppStore } from '../data/hooks/stores/AppStore'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())

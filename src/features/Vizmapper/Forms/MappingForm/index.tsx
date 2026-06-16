@@ -1,10 +1,8 @@
 import {
   Box,
   Button,
-  Checkbox,
   Divider,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Popover,
@@ -20,7 +18,7 @@ import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleSt
 import { useUndoStack } from '../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../models/IdType'
 import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { AttributeName, ValueTypeName } from '../../../../models/TableModel'
+import { AttributeName } from '../../../../models/TableModel'
 import {
   EdgeVisualPropertyName,
   NodeVisualPropertyName,
@@ -72,17 +70,8 @@ function MappingFormContent(props: {
     columnValues: state.columnValues,
     tables: state.tables,
   }))
-  const {
-    removeMapping,
-    createContinuousMapping,
-    createDiscreteMapping,
-    createPassthroughMapping,
-    createMapping,
-  } = useVisualStyleStore((state) => ({
+  const { removeMapping, createMapping } = useVisualStyleStore((state) => ({
     removeMapping: state.removeMapping,
-    createContinuousMapping: state.createContinuousMapping,
-    createDiscreteMapping: state.createDiscreteMapping,
-    createPassthroughMapping: state.createPassthroughMapping,
     createMapping: state.createMapping,
   }))
 

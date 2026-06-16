@@ -9,10 +9,10 @@ import {
   Typography,
 } from '@mui/material'
 import * as React from 'react'
-import { useState } from 'react'
 
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
+import { logUi } from '../../debug'
 import { IdType } from '../../models/IdType'
 import VisualStyleFn, {
   EdgeVisualPropertyName,
@@ -25,7 +25,6 @@ import {
   getCustomGraphicNodeVps,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
-  getSizePropertyForCustomGraphic,
 } from '../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
@@ -33,7 +32,6 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { MappingForm } from './Forms/MappingForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
-import { logUi } from '../../debug'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -65,9 +63,9 @@ function VisualPropertyView(props: {
 
   let tooltip: string | undefined
   if (widthDisabled)
-    tooltip = `Node width and height are locked. Use the \'${heightName}\' property to adjust the node size, or uncheck \“Lock node width and height\” in \'${heightName}\' to enable editing of the Width.`
+    tooltip = `Node width and height are locked. Use the '${heightName}' property to adjust the node size, or uncheck “Lock node width and height” in '${heightName}' to enable editing of the Width.`
   if (arrowColorDisabled)
-    tooltip = `Edge color to arrows is enabled. Use the \'${edgeLineColorName}\' property to adjust the arrow color, or uncheck \“Edge color to arrows\” in \'${edgeLineColorName}\' to enable editing of the arrow color.`
+    tooltip = `Edge color to arrows is enabled. Use the '${edgeLineColorName}' property to adjust the arrow color, or uncheck “Edge color to arrows” in '${edgeLineColorName}' to enable editing of the arrow color.`
 
   const hasWarning = vpName.includes('nodeImageChart')
 

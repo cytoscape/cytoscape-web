@@ -1,17 +1,17 @@
-import {
-  deleteDb,
-  getAllAppsFromDb,
-  getAllServiceAppsFromDb,
-  putAppToDb,
-  putServiceAppToDb,
-  putWorkspaceToDb,
-  deleteServiceAppFromDb,
-} from '../db'
 import { logDb } from '../../debug'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { Workspace } from '../../models/WorkspaceModel'
+import {
+  deleteDb,
+  deleteServiceAppFromDb,
+  getAllAppsFromDb,
+  getAllServiceAppsFromDb,
+  putAppToDb,
+  putServiceAppToDb,
+  putWorkspaceToDb,
+} from '../db'
 import { serviceFetcher } from './stores/AppStore'
 
 /**

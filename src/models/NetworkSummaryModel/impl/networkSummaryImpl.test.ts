@@ -322,6 +322,9 @@ describe('NetworkSummaryImpl', () => {
       state = deleteSummary(state, 'network-1')
       state = deleteAll(state)
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.summaries).toBe(originalSummaries)
       expect(original.summaries).toEqual({})

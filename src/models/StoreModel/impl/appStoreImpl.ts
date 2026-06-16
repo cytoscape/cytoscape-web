@@ -24,7 +24,11 @@ const stripLazyRefs = (
   if (components === undefined || components === null) {
     return []
   }
-  return components.map(({ component: _lazy, ...rest }) => rest)
+  return components.map((component) => {
+    const rest = { ...component }
+    delete (rest as any).component
+    return rest
+  })
 }
 
 /**
@@ -35,7 +39,8 @@ const stripLazyRefs = (
  * in useAppManager.ts (which stores them in the Immer-free AppResourceStore).
  */
 const stripResources = (app: CyApp): Omit<CyApp, 'resources'> => {
-  const { resources: _resources, ...rest } = app as any
+  const rest = { ...(app as any) }
+  delete rest.resources
   return rest
 }
 
@@ -165,7 +170,8 @@ export const addService = (
  * Remove a service app
  */
 export const removeService = (state: AppState, url: string): AppState => {
-  const { [url]: deleted, ...restServiceApps } = state.serviceApps
+  const restServiceApps = { ...state.serviceApps }
+  delete restServiceApps[url]
   return {
     ...state,
     serviceApps: restServiceApps,
@@ -353,8 +359,10 @@ export const setManifestSource = (
  * Remove an app from apps and loadStates
  */
 export const removeApp = (state: AppState, id: string): AppState => {
-  const { [id]: _removedApp, ...restApps } = state.apps
-  const { [id]: _removedLoadState, ...restLoadStates } = state.loadStates
+  const restApps = { ...state.apps }
+  delete restApps[id]
+  const restLoadStates = { ...state.loadStates }
+  delete restLoadStates[id]
   return {
     ...state,
     apps: restApps,

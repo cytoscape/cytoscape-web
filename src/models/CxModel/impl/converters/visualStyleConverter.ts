@@ -15,7 +15,6 @@ import {
   MappingFunctionType,
   PassthroughMappingFunction,
   VisualProperty,
-  VisualPropertyGroup,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
@@ -75,7 +74,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       const { id, v } = entry
       Object.keys(v).forEach((cxVPName) => {
         const entry = Object.entries(cxVisualPropertyConverter).find(
-          ([vpName, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
+          ([, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
         )
 
         if (entry != null) {
@@ -115,7 +114,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       const { id, v } = entry
       Object.keys(v).forEach((cxVPName) => {
         const entry = Object.entries(cxVisualPropertyConverter).find(
-          ([vpName, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
+          ([, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
         )
 
         if (entry != null) {
@@ -175,7 +174,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
     {
       vps: networkVisualProperties(visualStyle),
       getDefault: (cxVPName: string) => defaultNetworkProperties[cxVPName],
-      getMapping: (cxVPName: string) => null,
+      getMapping: () => null,
       getBypass: () => new Map(), // no mappings or bypasses for network vps
     },
   ]

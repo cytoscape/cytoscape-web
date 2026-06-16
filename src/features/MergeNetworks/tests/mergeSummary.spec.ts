@@ -371,7 +371,8 @@ function deepClone<T>(obj: T): T {
   }
 
   if (obj instanceof Function) {
-    return ((...args: any[]) => (obj as Function)(...args)) as unknown as T
+    return ((...args: any[]) =>
+      (obj as (...args: any[]) => any)(...args)) as unknown as T
   }
 
   if (obj instanceof Array) {

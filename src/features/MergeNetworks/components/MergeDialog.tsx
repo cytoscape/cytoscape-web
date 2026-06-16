@@ -40,26 +40,22 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
-import { AppConfigContext } from '../../../AppConfigContext'
 import { putNetworkSummaryToDb } from '../../../data/db'
-import { logUi } from '../../../debug'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
-import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
-import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../../data/hooks/useLoadCyNetwork'
+import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
-import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Column } from '../../../models/TableModel'
@@ -195,7 +191,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const edgeMatchingTableObj = createMatchingTable(edgeMatchingTable)
   const netMatchingTableObj = createMatchingTable(netMatchingTable)
   // Functions relying on store hooks
-  const updateSummary = useNetworkSummaryStore((state) => state.update)
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
   const netSummaries = useNetworkSummaryStore((state) => state.summaries)
   const setVisualStyleOptions = useUiStateStore(
@@ -211,28 +206,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const setCurrentNetworkId = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-  // Layout setting using the layout store
-  const defaultLayout: LayoutAlgorithm = useLayoutStore(
-    (state) => state.preferredLayout,
-  )
-  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
-    (state) => state.setIsRunning,
-  )
-  const layoutEngines: LayoutEngine[] = useLayoutStore(
-    (state) => state.layoutEngines,
-  )
-  const engine: LayoutEngine =
-    layoutEngines.find((engine) => engine.name === defaultLayout.engineName) ??
-    layoutEngines[0]
-
-  const updateNodePositions: (
-    // Function to update node positions after layout is applied
-    networkId: IdType,
-    positions: Map<IdType, [number, number, number?]>,
-  ) => void = useViewModelStore((state) => state.updateNodePositions)
-
-  const getFunction = useRendererFunctionStore((state) => state.getFunction)
-
   // Functions to select networks to merge or undo the selection
   const handleSelectAvailable = (uuid: string) => {
     const currentIndex = findPairIndex(selectedAvailable, uuid)

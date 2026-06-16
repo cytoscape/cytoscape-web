@@ -1,5 +1,4 @@
 //import the necessary libraries and components
-import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material'
 import {
   Paper,
   Table,
@@ -15,7 +14,6 @@ import React, { useEffect } from 'react'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
-import { Column } from '../../../models/TableModel/Column'
 import {
   MergeType,
   NetworkRecord,
@@ -159,7 +157,7 @@ export const MatchingTableComp = React.memo(
       if (row.hasConflicts) {
         const conflictDescription: string[] = []
         const typeSet = new Set<ValueTypeName | 'None'>()
-        for (const [_, netId] of netLst) {
+        for (const [, netId] of netLst) {
           if (
             row.nameRecord[netId] !== 'None' &&
             row.typeRecord[netId] !== undefined &&
@@ -297,3 +295,5 @@ export const MatchingTableComp = React.memo(
     )
   },
 )
+
+MatchingTableComp.displayName = 'MatchingTableComp'

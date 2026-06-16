@@ -3,10 +3,8 @@ import {
   Box,
   Button,
   Group,
-  Select,
   Space,
   Text,
-  TextInput,
   Tooltip,
 } from '@mantine/core'
 
@@ -52,7 +50,7 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
           .filter((x) => x.startsWith('list_'))
           .map((v) => {
             return (
-              <Tooltip zIndex={2001} label={valueTypeName2Label[v]}>
+              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label[v]}>
                 <Button
                   style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
                   disabled={!validValues.includes(v)}
@@ -82,7 +80,7 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
           placeholder="Select or type custom delimiter"
           data={['|', ':', '\\', '/', ',', 'space', 'tab']}
           comboboxProps={{ withinPortal: false }}
-          filter={({ options, search }) => options}
+          filter={({ options }) => options}
         />
       </Group>
     </Box>

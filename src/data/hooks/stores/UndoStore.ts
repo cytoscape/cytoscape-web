@@ -1,8 +1,6 @@
 import { create, StateCreator, StoreApi } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { putUndoRedoStackToDb } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models'
 import {
@@ -10,6 +8,8 @@ import {
   UndoRedoStack,
   UndoStore,
 } from '../../../models/StoreModel/UndoStoreModel'
+import { putUndoRedoStackToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 const persist =

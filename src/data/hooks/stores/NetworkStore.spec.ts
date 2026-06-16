@@ -2,10 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 
 import { IdType } from '../../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../../models/NetworkModel'
-import {
-  NetworkUpdatedEvent,
-  UpdateEventType,
-} from '../../../models/StoreModel/NetworkStoreModel'
+import { UpdateEventType } from '../../../models/StoreModel/NetworkStoreModel'
 import { useNetworkStore } from './NetworkStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -177,9 +174,8 @@ describe('useNetworkStore', () => {
         result.current.add(network)
       })
 
-      let deletedEdges: Edge[] = []
       act(() => {
-        deletedEdges = result.current.deleteNodes(networkId, ['n1'])
+        result.current.deleteNodes(networkId, ['n1'])
       })
 
       const updatedNetwork = result.current.networks.get(networkId)

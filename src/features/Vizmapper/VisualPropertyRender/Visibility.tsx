@@ -33,7 +33,7 @@ export function VisibilityPicker(props: {
   onValueChange: (visibility: VisibilityType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? VisibilityType.Element,
   )

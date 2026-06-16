@@ -37,7 +37,7 @@ export const applyMigrations = async (
   }
 
   // Create the given version
-  db.version(versionNumber).upgrade(async (tx) => {})
+  db.version(versionNumber).upgrade(async () => {})
 
   // needed for dexie observables to add it's tables
   migrations.forEach(async (migration) => {

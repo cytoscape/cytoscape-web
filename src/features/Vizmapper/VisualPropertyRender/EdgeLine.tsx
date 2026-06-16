@@ -27,7 +27,7 @@ export function EdgeLinePicker(props: {
   onValueChange: (edgeLine: EdgeLineType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedEdgeLines = Object.values(EdgeLineType).sort()
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? EdgeLineType.Solid,

@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { RingChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   calculateChartDimensions,

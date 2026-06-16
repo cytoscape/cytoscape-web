@@ -2,9 +2,8 @@ import { act, renderHook } from '@testing-library/react'
 
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
-import { AttributeName, Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+import { Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
-import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
 import { useTableStore } from './TableStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests

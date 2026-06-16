@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
-import { logApp } from '../../../debug'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { logApp } from '../../../debug'
 import { Column, Table, ValueType } from '../../../models'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { ActionHandlerProps } from './serviceResultHandlerManager'

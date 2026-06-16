@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as db from '../db';
 import {
   deleteDb,
   getAllAppsFromDb,
@@ -8,7 +7,6 @@ import {
   getWorkspaceFromDb,
   initializeDb,
   putAppToDb,
-  putServiceAppToDb,
 } from '../db'
 vi.mock('../db', async (importOriginal) => {
   const actual = await importOriginal();
@@ -21,7 +19,6 @@ vi.mock('../db', async (importOriginal) => {
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { serviceFetcher } from './stores/AppStore'
 import { RemoteWorkspace,useLoadWorkspace } from './useLoadWorkspace'
 
 // Mock window.location.reload

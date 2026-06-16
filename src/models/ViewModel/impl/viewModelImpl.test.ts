@@ -10,7 +10,6 @@ import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
 import { createViewModelFromCX } from '../../CxModel/impl/converters'
 import { IdType } from '../../IdType'
-import { Edge,Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { EdgeView,NetworkView, NodeView } from '../index'
 import {
@@ -1125,6 +1124,9 @@ describe('ViewModel Implementation', () => {
         values: new Map(),
       })
       networkView = deleteObjects(networkView, ['n2'])
+
+      // The chained operations produce a new network view object
+      expect(networkView).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.selectedNodes).toBe(originalSelectedNodes)

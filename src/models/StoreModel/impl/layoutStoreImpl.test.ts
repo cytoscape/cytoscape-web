@@ -138,6 +138,9 @@ describe('LayoutStoreImpl', () => {
       state = setIsRunning(state, true)
       state = setLayoutOption(state, 'cyjs', 'grid', 'spacing', 100)
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.layoutEngines).toBe(originalLayoutEngines)
       expect(original.preferredLayout).toBe(originalPreferredLayout)

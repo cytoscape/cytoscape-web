@@ -60,8 +60,8 @@ export const MergeNetwork = ({ onClick: handleClose }: BaseMenuItemProps): React
   const networksLoaded: Record<IdType, NetworkRecord> = {}
   networkIds.forEach((networkId) => {
     if (
-      networkTables.hasOwnProperty(networkId) &&
-      networkSummaries.hasOwnProperty(networkId) &&
+      Object.prototype.hasOwnProperty.call(networkTables, networkId) &&
+      Object.prototype.hasOwnProperty.call(networkSummaries, networkId) &&
       networkStore.has(networkId)
     ) {
       networksLoaded[networkId] = {

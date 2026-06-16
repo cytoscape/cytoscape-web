@@ -10,7 +10,7 @@ import {
   Slider,
   Typography,
 } from '@mui/material'
-//@ts-expect-error
+//@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 
@@ -351,5 +351,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+PngExportForm.displayName = 'PngExportForm'
 
 export default PngExportForm

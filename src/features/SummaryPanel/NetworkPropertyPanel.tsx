@@ -22,9 +22,9 @@ import { NetworkSummary } from '../../models/NetworkSummaryModel'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
-import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { Network } from '../../models'
 import { ConfirmationDialog } from '../ConfirmationDialog'
 import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'

@@ -1,7 +1,7 @@
 import { logUi } from '../../../debug'
 import { IdType } from '../../IdType'
 import { Edge, Network, Node } from '../../NetworkModel'
-import { AttributeName, Column, Table, ValueType } from '../../TableModel'
+import { AttributeName, Table, ValueType } from '../../TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import {
   ContinuousMappingFunction,
@@ -25,7 +25,6 @@ import {
   getCustomGraphicNodeVps,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
-  getSizePropertyForCustomGraphic,
 } from './customGraphicsImpl'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
 import { isOpenShape, openShapeToFilledShape } from './edgeArrowShapeImpl'
@@ -152,7 +151,6 @@ const nodeViewBuilder = (
   nodeViews?: Record<IdType, NodeView>,
 ): Record<IdType, NodeView> => {
   const result: Record<IdType, NodeView> = {}
-  const columns: Column[] = nodeTable.columns
   let idx: number = nodes.length
   if (idx !== nodes.length) {
     logUi.info(
@@ -179,7 +177,6 @@ const nodeViewBuilder = (
         visualProps,
         mappers,
         nodeTable.rows.get(nodeId) ?? {},
-        columns,
       ),
       x: nodeView !== undefined ? nodeView.x : 0,
       y: nodeView !== undefined ? nodeView.y : 0,
@@ -196,7 +193,6 @@ const edgeViewBuilder = (
   edgeTable: Table,
 ): Record<IdType, EdgeView> => {
   const result: Record<IdType, EdgeView> = {}
-  const columns: Column[] = edgeTable.columns
   let idx: number = edges.length
 
   while (idx--) {
@@ -208,7 +204,6 @@ const edgeViewBuilder = (
         visualProps,
         mappers,
         edgeTable.rows.get(edge.id) ?? {},
-        columns,
       ),
     }
     result[ev.id] = ev
@@ -274,7 +269,7 @@ const computeViewModelStyleProperties = (
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
 ) => {
-  const { defaultValue, mapping, bypassMap, name, group } = vp
+  const { defaultValue, mapping, bypassMap } = vp
   const bypass = bypassMap.get(id)
   let pairsToAdd: [string, VisualPropertyValueType][] = []
   if (bypass !== undefined) {
@@ -311,7 +306,6 @@ const computeView = (
   visualProperties: Array<VisualProperty<VisualPropertyValueType>>,
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
-  columns: Column[],
 ): Map<VisualPropertyName, VisualPropertyValueType> => {
   const pairs = new Map<VisualPropertyName, VisualPropertyValueType>()
 

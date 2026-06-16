@@ -7,8 +7,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { putUiStateToDb } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { UiStateStore } from '../../../models/StoreModel/UiStateStoreModel'
@@ -21,6 +19,8 @@ import {
   TableDisplayConfiguration,
   VisualStyleOptions,
 } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { putUiStateToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 
 export const DEFAULT_UI_STATE = {
   panels: {
@@ -50,7 +50,7 @@ export const serializeColumnUIKey = UiImpl.serializeColumnUIKey
 export const deserializeColumnUIKey = UiImpl.deserializeColumnUIKey
 
 export const useUiStateStore = create(
-  immer<UiStateStore>((set, get) => ({
+  immer<UiStateStore>((set) => ({
     ui: DEFAULT_UI_STATE,
     setUi: (ui: Ui) => {
       set((state) => {

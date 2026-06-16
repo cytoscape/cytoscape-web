@@ -1,6 +1,6 @@
-import * as React from 'react'
-import { Box, Typography, Tooltip } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import { Box, Tooltip,Typography } from '@mui/material'
+import * as React from 'react'
 
 interface LabelWithTooltipProps {
   label: string

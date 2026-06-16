@@ -20,7 +20,6 @@ import debounce from 'lodash/debounce'
 import * as React from 'react'
 import Draggable from 'react-draggable'
 
-import { ColorPalettePicker } from './ColorPalettePicker'
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { useUndoStack } from '../../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../../models/IdType'
@@ -33,6 +32,7 @@ import { ContinuousMappingFunction } from '../../../../../models/VisualStyleMode
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ColorGradient } from './ColorGradient'
+import { ColorPalettePicker } from './ColorPalettePicker'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
 import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
 
@@ -438,10 +438,10 @@ export function ContinuousColorMappingForm(props: {
                   bounds="parent"
                   axis="x"
                   handle=".handle"
-                  onStart={(e) => {
+                  onStart={() => {
                     setlastDraggedHandleId(h.id)
                   }}
-                  onStop={(e) => {
+                  onStop={() => {
                     setlastDraggedHandleId(h.id)
                   }}
                   onDrag={(e, data) => {

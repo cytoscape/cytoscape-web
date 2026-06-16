@@ -1,6 +1,6 @@
 import { Alert, Button, CircularProgress, Grid, Snackbar, Typography } from '@mui/material'
 import debounce from 'lodash/debounce'
-import { ReactElement, useContext, useEffect, useState, useRef } from 'react'
+import { ReactElement, useContext, useEffect, useRef,useState } from 'react'
 import {
   isRouteErrorResponse,
   useLocation,
@@ -8,15 +8,15 @@ import {
   useRouteError,
 } from 'react-router-dom'
 
-import { AppConfigContext, type AppConfig } from '../AppConfigContext'
-import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
-import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
+import { type AppConfig,AppConfigContext } from '../AppConfigContext'
+import { type DatabaseSnapshot,exportDatabaseSnapshot } from '../data/db/snapshot'
 import {
   createCrashReportPayload,
-  sendErrorReport,
   exportPartialSnapshotForNetwork,
+  sendErrorReport,
 } from '../data/external-api/error-report'
-import { exportDatabaseSnapshot, type DatabaseSnapshot } from '../data/db/snapshot'
+import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
+import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 import { logDb } from '../debug'
 
 export const Error = (): ReactElement => {

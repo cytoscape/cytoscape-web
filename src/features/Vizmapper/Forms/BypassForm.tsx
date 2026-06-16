@@ -38,7 +38,6 @@ import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView } from '../../../models/ViewModel'
 import {
   EdgeVisualPropertyName,
-  Mapper,
   MappingFunctionType,
   NodeVisualPropertyName,
   VisualProperty,
@@ -404,7 +403,11 @@ function BypassFormContent(props: {
                       sx={{ maxWidth: 155 }}
                     >
                       {selectedElementTable.columns.map((col: Column) => {
-                        return <MenuItem value={col.name}>{col.name}</MenuItem>
+                        return (
+                          <MenuItem key={col.name} value={col.name}>
+                            {col.name}
+                          </MenuItem>
+                        )
                       })}
                     </Select>
                   </TableCell>
@@ -571,8 +574,8 @@ export function BypassForm(props: {
   const bypassValuesBySelected = Array.from(
     props.visualProperty.bypassMap.entries(),
   )
-    .filter(([k, v]) => selectedElements.includes(k))
-    .map(([_, v]) => v)
+    .filter(([k]) => selectedElements.includes(k))
+    .map(([, v]) => v)
   const onlyOneBypassValue =
     new Set(
       selectedElements.length > 0

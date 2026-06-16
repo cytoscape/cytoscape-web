@@ -185,7 +185,8 @@ export const deleteFilterConfig = <T>(
   state: FilterState<T>,
   name: string,
 ): FilterState<T> => {
-  const { [name]: deleted, ...restFilterConfigs } = state.filterConfigs
+  const restFilterConfigs = { ...state.filterConfigs }
+  delete restFilterConfigs[name]
   return {
     ...state,
     filterConfigs: restFilterConfigs,

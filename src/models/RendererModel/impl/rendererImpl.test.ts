@@ -157,6 +157,9 @@ describe('RendererImpl', () => {
       state = setViewport(state, 'renderer-1', 'network-1' as IdType, createTestViewport())
       state = deleteRenderer(state, 'renderer-1')
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.renderers).toBe(originalRenderers)
       expect(original.viewports).toBe(originalViewports)

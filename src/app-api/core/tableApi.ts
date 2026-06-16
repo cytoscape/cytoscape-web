@@ -6,7 +6,6 @@ import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { IdType } from '../../models/IdType'
-import { Column } from '../../models/TableModel/Column'
 import {
   CellEdit as StoreCellEdit,
   TableType,
@@ -16,6 +15,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
+import { Column } from '../../models/TableModel/Column'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { Network } from "../../../models/NetworkModel";
-import { Table, ValueType } from '../../../models/TableModel';
+import { Table } from '../../../models/TableModel';
 import { VisualStyle } from "../../../models/VisualStyleModel";
 export enum MergeType {
     union = 'Union',

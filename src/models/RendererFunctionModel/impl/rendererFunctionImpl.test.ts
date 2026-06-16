@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
 import { IdType } from '../../IdType'
-import { getFunction, RendererFunctionState, setFunction } from './rendererFunctionImpl'
+import {
+  getFunction,
+  RendererFunction,
+  RendererFunctionState,
+  setFunction,
+} from './rendererFunctionImpl'
 
 const createDefaultState = (): RendererFunctionState => {
   return {
-    rendererFunctions: new Map<string, Map<string, Function>>(),
+    rendererFunctions: new Map<string, Map<string, RendererFunction>>(),
     rendererFunctionsByNetworkId: new Map<
       IdType,
-      Map<string, Map<string, Function>>
+      Map<string, Map<string, RendererFunction>>
     >(),
   }
 }
@@ -151,13 +156,7 @@ describe('RendererFunctionImpl', () => {
       const originalRendererFunctions = original.rendererFunctions
       const originalByNetworkId = original.rendererFunctionsByNetworkId
 
-      const result = setFunction(
-        original,
-        'renderer-1',
-        'function-1',
-        () => 'test',
-        'network-1',
-      )
+      setFunction(original, 'renderer-1', 'function-1', () => 'test', 'network-1')
 
       // Verify original is unchanged
       expect(original.rendererFunctions).toBe(originalRendererFunctions)

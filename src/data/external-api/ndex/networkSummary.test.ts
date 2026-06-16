@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { NetworkSummary } from '../../../models/NetworkSummaryModel'
-import { NetworkProperty } from '../../../models/NetworkSummaryModel/NetworkProperty'
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
 import { waitSeconds } from '../../../utils/waitSeconds'
 import { getNdexClient } from './client'

@@ -8,20 +8,19 @@ import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
-import {
-  clearNetworksFromDb,
-  deleteNetworkFromDb,
-  putNetworkToDb,
-} from '../../db'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../../models/NetworkModel'
 import * as NetworkStoreImpl from '../../../models/StoreModel/impl/networkStoreImpl'
 import {
   NetworkStore,
-  NetworkUpdatedEvent,
   UpdateEventType,
 } from '../../../models/StoreModel/NetworkStoreModel'
+import {
+  clearNetworksFromDb,
+  deleteNetworkFromDb,
+  putNetworkToDb,
+} from '../../db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 const persist =

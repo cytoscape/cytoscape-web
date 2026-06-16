@@ -131,7 +131,7 @@ export const createCyJSON = (network: Network): object => {
  *
  * @returns Network instance
  */
-export const createNetworkFromCyjs = (id: IdType, cyjs: any): Network => {
+export const createNetworkFromCyjs = (id: IdType): Network => {
   // TODO: Implement
   const network = createNetwork(id)
   return network
@@ -140,10 +140,7 @@ export const createNetworkFromCyjs = (id: IdType, cyjs: any): Network => {
 /**
  * Create a new network object from SIF
  */
-export const createFromSif = (
-  id: IdType,
-  sif: [string, string, string?],
-): Network => {
+export const createFromSif = (id: IdType): Network => {
   const network = createNetwork(id)
   return network
 }

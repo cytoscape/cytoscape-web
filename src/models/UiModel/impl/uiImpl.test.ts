@@ -550,6 +550,9 @@ describe('UiImpl', () => {
         },
       })
 
+      // The chained operations produce a new ui object
+      expect(ui).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.activeNetworkView).toBe(originalActiveNetworkView)
       expect(original.panels[Panel.LEFT]).toBe(originalPanelState)

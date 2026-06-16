@@ -12,8 +12,8 @@
 import packageJson from '../../../../package.json'
 import { logDb } from '../../../debug'
 import { getDatabaseVersion } from '../index'
-import { exportDatabaseSnapshot } from './index'
 import type { DatabaseSnapshot } from './index'
+import { exportDatabaseSnapshot } from './index'
 
 /**
  * Application state structure combining database and store states.
@@ -157,7 +157,7 @@ const serializeStoreState = (
       for (const [key, value] of Object.entries(state)) {
         try {
           serialized[key] = serializeStoreState(value, visited)
-        } catch (error) {
+        } catch {
           // If serialization fails for a property, skip it with error message
           serialized[key] = '[Serialization Error]'
         }
@@ -166,7 +166,7 @@ const serializeStoreState = (
     }
 
     return state
-  } catch (error) {
+  } catch {
     // If serialization fails entirely, return error placeholder
     return '[Serialization Error]'
   }

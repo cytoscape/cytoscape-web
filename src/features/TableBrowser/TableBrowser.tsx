@@ -13,8 +13,8 @@ import {
   GridSelection,
   Item,
 } from '@glideapps/glide-data-grid'
-import { KeyboardArrowDown, KeyboardArrowUp, CheckBoxOutlined as CheckBoxOutlinedIcon, ContentCopy, ContentPaste } from '@mui/icons-material'
-import { Button, ButtonGroup, Tooltip, Menu, MenuItem, Divider, ListItemIcon, ListItemText } from '@mui/material'
+import { CheckBoxOutlined as CheckBoxOutlinedIcon, ContentCopy, ContentPaste,KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
+import { Button, ButtonGroup, Divider, ListItemIcon, ListItemText,Menu, MenuItem, Tooltip } from '@mui/material'
 import Box from '@mui/material/Box'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
@@ -32,14 +32,9 @@ import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
 import { useWindowSize } from '../../data/hooks/useWindowSize'
 import { IdType } from '../../models/IdType'
-import { CellEdit, TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { CellEdit } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import {
-  Column,
-  Table,
-  ValueType,
-  ValueTypeName,
-} from '../../models/TableModel'
+import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
 import {
   deserializeValue,
   deserializeValueList,
@@ -58,7 +53,6 @@ import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableTo
 import {
   DuplicateIcon,
   EditIcon,
-  RenameIcon,
   SortAscIcon,
   SortDescIcon,
 } from './Icon'
@@ -222,10 +216,10 @@ export default function TableBrowser(props: {
     state.getViewModel(networkId),
   )
   const selectedNodes = useViewModelStore(
-    (state) => viewModel?.selectedNodes ?? [],
+    () => viewModel?.selectedNodes ?? [],
   )
   const selectedEdges = useViewModelStore(
-    (state) => viewModel?.selectedEdges ?? [],
+    () => viewModel?.selectedEdges ?? [],
   )
 
   const tableDisplayConfiguration = useUiStateStore(
@@ -252,7 +246,6 @@ export default function TableBrowser(props: {
   )
   const moveColumn = useTableStore((state) => state.moveColumn)
 
-  const workspace = useWorkspaceStore((state) => state.workspace)
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
@@ -739,12 +732,7 @@ export default function TableBrowser(props: {
   )
 
   const onColumnResize = React.useCallback(
-    (
-      column: GridColumn,
-      newSize: number,
-      colIndex: number,
-      newSizeWithGrow: number,
-    ): void => {
+    (column: GridColumn, newSize: number, colIndex: number): void => {
       if (column?.id !== undefined) {
         // Don't allow resizing virtual columns
         const columnData = allColumns[colIndex]

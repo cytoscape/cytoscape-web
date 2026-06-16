@@ -8,11 +8,11 @@ import {
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
 } from '../../../data/db'
-import { logDb } from '../../../debug'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logDb } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import {
   NetworkProperty,

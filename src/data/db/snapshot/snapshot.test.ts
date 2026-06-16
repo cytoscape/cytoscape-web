@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { Network } from '../../../models/NetworkModel'
 import { Table } from '../../../models/TableModel'
@@ -21,12 +21,10 @@ import {
  */
 import {
   exportDatabaseSnapshot,
-  exportDatabaseSnapshotToFile,
   importDatabaseSnapshot,
   importDatabaseSnapshotFromFile,
 } from './index'
 import {
-  MAX_RECORDS_PER_STORE,
   MAX_SNAPSHOT_SIZE_BYTES,
   sanitizeRecord,
   validateSnapshotFile,
@@ -258,14 +256,14 @@ describe('Database Snapshot Import/Export', () => {
         },
       }
 
-      const result = validateSnapshotStructure(snapshot, 7)
+      const result = validateSnapshotStructure(snapshot)
       expect(result.isValid).toBe(true)
       expect(result.errors.length).toBe(0)
     })
 
     it('should reject snapshot with missing metadata', () => {
       const snapshot = { data: {} }
-      const result = validateSnapshotStructure(snapshot, 7)
+      const result = validateSnapshotStructure(snapshot)
       expect(result.isValid).toBe(false)
       expect(result.errors.length).toBeGreaterThan(0)
     })
@@ -280,7 +278,7 @@ describe('Database Snapshot Import/Export', () => {
         },
         data: {},
       }
-      const result = validateSnapshotStructure(snapshot, 7)
+      const result = validateSnapshotStructure(snapshot)
       // Version is not validated, so errors should not mention version
       const versionErrors = result.errors.filter((e) =>
         e.toLowerCase().includes('version'),
@@ -298,7 +296,7 @@ describe('Database Snapshot Import/Export', () => {
         },
         data: {},
       }
-      const result = validateSnapshotStructure(snapshot, 7)
+      const result = validateSnapshotStructure(snapshot)
       // Should not have version-related warnings
       expect(result.warnings.some((w) => w.includes('version'))).toBe(false)
     })
@@ -314,7 +312,7 @@ describe('Database Snapshot Import/Export', () => {
           [ObjectStoreNames.CyNetworks]: 'not-an-array',
         },
       }
-      const result = validateSnapshotStructure(snapshot, 7)
+      const result = validateSnapshotStructure(snapshot)
       expect(result.isValid).toBe(false)
     })
   })

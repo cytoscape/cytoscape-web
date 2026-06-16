@@ -9,7 +9,7 @@ import { NetworkTab } from './NetworkTab'
 // Mock FloatingToolBar to allow testing click events
 const mockFloatingToolBarButtonClick = vi.fn()
 vi.mock('../FloatingToolBar/FloatingToolBar', () => ({
-  FloatingToolBar: ({ rendererId }: { rendererId: string }) => (
+  FloatingToolBar: () => (
     <div data-testid="floating-toolbar">
       <button
         data-testid="floating-toolbar-button"
