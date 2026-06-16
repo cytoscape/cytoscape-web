@@ -1,23 +1,59 @@
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { AppStatus } from '../../models/AppModel/AppStatus'
+import { ComponentType } from '../../models/AppModel/ComponentType'
+import type { CyApp } from '../../models/AppModel/CyApp'
+import { RootMenu } from '../../models/AppModel/RootMenu'
+import type { ServiceApp } from '../../models/AppModel/ServiceApp'
+import { DisplayMode } from '../../models/FilterModel/DisplayMode'
+import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
+import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
+import { SelectionType } from '../../models/FilterModel/SelectionType'
+import { IdType } from '../../models/IdType'
+import type { Edge,Network, Node } from '../../models/NetworkModel'
+import { GraphObjectType } from '../../models/NetworkModel/GraphObjectType'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import type { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import type { Table } from '../../models/TableModel'
+import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+import type { Ui } from '../../models/UiModel'
+import { Panel } from '../../models/UiModel/Panel'
+import { PanelState } from '../../models/UiModel/PanelState'
+import { NetworkView } from '../../models/ViewModel'
+import type { VisualStyle } from '../../models/VisualStyleModel'
+import type { DiscreteMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
+import { MappingFunctionType } from '../../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
+import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
 import {
+  NetworkVisualPropertyName,
+  NodeVisualPropertyName,
+} from '../../models/VisualStyleModel/VisualPropertyName'
+import { VisualPropertyValueTypeName } from '../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import type { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import type { Workspace } from '../../models/WorkspaceModel'
+import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
+import {
+  clearNetworksFromDb,
   clearNetworkSummaryFromDb,
   clearNetworkViewsFromDb,
-  clearNetworksFromDb,
   clearOpaqueAspectsFromDb,
   clearTablesFromDb,
   clearUndoRedoStackFromDb,
+  clearVisualStyleFromDb,
   closeDb,
-  deleteDb,
   deleteAppFromDb,
+  deleteDb,
   deleteFilterFromDb,
   deleteNetworkFromDb,
   deleteNetworkSummaryFromDb,
   deleteNetworkViewsFromDb,
   deleteOpaqueAspectsFromDb,
-  deleteVisualStyleFromDb,
   deleteServiceAppFromDb,
   deleteTablesFromDb,
   deleteUiStateFromDb,
   deleteUndoRedoStackFromDb,
+  deleteVisualStyleFromDb,
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
   getAppFromDb,
@@ -34,15 +70,15 @@ import {
   getTimestampFromDb,
   getUiStateFromDb,
   getUndoRedoStackFromDb,
-  getWorkspaceFromDb,
   getVisualStyleFromDb,
+  getWorkspaceFromDb,
   initializeDb,
   putAppToDb,
   putFilterToDb,
   putNetworkSummaryToDb,
   putNetworkToDb,
-  putNetworkViewToDb,
   putNetworkViewsToDb,
+  putNetworkViewToDb,
   putOpaqueAspectsToDb,
   putServiceAppToDb,
   putTablesToDb,
@@ -51,43 +87,9 @@ import {
   putUndoRedoStackToDb,
   putVisualStyleToDb,
   putWorkspaceToDb,
-  clearVisualStyleFromDb,
   updateWorkspaceDb,
 } from './index'
-import { IdType } from '../../models/IdType'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { NetworkView } from '../../models/ViewModel'
-import {
-  NetworkVisualPropertyName,
-  NodeVisualPropertyName,
-} from '../../models/VisualStyleModel/VisualPropertyName'
 import { deserializeNetworkView, serializeNetworkView } from './serialization/mapSerialization'
-import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
-import type { Network, Node, Edge } from '../../models/NetworkModel'
-import type { Table } from '../../models/TableModel'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
-import type { VisualStyle } from '../../models/VisualStyleModel'
-import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
-import { VisualPropertyValueTypeName } from '../../models/VisualStyleModel/VisualPropertyValueTypeName'
-import type { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
-import type { Ui } from '../../models/UiModel'
-import { Panel } from '../../models/UiModel/Panel'
-import { PanelState } from '../../models/UiModel/PanelState'
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import type { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
-import type { Workspace } from '../../models/WorkspaceModel'
-import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
-import { GraphObjectType } from '../../models/NetworkModel/GraphObjectType'
-import { DisplayMode } from '../../models/FilterModel/DisplayMode'
-import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
-import { SelectionType } from '../../models/FilterModel/SelectionType'
-import { MappingFunctionType } from '../../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
-import type { DiscreteMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
-import type { CyApp } from '../../models/AppModel/CyApp'
-import { ComponentType } from '../../models/AppModel/ComponentType'
-import { AppStatus } from '../../models/AppModel/AppStatus'
-import type { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { RootMenu } from '../../models/AppModel/RootMenu'
 
 const ensureDebugNamespace = () => {
   ;(window as any).debug = {}

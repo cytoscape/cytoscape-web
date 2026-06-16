@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 /**
  * Tests for ViewModel implementation
  *
@@ -12,11 +14,11 @@ import { Edge,Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { EdgeView,NetworkView, NodeView } from '../index'
 import {
-  additiveSelect,
-  additiveUnselect,
   addEdgeViewDirect,
   addEdgeViewsToModel,
   addEdgeViewToModel,
+  additiveSelect,
+  additiveUnselect,
   addNodeViewDirect,
   addNodeViewsToModel,
   addNodeViewToModel,

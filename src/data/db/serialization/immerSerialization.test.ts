@@ -1,4 +1,5 @@
 import { produce } from 'immer'
+import { describe, expect, it } from 'vitest'
 
 import { toPlainObject } from './immerSerialization'
 

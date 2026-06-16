@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/elementApi.test.ts
 // Plain Jest tests for elementApi core — no renderHook, no React context.
-
 import {
   createNodesCore,
   deleteEdgesCore,

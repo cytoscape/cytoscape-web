@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/visualStyleApi.test.ts
 // Plain Jest tests for visualStyleApi core — no renderHook, no React context.
-
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { ApiErrorCode } from '../types/ApiResult'
 import { visualStyleApi } from './visualStyleApi'

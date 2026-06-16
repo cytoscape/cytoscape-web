@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/tableApi.test.ts
 // Plain Jest tests for tableApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { tableApi } from './tableApi'
 

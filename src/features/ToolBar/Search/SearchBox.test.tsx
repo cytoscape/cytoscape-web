@@ -1,14 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import React from 'react'
-import { SearchBox } from './SearchBox'
-import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
-import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { GraphObjectType } from '../../../models/NetworkModel'
+import { SearchBox } from './SearchBox'
 import { runSearch } from './searchUtil'
 
 // Mock the modules

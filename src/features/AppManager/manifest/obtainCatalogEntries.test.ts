@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
   DEFAULT_MANIFEST_URL,
   EXTERNAL_APPS_ENABLED,

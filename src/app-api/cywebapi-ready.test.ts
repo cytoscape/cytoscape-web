@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 // src/app-api/cywebapi-ready.test.ts
 //
 // Smoke test: verifies that window.CyWebApi can be assigned and that

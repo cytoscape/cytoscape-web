@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/data/hooks/stores/useAppManager.lifecycle.test.ts
 //
 // Plain Jest unit tests for the lifecycle helper functions in appLifecycle.ts.
 // These helpers are extracted from useAppManager to avoid the top-level await
 // that makes renderHook-based testing complex.
-
 import type { AppContext, AppContextApis } from '../../../app-api/types/AppContext'
 import type { CyApp } from '../../../models/AppModel/CyApp'
 import {

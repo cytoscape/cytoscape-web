@@ -1,11 +1,13 @@
-import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
-import {
-  Table,
-  Column,
-  ValueTypeName,
-  ValueType,
-} from '../../../models/TableModel'
+import { beforeEach, describe, expect, it } from 'vitest'
+
 import { Operator } from '../../../models/FilterModel/Search'
+import {
+  Column,
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../../../models/TableModel'
+import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
 
 // to run these: npx jest src/components/ToolBar/Search/SearchUtils.test.ts
 

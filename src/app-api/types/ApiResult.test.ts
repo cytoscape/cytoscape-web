@@ -1,5 +1,6 @@
-// src/app-api/types/ApiResult.test.ts
+import { describe, expect, it } from 'vitest'
 
+// src/app-api/types/ApiResult.test.ts
 import type { ApiFailure, ApiResult, ApiSuccess } from './ApiResult'
 import { ApiErrorCode, fail, isFail, isOk, ok } from './ApiResult'
 

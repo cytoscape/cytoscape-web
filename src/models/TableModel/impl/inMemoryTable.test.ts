@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { Column } from '../Column'
 import { Table } from '../Table'

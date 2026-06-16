@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { Renderer } from '../Renderer'
 import { ViewPort } from '../ViewPort'

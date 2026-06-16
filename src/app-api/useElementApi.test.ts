@@ -1,7 +1,7 @@
 // src/app-api/useElementApi.test.ts
 // Trivial hook test: verifies hook returns core elementApi object.
-
 import { renderHook } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import { elementApi } from './core/elementApi'
 import { useElementApi } from './useElementApi'

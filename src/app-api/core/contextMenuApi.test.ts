@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/contextMenuApi.test.ts
 // Plain Jest tests for contextMenuApi — factory + anonymous singleton patterns.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { contextMenuApi, createContextMenuApi } from './contextMenuApi'
 

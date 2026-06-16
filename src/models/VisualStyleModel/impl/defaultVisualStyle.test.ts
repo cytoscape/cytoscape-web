@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { VisualPropertyGroup } from '../VisualPropertyGroup'
 import { NodeVisualPropertyName } from '../VisualPropertyName'
 import { EdgeVisualPropertyName } from '../VisualPropertyName'

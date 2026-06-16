@@ -1,8 +1,8 @@
 // src/app-api/useCyWebEvent.test.ts
 // Hook tests using renderHook from @testing-library/react.
-
 import { act, renderHook } from '@testing-library/react'
 import { useCallback } from 'react'
+import { expect, it, vi } from 'vitest'
 
 import { useCyWebEvent } from './useCyWebEvent'
 

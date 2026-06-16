@@ -1,6 +1,6 @@
 // src/app-api/useLayoutApi.test.ts
-
 import { renderHook } from '@testing-library/react'
+import { expect, it, vi } from 'vitest'
 
 // Mock LayoutStore to avoid @cosmograph/cosmos ESM incompatibility in Jest
 vi.mock('../data/hooks/stores/LayoutStore', () => ({

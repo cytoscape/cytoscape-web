@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { CyNetwork } from '../../CyNetworkModel'
 import { Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
@@ -10,15 +12,15 @@ import { NetworkView } from '../../ViewModel'
 import { createViewModel } from '../../ViewModel/impl/viewModelImpl'
 import { VisualStyle } from '../../VisualStyleModel'
 import VisualStyleFn from '../../VisualStyleModel'
-import { CustomGraphicsType } from '../../VisualStyleModel/VisualPropertyValue'
-import { PassthroughMappingFunction } from '../../VisualStyleModel/VisualMappingFunction'
-import { MappingFunctionType } from '../../VisualStyleModel/VisualMappingFunction'
-import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
 import {
+  setBypass,
   setDefault,
   setMapping,
-  setBypass,
 } from '../../VisualStyleModel/impl/visualStyleImpl'
+import { PassthroughMappingFunction } from '../../VisualStyleModel/VisualMappingFunction'
+import { MappingFunctionType } from '../../VisualStyleModel/VisualMappingFunction'
+import { CustomGraphicsType } from '../../VisualStyleModel/VisualPropertyValue'
+import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
 import { Cx2 } from '../Cx2'
 import { createCyNetworkFromCx2 } from './converter'
 import { exportCyNetworkToCx2 } from './exporter'

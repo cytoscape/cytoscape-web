@@ -1,4 +1,5 @@
 import { NDExClient } from '@js4cytoscape/ndex-client'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import { getNdexClient } from './client'
 import { getNDExBaseUrl } from './config'

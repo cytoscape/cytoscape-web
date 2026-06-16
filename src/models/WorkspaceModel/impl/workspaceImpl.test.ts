@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { Workspace } from '../Workspace'
 import {
@@ -9,9 +11,9 @@ import {
   deleteCurrentNetwork,
   deleteNetwork,
   deleteNetworkModifiedStatus,
-  setIsRemote,
-  setId,
   setCurrentNetworkId,
+  setId,
+  setIsRemote,
   setName,
   setNetworkModified,
 } from './workspaceImpl'

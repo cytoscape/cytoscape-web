@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { removePTags } from './removePTags'
 
 describe('removePTags', () => {

@@ -1,6 +1,6 @@
 // src/app-api/useTableApi.test.ts
-
 import { renderHook } from '@testing-library/react'
+import { expect, it } from 'vitest'
 
 import { tableApi } from './core/tableApi'
 import { useTableApi } from './useTableApi'

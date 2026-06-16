@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/selectionApi.test.ts
 // Plain Jest tests for selectionApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { selectionApi } from './selectionApi'
 

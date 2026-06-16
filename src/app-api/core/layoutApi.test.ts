@@ -1,9 +1,10 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 // src/app-api/core/layoutApi.test.ts
 // Plain Jest tests for layoutApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { layoutApi } from './layoutApi'
-import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 
 // ── Mock: dispatchCyWebEvent ──────────────────────────────────────────────────
 

@@ -1,15 +1,16 @@
 import cytoscape from 'cytoscape'
+import { describe, expect, it } from 'vitest'
 
 import { IdType } from '../../IdType'
 import NetworkFn, { Edge, Network } from '../../NetworkModel'
 import { UpdateEventType } from '../NetworkStoreModel'
 import {
   add,
-  addEdgeToNetwork,
   addEdgesToNetwork,
-  addNodeToNetwork,
+  addEdgeToNetwork,
   addNodesAndEdgesToNetwork,
   addNodesToNetwork,
+  addNodeToNetwork,
   createDeleteEdgesEvent,
   createDeleteNodesEvent,
   deleteAll,

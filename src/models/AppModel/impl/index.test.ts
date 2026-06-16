@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { ParameterUiType } from '../ParameterUiType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
 import { validateParameter } from './index'

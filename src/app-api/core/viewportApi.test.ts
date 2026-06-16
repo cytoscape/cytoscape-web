@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/viewportApi.test.ts
 // Plain Jest tests for viewportApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { viewportApi } from './viewportApi'
 

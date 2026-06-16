@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { AppStatus } from '../../AppModel/AppStatus'
 import { CyApp } from '../../AppModel/CyApp'
 import { ServiceApp } from '../../AppModel/ServiceApp'

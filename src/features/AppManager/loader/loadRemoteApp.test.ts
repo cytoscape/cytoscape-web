@@ -1,7 +1,8 @@
+import { beforeEach,describe, expect, it, vi } from 'vitest'
+
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { loadModule } from '../ExternalComponent'
 import { loadRemoteApp } from './loadRemoteApp'
-import { loadModule } from '../ExternalComponent'
 
 vi.mock('../ExternalComponent', () => ({
   loadModule: vi.fn(),

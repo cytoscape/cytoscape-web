@@ -1,6 +1,6 @@
 // src/app-api/useViewportApi.test.ts
-
 import { renderHook } from '@testing-library/react'
+import { expect, it } from 'vitest'
 
 import { viewportApi } from './core/viewportApi'
 import { useViewportApi } from './useViewportApi'

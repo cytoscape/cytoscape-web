@@ -1,3 +1,5 @@
+import { describe, expect, it, vi } from 'vitest'
+
 import NetworkFn from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'

@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/workspaceApi.test.ts
 // Plain Jest tests for workspaceApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { workspaceApi } from './workspaceApi'
 

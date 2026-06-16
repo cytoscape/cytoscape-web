@@ -1,3 +1,5 @@
+import { describe, expect, it, vi } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { GraphObjectType } from '../../NetworkModel'
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'

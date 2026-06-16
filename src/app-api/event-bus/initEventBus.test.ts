@@ -1,7 +1,8 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/event-bus/initEventBus.test.ts
 // Plain Jest tests — no renderHook. Mock store subscriptions and assert
 // that window.dispatchEvent is called with the correct CustomEvent payloads.
-
 import { initEventBus } from './initEventBus'
 
 // ── Mock: dispatchCyWebEvent (verify via window.dispatchEvent spy) ─────────────

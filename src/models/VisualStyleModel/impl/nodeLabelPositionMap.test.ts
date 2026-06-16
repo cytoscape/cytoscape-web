@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { NodeLabelPositionType } from '../VisualPropertyValue'
 import {
   computeNodeLabelPosition,

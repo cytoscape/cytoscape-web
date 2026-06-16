@@ -1,5 +1,6 @@
-// src/data/hooks/stores/AppCleanupRegistry.test.ts
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// src/data/hooks/stores/AppCleanupRegistry.test.ts
 import {
   _resetCleanupRegistry,
   cleanupAllForApp,
