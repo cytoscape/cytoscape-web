@@ -3,10 +3,9 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
-import federation from '@originjs/vite-plugin-federation'
-import react from '@vitejs/plugin-react-swc'
-import { Plugin, PluginOption } from 'vite'
-import { defineConfig, ViteUserConfig } from 'vitest/config'
+import { federation } from '@module-federation/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig, Plugin, PluginOption } from 'vite'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
@@ -58,6 +57,9 @@ export default defineConfig(async ({ command, mode }) => {
     federation({
       name: 'cyweb',
       filename: 'remoteEntry.js',
+      // Public types are published separately via the @cytoscape-web/api-types
+      // package, so skip Module Federation's own .d.ts generation.
+      dts: false,
       exposes: {
         './ApiTypes': './src/app-api/types/index.ts',
         './ElementApi': './src/app-api/useElementApi.ts',
@@ -89,16 +91,10 @@ export default defineConfig(async ({ command, mode }) => {
           './src/data/task/useCreateNetworkFromCx2.tsx',
       },
       shared: {
-        react: {
-          version: deps.react,
-          requiredVersion: deps.react,
-        },
-        'react-dom': {
-          version: deps['react-dom'],
-          requiredVersion: deps['react-dom'],
-        },
+        react: { singleton: true, requiredVersion: deps.react },
+        'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
         '@mui/material': {
-          version: deps['@mui/material'],
+          singleton: true,
           requiredVersion: deps['@mui/material'],
         },
       },
@@ -134,40 +130,29 @@ export default defineConfig(async ({ command, mode }) => {
         'Access-Control-Allow-Origin': '*',
       },
     },
-    // Strip console.* calls from production bundles (parity with the old
-    // Terser `drop_console: true`). Dev keeps them for debugging.
-    esbuild: {
-      drop: (command === 'build' ? ['console'] : []) as ('console' | 'debugger')[],
-    },
     build: {
       outDir: 'dist',
-      // Fast minifier (Vite's default; Terser is the slow opt-in). Stated
-      // explicitly so it can't silently regress to Terser.
-      minify: 'esbuild',
+      // esnext output target so the Module Federation runtime's top-level
+      // await (`importShared`) is allowed under Rolldown (Vite 8). Without
+      // this, Rolldown errors with REQUIRE_TLA on shared deps (@mui/@emotion).
+      target: 'esnext',
+      // Minifier is left at Vite 8's default (Oxc, fast).
       // Source maps in development builds only. Production omits them —
       // matching the old webpack config (`devtool: false` in production) and
-      // shaving ~15% off the build by skipping multi-MB .map generation for
-      // the vendor chunks. (The dev server emits source maps regardless of
-      // this setting.)
+      // shaving build time by skipping multi-MB .map generation. (The dev
+      // server emits source maps regardless of this setting.)
       sourcemap: mode !== 'production',
-      rollupOptions: {
-        output: {
-          // Split vendor code so app-source changes don't bust the vendor
-          // cache, and isolate the heavy image-export deps into their own
-          // chunk (parity with the old webpack splitChunks cacheGroups).
-          manualChunks(id: string) {
-            if (id.includes('node_modules')) {
-              if (
-                id.includes('cytoscape-pdf-export') ||
-                id.includes('cytoscape-svg')
-              ) {
-                return 'export-dependencies'
-              }
-              return 'vendors'
-            }
-          },
-        },
-      },
+      // Strip console.* from production bundles (parity with the old Terser
+      // `drop_console: true`). Vite 8's Oxc minifier is configured through
+      // Rolldown's minify.compress options.
+      rolldownOptions:
+        mode === 'production'
+          ? { output: { minify: { compress: { dropConsole: true } } } }
+          : undefined,
+      // NOTE: manual vendor/export chunk splitting was removed in the Vite 8 /
+      // Module Federation migration — the federation plugin disables
+      // `manualChunks` (grouping its async-init shared modules into one chunk
+      // causes circular-async hangs). Chunking is left to the plugin + Rolldown.
     },
     define: {
       'process.env.REACT_APP_GIT_COMMIT': JSON.stringify(gitCommit),

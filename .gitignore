@@ -12,6 +12,8 @@ dist
 dist-ssr
 # Bundle analyzer report (npm run build:analyze)
 /ba/
+# Module Federation (@module-federation/vite) generated cache/diagnostics
+/.mf/
 *.local
 yarn.lock
 
