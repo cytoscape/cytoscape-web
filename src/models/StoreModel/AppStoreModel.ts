@@ -32,11 +32,10 @@ export interface AppState {
 
 export interface AppAction {
   /**
-   * Try to restore app states from IndexedDB
-   *
-   * @returns
+   * Seed the session apps map with the given records (built by the caller from
+   * workspace.installedApps, §8.4) and restore service apps from IndexedDB.
    */
-  restore: (appIds: string[]) => Promise<void>
+  restore: (apps: CyApp[]) => Promise<void>
 
   /**
    * Add an app from the external module

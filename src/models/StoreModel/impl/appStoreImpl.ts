@@ -51,18 +51,19 @@ export interface AppState {
 }
 
 /**
- * Restore apps from database
+ * Seed the session apps map with the given records and restore service apps.
+ *
+ * Apps are seeded from `workspace.installedApps` (the durable status source,
+ * §8.4), not the deprecated global `apps` IndexedDB store.
  */
 export const restore = (
   state: AppState,
-  apps: Array<{ id: string; cached: CyApp | undefined }>,
+  apps: CyApp[],
   serviceApps: ServiceApp[],
 ): AppState => {
   const newApps = { ...state.apps }
-  apps.forEach(({ id, cached }) => {
-    if (cached !== undefined) {
-      newApps[id] = cached
-    }
+  apps.forEach((app) => {
+    newApps[app.id] = app
   })
 
   const newServiceApps = { ...state.serviceApps }

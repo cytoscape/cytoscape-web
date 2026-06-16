@@ -252,8 +252,8 @@ _Design: §7.1, §7.3, §7.4, §8.4, §12.7_
 
 ### 5.1 — installApp command
 
-- [ ] Add to `AppManagerCommands`: `installApp(entry: AppCatalogEntry, opts?: { activate?: boolean }): Promise<void>`
-- [ ] Implementation (§7.1):
+- [x] Add to `AppManagerCommands`: `installApp(entry: AppCatalogEntry, opts?: { activate?: boolean }): Promise<void>`
+- [x] Implementation (§7.1):
   1. Gate: `isAllowedOrigin(entry.url, config.appInstallAllowedOrigins)` — reject with a user-visible message on failure; `isHostCompatible(entry.compatibleHostVersions)` — install but force `activate: false` + warning on failure (§9 rule 3)
   2. `WorkspaceStore.addInstalledApp({ entry, status: activate ? Active : Inactive, source: 'appstore', installedAt: now })` (upsert → idempotent)
   3. Re-merge into the catalog (Step 3 helper) so the entry is immediately visible
@@ -261,35 +261,35 @@ _Design: §7.1, §7.3, §7.4, §8.4, §12.7_
 
 ### 5.2 — uninstallApp command
 
-- [ ] Add `uninstallApp(id: string): Promise<void>` (§12.7):
+- [x] Add `uninstallApp(id: string): Promise<void>` (§12.7):
   1. `deactivateApp(id)` if mounted (runs `unmountApp` + cleanup)
   2. `WorkspaceStore.removeInstalledApp(id)`
-  3. Remove from the merged catalog (+ `catalogSources`), clear `loadStates[id]`, `appRegistry.delete(id)`
-  4. `deleteAppFromDb(id)` for any legacy leftover
+  3. Remove from the merged catalog (+ `catalogSources`), clear `loadStates[id]`, `appRegistry.delete(id)` — catalog/loadStates handled by `removeApp(id)` + `recomposeCatalog()`
+  4. `deleteAppFromDb(id)` for any legacy leftover — done via `removeApp(id)`
 
 ### 5.3 — Status reconciliation (§8.4)
 
-- [ ] `activateApp` success → `setInstalledAppStatus(id, Active)`; if no `InstalledApp` record exists yet (manifest app), create one: `addInstalledApp({ entry: catalog[id], status: Active, source: 'manifest', installedAt: now })`
-- [ ] `deactivateApp` → `setInstalledAppStatus(id, Inactive)`
-- [ ] `activateApp` failure paths that set `AppStatus.Error` → mirror to `setInstalledAppStatus(id, Error)` when a record exists
+- [x] `activateApp` success → `setInstalledAppStatus(id, Active)`; if no `InstalledApp` record exists yet (manifest app), create one: `addInstalledApp({ entry: catalog[id], status: Active, source: 'manifest', installedAt: now })` — via `reconcileInstalledStatus`
+- [x] `deactivateApp` → `setInstalledAppStatus(id, Inactive)`
+- [x] `activateApp` failure paths that set `AppStatus.Error` → mirror to `setInstalledAppStatus(id, Error)` when a record exists
 
 ### 5.4 — Stop writing the global `apps` store
 
-- [ ] Remove `putAppToDb` calls from `AppStore.add` and `AppStore.setStatus` (the durable record is now `workspace.installedApps`; `apps`/`CyApp` stay session-local per §6.3)
-- [ ] Replace the `restore()` DB read with seeding from `workspace.installedApps` (build the restored `CyApp` status map from `InstalledApp.status`); keep `getAllAppsFromDb` usage only inside `migrateLegacyApps`
-- [ ] Audit remaining writers: `useLoadWorkspace` still writes `putAppToDb` — it is reworked in Step 8; leave a TODO referencing Step 8 if Step 8 is not done in the same PR
+- [x] Remove `putAppToDb` calls from `AppStore.add` and `AppStore.setStatus` (the durable record is now `workspace.installedApps`; `apps`/`CyApp` stay session-local per §6.3)
+- [x] Replace the `restore()` DB read with seeding from `workspace.installedApps` (build the restored `CyApp` status map from `InstalledApp.status`); keep `getAllAppsFromDb` usage only inside `migrateLegacyApps` — `restore(apps: CyApp[])`; useAppManager builds the seed from installedApps; init reordered so migration runs before restore
+- [x] Audit remaining writers: `useLoadWorkspace` still writes `putAppToDb` — it is reworked in Step 8; leave a TODO referencing Step 8 if Step 8 is not done in the same PR — TODO added
 
 ### 5.5 — Unit tests
 
-- [ ] installApp: allowed origin persists + merges; disallowed origin rejects and persists nothing; incompatible host version installs inactive with warning; repeated install of the same entry does not duplicate
-- [ ] uninstallApp: active app is deactivated, removed from workspace/catalog/loadStates/appRegistry
-- [ ] activate/deactivate reconciliation: manifest app gains a `source:'manifest'` record on first activation; status round-trips
+- [x] installApp: allowed origin persists + merges; disallowed origin rejects and persists nothing; incompatible host version installs inactive with warning; repeated install of the same entry does not duplicate
+- [x] uninstallApp: active app is deactivated, removed from workspace/catalog/loadStates/appRegistry
+- [x] activate/deactivate reconciliation: manifest app gains a `source:'manifest'` record on first activation; status round-trips
 
 #### Verification (Step 5)
 
-- [ ] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes
-- [ ] Manual test: install an app via DevTools console (`installApp` through a temporary hook) → appears in list, survives reload, auto-loads if activated
-- [ ] Manual test: toggle a manifest app off/on → `workspace.installedApps` reflects the status (DevTools → IndexedDB → `workspace`), no writes to the `apps` table
+- [x] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes — 2070/2071 (lone pre-existing `visualStyleApi` failure); 7 new useAppManager tests pass
+- [x] Manual test: install an app via DevTools console (`installApp` through a temporary hook) → appears in list, survives reload, auto-loads if activated
+- [x] Manual test: toggle a manifest app off/on → `workspace.installedApps` reflects the status (DevTools → IndexedDB → `workspace`), no writes to the `apps` table
 
 ---
 

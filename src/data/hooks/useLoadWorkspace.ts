@@ -1,17 +1,17 @@
-import {
-  deleteDb,
-  getAllAppsFromDb,
-  getAllServiceAppsFromDb,
-  putAppToDb,
-  putServiceAppToDb,
-  putWorkspaceToDb,
-  deleteServiceAppFromDb,
-} from '../db'
 import { logDb } from '../../debug'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { Workspace } from '../../models/WorkspaceModel'
+import {
+  deleteDb,
+  deleteServiceAppFromDb,
+  getAllAppsFromDb,
+  getAllServiceAppsFromDb,
+  putAppToDb,
+  putServiceAppToDb,
+  putWorkspaceToDb,
+} from '../db'
 import { serviceFetcher } from './stores/AppStore'
 
 /**
@@ -85,6 +85,9 @@ export const useLoadWorkspace = (
       await putWorkspaceToDb(workspace)
 
       // Step 3: Update app statuses in DB
+      // TODO(Phase 5 Step 8): This still writes app status to the legacy global
+      // `apps` store via putAppToDb. NDEx restore is reworked in Step 8 to seed
+      // workspace.installedApps from options.installedApps instead.
       try {
         logDb.info('[loadWorkspace] Updating app statuses')
         const activeApps = new Set(selectedWorkspace.options?.activeApps ?? [])
