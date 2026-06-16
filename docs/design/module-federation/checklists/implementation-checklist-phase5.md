@@ -339,35 +339,35 @@ _Design: §12 (mock in §12 intro), §12.2–§12.8_
 
 ### 7.1 — Display entry metadata
 
-- [ ] Extend `AppDisplayEntry` with `source?: AppSource` and `removable: boolean` (from `catalogSources`; §12.3: removable ⇔ `source === 'appstore' | 'snapshot'`; legacy orphans keep the existing remove path)
-- [ ] Split `getAction()` into a primary-action selector (existing toggle/retry/spinner logic, unchanged) and a `removable` predicate (§12.6)
+- [x] Extend `AppDisplayEntry` with `source?: AppSource` and `removable: boolean` (from `catalogSources`; §12.3: removable ⇔ `source === 'appstore' | 'snapshot'`; legacy orphans keep the existing remove path)
+- [x] Split `getAction()` into a primary-action selector (existing toggle/retry/spinner logic, unchanged) and a `removable` predicate (§12.6) — `removable` computed when building display entries; `getAction()` unchanged
 
 ### 7.2 — Overflow (kebab) menu + uninstall confirmation
 
-- [ ] Add a kebab `IconButton` + MUI `Menu` rendered **only** for removable rows (§12.4); menu item: `Uninstall`
-- [ ] Confirmation dialog (§12.5): "Uninstall **{name}**? It will be removed from this workspace." — confirm calls `uninstallApp(id)`, cancel is a no-op; legacy orphan delete stays unconfirmed
-- [ ] Add an `App Store` indicator `Chip` on installed (non-manifest) rows (§12.4)
-- [ ] `Uninstall` works for both active and inactive rows (active is deactivated first — handled inside `uninstallApp`)
+- [x] Add a kebab `IconButton` + MUI `Menu` rendered **only** for removable rows (§12.4); menu item: `Uninstall`
+- [x] Confirmation dialog (§12.5): "Uninstall **{name}**? It will be removed from this workspace." — confirm calls `uninstallApp(id)`, cancel is a no-op; legacy orphan delete stays unconfirmed
+- [x] Add an `App Store` indicator `Chip` on installed (non-manifest) rows (§12.4) — labelled `App Store` / `Snapshot` by source
+- [x] `Uninstall` works for both active and inactive rows (active is deactivated first — handled inside `uninstallApp`)
 
 ### 7.3 — Install from URL (§12.8)
 
-- [ ] Add an **Install from URL** section to the Apps tab in `AppSettingsDialog`, visually distinct from the existing Manifest Source accordion (see the §12 mock): `TextField` (single-entry manifest URL) + `Install` button
-- [ ] On Install: fetch → `parseSingleEntryManifest` → `installApp(entry, { activate: false })` (§12.8: manual installs arrive inactive)
-- [ ] Inline error display for: invalid manifest, disallowed origin (no warning-and-proceed bypass), incompatible host version, network failure
-- [ ] Clear the field on success; the new row appears immediately (catalog re-merge from Step 5)
+- [x] Add an **Install from URL** section to the Apps tab in `AppSettingsDialog`, visually distinct from the existing Manifest Source accordion (see the §12 mock): `TextField` (single-entry manifest URL) + `Install` button
+- [x] On Install: fetch → `parseSingleEntryManifest` → `installApp(entry, { activate: false })` (§12.8: manual installs arrive inactive)
+- [x] Inline error display for: invalid manifest, disallowed origin (no warning-and-proceed bypass), incompatible host version, network failure — origin/version pre-checked inline (no `installApp` toast) so errors land in the field
+- [x] Clear the field on success; the new row appears immediately (catalog re-merge from Step 5)
 
 ### 7.4 — Test hooks
 
-- [ ] Add `data-testid` attributes for the kebab button, uninstall menu item, confirmation dialog buttons, Install from URL field/button (E2E convention)
+- [x] Add `data-testid` attributes for the kebab button, uninstall menu item, confirmation dialog buttons, Install from URL field/button (E2E convention) — `app-kebab-{id}`, `app-uninstall-menuitem`, `app-uninstall-confirm-dialog`, `app-uninstall-confirm-button`, `install-from-url-input`, `install-from-url-button`
 
 #### Verification (Step 7)
 
-- [ ] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes
-- [ ] Manual test: manifest row → toggle only, no kebab, no chip
-- [ ] Manual test: installed row → chip + kebab; Uninstall shows confirmation; cancel leaves the app; confirm removes it and it does not reappear after reload (§15)
-- [ ] Manual test: uninstall an **active** app → unmounts (panels/menu items disappear), then removed
-- [ ] Manual test: Install from URL with a valid single-entry manifest → row appears inactive; enabling it loads the remote
-- [ ] Manual test: Install from URL with a disallowed origin → inline error, nothing persisted
+- [x] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes — both files lint-clean; build ok; test:unit 2070/2071 (lone pre-existing `visualStyleApi` failure), no regressions
+- [x] Manual test: manifest row → toggle only, no kebab, no chip
+- [x] Manual test: installed row → chip + kebab; Uninstall shows confirmation; cancel leaves the app; confirm removes it and it does not reappear after reload (§15)
+- [x] Manual test: uninstall an **active** app → unmounts (panels/menu items disappear), then removed
+- [x] Manual test: Install from URL with a valid single-entry manifest → row appears inactive; enabling it loads the remote
+- [x] Manual test: Install from URL with a disallowed origin → inline error, nothing persisted
 
 ---
 

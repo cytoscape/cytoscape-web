@@ -22,13 +22,19 @@ import {
   Typography,
   useTheme,
 } from '@mui/material'
-import { useRef, useState } from 'react'
+import { useContext, useRef, useState } from 'react'
 
 import { DEFAULT_MANIFEST_URL } from '../../app-api/constants'
+import { AppConfigContext } from '../../AppConfigContext'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { logApp } from '../../debug'
 import { AppListPanel } from './AppListPanel'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
+import {
+  isAllowedOrigin,
+  isHostCompatible,
+  parseSingleEntryManifest,
+} from './install/installGate'
 import { parseManifest } from './manifest/parseManifest'
 import { ServiceListPanel } from './ServiceListPanel'
 
@@ -60,8 +66,10 @@ export const AppSettingsDialog = ({
   setOpenDialog,
 }: AppSettingsDialogProps) => {
   const theme: Theme = useTheme()
-  const { setManifestSource, refreshCatalog } = useAppManagerCommands()
+  const { setManifestSource, refreshCatalog, installApp } =
+    useAppManagerCommands()
   const currentSource = useAppStore((state) => state.manifestSource)
+  const { appInstallAllowedOrigins } = useContext(AppConfigContext)
 
   const [tabIndex, setTabIndex] = useState(0)
   const [urlInput, setUrlInput] = useState('')
@@ -71,7 +79,51 @@ export const AppSettingsDialog = ({
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewContent, setPreviewContent] = useState('')
   const [previewTitle, setPreviewTitle] = useState('')
+  const [installUrl, setInstallUrl] = useState('')
+  const [installError, setInstallError] = useState<string | undefined>()
+  const [installing, setInstalling] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  /**
+   * Install a single app from a manifest URL (§12.8). Validates the entry
+   * inline through the same trust-boundary gates as installApp, so errors are
+   * shown in-place rather than as a toast. Manual installs arrive inactive.
+   */
+  const handleInstallFromUrl = async (): Promise<void> => {
+    const url = installUrl.trim()
+    if (url === '') return
+    setInstallError(undefined)
+    setInstalling(true)
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      const entry = parseSingleEntryManifest(data)
+      if (entry === undefined) {
+        setInstallError('No valid app entry found in the manifest')
+        return
+      }
+      if (!isAllowedOrigin(entry.url, appInstallAllowedOrigins)) {
+        setInstallError('The app URL is not from an allowed origin')
+        return
+      }
+      if (!isHostCompatible(entry.compatibleHostVersions)) {
+        setInstallError('The app is not compatible with this host version')
+        return
+      }
+      await installApp(entry, { activate: false })
+      setInstallUrl('')
+    } catch (err) {
+      setInstallError(
+        err instanceof Error ? err.message : 'Failed to install app',
+      )
+      logApp.warn('[AppSettingsDialog]: Install from URL failed:', err)
+    } finally {
+      setInstalling(false)
+    }
+  }
 
   const handleSetCustomUrl = (): void => {
     const error = validateManifestUrl(urlInput)
@@ -184,6 +236,49 @@ export const AppSettingsDialog = ({
         {tabIndex === 0 && (
           <Box>
             <AppListPanel />
+
+            <Box
+              sx={{
+                mt: 2,
+                p: 1.5,
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                Install from URL
+              </Typography>
+              <Box
+                sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}
+              >
+                <TextField
+                  size="small"
+                  label="Single-entry manifest URL"
+                  value={installUrl}
+                  onChange={(e) => {
+                    setInstallUrl(e.target.value)
+                    setInstallError(undefined)
+                  }}
+                  error={installError !== undefined}
+                  helperText={installError}
+                  fullWidth
+                  inputProps={{ 'data-testid': 'install-from-url-input' }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  data-testid="install-from-url-button"
+                  onClick={() => void handleInstallFromUrl()}
+                  disabled={installUrl.trim() === '' || installing}
+                  startIcon={
+                    installing ? <CircularProgress size={16} /> : undefined
+                  }
+                  sx={{ whiteSpace: 'nowrap', height: 40 }}
+                >
+                  Install
+                </Button>
+              </Box>
+            </Box>
 
             <Accordion
               disableGutters
