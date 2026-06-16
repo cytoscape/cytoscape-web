@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import 'fake-indexeddb/auto'
 import { enableMapSet } from 'immer'
 import { vi } from 'vitest'
