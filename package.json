@@ -43,7 +43,9 @@
     "dev:local": "vite --host --open",
     "build:analyze": "cross-env ANALYZE=true run-s build:bundle copy:dist",
     "build:api-types": "npm run build --workspace=packages/api-types",
-    "lint": "eslint --ext .js,.ts,.jsx,.tsx src",
+    "lint": "run-s lint:tsc lint:eslint",
+    "lint:eslint": "eslint --ext .js,.ts,.jsx,.tsx src",
+    "lint:tsc": "tsc --noEmit",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
   },
