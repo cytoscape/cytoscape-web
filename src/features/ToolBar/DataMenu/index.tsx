@@ -225,7 +225,7 @@ export const DataMenu = () => {
         open={openDeleteNetworkDialog}
         setOpen={setOpenDeleteNetworkDialog}
         buttonTitle="Yes (cannot be undone)"
-        isAlert={true}
+        isAlert
       />
       <ConfirmationDialog
         title="Remove All Networks"
@@ -234,7 +234,7 @@ export const DataMenu = () => {
         open={openDeleteAllNetworksDialog}
         setOpen={setOpenDeleteAllNetworksDialog}
         buttonTitle="Yes (cannot be undone)"
-        isAlert={true}
+        isAlert
       />
       <ConfirmationDialog
         title="Reset Local Workspace (for developers)"
@@ -243,7 +243,7 @@ export const DataMenu = () => {
         open={openResetLocalWorkspaceDialog}
         setOpen={setOpenResetLocalWorkspaceDialog}
         buttonTitle="Reset Workspace (cannot be undone)"
-        isAlert={true}
+        isAlert
       />
     </>
   )

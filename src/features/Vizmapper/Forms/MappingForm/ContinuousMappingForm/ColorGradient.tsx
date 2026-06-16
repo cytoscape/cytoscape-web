@@ -17,6 +17,8 @@ export interface ColorGradiientProps {
   verticalPadding: number
   valuePixelScale: ScaleLinear<number, number>
   colorScale: ScaleLinear<string, string>
+  labelColor?: string
+  strokeColor?: string
   cm: ContinuousMappingFunction
 }
 
@@ -30,6 +32,9 @@ export function ColorGradient(props: ColorGradiientProps): React.ReactElement {
     horizontalPadding,
     verticalPadding,
     valuePixelScale,
+    colorScale,
+    labelColor = 'rgba(0, 0, 0, 0.7)',
+    strokeColor = 'rgba(0, 0, 0, 0.7)',
     cm,
   } = props
 
@@ -73,9 +78,18 @@ export function ColorGradient(props: ColorGradiientProps): React.ReactElement {
             labelProps={{
               fontSize: 14,
               textAnchor: 'middle',
+              fill: labelColor,
             }}
             label={domainLabel}
-            stroke={'#1b1a1e'}
+            stroke={strokeColor}
+            tickStroke={strokeColor}
+            tickLabelProps={() => ({
+              fill: labelColor,
+              fontSize: 10,
+              textAnchor: 'middle',
+              verticalAnchor: 'end',
+              dy: 2,
+            })}
           />
         </svg>
       </Box>

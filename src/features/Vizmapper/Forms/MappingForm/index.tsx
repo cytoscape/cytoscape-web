@@ -1,3 +1,4 @@
+import DeleteIcon from '@mui/icons-material/Delete'
 import {
   Box,
   Button,
@@ -36,9 +37,9 @@ import {
   LockSizeCheckbox,
 } from '../../VisualPropertyRender/Checkbox'
 import {
-  ContinuousMappingFunctionIcon,
-  DiscreteMappingFunctionIcon,
-  PassthroughMappingFunctionIcon,
+  ContinuousMappingIcon,
+  DiscreteMappingIcon,
+  PassthroughMappingIcon,
 } from '../../VisualStyleIcons'
 import {
   EmptyVisualPropertyViewBox,
@@ -47,10 +48,11 @@ import {
 import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 
+
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
-  [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
-  [MappingFunctionType.Discrete]: <DiscreteMappingFunctionIcon />,
-  [MappingFunctionType.Continuous]: <ContinuousMappingFunctionIcon />,
+  [MappingFunctionType.Passthrough]: <PassthroughMappingIcon />,
+  [MappingFunctionType.Discrete]: <DiscreteMappingIcon />,
+  [MappingFunctionType.Continuous]: <ContinuousMappingIcon />,
 }
 
 function MappingFormContent(props: {
@@ -353,19 +355,11 @@ function MappingFormContent(props: {
         >{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           data-testid="mapping-form-remove-button"
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#F50157',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
+          color="error"
           disabled={props.visualProperty.mapping == null}
           size="small"
+          startIcon={<DeleteIcon />}
           onClick={() => {
             postEdit(
               UndoCommandType.REMOVE_MAPPING,

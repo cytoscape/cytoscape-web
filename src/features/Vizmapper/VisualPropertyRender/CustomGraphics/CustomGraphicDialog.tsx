@@ -1,5 +1,9 @@
+import CheckIcon from '@mui/icons-material/Check'
+import DeleteIcon from '@mui/icons-material/Delete'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft'
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
 import PieChartIcon from '@mui/icons-material/PieChart'
@@ -28,6 +32,10 @@ import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  PieChartPropertiesType,
+  RingChartPropertiesType,
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { AttributesForm } from './Forms/AttributesForm'
 import { ColorsForm } from './Forms/ColorsForm'
 import { PropertiesForm } from './Forms/PropertiesForm'
@@ -35,6 +43,7 @@ import { useCustomGraphicState } from './hooks/useCustomGraphicState'
 import { CHART_CONSTANTS, COLORS } from './utils/constants'
 import { isRingChartProperties } from './utils/typeGuards'
 import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
+
 
 /** Props for the custom graphics dialog */
 interface CustomGraphicDialogProps {
@@ -216,20 +225,11 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
         <Typography variant="h6">Custom Graphics</Typography>
         <Button
           size="small"
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteIcon />}
           onClick={handleRemoveChartsClick}
           disabled={isNewChart}
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#F50157',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-              opacity: 0.5,
-            },
-          }}
         >
           Remove custom graphic
         </Button>
@@ -850,18 +850,28 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onCancel}>Cancel</Button>
+        <Button
+          variant="outlined"
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
         <Box sx={{ flex: '1 1 auto' }} />
         {isNewChart ? (
           <>
             {activeStep > 0 && (
-              <Button onClick={handleBack} sx={{ mr: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<KeyboardArrowLeftIcon />}
+                onClick={handleBack} sx={{ mr: 1 }}
+              >
                 Back
               </Button>
             )}
             {activeStep < steps.length - 1 ? (
               <Button
                 variant="contained"
+                endIcon={<KeyboardArrowRightIcon />}
                 onClick={handleNext}
                 disabled={!isStepValid(activeStep)}
               >
@@ -870,6 +880,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
             ) : (
               <Button
                 variant="contained"
+                startIcon={<CheckIcon />}
                 onClick={handleConfirm}
                 disabled={!isStepValid(3)}
                 title={

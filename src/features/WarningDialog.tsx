@@ -40,7 +40,11 @@ export const WarningDialog = ({
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button data-testid="warning-dialog-close" onClick={handleClose}>
+        <Button
+          data-testid="warning-dialog-close"
+          variant="contained"
+          onClick={handleClose}
+        >
           Close
         </Button>
       </DialogActions>

@@ -203,25 +203,17 @@ export const WorkspaceNamingDialog = ({
         <DialogActions>
           <Button
             data-testid="workspace-naming-cancel-button"
+            variant="outlined"
             onClick={onClose}
-            color="primary"
           >
             Cancel
           </Button>
           <Button
             data-testid="workspace-naming-save-button"
+            variant="contained"
             disabled={workspaceName.trim().length === 0}
             onClick={onSave}
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            sx={{ px: 4 }}
           >
             Save
           </Button>

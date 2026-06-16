@@ -1,15 +1,10 @@
-import { Box, Theme, Tooltip, Typography, useTheme } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { Workspace } from '../../../models'
 import { dateFormatter } from '../../../utils/dateFormat'
 
 export const WorkspaceNamePanel = () => {
-  const theme: Theme = useTheme()
-  const background = theme.palette.primary.dark
-  const textColor = theme.palette.primary.contrastText
-  const borderColor = theme.palette.divider
-
   const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
 
   return (
@@ -17,14 +12,10 @@ export const WorkspaceNamePanel = () => {
       data-testid="workspace-name-panel"
       sx={{
         width: '100%',
-        height: '42px',
-        backgroundColor: background,
-        color: textColor,
-        p: theme.spacing(1),
+        p: (theme) => theme.spacing(1),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderBottom: `2px solid ${borderColor}`,
       }}
     >
       <Tooltip
@@ -40,15 +31,15 @@ export const WorkspaceNamePanel = () => {
             width: '100%',
           }}
         >
-          <Typography sx={{ ml: 0.5 }} variant="body1">
-            Name:
-          </Typography>
           <Typography
-            sx={{ paddingLeft: '1em' }}
-            variant="subtitle1"
-            color={'info'}
+            sx={{
+              textAlign: 'center',
+              width: '100%',
+              color: (theme) => theme.palette.text.secondary,
+            }}
+            variant="subtitle2"
           >
-            {workspace.name}
+            {workspace.id !== '' ?  workspace.name : <>&nbsp;</>}
           </Typography>
         </Box>
       </Tooltip>

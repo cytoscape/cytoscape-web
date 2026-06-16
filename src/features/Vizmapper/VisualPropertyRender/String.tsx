@@ -21,13 +21,20 @@ export function StringInput(props: {
         value={localValue ?? ''}
         type="string"
         onChange={(e) => setLocalValue(e.target.value)}
+        sx={{ width: '100%', p: 0.25 }}
       >
         {localValue}
       </TextField>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          p: 0.25
+        }}
+      >
         <Button
           data-testid="string-input-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? '')
@@ -37,13 +44,7 @@ export function StringInput(props: {
         </Button>
         <Button
           data-testid="string-input-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

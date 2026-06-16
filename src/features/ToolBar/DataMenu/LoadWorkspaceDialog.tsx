@@ -1,7 +1,8 @@
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import {
   Box,
   Button,
-  Checkbox,
+  Radio,
   Dialog,
   DialogActions,
   DialogContent,
@@ -30,6 +31,7 @@ import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { dateFormatter } from '../../../utils/dateFormat'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
+
 
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
@@ -240,8 +242,8 @@ export const LoadWorkspaceDialog: React.FC<{
                   hover
                 >
                   <TableCell padding="checkbox">
-                    <Checkbox
-                      data-testid={`load-workspace-checkbox-${workspace.workspaceId}`}
+                    <Radio
+                      data-testid={`load-workspace-radio-${workspace.workspaceId}`}
                       checked={selectedWorkspaceId === workspace.workspaceId}
                       onChange={() => handleRowSelect(workspace.workspaceId)}
                       onClick={(e) => e.stopPropagation()}
@@ -276,17 +278,9 @@ export const LoadWorkspaceDialog: React.FC<{
         >
           <Button
             data-testid="load-workspace-delete-button"
-            sx={{
-              color: '#F50157',
-              backgroundColor: 'transparent',
-              '&:hover': {
-                color: '#FFFFFF',
-                backgroundColor: '#fc266f',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteForeverIcon />}
             onClick={handleDeleteWorkspaceClick}
             disabled={selectedWorkspaceId == null}
           >
@@ -295,6 +289,7 @@ export const LoadWorkspaceDialog: React.FC<{
           <Box sx={{ display: 'flex' }}>
             <Button
               data-testid="load-workspace-cancel-button"
+              variant="outlined"
               color="primary"
               onClick={handleClose}
               sx={{ mr: 2 }}
@@ -303,16 +298,7 @@ export const LoadWorkspaceDialog: React.FC<{
             </Button>
             <Button
               data-testid="load-workspace-open-button"
-              sx={{
-                color: '#FFFFFF',
-                backgroundColor: '#337ab7',
-                '&:hover': {
-                  backgroundColor: '#285a9b',
-                },
-                '&:disabled': {
-                  backgroundColor: 'transparent',
-                },
-              }}
+              variant="contained"
               onClick={handleOpenWorkspace}
               disabled={selectedWorkspaceId == null}
             >
@@ -328,19 +314,16 @@ export const LoadWorkspaceDialog: React.FC<{
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancel</Button>
               <Button
-                sx={{
-                  color: '#F50157',
-                  backgroundColor: 'transparent',
-                  '&:hover': {
-                    color: '#FFFFFF',
-                    backgroundColor: '#fc266f',
-                  },
-                  '&:disabled': {
-                    backgroundColor: 'transparent',
-                  },
-                }}
+                variant="outlined"
+                onClick={handleCloseDialog}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<DeleteForeverIcon />}
                 onClick={handleConfirmDelete}
               >
                 Delete

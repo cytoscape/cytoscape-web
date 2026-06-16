@@ -1,0 +1,103 @@
+/**
+ * This file contains styles for the Mantine components.
+ * 
+ * IMPORTANT: These styles are meant to override the default Mantine styles 
+ *            to better match the MUI theme used in the application.
+ */
+
+/* Dialog */
+
+.mantine-Modal-content {
+  background-color: var(--mui-palette-background-paper);
+  color: var(--mui-palette-text-primary);
+}
+.mantine-Modal-content .mantine-Paper-root {
+  background-color: inherit;
+  color: inherit;
+  box-shadow: none;
+}
+.mantine-Modal-header, .mantine-Dropzone-root, .mantine-Dropzone-inner {
+  background-color: transparent;
+  color: inherit;
+}
+.mantine-Modal-header .mantine-Title-root {
+  color: var(--mui-palette-text-primary) !important;
+}
+.mantine-Modal-close svg {
+  color: var(--mui-palette-text-secondary);
+}
+.mantine-Modal-close:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-Modal-close svg:hover {
+  color: var(--mui-palette-text-primary);
+}
+.mantine-Dropzone-root {
+  border-color: var(--mui-palette-divider);
+}
+.mantine-Dropzone-root:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-Modal-content .mantine-Text-root {
+  color: var(--mui-palette-text-primary);
+}
+
+/* Input */
+
+.mantine-Input-input {
+  background-color: inherit;
+  color: var(--mui-palette-text-primary);
+  border-color: var(--mui-palette-divider);
+}
+.mantine-Input-input:hover {
+  border-color: var(--mui-palette-text-primary);
+}
+.mantine-Input-input:focus {
+  border-color: var(--mui-palette-primary-main);
+}
+
+/** Number Input Control (up/down buttons) */
+
+.mantine-NumberInput-control {
+  border-inline-start: 1px solid var(--mui-palette-divider);
+}
+.mantine-NumberInput-control:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-NumberInput-control svg {
+  color: var(--mui-palette-text-secondary);
+}
+.mantine-NumberInput-control:hover svg {
+  color: var(--mui-palette-text-primary);
+}
+
+/** Rich Text Editor */
+
+.mantine-RichTextEditor-root {
+  border-color: rgba(var(--mui-palette-common-onBackgroundChannel) / 0.23);
+}
+.mantine-RichTextEditor-root:hover {
+  border-color: var(--mui-palette-common-onBackgroundChannel);
+}
+.mantine-RichTextEditor-root:focus-within {
+  border-color: var(--mui-palette-primary-main);
+}
+.mantine-RichTextEditor-toolbar, .mantine-RichTextEditor-content, .mantine-RichTextEditor-controlsGroup, .mantine-RichTextEditor-control {
+  background-color: inherit;
+  color: var(--mui-palette-text-primary);
+}
+.mantine-RichTextEditor-toolbar {
+  border-bottom: 1px solid rgba(var(--mui-palette-common-onBackgroundChannel) / 0.23);
+}
+.mantine-RichTextEditor-control {
+  border-color: rgba(var(--mui-palette-common-onBackgroundChannel) / 0.23);
+}
+.mantine-RichTextEditor-control:hover {
+  background-color: var(--mui-palette-action-hover);
+}
+.mantine-RichTextEditor-control svg {
+  color: var(--mui-palette-text-secondary);
+}
+.mantine-RichTextEditor-control:hover svg {
+  color: var(--mui-palette-text-primary);
+}

@@ -1,3 +1,4 @@
+import DeleteIcon from '@mui/icons-material/Delete'
 import {
   Alert,
   Box,
@@ -137,23 +138,14 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
       <DialogActions>
         <Button
           data-testid="edit-table-column-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={props.onClose}
         >
           Cancel
         </Button>
         <Button
           data-testid="edit-table-column-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           onClick={() => props.onSubmit(value, mappingSyncSetting)}
         >
           Confirm
@@ -190,7 +182,7 @@ export function DeleteTableColumnForm(
     >
       <DialogTitle>Delete Column</DialogTitle>
       <DialogContent>
-        <Box>Are you sure you want to delete column {props.column.id}?</Box>
+        <Box>Are you sure you want to delete column &quot;{props.column.id}&quot;?</Box>
         {columnHasDependentProperties ? (
           <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
             props.column.id
@@ -231,27 +223,19 @@ export function DeleteTableColumnForm(
       <DialogActions>
         <Button
           data-testid="delete-table-column-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={props.onClose}
         >
           Cancel
         </Button>
         <Button
           data-testid="delete-table-column-confirm-button"
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#fc266f',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
+          color="error"
+          startIcon={<DeleteIcon />}
           onClick={() => props.onSubmit(mappingSyncSetting)}
         >
-          Confirm
+          Delete
         </Button>
       </DialogActions>
     </Dialog>
@@ -271,22 +255,18 @@ export function CreateTableColumnForm(
   const submitButton = disabled ? (
     <Tooltip title="Column name must not be empty">
       <Box>
-        <Button disabled={true}>Confirm</Button>
+        <Button
+          variant="contained"
+          disabled
+        >
+          Confirm
+        </Button>
       </Box>
     </Tooltip>
   ) : (
     <Button
       data-testid="create-table-column-confirm-button"
-      sx={{
-        color: '#FFFFFF',
-        backgroundColor: '#337ab7',
-        '&:hover': {
-          backgroundColor: '#285a9b',
-        },
-        '&:disabled': {
-          backgroundColor: 'transparent',
-        },
-      }}
+      variant="contained"
       disabled={columnName === ''}
       onClick={() => {
         props.onSubmit(columnName, valueTypeName, defaultValue)
@@ -351,7 +331,7 @@ export function CreateTableColumnForm(
       <DialogActions>
         <Button
           data-testid="create-table-column-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             setColumnName('')
             setDefaultValue('')

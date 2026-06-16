@@ -57,21 +57,15 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       <DialogActions>
         <Button
           data-testid="email-verification-verify-button"
+          variant="outlined"
           onClick={onVerify}
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
         >
           Already Verified
         </Button>
         <Button
           data-testid="email-verification-cancel-button"
+          variant="contained"
           onClick={onCancel}
-          color="primary"
         >
           Log Out
         </Button>

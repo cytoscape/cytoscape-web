@@ -86,22 +86,20 @@ export function ColorPalettePicker({
 
   return (
     <Paper
+      variant="outlined"
       sx={{
         display: 'flex',
-        p: 1,
-        m: 1,
-        ml: 3,
-        mr: 3,
-        justifyContent: 'center',
-        backgroundColor: '#fcfffc',
-        color: '#595858',
+        py: 1,
+        px: 2,
+        gap: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
       }}
     >
-      Current Palette:&ensp;
+      <span>Current Palette:</span>
       <Button
         onClick={showColorPickerMenu}
         variant="outlined"
-        sx={{ color: '#63a5e8' }}
         size="small"
         startIcon={<Palette />}
       >
@@ -214,8 +212,6 @@ export function ColorPalettePicker({
             ml: 3,
             mr: 3,
             justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
           }}
         >
           <FormGroup>
@@ -249,21 +245,18 @@ export function ColorPalettePicker({
             ml: 3,
             mr: 3,
             justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
           }}
         >
-          <Button color="primary" onClick={hideColorPickerMenu} size="small">
+          <Button
+            color="primary"
+            variant="outlined"
+            onClick={hideColorPickerMenu}
+            size="small"
+          >
             Cancel
           </Button>
           <Button
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-            }}
+            variant="contained"
             onClick={handleConfirm}
             size="small"
           >

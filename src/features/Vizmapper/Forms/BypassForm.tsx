@@ -467,17 +467,8 @@ function BypassFormContent(props: {
         >{`${visualProperty.displayName} Bypasses`}</Typography>
         <Button
           data-testid="bypass-form-remove-all-button"
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#F50157',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="outlined"
+          color="error"
           size="small"
           onClick={() => {
             postEdit(

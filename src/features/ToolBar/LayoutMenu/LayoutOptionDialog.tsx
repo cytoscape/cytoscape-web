@@ -226,25 +226,16 @@ export const LayoutOptionDialog = ({
       <DialogActions>
         <Button
           data-testid="layout-option-dialog-close-button"
+          variant="outlined"
           onClick={handleClose}
-          color="primary"
         >
           Close
         </Button>
         <Button
           data-testid="layout-option-dialog-apply-button"
+          variant="contained"
           disabled={allDisabled || disabled}
           onClick={handleApply}
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
         >
           Apply Layout
         </Button>

@@ -1,7 +1,6 @@
 import InfoIcon from '@mui/icons-material/Info'
 import {
   Box,
-  Divider,
   IconButton,
   Tab,
   Tabs,
@@ -32,6 +31,7 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { MappingForm } from './Forms/MappingForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
+
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -143,7 +143,9 @@ function VisualPropertyView(props: {
         >
           <Typography
             variant="body2"
-            sx={{ color: disabled ? 'gray' : 'black' }}
+            sx={{
+              color: (theme) => (disabled ? theme.palette.text.disabled : theme.palette.text.primary)
+            }}
           >
             {visualProperty.displayName}
           </Typography>
@@ -267,38 +269,42 @@ export default function VizmapperView(props: {
       <Tabs
         data-testid="vizmapper-tabs"
         value={currentTabIndex}
-        TabIndicatorProps={{ sx: { backgroundColor: 'white' } }}
         sx={{
           display: 'flex',
           alignItems: 'center',
-          fontSize: 10,
           pb: 0.5,
-          backgroundColor: '#2F80ED',
-          '& button.Mui-selected': { color: 'white' },
           '& button': {
             minHeight: 34,
             height: 34,
-            width: 30,
           },
-          height: 34,
           minHeight: 34,
+          height: 34,
+          backgroundColor: (theme) => theme.palette.background.default,
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
         <Tab
           data-testid="vizmapper-nodes-tab"
-          label={<Typography variant="caption">Nodes</Typography>}
+          label="Nodes"
         />
         <Tab
           data-testid="vizmapper-edges-tab"
-          label={<Typography variant="caption">Edges</Typography>}
+          label="Edges"
         />
         <Tab
           data-testid="vizmapper-network-tab"
-          label={<Typography variant="caption">Network</Typography>}
+          label="Network"
         />
       </Tabs>
-      <Box sx={{ display: 'flex', p: 1.5, ml: 0.5, minHeight: '40px' }}>
+      <Box sx={{
+        display: 'flex',
+        px: 1.5,
+        pt: 1.5,
+        pb: 0,
+        ml: 0.5, 
+        minHeight: '40px' ,
+        borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
+      }}>
         <Box
           sx={{
             width: TAB_TEXT_WIDTH,
@@ -332,13 +338,11 @@ export default function VizmapperView(props: {
           Bypass
         </Box>
       </Box>
-      <Divider />
       <div hidden={currentTabIndex !== 0}>
         {currentTabIndex === 0 && (
           <Box
             sx={{
               ml: 1,
-              pt: 1,
               overflow: 'scroll',
               height: props.height - 162, // we want to only scroll the vp list instead of the whole allotment
               // height has to be computed based on allotment size to allow overflow scroll

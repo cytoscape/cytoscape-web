@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import PaletteIcon from '@mui/icons-material/Palette'
 import ShareIcon from '@mui/icons-material/Share'
-import { Box, Tab, Tabs, Theme, Typography, useTheme } from '@mui/material'
+import { Box, IconButton, Tab, Tabs, Tooltip } from '@mui/material'
 import { useEffect, useState } from 'react'
 
 import llmLogo from '../../../assets/openai.svg'
@@ -19,6 +19,9 @@ import { Summaries as SummaryList } from '../../SummaryPanel'
 import VizmapperView from '../../Vizmapper'
 import { WorkspaceNamePanel } from './WorkspaceNamePanel'
 
+
+const TABS_HEIGHT = 40
+
 interface NetworkBrowserProps {
   allotmentDimensions: [number, number]
 }
@@ -32,12 +35,6 @@ interface NetworkBrowserProps {
 export const NetworkBrowserPanel = ({
   allotmentDimensions,
 }: NetworkBrowserProps): JSX.Element => {
-  const theme: Theme = useTheme()
-  const buttonStyle = {
-    marginRight: theme.spacing(1),
-    border: '1px solid #999999',
-  }
-
   const ui: Ui = useUiStateStore((state) => state.ui)
   const { panels } = ui
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
@@ -83,7 +80,6 @@ export const NetworkBrowserPanel = ({
     <Box
       data-testid="network-browser-panel"
       sx={{
-        p: 0,
         margin: 0,
         height: '100%',
         boxSizing: 'border-box',
@@ -94,95 +90,146 @@ export const NetworkBrowserPanel = ({
       <Box
         sx={{
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'flex-start',
+          width: '100%',
+          height: '100%',
           p: 0,
           m: 0,
+          backgroundColor: (theme) => theme.palette.background.paper,
         }}
       >
-        <Tabs
-          data-testid="network-browser-panel-tabs"
+        <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            height: '2.5em',
-            minHeight: '2.5em',
-            flexGrow: 1,
+            justifyItems: 'center',
+            width: '100%',
+            p: 0,
+            m: 0,
+            backgroundColor: (theme) => theme.palette.background.subtle,
           }}
-          value={currentTabIndex}
-          onChange={changeTab}
         >
-          <Tab
-            data-testid="network-browser-panel-workspace-tab"
-            sx={{ height: '2.5em', minHeight: '2.5em' }}
-            icon={<ShareIcon />}
-            iconPosition="start"
-            label={<Typography variant="body2">WORKSPACE</Typography>}
-          />
-          <Tab
-            data-testid="network-browser-panel-style-tab"
-            sx={{ height: '2.5em', minHeight: '2.5em' }}
-            icon={<PaletteIcon />}
-            iconPosition="start"
-            label={<Typography variant="body2">STYLE</Typography>}
-          />
-          {showLLMQueryPanel && (
+          <Tabs
+            data-testid="network-browser-panel-tabs"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyItems: 'center',
+              flexGrow: 1,
+              height: TABS_HEIGHT,
+              minHeight: TABS_HEIGHT,
+              '& button': {
+                minHeight: TABS_HEIGHT,
+                height: TABS_HEIGHT,
+              },
+            }}
+            value={currentTabIndex}
+            onChange={changeTab}
+          >
             <Tab
-              data-testid="network-browser-panel-llm-query-tab"
-              sx={{ height: '2.5em', minHeight: '2.5em' }}
-              icon={
-                <img
-                  height="25"
-                  width="25"
-                  style={{ fill: 'gray' }}
-                  src={llmLogo}
-                />
-              }
+              data-testid="network-browser-panel-workspace-tab"
+              icon={<ShareIcon />}
               iconPosition="start"
-              label={<Typography variant="body2">LLM QUERY</Typography>}
+              label="WORKSPACE"
+            />
+            <Tab
+              data-testid="network-browser-panel-style-tab"
+              icon={<PaletteIcon />}
+              iconPosition="start"
+              label="STYLE"
+            />
+            {showLLMQueryPanel && (
+              <Tab
+                data-testid="network-browser-panel-llm-query-tab"
+                icon={
+                  <img
+                    height="25"
+                    width="25"
+                    style={{ fill: 'gray' }}
+                    src={llmLogo}
+                  />
+                }
+                iconPosition="start"
+                label="LLM QUERY"
+              />
+            )}
+          </Tabs>
+          {panels.left === PanelState.OPEN ? (
+            <Tooltip title="Close panel">
+              <IconButton
+                data-testid="network-browser-panel-close-button"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  mr: 1,
+                  color: (theme) => theme.palette.text.secondary,
+                  '&:hover': {
+                    color: (theme) => theme.palette.text.primary,
+                    backgroundColor: 'transparent',
+                  },
+                }}
+                onClick={() => setPanelState(Panel.LEFT, PanelState.CLOSED)}
+              >
+                <ChevronLeft />
+              </IconButton>
+            </Tooltip>
+          ) : (
+            <ChevronRight
+              data-testid="network-browser-panel-open-button"
+              sx={{
+                mr: 1,
+                color: (theme) => theme.palette.text.secondary,
+                '&:hover': {
+                  color: (theme) => theme.palette.text.primary,
+                },
+              }}
+              onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
             />
           )}
-        </Tabs>
-        {panels.left === PanelState.OPEN ? (
-          <ChevronLeft
-            data-testid="network-browser-panel-close-button"
-            style={buttonStyle}
-            onClick={() => setPanelState(Panel.LEFT, PanelState.CLOSED)}
-          />
-        ) : (
-          <ChevronRight
-            data-testid="network-browser-panel-open-button"
-            style={buttonStyle}
-            onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
-          />
-        )}
-      </Box>
-      <Box hidden={currentTabIndex !== 0}>
-        <WorkspaceNamePanel />
-      </Box>
-      <Box
-        sx={{
-          flexGrow: 1,
-          width: '100%',
-          height: '100%',
-          overflowY: 'auto',
-        }}
-        hidden={currentTabIndex !== 0}
-      >
-        {currentTabIndex === 0 && <SummaryList />}
-      </Box>
-      <Box hidden={currentTabIndex !== 1}>
-        {currentTabIndex === 1 && (
-          <VizmapperView
-            networkId={targetNetworkId}
-            height={allotmentDimensions[0]}
-          />
-        )}
-      </Box>
-      <Box hidden={currentTabIndex !== 2}>
-        {currentTabIndex === 2 && (
-          <LLMQueryResultPanel height={allotmentDimensions[0]} />
-        )}
+        </Box>
+        <Box
+          hidden={currentTabIndex !== 0}
+          sx={{
+            width: '100%',
+            backgroundColor: (theme) => theme.palette.background.default,
+          }}
+        >
+          <WorkspaceNamePanel />
+        </Box>
+        <Box
+          sx={{
+            flexGrow: 1,
+            height: '100%',
+            width: '100%',
+            overflowY: 'auto',
+          }}
+          hidden={currentTabIndex !== 0}
+        >
+          {currentTabIndex === 0 && <SummaryList />}
+        </Box>
+        <Box
+          hidden={currentTabIndex !== 1}
+          sx={{
+            flexGrow: 1,
+            height: '100%',
+            width: '100%',
+            overflowY: 'auto',
+          }}
+        >
+          {currentTabIndex === 1 && (
+            <VizmapperView
+              networkId={targetNetworkId}
+              height={allotmentDimensions[0]}
+            />
+          )}
+        </Box>
+        <Box hidden={currentTabIndex !== 2}>
+          {currentTabIndex === 2 && (
+            <LLMQueryResultPanel height={allotmentDimensions[0]} />
+          )}
+        </Box>
       </Box>
     </Box>
   )

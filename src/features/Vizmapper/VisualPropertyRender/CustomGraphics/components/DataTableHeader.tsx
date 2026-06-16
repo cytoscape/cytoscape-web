@@ -30,7 +30,6 @@ export const DataTableHeader: React.FC<DataTableHeaderProps> = ({
         px: 0.75,
         py: 0.25,
         bgcolor: 'grey.50',
-        borderRadius: 1,
         mb: 0.5,
       }}
     >

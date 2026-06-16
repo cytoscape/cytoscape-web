@@ -11,10 +11,21 @@ interface MessagePanelProps {
 export const MessagePanel = (props: MessagePanelProps): ReactElement => {
   return (
     <Box
-      sx={{ width: '100%', height: '100%', display: 'grid', padding: '1em' }}
       data-testid={props['data-testid']}
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'grid',
+        padding: '1em',
+        backgroundColor: (theme) => theme.palette.background.paper,
+      }}
     >
-      <Box sx={{ margin: 'auto' }}>
+      <Box
+        sx={{
+          margin: 'auto',
+          color: (theme) => theme.palette.text.disabled,
+        }}
+      >
         <h2>{props.message}</h2>
         <h6>{props.subMessage}</h6>
         {props.showProgress ?? false ? <LinearProgress /> : null}

@@ -66,6 +66,7 @@ export function NumberInput(props: {
           setValue(e.target.value)
           setValueIsValid(strValueIsValid(e.target.value))
         }}
+        sx={{ width: '100%', p: 0.25 }}
       >
         <Typography variant="h6">{value}</Typography>
       </TextField>
@@ -75,13 +76,13 @@ export function NumberInput(props: {
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'space-between',
+          p: 0.25
         }}
       >
         <Button
           data-testid="number-input-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             setValue(String(currentValue ?? 0))
             setValueIsValid(strValueIsValid(String(currentValue ?? 0)))
@@ -92,13 +93,7 @@ export function NumberInput(props: {
         </Button>
         <Button
           data-testid="number-input-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           disabled={!isValid}
           onClick={() => {
             const nextValue = Number(Number(value).toFixed(4))

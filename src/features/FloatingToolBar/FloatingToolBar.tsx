@@ -1,4 +1,4 @@
-import { Box, Divider } from '@mui/material'
+import { Box } from '@mui/material'
 
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
@@ -32,11 +32,14 @@ export const FloatingToolBar = ({
         right: '1em',
         zIndex: 1,
         borderRadius: '0.5em',
-        backgroundColor: 'rgba(250, 250, 250, 0.8)',
-        border: '1px solid #AAAAAA',
+        backgroundColor: (theme) => theme.palette.background.paper,
+        border: (theme) => `1px solid ${theme.palette.grey[800]}`,
+        opacity: 0.8,
+        '&:hover': {
+          opacity: 1,
+        },
       }}
     >
-      <Divider orientation="vertical" flexItem />
       <ApplyLayoutButton
         targetNetworkId={targetNetworkId}
         disabled={isCirclePackingRenderer}

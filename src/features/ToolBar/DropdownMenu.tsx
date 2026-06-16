@@ -1,5 +1,3 @@
-import './DataMenu/menuItem.css'
-
 import { Button, Tooltip } from '@mui/material'
 import { Box } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
@@ -8,6 +6,8 @@ import { OverlayPanel } from 'primereact/overlaypanel'
 import { TieredMenu } from 'primereact/tieredmenu'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
+
+import { darkPalette } from '../../theme'
 
 
 interface DropdownMenuProps {
@@ -28,6 +28,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   onOpenChange,
 }) => {
   const overlayPanelRef = useRef<OverlayPanel>(null)
+  const theme = useTheme()
 
   useEffect(() => {
     if (!open) {
@@ -68,7 +69,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         <Button
           data-testid={`toolbar-${id}-menu-button`}
           sx={{
-            color: 'white',
+            color: darkPalette.text.primary,
             textTransform: 'none',
           }}
           id={`${id}-dropdown`}
@@ -89,6 +90,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             style={{ 
               minWidth: minWidth ?? 200,
               maxWidth: 600,
+              backgroundColor: theme.palette.background.paper,
               boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
             }}
             model={menuItems}

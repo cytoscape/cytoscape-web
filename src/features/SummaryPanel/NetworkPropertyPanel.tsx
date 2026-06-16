@@ -5,13 +5,11 @@ import {
   Box,
   Chip,
   CircularProgress,
-  Divider,
   IconButton,
   Theme,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { blueGrey } from '@mui/material/colors'
 import { useTheme } from '@mui/material/styles'
 import { lazy, ReactElement, Suspense, useState } from 'react'
 
@@ -173,9 +171,6 @@ export const NetworkPropertyPanel = ({
     }
   }
 
-  const backgroundColor: string =
-    currentNetworkId === id ? blueGrey[100] : '#FFFFFF'
-
   const networkModifiedIcon = networkModified ? (
     <Tooltip title="Network has been modified">
       <CircleIcon sx={{ color: theme.palette.error.main, fontSize: 10 }} />
@@ -184,15 +179,15 @@ export const NetworkPropertyPanel = ({
 
   return (
     <>
-      <Divider />
       <Box
         sx={{
-          backgroundColor,
+          backgroundColor: (theme) => currentNetworkId === id ? theme.palette.action.selected : theme.palette.background.paper,
           width: '100%',
           display: 'flex',
           alignItems: 'center',
           '&:hover': { cursor: 'pointer' },
           p: 1,
+          borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
         }}
         onClick={() => {
           setCurrentNetworkId(id)
@@ -231,7 +226,12 @@ export const NetworkPropertyPanel = ({
                   }
                 />
               </Tooltip>
-              <Typography variant={'body2'}>{summary.name}</Typography>
+              <Typography
+                variant={'body2'}
+                sx={{ color: theme.palette.text.primary }}
+              >
+                {summary.name}
+              </Typography>
             </Box>
             {networkModifiedIcon}
           </Box>
@@ -265,7 +265,7 @@ export const NetworkPropertyPanel = ({
             }}
           >
             <Typography
-              variant={'subtitle2'}
+              variant={'body2'}
               sx={{ width: '100%', color: theme.palette.text.secondary }}
             >
               {`N: ${nodeCount} (${
@@ -291,7 +291,7 @@ export const NetworkPropertyPanel = ({
                   showEditNetworkSummaryForm(e)
                 }}
               >
-                <EditIcon sx={{ fontSize: 18 }} />
+                <EditIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Remove the network from workspace">
@@ -303,7 +303,7 @@ export const NetworkPropertyPanel = ({
                   onClickDelete(e)
                 }}
               >
-                <DeleteIcon sx={{ fontSize: 18 }} />
+                <DeleteIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
               </IconButton>
             </Tooltip>
           </Box>
@@ -329,13 +329,13 @@ export const NetworkPropertyPanel = ({
         </Suspense>
         <ConfirmationDialog
           title="Remove Network From Workspace"
-          message={`Do you really want to delete the network, ${summary.name}?`}
+          message={`Do you really want to delete the network "${summary.name}"?`}
           onCancel={onCancelDelete}
           onConfirm={onConfirmDelete}
           open={openConfirmation}
           setOpen={setOpenConfirmation}
           buttonTitle="Yes (cannot be undone)"
-          isAlert={true}
+          isAlert
         />
       </Box>
     </>

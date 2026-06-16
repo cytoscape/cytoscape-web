@@ -13,7 +13,6 @@ const VPN = VisualPropertyName
 const mockSetDefault = vi.fn()
 const mockSetBypass = vi.fn()
 const mockDeleteBypass = vi.fn()
-const mockCreateDiscreteMapping = vi.fn()
 const mockCreateContinuousMapping = vi.fn()
 const mockCreatePassthroughMapping = vi.fn()
 const mockRemoveMapping = vi.fn()
@@ -29,11 +28,10 @@ vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
       setDefault: mockSetDefault,
       setBypass: mockSetBypass,
       deleteBypass: mockDeleteBypass,
-      createDiscreteMapping: mockCreateDiscreteMapping,
+      setMapping: mockSetMapping,
       createContinuousMapping: mockCreateContinuousMapping,
       createPassthroughMapping: mockCreatePassthroughMapping,
       removeMapping: mockRemoveMapping,
-      setMapping: mockSetMapping,
     })),
   },
 }))
@@ -160,8 +158,10 @@ describe('deleteBypass', () => {
 // --- createDiscreteMapping ---------------------------------------------------
 
 describe('createDiscreteMapping', () => {
-  it('calls createDiscreteMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#000000' } }
+  it('calls setMapping and returns ok() when network exists', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5' },
+    }
 
     const result = visualStyleApi.createDiscreteMapping(
       'net1',
@@ -171,7 +171,11 @@ describe('createDiscreteMapping', () => {
     )
 
     expect(result.success).toBe(true)
-    expect(mockSetMapping).toHaveBeenCalled()
+    expect(mockSetMapping).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeBackgroundColor,
+      expect.objectContaining({ attribute: 'type', type: 'discrete' }),
+    )
   })
 
   it('returns NetworkNotFound when visual style does not exist', () => {

@@ -19,10 +19,10 @@ export function BooleanSwitch(props: {
         checked={localValue ?? false}
         onChange={(e) => setLocalValue(e.target.checked)}
       ></Switch>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
         <Button
           data-testid="boolean-switch-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? false)
@@ -32,13 +32,7 @@ export function BooleanSwitch(props: {
         </Button>
         <Button
           data-testid="boolean-switch-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

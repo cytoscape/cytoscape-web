@@ -1,4 +1,5 @@
-import { Box, Button, Theme, useTheme } from '@mui/material'
+import SearchIcon from '@mui/icons-material/Search'
+import { Box, Button } from '@mui/material'
 
 interface SearchButtonsProps {
   handleClose: () => void
@@ -11,8 +12,6 @@ export const SearchButtons = ({
   handleClose,
   startSearch,
 }: SearchButtonsProps): JSX.Element => {
-  const theme: Theme = useTheme()
-
   return (
     <Box
       sx={{
@@ -20,22 +19,22 @@ export const SearchButtons = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        gap: theme.spacing(1),
+        gap: (theme) => theme.spacing(1),
         padding: 0,
-        margin: 0,
+        mt: 4,
       }}
     >
       <Button
         data-testid="search-settings-close-button"
-        color="inherit"
+        variant="outlined"
         onClick={handleClose}
       >
         Close
       </Button>
       <Button
         data-testid="search-settings-search-button"
-        color="primary"
         variant="contained"
+        startIcon={<SearchIcon />}
         onClick={startSearch}
       >
         Search
