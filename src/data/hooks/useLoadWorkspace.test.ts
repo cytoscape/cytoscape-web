@@ -9,7 +9,7 @@ import {
   putAppToDb,
 } from '../db'
 vi.mock('../db', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import('../db')>();
   return {
     ...actual,
     putAppToDb: vi.fn(actual.putAppToDb)

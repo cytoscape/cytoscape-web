@@ -250,19 +250,25 @@ describe('applyLayout — happy path', () => {
   it('dispatches layout:started before layout executes', async () => {
     await layoutApi.applyLayout('net1')
     const startedCall = mockDispatchCyWebEvent.mock.calls.find(
-      ([type]: [string]) => type === 'layout:started',
+      ([type]) => type === 'layout:started',
     )
     expect(startedCall).toBeDefined()
-    expect(startedCall[1]).toMatchObject({ networkId: 'net1', algorithm: 'circle' })
+    expect(startedCall![1]).toMatchObject({
+      networkId: 'net1',
+      algorithm: 'circle',
+    })
   })
 
   it('dispatches layout:completed after positions committed', async () => {
     await layoutApi.applyLayout('net1')
     const completedCall = mockDispatchCyWebEvent.mock.calls.find(
-      ([type]: [string]) => type === 'layout:completed',
+      ([type]) => type === 'layout:completed',
     )
     expect(completedCall).toBeDefined()
-    expect(completedCall[1]).toMatchObject({ networkId: 'net1', algorithm: 'circle' })
+    expect(completedCall![1]).toMatchObject({
+      networkId: 'net1',
+      algorithm: 'circle',
+    })
   })
 
   it('sets isRunning true then false', async () => {

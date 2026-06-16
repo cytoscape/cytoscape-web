@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../../models/TableModel'
 import { ColumnAppendState } from '../model/ColumnAppendState'
 import { ColumnAppendType } from '../model/ColumnAppendType'

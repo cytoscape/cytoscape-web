@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, type MockedFunction, vi } from 'vitest'
 
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
 import { waitSeconds } from '../../../utils/waitSeconds'
@@ -541,10 +541,10 @@ describe('normalizeNdexSummaries', () => {
 })
 
 describe('fetchNdexSummaries', () => {
-  const mockGetNdexClient = getNdexClient as vi.MockedFunction<
+  const mockGetNdexClient = getNdexClient as MockedFunction<
     typeof getNdexClient
   >
-  const mockWaitSeconds = waitSeconds as vi.MockedFunction<typeof waitSeconds>
+  const mockWaitSeconds = waitSeconds as MockedFunction<typeof waitSeconds>
 
   const createBaseSummary = (): NdexNetworkSummary => ({
     ownerUUID: 'owner-123',
@@ -777,10 +777,10 @@ describe('fetchNdexSummaries', () => {
 })
 
 describe('getNetworkValidationStatus', () => {
-  const mockGetNdexClient = getNdexClient as vi.MockedFunction<
+  const mockGetNdexClient = getNdexClient as MockedFunction<
     typeof getNdexClient
   >
-  const mockWaitSeconds = waitSeconds as vi.MockedFunction<typeof waitSeconds>
+  const mockWaitSeconds = waitSeconds as MockedFunction<typeof waitSeconds>
 
   const createValidSummary = (): NdexNetworkSummary => ({
     ownerUUID: 'owner-123',
