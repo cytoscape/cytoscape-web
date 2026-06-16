@@ -6,21 +6,21 @@ import { networkApi } from './networkApi'
 
 // ── Mock: uuid ────────────────────────────────────────────────────────────────
 
-jest.mock('uuid', () => ({ v4: () => 'test-uuid' }))
+vi.mock('uuid', () => ({ v4: () => 'test-uuid' }))
 
 // ── Mock: CX2 validator ───────────────────────────────────────────────────────
 
-const mockValidateCX2 = jest.fn()
+const mockValidateCX2 = vi.fn()
 
-jest.mock('../../models/CxModel/impl/validator', () => ({
+vi.mock('../../models/CxModel/impl/validator', () => ({
   validateCX2: (...args: unknown[]) => mockValidateCX2(...args),
 }))
 
 // ── Mock: CX2 → CyNetwork converter ──────────────────────────────────────────
 
-const mockCreateCyNetworkFromCx2 = jest.fn()
+const mockCreateCyNetworkFromCx2 = vi.fn()
 
-jest.mock('../../models/CxModel/impl', () => ({
+vi.mock('../../models/CxModel/impl', () => ({
   createCyNetworkFromCx2: (...args: unknown[]) =>
     mockCreateCyNetworkFromCx2(...args),
 }))
@@ -29,14 +29,14 @@ jest.mock('../../models/CxModel/impl', () => ({
 
 const mockNetworks = new Map<string, any>()
 const mockNetworkActions = {
-  add: jest.fn(),
-  delete: jest.fn(),
-  deleteAll: jest.fn(),
+  add: vi.fn(),
+  delete: vi.fn(),
+  deleteAll: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/NetworkStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   useNetworkStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockNetworkActions,
       networks: mockNetworks,
     })),
@@ -44,40 +44,40 @@ jest.mock('../../data/hooks/stores/NetworkStore', () => ({
 }))
 
 const mockSummaryActions = {
-  add: jest.fn(),
-  delete: jest.fn(),
-  deleteAll: jest.fn(),
+  add: vi.fn(),
+  delete: vi.fn(),
+  deleteAll: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
   useNetworkSummaryStore: {
-    getState: jest.fn(() => mockSummaryActions),
+    getState: vi.fn(() => mockSummaryActions),
   },
 }))
 
 const mockViewModelActions = {
-  add: jest.fn(),
-  delete: jest.fn(),
-  deleteAll: jest.fn(),
+  add: vi.fn(),
+  delete: vi.fn(),
+  deleteAll: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => mockViewModelActions),
+    getState: vi.fn(() => mockViewModelActions),
   },
 }))
 
 const mockVisualStyleActions = {
-  add: jest.fn(),
-  delete: jest.fn(),
-  deleteAll: jest.fn(),
-  createPassthroughMapping: jest.fn(),
+  add: vi.fn(),
+  delete: vi.fn(),
+  deleteAll: vi.fn(),
+  createPassthroughMapping: vi.fn(),
 }
 const mockVisualStyles: Record<string, any> = {}
 
-jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
+vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockVisualStyleActions,
       visualStyles: mockVisualStyles,
     })),
@@ -85,49 +85,49 @@ jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
 }))
 
 const mockTableActions = {
-  add: jest.fn(),
-  delete: jest.fn(),
-  deleteAll: jest.fn(),
+  add: vi.fn(),
+  delete: vi.fn(),
+  deleteAll: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/TableStore', () => ({
+vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
-    getState: jest.fn(() => mockTableActions),
+    getState: vi.fn(() => mockTableActions),
   },
 }))
 
 const mockOpaqueAspectActions = {
-  delete: jest.fn(),
-  deleteAll: jest.fn(),
+  delete: vi.fn(),
+  deleteAll: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/OpaqueAspectStore', () => ({
+vi.mock('../../data/hooks/stores/OpaqueAspectStore', () => ({
   useOpaqueAspectStore: {
-    getState: jest.fn(() => mockOpaqueAspectActions),
+    getState: vi.fn(() => mockOpaqueAspectActions),
   },
 }))
 
 const mockUndoActions = {
-  deleteStack: jest.fn(),
-  deleteAllStacks: jest.fn(),
+  deleteStack: vi.fn(),
+  deleteAllStacks: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/UndoStore', () => ({
+vi.mock('../../data/hooks/stores/UndoStore', () => ({
   useUndoStore: {
-    getState: jest.fn(() => mockUndoActions),
+    getState: vi.fn(() => mockUndoActions),
   },
 }))
 
 let mockActiveNetworkView = ''
 const mockUiStateActions = {
-  setActiveNetworkView: jest.fn((id: string) => {
+  setActiveNetworkView: vi.fn((id: string) => {
     mockActiveNetworkView = id
   }),
 }
 
-jest.mock('../../data/hooks/stores/UiStateStore', () => ({
+vi.mock('../../data/hooks/stores/UiStateStore', () => ({
   useUiStateStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockUiStateActions,
       ui: { activeNetworkView: mockActiveNetworkView },
     })),
@@ -140,27 +140,27 @@ let mockWorkspaceState = {
   id: 'ws1',
 }
 const mockWorkspaceActions = {
-  addNetworkIds: jest.fn((id: string) => {
+  addNetworkIds: vi.fn((id: string) => {
     mockWorkspaceState.networkIds.push(id)
   }),
-  setCurrentNetworkId: jest.fn((id: string) => {
+  setCurrentNetworkId: vi.fn((id: string) => {
     mockWorkspaceState.currentNetworkId = id
   }),
-  deleteNetwork: jest.fn((id: string) => {
+  deleteNetwork: vi.fn((id: string) => {
     mockWorkspaceState.networkIds = mockWorkspaceState.networkIds.filter(
       (n) => n !== id,
     )
   }),
-  deleteAllNetworks: jest.fn(() => {
+  deleteAllNetworks: vi.fn(() => {
     mockWorkspaceState.networkIds = []
   }),
-  deleteNetworkModifiedStatus: jest.fn(),
-  deleteAllNetworkModifiedStatuses: jest.fn(),
+  deleteNetworkModifiedStatus: vi.fn(),
+  deleteAllNetworkModifiedStatuses: vi.fn(),
 }
 
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       ...mockWorkspaceActions,
       workspace: {
         networkIds: mockWorkspaceState.networkIds,
@@ -173,21 +173,21 @@ jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
 
 const mockValidationResults: Record<string, any> = {}
 const mockHcxActions = {
-  deleteValidationResult: jest.fn((id: string) => {
+  deleteValidationResult: vi.fn((id: string) => {
     delete mockValidationResults[id]
   }),
-  deleteAllValidationResults: jest.fn(() => {
+  deleteAllValidationResults: vi.fn(() => {
     Object.keys(mockValidationResults).forEach(
       (k) => delete mockValidationResults[k],
     )
   }),
 }
 
-jest.mock(
+vi.mock(
   '../../features/HierarchyViewer/store/HcxValidatorStore',
   () => ({
     useHcxValidatorStore: {
-      getState: jest.fn(() => ({
+      getState: vi.fn(() => ({
         ...mockHcxActions,
         validationResults: mockValidationResults,
       })),
@@ -223,7 +223,7 @@ function resetMocks() {
   Object.keys(mockValidationResults).forEach(
     (k) => delete mockValidationResults[k],
   )
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   mockValidateCX2.mockReturnValue({ isValid: true, errors: [], warnings: [] })
   mockCreateCyNetworkFromCx2.mockReturnValue(makeFakeCyNetwork('test-uuid'))
 }

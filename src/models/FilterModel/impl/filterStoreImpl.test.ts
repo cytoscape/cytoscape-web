@@ -139,7 +139,7 @@ describe('FilterStoreImpl', () => {
   describe('setConverter', () => {
     it('should set converter function', () => {
       const state = createDefaultState()
-      const converter = jest.fn((result: any) => result)
+      const converter = vi.fn((result: any) => result)
 
       const result = setConverter(state, converter)
 

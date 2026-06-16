@@ -12,8 +12,8 @@ describe('AppCleanupRegistry', () => {
   })
 
   it('calls all registered cleanup functions with the appId', () => {
-    const fn1 = jest.fn()
-    const fn2 = jest.fn()
+    const fn1 = vi.fn()
+    const fn2 = vi.fn()
     registerAppCleanup(fn1)
     registerAppCleanup(fn2)
 
@@ -28,11 +28,11 @@ describe('AppCleanupRegistry', () => {
   })
 
   it('continues calling remaining functions when one throws', () => {
-    const fn1 = jest.fn()
-    const fn2 = jest.fn().mockImplementation(() => {
+    const fn1 = vi.fn()
+    const fn2 = vi.fn().mockImplementation(() => {
       throw new Error('cleanup2 failed')
     })
-    const fn3 = jest.fn()
+    const fn3 = vi.fn()
     registerAppCleanup(fn1)
     registerAppCleanup(fn2)
     registerAppCleanup(fn3)
@@ -46,7 +46,7 @@ describe('AppCleanupRegistry', () => {
   })
 
   it('calls each function once per cleanupAllForApp invocation', () => {
-    const fn = jest.fn()
+    const fn = vi.fn()
     registerAppCleanup(fn)
 
     cleanupAllForApp('app1')
@@ -58,9 +58,9 @@ describe('AppCleanupRegistry', () => {
   })
 
   it('supports multiple registrations from different stores', () => {
-    const resourceCleanup = jest.fn()
-    const contextMenuCleanup = jest.fn()
-    const futureStoreCleanup = jest.fn()
+    const resourceCleanup = vi.fn()
+    const contextMenuCleanup = vi.fn()
+    const futureStoreCleanup = vi.fn()
 
     registerAppCleanup(resourceCleanup)
     registerAppCleanup(contextMenuCleanup)

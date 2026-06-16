@@ -1,12 +1,13 @@
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { loadModule } from '../ExternalComponent'
 import { loadRemoteApp } from './loadRemoteApp'
+import { loadModule } from '../ExternalComponent'
 
-jest.mock('../ExternalComponent', () => ({
-  loadModule: jest.fn(),
+vi.mock('../ExternalComponent', () => ({
+  loadModule: vi.fn(),
 }))
 
-const mockedLoadModule = jest.mocked(loadModule)
+const mockedLoadModule = vi.mocked(loadModule)
 
 describe('loadRemoteApp', () => {
   let appRegistry: Map<string, CyApp>

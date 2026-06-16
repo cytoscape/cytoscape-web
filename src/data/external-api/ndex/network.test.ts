@@ -3,12 +3,12 @@ import { getNdexClient } from './client'
 import { fetchNdexNetwork, updateNdexNetwork } from './network'
 
 // Mock the NDEx client module
-jest.mock('./client', () => ({
-  getNdexClient: jest.fn(),
+vi.mock('./client', () => ({
+  getNdexClient: vi.fn(),
 }))
 
 describe('fetchNdexNetwork', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -22,7 +22,7 @@ describe('fetchNdexNetwork', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch a network from NDEx by UUID', async () => {
@@ -32,7 +32,7 @@ describe('fetchNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        getRawCX2Network: jest.fn().mockResolvedValue(mockCx2Network),
+        getRawCX2Network: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -53,7 +53,7 @@ describe('fetchNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        getRawCX2Network: jest.fn().mockResolvedValue(mockCx2Network),
+        getRawCX2Network: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -74,7 +74,7 @@ describe('fetchNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        getRawCX2Network: jest.fn().mockRejectedValue(mockError),
+        getRawCX2Network: vi.fn().mockRejectedValue(mockError),
       },
     }
 
@@ -98,7 +98,7 @@ describe('fetchNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        getRawCX2Network: jest.fn().mockResolvedValue(mockCx2Network),
+        getRawCX2Network: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -119,7 +119,7 @@ describe('fetchNdexNetwork', () => {
 })
 
 describe('updateNdexNetwork', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -128,7 +128,7 @@ describe('updateNdexNetwork', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should update a network in NDEx by ID', async () => {
@@ -138,7 +138,7 @@ describe('updateNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        updateNetworkFromRawCX2: jest.fn().mockResolvedValue(undefined),
+        updateNetworkFromRawCX2: vi.fn().mockResolvedValue(undefined),
       },
     }
 
@@ -161,7 +161,7 @@ describe('updateNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        updateNetworkFromRawCX2: jest.fn().mockResolvedValue(undefined),
+        updateNetworkFromRawCX2: vi.fn().mockResolvedValue(undefined),
       },
     }
 
@@ -187,7 +187,7 @@ describe('updateNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        updateNetworkFromRawCX2: jest.fn().mockResolvedValue(undefined),
+        updateNetworkFromRawCX2: vi.fn().mockResolvedValue(undefined),
       },
     }
 
@@ -209,7 +209,7 @@ describe('updateNdexNetwork', () => {
 
     const mockClient = {
       networks: {
-        updateNetworkFromRawCX2: jest.fn().mockRejectedValue(mockError),
+        updateNetworkFromRawCX2: vi.fn().mockRejectedValue(mockError),
       },
     }
 

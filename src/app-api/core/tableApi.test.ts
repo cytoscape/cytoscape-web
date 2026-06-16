@@ -6,20 +6,20 @@ import { tableApi } from './tableApi'
 
 // ── Mock: TableStore ──────────────────────────────────────────────────────────
 
-const mockCreateColumn = jest.fn()
-const mockDeleteColumn = jest.fn()
-const mockSetColumnName = jest.fn()
-const mockSetValue = jest.fn()
-const mockSetValues = jest.fn()
-const mockEditRows = jest.fn()
-const mockApplyValueToElements = jest.fn()
+const mockCreateColumn = vi.fn()
+const mockDeleteColumn = vi.fn()
+const mockSetColumnName = vi.fn()
+const mockSetValue = vi.fn()
+const mockSetValues = vi.fn()
+const mockEditRows = vi.fn()
+const mockApplyValueToElements = vi.fn()
 
 // Mutable tables map for tests
 const mockTables: Record<string, any> = {}
 
-jest.mock('../../data/hooks/stores/TableStore', () => ({
+vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       tables: mockTables,
       createColumn: mockCreateColumn,
       deleteColumn: mockDeleteColumn,
@@ -36,9 +36,9 @@ jest.mock('../../data/hooks/stores/TableStore', () => ({
 
 const mockNetworks = new Map<string, any>()
 
-jest.mock('../../data/hooks/stores/NetworkStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   useNetworkStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       networks: mockNetworks,
     })),
   },
@@ -67,7 +67,7 @@ function makeTableRecord(
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   // Reset any custom mockImplementation set by prior tests
   mockCreateColumn.mockReset()
   mockDeleteColumn.mockReset()

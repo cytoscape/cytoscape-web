@@ -11,11 +11,29 @@ import { ValueType } from '../../../models/TableModel'
 import { useFilterStore } from './FilterStore'
 
 // Mock the database operations
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putFilterToDb: jest.fn().mockResolvedValue(undefined),
-  deleteFilterFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 describe('useFilterStore', () => {
   describe('setSearchState', () => {
@@ -101,7 +119,7 @@ describe('useFilterStore', () => {
   describe('setConverter', () => {
     it('should set converter function', () => {
       const { result } = renderHook(() => useFilterStore())
-      const converter = jest.fn((result: any) => result)
+      const converter = vi.fn((result: any) => result)
 
       act(() => {
         result.current.setConverter(converter)

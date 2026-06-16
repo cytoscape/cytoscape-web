@@ -12,34 +12,37 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { runSearch } from './searchUtil'
 
 // Mock the modules
-jest.mock('./searchUtil', () => ({
-  ...jest.requireActual('./searchUtil'),
-  runSearch: jest.fn(),
-  createFuseIndex: jest.fn(() => ({})),
-  filterColumns: jest.fn(() => new Set()),
-}))
+vi.mock('./searchUtil', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./searchUtil')>()
+  return {
+    ...actual,
+  runSearch: vi.fn(),
+  createFuseIndex: vi.fn(() => ({})),
+  filterColumns: vi.fn(() => new Set()),
+}
+})
 
-jest.mock('../../../data/hooks/stores/FilterStore')
-jest.mock('../../../data/hooks/stores/MessageStore')
-jest.mock('../../../data/hooks/stores/TableStore')
-jest.mock('../../../data/hooks/stores/UiStateStore')
-jest.mock('../../../data/hooks/stores/WorkspaceStore')
-jest.mock('../../../data/hooks/stores/ViewModelStore')
+vi.mock('../../../data/hooks/stores/FilterStore')
+vi.mock('../../../data/hooks/stores/MessageStore')
+vi.mock('../../../data/hooks/stores/TableStore')
+vi.mock('../../../data/hooks/stores/UiStateStore')
+vi.mock('../../../data/hooks/stores/WorkspaceStore')
+vi.mock('../../../data/hooks/stores/ViewModelStore')
 
 describe('SearchBox', () => {
-    const addMessageMock = jest.fn()
-    const exclusiveSelectMock = jest.fn()
-    const setQueryMock = jest.fn()
-    const setSearchStateMock = jest.fn()
+    const addMessageMock = vi.fn()
+    const exclusiveSelectMock = vi.fn()
+    const setQueryMock = vi.fn()
+    const setSearchStateMock = vi.fn()
 
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
 
         // Setup store mocks
-        ;(useMessageStore as unknown as jest.Mock).mockImplementation((selector) => 
+        ;(useMessageStore as unknown as import('vitest').Mock).mockImplementation((selector) => 
             selector({ addMessage: addMessageMock })
         )
-        ;(useFilterStore as unknown as jest.Mock).mockImplementation((selector) =>
+        ;(useFilterStore as unknown as import('vitest').Mock).mockImplementation((selector) =>
             selector({
                 search: {
                     query: 'test-query',
@@ -49,32 +52,32 @@ describe('SearchBox', () => {
                 },
                 setQuery: setQueryMock,
                 setSearchState: setSearchStateMock,
-                setIndexedColumns: jest.fn(),
-                setIndex: jest.fn(),
+                setIndexedColumns: vi.fn(),
+                setIndex: vi.fn(),
             })
         )
-        ;(useUiStateStore as unknown as jest.Mock).mockImplementation((selector) => 
+        ;(useUiStateStore as unknown as import('vitest').Mock).mockImplementation((selector) => 
             selector({ ui: { activeNetworkView: 'net1' } })
         )
-        ;(useWorkspaceStore as unknown as jest.Mock).mockImplementation((selector) =>
+        ;(useWorkspaceStore as unknown as import('vitest').Mock).mockImplementation((selector) =>
             selector({
                 workspace: { currentNetworkId: 'net1' }
             })
         )
-        ;(useTableStore as unknown as jest.Mock).mockImplementation((selector) =>
+        ;(useTableStore as unknown as import('vitest').Mock).mockImplementation((selector) =>
             selector({
                 tables: {
                     'net1': { nodeTable: { columns: new Map(), rows: new Map() }, edgeTable: { columns: new Map(), rows: new Map() } }
                 }
             })
         )
-        ;(useViewModelStore as unknown as jest.Mock).mockImplementation((selector) =>
+        ;(useViewModelStore as unknown as import('vitest').Mock).mockImplementation((selector) =>
             selector({ exclusiveSelect: exclusiveSelectMock })
         )
     })
 
     it('shows "No matches found" when a search target is selected but no matches occur', async () => {
-        (runSearch as jest.Mock).mockReturnValue([]) // No matches
+        (runSearch as import('vitest').Mock).mockReturnValue([]) // No matches
 
         render(<SearchBox />)
 
@@ -88,7 +91,7 @@ describe('SearchBox', () => {
     })
 
     it('shows "No search target selected" when no target is selected and a search is performed', async () => {
-        (runSearch as jest.Mock).mockReturnValue([]) // No matches
+        (runSearch as import('vitest').Mock).mockReturnValue([]) // No matches
 
         render(<SearchBox />)
 

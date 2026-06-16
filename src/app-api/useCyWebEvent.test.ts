@@ -27,7 +27,7 @@ function dispatchNetworkCreated(networkId: string): void {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 it('calls handler when a matching event is dispatched', () => {
-  const handler = jest.fn()
+  const handler = vi.fn()
   renderHook(() => useCyWebEvent('selection:changed', handler))
 
   dispatchSelection({ networkId: 'n1', selectedNodes: ['a'], selectedEdges: [] })
@@ -41,7 +41,7 @@ it('calls handler when a matching event is dispatched', () => {
 })
 
 it('does not call handler for a different event type', () => {
-  const handler = jest.fn()
+  const handler = vi.fn()
   renderHook(() => useCyWebEvent('network:created', handler))
 
   dispatchSelection({ networkId: 'n1', selectedNodes: [], selectedEdges: [] })
@@ -50,7 +50,7 @@ it('does not call handler for a different event type', () => {
 })
 
 it('removes the listener on unmount (handler not called after)', () => {
-  const handler = jest.fn()
+  const handler = vi.fn()
   const { unmount } = renderHook(() => useCyWebEvent('network:created', handler))
 
   dispatchNetworkCreated('net1')
@@ -63,17 +63,17 @@ it('removes the listener on unmount (handler not called after)', () => {
 })
 
 it('re-subscribes when handler reference changes', () => {
-  let handlerRef = jest.fn()
+  let handlerRef = vi.fn()
 
   const { rerender } = renderHook(
-    ({ handler }: { handler: jest.Mock }) => useCyWebEvent('network:created', handler),
+    ({ handler }: { handler: import('vitest').Mock }) => useCyWebEvent('network:created', handler),
     { initialProps: { handler: handlerRef } },
   )
 
   dispatchNetworkCreated('net1')
   expect(handlerRef).toHaveBeenCalledTimes(1)
 
-  const newHandler = jest.fn()
+  const newHandler = vi.fn()
   handlerRef = newHandler
   rerender({ handler: newHandler })
 
@@ -82,7 +82,7 @@ it('re-subscribes when handler reference changes', () => {
 })
 
 it('useCallback-wrapped handler does not re-subscribe on re-render', () => {
-  const addListenerSpy = jest.spyOn(window, 'addEventListener')
+  const addListenerSpy = vi.spyOn(window, 'addEventListener')
 
   const { rerender } = renderHook(() => {
     const stableHandler = useCallback(() => {

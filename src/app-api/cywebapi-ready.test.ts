@@ -52,7 +52,7 @@ describe('cywebapi:ready smoke test', () => {
 
   it('cywebapi:ready fires after window.CyWebApi is assigned', () => {
     ;(window as any).CyWebApi = mockCyWebApi
-    const handler = jest.fn()
+    const handler = vi.fn()
     window.addEventListener('cywebapi:ready', handler)
     window.dispatchEvent(new CustomEvent('cywebapi:ready'))
     expect(handler).toHaveBeenCalledTimes(1)
@@ -74,7 +74,7 @@ describe('cywebapi:ready smoke test', () => {
   it('listener registered after cywebapi:ready does NOT receive the already-fired event', () => {
     ;(window as any).CyWebApi = mockCyWebApi
     window.dispatchEvent(new CustomEvent('cywebapi:ready'))
-    const handler = jest.fn()
+    const handler = vi.fn()
     window.addEventListener('cywebapi:ready', handler)
     // no second dispatch — handler should not have been called
     expect(handler).not.toHaveBeenCalled()

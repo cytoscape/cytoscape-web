@@ -3,24 +3,20 @@
 
 import { ApiErrorCode } from '../types/ApiResult'
 import { layoutApi } from './layoutApi'
+import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 
 // ── Mock: dispatchCyWebEvent ──────────────────────────────────────────────────
 
-jest.mock('../event-bus/dispatchCyWebEvent', () => ({
-  dispatchCyWebEvent: jest.fn(),
+vi.mock('../event-bus/dispatchCyWebEvent', () => ({
+  dispatchCyWebEvent: vi.fn(),
 }))
 
 // Access the auto-mocked function after registration
-let mockDispatchCyWebEvent: jest.Mock
-beforeAll(() => {
-  mockDispatchCyWebEvent =
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('../event-bus/dispatchCyWebEvent').dispatchCyWebEvent
-})
+const mockDispatchCyWebEvent = vi.mocked(dispatchCyWebEvent)
 
 // ── Mock: LayoutStore ─────────────────────────────────────────────────────────
 
-const mockSetIsRunning = jest.fn()
+const mockSetIsRunning = vi.fn()
 
 const mockCircleAlgorithm = {
   name: 'circle',
@@ -36,7 +32,7 @@ const mockLayoutEngines = [
     name: 'testEngine',
     defaultAlgorithmName: 'circle',
     algorithms: { circle: mockCircleAlgorithm },
-    apply: jest.fn(),
+    apply: vi.fn(),
   },
 ]
 
@@ -49,26 +45,26 @@ const mockLayoutState = {
   setIsRunning: mockSetIsRunning,
 }
 
-jest.mock('../../data/hooks/stores/LayoutStore', () => ({
-  useLayoutStore: { getState: jest.fn(() => mockLayoutState) },
+vi.mock('../../data/hooks/stores/LayoutStore', () => ({
+  useLayoutStore: { getState: vi.fn(() => mockLayoutState) },
 }))
 
 // ── Mock: NetworkStore ────────────────────────────────────────────────────────
 
 const mockNetworks = new Map<string, any>()
 
-jest.mock('../../data/hooks/stores/NetworkStore', () => ({
-  useNetworkStore: { getState: jest.fn(() => ({ networks: mockNetworks })) },
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: { getState: vi.fn(() => ({ networks: mockNetworks })) },
 }))
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
 
-const mockGetViewModel = jest.fn()
-const mockUpdateNodePositions = jest.fn()
+const mockGetViewModel = vi.fn()
+const mockUpdateNodePositions = vi.fn()
 
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       getViewModel: mockGetViewModel,
       updateNodePositions: mockUpdateNodePositions,
     })),
@@ -77,36 +73,36 @@ jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
 
 // ── Mock: RendererFunctionStore ───────────────────────────────────────────────
 
-const mockGetFunction = jest.fn()
+const mockGetFunction = vi.fn()
 
-jest.mock('../../data/hooks/stores/RendererFunctionStore', () => ({
+vi.mock('../../data/hooks/stores/RendererFunctionStore', () => ({
   useRendererFunctionStore: {
-    getState: jest.fn(() => ({ getFunction: mockGetFunction })),
+    getState: vi.fn(() => ({ getFunction: mockGetFunction })),
   },
 }))
 
 // ── Mock: UiStateStore, WorkspaceStore, UndoStore (for corePostEdit) ─────────
 
-const mockSetUndoStack = jest.fn()
-const mockSetRedoStack = jest.fn()
+const mockSetUndoStack = vi.fn()
+const mockSetRedoStack = vi.fn()
 
-jest.mock('../../data/hooks/stores/UiStateStore', () => ({
+vi.mock('../../data/hooks/stores/UiStateStore', () => ({
   useUiStateStore: {
-    getState: jest.fn(() => ({ ui: { activeNetworkView: '' } })),
+    getState: vi.fn(() => ({ ui: { activeNetworkView: '' } })),
   },
 }))
 
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: { currentNetworkId: 'net1' },
     })),
   },
 }))
 
-jest.mock('../../data/hooks/stores/UndoStore', () => ({
+vi.mock('../../data/hooks/stores/UndoStore', () => ({
   useUndoStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       undoRedoStacks: {},
       setUndoStack: mockSetUndoStack,
       setRedoStack: mockSetRedoStack,
@@ -117,7 +113,7 @@ jest.mock('../../data/hooks/stores/UndoStore', () => ({
 // ── Test setup ────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   mockNetworks.clear()
   // Restore default layout state
   mockLayoutState.layoutEngines = mockLayoutEngines
@@ -125,7 +121,7 @@ beforeEach(() => {
   // Default: no view model
   mockGetViewModel.mockReturnValue(undefined)
   // Default: fit function available
-  const mockFitFn = jest.fn()
+  const mockFitFn = vi.fn()
   mockGetFunction.mockReturnValue(mockFitFn)
 })
 
@@ -169,7 +165,7 @@ describe('getAvailableLayouts', () => {
           parameters: {},
         },
       },
-      apply: jest.fn(),
+      apply: vi.fn(),
     }
     mockLayoutState.layoutEngines = [...mockLayoutEngines, extraEngine] as any[]
     const result = layoutApi.getAvailableLayouts()
@@ -282,14 +278,14 @@ describe('applyLayout — happy path', () => {
   })
 
   it('calls fit function when fitAfterLayout is true (default)', async () => {
-    const mockFitFn = jest.fn()
+    const mockFitFn = vi.fn()
     mockGetFunction.mockReturnValue(mockFitFn)
     await layoutApi.applyLayout('net1')
     expect(mockFitFn).toHaveBeenCalled()
   })
 
   it('does not call fit when fitAfterLayout is false', async () => {
-    const mockFitFn = jest.fn()
+    const mockFitFn = vi.fn()
     mockGetFunction.mockReturnValue(mockFitFn)
     await layoutApi.applyLayout('net1', { fitAfterLayout: false })
     expect(mockFitFn).not.toHaveBeenCalled()
@@ -297,8 +293,7 @@ describe('applyLayout — happy path', () => {
 
   it('layout succeeds when fit function is not registered (warning only)', async () => {
     mockGetFunction.mockReturnValue(undefined)
-    const consoleSpy = jest
-      .spyOn(console, 'warn')
+    const consoleSpy = vi.spyOn(console, 'warn')
       .mockImplementation(() => {})
     const result = await layoutApi.applyLayout('net1')
     expect(result.success).toBe(true)
