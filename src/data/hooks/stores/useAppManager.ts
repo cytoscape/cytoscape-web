@@ -12,6 +12,7 @@ import type {
   RegisterPanelOptions,
 } from '../../../app-api/types/AppResourceTypes'
 import { logApp } from '../../../debug'
+import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
 import { composeCatalog } from '../../../features/AppManager/manifest/composeCatalog'
 import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obtainCatalogEntries'
@@ -290,7 +291,18 @@ export const useAppManager = (): AppManagerCommands => {
         // 8. Unblock the lifecycle useEffect
         setRestored(true)
 
-        // 9. Startup auto-load: the active set comes from the workspace's
+        // 9. One-time runtime migration of the legacy global apps store into
+        //    the workspace's installedApps (§10.1). Runs after the catalog is
+        //    composed (URLs resolvable) and before auto-load. Idempotent.
+        const currentInstalled =
+          useWorkspaceStore.getState().workspace.installedApps ?? []
+        await migrateLegacyApps({
+          catalog: useAppStore.getState().catalog,
+          installedAppIds: new Set(currentInstalled.map((a) => a.entry.id)),
+          addInstalledApp: useWorkspaceStore.getState().addInstalledApp,
+        })
+
+        // 10. Startup auto-load: the active set comes from the workspace's
         //    installed apps (the durable source of truth, §8.4), not the
         //    legacy global apps store.
         const installedAppList =

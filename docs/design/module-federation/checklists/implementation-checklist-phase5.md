@@ -218,23 +218,23 @@ _Design: §10.1_
 
 ### 4.1 — Implement migrateLegacyApps
 
-- [ ] Create `src/features/AppManager/install/migrateLegacyApps.ts`:
+- [x] Create `src/features/AppManager/install/migrateLegacyApps.ts`:
   - Input: the merged catalog (Step 3) — runs **after** the readiness gate and catalog composition, **before** the auto-load pass
   - `getAllAppsFromDb()`; no-op (idempotent) when empty
   - For each legacy record with `catalog[id]`: `addInstalledApp({ entry: catalog[id], status: record.status ?? Inactive, source: 'manifest', installedAt: now })` — skip ids already present in `workspace.installedApps`
   - For records without a resolvable URL: drop (delete only) — pre-migration they already depended on the manifest (§10.1)
   - Delete every processed legacy record via `deleteAppFromDb(id)`
-- [ ] Wire the call into the `useAppManager` init sequence
-- [ ] Do **not** bump the Dexie version; the emptied `apps` table stays in the schema (§10.1)
+- [x] Wire the call into the `useAppManager` init sequence — after `setRestored(true)`, before the auto-load pass; deps injected (`catalog`, `installedAppIds`, `addInstalledApp`)
+- [x] Do **not** bump the Dexie version; the emptied `apps` table stays in the schema (§10.1)
 
 ### 4.2 — Unit tests
 
-- [ ] `migrateLegacyApps.test.ts` (mock DB helpers): active legacy record + in catalog → migrated with status preserved; not in catalog → deleted, not migrated; already in `installedApps` → skipped; empty DB → no-op; second run → no-op (idempotent)
+- [x] `migrateLegacyApps.test.ts` (mock DB helpers, 6 tests): active legacy record + in catalog → migrated with status preserved; missing status → Inactive; not in catalog → deleted, not migrated; already in `installedApps` → skipped + cleaned up; empty DB → no-op (idempotent second run); multi-record mixed case
 
 #### Verification (Step 4)
 
-- [ ] `npm run lint` passes; `npm run test:unit -- --testPathPattern="migrateLegacyApps"` passes; `npm run build` succeeds
-- [ ] Manual test: seed a legacy `apps` record (DevTools), reload → record appears in `workspace.installedApps` with `source: 'manifest'`, legacy table is empty, previously Active app auto-loads
+- [x] `npm run lint` passes; `npm run test:unit -- --testPathPattern="migrateLegacyApps"` passes (6/6); `npm run build` succeeds — full suite 2063/2064 (lone pre-existing `visualStyleApi` failure)
+- [x] Manual test: seed a legacy `apps` record (DevTools), reload → record appears in `workspace.installedApps` with `source: 'manifest'`, legacy table is empty, previously Active app auto-loads
 
 ---
 
