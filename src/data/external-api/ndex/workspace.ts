@@ -115,8 +115,16 @@ export const createNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<{ uuid: string }> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const response = await ndexClient.workspace.createCyWebWorkspace(workspaceData)
-  return { uuid: response }
+  // The v3 endpoint is typed Promise<string> but actually resolves to
+  // { uuid, modificationTime }. Extract the id string (tolerate a bare string
+  // too) so callers never receive an object as the workspace id.
+  const response: unknown =
+    await ndexClient.workspace.createCyWebWorkspace(workspaceData)
+  const uuid =
+    typeof response === 'string'
+      ? response
+      : ((response as { uuid?: string } | null)?.uuid ?? '')
+  return { uuid }
 }
 
 /**

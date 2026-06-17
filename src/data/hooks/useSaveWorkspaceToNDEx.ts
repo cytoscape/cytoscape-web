@@ -206,6 +206,16 @@ export const useSaveWorkspace = () => {
       } else {
         const response = await createNdexWorkspace(workspaceData, accessToken)
         const { uuid } = response
+        // Safeguard: a non-string id becomes an invalid IndexedDB key and every
+        // subsequent workspace persist throws "not a valid key". Fail loudly
+        // instead of corrupting the workspace id.
+        if (typeof uuid !== 'string' || uuid === '') {
+          logApi.error(
+            '[saveWorkspace]: NDEx returned an invalid workspace id',
+            uuid,
+          )
+          throw new Error('NDEx did not return a valid workspace id')
+        }
         setId(uuid)
       }
       setIsRemote(true)
