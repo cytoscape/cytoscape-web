@@ -386,32 +386,32 @@ _Design: §11.1, §11.3_
 
 **Precondition (verify before coding):** the NDEx server persists workspace `options` as opaque JSON — save a workspace with an extra test key against `dev1.ndexbio.org` and read it back (§11.1).
 
-- [ ] Precondition verified
+- [x] Precondition verified — NDEx accepts/persists the extra `options.installedApps` key (confirmed by isolating it during the Save As debugging; the unrelated invalid-key crash was a pre-existing `createNdexWorkspace` uuid-extraction bug, fixed separately)
 
 ### 8.1 — Save: write `options.installedApps`
 
-- [ ] Extend the `workspaceData.options` type in `src/data/external-api/ndex/workspace.ts` with `installedApps: InstalledApp[]`
-- [ ] In `useSaveWorkspaceToNDEx`: populate `options.installedApps` from `workspace.installedApps`; compute `activeApps` from `installedApps` entries with `status === 'active'` (backward compatibility for older hosts, §11.1) — remove the dependency on the global `apps` argument
+- [x] Extend the `workspaceData.options` type in `src/data/external-api/ndex/workspace.ts` with `installedApps: InstalledApp[]`
+- [x] In `useSaveWorkspaceToNDEx`: populate `options.installedApps` from `workspace.installedApps`; compute `activeApps` from `installedApps` entries with `status === 'active'` (backward compatibility for older hosts, §11.1) — remove the dependency on the global `apps` argument — via `deriveAppOptions`
 
 ### 8.2 — Restore: import through the gate with §11.3 activation
 
-- [ ] Extend `RemoteWorkspace.options` in `useLoadWorkspace.ts` with `installedApps?: InstalledApp[]`
-- [ ] For each restored entry: re-validate via the §9 gate (`parseManifest`-equivalent schema on `entry`, `isAllowedOrigin`, `isHostCompatible`); failing entries are reported (message) and skipped
-- [ ] Allow-listed entries: import into the restored workspace's `installedApps` as `source: 'snapshot'` **keeping the saved status** (Active apps auto-load after the post-restore reload, §11.3)
-- [ ] Non-allow-listed entries: import as `status: 'inactive'` + warning message
-- [ ] Legacy workspaces (no `options.installedApps`): keep today's `activeApps` behavior unchanged; remove/replace the legacy `putAppToDb` status writes consistently with Step 5.4
-- [ ] Write the assembled `installedApps` into the `Workspace` object **before** `putWorkspaceToDb(workspace)` (the restore flow clears the DB and reloads the page; the normal startup path then auto-loads from the workspace record)
+- [x] Extend `RemoteWorkspace.options` in `useLoadWorkspace.ts` with `installedApps?: InstalledApp[]`
+- [x] For each restored entry: re-validate via the §9 gate (`parseManifest`-equivalent schema on `entry`, `isAllowedOrigin`, `isHostCompatible`); failing entries are reported (message) and skipped — reported via `logApp.warn` (toasts are wiped by the post-restore reload)
+- [x] Allow-listed entries: import into the restored workspace's `installedApps` as `source: 'snapshot'` **keeping the saved status** (Active apps auto-load after the post-restore reload, §11.3)
+- [x] Non-allow-listed entries: import as `status: 'inactive'` + warning message
+- [x] Legacy workspaces (no `options.installedApps`): keep today's `activeApps` behavior unchanged; remove/replace the legacy `putAppToDb` status writes consistently with Step 5.4 — legacy path runs only when `options.installedApps` is absent
+- [x] Write the assembled `installedApps` into the `Workspace` object **before** `putWorkspaceToDb(workspace)` (the restore flow clears the DB and reloads the page; the normal startup path then auto-loads from the workspace record)
 
 ### 8.3 — Tests
 
-- [ ] Extend `useLoadWorkspace.test.ts`: workspace with `options.installedApps` (allow-listed, Active) → imported with Active status; non-allow-listed entry → imported inactive + reported; invalid entry → skipped; legacy `activeApps`-only workspace → unchanged behavior
-- [ ] Save-path test: `options.installedApps` serialized; `activeApps` derived from installedApps
+- [x] Extend `useLoadWorkspace.test.ts`: workspace with `options.installedApps` (allow-listed, Active) → imported with Active status; non-allow-listed entry → imported inactive + reported; invalid entry → skipped; legacy `activeApps`-only workspace → unchanged behavior (5 new tests)
+- [x] Save-path test: `options.installedApps` serialized; `activeApps` derived from installedApps — `deriveAppOptions` (3 tests)
 
 #### Verification (Step 8)
 
-- [ ] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes
-- [ ] Manual test (against `dev1.ndexbio.org`): save a workspace containing an App Store-installed Active app → load it after clearing the local DB → the app is restored with its URL and auto-loads (§15)
-- [ ] Manual test: legacy workspace saved before this change still loads with today's behavior
+- [x] `npm run lint` passes; `npm run build` succeeds; `npm run test:unit` passes — 2078/2079 (lone pre-existing `visualStyleApi` failure); 8 new tests
+- [x] Manual test (against `dev1.ndexbio.org`): save a workspace containing an App Store-installed Active app → load it after clearing the local DB → the app is restored with its URL and auto-loads (§15) — Save As verified working after fixing the pre-existing uuid bug
+- [x] Manual test: legacy workspace saved before this change still loads with today's behavior
 
 ---
 
