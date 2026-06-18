@@ -54,11 +54,15 @@ Replace classic-script injection with a dynamic `import()` of the remote's
 fixture becomes a real `@module-federation/vite` ESM remote so the Tier-3.2 E2E
 validates the actual production artifact.
 
-### Stage 2 — Adopt the Module Federation runtime
+### Stage 2 — Adopt the Module Federation runtime ✅
 
-Replace the bespoke injection/caching with `@module-federation/runtime`
-(`init` / `loadRemote`), retiring the hand-rolled loader and gaining
-manifest handling, version negotiation, and a managed share scope.
+Replaced the bespoke injection/caching with the global `@module-federation/runtime`
+(`registerRemotes` / `loadRemote`), retiring the hand-rolled loader. Remotes are
+registered with `type: 'module'` so the runtime's `loadEsmEntry` imports the ESM
+`remoteEntry.js` via dynamic `import()` (the runtime otherwise defaults to
+classic `<script>` injection, which fails on ESM). Module ids are addressed as
+`<scope>/<expose>` (the `cyweb/`-style `./Expose` prefix is stripped). This sets
+up Stage 3, where the runtime's managed share scope wires true singletons.
 
 ### Stage 3 — True shared singletons
 

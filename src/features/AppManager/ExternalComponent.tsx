@@ -1,129 +1,86 @@
+import {
+  loadRemote as mfLoadRemote,
+  registerRemotes as mfRegisterRemotes,
+} from '@module-federation/runtime'
 import { ComponentType, lazy } from 'react'
 
 import { logApp } from '../../debug'
 
 const lazyComponentCache = new Map<string, ReturnType<typeof lazy>>()
-const remoteEntryUrlCache = new Map<string, string>()
-const remoteContainerCache = new Map<string, Promise<RemoteContainer>>()
-const remoteInitCache = new Map<string, Promise<void>>()
+
+// scope -> currently-registered remoteEntry URL, so we only (re)register a
+// remote when its URL actually changes.
+const registeredRemotes = new Map<string, string>()
 
 const DisabledExternalComponent: ComponentType = () => null
 
-type RemoteContainer = {
-  init: (shareScope: unknown) => Promise<void> | void
-  get: (module: string) => Promise<() => unknown> | (() => unknown)
+// We deliberately use the GLOBAL Module Federation runtime functions (rather
+// than createInstance) so external apps are loaded through the very same host
+// instance that @module-federation/vite initializes at startup. That instance
+// is ESM-aware: it imports modern remoteEntry.js bundles as ES modules. A fresh
+// createInstance() would default to classic-script injection and choke on the
+// `import` statements in a Vite-built remote.
+//
+// Indirected through a mutable binding so tests can substitute fakes.
+type FederationRuntime = {
+  registerRemotes: typeof mfRegisterRemotes
+  loadRemote: typeof mfLoadRemote
 }
 
-const getRemoteCacheKey = (scope: string, url: string): string =>
-  `${scope}::${url}`
-
-const remoteShareScope = { default: {} }
-
-/**
- * Imports a remote `remoteEntry.js` as an ES module and returns its namespace.
- *
- * Modern Module Federation remotes (e.g. `@module-federation/vite`) emit an ESM
- * `remoteEntry.js` whose namespace exports the federation container contract
- * (`init` / `get`). We load it with a dynamic `import()` — `@vite-ignore` keeps
- * the host's own bundler from trying to resolve this runtime URL at build time.
- *
- * Indirected through a module-level binding so unit tests can substitute a fake
- * importer (real dynamic import of an arbitrary URL is not feasible in jsdom).
- */
-let importRemoteEntry = (url: string): Promise<unknown> =>
-  import(/* @vite-ignore */ url)
-
-/** Test seam: override the remote-entry importer. */
-export const __setImportRemoteEntry = (
-  importer: (url: string) => Promise<unknown>,
-): void => {
-  importRemoteEntry = importer
+const defaultRuntime: FederationRuntime = {
+  registerRemotes: mfRegisterRemotes,
+  loadRemote: mfLoadRemote,
 }
 
-/** Test seam: restore the real dynamic-import importer and clear caches. */
+let runtime: FederationRuntime = defaultRuntime
+
+/** Test seam: substitute a fake Module Federation runtime. */
+export const __setRuntime = (fake: FederationRuntime): void => {
+  runtime = fake
+}
+
+/** Test seam: reset the runtime, registry, and component cache. */
 export const __resetRemoteState = (): void => {
-  importRemoteEntry = (url: string) => import(/* @vite-ignore */ url)
+  runtime = defaultRuntime
+  registeredRemotes.clear()
   lazyComponentCache.clear()
-  remoteEntryUrlCache.clear()
-  remoteContainerCache.clear()
-  remoteInitCache.clear()
-}
-
-const isRemoteContainer = (value: unknown): value is RemoteContainer =>
-  typeof value === 'object' &&
-  value !== null &&
-  typeof (value as RemoteContainer).init === 'function' &&
-  typeof (value as RemoteContainer).get === 'function'
-
-const initializeContainer = async (
-  scope: string,
-  container: RemoteContainer,
-): Promise<void> => {
-  const existingPromise = remoteInitCache.get(scope)
-  if (existingPromise !== undefined) {
-    return existingPromise
-  }
-
-  const initPromise = Promise.resolve(
-    container.init(remoteShareScope.default),
-  ).catch((error: unknown) => {
-    if (
-      error instanceof Error &&
-      /already been initialized|already initialized/i.test(error.message)
-    ) {
-      return
-    }
-
-    remoteInitCache.delete(scope)
-    throw error
-  })
-
-  remoteInitCache.set(scope, initPromise)
-  return initPromise
 }
 
 /**
- * Load and initialize a remote Module Federation container from its ESM
- * `remoteEntry.js`. The initialized container is cached per scope+url.
+ * Ensure a remote is registered with the federation runtime under `scope`,
+ * pointing at `url`. Idempotent per scope+url; re-registers (force) when the
+ * URL changes.
+ */
+const ensureRemoteRegistered = (scope: string, url: string): void => {
+  if (registeredRemotes.get(scope) === url) {
+    return
+  }
+  if (registeredRemotes.has(scope)) {
+    logApp.warn(
+      `[ExternalComponent]: Replacing remote entry for "${scope}" from ${registeredRemotes.get(
+        scope,
+      )} to ${url}`,
+    )
+  }
+  // `type: 'module'` tells the runtime to import() the remoteEntry as an ES
+  // module (loadEsmEntry) rather than inject a classic <script>, which is
+  // required for modern @module-federation/vite (ESM) remotes.
+  runtime.registerRemotes([{ name: scope, entry: url, type: 'module' }], {
+    force: true,
+  })
+  registeredRemotes.set(scope, url)
+}
+
+/**
+ * Register (and, on first use, load) a remote's `remoteEntry.js` via the
+ * Module Federation runtime. Kept for API compatibility; loadModule registers
+ * lazily, so callers rarely need this directly.
  */
 export const loadRemoteEntry = async (
   url: string,
   scope: string,
-): Promise<RemoteContainer> => {
-  const cacheKey = getRemoteCacheKey(scope, url)
-  const cachedPromise = remoteContainerCache.get(cacheKey)
-  if (cachedPromise !== undefined) {
-    return cachedPromise
-  }
-
-  const previousUrl = remoteEntryUrlCache.get(scope)
-  if (previousUrl !== undefined && previousUrl !== url) {
-    logApp.warn(
-      `[ExternalComponent]: Replacing remote entry for "${scope}" from ${previousUrl} to ${url}`,
-    )
-  }
-
-  const containerPromise = (async (): Promise<RemoteContainer> => {
-    const namespace = await importRemoteEntry(url)
-    if (!isRemoteContainer(namespace)) {
-      throw new Error(
-        `Remote entry "${scope}" loaded from ${url} does not export a Module Federation container (init/get)`,
-      )
-    }
-
-    await initializeContainer(scope, namespace)
-    return namespace
-  })().catch((error) => {
-    remoteContainerCache.delete(cacheKey)
-    if (remoteEntryUrlCache.get(scope) === url) {
-      remoteEntryUrlCache.delete(scope)
-    }
-    throw error
-  })
-
-  remoteContainerCache.set(cacheKey, containerPromise)
-  remoteEntryUrlCache.set(scope, url)
-  return containerPromise
+): Promise<void> => {
+  ensureRemoteRegistered(scope, url)
 }
 
 export const loadComponent = (scope: string, module: string) => {
@@ -165,21 +122,32 @@ export const ExternalComponent = (scope: string, module: string) => {
 }
 
 /**
- * Load a remote exposed module after ensuring the remote container exists.
+ * Load a remote exposed module through the Module Federation runtime.
+ *
+ * `module` is the `cyweb/`-style expose path (e.g. `'./AppConfig'`); the
+ * runtime addresses modules as `<scope>/<expose>` (e.g. `testApp/AppConfig`).
  */
 export const loadModule = async (
   scope: string,
   module: string,
   url?: string,
-) => {
-  const resolvedUrl = url ?? remoteEntryUrlCache.get(scope)
+): Promise<unknown> => {
+  const resolvedUrl = url ?? registeredRemotes.get(scope)
   if (resolvedUrl === undefined) {
     throw new Error(`Missing remote entry URL for module "${scope}/${module}"`)
   }
 
-  const container = await loadRemoteEntry(resolvedUrl, scope)
-  const factory = await container.get(module)
-  return factory()
+  ensureRemoteRegistered(scope, resolvedUrl)
+
+  const exposeName = module.replace(/^\.\//, '')
+  const remoteId = `${scope}/${exposeName}`
+  const loaded = await runtime.loadRemote(remoteId)
+  if (loaded === null || loaded === undefined) {
+    throw new Error(
+      `Failed to load remote module "${remoteId}" from ${resolvedUrl}`,
+    )
+  }
+  return loaded
 }
 
 export default ExternalComponent
