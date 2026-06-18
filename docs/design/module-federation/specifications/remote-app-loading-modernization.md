@@ -64,12 +64,22 @@ classic `<script>` injection, which fails on ESM). Module ids are addressed as
 `<scope>/<expose>` (the `cyweb/`-style `./Expose` prefix is stripped). This sets
 up Stage 3, where the runtime's managed share scope wires true singletons.
 
-### Stage 3 — True shared singletons
+### Stage 3 — True shared singletons ✅
 
-Wire the host's React / ReactDOM / MUI / Emotion into the federation share
-scope as singletons so remotes resolve the host's instances. Add a test
-asserting a single React instance across the host↔remote boundary, fixing the
-`AppIdContext`-across-remotes hazard from finding #3.
+Adopting the host runtime in Stage 2 already made the remote resolve the host's
+React (a remote hooks-component renders inside the host tree without an "invalid
+hook call"). Stage 3 completes the shared set: **`@emotion/react` and
+`@emotion/styled` are now shared singletons** alongside `react`, `react-dom`,
+and `@mui/material` (in `FEDERATION_SHARED_SINGLETONS`). Without shared Emotion,
+a MUI-using remote would create a second Emotion cache (duplicated styles,
+broken theming) even with MUI itself shared.
+
+Tests:
+- `verify:federation` asserts all five singletons register in the built bundle.
+- The Tier-3.2 E2E now registers an `apps-menu` resource whose component calls a
+  React hook; the host renders it in its own tree and the test asserts it
+  appears with no hook-call error — a behavioral proof of a single shared React
+  across the boundary (the `AppIdContext`-across-remotes hazard from finding #3).
 
 ## Test coverage
 

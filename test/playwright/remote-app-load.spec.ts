@@ -49,4 +49,44 @@ test.describe('host loads a real federated remote', () => {
     expect(typeof remoteReactVersion).toBe('string')
     expect(remoteReactVersion).toMatch(/^\d+\./)
   })
+
+  test('host renders a remote hooks component (single shared React)', async ({
+    page,
+  }) => {
+    // Fail loudly if React throws "invalid hook call" — the symptom of two
+    // separate React copies across the host↔remote boundary.
+    const hookErrors: string[] = []
+    page.on('pageerror', (e) => {
+      if (/invalid hook call|hook/i.test(e.message)) hookErrors.push(e.message)
+    })
+
+    await page.goto('/')
+
+    // Register the fixture remote and activate it.
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
+    await page.getByText('Manifest Source').click()
+    await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
+    await page.getByRole('button', { name: 'Apply' }).click()
+    const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
+    await expect(toggle).toBeVisible({ timeout: 15_000 })
+    await toggle.click()
+    await expect(
+      page.locator('[data-testid="remote-app-marker"]'),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // On mount the remote registered an 'apps-menu' resource whose component
+    // calls a React hook. The host renders it inside its OWN React tree — which
+    // only works if the remote shares the host's single React instance.
+    await page.getByTestId('app-settings-dialog-close-button').click()
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+
+    await expect(
+      page.locator('[data-testid="remote-menu-marker"]'),
+    ).toBeVisible({ timeout: 10_000 })
+    await expect(
+      page.locator('[data-testid="remote-menu-marker"]'),
+    ).toHaveText('single-react-ok')
+    expect(hookErrors).toEqual([])
+  })
 })

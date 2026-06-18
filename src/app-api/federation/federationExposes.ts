@@ -38,8 +38,15 @@ export const FEDERATION_EXPOSES = {
   './CreateNetworkFromCx2': './src/data/task/useCreateNetworkFromCx2.tsx',
 } as const
 
+// Shared as singletons so a remote resolves the host's single instance rather
+// than bundling its own. React/ReactDOM must be single or cross-boundary hooks
+// throw "invalid hook call". MUI relies on Emotion, so @emotion/react and
+// @emotion/styled must also be singletons or a MUI-using remote gets a second
+// Emotion cache (duplicated styles, broken theming).
 export const FEDERATION_SHARED_SINGLETONS = [
   'react',
   'react-dom',
   '@mui/material',
+  '@emotion/react',
+  '@emotion/styled',
 ] as const
