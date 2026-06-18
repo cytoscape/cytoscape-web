@@ -3,7 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	testDir: './test/playwright',
 	fullyParallel: true,
-	retries: 0,
+	// Retry on CI to ride out the Vite dev-server cold-start window: the first
+	// requests trigger dependency optimization + a full reload, during which an
+	// in-flight module import can transiently fail. Local runs stay at 0.
+	retries: process.env.CI ? 2 : 0,
 	use: {
 		baseURL: 'http://localhost:5500',
 		headless: true,

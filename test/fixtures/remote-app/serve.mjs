@@ -1,9 +1,15 @@
 // Static file server for the Tier-3.2 fixture remote.
 //
-// Builds the remote (so the test always serves fresh output), then serves
-// dist/ plus a dynamically-generated /manifest.json on a fixed port, with
-// permissive CORS headers. CORS matters because the host fetches the manifest
-// cross-origin and the remote's chunks are loaded as cross-origin ES modules.
+// Serves dist/ plus a dynamically-generated /manifest.json on a fixed port,
+// with permissive CORS headers. CORS matters because the host fetches the
+// manifest cross-origin and the remote's chunks are loaded as cross-origin
+// ES modules.
+//
+// The fixture is normally pre-built by the `test:e2e` script BEFORE Playwright
+// launches the web servers — building here would otherwise run concurrently
+// with the host dev server's cold start and starve its Vite dep-optimization
+// (flaking unrelated tests in CI). A build is only triggered as a fallback if
+// dist/ is missing (e.g. running `node serve.mjs` directly).
 //
 // Used as a Playwright `webServer` entry — see playwright.config.ts.
 import { execSync } from 'node:child_process'
@@ -17,9 +23,10 @@ const DIST = path.join(__dirname, 'dist')
 const PORT = 4191
 const APP_ID = 'testRemoteApp'
 
-// Always rebuild so the served bundle matches the current fixture source.
-console.log('[remote-fixture] building remote...')
-execSync('npx vite build', { cwd: __dirname, stdio: 'inherit' })
+if (!existsSync(path.join(DIST, 'remoteEntry.js'))) {
+  console.log('[remote-fixture] dist missing — building remote (fallback)...')
+  execSync('npx vite build', { cwd: __dirname, stdio: 'inherit' })
+}
 
 const MANIFEST = JSON.stringify([
   {
