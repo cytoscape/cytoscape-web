@@ -10,6 +10,12 @@ import type { ServerResponse } from 'node:http'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
+import {
+  FEDERATION_EXPOSES,
+  FEDERATION_FILENAME,
+  FEDERATION_NAME,
+  FEDERATION_SHARED_SINGLETONS,
+} from './src/app-api/federation/federationExposes'
 
 function readGitMetadata(command: string): string {
   try {
@@ -56,49 +62,20 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const plugins: PluginOption[] = [
     react(),
     federation({
-      name: 'cyweb',
-      filename: 'remoteEntry.js',
+      name: FEDERATION_NAME,
+      filename: FEDERATION_FILENAME,
       // Public types are published separately via the @cytoscape-web/api-types
       // package, so skip Module Federation's own .d.ts generation.
       dts: false,
-      exposes: {
-        './ApiTypes': './src/app-api/types/index.ts',
-        './ElementApi': './src/app-api/useElementApi.ts',
-        './NetworkApi': './src/app-api/useNetworkApi.ts',
-        './SelectionApi': './src/app-api/useSelectionApi.ts',
-        './ViewportApi': './src/app-api/useViewportApi.ts',
-        './TableApi': './src/app-api/useTableApi.ts',
-        './VisualStyleApi': './src/app-api/useVisualStyleApi.ts',
-        './LayoutApi': './src/app-api/useLayoutApi.ts',
-        './ExportApi': './src/app-api/useExportApi.ts',
-        './WorkspaceApi': './src/app-api/useWorkspaceApi.ts',
-        './AppIdContext': './src/app-api/AppIdContext.tsx',
-        './EventBus': './src/app-api/useCyWebEvent.ts',
-        './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
-        './LayoutStore': './src/data/hooks/stores/LayoutStore.ts',
-        './MessageStore': './src/data/hooks/stores/MessageStore.ts',
-        './NetworkStore': './src/data/hooks/stores/NetworkStore.ts',
-        './NetworkSummaryStore':
-          './src/data/hooks/stores/NetworkSummaryStore.ts',
-        './OpaqueAspectStore': './src/data/hooks/stores/OpaqueAspectStore.ts',
-        './RendererStore': './src/data/hooks/stores/RendererStore.ts',
-        './TableStore': './src/data/hooks/stores/TableStore.ts',
-        './UiStateStore': './src/data/hooks/stores/UiStateStore.ts',
-        './ViewModelStore': './src/data/hooks/stores/ViewModelStore.ts',
-        './VisualStyleStore': './src/data/hooks/stores/VisualStyleStore.ts',
-        './WorkspaceStore': './src/data/hooks/stores/WorkspaceStore.ts',
-        './CreateNetwork': './src/data/task/useCreateNetwork.tsx',
-        './CreateNetworkFromCx2':
-          './src/data/task/useCreateNetworkFromCx2.tsx',
-      },
-      shared: {
-        react: { singleton: true, requiredVersion: deps.react },
-        'react-dom': { singleton: true, requiredVersion: deps['react-dom'] },
-        '@mui/material': {
-          singleton: true,
-          requiredVersion: deps['@mui/material'],
-        },
-      },
+      // Exposes are defined in src/app-api/federation/federationExposes.ts so
+      // the build and the contract tests share one source of truth.
+      exposes: { ...FEDERATION_EXPOSES },
+      shared: Object.fromEntries(
+        FEDERATION_SHARED_SINGLETONS.map((name) => [
+          name,
+          { singleton: true, requiredVersion: deps[name as keyof typeof deps] },
+        ]),
+      ),
     }),
     serveAppsConfigInDev(appsConfigPath),
   ]

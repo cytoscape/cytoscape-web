@@ -1,8 +1,12 @@
 # Vite Migration — Federation & Public API Test Hardening Plan
 
-> Status: **Proposed** (plan only — no test code written yet)
-> Branch: `feature/vite8`
-> Author: agent-assisted analysis, 2026-06-16
+> Status: **Tier 1 + Tier 2 + Tier 3.1 implemented** (2026-06-18); Tier 3.2 deferred (see §7)
+> Branch: `feature/vite-from-webpack`
+> Author: agent-assisted analysis, 2026-06-16 (revised 2026-06-18 for Vitest)
+>
+> Implementation note: the public surface is **26** exposes (12 typed
+> API/EventBus/AppIdContext/ApiTypes + 12 stores + 2 task hooks), not 28 as the
+> original draft estimated. All counts below are corrected to 26.
 
 ## 1. Purpose
 
@@ -40,7 +44,7 @@ The public surface is encoded in **three independent places** that must stay in
 sync. There is no test asserting they do:
 
 1. **`vite.config.ts`** — `federation({ exposes: { … } })` — the source of truth
-   for what is shipped (currently 28 entries: API hooks, stores, task hooks,
+   for what is shipped (currently 26 entries: API hooks, stores, task hooks,
    `ApiTypes`, `AppIdContext`, `EventBus`).
 2. **`dist/` build output** — `dist/remoteEntry.js` (exports `init`, `get`) and
    the generated `dist/assets/virtual_mf-exposes…js` chunk, which literally
@@ -50,17 +54,19 @@ sync. There is no test asserting they do:
 
 ## 3. Tiered implementation plan
 
-### Tier 1 — Config / contract tests (Jest, no browser, fast)
+### Tier 1 — Config / contract tests (Vitest, no browser, fast)
 
 Runs inside the existing `npm run test:unit` suite. Catches dropped/renamed
 exposes and api-types drift in milliseconds.
 
 #### 1.0 Prerequisite refactor — extract the exposes map
 
-`vite.config.ts` is awkward to import from Jest (ESM-only plugin imports,
+`vite.config.ts` is awkward to import from a test (heavy plugin imports,
 top-level `defineConfig`). Extract the expose definition into a plain,
 importable module so both the Vite config and the tests consume one source of
-truth.
+truth. (Vitest shares Vite's native-ESM transform, so importing a plain
+`.ts` module needs no extra config — but importing the full `vite.config.ts`
+still drags in the federation plugin, hence the extraction.)
 
 - **New file:** `src/app-api/federation/federationExposes.ts`
 
@@ -75,7 +81,7 @@ truth.
   export const FEDERATION_EXPOSES = {
     './ApiTypes': './src/app-api/types/index.ts',
     './ElementApi': './src/app-api/useElementApi.ts',
-    // … all 28 entries, moved verbatim from vite.config.ts
+    // … all 26 entries, moved verbatim from vite.config.ts
   } as const
 
   export const FEDERATION_SHARED_SINGLETONS = [
@@ -94,7 +100,7 @@ truth.
 
 - **New file:** `src/app-api/federation/federationExposes.test.ts`
 - Assertions:
-  - **Frozen expected-keys list.** A literal array of the 28 expected
+  - **Frozen expected-keys list.** A literal array of the 26 expected
     `./Xxx` keys lives in the test. Assert
     `Object.keys(FEDERATION_EXPOSES)` equals it exactly (set equality — fails on
     both *missing* and *unexpected* keys). This is the human-reviewed gate: a
@@ -129,8 +135,10 @@ is slow, so this is a standalone script wired as a **CI step**, not part of the
 default `test:unit` run.
 
 - **New file:** `scripts/verify-federation-build.ts`
-- **New npm script:** `"verify:federation": "tsx scripts/verify-federation-build.ts"`
-  (assumes a `dist/` produced by `npm run build`; CI runs build → verify).
+- **New npm script:** `"verify:federation": "ts-node scripts/verify-federation-build.ts"`
+  (`ts-node` is already a dev dependency — no new dep needed; `tsx` is not
+  installed. Assumes a `dist/` produced by `npm run build`; CI runs build →
+  verify.)
 - Assertions against `dist/`:
   1. `dist/remoteEntry.js` exists; its source contains both `export{` … `as get`
      and `as init` (the MF container contract). A more robust variant:
@@ -225,7 +233,7 @@ the best value-per-effort and cover the most probable migration regressions.
 
 **New (Tier 2)**
 - `scripts/verify-federation-build.ts`
-- `package.json` — `verify:federation` script (requires dependency-change approval per CLAUDE.md §1 if `tsx` isn't already present)
+- `package.json` — `verify:federation` script (runs via the existing `ts-node` dev dependency; no dependency change required)
 
 **New (Tier 3)**
 - `test/playwright/cywebapi-ready.spec.ts`
@@ -234,13 +242,14 @@ the best value-per-effort and cover the most probable migration regressions.
 
 ## 7. Open questions for implementation
 
-- **`tsx` availability** for the Tier-2 script — confirm it's installed or use
-  an existing runner (`ts-node`, or compile-on-the-fly). Adding a dep needs
-  explicit approval (CLAUDE.md §1, Dependency Changes).
+- **Tier-2 script runner** — resolved: use `ts-node` (already a dev
+  dependency). `tsx` is not installed, and adding a dep would need explicit
+  approval (CLAUDE.md §1, Dependency Changes). Confirm `ts-node` runs the
+  script under the repo's ESM/`module` settings, or compile-on-the-fly if not.
 - **Runtime apps-config injection for Tier 3.2** — confirm the supported way to
   register a remote at runtime (`apps.local.json`, the `/apps.json` middleware,
   or an in-app "add app by URL" flow) so the fixture remote can be wired without
   hacking internals.
-- **The 28-entry frozen list** — confirm whether the raw `*Store` exposes are
+- **The 26-entry frozen list** — confirm whether the raw `*Store` exposes are
   considered public/stable contract or internal; this decides whether Tier 1.2
   parity must cover them or only the typed `Api`/`EventBus` subset.

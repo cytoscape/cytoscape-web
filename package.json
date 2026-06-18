@@ -36,6 +36,7 @@
     "test:unit:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "verify:federation": "ts-node --transpileOnly --compilerOptions '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' scripts/verify-federation-build.ts",
     "build:bundle": "cross-env vite build",
     "copy:dist": "cpy \"silent-check-sso.html\" \"src/assets/apps.json\" dist --flat",
     "copy:netlify": "cpy \"netlify/_redirects\" dist --flat",
