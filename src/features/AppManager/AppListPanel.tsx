@@ -192,6 +192,7 @@ export const AppListPanel = () => {
                   {action === 'loading' && <CircularProgress size={24} />}
                   {(action === 'enable' || action === 'disable') && (
                     <Switch
+                      data-testid={`app-toggle-${entry.id}`}
                       size="small"
                       checked={action === 'disable'}
                       onChange={() => {

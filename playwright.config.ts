@@ -25,12 +25,22 @@ export default defineConfig({
 			use: { ...devices['Desktop Safari'] }
 		}
 	],
-	webServer: {
-		command: 'npm run dev -- --no-open',
-		url: 'http://localhost:5500',
-		reuseExistingServer: true,
-		timeout: 300000
-	}
+	webServer: [
+		{
+			command: 'npm run dev -- --no-open',
+			url: 'http://localhost:5500',
+			reuseExistingServer: true,
+			timeout: 300000
+		},
+		{
+			// Tier-3.2 fixture remote: builds + serves a separate Module
+			// Federation bundle that the host loads via a custom manifest URL.
+			command: 'node test/fixtures/remote-app/serve.mjs',
+			url: 'http://localhost:4191/manifest.json',
+			reuseExistingServer: true,
+			timeout: 120000
+		}
+	]
 });
 
 

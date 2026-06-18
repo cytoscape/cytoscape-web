@@ -3,7 +3,6 @@ import { ComponentType, lazy } from 'react'
 import { logApp } from '../../debug'
 
 const lazyComponentCache = new Map<string, ReturnType<typeof lazy>>()
-const remoteEntryCache = new Map<string, Promise<void>>()
 const remoteEntryUrlCache = new Map<string, string>()
 const remoteContainerCache = new Map<string, Promise<RemoteContainer>>()
 const remoteInitCache = new Map<string, Promise<void>>()
@@ -20,10 +19,41 @@ const getRemoteCacheKey = (scope: string, url: string): string =>
 
 const remoteShareScope = { default: {} }
 
-const getContainer = (scope: string): RemoteContainer | undefined => {
-  const remoteWindow = window as unknown as Record<string, unknown>
-  return remoteWindow[scope] as RemoteContainer | undefined
+/**
+ * Imports a remote `remoteEntry.js` as an ES module and returns its namespace.
+ *
+ * Modern Module Federation remotes (e.g. `@module-federation/vite`) emit an ESM
+ * `remoteEntry.js` whose namespace exports the federation container contract
+ * (`init` / `get`). We load it with a dynamic `import()` — `@vite-ignore` keeps
+ * the host's own bundler from trying to resolve this runtime URL at build time.
+ *
+ * Indirected through a module-level binding so unit tests can substitute a fake
+ * importer (real dynamic import of an arbitrary URL is not feasible in jsdom).
+ */
+let importRemoteEntry = (url: string): Promise<unknown> =>
+  import(/* @vite-ignore */ url)
+
+/** Test seam: override the remote-entry importer. */
+export const __setImportRemoteEntry = (
+  importer: (url: string) => Promise<unknown>,
+): void => {
+  importRemoteEntry = importer
 }
+
+/** Test seam: restore the real dynamic-import importer and clear caches. */
+export const __resetRemoteState = (): void => {
+  importRemoteEntry = (url: string) => import(/* @vite-ignore */ url)
+  lazyComponentCache.clear()
+  remoteEntryUrlCache.clear()
+  remoteContainerCache.clear()
+  remoteInitCache.clear()
+}
+
+const isRemoteContainer = (value: unknown): value is RemoteContainer =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as RemoteContainer).init === 'function' &&
+  typeof (value as RemoteContainer).get === 'function'
 
 const initializeContainer = async (
   scope: string,
@@ -34,32 +64,34 @@ const initializeContainer = async (
     return existingPromise
   }
 
-  const initPromise = Promise.resolve(container.init(remoteShareScope.default))
-    .catch((error: unknown) => {
-      if (
-        error instanceof Error &&
-        /already been initialized|already initialized/i.test(error.message)
-      ) {
-        return
-      }
+  const initPromise = Promise.resolve(
+    container.init(remoteShareScope.default),
+  ).catch((error: unknown) => {
+    if (
+      error instanceof Error &&
+      /already been initialized|already initialized/i.test(error.message)
+    ) {
+      return
+    }
 
-      remoteInitCache.delete(scope)
-      throw error
-    })
+    remoteInitCache.delete(scope)
+    throw error
+  })
 
   remoteInitCache.set(scope, initPromise)
   return initPromise
 }
 
 /**
- * Load a remote Module Federation entry and cache the initialized container.
+ * Load and initialize a remote Module Federation container from its ESM
+ * `remoteEntry.js`. The initialized container is cached per scope+url.
  */
 export const loadRemoteEntry = async (
   url: string,
   scope: string,
-): Promise<void> => {
+): Promise<RemoteContainer> => {
   const cacheKey = getRemoteCacheKey(scope, url)
-  const cachedPromise = remoteEntryCache.get(cacheKey)
+  const cachedPromise = remoteContainerCache.get(cacheKey)
   if (cachedPromise !== undefined) {
     return cachedPromise
   }
@@ -71,50 +103,17 @@ export const loadRemoteEntry = async (
     )
   }
 
-  const remotePromise = new Promise<void>((resolve, reject) => {
-    const existingContainer = getContainer(scope)
-    if (existingContainer !== undefined) {
-      void initializeContainer(scope, existingContainer)
-        .then(() => resolve())
-        .catch(reject)
-      return
+  const containerPromise = (async (): Promise<RemoteContainer> => {
+    const namespace = await importRemoteEntry(url)
+    if (!isRemoteContainer(namespace)) {
+      throw new Error(
+        `Remote entry "${scope}" loaded from ${url} does not export a Module Federation container (init/get)`,
+      )
     }
 
-    if (typeof document === 'undefined') {
-      reject(new Error('Remote entries can only be loaded in a browser'))
-      return
-    }
-
-    const remoteScript = document.createElement('script')
-    remoteScript.src = url
-    remoteScript.type = 'text/javascript'
-    remoteScript.async = true
-    remoteScript.dataset.remoteScope = scope
-
-    remoteScript.onload = () => {
-      const container = getContainer(scope)
-      if (container === undefined) {
-        reject(
-          new Error(
-            `Remote entry "${scope}" loaded from ${url} did not register a container`,
-          ),
-        )
-        return
-      }
-
-      remoteContainerCache.set(cacheKey, Promise.resolve(container))
-      void initializeContainer(scope, container)
-        .then(() => resolve())
-        .catch(reject)
-    }
-
-    remoteScript.onerror = () => {
-      reject(new Error(`Failed to load remote entry "${scope}" from ${url}`))
-    }
-
-    document.head.appendChild(remoteScript)
-  }).catch((error) => {
-    remoteEntryCache.delete(cacheKey)
+    await initializeContainer(scope, namespace)
+    return namespace
+  })().catch((error) => {
     remoteContainerCache.delete(cacheKey)
     if (remoteEntryUrlCache.get(scope) === url) {
       remoteEntryUrlCache.delete(scope)
@@ -122,9 +121,9 @@ export const loadRemoteEntry = async (
     throw error
   })
 
-  remoteEntryCache.set(cacheKey, remotePromise)
+  remoteContainerCache.set(cacheKey, containerPromise)
   remoteEntryUrlCache.set(scope, url)
-  return remotePromise
+  return containerPromise
 }
 
 export const loadComponent = (scope: string, module: string) => {
@@ -175,21 +174,10 @@ export const loadModule = async (
 ) => {
   const resolvedUrl = url ?? remoteEntryUrlCache.get(scope)
   if (resolvedUrl === undefined) {
-    throw new Error(
-      `Missing remote entry URL for module "${scope}/${module}"`,
-    )
+    throw new Error(`Missing remote entry URL for module "${scope}/${module}"`)
   }
 
-  await loadRemoteEntry(resolvedUrl, scope)
-  const cacheKey = getRemoteCacheKey(scope, resolvedUrl)
-  const containerPromise =
-    remoteContainerCache.get(cacheKey) ?? Promise.resolve(getContainer(scope))
-  const container = await containerPromise
-
-  if (container === undefined) {
-    throw new Error(`Remote container "${scope}" is not available`)
-  }
-
+  const container = await loadRemoteEntry(resolvedUrl, scope)
   const factory = await container.get(module)
   return factory()
 }
