@@ -193,9 +193,10 @@ Plugins import from the `cyweb/` prefix. The full list includes API hooks (`Elem
 
 **Testing:**
 
-- `npm run test:unit` - Run Jest unit tests
-- `npm run test:e2e` - Run Playwright end-to-end tests
-  > **Note:** There is no unified `npm test` command. Use `test:unit` or `test:e2e` separately.
+- `npm test` - Run all checks in sequence (lint → unit → Chromium e2e) via `run-s`
+- `npm run test:unit` - Run Vitest unit tests
+- `npm run test:e2e` - Run Playwright end-to-end tests (all browsers)
+- `npm run test:e2e:chromium` - Run Playwright end-to-end tests (Chromium only; used by `npm test`)
 
 **Code Quality:**
 
