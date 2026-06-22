@@ -278,7 +278,7 @@ export const SubNetworkPanel = ({
       interactionSourceUrl,
       rootNetworkId,
       subsystemNodeId,
-      query,
+      query.nodeIds?.join(',') ?? '',
       interactionNetworkId,
     ],
     queryFn: async ({ queryKey }) => {
