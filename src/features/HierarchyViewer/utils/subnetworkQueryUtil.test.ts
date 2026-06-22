@@ -3,6 +3,7 @@ import {
   fetchNdexInterconnectQuery,
   fetchNdexNetwork,
 } from '../../../data/external-api/ndex'
+import { Cx2 } from '../../../models/CxModel/Cx2'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import { fetchNdexSubnetworkByQuery } from './subnetworkQueryUtil'
 
@@ -64,7 +65,7 @@ describe('fetchNdexSubnetworkByQuery', () => {
     const nodeIds = '1,2,3'
     const interactionNetworkUuid = ''
 
-    const mockCx2 = [{ CXVersion: '2.0' }] as any
+    const mockCx2 = [{ CXVersion: '2.0' }, { status: [{ success: true }] }] as Cx2
     const expectedNetwork = makeMockCyNetwork(`${hierarchyId}_${subsystemId}`)
 
     mockFetchNdexInterconnectQuery.mockResolvedValue(mockCx2)
@@ -95,7 +96,7 @@ describe('fetchNdexSubnetworkByQuery', () => {
     const nodeIds = '1,2,3'
     const interactionNetworkUuid = 'interaction-uuid-456'
 
-    const mockCx2 = [{ CXVersion: '2.0' }] as any
+    const mockCx2 = [{ CXVersion: '2.0' }, { status: [{ success: true }] }] as Cx2
     const expectedNetwork = makeMockCyNetwork(`${hierarchyId}_${subsystemId}`)
 
     mockFetchNdexNetwork.mockResolvedValue(mockCx2)
