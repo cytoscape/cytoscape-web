@@ -16,7 +16,7 @@ describe('BiologicalFlowLayout', () => {
     const edges = [makeEdge('a', 'b'), makeEdge('b', 'c')]
 
     let result: Map<IdType, [number, number]> | null = null
-    BiologicalFlowLayout.apply(nodes, edges, (pos) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
+    BiologicalFlowLayout.apply(nodes, edges, (pos: Map<IdType, [number, number]>) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
 
     expect(result).not.toBeNull()
     const [ax] = result!.get('a')!
@@ -31,7 +31,7 @@ describe('BiologicalFlowLayout', () => {
     const edges = [makeEdge('a', 'b'), makeEdge('b', 'c'), makeEdge('c', 'a')]
 
     let result: Map<IdType, [number, number]> | null = null
-    BiologicalFlowLayout.apply(nodes, edges, (pos) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
+    BiologicalFlowLayout.apply(nodes, edges, (pos: Map<IdType, [number, number]>) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
 
     expect(result!.size).toBe(3)
   })
@@ -41,7 +41,7 @@ describe('BiologicalFlowLayout', () => {
     const edges = [makeEdge('x', 'y'), makeEdge('x', 'z')]
 
     let result: Map<IdType, [number, number]> | null = null
-    BiologicalFlowLayout.apply(nodes, edges, (pos) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
+    BiologicalFlowLayout.apply(nodes, edges, (pos: Map<IdType, [number, number]>) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
 
     const positions = [...result!.values()]
     const posStrings = positions.map(([x, y]) => `${x},${y}`)
@@ -53,7 +53,7 @@ describe('BiologicalFlowLayout', () => {
     const edges = [makeEdge('a', 'b'), makeEdge('b', 'c'), makeEdge('c', 'd')]
 
     let result: Map<IdType, [number, number]> | null = null
-    BiologicalFlowLayout.apply(nodes, edges, (pos) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
+    BiologicalFlowLayout.apply(nodes, edges, (pos: Map<IdType, [number, number]>) => { result = pos }, BiologicalFlowLayout.algorithms['biological-flow'])
 
     for (const [x, y] of result!.values()) {
       expect(x).toBeGreaterThanOrEqual(150)
