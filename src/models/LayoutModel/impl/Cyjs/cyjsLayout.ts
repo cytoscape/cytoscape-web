@@ -1,10 +1,14 @@
 import cytoscape, { EdgeDefinition, NodeDefinition } from 'cytoscape'
+import biologicalFlow from 'cytoscape-biological-flow'
 
 import { IdType } from '../../../IdType'
 import { Edge,Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
 import { CyjsAlgorithms } from './Algorithms/cyjsAlgorithms'
+
+// Register the biological-flow layout extension
+cytoscape.use(biologicalFlow)
 
 export const CyjsLayout: LayoutEngine = {
   // Cytoscape.js Layout

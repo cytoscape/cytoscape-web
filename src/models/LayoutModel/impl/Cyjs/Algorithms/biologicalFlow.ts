@@ -1,15 +1,14 @@
 /**
- * Biological Flow Layout — contributed by Nodes Bio
+ * Biological Flow Layout — powered by cytoscape-biological-flow
  *
  * A hierarchical layout optimized for biological pathway visualization:
- * - Topological sort assigns columns (left→right signal flow)
+ * - Left-to-right signal flow direction
  * - Barycenter heuristic minimizes edge crossings
  * - Handles cycles via DFS back-edge removal
  *
- * This is a client-side port of the LayoutOptimizer algorithm
- * originally developed for the MedMap pathway visualization tool.
+ * Contributed by Nodes Bio (https://nodes.bio)
  *
- * @see https://github.com/cytoscape/cytoscape-web/issues/XXX
+ * @see https://github.com/jmg421/cytoscape-biological-flow
  */
 import { LayoutAlgorithm } from '../../..'
 import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
@@ -24,7 +23,7 @@ export const biologicalFlow: LayoutAlgorithm = {
     'Uses topological sort for layer assignment and barycenter heuristic ' +
     'for crossing minimization. Handles cycles gracefully.',
   parameters: {
-    name: 'preset', // Uses preset because positions are pre-computed
+    name: 'biological-flow',
     fit: true,
     padding: 80,
     animate: false,
