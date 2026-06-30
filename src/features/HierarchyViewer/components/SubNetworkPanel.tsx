@@ -272,13 +272,16 @@ export const SubNetworkPanel = ({
     interactionSourceUrl = ndexBaseUrl
   }
 
+  // Convert query nodeIds to comma-separated string for the NDEx interconnect API
+  const queryString = query?.nodeIds?.join(',') ?? ''
+
   const result = useQuery({
     queryKey: [
       hierarchyId,
       interactionSourceUrl,
       rootNetworkId,
       subsystemNodeId,
-      query,
+      queryString,
       interactionNetworkId,
     ],
     queryFn: async ({ queryKey }) => {
