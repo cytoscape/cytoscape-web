@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-web",
-  "version": "1.0.8-SNAPSHOT",
+  "version": "1.0.8",
   "private": true,
   "workspaces": [
     "packages/*"
