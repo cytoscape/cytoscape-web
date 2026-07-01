@@ -190,6 +190,78 @@ describe('createDiscreteMapping', () => {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
   })
+
+  it('builds a vpValueMap from string mapping entries when attributeType is string', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5' },
+    }
+
+    const result = visualStyleApi.createDiscreteMapping(
+      'net1',
+      VPN.NodeBackgroundColor,
+      'type',
+      'string',
+      { protein: '#ff0000', rna: '#00ff00' },
+    )
+
+    expect(result.success).toBe(true)
+    expect(mockSetMapping).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeBackgroundColor,
+      expect.objectContaining({
+        attribute: 'type',
+        type: 'discrete',
+        vpValueMap: new Map([
+          ['protein', '#ff0000'],
+          ['rna', '#00ff00'],
+        ]),
+      }),
+    )
+  })
+
+  it('parses mapping keys as numbers when attributeType is integer or double', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10 },
+    }
+
+    visualStyleApi.createDiscreteMapping(
+      'net1',
+      VPN.NodeHeight,
+      'degree',
+      'integer',
+      { '1': 20, '2': 40 },
+    )
+
+    expect(mockSetMapping).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeHeight,
+      expect.objectContaining({
+        vpValueMap: new Map([
+          [1, 20],
+          [2, 40],
+        ]),
+      }),
+    )
+
+    visualStyleApi.createDiscreteMapping(
+      'net1',
+      VPN.NodeHeight,
+      'score',
+      'double',
+      { '1.5': 20, '2.5': 40 },
+    )
+
+    expect(mockSetMapping).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeHeight,
+      expect.objectContaining({
+        vpValueMap: new Map([
+          [1.5, 20],
+          [2.5, 40],
+        ]),
+      }),
+    )
+  })
 })
 
 // --- createContinuousMapping -------------------------------------------------

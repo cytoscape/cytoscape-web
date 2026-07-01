@@ -459,6 +459,7 @@ interface VisualStyleApi {
     vpName: VisualPropertyName,
     attribute: AttributeName,
     attributeType: ValueTypeName,
+    mapping?: Record<string, VisualPropertyValueType>,
   ): ApiResult
 
   createContinuousMapping(
