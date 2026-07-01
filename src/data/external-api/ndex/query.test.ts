@@ -43,12 +43,14 @@ describe('fetchNdexInterconnectQuery', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
+    // The last argument (outputCX2) MUST be true: the result is parsed by
+    // getCyNetworkFromCx2 as CX2. Requesting CX1 breaks subnetwork loading.
     expect(mockClient.networks.interConnectQuery).toHaveBeenCalledWith(
       mockNdexUuid,
       '',
       false,
       { nodeIds: [1, 2] },
-      false,
+      true,
     )
     expect(result).toEqual(mockCx2Network)
   })
@@ -77,7 +79,7 @@ describe('fetchNdexInterconnectQuery', () => {
       '',
       false,
       { nodeIds: [3] },
-      false,
+      true,
     )
     expect(result).toEqual(mockCx2Network)
   })
@@ -102,8 +104,27 @@ describe('fetchNdexInterconnectQuery', () => {
       '',
       false,
       { nodeIds: [1, 2, 3] },
-      false,
+      true,
     )
+  })
+
+  // Regression guard: the interconnect query MUST request CX2 (outputCX2=true,
+  // the 5th arg / V3 API). The result is parsed by getCyNetworkFromCx2, which
+  // validates strictly as CX2. Requesting CX1 (false / V2 API) silently breaks
+  // HierarchyViewer subnetwork loading. Do NOT change this to false.
+  it('must request CX2 output (outputCX2=true) to keep subnetwork loading working', async () => {
+    const mockClient = {
+      networks: {
+        interConnectQuery: jest.fn().mockResolvedValue(createMockCx2Network()),
+      },
+    }
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    await fetchNdexInterconnectQuery('any-uuid', '1')
+
+    const outputCX2Arg =
+      mockClient.networks.interConnectQuery.mock.calls[0][4]
+    expect(outputCX2Arg).toBe(true)
   })
 
   it('should propagate errors from the NDEx client', async () => {

@@ -28,7 +28,11 @@ export const fetchNdexInterconnectQuery = async (
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const searchTerms = ''
   const saveResult = false
-  const outputCX2 = false
+  // Must request CX2 (V3 API). The result is parsed by getCyNetworkFromCx2,
+  // which validates/parses strictly as CX2 (aspect-array). Requesting CX1
+  // (V2 API) here breaks HierarchyViewer subnetwork loading. See query.test.ts
+  // for the regression guard.
+  const outputCX2 = true
 
   const result = await ndexClient.networks.interConnectQuery(
     ndexUuid,
