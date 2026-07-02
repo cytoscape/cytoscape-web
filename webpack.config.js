@@ -82,9 +82,17 @@ module.exports = {
     },
     static: path.resolve(__dirname, './dist'),
     historyApiFallback: {
+      // The bundle's index.html is emitted under the base path (publicPath =
+      // urlBaseName, e.g. "/cytoscape/"), so SPA deep links must fall back to
+      // "<base>/index.html" — not root "/index.html" — or nested routes 404.
       rewrites: [
-        { from: /^\/$/, to: '/index.html' }, // default index route
-        { from: /./, to: '/index.html' }, // all other routes
+        {
+          from: /./,
+          to:
+            (config.urlBaseName && config.urlBaseName !== ''
+              ? config.urlBaseName.replace(/\/$/, '')
+              : '') + '/index.html',
+        },
       ],
     },
     headers: {

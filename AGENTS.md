@@ -219,10 +219,12 @@ Plugins import from the `cyweb/` prefix. The full list includes API hooks (`Elem
 
 - Test directory: `test/playwright/`
 - Browsers: Chromium, Firefox, WebKit
-- Base URL: `http://localhost:5500` (auto-starts dev server)
+- Base URL: `http://localhost:5500` + the app base path from `config.json` `urlBaseName` (see Section 7) — do NOT assume root
 - Element selection: `data-testid` attributes
 - Artifacts: trace on first retry, video on failure, screenshot on failure
 - Test workflow templates in `docs/prompts/`: planner → generator → healer
+- **Two E2E lanes — default (hermetic UI) vs. acceptance (live NDEx).** Live-NDEx tests (e.g. `hierarchy-subnetwork.spec.ts`) are **tagged `{ tag: '@ndex' }`** AND gated by `test.skip(!process.env.RUN_NDEX_E2E, …)`. Scripts: `npm run test:e2e` = default lane (`playwright test --grep-invert @ndex`), `npm run test:e2e:acceptance` = acceptance lane (`RUN_NDEX_E2E=1 … --grep @ndex`), `npm run test:e2e:all` = both. **Rule:** any spec touching a live external server MUST be tagged `@ndex` + gated; everything else stays hermetic — import `offlineTest as test` from `test/playwright/fixtures.ts` (auto-stubs the app's boot calls to NDEx/Keycloak/analytics so it boots offline), or use local fixtures under `test/fixtures/`. See `app-smoke.spec.ts` for a hermetic example. Live identifiers are parameterized in `test/playwright/fixtures/*.data.ts` (overridable via `E2E_*` env vars); the server comes from `config.json` `ndexBaseUrl` — keep fixture uuids paired with it.
+- **Data-driven acceptance specs.** These specs loop over a case list in their `fixtures/*.data.ts` and generate one `test(...)` per entry — **add a case by appending an object to that array, not by editing the spec.** For a new user flow (styling, NDEx search, etc.), add a new spec file, derive the URL from `urlBaseName`, gate it behind `RUN_NDEX_E2E` only if it needs a live server, prefer local fixtures otherwise, select via `data-testid`, and verify outcomes via DOM and/or `window.CyWebApi`. Full recipe: `test/playwright/README.md`.
 
 **Test Fixtures:**
 
@@ -243,7 +245,7 @@ Webpack 5 with Module Federation for microfrontend architecture:
 
 | File                      | Purpose                                                                                                                                                                                             |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), debug flag, Keycloak auth, Google Analytics |
+| `src/assets/config.json`  | Runtime configuration: NDEx server URL, **`urlBaseName` (app base path — see Section 7; not always `/`)**, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), debug flag, Keycloak auth, Google Analytics |
 | `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                                          |
 | `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                           |
 | `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                         |
@@ -290,6 +292,7 @@ Read these before working in related areas:
 - **`zod`** — Available as a dependency for runtime validation.
 - **`validateCX2()`** — Required for all external CX2 data before processing.
 - **NDEx Dev Server** — `config.json` points to `dev1.ndexbio.org` by default.
+- **App Base Path (`urlBaseName`)** — The app is NOT always served at root. `urlBaseName` in `src/assets/config.json` (e.g. `/cytoscape/`) sets the base path (webpack `output.publicPath`, React Router basename). It can change per environment. **Always read `urlBaseName` from `config.json` before constructing any app URL** — Playwright `page.goto`, dev-server readiness checks, manual navigation, etc. Prepend it (e.g. `http://localhost:5500/cytoscape/…`); do not hardcode `/` or `/cytoscape/`. Deep links resolve only under the base path.
 - **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
 - **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.
 - **Keycloak Auth** — SSO authentication with `silent-check-sso.html` for silent token refresh.
