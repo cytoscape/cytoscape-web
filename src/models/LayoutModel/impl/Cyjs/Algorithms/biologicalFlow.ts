@@ -14,7 +14,7 @@ import { LayoutAlgorithm } from '../../..'
 import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const biologicalFlow: LayoutAlgorithm = {
-  name: 'biological-flow',
+  name: 'bionodes',
   engineName: 'Cytoscape.js',
   displayName: 'Biological Flow Layout',
   type: LayoutAlgorithmType.hierarchical,
@@ -28,5 +28,5 @@ export const biologicalFlow: LayoutAlgorithm = {
     padding: 80,
     animate: false,
   },
-  editables: {},
+  editables: undefined,
 }
