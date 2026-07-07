@@ -1,9 +1,11 @@
 import { useCallback } from 'react'
 
-import { logApp } from '../../../debug'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
+import { logApp } from '../../../debug'
 import { Column, Table, ValueType } from '../../../models'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
+import { TableDisplayConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface UpdatedTable {
@@ -22,6 +24,9 @@ export const useUpdateTables = (): (({
   networkId,
 }: ActionHandlerProps) => void) => {
   const setTable = useTableStore((state) => state.setTable)
+  const setTableDisplayConfiguration = useUiStateStore(
+    (state) => state.setTableDisplayConfiguration,
+  )
   const isValidTableUpdate = (data: any): data is UpdatedTable => {
     return (
       data &&
@@ -95,8 +100,40 @@ export const useUpdateTables = (): (({
       }
 
       setTable(networkId, id, nextTable)
+
+      // The Table Browser renders columns from tableDisplayConfiguration,
+      // not from the table model, so new columns must be registered there
+      // as well or they stay invisible (GH issue #569)
+      const tdc: TableDisplayConfiguration | undefined =
+        useUiStateStore.getState().ui.visualStyleOptions?.[networkId]
+          ?.visualEditorProperties?.tableDisplayConfiguration
+      if (tdc !== undefined) {
+        const configKey = id === TableType.NODE ? 'nodeTable' : 'edgeTable'
+        const existingNames = new Set(
+          tdc[configKey].columnConfiguration.map((c) => c.attributeName),
+        )
+        const newColumnConfigs = columns
+          .filter((col) => !existingNames.has(col.id))
+          .map((col) => ({
+            attributeName: col.id,
+            visible: true,
+            columnWidth: undefined,
+          }))
+        if (newColumnConfigs.length > 0) {
+          setTableDisplayConfiguration(networkId, {
+            ...tdc,
+            [configKey]: {
+              ...tdc[configKey],
+              columnConfiguration: [
+                ...tdc[configKey].columnConfiguration,
+                ...newColumnConfigs,
+              ],
+            },
+          })
+        }
+      }
     },
-    [setTable],
+    [setTable, setTableDisplayConfiguration],
   )
   return updateTables
 }
