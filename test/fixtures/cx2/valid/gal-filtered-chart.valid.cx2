@@ -1,0 +1,1275 @@
+[
+    {
+        "CXVersion": "2.0",
+        "hasFragments": false
+    },
+    {
+        "metaData": [
+            {
+                "name": "attributeDeclarations",
+                "elementCount": 1
+            },
+            {
+                "name": "networkAttributes",
+                "elementCount": 1
+            },
+            {
+                "name": "nodes",
+                "elementCount": 10
+            },
+            {
+                "name": "edges",
+                "elementCount": 9
+            },
+            {
+                "name": "visualProperties",
+                "elementCount": 1
+            },
+            {
+                "name": "nodeBypasses",
+                "elementCount": 1
+            },
+            {
+                "name": "edgeBypasses",
+                "elementCount": 0
+            },
+            {
+                "name": "visualEditorProperties",
+                "elementCount": 1
+            },
+            {
+                "name": "cyTableColumn",
+                "elementCount": 38
+            }
+        ]
+    },
+    {
+        "attributeDeclarations": [
+            {
+                "networkAttributes": {
+                    "Dataset Name": {
+                        "d": "string"
+                    },
+                    "organism": {
+                        "d": "string"
+                    },
+                    "Dataset URL": {
+                        "d": "string"
+                    },
+                    "publication": {
+                        "d": "string"
+                    },
+                    "name": {
+                        "d": "string"
+                    }
+                },
+                "nodes": {
+                    "AverageShortestPathLength": {
+                        "d": "double"
+                    },
+                    "BetweennessCentrality": {
+                        "d": "double"
+                    },
+                    "ClosenessCentrality": {
+                        "d": "double"
+                    },
+                    "ClusteringCoefficient": {
+                        "d": "double"
+                    },
+                    "COMMON": {
+                        "d": "string"
+                    },
+                    "Degree": {
+                        "d": "integer"
+                    },
+                    "degree.layout": {
+                        "d": "integer"
+                    },
+                    "Eccentricity": {
+                        "d": "integer"
+                    },
+                    "gal1RGexp": {
+                        "d": "double"
+                    },
+                    "gal1RGsig": {
+                        "d": "double"
+                    },
+                    "gal4RGexp": {
+                        "d": "double"
+                    },
+                    "gal4RGsig": {
+                        "d": "double"
+                    },
+                    "gal80Rexp": {
+                        "d": "double"
+                    },
+                    "gal80Rsig": {
+                        "d": "double"
+                    },
+                    "isExcludedFromPaths": {
+                        "d": "boolean"
+                    },
+                    "IsSingleNode": {
+                        "d": "boolean"
+                    },
+                    "name": {
+                        "d": "string"
+                    },
+                    "NeighborhoodConnectivity": {
+                        "d": "double"
+                    },
+                    "NumberOfDirectedEdges": {
+                        "d": "integer"
+                    },
+                    "NumberOfUndirectedEdges": {
+                        "d": "integer"
+                    },
+                    "PartnerOfMultiEdgedNodePairs": {
+                        "d": "integer"
+                    },
+                    "Radiality": {
+                        "d": "double"
+                    },
+                    "SelfLoops": {
+                        "d": "integer"
+                    },
+                    "Stress": {
+                        "d": "long"
+                    },
+                    "TopologicalCoefficient": {
+                        "d": "double"
+                    }
+                },
+                "edges": {
+                    "EdgeBetweenness": {
+                        "d": "double"
+                    },
+                    "interaction": {
+                        "d": "string"
+                    },
+                    "name": {
+                        "d": "string"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "networkAttributes": [
+            {
+                "Dataset Name": "Ideker's Yeast Perturbation Network",
+                "organism": "scerevisiae",
+                "Dataset URL": "https://www.ncbi.nlm.nih.gov/pubmed/?term=11340206",
+                "publication": "Integrated Genomic and Proteomic Analyses of a Systematically Perturbed Metabolic Network\nTrey Ideker, Vesteinn Thorsson, Jeffrey A. Ranish, Rowan Christmas, Jeremy Buhler, Jimmy K. Eng, Roger Bumgarner, David R. Goodlett, Ruedi Aebersold, and Leroy Hood\nScience 4 May 2001: 292 (5518), 929-934. [DOI:10.1126/science.292.5518.929]",
+                "name": "galFiltered chart_1"
+            }
+        ]
+    },
+    {
+        "nodes": [
+            {
+                "id": 7816,
+                "x": 1727.830776999534,
+                "y": 457.792321195067,
+                "v": {
+                    "name": "YHR055C",
+                    "degree.layout": 2,
+                    "gal80Rexp": 0.802,
+                    "gal1RGsig": 0.0000028813,
+                    "Eccentricity": 21,
+                    "gal4RGsig": 0.026753,
+                    "TopologicalCoefficient": 0.6,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 2,
+                    "AverageShortestPathLength": 10.65725806,
+                    "gal80Rsig": 1.9696e-12,
+                    "ClosenessCentrality": 0.09383277,
+                    "Degree": 2,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.64232378,
+                    "Stress": 2004,
+                    "BetweennessCentrality": 0.00799922,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -0.867,
+                    "COMMON": "CUP1B",
+                    "gal4RGexp": -0.416,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 4
+                }
+            },
+            {
+                "id": 7818,
+                "x": 1483.5474429019155,
+                "y": 521.9084334376521,
+                "v": {
+                    "name": "YHR053C",
+                    "degree.layout": 2,
+                    "gal80Rexp": 0.795,
+                    "gal1RGsig": 0.00016731,
+                    "Eccentricity": 21,
+                    "gal4RGsig": 0.00084638,
+                    "TopologicalCoefficient": 0.6,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 2,
+                    "AverageShortestPathLength": 10.65725806,
+                    "gal80Rsig": 1.5187e-10,
+                    "ClosenessCentrality": 0.09383277,
+                    "Degree": 2,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.64232378,
+                    "Stress": 2004,
+                    "BetweennessCentrality": 0.00799922,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -0.656,
+                    "COMMON": "CUP1A",
+                    "gal4RGexp": -0.75,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 4
+                }
+            },
+            {
+                "id": 7884,
+                "x": 1973.9749143125389,
+                "y": 428.20356656787874,
+                "v": {
+                    "name": "YER103W",
+                    "degree.layout": 2,
+                    "gal80Rexp": -0.826,
+                    "gal1RGsig": 0.00012362,
+                    "Eccentricity": 21,
+                    "gal4RGsig": 0.013281,
+                    "TopologicalCoefficient": 0.5,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 2,
+                    "AverageShortestPathLength": 10.65725806,
+                    "gal80Rsig": 8.3702e-13,
+                    "ClosenessCentrality": 0.09383277,
+                    "Degree": 2,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.64232378,
+                    "Stress": 2016,
+                    "BetweennessCentrality": 0.01606373,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -0.405,
+                    "COMMON": "SSA4",
+                    "gal4RGexp": 0.176,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 3.5
+                }
+            },
+            {
+                "id": 7998,
+                "x": 1751.277978845074,
+                "y": 601.8039044611936,
+                "v": {
+                    "name": "YGL073W",
+                    "degree.layout": 5,
+                    "gal80Rexp": 0.543,
+                    "gal1RGsig": 0.034847,
+                    "Eccentricity": 20,
+                    "gal4RGsig": 0.42981,
+                    "TopologicalCoefficient": 0.25,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 5,
+                    "AverageShortestPathLength": 9.67741935,
+                    "gal80Rsig": 0.00062254,
+                    "ClosenessCentrality": 0.10333333,
+                    "Degree": 5,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.6786141,
+                    "Stress": 9976,
+                    "BetweennessCentrality": 0.06332441,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": 0.104,
+                    "COMMON": "HSF1",
+                    "gal4RGexp": -0.084,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 2
+                }
+            },
+            {
+                "id": 8000,
+                "x": 1991.470856785445,
+                "y": 579.5633324052585,
+                "v": {
+                    "name": "YBR072W",
+                    "degree.layout": 1,
+                    "gal80Rexp": -0.447,
+                    "gal1RGsig": 0.0000013135,
+                    "Eccentricity": 21,
+                    "gal4RGsig": 0.000023868,
+                    "TopologicalCoefficient": 0,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 1,
+                    "AverageShortestPathLength": 10.6733871,
+                    "gal80Rsig": 3.3493e-11,
+                    "ClosenessCentrality": 0.09369097,
+                    "Degree": 1,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.6417264,
+                    "Stress": 0,
+                    "BetweennessCentrality": 0,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -1.232,
+                    "COMMON": "HSP26",
+                    "gal4RGexp": 0.895,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 5
+                }
+            },
+            {
+                "id": 8040,
+                "x": 1599.2697357709164,
+                "y": 368.8216357367876,
+                "v": {
+                    "name": "YGL166W",
+                    "degree.layout": 3,
+                    "gal80Rexp": 0.147,
+                    "gal1RGsig": 0.33486,
+                    "Eccentricity": 22,
+                    "gal4RGsig": 0.0012181,
+                    "TopologicalCoefficient": 0.66666667,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 2,
+                    "AverageShortestPathLength": 11.63709677,
+                    "gal80Rsig": 0.032147,
+                    "ClosenessCentrality": 0.08593209,
+                    "Degree": 3,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.60603345,
+                    "Stress": 2010,
+                    "BetweennessCentrality": 0.00808084,
+                    "NumberOfUndirectedEdges": 1,
+                    "gal1RGexp": -0.073,
+                    "COMMON": "CUP2",
+                    "gal4RGexp": 0.243,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 1.66666667
+                }
+            },
+            {
+                "id": 8042,
+                "x": 1628.8311074939247,
+                "y": 254.38255020291214,
+                "v": {
+                    "name": "YLL028W",
+                    "degree.layout": 1,
+                    "gal80Rexp": -0.24,
+                    "gal1RGsig": 0.00017163,
+                    "Eccentricity": 23,
+                    "gal4RGsig": 0.27319,
+                    "TopologicalCoefficient": 0,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 1,
+                    "AverageShortestPathLength": 12.63306452,
+                    "gal80Rsig": 0.0047822,
+                    "ClosenessCentrality": 0.07915736,
+                    "Degree": 1,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.56914576,
+                    "Stress": 0,
+                    "BetweennessCentrality": 0,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -0.189,
+                    "COMMON": "TPO1",
+                    "gal4RGexp": -0.101,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 3
+                }
+            },
+            {
+                "id": 8066,
+                "x": 1829.1143417209043,
+                "y": 325.1851331475378,
+                "v": {
+                    "name": "YLR310C",
+                    "degree.layout": 2,
+                    "gal80Rexp": -0.071,
+                    "gal1RGsig": 0.67137,
+                    "Eccentricity": 22,
+                    "gal4RGsig": 0.41028,
+                    "TopologicalCoefficient": 0.5,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 2,
+                    "AverageShortestPathLength": 11.64516129,
+                    "gal80Rsig": 0.25519,
+                    "ClosenessCentrality": 0.08587258,
+                    "Degree": 2,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.60573477,
+                    "Stress": 1010,
+                    "BetweennessCentrality": 0.00806452,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": 0.015,
+                    "COMMON": "CDC25",
+                    "gal4RGexp": -0.037,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 1.5
+                }
+            },
+            {
+                "id": 8068,
+                "x": 2018.5288932053413,
+                "y": 260.1846169870082,
+                "v": {
+                    "name": "YNL098C",
+                    "degree.layout": 1,
+                    "gal80Rexp": 0.293,
+                    "gal1RGsig": 0.20515,
+                    "Eccentricity": 23,
+                    "gal4RGsig": 0.23242,
+                    "TopologicalCoefficient": 0,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 1,
+                    "AverageShortestPathLength": 12.64112903,
+                    "gal80Rsig": 0.00010426,
+                    "ClosenessCentrality": 0.07910686,
+                    "Degree": 1,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0,
+                    "Radiality": 0.56884707,
+                    "Stress": 0,
+                    "BetweennessCentrality": 0,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": 0.05,
+                    "COMMON": "RAS2",
+                    "gal4RGexp": 0.062,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 2
+                }
+            },
+            {
+                "id": 8069,
+                "x": 1433,
+                "y": 676.189099172156,
+                "v": {
+                    "name": "Node 1"
+                }
+            }
+        ]
+    },
+    {
+        "edges": [
+            {
+                "id": 8646,
+                "s": 7998,
+                "t": 7818,
+                "v": {
+                    "EdgeBetweenness": 981,
+                    "name": "YGL073W (pd) YHR053C",
+                    "interaction": "pd"
+                }
+            },
+            {
+                "id": 8644,
+                "s": 7998,
+                "t": 7816,
+                "v": {
+                    "EdgeBetweenness": 981,
+                    "name": "YGL073W (pd) YHR055C",
+                    "interaction": "pd"
+                }
+            },
+            {
+                "id": 8642,
+                "s": 7998,
+                "t": 7884,
+                "v": {
+                    "EdgeBetweenness": 1476,
+                    "name": "YGL073W (pd) YER103W",
+                    "interaction": "pd"
+                }
+            },
+            {
+                "id": 8702,
+                "s": 8042,
+                "t": 8040,
+                "v": {
+                    "EdgeBetweenness": 496,
+                    "name": "YLL028W (pp) YGL166W",
+                    "interaction": "pp"
+                }
+            },
+            {
+                "id": 8700,
+                "s": 8040,
+                "t": 7818,
+                "v": {
+                    "EdgeBetweenness": 495,
+                    "name": "YGL166W (pd) YHR053C",
+                    "interaction": "pd"
+                }
+            },
+            {
+                "id": 8698,
+                "s": 8040,
+                "t": 7816,
+                "v": {
+                    "EdgeBetweenness": 495,
+                    "name": "YGL166W (pd) YHR055C",
+                    "interaction": "pd"
+                }
+            },
+            {
+                "id": 8724,
+                "s": 8068,
+                "t": 8066,
+                "v": {
+                    "EdgeBetweenness": 496,
+                    "name": "YNL098C (pp) YLR310C",
+                    "interaction": "pp"
+                }
+            },
+            {
+                "id": 8722,
+                "s": 8066,
+                "t": 7884,
+                "v": {
+                    "EdgeBetweenness": 988,
+                    "name": "YLR310C (pp) YER103W",
+                    "interaction": "pp"
+                }
+            },
+            {
+                "id": 8650,
+                "s": 8000,
+                "t": 7998,
+                "v": {
+                    "EdgeBetweenness": 496,
+                    "name": "YBR072W (pd) YGL073W",
+                    "interaction": "pd"
+                }
+            }
+        ]
+    },
+    {
+        "visualProperties": [
+            {
+                "default": {
+                    "network": {
+                        "NETWORK_BACKGROUND_COLOR": "#FFFFFF"
+                    },
+                    "edge": {
+                        "EDGE_LABEL": "",
+                        "EDGE_LABEL_COLOR": "#000000",
+                        "EDGE_LABEL_FONT_FACE": {
+                            "FONT_FAMILY": "sans-serif",
+                            "FONT_STYLE": "normal",
+                            "FONT_WEIGHT": "normal"
+                        },
+                        "EDGE_LABEL_FONT_SIZE": 10,
+                        "EDGE_LABEL_OPACITY": 1,
+                        "EDGE_LABEL_ROTATION": 0,
+                        "EDGE_LABEL_MAX_WIDTH": 200,
+                        "EDGE_LINE_STYLE": "solid",
+                        "EDGE_OPACITY": 1,
+                        "EDGE_SELECTED_PAINT": "#FF0000",
+                        "EDGE_SOURCE_ARROW_COLOR": "#000000",
+                        "EDGE_SOURCE_ARROW_SHAPE": "none",
+                        "EDGE_LINE_COLOR": "#666666",
+                        "EDGE_TARGET_ARROW_COLOR": "#000000",
+                        "EDGE_TARGET_ARROW_SHAPE": "none",
+                        "EDGE_VISIBILITY": "element",
+                        "EDGE_WIDTH": 3,
+                        "EDGE_Z_LOCATION": 0
+                    },
+                    "node": {
+                        "NODE_BORDER_COLOR": "#006699",
+                        "NODE_BORDER_STYLE": "solid",
+                        "NODE_BORDER_OPACITY": 1,
+                        "NODE_BORDER_WIDTH": 0,
+                        "NODE_BACKGROUND_COLOR": "#CCCCCC",
+                        "NODE_HEIGHT": 30,
+                        "NODE_LABEL": "",
+                        "NODE_LABEL_COLOR": "#333333",
+                        "NODE_LABEL_FONT_FACE": {
+                            "FONT_FAMILY": "sans-serif",
+                            "FONT_STYLE": "normal",
+                            "FONT_WEIGHT": "normal"
+                        },
+                        "NODE_LABEL_FONT_SIZE": 12,
+                        "NODE_LABEL_OPACITY": 1,
+                        "NODE_LABEL_POSITION": {
+                            "HORIZONTAL_ALIGN": "center",
+                            "VERTICAL_ALIGN": "center",
+                            "HORIZONTAL_ANCHOR": "center",
+                            "VERTICAL_ANCHOR": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "JUSTIFICATION": "center"
+                        },
+                        "NODE_LABEL_ROTATION": 0,
+                        "NODE_LABEL_MAX_WIDTH": 200,
+                        "NODE_BACKGROUND_OPACITY": 1,
+                        "NODE_SELECTED_PAINT": "#FFFF00",
+                        "NODE_SHAPE": "round-rectangle",
+                        "NODE_VISIBILITY": "element",
+                        "NODE_WIDTH": 70,
+                        "NODE_Z_LOCATION": 0,
+                        "NODE_CUSTOMGRAPHICS_SIZE_1": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_1": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "S",
+                            "GRAPHICS_ANCHOR": "N"
+                        },
+                        "NODE_CUSTOMGRAPHICS_1": {
+                            "type": "chart",
+                            "name": "org.cytoscape.BarChart",
+                            "properties": {
+                                "cy_range": [
+                                    -1.232,
+                                    1.022
+                                ],
+                                "cy_showRangeAxis": true,
+                                "cy_axisLabelFontSize": 2,
+                                "cy_showRangeZeroBaseline": true,
+                                "cy_colorScheme": "Set3 colors",
+                                "cy_colors": [
+                                    "#8DD3C7",
+                                    "#FFFFB3",
+                                    "#BEBADA"
+                                ],
+                                "cy_itemLabelFontSize": 4,
+                                "cy_showDomainAxis": true,
+                                "cy_axisColor": "#238443",
+                                "cy_axisWidth": 0.5,
+                                "cy_autoRange": true,
+                                "cy_borderColor": "#CB181D",
+                                "cy_borderWidth": 0.5,
+                                "cy_dataColumns": [
+                                    "gal1RGexp",
+                                    "gal4RGexp",
+                                    "gal80Rexp"
+                                ],
+                                "cy_domainLabelPosition": "DOWN_45",
+                                "cy_showItemLabels": true
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_2": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_2": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_2": {
+                            "type": "chart",
+                            "name": "org.cytoscape.HeatMapChart",
+                            "properties": {
+                                "cy_range": [
+                                    -2.426,
+                                    3.126
+                                ],
+                                "cy_showRangeAxis": false,
+                                "cy_orientation": "HORIZONTAL",
+                                "cy_colorScheme": "CYAN_WHITE_YELLOW",
+                                "cy_colors": [
+                                    "#FFFF00",
+                                    "#FFFFFF",
+                                    "#00FFFF",
+                                    "#808080"
+                                ],
+                                "cy_dataColumns": [
+                                    "gal1RGexp",
+                                    "gal4RGexp",
+                                    "gal80Rexp"
+                                ],
+                                "cy_showDomainAxis": false
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_3": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_3": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "W",
+                            "GRAPHICS_ANCHOR": "E"
+                        },
+                        "NODE_CUSTOMGRAPHICS_3": {
+                            "type": "chart",
+                            "name": "org.cytoscape.PieChart",
+                            "properties": {
+                                "cy_range": [
+                                    1,
+                                    16.35887097
+                                ],
+                                "cy_colorScheme": "Set3 colors",
+                                "cy_colors": [
+                                    "#8DD3C7",
+                                    "#BEBADA"
+                                ],
+                                "cy_dataColumns": [
+                                    "Radiality",
+                                    "Degree"
+                                ]
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_4": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_4": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "E",
+                            "GRAPHICS_ANCHOR": "W"
+                        },
+                        "NODE_CUSTOMGRAPHICS_4": {
+                            "type": "chart",
+                            "name": "org.cytoscape.RingChart",
+                            "properties": {
+                                "cy_range": [
+                                    1,
+                                    16.35887097
+                                ],
+                                "cy_holeSize": 0.75,
+                                "cy_startAngle": 45,
+                                "cy_colors": [
+                                    "#EF8A62",
+                                    "#BEBADA"
+                                ],
+                                "cy_borderWidth": 0.5,
+                                "cy_borderColor": "#3690C0",
+                                "cy_dataColumns": [
+                                    "NumberOfDirectedEdges",
+                                    "NumberOfUndirectedEdges"
+                                ],
+                                "cy_itemLabelFontSize": 2,
+                                "cy_showItemLabels": true
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_5": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_5": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "N",
+                            "GRAPHICS_ANCHOR": "S"
+                        },
+                        "NODE_CUSTOMGRAPHICS_5": {
+                            "type": "chart",
+                            "name": "org.cytoscape.BoxChart",
+                            "properties": {
+                                "cy_range": [
+                                    8.3702e-13,
+                                    0.67137
+                                ],
+                                "cy_axisWidth": 0.5,
+                                "cy_showRangeAxis": true,
+                                "cy_orientation": "HORIZONTAL",
+                                "cy_axisLabelFontSize": 3,
+                                "cy_colorScheme": "Dark colors",
+                                "cy_showRangeZeroBaseline": true,
+                                "cy_colors": [
+                                    "#1B9E77",
+                                    "#D95F02",
+                                    "#7570B3"
+                                ],
+                                "cy_borderColor": "#6E016B",
+                                "cy_borderWidth": 0.3,
+                                "cy_dataColumns": [
+                                    "gal1RGsig",
+                                    "gal4RGsig",
+                                    "gal80Rsig"
+                                ],
+                                "cy_axisColor": "#EDF8B1"
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_6": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_6": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "NW",
+                            "GRAPHICS_ANCHOR": "SE"
+                        },
+                        "NODE_CUSTOMGRAPHICS_6": {
+                            "type": "chart",
+                            "name": "org.cytoscape.LineChart",
+                            "properties": {
+                                "cy_lineWidth": 2.1,
+                                "cy_range": [
+                                    -1.232,
+                                    0.895
+                                ],
+                                "cy_showRangeAxis": true,
+                                "cy_axisLabelFontSize": 2,
+                                "cy_colorScheme": "Set3 colors",
+                                "cy_showRangeZeroBaseline": true,
+                                "cy_colors": [
+                                    "#8DD3C7",
+                                    "#FFFFB3",
+                                    "#BEBADA"
+                                ],
+                                "cy_itemLabelFontSize": 2,
+                                "cy_showDomainAxis": true,
+                                "cy_axisColor": "#41AB5D",
+                                "cy_axisWidth": 0.3,
+                                "cy_borderWidth": 0.3,
+                                "cy_borderColor": "#016450",
+                                "cy_dataColumns": [
+                                    "gal1RGexp",
+                                    "gal4RGexp",
+                                    "gal80Rexp"
+                                ],
+                                "cy_domainLabelPosition": "DOWN_45",
+                                "cy_showItemLabels": true
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_7": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_7": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "NE",
+                            "GRAPHICS_ANCHOR": "SW"
+                        },
+                        "NODE_CUSTOMGRAPHICS_7": {
+                            "type": "chart",
+                            "name": "org.cytoscape.BarChart",
+                            "properties": {
+                                "cy_range": [
+                                    -1.232,
+                                    0.895
+                                ],
+                                "cy_type": "HEAT_STRIPS",
+                                "cy_colorScheme": "Green-White-Purple",
+                                "cy_colors": [
+                                    "#FF00FF",
+                                    "#FFFFFF",
+                                    "#00FF00"
+                                ],
+                                "cy_dataColumns": [
+                                    "gal1RGexp",
+                                    "gal4RGexp",
+                                    "gal80Rexp"
+                                ]
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_8": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_8": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "SW",
+                            "GRAPHICS_ANCHOR": "NE"
+                        },
+                        "NODE_CUSTOMGRAPHICS_8": {
+                            "type": "image",
+                            "name": "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics",
+                            "properties": {
+                                "tag": "bitmap image",
+                                "url": "file:/Users/jingchen/CytoscapeConfiguration/images3/25.png",
+                                "id": 2
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_9": 50,
+                        "NODE_CUSTOMGRAPHICS_POSITION_9": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0,
+                            "MARGIN_Y": 0,
+                            "ENTITY_ANCHOR": "SE",
+                            "GRAPHICS_ANCHOR": "NW"
+                        },
+                        "NODE_CUSTOMGRAPHICS_9": {
+                            "type": "chart",
+                            "name": "org.cytoscape.LinearGradient",
+                            "properties": {
+                                "cy_gradientFractions": [
+                                    0,
+                                    1
+                                ],
+                                "cy_gradientColors": [
+                                    "#E0ECF4",
+                                    "#8856A7"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "nodeMapping": {
+                    "NODE_LABEL": {
+                        "type": "PASSTHROUGH",
+                        "definition": {
+                            "attribute": "name"
+                        }
+                    }
+                },
+                "edgeMapping": {}
+            }
+        ]
+    },
+    {
+        "nodeBypasses": [
+            {
+                "id": 8069,
+                "v": {
+                    "NODE_CUSTOMGRAPHICS_9": {
+                        "type": "chart",
+                        "name": "org.cytoscape.LinearGradient",
+                        "properties": {
+                            "cy_gradientFractions": [
+                                0,
+                                1
+                            ],
+                            "cy_gradientColors": [
+                                "#FFFFFF",
+                                "#000000"
+                            ]
+                        }
+                    },
+                    "NODE_CUSTOMGRAPHICS_SIZE_9": 50,
+                    "NODE_CUSTOMGRAPHICS_POSITION_9": {
+                        "JUSTIFICATION": "center",
+                        "MARGIN_X": 0,
+                        "MARGIN_Y": 0,
+                        "ENTITY_ANCHOR": "SE",
+                        "GRAPHICS_ANCHOR": "NW"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "edgeBypasses": []
+    },
+    {
+        "visualEditorProperties": [
+            {
+                "properties": {
+                    "nodeSizeLocked": false,
+                    "arrowColorMatchesEdge": false,
+                    "tableDisplayConfiguration": {
+                        "nodeTable": {
+                            "columnConfiguration": [
+                                {
+                                    "attributeName": "degree.layout",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "gal80Rexp",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "gal1RGsig",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "Eccentricity",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "gal4RGsig",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "TopologicalCoefficient",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "SelfLoops",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "NumberOfDirectedEdges",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "AverageShortestPathLength",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "gal80Rsig",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "ClosenessCentrality",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "Degree",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "isExcludedFromPaths",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "PartnerOfMultiEdgedNodePairs",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "ClusteringCoefficient",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "Radiality",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "Stress",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "BetweennessCentrality",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "NumberOfUndirectedEdges",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "gal1RGexp",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "name",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "COMMON",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "gal4RGexp",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "IsSingleNode",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "NeighborhoodConnectivity",
+                                    "visible": true
+                                }
+                            ]
+                        },
+                        "edgeTable": {
+                            "columnConfiguration": [
+                                {
+                                    "attributeName": "EdgeBetweenness",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "interaction",
+                                    "visible": true
+                                },
+                                {
+                                    "attributeName": "name",
+                                    "visible": true
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "cyTableColumn": [
+            {
+                "applies_to": "node_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "AverageShortestPathLength"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "BetweennessCentrality"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "ClosenessCentrality"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "ClusteringCoefficient"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "Degree"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "Eccentricity"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "boolean",
+                "n": "IsSingleNode"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "NeighborhoodConnectivity"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "NumberOfDirectedEdges"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "NumberOfUndirectedEdges"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "PartnerOfMultiEdgedNodePairs"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "Radiality"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "SelfLoops"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "long",
+                "n": "Stress"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "TopologicalCoefficient"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "degree.layout"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "COMMON"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal1RGexp"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal4RGexp"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal80Rexp"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal1RGsig"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal4RGsig"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal80Rsig"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "boolean",
+                "n": "isExcludedFromPaths"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "shared interaction"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "interaction"
+            },
+            {
+                "applies_to": "edge_table",
+                "d": "double",
+                "n": "EdgeBetweenness"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "network_table",
+                "d": "list_of_string",
+                "n": "__Annotations"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "publication"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "Dataset Name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "Dataset URL"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "organism"
+            }
+        ]
+    },
+    {
+        "status": [
+            {
+                "error": "",
+                "success": true
+            }
+        ]
+    }
+]
