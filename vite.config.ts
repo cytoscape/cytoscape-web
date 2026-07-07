@@ -53,6 +53,34 @@ function serveAppsConfigInDev(appsConfigPath: string): Plugin {
   }
 }
 
+/**
+ * Dev-server-only plugin that processes simple EJS-like tags in index.html
+ * (parity with Webpack's HtmlWebpackPlugin).
+ */
+function injectHtmlVariables(variables: Record<string, any>): Plugin {
+  return {
+    name: 'inject-html-variables',
+    transformIndexHtml(html) {
+      let transformed = html
+      const debug = variables.DEBUG
+
+      if (debug) {
+        // If DEBUG is true, !DEBUG is false, so we strip the block
+        transformed = transformed.replace(
+          /<%\s*if\s*\(!DEBUG\)\s*{\s*%>[\s\S]*?<%\s*}\s*%>/g,
+          '',
+        )
+      } else {
+        // If DEBUG is false, !DEBUG is true, so we keep the block but remove the EJS tags
+        transformed = transformed.replace(/<%\s*if\s*\(!DEBUG\)\s*{\s*%>/g, '')
+        transformed = transformed.replace(/<%\s*}\s*%>/g, '')
+      }
+
+      return transformed
+    },
+  }
+}
+
 export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const appsConfigPath = path.resolve(
     __dirname,
@@ -78,6 +106,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     serveAppsConfigInDev(appsConfigPath),
+    injectHtmlVariables({ DEBUG: config.debug }),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old

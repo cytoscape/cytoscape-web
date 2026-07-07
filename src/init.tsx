@@ -32,7 +32,7 @@ const AUTH_INIT_TIMEOUT_MS = 4000
 const LOCAL_DEV_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
 const initializeApp = () => {
-  const { urlBaseName } = appConfig
+  const { urlBaseName, debug } = appConfig
   const rootElement: HTMLElement | null = document.getElementById('root')
   if (rootElement == null) {
     logStartup.error(
@@ -40,6 +40,12 @@ const initializeApp = () => {
       'Root element not found',
     )
     throw new Error('Root element not found')
+  }
+
+  if (debug) {
+    removeMessage(INITIAL_LOADING_SCREEN_ID)
+    rootElement.style.opacity = '1'
+    rootElement.style.visibility = 'visible'
   }
 
   // Update version text from package.json

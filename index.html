@@ -206,6 +206,7 @@
   </head>
   <body>
     <!-- Loading screen displayed before React app loads -->
+    <% if (!DEBUG) { %>
     <div id="initial-loading-screen" class="loading-screen">
       <div class="loading-content">
         <div class="loading-logo">
@@ -244,6 +245,7 @@
       </div>
       <div class="loading-footer">Initial loading may take some time</div>
     </div>
+    <% } %>
 
     <div id="root" class="app-ready"></div>
 
