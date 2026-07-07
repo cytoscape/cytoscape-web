@@ -219,6 +219,7 @@ module.exports = {
       favicon: './src/assets/favicon.ico',
       templateParameters: {
         VERSION: packageJson.version,
+        DEBUG: config.debug,
       },
     }),
     new CleanWebpackPlugin(),
