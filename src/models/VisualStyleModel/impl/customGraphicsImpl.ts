@@ -234,6 +234,12 @@ export const computePieChartProperties = (
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
   const pieValues = value.properties as PieChartPropertiesType
+
+  // Skip rendering when there are no data columns to drive the chart
+  if (!pieValues.cy_dataColumns || pieValues.cy_dataColumns.length === 0) {
+    return piePairsToAdd
+  }
+
   const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
     const attributeValue = row[attribute] as number
     const value = attributeValue ?? 0
@@ -291,6 +297,12 @@ export const computeRingChartProperties = (
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
   const pieValues = value.properties as RingChartPropertiesType
+
+  // Skip rendering when there are no data columns to drive the chart
+  if (!pieValues.cy_dataColumns || pieValues.cy_dataColumns.length === 0) {
+    return piePairsToAdd
+  }
+
   const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
     const attributeValue = row[attribute] as number
     const value = attributeValue ?? 0
