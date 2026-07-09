@@ -3,6 +3,7 @@ import { AppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
+import { AppSource } from '../../AppModel/InstalledApp'
 import { ManifestSource } from '../../AppModel/ManifestSource'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
@@ -44,23 +45,25 @@ export interface AppState {
   serviceApps: Record<string, ServiceApp>
   currentTask?: ServiceAppTask
   catalog: Record<string, AppCatalogEntry>
+  catalogSources: Record<string, AppSource>
   loadStates: Record<string, AppLoadState>
   manifestSource?: ManifestSource
 }
 
 /**
- * Restore apps from database
+ * Seed the session apps map with the given records and restore service apps.
+ *
+ * Apps are seeded from `workspace.installedApps` (the durable status source,
+ * §8.4), not the deprecated global `apps` IndexedDB store.
  */
 export const restore = (
   state: AppState,
-  apps: Array<{ id: string; cached: CyApp | undefined }>,
+  apps: CyApp[],
   serviceApps: ServiceApp[],
 ): AppState => {
   const newApps = { ...state.apps }
-  apps.forEach(({ id, cached }) => {
-    if (cached !== undefined) {
-      newApps[id] = cached
-    }
+  apps.forEach((app) => {
+    newApps[app.id] = app
   })
 
   const newServiceApps = { ...state.serviceApps }
@@ -303,19 +306,25 @@ export const updateInputColumn = (
 }
 
 /**
- * Replace the entire catalog with entries keyed by id
+ * Replace the entire catalog with entries keyed by id, along with each
+ * entry's provenance. When `sources` is omitted, every entry defaults to
+ * `'manifest'`.
  */
 export const setCatalog = (
   state: AppState,
   entries: AppCatalogEntry[],
+  sources?: Record<string, AppSource>,
 ): AppState => {
   const catalog: Record<string, AppCatalogEntry> = {}
+  const catalogSources: Record<string, AppSource> = {}
   for (const entry of entries) {
     catalog[entry.id] = entry
+    catalogSources[entry.id] = sources?.[entry.id] ?? 'manifest'
   }
   return {
     ...state,
     catalog,
+    catalogSources,
   }
 }
 

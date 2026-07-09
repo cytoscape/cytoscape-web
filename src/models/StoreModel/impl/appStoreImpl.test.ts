@@ -22,6 +22,7 @@ const createDefaultState = (): AppState => {
     serviceApps: {},
     currentTask: undefined,
     catalog: {},
+    catalogSources: {},
     loadStates: {},
     manifestSource: undefined,
   }
@@ -55,10 +56,7 @@ describe('AppStoreImpl', () => {
       const state = createDefaultState()
       const app1 = createTestApp('app-1')
       const app2 = createTestApp('app-2')
-      const apps = [
-        { id: 'app-1', cached: app1 },
-        { id: 'app-2', cached: app2 },
-      ]
+      const apps = [app1, app2]
       const serviceApps: ServiceApp[] = []
 
       const result = restore(state, apps, serviceApps)

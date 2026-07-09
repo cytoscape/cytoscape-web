@@ -6,6 +6,7 @@ import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppLoadState } from '../../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { AppSource } from '../../../models/AppModel/InstalledApp'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
@@ -19,10 +20,8 @@ import {
   getAllServiceAppsFromDb,
   getAppFromDb,
   putAppSettingToDb,
-  putAppToDb,
   putServiceAppToDb,
 } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 
 const sampleUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
 
@@ -54,17 +53,13 @@ export const useAppStore = create(
     serviceApps: {},
     currentTask: undefined,
     catalog: {},
+    catalogSources: {},
     loadStates: {},
     manifestSource: undefined,
 
-    restore: async (appIds: string[]) => {
-      const apps = await Promise.all(
-        appIds.map(async (id) => {
-          const cached = await getAppFromDb(id)
-          return { id, cached }
-        }),
-      )
-
+    restore: async (apps: CyApp[]) => {
+      // apps are seeded by the caller from workspace.installedApps (the durable
+      // status source, §8.4); only serviceApps are still restored from the DB.
       const serviceApps = await getAllServiceAppsFromDb()
 
       set((state) => {
@@ -78,24 +73,11 @@ export const useAppStore = create(
     add: async (app: CyApp) => {
       const { id } = app
       const cachedApp = await getAppFromDb(id)
+      // No persistence: the durable record is workspace.installedApps (§6.3).
+      // apps/CyApp are session-local; cachedApp resolves to undefined once the
+      // legacy table is migrated/empty.
       set((state) => {
         const newState = AppStoreImpl.add(state, app, cachedApp)
-        if (newState.apps[id] !== state.apps[id]) {
-          try {
-            const plainApp = toPlainObject(newState.apps[id])
-            putAppToDb(plainApp).catch((error) => {
-              logStore.error(
-                `[${useAppStore.name}]:[add] Failed to persist app ${id}:`,
-                error,
-              )
-            })
-          } catch (cloneError) {
-            logStore.error(
-              `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
-              cloneError,
-            )
-          }
-        }
         state.apps = newState.apps
         return state
       })
@@ -134,30 +116,11 @@ export const useAppStore = create(
     },
 
     setStatus: (id: string, status: AppStatus) => {
+      // Session-only: the durable status lives in workspace.installedApps and
+      // is reconciled by useAppManager (§8.4). No write to the global apps DB.
       set((state) => {
         const newState = AppStoreImpl.setStatus(state, id, status)
         state.apps = newState.apps
-        const appRecord = newState.apps[id]
-        if (appRecord !== undefined) {
-          const newAppState = { ...appRecord }
-          // Convert to plain object and handle errors to prevent infinite loops
-          try {
-            const plainApp = toPlainObject(newAppState)
-            putAppToDb(plainApp).catch((error) => {
-              logStore.error(
-                `[${useAppStore.name}]:[setStatus] Failed to persist app status for ${id}:`,
-                error,
-              )
-              // Don't throw - prevent error propagation that causes infinite loops
-            })
-          } catch (cloneError) {
-            logStore.error(
-              `[${useAppStore.name}]:[setStatus] Failed to clone app ${id} before saving:`,
-              cloneError,
-            )
-            // Don't throw - prevent error propagation
-          }
-        }
         return state
       })
     },
@@ -257,10 +220,14 @@ export const useAppStore = create(
       })
     },
 
-    setCatalog: (entries: AppCatalogEntry[]) => {
+    setCatalog: (
+      entries: AppCatalogEntry[],
+      sources?: Record<string, AppSource>,
+    ) => {
       set((state) => {
-        const newState = AppStoreImpl.setCatalog(state, entries)
+        const newState = AppStoreImpl.setCatalog(state, entries, sources)
         state.catalog = newState.catalog
+        state.catalogSources = newState.catalogSources
         return state
       })
     },

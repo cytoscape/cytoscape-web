@@ -7,11 +7,23 @@
 > apps. The App Store itself is an external service and is not implemented in
 > this repository.
 >
-> Cytoscape Web host behavior is intentionally unchanged. The App Store
+> The host's **catalog-consumption contract** is unchanged: the App Store
 > publishes a runtime manifest in the existing `AppCatalogEntry[]` shape, and
 > Cytoscape Web consumes it through the existing `obtainCatalogEntries()`
-> pipeline.
+> pipeline. The per-app **install flow** (Install button → `?installApp=`
+> intent) relies on host-side extensions specified separately in
+> [workspace-app-install-design.md](workspace-app-install-design.md).
 
+- Rev. 4 (6/11/2026): Keiichiro ONO and Claude (Fable 5) - Align with
+  workspace-app-install-design.md Rev. 3: rescope the "host unchanged"
+  premise to the catalog contract, require CORS on manifest endpoints
+  (§15.2), validate semver ranges in automated checks (§11.1), document
+  version-update semantics by install source (§12.1), add the Install deep
+  link to the detail page (§13) and the install path to the architecture
+  diagram (§6)
+- Rev. 3 (6/9/2026): Keiichiro ONO and Claude (Fable 5) - Add per-app
+  single-entry install manifest endpoints (§9.1) consumed by the host's
+  install intent and App Manager Install from URL
 - Rev. 2 (5/21/2026): Keiichiro ONO and Codex - Recast as a Desktop App Store
   platform extension with Store-owned GitHub Actions builds
 - Rev. 1 (3/20/2026): Keiichiro ONO and Claude - Initial brainstorming
@@ -29,9 +41,11 @@
 - **Managed CDN publishing.** Reviewed web bundles are served from
   `https://apps.cytoscape.org/web/{appId}/{version}/` so the code that was
   reviewed is the code users load.
-- **Host contract stays stable.** Cytoscape Web reads `GET /web/manifest`,
+- **Catalog contract stays stable.** Cytoscape Web reads `GET /web/manifest`,
   receives `AppCatalogEntry[]`, and loads selected apps dynamically via Module
-  Federation. No App Store-specific host code is required.
+  Federation. The per-app **Install** flow additionally uses the host's
+  `?installApp=` install intent, specified in
+  [workspace-app-install-design.md](workspace-app-install-design.md).
 - **Human review is mandatory.** Automated checks reduce reviewer burden, but
   every initial submission and update needs explicit core-team approval before
   CDN publication.
@@ -85,8 +99,11 @@ JavaScript Module Federation remotes served from a controlled CDN.
 ## 3. Non-Goals
 
 - No backend implementation in this repository
-- No change to Cytoscape Web's App API, app manager, or Module Federation
-  loader contract
+- No change to Cytoscape Web's App API or Module Federation loader contract
+  (host-side install support — the `?installApp=` intent, App Manager
+  install/uninstall UI, and workspace persistence — is specified separately
+  in [workspace-app-install-design.md](workspace-app-install-design.md), not
+  in this document)
 - No replacement of Desktop App Store JAR submission or download behavior
 - No private or organization-scoped Web apps in the first design
 - No automatic publication from developer-owned release assets
@@ -102,7 +119,7 @@ under a shared catalog identity.
 | --- | --- | --- |
 | Runtime | Cytoscape Desktop JVM | Cytoscape Web browser host |
 | Artifact | JAR file | `remoteEntry.js` plus chunks/assets |
-| Install/load | Download/install locally | User enables app; host loads remote URL |
+| Install/load | Download/install locally | User installs (persisted in workspace) and enables; host loads remote URL |
 | Hosting | App Store hosts downloadable JARs | App Store CDN hosts immutable bundle dirs |
 | Compatibility | Cytoscape Desktop versions | Cytoscape Web/App API versions |
 | Store metric | Download count | Activation/load count |
@@ -132,6 +149,14 @@ Published URLs are versioned and immutable:
 https://apps.cytoscape.org/web/{appId}/{version}/remoteEntry.js
 https://apps.cytoscape.org/web/{appId}/{version}/chunks/*.js
 https://apps.cytoscape.org/web/{appId}/{version}/assets/*
+https://apps.cytoscape.org/web/{appId}/{version}/manifest.json
+```
+
+One additional unversioned path exists per app — a mutable pointer that always
+describes the latest published version (see §9.1):
+
+```text
+https://apps.cytoscape.org/web/{appId}/manifest.json
 ```
 
 Reusing an already published `{appId, version}` is rejected. Updates require a
@@ -148,6 +173,8 @@ flowchart TD
     Review["Human review"]
     CDN["App Store CDN<br/>/web/{appId}/{version}/"]
     Manifest["GET /web/manifest<br/>AppCatalogEntry[]"]
+    AppManifest["GET /web/{appId}/manifest.json<br/>per-app install manifest"]
+    Detail["App detail page<br/>Install button"]
     Host["Cytoscape Web host"]
 
     DevRepo --> Submission
@@ -156,7 +183,10 @@ flowchart TD
     Checks --> Review
     Review -->|approved| CDN
     CDN --> Manifest
+    CDN --> AppManifest
     Manifest --> Host
+    Detail -->|open /?installApp=manifestUrl| Host
+    Host -->|install intent fetches| AppManifest
     Host -->|user enables app| CDN
 ```
 
@@ -360,6 +390,39 @@ above are returned to Cytoscape Web. Internal metadata such as commit SHA,
 review state, build logs, checksums, scanner results, and reviewer notes stays
 inside the App Store.
 
+### 9.1 Per-app install manifest
+
+The host-side install intent (`?installApp=<manifestUrl>`) and the App
+Manager's manual **Install from URL** action (see
+[workspace-app-install-design.md](./workspace-app-install-design.md) §7.2 and
+§12.8) consume a **single-entry manifest** describing one app. For every app
+with at least one published Web version, the Store publishes:
+
+```http
+GET https://apps.cytoscape.org/web/{appId}/manifest.json
+```
+
+a **one-element** `AppCatalogEntry[]` array (same schema as `/web/manifest`)
+describing the latest published version. An immutable per-version variant is
+published alongside each release:
+
+```http
+GET https://apps.cytoscape.org/web/{appId}/{version}/manifest.json
+```
+
+The App Store **Install** button links to Cytoscape Web with the
+**unversioned pointer** as the install intent —
+
+```text
+https://web.cytoscape.org/?installApp=<url-encoded /web/{appId}/manifest.json>
+```
+
+— so the user installs whatever version is latest at click time. What the
+host pins is the immutable, versioned `entry.url` (the `remoteEntry.js` URL)
+carried *inside* the manifest, not the manifest URL itself. Returning an
+array rather than a bare object lets the host reuse `parseManifest()`
+unchanged.
+
 ## 10. Internal Store Schema Boundary
 
 The App Store should use a Desktop/Web superset internally. A conceptual record
@@ -418,6 +481,10 @@ Automated review should include:
 - `./AppConfig` load test
 - `CyApp.id`, manifest `id`, and Module Federation scope match
 - React, ReactDOM, and MUI shared dependency compatibility
+- `compatibleHostVersions` is a valid semver range — the host treats an
+  unparsable range as compatible-with-warning
+  (workspace-app-install-design.md §9 rule 3), so Store-side validation is
+  the only hard gate
 - `@cytoscape-web/api-types` availability and version report
 - Public App API usage scan
 - Deprecated raw store expose usage scan
@@ -468,6 +535,22 @@ stateDiagram-v2
 Published versions remain immutable. Rejection or build failure never updates
 `/web/manifest`.
 
+### 12.1 How updates reach users
+
+Publishing a new version updates `/web/manifest` and the per-app manifest,
+but what existing users receive depends on how they obtained the app
+(catalog precedence, see workspace-app-install-design.md §8.1):
+
+| How the user got the app | Installed source | On new version publication |
+| --- | --- | --- |
+| **Install** button / Install from URL | `appstore` | Stays **pinned** to the installed immutable version; does not auto-update |
+| Enabled from the host catalog (`/web/manifest` as manifest source) | `manifest` | Follows the manifest; the next session or catalog refresh uses the new version |
+
+Store operators should not assume publication reaches all existing users.
+An explicit update notification/upgrade flow for pinned installs is future
+work on the host side (workspace-app-install-design.md §14 resolved-O1
+note).
+
 ## 13. App Detail Page
 
 The shared public catalog can display platform-specific sections.
@@ -476,6 +559,7 @@ The shared public catalog can display platform-specific sections.
 | --- | --- |
 | Name, icon, description | Store record, `app-store.json`, `package.json` |
 | Platform badges | Store record (`desktop`, `web`) |
+| **Install** button (Web) | Deep link to `https://web.cytoscape.org/?installApp=<url-encoded per-app manifest URL>` (§9.1) |
 | Web version history | Store Web release records |
 | Desktop version history | Existing Desktop release records |
 | License | `LICENSE`, `package.json`, reviewer-approved metadata |
@@ -523,7 +607,11 @@ policy should be explicit and reviewer-driven.
 ### 15.2 Bundle Integrity
 
 - Published CDN directories are immutable
-- CORS headers allow Cytoscape Web origins to fetch remote bundles
+- CORS headers must allow Cytoscape Web origins to `fetch()` the **manifest
+  endpoints** (`/web/manifest` and the per-app `manifest.json`, §9.1) — the
+  install intent and the App Manager's Install from URL depend on these
+  cross-origin reads. `remoteEntry.js` and its chunks are loaded via
+  script-tag injection and do not require CORS
 - Artifact checksums are retained in Store records
 - Subresource Integrity hashes may be exposed in a future host manifest
   extension, but they are not part of the current `AppCatalogEntry` contract
@@ -560,11 +648,16 @@ the first documentation update.
 - Desktop app entries and JAR download behavior remain unaffected
 - Cytoscape Web can load the generated manifest with the current
   `parseManifest()` and `obtainCatalogEntries()` behavior
+- Every published app exposes `/web/{appId}/manifest.json` (latest) and
+  `/web/{appId}/{version}/manifest.json` (immutable), each a one-element
+  `AppCatalogEntry[]` consumable by `parseManifest()` (§9.1)
 
 ## 17. Open Questions
 
 1. **Activation tracking** - Should Web activation counts come from an explicit
    Cytoscape Web telemetry API, CDN logs, or manifest fetch/load events?
+   Note: with the install intent, **Install button clicks are a first-party
+   Store event**, so an install count is available without any host telemetry
 2. **CDN provider** - Which storage/CDN backend should host immutable Web
    bundles?
 3. **SRI and signing** - Should future `AppCatalogEntry` extensions include
