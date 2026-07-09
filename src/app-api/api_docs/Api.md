@@ -625,10 +625,12 @@ Sets a per-element override. `elementIds` must be non-empty.
 
 Removes per-element overrides.
 
-#### `createDiscreteMapping(networkId, vpName, attribute, attributeType): ApiResult`
+#### `createDiscreteMapping(networkId, vpName, attribute, attributeType, mapping?): ApiResult`
 
 Creates a discrete (lookup-table) mapping for `vpName` based on the specified
-node/edge attribute.
+node/edge attribute. `mapping` is an optional `Record<string, VisualPropertyValueType>`
+of attribute-value keys (stringified; parsed back to `integer`/`long`/`double` per
+`attributeType`) to visual property values.
 
 #### `createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType): ApiResult`
 
