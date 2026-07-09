@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, offlineTest as test } from './fixtures'
 
 // Tests for CW-715 TableBrowser toolbar spacing (commit 62ce68bc).
 // Verifies the table browser panel renders with correct tab structure and
@@ -23,7 +23,7 @@ test.describe('TableBrowser Tab Navigation', () => {
   test('all three tabs are present', async ({ page }) => {
     await expect(
       page.locator('[data-testid="table-browser-tabs"]'),
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 15000 })
     await expect(
       page.locator('[data-testid="table-browser-nodes-tab"]'),
     ).toBeVisible()

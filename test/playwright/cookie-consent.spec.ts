@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, offlineTest as test } from './fixtures'
 
 test.describe('Cookie Consent', () => {
   test.beforeEach(async ({ context, page, browserName }) => {

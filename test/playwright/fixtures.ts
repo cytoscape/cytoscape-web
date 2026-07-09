@@ -40,11 +40,9 @@ export async function installOfflineAppRoutes(page: Page): Promise<void> {
       u.searchParams.get('redirect_uri') ?? appPath('silent-check-sso.html')
     const state = u.searchParams.get('state') ?? ''
     return route.fulfill({
-      status: 302,
-      headers: {
-        location: `${redirectUri}#error=login_required&state=${state}`,
-      },
-      body: '',
+      status: 200,
+      contentType: 'text/html',
+      body: `<html><head><meta http-equiv="refresh" content="0;url=${redirectUri}#error=login_required&state=${state}"></head><body></body></html>`,
     })
   })
 
@@ -53,7 +51,7 @@ export async function installOfflineAppRoutes(page: Page): Promise<void> {
     route.fulfill({
       status: 200,
       contentType: 'text/html',
-      body: '<html><body><script>parent.postMessage("unsupported","*")</script></body></html>',
+      body: '<html><body><script>parent.postMessage("supported","*")</script></body></html>',
     }),
   )
 

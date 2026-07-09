@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, offlineTest as test } from './fixtures'
 
 // Tests for CW-715: darker toolbar visual identity (commit afdee4e5)
 // Verifies the toolbar renders correctly and menus open/close via real clicks.

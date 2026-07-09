@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, offlineTest as test } from './fixtures'
 
 test.describe('App Shell', () => {
   test('app loads and main shell is visible', async ({ page }) => {

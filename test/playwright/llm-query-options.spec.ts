@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, offlineTest as test } from './fixtures'
 
 // Tests for the LLMQueryOptionsDialog extracted in commit 12f0f3a4.
 // Verifies dialog opens from Analysis menu with all fields present,
