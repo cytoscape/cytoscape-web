@@ -434,6 +434,31 @@ describe('CustomGraphicsImpl', () => {
   })
 
   describe('computePieChartProperties', () => {
+    it('should return empty array when cy_dataColumns is missing or empty', () => {
+      const id = '1'
+      const value: CustomGraphicsType = {
+        type: 'chart',
+        name: CustomGraphicsNameType.PieChart,
+        properties: {
+          cy_dataColumns: [],
+        } as unknown as PieChartPropertiesType,
+      }
+      const row = {}
+      const widthVp = { defaultValue: 100 } as any
+      const heightVp = { defaultValue: 100 } as any
+      const mappers = new Map()
+
+      const resultEmpty = computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
+      expect(resultEmpty).toEqual([])
+
+      const valueUndefined = {
+        ...value,
+        properties: {} as unknown as PieChartPropertiesType,
+      }
+      const resultUndefined = computePieChartProperties(id, valueUndefined, row, widthVp, heightVp, mappers)
+      expect(resultUndefined).toEqual([])
+    })
+
     it('should compute pie chart properties from data', () => {
       const id = '1'
       const value: CustomGraphicsType = {
@@ -655,6 +680,31 @@ describe('CustomGraphicsImpl', () => {
   })
 
   describe('computeRingChartProperties', () => {
+    it('should return empty array when cy_dataColumns is missing or empty', () => {
+      const id = '1'
+      const value: CustomGraphicsType = {
+        type: 'chart',
+        name: CustomGraphicsNameType.RingChart,
+        properties: {
+          cy_dataColumns: [],
+        } as unknown as RingChartPropertiesType,
+      }
+      const row = {}
+      const widthVp = { defaultValue: 100 } as any
+      const heightVp = { defaultValue: 100 } as any
+      const mappers = new Map()
+
+      const resultEmpty = computeRingChartProperties(id, value, row, widthVp, heightVp, mappers)
+      expect(resultEmpty).toEqual([])
+
+      const valueUndefined = {
+        ...value,
+        properties: {} as unknown as RingChartPropertiesType,
+      }
+      const resultUndefined = computeRingChartProperties(id, valueUndefined, row, widthVp, heightVp, mappers)
+      expect(resultUndefined).toEqual([])
+    })
+
     it('should compute ring chart properties from data', () => {
       const id = '1'
       const value: CustomGraphicsType = {

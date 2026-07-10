@@ -80,11 +80,11 @@ export interface TableColumn {
 }
 
 // Used for calculating proper height for the Data Grid
-const TOOLBAR_HEIGHT = 36
 const TABS_HEIGHT = 32
+const TOOLBAR_HEIGHT = 36
 
 // Adjust Data Grid size
-const GRID_GAP = TOOLBAR_HEIGHT * 2 - 1
+const GRID_GAP = TABS_HEIGHT + TOOLBAR_HEIGHT + 15
 
 const ButtonTooltip = ({ title, children }: { title: string; children: React.ReactElement }) => (
   <Tooltip
@@ -161,16 +161,16 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
   const { children, value, index, ...other } = props
 
   return (
-    <div
+    <Box
       role="tabpanel"
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
-      style={{ flexGrow: 1 }}
+      sx={{ flexGrow: 1 }}
       {...other}
     >
-      {value === index && <Box>{children}</Box>}
-    </div>
+      {value === index && <>{children}</>}
+    </Box>
   )
 }
 
@@ -1723,7 +1723,6 @@ export default function TableBrowser(props: {
         padding: 0,
         overflow: 'clip',
         backgroundColor: (theme) => theme.palette.background.paper,
-
       }}
     >
       <Box
