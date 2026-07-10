@@ -9,13 +9,14 @@ import { Workspace } from '../Workspace'
 export const DEF_WORKSPACE_NAME = 'Untitled Workspace'
 
 export const createWorkspace = (): Workspace => {
+  const now = new Date()
   return {
     id: uuidv4(),
     name: DEF_WORKSPACE_NAME,
     networkIds: [],
     networkModified: {},
-    creationTime: new Date(),
-    localModificationTime: new Date(),
+    creationTime: now,
+    localModificationTime: now,
     currentNetworkId: '',
     isRemote: false,
   }

@@ -743,7 +743,7 @@ describe('useWorkspaceStore', () => {
       })
 
       it('should warn and not throw for an unknown id', () => {
-        const warnSpy = jest
+        const warnSpy = vi
           .spyOn(logStore, 'warn')
           .mockImplementation(() => {})
         const { result } = renderHook(() => useWorkspaceStore())

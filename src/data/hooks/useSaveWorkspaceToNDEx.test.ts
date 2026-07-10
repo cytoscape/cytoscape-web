@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { InstalledApp } from '../../models/AppModel/InstalledApp'
 import { deriveAppOptions } from './useSaveWorkspaceToNDEx'

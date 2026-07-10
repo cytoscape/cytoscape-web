@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
