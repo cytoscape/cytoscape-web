@@ -1,14 +1,12 @@
 import { Box, Button, Switch } from '@mui/material'
 import React from 'react'
 
-import { CancelConfirmButtonGroup } from './CancelConfirmButtonGroup'
-
 export function BooleanSwitch(props: {
   currentValue: boolean | null
   onValueChange: (value: boolean) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const [localValue, setLocalValue] = React.useState(currentValue ?? false)
 
   React.useEffect(() => {

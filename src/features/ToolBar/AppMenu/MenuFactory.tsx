@@ -16,11 +16,11 @@ import { MenuItem as NestedMenuItem } from 'primereact/menuitem'
 import { useState } from 'react'
 import React from 'react'
 
-import { logApp } from '../../../debug'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logApp } from '../../../debug'
 import {
   inputColumnFilterFn,
   validateParameter,
@@ -616,7 +616,8 @@ const path2menu = (
       // and follow that path
       const intermediateItem = existingDupMenuItems.filter(
         (item) =>
-          !item.hasOwnProperty('template') || item.template === undefined,
+          !Object.prototype.hasOwnProperty.call(item, 'template') ||
+          item.template === undefined,
       ) as NestedMenuItem[]
 
       if (intermediateItem.length > 0) {

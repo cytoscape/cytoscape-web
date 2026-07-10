@@ -6,15 +6,16 @@
  */
 
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
 } from '@mui/material'
 import React from 'react'
+
 import { useCrashDataConsent } from '../../data/hooks/useCrashDataConsent'
 
 interface CrashDataConsentDialogProps {

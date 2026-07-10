@@ -8,7 +8,7 @@ export function FontPicker(props: {
   onValueChange: (font: FontType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedFontTypes = Object.values(FontType).sort()
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? FontType.SansSerif,

@@ -4,17 +4,17 @@ import { useContext, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { AppConfigContext } from '../../AppConfigContext'
-import { logUi } from '../../debug'
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
-import { isSubnetwork } from '../HierarchyViewer/utils/hierarchyUtil'
+import { logUi } from '../../debug'
 import { IdType } from '../../models'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
+import { isSubnetwork } from '../HierarchyViewer/utils/hierarchyUtil'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300

@@ -195,7 +195,7 @@ const computeCustomGraphicSizeProperties = (
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
 ) => {
-  const { defaultValue, mapping, bypassMap, name, group } = vp
+  const { defaultValue, mapping, bypassMap } = vp
   const bypass = bypassMap.get(id)
   if (bypass !== undefined) {
     return bypass as number
@@ -364,12 +364,7 @@ export const computeImageProperties = (
   customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
-  const size = computeCustomGraphicSizeProperties(
-    id,
-    customGraphicsSizeVp,
-    mappers,
-    row,
-  )
+  computeCustomGraphicSizeProperties(id, customGraphicsSizeVp, mappers, row)
 }
 
 export const computeCustomGraphicsProperties = (

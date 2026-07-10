@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import {
@@ -11,6 +13,7 @@ import { Ui } from '../Ui'
 import {
   deserializeColumnUIKey,
   enablePopup,
+  serializeColumnUIKey,
   setActiveNetworkBrowserPanelIndex,
   setActiveNetworkView,
   setActiveTableBrowserIndex,
@@ -25,7 +28,6 @@ import {
   setTableDisplayConfiguration,
   setTableState,
   setVisualStyleOptions,
-  serializeColumnUIKey,
 } from './uiImpl'
 
 // to run these: npx jest src/models/UiModel/impl/uiImpl.test.ts
@@ -547,6 +549,9 @@ describe('UiImpl', () => {
           },
         },
       })
+
+      // The chained operations produce a new ui object
+      expect(ui).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.activeNetworkView).toBe(originalActiveNetworkView)

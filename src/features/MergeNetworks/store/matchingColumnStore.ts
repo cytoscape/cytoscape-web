@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
 
 import { IdType } from '../../../models/IdType';
 import { Column } from '../../../models/TableModel';

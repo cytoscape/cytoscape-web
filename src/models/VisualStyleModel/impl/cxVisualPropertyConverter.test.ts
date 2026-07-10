@@ -1,12 +1,12 @@
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../TableModel'
 import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
-import { VisualPropertyName } from '../VisualPropertyName'
 import { EdgeArrowShapeType } from '../VisualPropertyValue'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-import { VisualStyle } from '../VisualStyle'
 import {
   convertContinuousMappingToCX,
   convertDiscreteMappingToCX,
@@ -20,7 +20,6 @@ import {
   VPEdgeArrowShapeTypeConverter,
   VPFontTypeConverter,
   VPNodeLabelPositionConverter,
-  VPNodeShapeTypeConverter,
   VPNumberConverter,
   VPStringConverter,
   vpToCX,

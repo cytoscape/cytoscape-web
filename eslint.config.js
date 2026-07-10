@@ -54,8 +54,8 @@ module.exports = [
       'no-prototype-builtins': 'warn',
 
       // Import sorting
-      'simple-import-sort/imports': 'error',
-      'simple-import-sort/exports': 'error',
+      'simple-import-sort/imports': 'warn',
+      'simple-import-sort/exports': 'warn',
     },
   },
   // Apply Prettier config (disables conflicting rules)

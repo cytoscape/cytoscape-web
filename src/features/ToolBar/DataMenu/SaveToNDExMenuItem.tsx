@@ -79,9 +79,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
       (state) => state.workspace.networkModified[currentNetworkId],
     ) ?? false
 
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
 
   const setNetworkModified = useWorkspaceStore(
     (state) => state.setNetworkModified,

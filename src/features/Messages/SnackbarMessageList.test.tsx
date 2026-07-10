@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import React from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../models/MessageModel'
@@ -7,7 +8,7 @@ import { SnackbarMessageList } from './SnackbarMessageList'
 
 describe('SnackbarMessageList persistent messages', () => {
   beforeEach(() => {
-    jest.useFakeTimers()
+    vi.useFakeTimers()
     act(() => {
       useMessageStore.setState((state) => {
         state.messages = []
@@ -22,7 +23,7 @@ describe('SnackbarMessageList persistent messages', () => {
         state.messages = []
       })
     })
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   it('stays visible until the user clicks to dismiss when marked persistent', async () => {
@@ -30,7 +31,7 @@ describe('SnackbarMessageList persistent messages', () => {
 
     // Wait for initial render and effects to complete
     await act(async () => {
-      jest.advanceTimersByTime(0)
+      vi.advanceTimersByTime(0)
       // Flush any pending updates
       await Promise.resolve()
     })
@@ -42,29 +43,25 @@ describe('SnackbarMessageList persistent messages', () => {
         persistent: true,
       })
       // Advance timers to allow useEffect to run
-      jest.advanceTimersByTime(0)
+      vi.advanceTimersByTime(0)
       await Promise.resolve()
     })
 
-    await waitFor(() => {
-      expect(screen.getByText('Persistent message')).toBeInTheDocument()
-    })
+    expect(screen.getByText('Persistent message')).toBeTruthy()
 
     act(() => {
-      jest.advanceTimersByTime(10000)
+      vi.advanceTimersByTime(10000)
     })
 
-    expect(screen.getByText('Persistent message')).toBeInTheDocument()
+    expect(screen.getByText('Persistent message')).toBeTruthy()
 
     await act(async () => {
       fireEvent.click(screen.getByRole('alert'))
-      jest.advanceTimersByTime(0)
+      vi.advanceTimersByTime(1000)
       await Promise.resolve()
     })
 
-    await waitFor(() => {
-      expect(screen.queryByText('Persistent message')).not.toBeInTheDocument()
-    })
+    expect(screen.queryByText('Persistent message')).toBeNull()
 
     // Unmount before cleanup to avoid act warnings
     unmount()

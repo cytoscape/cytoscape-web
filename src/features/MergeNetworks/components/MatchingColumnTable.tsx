@@ -100,3 +100,5 @@ export const MatchingColumnTable = React.memo(
     )
   },
 )
+
+MatchingColumnTable.displayName = 'MatchingColumnTable'

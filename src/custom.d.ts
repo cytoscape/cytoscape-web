@@ -5,7 +5,7 @@ declare module '*.woff'
 declare module '*.ttf'
 
 declare module '*.svg' {
-  import React = require('react')
+  import type React from 'react'
 
   export const ReactComponent: React.FC<React.SVGProps<SVGSVGElement>>
   const src: string
@@ -16,6 +16,63 @@ declare module '*.json' {
   const value: any
   export default value
 }
+
+declare module 'allotment' {
+  import type React from 'react'
+
+  export interface CommonProps {
+    className?: string
+    maxSize?: number
+    minSize?: number
+    snap?: boolean
+  }
+
+  export enum LayoutPriority {
+    Normal = 'NORMAL',
+    Low = 'LOW',
+    High = 'HIGH',
+  }
+
+  export type PaneProps = {
+    children: React.ReactNode
+    preferredSize?: number | string
+    priority?: LayoutPriority
+    visible?: boolean
+  } & CommonProps
+
+  export const Pane: React.ForwardRefExoticComponent<
+    PaneProps & React.RefAttributes<HTMLDivElement>
+  >
+
+  export type AllotmentHandle = {
+    reset: () => void
+    resize: (sizes: number[]) => void
+  }
+
+  export type AllotmentProps = {
+    children: React.ReactNode
+    defaultSizes?: number[]
+    proportionalLayout?: boolean
+    separator?: boolean
+    sizes?: number[]
+    vertical?: boolean
+    onChange?: (sizes: number[]) => void
+    onReset?: () => void
+    onVisibleChange?: (index: number, visible: boolean) => void
+  } & CommonProps
+
+  export function setSashSize(sashSize: number): void
+
+  declare const Allotment: React.ForwardRefExoticComponent<
+    AllotmentProps & React.RefAttributes<AllotmentHandle>
+  > & { Pane: typeof Pane }
+
+  export { Allotment }
+  export default Allotment
+}
+
+// Constants injected by Vite (see vite.config.ts)
+declare const REACT_APP_VERSION: string
 
 // global variables for debugging
 interface Window {

@@ -1,25 +1,23 @@
-import * as React from 'react'
+import PaletteIcon from '@mui/icons-material/Palette'
 import {
   Box,
-  Typography,
   Button,
-  Popover,
-  Grid,
   Card,
   CardContent,
-  Tooltip,
-  IconButton,
-  Divider,
-  Tabs,
+  Popover,
   Tab,
+  Tabs,
+  Tooltip,
+  Typography,
 } from '@mui/material'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import * as React from 'react'
+
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
 import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { StepGuidance } from '../WizardSteps/StepGuidance'
+import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { COLORS } from '../utils/constants'
-import PaletteIcon from '@mui/icons-material/Palette'
+import { StepGuidance } from '../WizardSteps/StepGuidance'
 
 interface PaletteFormProps {
   colorScheme: string
@@ -131,7 +129,7 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
           },
         }}
       >
-        {tabNames.map((tabName, index) => (
+        {tabNames.map((tabName) => (
           <Tab key={tabName} label={tabName} />
         ))}
       </Tabs>

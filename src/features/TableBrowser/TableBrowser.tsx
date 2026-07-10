@@ -35,11 +35,7 @@ import { useWindowSize } from '../../data/hooks/useWindowSize'
 import { IdType } from '../../models/IdType'
 import { CellEdit } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import {
-  Table,
-  ValueType,
-  ValueTypeName,
-} from '../../models/TableModel'
+import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
 import {
   deserializeValue,
   deserializeValueList,
@@ -293,10 +289,10 @@ export default function TableBrowser(props: {
     state.getViewModel(networkId),
   )
   const selectedNodes = useViewModelStore(
-    (state) => viewModel?.selectedNodes ?? [],
+    () => viewModel?.selectedNodes ?? [],
   )
   const selectedEdges = useViewModelStore(
-    (state) => viewModel?.selectedEdges ?? [],
+    () => viewModel?.selectedEdges ?? [],
   )
 
   const tableDisplayConfiguration = useUiStateStore(
@@ -323,7 +319,6 @@ export default function TableBrowser(props: {
   )
   const moveColumn = useTableStore((state) => state.moveColumn)
 
-  const workspace = useWorkspaceStore((state) => state.workspace)
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
@@ -810,12 +805,7 @@ export default function TableBrowser(props: {
   )
 
   const onColumnResize = React.useCallback(
-    (
-      column: GridColumn,
-      newSize: number,
-      colIndex: number,
-      newSizeWithGrow: number,
-    ): void => {
+    (column: GridColumn, newSize: number, colIndex: number): void => {
       if (column?.id !== undefined) {
         // Don't allow resizing virtual columns
         const columnData = allColumns[colIndex]

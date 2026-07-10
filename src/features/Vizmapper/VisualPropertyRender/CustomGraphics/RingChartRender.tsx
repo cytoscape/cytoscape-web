@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { RingChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   calculateChartDimensions,
@@ -37,17 +38,6 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
     : containerHeight
 
   const { cy_startAngle, cy_colors, cy_dataColumns, cy_holeSize } = properties
-
-  // If no data columns, show empty state
-  if (!cy_dataColumns.length) {
-    return (
-      <EmptyChartState
-        size={chartSize}
-        containerWidth={containerWidth}
-        containerHeight={adjustedContainerHeight}
-      />
-    )
-  }
 
   // Calculate slice angles (equal distribution for preview)
   const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
@@ -110,6 +100,17 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
     },
     [cytoscapeStartAngle, sliceAngle, outerRadius, innerRadius, useStroke],
   )
+
+  // If no data columns, show empty state
+  if (!cy_dataColumns.length) {
+    return (
+      <EmptyChartState
+        size={chartSize}
+        containerWidth={containerWidth}
+        containerHeight={adjustedContainerHeight}
+      />
+    )
+  }
 
   return (
     <Box

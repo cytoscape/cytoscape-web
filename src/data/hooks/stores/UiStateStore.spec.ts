@@ -1,9 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
+import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
-import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import {
   TableDisplayConfiguration,
   VisualStyleOptions,
@@ -16,10 +17,29 @@ import {
 } from './UiStateStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putUiStateToDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 describe('useUiStateStore', () => {
   beforeEach(() => {

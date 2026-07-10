@@ -4,11 +4,11 @@
  * Module for sending error reports with database snapshots to the error reporting endpoint.
  */
 
+import packageJson from '../../../../package.json'
 import appConfig from '../../../assets/config.json'
 import { logDb } from '../../../debug'
+import { getDatabaseVersion, getDb, ObjectStoreNames } from '../../db'
 import type { DatabaseSnapshot } from '../../db/snapshot'
-import { getDb, getDatabaseVersion, ObjectStoreNames } from '../../db'
-import packageJson from '../../../../package.json'
 
 /**
  * Envelope expected by https://dev1.ndexbio.org/report

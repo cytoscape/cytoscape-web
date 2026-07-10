@@ -1,7 +1,7 @@
 export * from './AppModel'
 export * from './CyNetworkModel'
 export * from './FilterModel'
-export { IdType } from './IdType'
+export type { IdType } from './IdType'
 export * from './LayoutModel'
 export * from './MessageModel'
 export * from './NetworkModel'

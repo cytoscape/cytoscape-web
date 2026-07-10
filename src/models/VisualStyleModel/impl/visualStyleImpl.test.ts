@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType, ValueTypeName } from '../../TableModel'
 import {
@@ -6,8 +8,6 @@ import {
   DiscreteMappingFunction,
   MappingFunctionType,
   PassthroughMappingFunction,
-  VisualPropertyName,
-  VisualStyle,
 } from '..'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { createVisualStyle } from './visualStyleFnImpl'
@@ -635,15 +635,15 @@ describe('VisualStyleImpl', () => {
       const originalBypassMap = original.nodeShape.bypassMap
 
       // Perform various operations
-      let visualStyle = setDefault(original, 'nodeShape', 'ellipse')
-      visualStyle = setBypass(visualStyle, 'nodeBackgroundColor', ['node-1'], '#FF0000')
-      visualStyle = createDiscreteMapping(
-        visualStyle,
+      let result = setDefault(original, 'nodeShape', 'ellipse')
+      result = setBypass(result, 'nodeBackgroundColor', ['node-1'], '#FF0000')
+      result = createDiscreteMapping(
+        result,
         'nodeShape',
         'type',
         ValueTypeName.String,
       )
-      visualStyle = setDiscreteMappingValue(visualStyle, 'nodeShape', ['type1'], 'diamond')
+      setDiscreteMappingValue(result, 'nodeShape', ['type1'], 'diamond')
 
       // Verify original is unchanged
       expect(original.nodeShape.defaultValue).toBe(originalDefault)

@@ -72,17 +72,8 @@ function MappingFormContent(props: {
     columnValues: state.columnValues,
     tables: state.tables,
   }))
-  const {
-    removeMapping,
-    createContinuousMapping,
-    createDiscreteMapping,
-    createPassthroughMapping,
-    createMapping,
-  } = useVisualStyleStore((state) => ({
+  const { removeMapping, createMapping } = useVisualStyleStore((state) => ({
     removeMapping: state.removeMapping,
-    createContinuousMapping: state.createContinuousMapping,
-    createDiscreteMapping: state.createDiscreteMapping,
-    createPassthroughMapping: state.createPassthroughMapping,
     createMapping: state.createMapping,
   }))
 

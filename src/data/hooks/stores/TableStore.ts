@@ -8,7 +8,6 @@ import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
-import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import {
@@ -25,6 +24,7 @@ import {
 } from '../../../models/TableModel'
 import * as TableImpl from '../../../models/TableModel/impl/inMemoryTable'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
+import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 const persist =

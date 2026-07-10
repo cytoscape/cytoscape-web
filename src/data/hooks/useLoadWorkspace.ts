@@ -1,17 +1,23 @@
+import { logApp, logDb } from '../../debug'
+import {
+  isAllowedOrigin,
+  isHostCompatible,
+} from '../../features/AppManager/install/installGate'
+import { parseManifest } from '../../features/AppManager/manifest/parseManifest'
+import { AppStatus } from '../../models/AppModel/AppStatus'
+import { CyApp } from '../../models/AppModel/CyApp'
+import { InstalledApp } from '../../models/AppModel/InstalledApp'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
+import { Workspace } from '../../models/WorkspaceModel'
 import {
   deleteDb,
+  deleteServiceAppFromDb,
   getAllAppsFromDb,
   getAllServiceAppsFromDb,
   putAppToDb,
   putServiceAppToDb,
   putWorkspaceToDb,
-  deleteServiceAppFromDb,
 } from '../db'
-import { logDb } from '../../debug'
-import { AppStatus } from '../../models/AppModel/AppStatus'
-import { CyApp } from '../../models/AppModel/CyApp'
-import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { Workspace } from '../../models/WorkspaceModel'
 import { serviceFetcher } from './stores/AppStore'
 
 /**
@@ -27,6 +33,7 @@ export interface RemoteWorkspace {
     currentNetwork?: string
     activeApps?: string[]
     serviceApps?: string[]
+    installedApps?: InstalledApp[]
   }
 }
 
@@ -63,6 +70,7 @@ export const useLoadWorkspace = (
     selectedWorkspace: RemoteWorkspace,
     currentApps: Record<string, CyApp>,
     currentServiceApps: Record<string, ServiceApp>,
+    allowedOrigins: string[] = [],
   ): Promise<void> => {
     try {
       // Step 1: Clear the database
@@ -81,78 +89,129 @@ export const useLoadWorkspace = (
         isRemote: true,
       }
 
+      // Step 2b: Restore installed apps from the snapshot (§11.1, §11.3). Each
+      // entry passes the §9 gate; allow-listed (and host-compatible) entries
+      // keep their saved status, others import inactive. Invalid entries are
+      // skipped. New snapshots carry this, so the legacy Step 3 path below is
+      // taken only for older workspaces.
+      const remoteInstalledApps = selectedWorkspace.options?.installedApps
+      if (remoteInstalledApps !== undefined) {
+        const restored: InstalledApp[] = []
+        for (const app of remoteInstalledApps) {
+          const validated = parseManifest([app?.entry])
+          if (validated.length === 0) {
+            logApp.warn(
+              '[loadWorkspace] Skipping invalid installed app entry',
+              app?.entry,
+            )
+            continue
+          }
+          const entry = validated[0]
+          const allowed = isAllowedOrigin(entry.url, allowedOrigins)
+          const compatible = isHostCompatible(entry.compatibleHostVersions)
+          const keepActive =
+            allowed && compatible && app.status === AppStatus.Active
+          if (!allowed) {
+            logApp.warn(
+              `[loadWorkspace] "${entry.id}" origin is not allow-listed; imported inactive`,
+            )
+          } else if (!compatible && app.status === AppStatus.Active) {
+            logApp.warn(
+              `[loadWorkspace] "${entry.id}" is incompatible with this host; imported inactive`,
+            )
+          }
+          restored.push({
+            entry,
+            status: keepActive ? AppStatus.Active : AppStatus.Inactive,
+            source: 'snapshot',
+            installedAt: app.installedAt ?? new Date().toISOString(),
+          })
+        }
+        workspace.installedApps = restored
+      }
+
       logDb.info('[loadWorkspace] Writing workspace to database', workspace)
       await putWorkspaceToDb(workspace)
 
-      // Step 3: Update app statuses in DB
-      try {
-        logDb.info('[loadWorkspace] Updating app statuses')
-        const activeApps = new Set(selectedWorkspace.options?.activeApps ?? [])
-        const dbApps = await getAllAppsFromDb()
-        const currentActiveApps = new Set(
-          Object.keys(currentApps).filter(
-            (key) => currentApps[key].status === AppStatus.Active,
-          ),
-        )
+      // Step 3: Legacy app-status path — only for older workspaces with no
+      // options.installedApps. New snapshots already wrote workspace.installedApps
+      // above; the legacy activeApps → putAppToDb behavior is kept for backward
+      // compatibility and is folded into installedApps by the startup migration
+      // (§10.1).
+      if (remoteInstalledApps === undefined) {
+        try {
+          logDb.info('[loadWorkspace] Updating app statuses')
+          const activeApps = new Set(
+            selectedWorkspace.options?.activeApps ?? [],
+          )
+          const dbApps = await getAllAppsFromDb()
+          const currentActiveApps = new Set(
+            Object.keys(currentApps).filter(
+              (key) => currentApps[key].status === AppStatus.Active,
+            ),
+          )
 
-        // Update apps that exist in DB
-        for (const app of dbApps) {
-          const shouldBeActive = activeApps.has(app.id)
-          const isCurrentlyActive = currentActiveApps.has(app.id)
+          // Update apps that exist in DB
+          for (const app of dbApps) {
+            const shouldBeActive = activeApps.has(app.id)
+            const isCurrentlyActive = currentActiveApps.has(app.id)
 
-          if (shouldBeActive && !isCurrentlyActive) {
-            // App should be active but isn't - update in DB
-            try {
-              const updatedApp: CyApp = { ...app, status: AppStatus.Active }
-              await putAppToDb(updatedApp)
-              logDb.info(`[loadWorkspace] Activated app: ${app.id}`)
-            } catch (error) {
-              logDb.error(
-                `[loadWorkspace] Failed to activate app ${app.id}:`,
-                error,
-              )
-              // Continue with other apps even if one fails
-            }
-          } else if (!shouldBeActive && isCurrentlyActive) {
-            // App should be inactive but is active - update in DB
-            try {
-              const updatedApp: CyApp = { ...app, status: AppStatus.Inactive }
-              await putAppToDb(updatedApp)
-              logDb.info(`[loadWorkspace] Deactivated app: ${app.id}`)
-            } catch (error) {
-              logDb.error(
-                `[loadWorkspace] Failed to deactivate app ${app.id}:`,
-                error,
-              )
-              // Continue with other apps even if one fails
-            }
-          }
-        }
-
-        // Handle apps in currentApps that aren't in DB yet
-        for (const appKey of Object.keys(currentApps)) {
-          if (!dbApps.find((app) => app.id === appKey)) {
-            try {
-              const app = currentApps[appKey]
-              const shouldBeActive = activeApps.has(appKey)
-              const updatedApp: CyApp = {
-                ...app,
-                status: shouldBeActive ? AppStatus.Active : AppStatus.Inactive,
+            if (shouldBeActive && !isCurrentlyActive) {
+              // App should be active but isn't - update in DB
+              try {
+                const updatedApp: CyApp = { ...app, status: AppStatus.Active }
+                await putAppToDb(updatedApp)
+                logDb.info(`[loadWorkspace] Activated app: ${app.id}`)
+              } catch (error) {
+                logDb.error(
+                  `[loadWorkspace] Failed to activate app ${app.id}:`,
+                  error,
+                )
+                // Continue with other apps even if one fails
               }
-              await putAppToDb(updatedApp)
-              logDb.info(`[loadWorkspace] Added app to DB: ${appKey}`)
-            } catch (error) {
-              logDb.error(
-                `[loadWorkspace] Failed to add app ${appKey} to DB:`,
-                error,
-              )
-              // Continue with other apps even if one fails
+            } else if (!shouldBeActive && isCurrentlyActive) {
+              // App should be inactive but is active - update in DB
+              try {
+                const updatedApp: CyApp = { ...app, status: AppStatus.Inactive }
+                await putAppToDb(updatedApp)
+                logDb.info(`[loadWorkspace] Deactivated app: ${app.id}`)
+              } catch (error) {
+                logDb.error(
+                  `[loadWorkspace] Failed to deactivate app ${app.id}:`,
+                  error,
+                )
+                // Continue with other apps even if one fails
+              }
             }
           }
+
+          // Handle apps in currentApps that aren't in DB yet
+          for (const appKey of Object.keys(currentApps)) {
+            if (!dbApps.find((app) => app.id === appKey)) {
+              try {
+                const app = currentApps[appKey]
+                const shouldBeActive = activeApps.has(appKey)
+                const updatedApp: CyApp = {
+                  ...app,
+                  status: shouldBeActive
+                    ? AppStatus.Active
+                    : AppStatus.Inactive,
+                }
+                await putAppToDb(updatedApp)
+                logDb.info(`[loadWorkspace] Added app to DB: ${appKey}`)
+              } catch (error) {
+                logDb.error(
+                  `[loadWorkspace] Failed to add app ${appKey} to DB:`,
+                  error,
+                )
+                // Continue with other apps even if one fails
+              }
+            }
+          }
+        } catch (error) {
+          logDb.error('[loadWorkspace] Error updating app statuses', error)
+          // Continue even if app updates fail
         }
-      } catch (error) {
-        logDb.error('[loadWorkspace] Error updating app statuses', error)
-        // Continue even if app updates fail
       }
 
       // Step 4: Update service apps in DB

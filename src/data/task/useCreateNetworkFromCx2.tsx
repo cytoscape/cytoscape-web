@@ -7,6 +7,11 @@
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
+import { Cx2 } from '../../models/CxModel/Cx2'
+import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
+import { CyNetwork } from '../../models/CyNetworkModel'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
@@ -14,11 +19,6 @@ import { useTableStore } from '../hooks/stores/TableStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
-import { Cx2 } from '../../models/CxModel/Cx2'
-import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
-import { CyNetwork } from '../../models/CyNetworkModel'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 /**
  * Props for creating a network with a view from a CX2 object.

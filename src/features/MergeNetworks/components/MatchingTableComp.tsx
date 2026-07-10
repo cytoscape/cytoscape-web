@@ -1,5 +1,4 @@
 //import the necessary libraries and components
-import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material'
 import {
   Paper,
   Table,
@@ -15,7 +14,6 @@ import React, { useEffect } from 'react'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
-import { Column } from '../../../models/TableModel/Column'
 import {
   MergeType,
   NetworkRecord,
@@ -46,18 +44,26 @@ export const MatchingTableComp = React.memo(
     mergeOpType,
     mergeWithinNetwork,
   }: MatchingTableProps) => {
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // ones that match the current table view.
+    const nodeRows = useNodeMatchingTableStore((state) => state.rows)
+    const edgeRows = useEdgeMatchingTableStore((state) => state.rows)
+    const netRows = useNetMatchingTableStore((state) => state.rows)
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const tableData =
       tableView === TableView.node
-        ? useNodeMatchingTableStore((state) => state.rows)
+        ? nodeRows
         : tableView === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.rows)
-          : useNetMatchingTableStore((state) => state.rows)
+          ? edgeRows
+          : netRows
     const setMatchingTable =
       tableView === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : tableView === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     // Handler for 'Merged Network' changes
     const onMergedNetworkChange = (
       e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -159,7 +165,7 @@ export const MatchingTableComp = React.memo(
       if (row.hasConflicts) {
         const conflictDescription: string[] = []
         const typeSet = new Set<ValueTypeName | 'None'>()
-        for (const [_, netId] of netLst) {
+        for (const [, netId] of netLst) {
           if (
             row.nameRecord[netId] !== 'None' &&
             row.typeRecord[netId] !== undefined &&
@@ -297,3 +303,5 @@ export const MatchingTableComp = React.memo(
     )
   },
 )
+
+MatchingTableComp.displayName = 'MatchingTableComp'

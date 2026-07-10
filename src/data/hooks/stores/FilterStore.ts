@@ -1,8 +1,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { deleteFilterFromDb, putFilterToDb } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
 import { FilterConfig } from '../../../models/FilterModel'
 import * as FilterStoreImpl from '../../../models/FilterModel/impl/filterStoreImpl'
@@ -13,6 +11,8 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { DiscreteRange } from '../../../models/PropertyModel/DiscreteRange'
 import { NumberRange } from '../../../models/PropertyModel/NumberRange'
 import { ValueType } from '../../../models/TableModel'
+import { deleteFilterFromDb, putFilterToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 /**
  * The store for both search and filter.
  *

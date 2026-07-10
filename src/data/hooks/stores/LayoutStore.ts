@@ -10,12 +10,8 @@ import { immer } from 'zustand/middleware/immer'
 import {
   defAlgorithm,
   defHierarchicalAlgorithm,
-  getLayout,
   LayoutEngines,
 } from '../../../models/LayoutModel/impl/layoutSelection'
-import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
-import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
-import { Property } from '../../../models/PropertyModel/Property'
 import * as LayoutStoreImpl from '../../../models/StoreModel/impl/layoutStoreImpl'
 import { LayoutStore } from '../../../models/StoreModel/LayoutStoreModel'
 import { ValueType } from '../../../models/TableModel'

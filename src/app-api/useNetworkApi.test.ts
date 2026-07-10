@@ -1,6 +1,6 @@
 // src/app-api/useNetworkApi.test.ts
-
 import { renderHook } from '@testing-library/react'
+import { expect, it } from 'vitest'
 
 import { networkApi } from './core/networkApi'
 import { useNetworkApi } from './useNetworkApi'

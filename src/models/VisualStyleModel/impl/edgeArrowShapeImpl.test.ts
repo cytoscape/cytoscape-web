@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { EdgeArrowShapeType } from '../VisualPropertyValue'
 import {
   isOpenShape,

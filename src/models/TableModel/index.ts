@@ -7,10 +7,10 @@
 
 import * as TableFn from './impl/inMemoryTable'
 
-export { AttributeName } from './AttributeName'
-export { Column } from './Column'
-export { Table } from './Table'
-export { ValueType } from './ValueType'
+export type { AttributeName } from './AttributeName'
+export type { Column } from './Column'
+export type { Table } from './Table'
+export type { ValueType } from './ValueType'
 export { ValueTypeName } from './ValueTypeName'
 
 export { TableFn as default }

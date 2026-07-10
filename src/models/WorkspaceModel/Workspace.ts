@@ -1,3 +1,4 @@
+import { InstalledApp } from '../AppModel/InstalledApp'
 import { IdType } from '../IdType'
 
 export interface Workspace {
@@ -13,6 +14,11 @@ export interface Workspace {
   localModificationTime: Date
   creationTime: Date // Optional?
   networkModified: Record<IdType, boolean | undefined> // Network is edited locally or not
-  isRemote?: boolean // 
+  isRemote?: boolean //
+
+  // Apps installed in this workspace (durable, workspace-scoped app state).
+  // See workspace-app-install-design.md §6.2.
+  installedApps?: InstalledApp[]
+
   options?: any // ???
 }

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { VisualProperty } from '../VisualProperty'
 import { NodeVisualPropertyName } from '../VisualPropertyName'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
@@ -7,9 +9,7 @@ import {
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
-import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
 import {
-  VALID_PIE_CHART_SLICE_INDEX_RANGE,
   computeCustomGraphicsProperties,
   computePieChartProperties,
   computeRingChartProperties,
@@ -20,8 +20,9 @@ import {
   getPieBackgroundColorViewModelProp,
   getPieBackgroundSizeViewModelProp,
   getSizePropertyForCustomGraphic,
+  VALID_PIE_CHART_SLICE_INDEX_RANGE,
 } from './customGraphicsImpl'
-import { DEFAULT_CUSTOM_GRAPHICS } from './defaultVisualStyle'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
 import { createVisualStyle } from './visualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/customGraphicsImpl.test.ts

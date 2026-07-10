@@ -1,8 +1,9 @@
+import { describe, expect, it } from 'vitest'
+
 import NetworkFn from '../../NetworkModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
 import { createViewModel } from '../../ViewModel/impl/viewModelImpl'
 import { VisualPropertyGroup } from '../VisualPropertyGroup'
-import { VisualStyle } from '../VisualStyle'
 import {
   applyVisualStyle,
   createVisualStyle,

@@ -5,7 +5,6 @@ import {
   Checkbox,
   Divider,
   Group,
-  List,
   NumberInput,
   Popover,
   Radio,
@@ -17,8 +16,6 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { modals } from '@mantine/modals'
-import { notifications } from '@mantine/notifications'
 import {
   IconAlertCircle,
   IconInfoCircle,
@@ -37,11 +34,11 @@ import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
 import { DelimiterType } from '../../model/DelimiterType'
+import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
 import {
   convertFileDelimiterToEffective,
   convertFileDelimiterToStorageValue,
 } from '../../model/impl/DelimiterUtils'
-import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
 import {
   findValidRowsToJoin,
   joinRowsToTable,
@@ -129,8 +126,6 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     // Transform decimal delimiter if needed
     return (result.data as DataTableValue[]).map((row) => {
       if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
@@ -151,12 +146,6 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
     })
   })
   const [columns, setColumns] = useState<ColumnAppendState[]>(() => {
-    const result = Papa.parse(rawText, {
-      header: useFirstRowAsColumns,
-      skipEmptyLines: true,
-    })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     const nextColumns = generateInferredColumnAppend(rows as DataTableValue[])
 
     return nextColumns

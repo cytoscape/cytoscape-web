@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
 import { createTable } from '../../TableModel/impl/inMemoryTable'

@@ -30,7 +30,7 @@ export function mergeNetSummary(
   matchingTableRows.slice(3).forEach((row) => {
     for (const netId of fromNetworks) {
       if (
-        row.nameRecord.hasOwnProperty(netId) &&
+        Object.prototype.hasOwnProperty.call(row.nameRecord, netId) &&
         row.nameRecord[netId] !== 'None' &&
         row.nameRecord[netId] !== ''
       ) {
@@ -83,7 +83,7 @@ function mergeProperty(
     ) {
       try {
         value1 = JSON.parse(value1)
-      } catch (e) {
+      } catch {
         logApp.error(
           `[${mergeProperty.name}]: Error parsing value1 as JSON array:`,
           value1,
@@ -97,7 +97,7 @@ function mergeProperty(
     ) {
       try {
         value2 = JSON.parse(value2)
-      } catch (e) {
+      } catch {
         logApp.error(
           `[${mergeProperty.name}]: Error parsing value2 as JSON array:`,
           value2,

@@ -1,7 +1,7 @@
 import * as React from 'react'
+
 import { IdType } from '../../../../models/IdType'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
-
 import { CustomGraphicDialog } from './CustomGraphicDialog'
 
 /** Inline adapter for VisualPropertyValueForm with feature flag */

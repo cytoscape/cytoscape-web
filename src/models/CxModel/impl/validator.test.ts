@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../Cx2'
 import {
   findAspect,
@@ -572,30 +574,6 @@ describe('validateCx2Structure', () => {
   })
 
   describe('validateCx2Attributes', () => {
-    // Helper function to create a basic CX2 structure with attribute declarations
-    const createBaseCx2 = (): Cx2 =>
-      [
-        { CXVersion: '2.0' },
-        {
-          metaData: [
-            { name: 'attributeDeclarations', elementCount: 1 },
-            { name: 'nodes', elementCount: 0 },
-            { name: 'edges', elementCount: 0 },
-            { name: 'networkAttributes', elementCount: 0 },
-          ],
-        },
-        {
-          attributeDeclarations: [
-            {
-              nodes: {},
-              edges: {},
-              network: {},
-            },
-          ],
-        },
-        { status: [{ success: true }] },
-      ] as Cx2
-
     describe('node attributes', () => {
       it('should validate valid node attributes', () => {
         const cx2: Cx2 = [

@@ -32,7 +32,7 @@ export function NodeBorderLinePicker(props: {
   onValueChange: (borderLine: NodeBorderLineType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedBorderLines = Object.values(NodeBorderLineType).sort()
 
   const [localValue, setLocalValue] = React.useState(

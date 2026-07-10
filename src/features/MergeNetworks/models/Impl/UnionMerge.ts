@@ -132,8 +132,8 @@ export function unionMerge(
         }
         const isMatch =
           originalRow.interaction === oriEntry.interaction ||
-          (!originalRow.hasOwnProperty('interaction') &&
-            !oriEntry.hasOwnProperty('interaction'))
+          (!Object.prototype.hasOwnProperty.call(originalRow, 'interaction') &&
+            !Object.prototype.hasOwnProperty.call(oriEntry, 'interaction'))
 
         if (isMatch) {
           initialEdgeRows[mergedEdgeId] = mergeAttributes(
@@ -290,8 +290,11 @@ export function unionMerge(
           }
           const isMatch =
             originalRow.interaction === castedRecord.interaction ||
-            (!originalRow.hasOwnProperty('interaction') &&
-              !castedRecord.hasOwnProperty('interaction'))
+            (!Object.prototype.hasOwnProperty.call(originalRow, 'interaction') &&
+              !Object.prototype.hasOwnProperty.call(
+                castedRecord,
+                'interaction',
+              ))
           if (isMatch) {
             mergedEdgeTable = TableFn.updateRow(mergedEdgeTable, [
               mergedEdgeId,

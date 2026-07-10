@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/workspaceApi.test.ts
 // Plain Jest tests for workspaceApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { workspaceApi } from './workspaceApi'
 
@@ -14,17 +15,17 @@ let mockWorkspace = {
   networkModified: {} as Record<string, boolean | undefined>,
 }
 
-const mockSetCurrentNetworkId = jest.fn((id: string) => {
+const mockSetCurrentNetworkId = vi.fn((id: string) => {
   mockWorkspace.currentNetworkId = id
 })
 
-const mockSetName = jest.fn((name: string) => {
+const mockSetName = vi.fn((name: string) => {
   mockWorkspace.name = name
 })
 
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: mockWorkspace,
       setCurrentNetworkId: mockSetCurrentNetworkId,
       setName: mockSetName,
@@ -36,9 +37,9 @@ jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
 
 let mockSummaries: Record<string, any> = {}
 
-jest.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
+vi.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
   useNetworkSummaryStore: {
-    getState: jest.fn(() => ({ summaries: mockSummaries })),
+    getState: vi.fn(() => ({ summaries: mockSummaries })),
   },
 }))
 

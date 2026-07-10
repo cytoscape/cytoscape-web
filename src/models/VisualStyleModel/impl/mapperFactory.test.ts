@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../TableModel'
 import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'

@@ -1,19 +1,17 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  List,
-  Alert,
-} from '@mui/material'
 import LinkIcon from '@mui/icons-material/Link'
-import { ReactElement, useState, useEffect } from 'react'
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
+} from '@mui/material'
+import { ReactElement, useEffect,useState } from 'react'
 
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
-import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { IdType } from '../../../models/IdType'
 import {
   AttributeName,
@@ -252,7 +250,7 @@ export const EdgeCreationDialog = ({
                       All fields are optional. Default values are already populated.
                     </Typography>
                     <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                      <strong>List fields:</strong> Enter comma-separated values (e.g., "value1, value2" or "1, 2, 3").
+                      <strong>List fields:</strong> Enter comma-separated values (e.g., &quot;value1, value2&quot; or &quot;1, 2, 3&quot;).
                     </Typography>
                   </Alert>
                   <Box

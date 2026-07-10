@@ -1,24 +1,25 @@
-import React from 'react'
+import Palette from '@mui/icons-material/Palette'
 import {
   Box,
-  Paper,
   Button,
-  Popover,
-  Typography,
-  ToggleButtonGroup,
-  ToggleButton,
-  Tooltip,
   Checkbox,
   FormControlLabel,
   FormGroup,
+  Paper,
+  Popover,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
 } from '@mui/material'
-import Palette from '@mui/icons-material/Palette'
+import React from 'react'
+
 import {
-  PALETTES,
   getColorBrewerPaletteColors,
+  PALETTES,
 } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
-import { PalettePreview } from './PalettePreview'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import { PalettePreview } from './PalettePreview'
 
 interface ColorPalettePickerProps {
   currentPaletteName: string
@@ -128,7 +129,7 @@ export function ColorPalettePicker({
           fullWidth={true}
         >
           {Object.entries(PALETTES)
-            .filter(([paletteId, palette]) => {
+            .filter(([, palette]) => {
               // Only show ColorBrewer diverging palettes (those with min/middle/max)
               return (
                 palette.metadata.category === 'diverging' &&

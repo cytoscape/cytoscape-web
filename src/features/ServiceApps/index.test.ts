@@ -1,8 +1,10 @@
-import { createNetworkDataObj } from './index'
+import { describe, expect, it } from 'vitest'
+
+import { Network } from '../../models'
 import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
 import { Format, Model } from '../../models/AppModel/ServiceInputDefinition'
-import { Network } from '../../models'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
+import { createNetworkDataObj } from './index'
 
 describe('ServiceApps', () => {
   describe('createNetworkDataObj', () => {

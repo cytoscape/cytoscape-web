@@ -1,6 +1,6 @@
 // src/app-api/useSelectionApi.test.ts
-
 import { renderHook } from '@testing-library/react'
+import { expect, it } from 'vitest'
 
 import { selectionApi } from './core/selectionApi'
 import { useSelectionApi } from './useSelectionApi'

@@ -1,7 +1,6 @@
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import { Box, Button,Slider, Stack, Typography } from '@mui/material'
-import debounce from 'lodash.debounce'
 import * as React from 'react'
 
 const percentToOpacity = (val: number): number => +(val / 100).toFixed(2)
@@ -12,7 +11,7 @@ export function OpacitySlider(props: {
   onValueChange: (value: number) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const [localOpacityValue, setLocalOpacityValue] = React.useState<number>(
     currentValue ?? 0,
   )

@@ -3,7 +3,6 @@ import NetworkFn, { Edge, Network, Node } from '../../../../models/NetworkModel'
 import TableFn from '../../../../models/TableModel'
 import { Column } from '../../../../models/TableModel/Column'
 import {
-  ListOfValueType,
   SingleValueType,
   ValueType,
 } from '../../../../models/TableModel/ValueType'
@@ -140,7 +139,7 @@ export function intersectionMerge(
     }
     intersectedNodeIds = new Set(
       [...intersectedNodeIds].filter((x) =>
-        matchedNodeIds.map(([newNodeId, _]) => newNodeId).includes(x),
+        matchedNodeIds.map(([newNodeId]) => newNodeId).includes(x),
       ),
     )
     for (const [key, value] of matchingAttributeMap) {

@@ -2,12 +2,12 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import {
   Box,
   Button,
-  Radio,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Radio,
   Table,
   TableBody,
   TableCell,
@@ -43,7 +43,8 @@ export const LoadWorkspaceDialog: React.FC<{
   )
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const setWorkspaceIsRemote = useWorkspaceStore((state) => state.setIsRemote)
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, appInstallAllowedOrigins } =
+    useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const addMessage = useMessageStore((state) => state.addMessage)
   const apps = useAppStore((state) => state.apps)
@@ -117,7 +118,12 @@ export const LoadWorkspaceDialog: React.FC<{
     )
     if (selectedWorkspace) {
       try {
-        await loadWorkspace(selectedWorkspace, apps, serviceApps)
+        await loadWorkspace(
+          selectedWorkspace,
+          apps,
+          serviceApps,
+          appInstallAllowedOrigins,
+        )
         handleClose()
         // Reload the page to apply changes
         window.location.reload()

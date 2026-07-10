@@ -55,7 +55,6 @@ export const typesCanBeMapped = (
   mappingType: MappingFunctionType,
   valueTypeName: ValueTypeName,
   vpValueTypeName: VisualPropertyValueTypeName,
-  columnName?: string,
 ): boolean => {
   if (mappingType === MappingFunctionType.Passthrough) {
     const vtBaseType = valueType2BaseType[valueTypeName]

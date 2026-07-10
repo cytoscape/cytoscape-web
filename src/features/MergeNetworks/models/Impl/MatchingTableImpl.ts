@@ -1,5 +1,5 @@
 import { IdType } from "../../../../models/IdType";
-import { Column, Table } from "../../../../models/TableModel";
+import { Column } from "../../../../models/TableModel";
 import { MatchingTable, MatchingTableRow } from '../MatchingTable'
 
 export function createMatchingTable(matchingTableRows: MatchingTableRow[]): MatchingTable {

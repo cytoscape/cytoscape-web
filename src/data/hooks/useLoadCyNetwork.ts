@@ -1,9 +1,9 @@
-import { fetchNdexNetwork } from '../external-api/ndex'
-import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { logApi, logDb } from '../../debug'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
+import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
+import { fetchNdexNetwork } from '../external-api/ndex'
 
 /**
  * Hook that returns a function to load a CyNetwork from cache or NDEx.
@@ -27,7 +27,7 @@ export const useLoadCyNetwork = () => {
       try {
         const cyNetwork = await getCyNetworkFromDb(networkId)
         return cyNetwork
-      } catch (cacheError) {
+      } catch {
         // Cache miss - check if this is a local-only network
         const summary = await getNetworkSummaryFromDb(networkId)
 

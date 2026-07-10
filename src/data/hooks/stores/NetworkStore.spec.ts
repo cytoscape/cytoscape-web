@@ -1,25 +1,40 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../../models/NetworkModel'
-import {
-  NetworkUpdatedEvent,
-  UpdateEventType,
-} from '../../../models/StoreModel/NetworkStoreModel'
+import { UpdateEventType } from '../../../models/StoreModel/NetworkStoreModel'
 import { useNetworkStore } from './NetworkStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putNetworkToDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworksFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock the workspace store to provide a current network ID
-jest.mock('./WorkspaceStore', () => ({
+vi.mock('./WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },
@@ -160,9 +175,8 @@ describe('useNetworkStore', () => {
         result.current.add(network)
       })
 
-      let deletedEdges: Edge[] = []
       act(() => {
-        deletedEdges = result.current.deleteNodes(networkId, ['n1'])
+        result.current.deleteNodes(networkId, ['n1'])
       })
 
       const updatedNetwork = result.current.networks.get(networkId)

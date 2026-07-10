@@ -1,5 +1,4 @@
 import { Box, Button, Tab, Tabs } from '@mui/material'
-import debounce from 'lodash.debounce'
 import React from 'react'
 import { ChromePicker, CompactPicker, SwatchesPicker } from 'react-color'
 
@@ -16,8 +15,7 @@ export function ColorPicker(props: {
   onValueChange: (color: ColorType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const debouncedValueChange = debounce(onValueChange, 200)
+  const { currentValue } = props
   const [activeTab, setActiveTab] = React.useState(0)
 
   // use local state to appear instantaneous in the color picker,

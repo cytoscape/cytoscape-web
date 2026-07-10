@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { PieChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   calculateChartDimensions,
@@ -7,7 +8,7 @@ import {
   calculateSliceAngle,
   degreesToRadians,
 } from './utils/chartRenderUtils'
-import { CHART_CONSTANTS, COLORS, STYLES } from './utils/constants'
+import { COLORS, STYLES } from './utils/constants'
 import { EmptyChartState } from './WizardSteps/EmptyChartState'
 
 interface PieChartRenderProps {
@@ -37,17 +38,6 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
     : containerHeight
 
   const { cy_startAngle, cy_colors, cy_dataColumns } = properties
-
-  // If no data columns, show empty state
-  if (!cy_dataColumns.length) {
-    return (
-      <EmptyChartState
-        size={chartSize}
-        containerWidth={containerWidth}
-        containerHeight={adjustedContainerHeight}
-      />
-    )
-  }
 
   // Calculate slice angles (equal distribution for preview)
   const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
@@ -99,6 +89,17 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
     },
     [cytoscapeStartAngle, sliceAngle, outerRadius, useStroke],
   )
+
+  // If no data columns, show empty state
+  if (!cy_dataColumns.length) {
+    return (
+      <EmptyChartState
+        size={chartSize}
+        containerWidth={containerWidth}
+        containerHeight={adjustedContainerHeight}
+      />
+    )
+  }
 
   return (
     <Box

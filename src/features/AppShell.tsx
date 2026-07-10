@@ -48,10 +48,15 @@ import { Panel } from '../models/UiModel/Panel'
 import { PanelState } from '../models/UiModel/PanelState'
 import { NetworkView } from '../models/ViewModel'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
+import { parseSingleEntryManifest } from './AppManager/install/installGate'
 import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
 import { SyncTabsAction } from './SyncTabs'
 import { ToolBar } from './ToolBar'
+
+// Search param carrying an App Store install intent: a URL pointing to a
+// single-entry manifest (see workspace-app-install-design.md §7.2).
+const INSTALL_APP_QUERY_KEY = 'installApp'
 
 /**
  * Application shell component that provides the main layout structure
@@ -69,7 +74,7 @@ const AppShell = (): ReactElement => {
   const appManagerCommands = useAppManager()
   const params = useParams()
   const navigate = useNavigate()
-  const [search, setSearchParams] = useSearchParams()
+  const [search] = useSearchParams()
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const setWorkspace = useWorkspaceStore((state) => state.set)
@@ -382,6 +387,41 @@ const AppShell = (): ReactElement => {
       // cywebapi:ready signals external consumers that the API and event bus are ready.
       initEventBus()
       window.dispatchEvent(new CustomEvent('cywebapi:ready'))
+
+      // Process an App Store install intent (?installApp=<manifestUrl>). The
+      // workspace is hydrated by now (setWorkspace above), so installApp's
+      // persisted write is accepted (§8.3). The param is stripped by the
+      // navigate() below. Never throws — init must continue regardless.
+      const installAppUrl = search.get(INSTALL_APP_QUERY_KEY)
+      if (installAppUrl !== null) {
+        try {
+          const response = await fetch(installAppUrl)
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+          }
+          const data = await response.json()
+          const entry = parseSingleEntryManifest(data)
+          if (entry === undefined) {
+            throw new Error('manifest contained no valid app entry')
+          }
+          // Install intent implies activation (§7.3). The §9 gate inside
+          // installApp still applies (origin allow-list, host compatibility)
+          // and surfaces its own messages, so only fetch/parse errors land here.
+          await appManagerCommands.installApp(entry, { activate: true })
+        } catch (error) {
+          addMessage({
+            message: `Failed to install app from ${installAppUrl}: ${
+              error instanceof Error ? error.message : 'unknown error'
+            }`,
+            duration: 5000,
+            severity: MessageSeverity.ERROR,
+          })
+          logStartup.warn(
+            `[AppShell]: install intent failed for ${installAppUrl}`,
+            error,
+          )
+        }
+      }
 
       // Process state restoration parameters after workspace is set
       const hasSearchQueryParams = search.size > 0

@@ -1,6 +1,4 @@
-import { Backdrop,Box, Button } from '@mui/material'
-
-import { VisualPropertyValueType } from '../../../models/VisualStyleModel'
+import { Box, Button } from '@mui/material'
 
 export interface CancelConfirmButtonGroupProps {
   closePopover: (reason: string) => void

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { OpaqueAspects } from '../OpaqueAspects'
 import {
@@ -196,6 +198,9 @@ describe('OpaqueAspectImpl', () => {
       state = deleteSingleAspect(state, 'network-1', 'aspect-2')
       state = clearAspects(state, 'network-1')
       state = deleteAll(state)
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.opaqueAspects).toBe(originalOpaqueAspects)

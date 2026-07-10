@@ -6,6 +6,7 @@ import {
 
 export class CxToCyCanvas {
   constructor() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- legacy: `self` is captured by nested `function` expressions (shape renderers) where `this` is rebound
     var self = this
 
     this._findIntersection = function (p1, p2, p3, p4) {
@@ -604,7 +605,7 @@ export class CxToCyCanvas {
     const backgroundCanvas = backgroundLayer.getCanvas()
     const backgroundCtx = backgroundCanvas.getContext('2d')
 
-    cytoscapeInstance.on('render cyCanvas.resize', (evt) => {
+    cytoscapeInstance.on('render cyCanvas.resize', () => {
       backgroundCtx.fillStyle = cxBGColor
       backgroundCtx.fillRect(
         0,
@@ -644,7 +645,7 @@ export class CxToCyCanvas {
     this.topLayer = topLayer
     this.bottomLayer = bottomLayer
 
-    cytoscapeInstance.on('render cyCanvas.resize', (evt) => {
+    cytoscapeInstance.on('render cyCanvas.resize', () => {
       var colorFromInt = this._colorFromInt
       var shapeFunctions = this._shapeFunctions
       //console.log("render cyCanvas.resize event");
@@ -733,11 +734,6 @@ export class CxToCyCanvas {
               annotationMap['targetAnnotation'] &&
               annotationMap['sourceAnnotation']
             ) {
-              let sourceAnnotation =
-                indexedAnnotations[annotationMap['sourceAnnotation']]
-              let targetAnnotation =
-                indexedAnnotations[annotationMap['targetAnnotation']]
-
               // The following is a start to implementing arrow annotations. To follow Cytoscape's
               // implementation, it would take a great deal of math and special cases, so has been
               // left for later work.

@@ -56,7 +56,5 @@ export const CyjsNodeShapeTypeObj = CyjsNodeShapeNames.reduce(
   {} as const,
 )
 
-const newShape: Record<CyjsNodeShapeTagType, CyjsNodeShapeType> = {
-  ...CyjsNodeShapeTypeObj,
-} as const
-export type CyjsNodeShapeType2 = (typeof newShape)[keyof typeof newShape]
+export type CyjsNodeShapeType2 =
+  (typeof CyjsNodeShapeTypeObj)[keyof typeof CyjsNodeShapeTypeObj]

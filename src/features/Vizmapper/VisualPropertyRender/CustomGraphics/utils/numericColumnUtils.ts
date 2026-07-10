@@ -1,6 +1,6 @@
 import { Column } from '../../../../../models/TableModel/Column'
-import { ValueTypeName } from '../../../../../models/TableModel/ValueTypeName'
 import { ValueType } from '../../../../../models/TableModel/ValueType'
+import { ValueTypeName } from '../../../../../models/TableModel/ValueTypeName'
 
 /**
  * Checks if a column is numeric based on its type and values.

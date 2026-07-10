@@ -17,7 +17,6 @@ import { Node } from '../Cx2/CoreAspects/Node'
 import { NodeBypasses } from '../Cx2/CoreAspects/NodeBypasses'
 import { VisualProperties } from '../Cx2/CoreAspects/VisualProperties'
 import { CoreAspectTag } from '../Cx2/CoreAspectTag'
-import { CxDescriptor } from '../Cx2/CxDescriptor'
 import { CxValue } from '../Cx2/CxValue'
 
 export const CX_ANNOTATIONS_KEY = '__Annotations'
@@ -38,7 +37,10 @@ const getAspect = (cx2: Cx2, aspectTag: string): object[] => {
 
 const getVisualProperties = (cx2: Cx2): VisualProperties => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.VisualProperties)
+    return Object.prototype.hasOwnProperty.call(
+      entry,
+      CoreAspectTag.VisualProperties,
+    )
   })
 
   if (filtered.length === 0) {
@@ -52,7 +54,10 @@ const getVisualProperties = (cx2: Cx2): VisualProperties => {
 
 const getNodeBypasses = (cx2: Cx2): NodeBypasses => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.NodeBypasses)
+    return Object.prototype.hasOwnProperty.call(
+      entry,
+      CoreAspectTag.NodeBypasses,
+    )
   })
 
   if (filtered.length === 0) {
@@ -67,7 +72,10 @@ const getNodeBypasses = (cx2: Cx2): NodeBypasses => {
 
 const getEdgeBypasses = (cx2: Cx2): EdgeBypasses => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.EdgeBypasses)
+    return Object.prototype.hasOwnProperty.call(
+      entry,
+      CoreAspectTag.EdgeBypasses,
+    )
   })
 
   if (filtered.length === 0) {
@@ -82,7 +90,10 @@ const getEdgeBypasses = (cx2: Cx2): EdgeBypasses => {
 
 const getNetworkAttributes = (cx2: Cx2): NetworkAttributeValue[] => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.NetworkAttributes)
+    return Object.prototype.hasOwnProperty.call(
+      entry,
+      CoreAspectTag.NetworkAttributes,
+    )
   })
 
   if (filtered.length === 0) {
@@ -95,7 +106,10 @@ const getNetworkAttributes = (cx2: Cx2): NetworkAttributeValue[] => {
 
 const getAttributeDeclarations = (cx2: Cx2): AttributeDeclarations => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.AttributeDeclarations)
+    return Object.prototype.hasOwnProperty.call(
+      entry,
+      CoreAspectTag.AttributeDeclarations,
+    )
   })
 
   if (filtered.length === 0) {
@@ -156,7 +170,10 @@ const getEdges = (cx2: Cx2): Edge[] => {
 
 const getVisualEditorProperties = (cx2: Cx2): VisualStyleOptions => {
   const filtered = cx2.filter((entry) => {
-    return entry.hasOwnProperty(CoreAspectTag.VisualEditorProperties)
+    return Object.prototype.hasOwnProperty.call(
+      entry,
+      CoreAspectTag.VisualEditorProperties,
+    )
   })
 
   const attributeDeclarations =

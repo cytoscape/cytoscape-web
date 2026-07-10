@@ -63,9 +63,9 @@ function VisualPropertyView(props: {
 
   let tooltip: string | undefined
   if (widthDisabled)
-    tooltip = `Node width and height are locked. Use the \'${heightName}\' property to adjust the node size, or uncheck \“Lock node width and height\” in \'${heightName}\' to enable editing of the Width.`
+    tooltip = `Node width and height are locked. Use the '${heightName}' property to adjust the node size, or uncheck “Lock node width and height” in '${heightName}' to enable editing of the Width.`
   if (arrowColorDisabled)
-    tooltip = `Edge color to arrows is enabled. Use the \'${edgeLineColorName}\' property to adjust the arrow color, or uncheck \“Edge color to arrows\” in \'${edgeLineColorName}\' to enable editing of the arrow color.`
+    tooltip = `Edge color to arrows is enabled. Use the '${edgeLineColorName}' property to adjust the arrow color, or uncheck “Edge color to arrows” in '${edgeLineColorName}' to enable editing of the arrow color.`
 
   const hasWarning = vpName.includes('nodeImageChart')
 

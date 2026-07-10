@@ -43,10 +43,6 @@ export function ContinuousNumberMappingForm(props: {
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
-  if (m == null) {
-    return <Box></Box>
-  }
-
   const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
   const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(0)
   const [lastDraggedHandleId, setlastDraggedHandleId] = React.useState<
@@ -76,7 +72,14 @@ export function ContinuousNumberMappingForm(props: {
     setCreateHandleAnchorEl(null)
   }
 
-  const { min, max, controlPoints } = m
+  // Fall back to a harmless empty mapping so the hooks below can run
+  // unconditionally; the component still bails out before rendering when
+  // the real mapping is missing (see the early return above the JSX below).
+  const { min, max, controlPoints } = m ?? {
+    min: { value: 0, vpValue: 0 },
+    max: { value: 0, vpValue: 0 },
+    controlPoints: [] as ContinuousFunctionControlPoint[],
+  }
 
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
@@ -337,6 +340,10 @@ export function ContinuousNumberMappingForm(props: {
     )
   }, [maxState])
 
+  if (m == null) {
+    return <Box></Box>
+  }
+
   return (
     <Paper
       variant="filled"
@@ -413,10 +420,10 @@ export function ContinuousNumberMappingForm(props: {
                       bottom: LINE_CHART_HEIGHT - LINE_CHART_MARGIN_BOTTOM,
                     }}
                     handle=".handle"
-                    onStart={(e) => {
+                    onStart={() => {
                       setlastDraggedHandleId(h.id)
                     }}
-                    onStop={(e) => {
+                    onStop={() => {
                       setlastDraggedHandleId(h.id)
                     }}
                     onDrag={(e, data) => {

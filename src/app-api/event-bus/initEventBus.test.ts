@@ -1,7 +1,8 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/event-bus/initEventBus.test.ts
 // Plain Jest tests — no renderHook. Mock store subscriptions and assert
 // that window.dispatchEvent is called with the correct CustomEvent payloads.
-
 import { initEventBus } from './initEventBus'
 
 // ── Mock: dispatchCyWebEvent (verify via window.dispatchEvent spy) ─────────────
@@ -20,10 +21,10 @@ const mockWorkspaceState = {
   },
 }
 
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => mockWorkspaceState),
-    subscribe: jest.fn((selectorOrCb: any, cb?: any) => {
+    getState: vi.fn(() => mockWorkspaceState),
+    subscribe: vi.fn((selectorOrCb: any, cb?: any) => {
       if (typeof cb === 'function') {
         workspaceSubs.push({ selector: selectorOrCb, callback: cb })
       }
@@ -36,10 +37,10 @@ jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
 
 const viewModelSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback; options?: any }> = []
 
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(),
-    subscribe: jest.fn((selectorOrCb: any, cb?: any, opts?: any) => {
+    getState: vi.fn(),
+    subscribe: vi.fn((selectorOrCb: any, cb?: any, opts?: any) => {
       if (typeof cb === 'function') {
         viewModelSubs.push({ selector: selectorOrCb, callback: cb, options: opts })
       }
@@ -52,10 +53,10 @@ jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
 
 const visualStyleSubs: Array<SubscriptionCallback> = []
 
-jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
+vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
-    getState: jest.fn(),
-    subscribe: jest.fn((cb: any) => {
+    getState: vi.fn(),
+    subscribe: vi.fn((cb: any) => {
       visualStyleSubs.push(cb)
       return () => {}
     }),
@@ -66,10 +67,10 @@ jest.mock('../../data/hooks/stores/VisualStyleStore', () => ({
 
 const tableSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
 
-jest.mock('../../data/hooks/stores/TableStore', () => ({
+vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
-    getState: jest.fn(),
-    subscribe: jest.fn((selectorOrCb: any, cb?: any) => {
+    getState: vi.fn(),
+    subscribe: vi.fn((selectorOrCb: any, cb?: any) => {
       if (typeof cb === 'function') {
         tableSubs.push({ selector: selectorOrCb, callback: cb })
       }
@@ -100,25 +101,25 @@ function triggerTableSub(curr: any, prev: any): void {
 }
 
 function dispatchedTypes(): string[] {
-  const spy = jest.spyOn(window, 'dispatchEvent') as jest.SpyInstance
+  const spy = vi.spyOn(window, 'dispatchEvent') as import('vitest').MockInstance
   return (spy.mock.calls as Array<[Event]>).map((args) => (args[0] as CustomEvent).type)
 }
 
 function dispatchedDetails(): any[] {
-  const spy = jest.spyOn(window, 'dispatchEvent') as jest.SpyInstance
+  const spy = vi.spyOn(window, 'dispatchEvent') as import('vitest').MockInstance
   return (spy.mock.calls as Array<[Event]>).map((args) => (args[0] as CustomEvent).detail)
 }
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-let dispatchSpy: jest.SpyInstance
+let dispatchSpy: import('vitest').MockInstance
 
 beforeEach(() => {
   workspaceSubs.length = 0
   viewModelSubs.length = 0
   visualStyleSubs.length = 0
   tableSubs.length = 0
-  dispatchSpy = jest.spyOn(window, 'dispatchEvent')
+  dispatchSpy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
 })
 

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { MappingFunctionType } from '../../../models'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { FilterWidgetType } from '../../../models/FilterModel/FilterWidgetType'
@@ -539,7 +541,7 @@ describe('db-util', () => {
         },
       ]
 
-      testCases.forEach(({ input, expected, description }) => {
+      testCases.forEach(({ input }) => {
         // Test NetworkView deserialization
         const networkView = {
           values: input,

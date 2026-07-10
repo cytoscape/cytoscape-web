@@ -1,6 +1,7 @@
-jest.mock('lodash/cloneDeep', () => ({
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('lodash/cloneDeep', () => ({
   __esModule: true,
-  default: jest.fn(deepClone),
+  default: vi.fn(deepClone),
 }))
 
 import { IdType } from '../../../models/IdType'
@@ -14,7 +15,7 @@ import { MatchingTable, MatchingTableRow } from '../models/MatchingTable'
 
 describe('mergeNetSummary', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
   it('should merge network summaries with different data types and handle edge cases', () => {
     const fromNetworks: IdType[] = ['net1', 'net2', 'net3']
@@ -371,7 +372,8 @@ function deepClone<T>(obj: T): T {
   }
 
   if (obj instanceof Function) {
-    return ((...args: any[]) => (obj as Function)(...args)) as unknown as T
+    return ((...args: any[]) =>
+      (obj as (...args: any[]) => any)(...args)) as unknown as T
   }
 
   if (obj instanceof Array) {

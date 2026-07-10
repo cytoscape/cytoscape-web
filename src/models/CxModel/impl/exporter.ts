@@ -7,14 +7,12 @@ import isEqual from 'lodash/isEqual'
 
 import { CyNetwork } from '../../CyNetworkModel'
 import { IdType } from '../../IdType'
-import { Network } from '../../NetworkModel'
 import { translateEdgeIdToCX } from '../../NetworkModel/impl/networkImpl'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
 import {
   AttributeName,
   Column,
-  Table,
   ValueType,
   ValueTypeName,
 } from '../../TableModel'
@@ -22,13 +20,11 @@ import {
   deserializeValue,
   isListType,
 } from '../../TableModel/impl/valueTypeImpl'
-import { NetworkView } from '../../ViewModel'
 import VisualStyleFn, {
   NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
-  VisualStyle,
 } from '../../VisualStyleModel'
 import {
   getCustomGraphicNodeVps,
@@ -50,7 +46,6 @@ import {
   MappingFunctionType,
   PassthroughMappingFunction,
 } from '../../VisualStyleModel/VisualMappingFunction'
-import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
 
 /**
  * Exports a network to CX2 format.

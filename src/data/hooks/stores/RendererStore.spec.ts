@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import { Renderer } from '../../../models/RendererModel/Renderer'
@@ -6,7 +7,7 @@ import { ViewPort } from '../../../models/RendererModel/ViewPort'
 import { useRendererStore } from './RendererStore'
 
 // Mock DefaultRenderer to avoid module import issues
-jest.mock('../../../features/DefaultRenderer', () => ({
+vi.mock('../../../features/DefaultRenderer', () => ({
   DefaultRenderer: {
     id: 'default-renderer',
     name: 'Default Renderer',

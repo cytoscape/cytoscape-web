@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../Cx2'
 import { createCyNetworkFromCx2 } from './converter'
 

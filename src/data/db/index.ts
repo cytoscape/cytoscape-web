@@ -1,7 +1,6 @@
 import 'dexie-observable'
 
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
-import _ from 'lodash'
 
 import config from '../../assets/config.json'
 import { logDb } from '../../debug'

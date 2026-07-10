@@ -1,22 +1,23 @@
-jest.mock('../../../models/NetworkModel/impl/networkImpl', () => {
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('../../../models/NetworkModel/impl/networkImpl', () => {
     return {
-        createNetwork: jest.fn(),
-        createNetworkFromLists: jest.fn(),
-        addNode: jest.fn(),
-        addNodes: jest.fn(),
-        addEdges: jest.fn(),
-        addEdge: jest.fn(),
-        deleteNodes: jest.fn(),
-        deleteEdges: jest.fn(),
-        translateCXEdgeId: jest.fn((id: string) => `e${id}`),
-        isEdgeId: jest.fn((id: string) => id.startsWith('e')),
-        translateEdgeIdToCX: jest.fn((id: string) => id.slice(1)),
-        createFromCyJson: jest.fn(),
-        networkModelToImplNetwork: jest.fn(),
-        createCyJSON: jest.fn(),
-        addNodeRow: jest.fn(),
-        addNodesWithRows: jest.fn(),
-        getInternalNetworkDataStore: jest.fn(),
+        createNetwork: vi.fn(),
+        createNetworkFromLists: vi.fn(),
+        addNode: vi.fn(),
+        addNodes: vi.fn(),
+        addEdges: vi.fn(),
+        addEdge: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteEdges: vi.fn(),
+        translateCXEdgeId: vi.fn((id: string) => `e${id}`),
+        isEdgeId: vi.fn((id: string) => id.startsWith('e')),
+        translateEdgeIdToCX: vi.fn((id: string) => id.slice(1)),
+        createFromCyJson: vi.fn(),
+        networkModelToImplNetwork: vi.fn(),
+        createCyJSON: vi.fn(),
+        addNodeRow: vi.fn(),
+        addNodesWithRows: vi.fn(),
+        getInternalNetworkDataStore: vi.fn(),
     };
 });
 
@@ -32,29 +33,29 @@ import { unionMerge } from '../models/Impl/UnionMerge';
 import { MatchingTableRow } from '../models/MatchingTable';
 
 beforeEach(() => {
-    jest.resetAllMocks();
-    (NetworkFn.createNetwork as jest.Mock).mockImplementation((id: IdType) => ({
+    vi.resetAllMocks();
+    (NetworkFn.createNetwork as import('vitest').Mock).mockImplementation((id: IdType) => ({
         id,
         nodes: [],
         edges: []
     }));
-    (NetworkFn.addNodes as jest.Mock).mockImplementation((network: Network, nodeIds: IdType[]) => {
+    (NetworkFn.addNodes as import('vitest').Mock).mockImplementation((network: Network, nodeIds: IdType[]) => {
         nodeIds.forEach(nodeId => network.nodes.push({ id: nodeId }));
         return network;
     });
-    (NetworkFn.addNode as jest.Mock).mockImplementation((network: Network, nodeId: IdType) => {
+    (NetworkFn.addNode as import('vitest').Mock).mockImplementation((network: Network, nodeId: IdType) => {
         network.nodes.push({ id: nodeId });
         return network;
     });
-    (NetworkFn.addEdges as jest.Mock).mockImplementation((network: Network, edges: Edge[]) => {
+    (NetworkFn.addEdges as import('vitest').Mock).mockImplementation((network: Network, edges: Edge[]) => {
         edges.forEach(edge => network.edges.push(edge));
         return network;
     });
-    (NetworkFn.addEdge as jest.Mock).mockImplementation((network: Network, edge: Edge) => {
+    (NetworkFn.addEdge as import('vitest').Mock).mockImplementation((network: Network, edge: Edge) => {
         network.edges.push(edge);
         return network;
     });
-    (NetworkFn.createNetworkFromLists as jest.Mock).mockImplementation((id: IdType, nodes: Node[], edges: Edge[]) => {
+    (NetworkFn.createNetworkFromLists as import('vitest').Mock).mockImplementation((id: IdType, nodes: Node[], edges: Edge[]) => {
         const network: Network = { id, nodes: [], edges: [] };
         nodes.forEach(node => network.nodes.push({ id: node.id }));
         edges.forEach(edge => network.edges.push(edge));

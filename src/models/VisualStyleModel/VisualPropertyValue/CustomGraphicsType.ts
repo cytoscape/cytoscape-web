@@ -1,5 +1,5 @@
-import { AttributeName } from '../../TableModel/AttributeName'
-import { ColorType } from './ColorType'
+import type { AttributeName } from '../../TableModel/AttributeName'
+import type { ColorType } from './ColorType'
 
 export const CustomGraphicsTypeType = {
   Chart: 'chart',
@@ -58,7 +58,7 @@ export interface RingChartPropertiesType {
   cy_dataColumns: AttributeName[]
 }
 
-export interface NonePropertiesType {}
+export type NonePropertiesType = Record<string, never>
 
 // TODO
 // export interface ImagePropertiesType {

@@ -7,17 +7,17 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+import { logStore } from '../../../debug'
+import { IdType } from '../../../models/IdType'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
+import * as NetworkSummaryImpl from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { NetworkSummaryStore } from '../../../models/StoreModel/NetworkSummaryStoreModel'
 import {
   clearNetworkSummaryFromDb,
   deleteNetworkSummaryFromDb,
   putNetworkSummaryToDb,
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
-import { logStore } from '../../../debug'
-import { IdType } from '../../../models/IdType'
-import { NetworkSummary } from '../../../models/NetworkSummaryModel'
-import * as NetworkSummaryImpl from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
-import { NetworkSummaryStore } from '../../../models/StoreModel/NetworkSummaryStoreModel'
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
@@ -58,7 +58,7 @@ export const useNetworkSummaryStore = create(
       set((state) => {
         const newState = NetworkSummaryImpl.deleteSummary(state, networkId)
         void deleteNetworkSummaryFromDb(networkId)
-          .then((val) => {
+          .then(() => {
             logStore.info(
               `[${useNetworkSummaryStore.name}]: Summary deleted: ${networkId}`,
             )

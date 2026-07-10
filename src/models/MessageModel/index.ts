@@ -1,1 +1,2 @@
-export { Message, MessageSeverity } from './Message'
+export type { Message } from './Message'
+export { MessageSeverity } from './Message'

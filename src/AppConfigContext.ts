@@ -17,7 +17,7 @@ export interface KeycloakConfig {
  */
 export interface AppConfig {
   ndexBaseUrl: string
-  options?: {}
+  options?: Record<string, unknown>
   defaultServices: string[]
   keycloakConfig: KeycloakConfig
   maxNetworkElementsThreshold: number
@@ -31,6 +31,9 @@ export interface AppConfig {
   debug: boolean
   errorReportEndpoint: string
   maxErrorReportSnapshotSizeMB: number
+  // Origins from which external apps may be installed (App Store CDN, etc.).
+  // localhost origins are additionally allowed when the host itself runs on localhost.
+  appInstallAllowedOrigins: string[]
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -69,6 +72,7 @@ export const defaultAppConfig: AppConfig = {
   debug: true,
   errorReportEndpoint: '',
   maxErrorReportSnapshotSizeMB: 10,
+  appInstallAllowedOrigins: ['https://apps.cytoscape.org'],
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

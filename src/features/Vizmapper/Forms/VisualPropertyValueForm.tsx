@@ -2,10 +2,7 @@ import {
   Box,
   Divider,
   Popover,
-  Tab,
-  Tabs,
   Tooltip,
-  Typography,
 } from '@mui/material'
 import * as React from 'react'
 
@@ -16,6 +13,10 @@ import {
   VisualPropertyName,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
+import {
+  CustomGraphicsType,
+  CustomGraphicsTypeType,
+} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
 import {
   Boolean as BooleanRender,
@@ -27,10 +28,6 @@ import {
   CustomGraphicPicker,
   CustomGraphicRender,
 } from '../VisualPropertyRender/CustomGraphics'
-import {
-  CustomGraphicsType,
-  CustomGraphicsTypeType,
-} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   EdgeArrowShape,
   EdgeArrowShapePicker,
@@ -375,9 +372,7 @@ export function VisualPropertyValueForm(
     setValuePicker(value)
   }
 
-  const closePopover = (
-    reason: 'backdropClick' | 'escapeKeyDown' | 'confirm' | 'cancel',
-  ): void => {
+  const closePopover = (): void => {
     setValuePicker(null)
   }
 
@@ -411,9 +406,7 @@ export function VisualPropertyValueForm(
         anchorEl={valuePicker}
         disableEscapeKeyDown={true}
         hideBackdrop={true}
-        onClose={(e: any, reason: 'backdropClick' | 'escapeKeyDown') =>
-          closePopover(reason)
-        }
+        onClose={() => closePopover()}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <Box sx={{ overflow: 'hidden' }}>

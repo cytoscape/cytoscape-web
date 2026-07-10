@@ -1,8 +1,6 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
-import { Tooltip } from '@mui/material'
 import { ReactElement, useContext, useState } from 'react'
 
-import { AppConfigContext } from '../../../AppConfigContext'
 import {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
@@ -37,7 +35,6 @@ import { DropdownMenuItem } from '../DropdownMenu'
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
     useState<boolean>(false)
   const { navigateToNetwork } = useUrlNavigation()

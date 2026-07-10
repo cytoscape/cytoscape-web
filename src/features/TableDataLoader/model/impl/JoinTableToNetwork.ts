@@ -151,7 +151,7 @@ export const findValidRowsToJoin = (
     }
   })
 
-  table.rows.forEach((row, rowId) => {
+  table.rows.forEach((row) => {
     // assume that the column is a key column which should mean that the data type is
     // string, integer or long
 

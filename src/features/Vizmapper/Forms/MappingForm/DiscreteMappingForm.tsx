@@ -13,7 +13,6 @@ import {
   TableHead,
   TableRow,
   Tooltip,
-  Typography,
 } from '@mui/material'
 import * as React from 'react'
 
@@ -65,9 +64,11 @@ export function DiscreteMappingForm(props: {
 
   const toggleSelected = (key: ValueType, selected: boolean): void => {
     const nextDiscreteMappingEntries = new Set(selectedDiscreteMappingEntries)
-    selected
-      ? nextDiscreteMappingEntries.delete(key)
-      : nextDiscreteMappingEntries.add(key)
+    if (selected) {
+      nextDiscreteMappingEntries.delete(key)
+    } else {
+      nextDiscreteMappingEntries.add(key)
+    }
     setSelectedDiscreteMappingEntries(nextDiscreteMappingEntries)
   }
 
