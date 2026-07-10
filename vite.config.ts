@@ -62,17 +62,17 @@ function injectHtmlVariables(variables: Record<string, any>): Plugin {
     name: 'inject-html-variables',
     transformIndexHtml(html) {
       let transformed = html
-      const debug = variables.DEBUG
+      const disable = variables.DISABLE_LOADING_SCREEN
 
-      if (debug) {
-        // If DEBUG is true, !DEBUG is false, so we strip the block
+      if (disable) {
+        // If DISABLE_LOADING_SCREEN is true, !DISABLE_LOADING_SCREEN is false, so we strip the block
         transformed = transformed.replace(
-          /<%\s*if\s*\(!DEBUG\)\s*{\s*%>[\s\S]*?<%\s*}\s*%>/g,
+          /<%\s*if\s*\(!DISABLE_LOADING_SCREEN\)\s*{\s*%>[\s\S]*?<%\s*}\s*%>/g,
           '',
         )
       } else {
-        // If DEBUG is false, !DEBUG is true, so we keep the block but remove the EJS tags
-        transformed = transformed.replace(/<%\s*if\s*\(!DEBUG\)\s*{\s*%>/g, '')
+        // If DISABLE_LOADING_SCREEN is false, !DISABLE_LOADING_SCREEN is true, so we keep the block but remove the EJS tags
+        transformed = transformed.replace(/<%\s*if\s*\(!DISABLE_LOADING_SCREEN\)\s*{\s*%>/g, '')
         transformed = transformed.replace(/<%\s*}\s*%>/g, '')
       }
 
@@ -106,7 +106,10 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     serveAppsConfigInDev(appsConfigPath),
-    injectHtmlVariables({ DEBUG: config.debug }),
+    injectHtmlVariables({
+      DISABLE_LOADING_SCREEN:
+        config.debugOptions?.disableLoadingScreen ?? (config.debug === true),
+    }),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old

@@ -11,6 +11,11 @@ export interface KeycloakConfig {
   clientId: string
 }
 
+export interface DebugOptions {
+  disableLoadingScreen?: boolean
+  disableAutoReload?: boolean
+}
+
 /**
  * Application-wide configuration
  * Loaded from assets/config.json and provided via React context
@@ -29,6 +34,7 @@ export interface AppConfig {
   googleAnalyticsId: string
   undoStackSize: number
   debug: boolean
+  debugOptions?: DebugOptions
   errorReportEndpoint: string
   maxErrorReportSnapshotSizeMB: number
   // Origins from which external apps may be installed (App Store CDN, etc.).
@@ -70,6 +76,10 @@ export const defaultAppConfig: AppConfig = {
   googleAnalyticsId: '',
   undoStackSize: 20,
   debug: true,
+  debugOptions: {
+    disableLoadingScreen: false,
+    disableAutoReload: false,
+  },
   errorReportEndpoint: '',
   maxErrorReportSnapshotSizeMB: 10,
   appInstallAllowedOrigins: ['https://apps.cytoscape.org'],
