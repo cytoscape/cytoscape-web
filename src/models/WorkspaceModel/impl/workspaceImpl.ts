@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 
+import { AppStatus } from '../../AppModel/AppStatus'
+import { InstalledApp } from '../../AppModel/InstalledApp'
 import { IdType } from '../../IdType'
 import { Workspace } from '../Workspace'
 
@@ -185,5 +187,57 @@ export const deleteAllNetworkModifiedStatuses = (
   return {
     ...workspace,
     networkModified: {},
+  }
+}
+
+/**
+ * Add or replace an installed app (upsert by entry.id). Preserves position
+ * when replacing an existing record; appends a new one otherwise.
+ */
+export const addInstalledApp = (
+  workspace: Workspace,
+  app: InstalledApp,
+): Workspace => {
+  const existing = workspace.installedApps ?? []
+  const index = existing.findIndex((a) => a.entry.id === app.entry.id)
+  const installedApps =
+    index >= 0
+      ? existing.map((a, i) => (i === index ? app : a))
+      : [...existing, app]
+  return {
+    ...workspace,
+    installedApps,
+  }
+}
+
+/**
+ * Remove an installed app by id. No-op if absent.
+ */
+export const removeInstalledApp = (
+  workspace: Workspace,
+  id: IdType,
+): Workspace => {
+  const existing = workspace.installedApps ?? []
+  return {
+    ...workspace,
+    installedApps: existing.filter((a) => a.entry.id !== id),
+  }
+}
+
+/**
+ * Update the status of an installed app. Returns the workspace unchanged if
+ * the id is absent (the caller is responsible for warning).
+ */
+export const setInstalledAppStatus = (
+  workspace: Workspace,
+  id: IdType,
+  status: AppStatus,
+): Workspace => {
+  const existing = workspace.installedApps ?? []
+  return {
+    ...workspace,
+    installedApps: existing.map((a) =>
+      a.entry.id === id ? { ...a, status } : a,
+    ),
   }
 }

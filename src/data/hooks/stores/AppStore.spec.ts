@@ -66,18 +66,12 @@ describe('useAppStore', () => {
   }
 
   describe('restore', () => {
-    it('should restore apps from database', async () => {
+    it('should seed apps from the provided records', async () => {
       const { result } = renderHook(() => useAppStore())
-      const db = await import('../../db')
-      const { getAppFromDb } = db
       const app1 = createTestApp('app-1')
       const app2 = createTestApp('app-2')
-
-      vi.mocked(getAppFromDb).mockResolvedValueOnce(app1 as any)
-      vi.mocked(getAppFromDb).mockResolvedValueOnce(app2 as any)
-
       await act(async () => {
-        await result.current.restore(['app-1', 'app-2'])
+        await result.current.restore([app1, app2])
       })
 
       await waitFor(() => {

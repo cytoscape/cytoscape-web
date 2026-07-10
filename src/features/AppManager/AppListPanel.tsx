@@ -1,21 +1,31 @@
 import DeleteIcon from '@mui/icons-material/Delete'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
   Box,
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
+  Menu,
+  MenuItem,
   Paper,
   Switch,
   Tooltip,
   Typography,
 } from '@mui/material'
+import { useState } from 'react'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { AppCatalogEntry } from '../../models/AppModel/AppCatalogEntry'
 import { AppLoadState } from '../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
+import { AppSource } from '../../models/AppModel/InstalledApp'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
 
 /**
@@ -30,6 +40,10 @@ interface AppDisplayEntry {
   inCatalog: boolean
   loadState: AppLoadState | undefined
   status: AppStatus | undefined
+  /** Provenance of the catalog entry (undefined for orphans) */
+  source?: AppSource
+  /** Whether this row can be uninstalled from the workspace (§12.3) */
+  removable: boolean
 }
 
 /**
@@ -59,11 +73,21 @@ export const AppListPanel = () => {
   const catalog: Record<string, AppCatalogEntry> = useAppStore(
     (state) => state.catalog,
   )
+  const catalogSources: Record<string, AppSource> = useAppStore(
+    (state) => state.catalogSources,
+  )
   const loadStates: Record<string, AppLoadState> = useAppStore(
     (state) => state.loadStates,
   )
-  const { activateApp, deactivateApp, retryApp, removeOrphan } =
+  const { activateApp, deactivateApp, retryApp, removeOrphan, uninstallApp } =
     useAppManagerCommands()
+
+  // Overflow (kebab) menu and uninstall-confirmation state
+  const [menu, setMenu] = useState<{
+    anchorEl: HTMLElement
+    entry: AppDisplayEntry
+  } | null>(null)
+  const [confirm, setConfirm] = useState<AppDisplayEntry | null>(null)
 
   // Build merged display list: catalog entries + orphan apps
   const displayEntries: AppDisplayEntry[] = []
@@ -73,6 +97,7 @@ export const AppListPanel = () => {
   for (const entry of Object.values(catalog)) {
     seenIds.add(entry.id)
     const app = apps[entry.id]
+    const source = catalogSources[entry.id]
     displayEntries.push({
       id: entry.id,
       name: entry.name ?? entry.id,
@@ -82,6 +107,10 @@ export const AppListPanel = () => {
       inCatalog: true,
       loadState: loadStates[entry.id],
       status: app?.status,
+      source,
+      // Only workspace-installed apps are uninstallable; manifest apps are
+      // disable-only (§12.3).
+      removable: source === 'appstore' || source === 'snapshot',
     })
   }
 
@@ -99,6 +128,9 @@ export const AppListPanel = () => {
       inCatalog: false,
       loadState: loadStates[id],
       status: app.status,
+      // Orphans keep the existing (unconfirmed) removeOrphan path, not the
+      // kebab uninstall.
+      removable: false,
     })
   }
 
@@ -169,6 +201,16 @@ export const AppListPanel = () => {
                         sx={{ height: 20, fontSize: '0.7rem' }}
                       />
                     )}
+                    {entry.removable && (
+                      <Chip
+                        label={
+                          entry.source === 'snapshot' ? 'Snapshot' : 'App Store'
+                        }
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
                   </Box>
                   {entry.description && (
                     <Typography
@@ -188,7 +230,14 @@ export const AppListPanel = () => {
                   )}
                 </Box>
 
-                <Box sx={{ flexShrink: 0 }}>
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                  }}
+                >
                   {action === 'loading' && <CircularProgress size={24} />}
                   {(action === 'enable' || action === 'disable') && (
                     <Switch
@@ -224,12 +273,76 @@ export const AppListPanel = () => {
                       </IconButton>
                     </Tooltip>
                   )}
+                  {entry.removable && (
+                    <Tooltip title="More options">
+                      <IconButton
+                        size="small"
+                        data-testid={`app-kebab-${entry.id}`}
+                        onClick={(e) =>
+                          setMenu({ anchorEl: e.currentTarget, entry })
+                        }
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </Box>
               </Paper>
             )
           })}
         </Box>
       )}
+
+      {/* Overflow menu for workspace-installed apps (§12.4) */}
+      <Menu
+        anchorEl={menu?.anchorEl}
+        open={menu !== null}
+        onClose={() => setMenu(null)}
+      >
+        <MenuItem
+          data-testid="app-uninstall-menuitem"
+          onClick={() => {
+            if (menu !== null) {
+              setConfirm(menu.entry)
+              setMenu(null)
+            }
+          }}
+        >
+          Uninstall
+        </MenuItem>
+      </Menu>
+
+      {/* Uninstall confirmation (§12.5) */}
+      <Dialog
+        open={confirm !== null}
+        onClose={() => setConfirm(null)}
+        data-testid="app-uninstall-confirm-dialog"
+      >
+        <DialogTitle>Uninstall app</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Uninstall <strong>{confirm?.name}</strong>? It will be removed from
+            this workspace.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirm(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            data-testid="app-uninstall-confirm-button"
+            onClick={() => {
+              if (confirm !== null) {
+                const id = confirm.id
+                setConfirm(null)
+                void uninstallApp(id)
+              }
+            }}
+          >
+            Uninstall
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

@@ -7,6 +7,7 @@ import {
   VisualStyle,
 } from '../../models'
 import { AppStatus } from '../../models/AppModel/AppStatus'
+import { InstalledApp } from '../../models/AppModel/InstalledApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { MessageSeverity } from '../../models/MessageModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
@@ -24,6 +25,24 @@ import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useLoadCyNetwork } from './useLoadCyNetwork'
 import { useSaveCyNetworkCopyToNDEx } from './useSaveCyNetworkCopyToNDEx'
 import { useSaveCyNetworkToNDEx } from './useSaveCyNetworkToNDEx'
+
+/**
+ * Derive the app-related workspace options from the workspace's installed apps
+ * (the durable source of truth, §8.4 / §11.1). `activeApps` (ids only) is kept
+ * for backward compatibility with older hosts; `installedApps` carries the full
+ * records (URL + status + provenance).
+ */
+export const deriveAppOptions = (
+  installedApps: InstalledApp[] | undefined,
+): { activeApps: string[]; installedApps: InstalledApp[] } => {
+  const list = installedApps ?? []
+  return {
+    activeApps: list
+      .filter((a) => a.status === AppStatus.Active)
+      .map((a) => a.entry.id),
+    installedApps: list,
+  }
+}
 
 /**
  * Hook that returns a function to save a workspace to NDEx.
@@ -160,17 +179,20 @@ export const useSaveWorkspace = () => {
 
     // Save workspace to NDEx
     try {
-      const activeApps = Object.keys(apps).filter(
-        (key) => apps[key].status === AppStatus.Active,
-      )
       const serviceAppNames = Object.keys(serviceApps)
       const workspace = await getWorkspaceFromDb(currentWorkspaceId)
+      // App state is derived from workspace.installedApps (§8.4); the legacy
+      // `apps` argument is no longer used to compute activeApps.
+      const { activeApps, installedApps } = deriveAppOptions(
+        workspace.installedApps,
+      )
       const workspaceData = {
         name: workspaceName,
         options: {
           currentNetwork: workspace.currentNetworkId,
-          activeApps: activeApps,
+          activeApps,
           serviceApps: serviceAppNames,
+          installedApps,
         },
         networkIDs: workspace.networkIds,
       }
@@ -184,6 +206,16 @@ export const useSaveWorkspace = () => {
       } else {
         const response = await createNdexWorkspace(workspaceData, accessToken)
         const { uuid } = response
+        // Safeguard: a non-string id becomes an invalid IndexedDB key and every
+        // subsequent workspace persist throws "not a valid key". Fail loudly
+        // instead of corrupting the workspace id.
+        if (typeof uuid !== 'string' || uuid === '') {
+          logApi.error(
+            '[saveWorkspace]: NDEx returned an invalid workspace id',
+            uuid,
+          )
+          throw new Error('NDEx did not return a valid workspace id')
+        }
         setId(uuid)
       }
       setIsRemote(true)

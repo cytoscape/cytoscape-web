@@ -71,6 +71,9 @@ declare module 'allotment' {
   export default Allotment
 }
 
+// Constants injected by Vite (see vite.config.ts)
+declare const REACT_APP_VERSION: string
+
 // global variables for debugging
 interface Window {
   debug: any
