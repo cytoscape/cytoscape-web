@@ -57,30 +57,6 @@ function serveAppsConfigInDev(appsConfigPath: string): Plugin {
  * Dev-server-only plugin that processes simple EJS-like tags in index.html
  * (parity with Webpack's HtmlWebpackPlugin).
  */
-function injectHtmlVariables(variables: Record<string, any>): Plugin {
-  return {
-    name: 'inject-html-variables',
-    transformIndexHtml(html) {
-      let transformed = html
-      const disable = variables.DISABLE_LOADING_SCREEN
-
-      if (disable) {
-        // If DISABLE_LOADING_SCREEN is true, !DISABLE_LOADING_SCREEN is false, so we strip the block
-        transformed = transformed.replace(
-          /<%\s*if\s*\(!DISABLE_LOADING_SCREEN\)\s*{\s*%>[\s\S]*?<%\s*}\s*%>/g,
-          '',
-        )
-      } else {
-        // If DISABLE_LOADING_SCREEN is false, !DISABLE_LOADING_SCREEN is true, so we keep the block but remove the EJS tags
-        transformed = transformed.replace(/<%\s*if\s*\(!DISABLE_LOADING_SCREEN\)\s*{\s*%>/g, '')
-        transformed = transformed.replace(/<%\s*}\s*%>/g, '')
-      }
-
-      return transformed
-    },
-  }
-}
-
 export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const appsConfigPath = path.resolve(
     __dirname,
@@ -106,10 +82,6 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     serveAppsConfigInDev(appsConfigPath),
-    injectHtmlVariables({
-      DISABLE_LOADING_SCREEN:
-        config.debugOptions?.disableLoadingScreen ?? (config.debug === true),
-    }),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old

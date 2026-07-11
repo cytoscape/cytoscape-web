@@ -12,7 +12,6 @@ export interface KeycloakConfig {
 }
 
 export interface DebugOptions {
-  disableLoadingScreen?: boolean
   disableAutoReload?: boolean
 }
 
@@ -77,7 +76,6 @@ export const defaultAppConfig: AppConfig = {
   undoStackSize: 20,
   debug: true,
   debugOptions: {
-    disableLoadingScreen: false,
     disableAutoReload: false,
   },
   errorReportEndpoint: '',
