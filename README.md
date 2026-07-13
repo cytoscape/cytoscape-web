@@ -39,7 +39,98 @@ Cytoscape Web is designed to expand with two types of **Apps**. We are actively 
 
 # Developer's Guide
 
-(TBA)
+## Architecture
+
+Cytoscape Web is a React single-page app built on a strict **three-layer separation** —
+pure **Models**, **Stores** that wrap them, and **Features** (React components) that consume
+stores through hooks. State is persisted to the browser's IndexedDB, and the app talks to
+external systems (NDEx, Cytoscape Desktop, and federated Apps) through dedicated API clients
+and Module Federation.
+
+```mermaid
+flowchart TB
+    User(["User / Browser"])
+
+    subgraph ext["External Systems"]
+        direction LR
+        NDEx[("NDEx<br/>Network Data Exchange")]
+        CyDesktop["Cytoscape Desktop"]
+        FedApps["Service / Federated Apps"]
+    end
+
+    subgraph features["Features — React components · src/features"]
+        direction LR
+        AppShell["AppShell<br/>init · routing · URL state"]
+        NetworkPanel["NetworkPanel<br/>CyjsRenderer → Cytoscape.js"]
+        Vizmapper["Vizmapper"]
+        TableBrowser["TableBrowser"]
+        MoreFeat["Workspace · SummaryPanel<br/>HierarchyViewer · MergeNetworks<br/>ServiceApps · ToolBar · ..."]
+    end
+
+    subgraph hooks["Integration Hooks — src/data/hooks"]
+        direction LR
+        Workflow["Workflow hooks<br/>load / save · create / delete"]
+        TaskHooks["Task hooks<br/>exposed via Module Federation"]
+    end
+
+    subgraph stores["Stores — Zustand + Immer · src/data/hooks/stores"]
+        direction LR
+        NetworkStore["NetworkStore"]
+        TableStore["TableStore"]
+        VisualStyleStore["VisualStyleStore"]
+        ViewModelStore["ViewModelStore"]
+        WorkspaceStore["WorkspaceStore"]
+        MoreStores["UiStateStore · LayoutStore<br/>FilterStore · UndoStore · ..."]
+    end
+
+    subgraph models["Models — pure TypeScript · src/models"]
+        direction LR
+        NetworkModel["NetworkModel"]
+        TableModel["TableModel"]
+        VisualStyleModel["VisualStyleModel"]
+        CxModel["CxModel (CX2)"]
+        MoreModels["ViewModel · Workspace<br/>Layout · Filter · ..."]
+    end
+
+    subgraph datalayer["Data Layer — src/data"]
+        direction LR
+        DB[("IndexedDB · Dexie<br/>serialization · migrations")]
+        ExtApiClients["External API clients<br/>ndex · cytoscape · error-report"]
+    end
+
+    User --> features
+    features -->|store hooks| stores
+    features -->|complex workflows| hooks
+    hooks --> stores
+    hooks --> ExtApiClients
+    stores -->|wrap pure fns| models
+    stores <-->|persist| DB
+    ExtApiClients <-->|CX2 REST| NDEx
+    ExtApiClients -->|open network| CyDesktop
+    FedApps -.->|consume via Module Federation| TaskHooks
+
+    classDef extCls fill:#eef,stroke:#88a
+    classDef featCls fill:#e8f6e8,stroke:#6a6
+    classDef hookCls fill:#fff2d9,stroke:#caa25a
+    classDef storeCls fill:#e6f0fb,stroke:#5a8fca
+    classDef modelCls fill:#f3e8fb,stroke:#9a6aca
+    classDef dataCls fill:#fde8ec,stroke:#ca5a7a
+
+    class NDEx,CyDesktop,FedApps extCls
+    class AppShell,NetworkPanel,Vizmapper,TableBrowser,MoreFeat featCls
+    class Workflow,TaskHooks hookCls
+    class NetworkStore,TableStore,VisualStyleStore,ViewModelStore,WorkspaceStore,MoreStores storeCls
+    class NetworkModel,TableModel,VisualStyleModel,CxModel,MoreModels modelCls
+    class DB,ExtApiClients dataCls
+```
+
+**Layering rules** (enforced by convention):
+
+- **Models** (`src/models/`) are pure TypeScript — no React, no Zustand. Each domain exports a `<Domain>Fn` object of pure functions.
+- **Stores** (`src/data/hooks/stores/`) are Zustand + Immer stores that wrap model operations and must not import React components. Persisted stores auto-save to IndexedDB.
+- **Features** (`src/features/`) are functional React components that consume stores via hooks — either store hooks directly or the composed workflow hooks in `src/data/hooks/`.
+
+See [`CLAUDE.md`](./CLAUDE.md) and the specs under [`docs/specifications/`](./docs/specifications/) for the full architecture reference.
 
 ## Quick Start
 
