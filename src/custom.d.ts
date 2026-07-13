@@ -63,7 +63,7 @@ declare module 'allotment' {
 
   export function setSashSize(sashSize: number): void
 
-  declare const Allotment: React.ForwardRefExoticComponent<
+  const Allotment: React.ForwardRefExoticComponent<
     AllotmentProps & React.RefAttributes<AllotmentHandle>
   > & { Pane: typeof Pane }
 

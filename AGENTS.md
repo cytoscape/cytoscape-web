@@ -144,10 +144,11 @@ See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and
 - Trailing commas (all positions)
 - 2-space indentation, 80-char line width
 
-**Linting (enforced by ESLint):**
+**Linting (enforced by oxlint — config in `.oxlintrc.json`):**
 
-- Import sorting via `eslint-plugin-simple-import-sort` (error level — builds will fail)
-- `@typescript-eslint/no-explicit-any` is OFF — `any` is permitted
+- `correctness` category is error level; `react-hooks/rules-of-hooks` is error level
+- `typescript/no-explicit-any` is OFF — `any` is permitted
+- Import sorting is no longer lint-enforced (the ESLint `simple-import-sort` rule had no oxlint equivalent); keep imports sorted by convention
 - Functional components only — no class components
 - New JSX transform (`react-jsx`) — do NOT add `import React from 'react'` in component files
 
