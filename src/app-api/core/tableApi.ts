@@ -187,6 +187,32 @@ function syncColumnToTableDisplayConfig(
   })
 }
 
+/**
+ * Remove a column from the tableDisplayConfiguration in UiStateStore so the
+ * Table Browser stops rendering a header for a deleted column. Without this,
+ * columns removed via the API disappear from the data but keep showing up
+ * as an empty column in the UI.
+ */
+function removeColumnFromTableDisplayConfig(
+  networkId: IdType,
+  tableType: AppTableType,
+  columnName: string,
+): void {
+  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+  useUiStateStore.setState((state: any) => {
+    const tdc =
+      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
+        ?.tableDisplayConfiguration
+    if (!tdc?.[configKey]?.columnConfiguration) return state
+
+    const colConfig = tdc[configKey].columnConfiguration
+    tdc[configKey].columnConfiguration = colConfig.filter(
+      (c: { attributeName: string }) => c.attributeName !== columnName,
+    )
+    return state
+  })
+}
+
 // ── Core implementation ──────────────────────────────────────────────────────
 
 export const tableApi: TableApi = {
@@ -266,6 +292,18 @@ export const tableApi: TableApi = {
         return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
       }
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
+
+      // Schedule table display config sync asynchronously to avoid
+      // blocking page.evaluate() — the Immer + IndexedDB persist cycle
+      // in UiStateStore can hang when called synchronously from CDP.
+      setTimeout(() => {
+        try {
+          removeColumnFromTableDisplayConfig(networkId, tableType, columnName)
+        } catch {
+          // Best-effort
+        }
+      }, 0)
+
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
