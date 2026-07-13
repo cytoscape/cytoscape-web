@@ -48,80 +48,56 @@ external systems (NDEx, Cytoscape Desktop, and federated Apps) through dedicated
 and Module Federation.
 
 ```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 620, "curve": "basis"}}}%%
 flowchart TB
     User(["User / Browser"])
 
-    subgraph ext["External Systems"]
-        direction LR
-        NDEx[("NDEx<br/>Network Data Exchange")]
-        CyDesktop["Cytoscape Desktop"]
-        FedApps["Service / Federated Apps"]
-    end
-
-    subgraph features["Features — React components · src/features"]
-        direction LR
-        AppShell["AppShell<br/>init · routing · URL state"]
-        NetworkPanel["NetworkPanel<br/>CyjsRenderer → Cytoscape.js"]
-        Vizmapper["Vizmapper"]
-        TableBrowser["TableBrowser"]
-        MoreFeat["Workspace · SummaryPanel<br/>HierarchyViewer · MergeNetworks<br/>ServiceApps · ToolBar · ..."]
-    end
-
-    subgraph hooks["Integration Hooks — src/data/hooks"]
-        direction LR
-        Workflow["Workflow hooks<br/>load / save · create / delete"]
-        TaskHooks["Task hooks<br/>exposed via Module Federation"]
-    end
-
-    subgraph stores["Stores — Zustand + Immer · src/data/hooks/stores"]
-        direction LR
-        NetworkStore["NetworkStore"]
-        TableStore["TableStore"]
-        VisualStyleStore["VisualStyleStore"]
-        ViewModelStore["ViewModelStore"]
-        WorkspaceStore["WorkspaceStore"]
-        MoreStores["UiStateStore · LayoutStore<br/>FilterStore · UndoStore · ..."]
-    end
-
-    subgraph models["Models — pure TypeScript · src/models"]
-        direction LR
-        NetworkModel["NetworkModel"]
-        TableModel["TableModel"]
-        VisualStyleModel["VisualStyleModel"]
-        CxModel["CxModel (CX2)"]
-        MoreModels["ViewModel · Workspace<br/>Layout · Filter · ..."]
-    end
-
-    subgraph datalayer["Data Layer — src/data"]
+    subgraph app["Cytoscape Web · React single-page app"]
+      direction TB
+      Features["<b>Features</b> — React components · src/features<br/>AppShell · NetworkPanel / CyjsRenderer · Vizmapper · TableBrowser<br/>Workspace · HierarchyViewer · MergeNetworks · ServiceApps · …"]
+      Hooks["<b>Integration Hooks</b> · src/data/hooks<br/>load / save · create / delete workflows · Task hooks (Module Federation)"]
+      Stores["<b>Stores</b> — Zustand + Immer · src/data/hooks/stores<br/>Network · Table · VisualStyle · ViewModel · Workspace · Ui · Layout · Filter · Undo · …"]
+      Models["<b>Models</b> — pure TypeScript · src/models<br/>Network · Table · VisualStyle · Cx (CX2) · View · Workspace · Layout · Filter · …"]
+      subgraph datalayer["Data layer · src/data"]
         direction LR
         DB[("IndexedDB · Dexie<br/>serialization · migrations")]
-        ExtApiClients["External API clients<br/>ndex · cytoscape · error-report"]
+        ExtApi["External API clients<br/>ndex · cytoscape · error-report"]
+      end
     end
 
-    User --> features
-    features -->|store hooks| stores
-    features -->|complex workflows| hooks
-    hooks --> stores
-    hooks --> ExtApiClients
-    stores -->|wrap pure fns| models
-    stores <-->|persist| DB
-    ExtApiClients <-->|CX2 REST| NDEx
-    ExtApiClients -->|open network| CyDesktop
-    FedApps -.->|consume via Module Federation| TaskHooks
+    subgraph ext["External Systems"]
+      direction TB
+      NDEx[("NDEx<br/>Network Data Exchange")]
+      CyDesktop["Cytoscape Desktop"]
+      FedApps["Service / Federated Apps"]
+    end
 
-    classDef extCls fill:#eef,stroke:#88a
-    classDef featCls fill:#e8f6e8,stroke:#6a6
-    classDef hookCls fill:#fff2d9,stroke:#caa25a
-    classDef storeCls fill:#e6f0fb,stroke:#5a8fca
-    classDef modelCls fill:#f3e8fb,stroke:#9a6aca
-    classDef dataCls fill:#fde8ec,stroke:#ca5a7a
+    User --> Features
+    Features -->|store & workflow hooks| Hooks
+    Hooks --> Stores
+    Stores -->|wrap pure fns| Models
+    Stores <-.->|persist| DB
+    Hooks --> ExtApi
+    ExtApi <-->|CX2 REST| NDEx
+    ExtApi -->|open network| CyDesktop
+    FedApps -.->|Module Federation| Hooks
 
+    classDef featCls fill:#e8f6e8,stroke:#4a9a4a,color:#123
+    classDef hookCls fill:#fff2d9,stroke:#c79a3a,color:#123
+    classDef storeCls fill:#e6f0fb,stroke:#3a78c7,color:#123
+    classDef modelCls fill:#f3e8fb,stroke:#8a4ac7,color:#123
+    classDef dataCls fill:#fde8ec,stroke:#c73a6a,color:#123
+    classDef extCls fill:#eeeef7,stroke:#7a7ab0,color:#123
+
+    class Features featCls
+    class Hooks hookCls
+    class Stores storeCls
+    class Models modelCls
+    class DB,ExtApi dataCls
     class NDEx,CyDesktop,FedApps extCls
-    class AppShell,NetworkPanel,Vizmapper,TableBrowser,MoreFeat featCls
-    class Workflow,TaskHooks hookCls
-    class NetworkStore,TableStore,VisualStyleStore,ViewModelStore,WorkspaceStore,MoreStores storeCls
-    class NetworkModel,TableModel,VisualStyleModel,CxModel,MoreModels modelCls
-    class DB,ExtApiClients dataCls
+    style app fill:#fcfcfd,stroke:#c0c0cc
+    style datalayer fill:#ffffff,stroke:#d8a0b0
+    style ext fill:#fcfcfd,stroke:#c0c0cc
 ```
 
 **Layering rules** (enforced by convention):
