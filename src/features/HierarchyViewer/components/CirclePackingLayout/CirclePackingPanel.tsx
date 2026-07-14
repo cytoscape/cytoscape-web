@@ -494,7 +494,13 @@ export const CirclePackingPanel = ({
 
       setNetworkSwitched(true)
     },
-    [visible],
+    [
+      visible,
+      rendererId,
+      getRendererFunction,
+      setRendererFunction,
+      initialSize,
+    ],
   )
 
   /**
@@ -991,7 +997,7 @@ export const CirclePackingPanel = ({
         setNetworkSwitched(false)
       }
     },
-    [selectedNodes, selectedLeaves],
+    [selectedNodes, selectedLeaves, networkSwitched, selectedNodeSet],
   )
 
   /**

@@ -238,7 +238,18 @@ export const FilterPanel = () => {
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
-  }, [targetAttrName, selectedObjectType, vs])
+  }, [
+    targetAttrName,
+    selectedObjectType,
+    vs,
+    shouldApplyFilter,
+    addFilterConfig,
+    updateFilterConfig,
+    table,
+    targetNetworkId,
+    searchParams,
+    isFilterEnabled,
+  ])
 
   if (!shouldApplyFilter || selectedFilter === undefined || table === undefined)
     return null

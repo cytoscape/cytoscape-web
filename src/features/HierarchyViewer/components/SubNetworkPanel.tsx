@@ -311,7 +311,7 @@ export const SubNetworkPanel = ({
       return
     }
     prevQueryNetworkIdRef.current = queryNetworkId
-  }, [queryNetworkId])
+  }, [queryNetworkId, getViewModel])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {

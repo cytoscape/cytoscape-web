@@ -154,7 +154,17 @@ export const MatchingTableComp = React.memo(
         setMergeTooltipIsOpen(true)
         setMergeTooltipText('Please select networks to merge')
       }
-    }, [duplicatedNamesIds, emptyRowIds, netLst, mergeOpType])
+    }, [
+      duplicatedNamesIds,
+      emptyRowIds,
+      netLst,
+      mergeOpType,
+      setMergeTooltipText,
+      setMergeTooltipIsOpen,
+      mergeWithinNetwork,
+      tableData.length,
+      tableView,
+    ])
 
     const getTooltipMessage = (
       row: MatchingTableRow,

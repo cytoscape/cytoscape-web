@@ -48,7 +48,7 @@ export const useHierarchyViewerManager = (): void => {
     return () => {
       setCustomNetworkTabName(DEFAULT_RENDERER_ID, '')
     }
-  }, [])
+  }, [setCustomNetworkTabName])
 
   const setActiveNetworkView = useUiStateStore(
     (state) => state.setActiveNetworkView,
@@ -154,5 +154,5 @@ export const useHierarchyViewerManager = (): void => {
     } else {
       setPanelState(Panel.RIGHT, PanelState.CLOSED)
     }
-  }, [uiState.enablePopup])
+  }, [uiState.enablePopup, setPanelState])
 }

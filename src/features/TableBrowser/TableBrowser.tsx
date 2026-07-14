@@ -13,9 +13,22 @@ import {
   GridSelection,
   Item,
 } from '@glideapps/glide-data-grid'
-import { CheckBoxOutlined as CheckBoxOutlinedIcon, ContentCopy, ContentPaste } from '@mui/icons-material'
+import {
+  CheckBoxOutlined as CheckBoxOutlinedIcon,
+  ContentCopy,
+  ContentPaste,
+} from '@mui/icons-material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { Button, Divider, IconButton, ListItemIcon, ListItemText,Menu, MenuItem, Tooltip } from '@mui/material'
+import {
+  Button,
+  Divider,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Tooltip,
+} from '@mui/material'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import Tab from '@mui/material/Tab'
@@ -51,19 +64,13 @@ import { NetworkView } from '../../models/ViewModel'
 import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { isValidUrl } from '../../utils/urlUtil'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
-import {
-  DuplicateIcon,
-  EditIcon,
-  SortAscIcon,
-  SortDescIcon,
-} from './Icon'
+import { DuplicateIcon, EditIcon, SortAscIcon, SortDescIcon } from './Icon'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import {
   CreateTableColumnForm,
   DeleteTableColumnForm,
   EditTableColumnForm,
 } from './TableColumnForm'
-
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -86,7 +93,13 @@ const TOOLBAR_HEIGHT = 36
 // Adjust Data Grid size
 const GRID_GAP = TABS_HEIGHT + TOOLBAR_HEIGHT + 15
 
-const ButtonTooltip = ({ title, children }: { title: string; children: React.ReactElement }) => (
+const ButtonTooltip = ({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactElement
+}) => (
   <Tooltip
     title={title}
     placement="top"
@@ -110,7 +123,7 @@ const ToolbarIconButton = ({
   disabled = false,
   onClick,
   children,
-}: { 
+}: {
   title: string
   disabled?: boolean
   onClick: () => void
@@ -118,7 +131,7 @@ const ToolbarIconButton = ({
 }) => (
   <ButtonTooltip title={title}>
     <span>
-      <Button 
+      <Button
         disabled={disabled}
         onClick={onClick}
         sx={{
@@ -138,11 +151,11 @@ const ToolbarIconButton = ({
 const ToolbarTextButton = ({
   onClick,
   children,
-}: { 
+}: {
   onClick: () => void
-  children: React.ReactNode 
+  children: React.ReactNode
 }) => (
-  <Button 
+  <Button
     variant="outlined"
     size="small"
     onClick={onClick}
@@ -198,7 +211,8 @@ export default function TableBrowser(props: {
   const { width } = useWindowSize()
   const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
-  const setPanelState: (panel: Panel, panelState: PanelState) => void = useUiStateStore((state) => state.setPanelState)
+  const setPanelState: (panel: Panel, panelState: PanelState) => void =
+    useUiStateStore((state) => state.setPanelState)
   const setUi = useUiStateStore((state) => state.setUi)
   const currentTabIndex = ui.tableUi.activeTabIndex
 
@@ -288,12 +302,8 @@ export default function TableBrowser(props: {
   const viewModel: NetworkView | undefined = useViewModelStore((state) =>
     state.getViewModel(networkId),
   )
-  const selectedNodes = useViewModelStore(
-    () => viewModel?.selectedNodes ?? [],
-  )
-  const selectedEdges = useViewModelStore(
-    () => viewModel?.selectedEdges ?? [],
-  )
+  const selectedNodes = useViewModelStore(() => viewModel?.selectedNodes ?? [])
+  const selectedEdges = useViewModelStore(() => viewModel?.selectedEdges ?? [])
 
   const tableDisplayConfiguration = useUiStateStore(
     (state) =>
@@ -784,6 +794,7 @@ export default function TableBrowser(props: {
       moveColumn,
       networkId,
       setTableDisplayConfiguration,
+      setNetworkModified,
       tableDisplayConfiguration,
       virtualColumns,
     ],
@@ -860,6 +871,7 @@ export default function TableBrowser(props: {
       edgeTable,
       setColumnWidth,
       setTableDisplayConfiguration,
+      setNetworkModified,
       networkId,
       tableDisplayConfiguration,
     ],
@@ -1782,10 +1794,7 @@ export default function TableBrowser(props: {
               </Tooltip>
             }
           />
-          <Tab
-            data-testid="table-browser-network-tab"
-            label="Network"
-          />
+          <Tab data-testid="table-browser-network-tab" label="Network" />
         </Tabs>
         <Tooltip title="Close panel">
           <IconButton
@@ -1887,7 +1896,10 @@ export default function TableBrowser(props: {
           'aria-labelledby': 'table-browser-context-menu',
         }}
       >
-        <Tooltip title={isContextCellVirtual ? "Cannot apply to virtual columns" : ""} placement="right">
+        <Tooltip
+          title={isContextCellVirtual ? 'Cannot apply to virtual columns' : ''}
+          placement="right"
+        >
           <span>
             <MenuItem
               disabled={isContextCellVirtual}
@@ -1942,7 +1954,10 @@ export default function TableBrowser(props: {
           </span>
         </Tooltip>
 
-        <Tooltip title={isContextCellVirtual ? "Cannot apply to virtual columns" : ""} placement="right">
+        <Tooltip
+          title={isContextCellVirtual ? 'Cannot apply to virtual columns' : ''}
+          placement="right"
+        >
           <span>
             <MenuItem
               disabled={isContextCellVirtual}
@@ -2020,11 +2035,14 @@ export default function TableBrowser(props: {
 
         <MenuItem
           onClick={() => {
-            const activeRef = currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
+            const activeRef =
+              currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
             // emit paste assumes the grid has focus or the browser permits it.
             // Note: Users may need to Ctrl+V instead if browser blocks programmatic paste.
             activeRef.current?.emit('paste').catch(() => {
-              console.warn('Programmatic paste blocked by browser. Please use Ctrl+V.')
+              console.warn(
+                'Programmatic paste blocked by browser. Please use Ctrl+V.',
+              )
             })
             handleContextMenuClose()
           }}
@@ -2040,7 +2058,8 @@ export default function TableBrowser(props: {
         <MenuItem
           disabled={selection.current === undefined}
           onClick={() => {
-            const activeRef = currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
+            const activeRef =
+              currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
             activeRef.current?.emit('copy')
             handleContextMenuClose()
           }}
@@ -2072,15 +2091,18 @@ export default function TableBrowser(props: {
         </MenuItem>
 
         <MenuItem
-          disabled={selection.rows.length === 0 && selection.current === undefined}
+          disabled={
+            selection.rows.length === 0 && selection.current === undefined
+          }
           onClick={() => {
             const rowsToSelect = new Set(selection.rows.toArray())
-            
+
             if (selection.current) {
-              const ranges = selection.current.rangeStack.length > 0 
-                ? selection.current.rangeStack 
-                : [selection.current.range]
-                
+              const ranges =
+                selection.current.rangeStack.length > 0
+                  ? selection.current.rangeStack
+                  : [selection.current.range]
+
               ranges.forEach((range) => {
                 for (let r = range.y; r < range.y + range.height; r++) {
                   rowsToSelect.add(r)

@@ -182,7 +182,13 @@ function BypassFormContent(props: {
       setAccordionExpanded(true)
       additiveSelect(currentNetworkId, Array.from(elementsWithBypass.keys()))
     }
-  }, [selectedElements.length, elementsWithBypass.size])
+  }, [
+    selectedElements.length,
+    elementsWithBypass.size,
+    additiveSelect,
+    currentNetworkId,
+    elementsWithBypass,
+  ])
 
   const emptyBypassForm = (
     <>

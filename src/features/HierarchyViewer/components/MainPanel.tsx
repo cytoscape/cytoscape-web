@@ -172,7 +172,7 @@ export const MainPanel = (): JSX.Element => {
       setRootNetworkId(metadata.interactionNetworkUUID)
       setRootNetworkHost(metadata.interactionNetworkHost ?? '')
     }
-  }, [metadata])
+  }, [metadata, setRootNetworkId, setRootNetworkHost])
 
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />

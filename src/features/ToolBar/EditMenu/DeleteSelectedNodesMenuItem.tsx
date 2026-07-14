@@ -10,7 +10,6 @@ import { IdType } from '../../../models/IdType'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {
@@ -48,7 +47,7 @@ export const DeleteSelectedNodesMenuItem = (
     } else {
       setDisabled(true)
     }
-  }, [selectedNodes, targetNetworkId])
+  }, [selectedNodes, targetNetworkId, currentNetworkId])
 
   const handleDeleteNodes = (): void => {
     props.onClick()

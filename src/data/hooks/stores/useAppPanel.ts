@@ -47,7 +47,7 @@ export const useAppPanel = (): any[] => {
         }
       })
     })
-  }, [apps])
+  }, [apps, panels, panelsCreated])
 
   return panels
 }

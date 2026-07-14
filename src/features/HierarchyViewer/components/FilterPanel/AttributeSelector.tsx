@@ -61,7 +61,7 @@ export const AttributeSelector = ({
         setSelectedValue(selectedValue)
       }
     }
-  }, [options, selectedValue])
+  }, [options, selectedValue, setSelectedValue])
 
   const handleChange = (event: SelectChangeEvent<string>) => {
     // Update the type of the event parameter

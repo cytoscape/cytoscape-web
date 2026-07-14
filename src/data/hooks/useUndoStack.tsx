@@ -431,6 +431,7 @@ export const useUndoStack = () => {
     deleteBypass,
     addNodeViews,
     addEdgeViews,
+    addNodesAndEdges,
   ])
 
   const redoLastEdit = useCallback(() => {

@@ -348,7 +348,23 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setLoading(false)
     reset()
     props.onClick()
-  }, [rows, columns, name])
+  }, [
+    rows,
+    columns,
+    name,
+    addSummary,
+    setVisualStyleOptions,
+    addNewNetwork,
+    setVisualStyle,
+    setTables,
+    setViewModel,
+    addNetworkToWorkspace,
+    setCurrentNetworkId,
+    navigateToNetwork,
+    workspace.id,
+    reset,
+    props,
+  ])
 
   const handleSelectNoneClick = () => {
     const newColumns = unselectAllColumns(columns)
