@@ -265,6 +265,10 @@ const AppShell = (): ReactElement => {
     tryRestoreSelection()
   }
 
+  // One-shot startup effect (URL-as-state pattern): snapshots the mount-time
+  // search params / route and hydrates stores exactly once (ref-guarded, also
+  // under StrictMode). Re-running with fresh router values is never correct —
+  // it would re-import networks and re-navigate after its own URL cleanup.
   useEffect(() => {
     /**
      * Initializes the application shell by:
@@ -462,6 +466,7 @@ const AppShell = (): ReactElement => {
       logStartup.info('[AppShell]: Initializing app shell')
       initializeAppShell()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])
 
   return (

@@ -164,6 +164,9 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     (state) => state.addNetworkIds,
   )
 
+  // Re-parse only when parse options change, merging the user's existing column
+  // assignments. `columns` must stay out of the deps: the effect calls setColumns
+  // with fresh identities, so adding it would loop and clobber user edits.
   useEffect(() => {
     const result = Papa.parse(text, {
       header: useFirstRowAsColumns,
@@ -264,6 +267,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
 
       setColumns(validatedColumns)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-parse on option change only; adding columns would loop
   }, [
     skipNLines,
     useFirstRowAsColumns,

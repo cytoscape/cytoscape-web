@@ -418,6 +418,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   }
 
   // Set the initial state of the networkRecords
+  // Mount-only snapshot by design: `networksLoaded` is a fresh object literal
+  // from the parent on every render, so adding it would re-fire the cleanup
+  // (wiping the user's in-progress matching config) and resurrect networks
+  // the user removed from the merge list.
   useEffect(() => {
     setNetworkRecords(networksLoaded)
     return () => {
@@ -427,6 +431,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       resetMatchingCols()
       resetNodesDuplication()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only snapshot; deps would reset stores mid-session
   }, [])
   // set merge type
   const handleMergeTypeChange = (
@@ -960,7 +965,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         >
           Cancel
         </Button>
-        <Tooltip title={mergeTooltipIsOpen ? mergeTooltipText : ''} placement="top" arrow>
+        <Tooltip
+          title={mergeTooltipIsOpen ? mergeTooltipText : ''}
+          placement="top"
+          arrow
+        >
           <span>
             <Button
               data-testid="merge-dialog-merge-button"

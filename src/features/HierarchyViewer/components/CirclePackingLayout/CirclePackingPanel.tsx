@@ -800,6 +800,10 @@ export const CirclePackingPanel = ({
 
   /**
    * Redraw the circle packing layout when the view model has been updated
+   *
+   * Keyed on visualStyle only: buildCirclePackingViewModel and
+   * circlePackingView get new identities from the rebuild's own store write,
+   * so adding either as a dependency would rebuild in an infinite loop.
    */
   useEffect(
     function onVisualStyleChange() {
@@ -815,6 +819,7 @@ export const CirclePackingPanel = ({
         throw e
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- vs trigger only; rebuild writes the view model (loop)
     [visualStyle],
   )
 
@@ -956,6 +961,8 @@ export const CirclePackingPanel = ({
       }
     },
     // Only depend on hierarchy changes and network changes, not on selection changes
+    // (selection strokes are updated cheaply by onNodeSelection below)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchy/network keys only; selection has its own effect
     [circlePackingView?.hierarchy, networkId, lastNetworkId],
   )
 
@@ -985,6 +992,7 @@ export const CirclePackingPanel = ({
         clearTimeout(timeoutId)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hover trigger only; a view dep would re-open the tooltip on rebuilds
     [hoveredEnter],
   )
 
@@ -1007,6 +1015,10 @@ export const CirclePackingPanel = ({
 
   /**
    * Initialize view model when initial size is available
+   *
+   * buildCirclePackingViewModel must NOT be a dependency: its identity changes
+   * with every render caused by its own store write, so adding it would
+   * rebuild the view model in an infinite loop.
    */
   useEffect(
     function onInitialSizeChange() {
@@ -1014,6 +1026,7 @@ export const CirclePackingPanel = ({
         buildCirclePackingViewModel()
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot build when the measured size arrives
     [initialSize],
   )
 

@@ -142,6 +142,10 @@ function BypassFormContent(props: {
       : [],
   )
 
+  // Open-time snapshot: this form remounts on every popover open and captures
+  // selection/bypass state into local maps that the event handlers maintain.
+  // Do not add deps — bypassElementIds is rebuilt each render and the effect
+  // sets state unconditionally, so deps would cause an infinite render loop.
   React.useEffect(() => {
     // Use Case I: users want to assign bypasses to selected elements
     if (selectedElements.length > 0) {
@@ -174,6 +178,7 @@ function BypassFormContent(props: {
 
       setElementsWithBypass(withBypass)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open-time snapshot; form remounts on each popover open
   }, [])
 
   //Select all elements for the use case: users want to know what elements have bypasses

@@ -855,6 +855,7 @@ const CyjsRenderer = ({
       renderNetwork()
       setRenderedId(id)
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on network prop; the [cy] effect covers instance creation
     [network],
   )
 
@@ -885,6 +886,7 @@ const CyjsRenderer = ({
         renderNetwork(false)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- element counts are the intended trigger, not network identity
     [network?.nodes.length, network?.edges.length],
   )
 
@@ -895,6 +897,9 @@ const CyjsRenderer = ({
    * visual editor properties (`visualEditorProperties`) change. It applies the computed
    * visual style to the Cytoscape.js instance, updates the node and edge styles,
    * and persists the updated view model.
+   *
+   * Note: `networkView` must NOT be a dependency — this effect writes it via
+   * setViewModel with a new object each run, so adding it would loop forever.
    */
   useEffect(
     function onStyleModelUpdate() {
@@ -930,6 +935,7 @@ const CyjsRenderer = ({
       // Store the key-value pair in the local IndexedDB
       setViewModel(id, updatedNetworkView)
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- style/table triggers only; networkView is written here (loop)
     [vs, table, visualEditorProperties],
   )
 
@@ -939,6 +945,10 @@ const CyjsRenderer = ({
    * Removes Cytoscape.js nodes not present in the view model
    * e.g. when a user deletes nodes from the network, the Cytoscape nodes are removed.
    * and fits the network if appropriate.
+   *
+   * Note: `nodesMoved` is a consume-once flag reset by this effect and must
+   * NOT be a dependency — re-firing on its reset would run the position sync
+   * and potential cy.fit() that the flag exists to suppress after a drag.
    */
   useEffect(
     function onNodePositionAndNodeDeletion() {
@@ -976,6 +986,7 @@ const CyjsRenderer = ({
         }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on nodeViews; nodesMoved is a consume-once flag
     [networkView?.nodeViews],
   )
 
@@ -1119,6 +1130,7 @@ const CyjsRenderer = ({
       updateNodeSelection()
       updateEdgeSelection()
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection fields are the intended granularity; whole networkView would resync on every view mutation
     [networkView?.selectedNodes, networkView?.selectedEdges],
   )
 

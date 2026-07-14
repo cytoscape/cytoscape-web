@@ -44,12 +44,14 @@ export const SharedStyleManager = ({
     if (enable) {
       applySharedStyle()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only init; applySharedStyle identity churns per render
   }, [])
 
   useEffect(() => {
     if (enable) {
       applySharedStyle()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on network switch; applySharedStyle reads fresh state
   }, [networkId, rootNetworkId])
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export const SharedStyleManager = ({
       }
       addIndividualStyle(rootNetworkId, editedStyle)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on this network's style only; rootNetworkId dep would copy stale styles on root switch
   }, [individualStyles[networkId]])
 
   const applySharedStyle = (): void => {

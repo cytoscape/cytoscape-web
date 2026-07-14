@@ -60,6 +60,9 @@ export const useHierarchyViewerManager = (): void => {
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
+  // Detects removed hierarchy networks by diffing networkIds against the
+  // lastIds snapshot. lastIds is only ever written here, so it is intentionally
+  // not a dependency — networkIds is the sole trigger.
   useEffect(() => {
     const deleteChildren = async (parentId: IdType): Promise<void> => {
       const keys = await getAllNetworkKeys()
@@ -100,6 +103,7 @@ export const useHierarchyViewerManager = (): void => {
         error,
       )
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on networkIds; lastIds is the previous-value snapshot
   }, [networkIds])
 
   const uiState = useUiStateStore((state) => state.ui)
@@ -145,6 +149,7 @@ export const useHierarchyViewerManager = (): void => {
         deleteRenderer(renderers.circlePacking.id)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on summary change; renderers are fresh at trigger time
   }, [summary])
 
   useEffect(() => {

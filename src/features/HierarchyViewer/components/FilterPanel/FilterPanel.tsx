@@ -131,6 +131,9 @@ export const FilterPanel = () => {
 
   /**
    * Enable filter if URL parameters are set
+   *
+   * Mount-only by design: re-running would call setIsFilterEnabled with the
+   * (never-updated) URL value and snap the user's toggle back to it.
    */
   useEffect(() => {
     const filterEnabled = searchParams.get(FilterUrlParams.FILTER_ENABLED)
@@ -164,10 +167,14 @@ export const FilterPanel = () => {
       )
       // setSearchParams(searchParams)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only URL-param init; re-runs would clobber the toggle
   }, [])
 
   /**
    * Add visual mapping to the filter config
+   *
+   * `selectedFilter` must NOT be a dependency: this effect writes it back via
+   * updateFilterConfig with a fresh object, so adding it would loop forever.
    */
   useEffect(() => {
     if (selectedFilter === undefined) return
@@ -178,6 +185,7 @@ export const FilterPanel = () => {
 
     const newFilterConfig = { ...selectedFilter, visualMapping }
     updateFilterConfig(newFilterConfig.name, newFilterConfig)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- vs trigger only; selectedFilter is written here (loop)
   }, [vs])
 
   /**
@@ -186,6 +194,7 @@ export const FilterPanel = () => {
   useEffect(() => {
     searchParams.set(FilterUrlParams.FILTER_ENABLED, isFilterEnabled.toString())
     // setSearchParams(searchParams)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the toggle; searchParams is fresh each render
   }, [isFilterEnabled])
 
   useEffect(() => {

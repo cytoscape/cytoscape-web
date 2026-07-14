@@ -299,9 +299,12 @@ export function ContinuousNumberMappingForm(props: {
         value: max,
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on handle edits; the [minState]/[maxState] effects own the inverse clamping
   }, [handles])
 
   // anytime someone changes the min value, make sure all handle values are greater than the min
+  // note: `handles` must stay out of the deps — setHandles creates new identities
+  // every run, so adding it would re-trigger this effect forever
   React.useEffect(() => {
     const newHandles = [...handles]
       .map((h) => {
@@ -326,9 +329,12 @@ export function ContinuousNumberMappingForm(props: {
     setAddHandleFormValue(
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- min-edit trigger only; adding handles would loop
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
+  // note: `handles` must stay out of the deps — setHandles creates new identities
+  // every run, so adding it would re-trigger this effect forever
   React.useEffect(() => {
     const newHandles = [...handles]
       .map((h) => {
@@ -352,6 +358,7 @@ export function ContinuousNumberMappingForm(props: {
     setAddHandleFormValue(
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- max-edit trigger only; adding handles would loop
   }, [maxState])
 
   if (m == null) {
@@ -504,7 +511,8 @@ export function ContinuousNumberMappingForm(props: {
                             width: 2,
                             top: HANDLE_VERTICAL_OFFSET,
                             height: pixelPositionY,
-                            backgroundColor: (theme) => theme.palette.text.disabled,
+                            backgroundColor: (theme) =>
+                              theme.palette.text.disabled,
                             '&:hover': {
                               cursor: isEndHandle ? 'ns-resize' : 'move',
                             },
@@ -519,12 +527,16 @@ export function ContinuousNumberMappingForm(props: {
                               right: -10,
                               width: 20,
                               height: 20,
-                              backgroundColor: (theme) => theme.palette.text.secondary,
-                              color: (theme) => theme.palette.background.default,
+                              backgroundColor: (theme) =>
+                                theme.palette.text.secondary,
+                              color: (theme) =>
+                                theme.palette.background.default,
                               '&:hover': {
                                 cursor: 'pointer',
-                                backgroundColor: (theme) => theme.palette.text.primary,
-                                color: (theme) => theme.palette.background.paper,
+                                backgroundColor: (theme) =>
+                                  theme.palette.text.primary,
+                                color: (theme) =>
+                                  theme.palette.background.paper,
                               },
                             }}
                             onClick={() => deleteHandle(h.id)}
@@ -539,11 +551,15 @@ export function ContinuousNumberMappingForm(props: {
                               right: -10,
                               width: 20,
                               height: 20,
-                              backgroundColor: (theme) => theme.palette.text.secondary,
-                              color: (theme) => theme.palette.background.default,
+                              backgroundColor: (theme) =>
+                                theme.palette.text.secondary,
+                              color: (theme) =>
+                                theme.palette.background.default,
                               '&:hover': {
-                                backgroundColor: (theme) => theme.palette.text.primary,
-                                color: (theme) => theme.palette.background.paper,
+                                backgroundColor: (theme) =>
+                                  theme.palette.text.primary,
+                                color: (theme) =>
+                                  theme.palette.background.paper,
                               },
                             }}
                             onClick={() => deleteHandle(h.id)}
@@ -668,7 +684,12 @@ export function ContinuousNumberMappingForm(props: {
               }}
             >
               <ArrowLeftIcon
-                sx={{ fontSize: 40, position: 'absolute', left: -27, color: (theme) => theme.palette.text.disabled }}
+                sx={{
+                  fontSize: 40,
+                  position: 'absolute',
+                  left: -27,
+                  color: (theme) => theme.palette.text.disabled,
+                }}
               />
               <VisualPropertyValueForm
                 currentValue={m.ltMinVpValue}
@@ -705,7 +726,12 @@ export function ContinuousNumberMappingForm(props: {
               }}
             >
               <ArrowRightIcon
-                sx={{ fontSize: 40, position: 'absolute', left: 35, color: (theme) => theme.palette.text.disabled }}
+                sx={{
+                  fontSize: 40,
+                  position: 'absolute',
+                  left: 35,
+                  color: (theme) => theme.palette.text.disabled,
+                }}
               />
               <VisualPropertyValueForm
                 currentValue={m.gtMaxVpValue}
@@ -765,7 +791,7 @@ export function ContinuousNumberMappingForm(props: {
             }}
           >
             <Box
-              sx={{ 
+              sx={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 0.5,
