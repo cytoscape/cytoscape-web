@@ -2,7 +2,7 @@
 
 > Audit date: 2026-07-13 · branch `wincompat` @ 186d52cf · Method: 8 parallel dimension auditors, every finding independently re-verified against the repo by a skeptical verifier agent (60 agents total). 51 findings confirmed, 1 rejected.
 >
-> The synthesized, deduplicated report is in [README.md](./README.md). Raw structured data: [dx-findings.json](./dx-findings.json).
+> The synthesized, deduplicated report is in [AUDIT.md](../AUDIT.md). Raw structured data: [dx-findings.json](./dx-findings.json).
 >
 > Findings overlap across dimensions where independent auditors converged on the same gap (e.g. the .spec include pattern, verify:federation, check:agents) — convergence noted inline.
 

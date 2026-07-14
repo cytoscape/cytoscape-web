@@ -4,7 +4,9 @@
 >
 > **Method:** 8 parallel auditors (build speed, dev loop, testing, lint/typecheck, CI/CD, docs/onboarding, automation, editor ergonomics), with every finding independently re-verified against the actual repo by a skeptical verifier agent — 60 agents total. Timing claims were reproduced empirically by the verifiers. 51 findings confirmed, 1 rejected.
 >
-> This file is the synthesized, deduplicated report. Full per-finding detail (evidence with file:line citations, verifier corrections): [FINDINGS.md](./FINDINGS.md). Raw structured data: [dx-findings.json](./dx-findings.json).
+> This file is the synthesized, deduplicated report. Full per-finding detail (evidence with file:line citations, verifier corrections): [findings/FINDINGS.md](./findings/FINDINGS.md). Raw structured data: [findings/dx-findings.json](./findings/dx-findings.json).
+>
+> **Status update (2026-07-14):** items 1, 3, and 4 of the suggested order below have been addressed on this branch — the Vitest include fix (`6c47d88f`), CI parallelization + concurrency (`300e8550`), and the lint-loop speedups (`703c8d6b`, `986494a7`, `de3b7d53`, with oxlint replacing the planned `eslint --cache`). The findings are preserved below as originally written; line numbers cited for `vitest.config.ts`, `ci.yml`, `package.json` scripts, and the ESLint config predate those commits.
 
 ## Fix these first — verified defects, not just improvements
 
@@ -72,4 +74,4 @@
 
 One honest rejection from verification: "ignore `test/fixtures/remote-app/dist` in the dev watcher" — the premise was real but the claimed harm doesn't occur (Vite's defaults already cover it).
 
-**Notes:** This audit changed no code. Several recommendations touch `package.json` or add dependencies (husky, lint-staged, size-limit), which per CLAUDE.md require explicit maintainer approval. Finding numbers (#N) refer to entries in [FINDINGS.md](./FINDINGS.md) and `dx-findings.json`.
+**Notes:** This audit changed no code. Several recommendations touch `package.json` or add dependencies (husky, lint-staged, size-limit), which per CLAUDE.md require explicit maintainer approval. Finding numbers (#N) refer to entries in [findings/FINDINGS.md](./findings/FINDINGS.md) and `findings/dx-findings.json`.
