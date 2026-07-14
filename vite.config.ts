@@ -31,14 +31,14 @@ const lastCommitTime = readGitMetadata('git show -s --format=%cI HEAD')
 const deps = packageJson.dependencies
 
 /**
- * Dev-server-only plugin that serves the runtime apps manifest at `/apps.json`.
- * For production builds the manifest is copied into `dist` by the `copy:dist`
- * npm script (cpy-cli), so no build-time emission is needed here.
+ * Owns the runtime apps manifest at `/apps.json` for both modes: the dev
+ * server serves it as middleware (from apps.local.json), and production
+ * builds emit it into `dist` (from apps.json) via generateBundle — so a
+ * bare `vite build` produces a complete, deployable dist.
  */
-function serveAppsConfigInDev(appsConfigPath: string): Plugin {
+function appsConfigPlugin(appsConfigPath: string): Plugin {
   return {
-    name: 'serve-apps-config-in-dev',
-    apply: 'serve',
+    name: 'apps-config',
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
         if (req.url === '/apps.json') {
@@ -48,6 +48,13 @@ function serveAppsConfigInDev(appsConfigPath: string): Plugin {
         }
 
         next()
+      })
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'apps.json',
+        source: fs.readFileSync(appsConfigPath, 'utf8'),
       })
     },
   }
@@ -77,7 +84,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
         ]),
       ),
     }),
-    serveAppsConfigInDev(appsConfigPath),
+    appsConfigPlugin(appsConfigPath),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old
