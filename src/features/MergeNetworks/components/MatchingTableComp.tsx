@@ -10,7 +10,7 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material'
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
@@ -77,26 +77,31 @@ export const MatchingTableComp = React.memo(
       (state) => state.setIsOpen,
     )
     const setMergeTooltipText = useMergeToolTipStore((state) => state.setText)
-    const name2RowId = new Map<string, number[]>()
-    const emptyRowIds = new Set<number>()
-    tableData.forEach((row) => {
-      const name = row.mergedNetwork
-      if (name.length > 0) {
-        if (name2RowId.has(row.mergedNetwork)) {
-          name2RowId.get(row.mergedNetwork)?.push(row.id)
+    // Memoized so the Sets keep a stable identity between renders and the
+    // effect below only re-runs when tableData actually changes
+    const { emptyRowIds, duplicatedNamesIds } = useMemo(() => {
+      const name2RowId = new Map<string, number[]>()
+      const emptyRowIds = new Set<number>()
+      tableData.forEach((row) => {
+        const name = row.mergedNetwork
+        if (name.length > 0) {
+          if (name2RowId.has(row.mergedNetwork)) {
+            name2RowId.get(row.mergedNetwork)?.push(row.id)
+          } else {
+            name2RowId.set(row.mergedNetwork, [row.id])
+          }
         } else {
-          name2RowId.set(row.mergedNetwork, [row.id])
+          emptyRowIds.add(row.id)
         }
-      } else {
-        emptyRowIds.add(row.id)
-      }
-    })
-    //get rows that have duplicated name
-    const duplicatedNamesIds = new Set(
-      Array.from(name2RowId.values())
-        .filter((ids) => ids.length > 1)
-        .reduce((acc, val) => acc.concat(val), []),
-    )
+      })
+      //get rows that have duplicated name
+      const duplicatedNamesIds = new Set(
+        Array.from(name2RowId.values())
+          .filter((ids) => ids.length > 1)
+          .reduce((acc, val) => acc.concat(val), []),
+      )
+      return { emptyRowIds, duplicatedNamesIds }
+    }, [tableData])
 
     useEffect(() => {
       if (netLst.length > 0) {

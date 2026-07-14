@@ -10,7 +10,7 @@ import {
   Select,
   SelectChangeEvent,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
@@ -41,13 +41,17 @@ export const AttributeSelector = ({
     selectedType === GraphObjectType.NODE ? nodeTable : edgeTable
 
   // Filter options by type. For string
-  const options: string[] = []
-  targetTable.columns.forEach((column: Column) => {
-    const { name, type } = column
-    if (type === ValueTypeName.Boolean || type === ValueTypeName.String) {
-      options.push(name)
-    }
-  })
+  const options: string[] = useMemo(
+    () =>
+      targetTable.columns
+        .filter(
+          (column: Column) =>
+            column.type === ValueTypeName.Boolean ||
+            column.type === ValueTypeName.String,
+        )
+        .map((column: Column) => column.name),
+    [targetTable],
+  )
 
   useEffect(() => {
     if (options.length === 0) {
@@ -57,8 +61,6 @@ export const AttributeSelector = ({
       if (selectedValue === '' || !options.includes(selectedValue)) {
         // Select the first option if the selected value is not in the options
         setSelectedValue(options[0])
-      } else {
-        setSelectedValue(selectedValue)
       }
     }
   }, [options, selectedValue, setSelectedValue])

@@ -58,6 +58,10 @@ interface CirclePackingPanelProps {
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
 const SVG_ID = 'cpView'
 
+// Stable fallback so `selectedNodes` keeps the same identity across renders
+// while the circle packing view model has not been built yet
+const EMPTY_SELECTION: IdType[] = []
+
 // Color scale for the circles in the view
 const colorScale = getColorMapper([0, 5])
 
@@ -147,7 +151,8 @@ export const CirclePackingPanel = ({
     (view) => view.type === CirclePackingType,
   ) as CirclePackingView
 
-  const selectedNodes: IdType[] = circlePackingView?.selectedNodes ?? []
+  const selectedNodes: IdType[] =
+    circlePackingView?.selectedNodes ?? EMPTY_SELECTION
   const selectedNodeSet = useMemo(
     () => new Set<string>(selectedNodes),
     [selectedNodes],

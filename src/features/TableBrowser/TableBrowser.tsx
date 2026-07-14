@@ -380,14 +380,18 @@ export default function TableBrowser(props: {
   const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
   const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
   // Temporary fix: fallback to table columns if tableDisplayConfiguration is not found
-  const modelColumns =
-    currentTableConfig?.columnConfiguration ??
-    currentTable?.columns?.map((col) => ({
-      attributeName: col.name,
-      visible: true,
-      columnWidth: undefined,
-    })) ??
-    []
+  // Memoized so downstream memos (columns/allColumns) keep stable identities
+  const modelColumns = React.useMemo(
+    () =>
+      currentTableConfig?.columnConfiguration ??
+      currentTable?.columns?.map((col) => ({
+        attributeName: col.name,
+        visible: true,
+        columnWidth: undefined,
+      })) ??
+      [],
+    [currentTableConfig, currentTable],
+  )
 
   // Utility function to create a new TableDisplayConfiguration with updates
   const createUpdatedTableDisplayConfiguration = React.useCallback(
@@ -465,19 +469,23 @@ export default function TableBrowser(props: {
     currentTableConfig,
   ])
 
-  const columns = modelColumns.map((col, index) => {
-    const columnType = currentTable?.columns?.find(
-      (c) => c?.name === col?.attributeName,
-    )?.type
+  const columns = React.useMemo(
+    () =>
+      modelColumns.map((col, index) => {
+        const columnType = currentTable?.columns?.find(
+          (c) => c?.name === col?.attributeName,
+        )?.type
 
-    return {
-      id: col?.attributeName ?? '',
-      title: col?.attributeName ?? '',
-      type: columnType ?? ValueTypeName.String,
-      index,
-      width: col?.columnWidth,
-    }
-  })
+        return {
+          id: col?.attributeName ?? '',
+          title: col?.attributeName ?? '',
+          type: columnType ?? ValueTypeName.String,
+          index,
+          width: col?.columnWidth,
+        }
+      }),
+    [modelColumns, currentTable],
+  )
 
   // Add virtual columns for edge table to show source and target node names
   const virtualColumns = React.useMemo(() => {
@@ -544,34 +552,31 @@ export default function TableBrowser(props: {
   }, [currentTable, edgeTable, nodeTable, network])
 
   // Combine regular columns with virtual columns for edge table
-  const allColumns =
-    currentTable === edgeTable ? [...virtualColumns, ...columns] : columns
+  const allColumns = React.useMemo(
+    () =>
+      currentTable === edgeTable ? [...virtualColumns, ...columns] : columns,
+    [currentTable, edgeTable, virtualColumns, columns],
+  )
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
-  const selectedElementsSet = new Set(selectedElements)
-  const rowsWithIds = Array.from(
-    (currentTable?.rows ?? new Map()).entries(),
-  ).map(([key, value]) => ({ ...value, id: key }))
-  let rows =
-    selectedElements?.length > 0
-      ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
-      : rowsWithIds
 
-  React.useEffect(() => {
-    // scroll to the first result anytime someone changes the filtered rows
-    // e.g. when the user selects nodes in the network view, scroll to the top of the list in the table
-    nodeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
-      vAlign: 'start',
-      hAlign: 'start',
-    })
-    edgeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
-      vAlign: 'start',
-      hAlign: 'start',
-    })
-  }, [selectedElements])
+  // Filtered (by selection) and sorted rows, memoized so grid callbacks that
+  // depend on `rows` keep a stable identity between unrelated renders
+  const rows = React.useMemo(() => {
+    const selectedElementsSet = new Set(selectedElements)
+    const rowsWithIds = Array.from(
+      (currentTable?.rows ?? new Map()).entries(),
+    ).map(([key, value]) => ({ ...value, id: key }))
+    let result =
+      selectedElements?.length > 0
+        ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
+        : rowsWithIds
 
-  if (sort.column != null && sort.direction != null && sort.valueType != null) {
-    if (sort.column != null) {
+    if (
+      sort.column != null &&
+      sort.direction != null &&
+      sort.valueType != null
+    ) {
       // Handle sorting for virtual columns
       if (
         sort.column === '__sourceNodeName' ||
@@ -592,8 +597,8 @@ export default function TableBrowser(props: {
           })
         }
 
-        rows = orderBy(
-          rows,
+        result = orderBy(
+          result,
           (o) => {
             if (sort.column === '__sourceNodeName') {
               const sourceId = (o as any).s?.toString()
@@ -612,8 +617,8 @@ export default function TableBrowser(props: {
         )
       } else {
         // Regular column sorting
-        rows = orderBy(
-          rows,
+        result = orderBy(
+          result,
           (o) =>
             (o as Record<string, ValueType>)[
               sort.column as string
@@ -622,7 +627,22 @@ export default function TableBrowser(props: {
         )
       }
     }
-  }
+
+    return result
+  }, [selectedElements, currentTable, sort, nodeTable])
+
+  React.useEffect(() => {
+    // scroll to the first result anytime someone changes the filtered rows
+    // e.g. when the user selects nodes in the network view, scroll to the top of the list in the table
+    nodeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
+      vAlign: 'start',
+      hAlign: 'start',
+    })
+    edgeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
+      vAlign: 'start',
+      hAlign: 'start',
+    })
+  }, [selectedElements])
 
   const handleChange = (
     event: React.SyntheticEvent,

@@ -1,5 +1,5 @@
 import DeleteIcon from '@mui/icons-material/Delete'
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement } from 'react'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
@@ -14,8 +14,6 @@ export const DeleteSelectedNodesMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {
   const { deleteNodes } = useDeleteNodes()
-
-  const [disabled, setDisabled] = useState<boolean>(true)
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -39,15 +37,10 @@ export const DeleteSelectedNodesMenuItem = (
   const selectedNodes: IdType[] =
     viewModel !== undefined ? viewModel.selectedNodes : []
 
-  useEffect(() => {
-    // Disable the menu item if there are no selected nodes
-    // or if the sub network view is selected
-    if (selectedNodes.length > 0 && targetNetworkId === currentNetworkId) {
-      setDisabled(false)
-    } else {
-      setDisabled(true)
-    }
-  }, [selectedNodes, targetNetworkId, currentNetworkId])
+  // Disable the menu item if there are no selected nodes
+  // or if the sub network view is selected
+  const disabled: boolean =
+    selectedNodes.length === 0 || targetNetworkId !== currentNetworkId
 
   const handleDeleteNodes = (): void => {
     props.onClick()

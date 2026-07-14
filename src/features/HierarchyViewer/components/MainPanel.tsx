@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Allotment } from 'allotment'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
@@ -34,6 +34,25 @@ export interface Query {
 const queryClient = new QueryClient()
 
 export const CP_RENDERER_ID: string = 'circlePacking'
+
+// Module-scope so the renderer object keeps a stable identity across renders
+const CirclePackingRenderer: Renderer = {
+  id: CP_RENDERER_ID,
+  name: 'Cell View',
+  description: 'Circle Packing Renderer',
+  getComponent: (
+    networkData: Network,
+    initialSize: { w: number; h: number },
+    visible: boolean,
+  ) => (
+    <CirclePackingPanel
+      rendererId={CP_RENDERER_ID}
+      network={networkData}
+      initialSize={initialSize}
+      visible={visible}
+    />
+  ),
+}
 
 export const MainPanel = (): JSX.Element => {
   const [subNetworkName, setSubNetworkName] = useState<string>('')
@@ -80,25 +99,7 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.setRootNetworkHost,
   )
 
-  const CirclePackingRenderer: Renderer = {
-    id: CP_RENDERER_ID,
-    name: 'Cell View',
-    description: 'Circle Packing Renderer',
-    getComponent: (
-      networkData: Network,
-      initialSize: { w: number; h: number },
-      visible: boolean,
-    ) => (
-      <CirclePackingPanel
-        rendererId={CP_RENDERER_ID}
-        network={networkData}
-        initialSize={initialSize}
-        visible={visible}
-      />
-    ),
-  }
-
-  const checkDataType = (): void => {
+  const checkDataType = useCallback((): void => {
     const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
 
     if (metadata !== undefined) {
@@ -112,15 +113,11 @@ export const MainPanel = (): JSX.Element => {
       setIsHierarchy(false)
       setMetadata(undefined)
     }
-  }
+  }, [networkSummary, renderers, addRenderer])
 
   useEffect(() => {
     checkDataType()
-  }, [networkSummary])
-
-  useEffect(() => {
-    checkDataType()
-  }, [currentNetworkId])
+  }, [networkSummary, currentNetworkId, checkDataType])
 
   useEffect(() => {
     // Pick the first selected node if multiple nodes are selected

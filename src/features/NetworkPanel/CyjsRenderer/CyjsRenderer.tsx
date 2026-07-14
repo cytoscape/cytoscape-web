@@ -1154,11 +1154,20 @@ const CyjsRenderer = ({
 
   /**
    * Re-render network when Cytoscape instance changes.
+   *
+   * Effect-event pattern: the ref always points at the latest renderNetwork
+   * closure, so the effect below fires only when `cy` changes (its intended
+   * trigger) while still calling an up-to-date renderNetwork.
    */
+  const renderNetworkRef = useRef(renderNetwork)
+  useEffect(() => {
+    renderNetworkRef.current = renderNetwork
+  })
+
   useEffect(
     function onCyJsRendererChange() {
       if (cy !== null) {
-        renderNetwork()
+        renderNetworkRef.current()
       }
     },
     [cy],

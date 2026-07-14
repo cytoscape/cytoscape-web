@@ -14,7 +14,6 @@ import { NetworkView } from '../../../models/ViewModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { createNode } = useCreateNode()
 
@@ -43,29 +42,30 @@ export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
 
   const getViewport = useRendererStore((state) => state.getViewport)
   const visualStyles = useVisualStyleStore((state) => state.visualStyles)
-  const visualStyleOption = useUiStateStore((state) => state.ui.visualStyleOptions[currentNetworkId])
+  const visualStyleOption = useUiStateStore(
+    (state) => state.ui.visualStyleOptions[currentNetworkId],
+  )
 
-  // Check if current view supports creation
-  const canCreateInView = (): boolean => {
-    if (networkView === undefined) {
-      return true // Default view supports creation
-    }
-    const viewType = networkView.type
-    // Only allow creation in node-link diagrams
-    return viewType === undefined || viewType === 'nodeLink'
-  }
+  // Check if current view supports creation:
+  // only node-link diagrams (or the default view) allow creation
+  const isCreationEnabled: boolean =
+    networkView === undefined ||
+    networkView.type === undefined ||
+    networkView.type === 'nodeLink'
+  const isHierarchy: boolean = networkSummary ? isHCX(networkSummary) : false
 
   useEffect(() => {
-    const isCreationEnabled = canCreateInView()
-    const isHierarchy = networkSummary ? isHCX(networkSummary) : false
     // Disable the menu item if the sub network view is selected, creation is not enabled, or network is a hierarchy
-    if (targetNetworkId === currentNetworkId && isCreationEnabled && !isHierarchy) {
+    if (
+      targetNetworkId === currentNetworkId &&
+      isCreationEnabled &&
+      !isHierarchy
+    ) {
       setDisabled(false)
     } else {
       setDisabled(true)
     }
-  }, [targetNetworkId, currentNetworkId, networkView, networkSummary])
-
+  }, [targetNetworkId, currentNetworkId, isCreationEnabled, isHierarchy])
 
   const handleCreateNode = (): void => {
     // Get the viewport center (pan position)
@@ -82,9 +82,12 @@ export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
     const defNodeHeight = style?.nodeHeight?.defaultValue ?? 50
     // Calculate an offset to ensure the new node is fully visible within the viewport,
     // based on the default node size and the padding
-    const nodeSizeLocked = visualStyleOption?.visualEditorProperties?.nodeSizeLocked
+    const nodeSizeLocked =
+      visualStyleOption?.visualEditorProperties?.nodeSizeLocked
     const offsetY = (defNodeHeight as number) / 2 + pad
-    const offsetX = nodeSizeLocked ? offsetY : (defNodeWidth as number) / 2 + pad // if node size locked, use height for both width and height
+    const offsetX = nodeSizeLocked
+      ? offsetY
+      : (defNodeWidth as number) / 2 + pad // if node size locked, use height for both width and height
     // Calculate the position to place the new node in the top-left corner, adjusted for pan, zoom and offset
     const x = -panX / zoom + offsetX
     const y = -panY / zoom + offsetY
@@ -94,8 +97,6 @@ export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
     props.onClick()
   }
 
-  const isCreationEnabled = canCreateInView()
-  const isHierarchy = networkSummary ? isHCX(networkSummary) : false
   const tooltipText = isHierarchy
     ? 'Creation not available for hierarchy networks'
     : !isCreationEnabled
