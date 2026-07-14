@@ -39,7 +39,7 @@
     "test:e2e": "npm run build:test-remote && playwright test",
     "test:e2e:chromium": "npm run build:test-remote && playwright test --project=chromium",
     "build:test-remote": "vite build --config test/fixtures/remote-app/vite.config.ts",
-    "verify:federation": "ts-node --transpileOnly --compilerOptions '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' scripts/verify-federation-build.ts",
+    "verify:federation": "ts-node --transpileOnly --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/verify-federation-build.ts",
     "build:bundle": "cross-env vite build",
     "copy:dist": "cpy \"silent-check-sso.html\" \"src/assets/apps.json\" dist --flat",
     "copy:netlify": "cpy \"netlify/_redirects\" dist --flat",
@@ -54,7 +54,7 @@
     "lint:eslint": "eslint --ext .js,.ts,.jsx,.tsx src",
     "lint:tsc": "tsc --noEmit",
     "lint:fix": "eslint --ext .js,.ts,.jsx,.tsx src --fix",
-    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx}'"
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "devDependencies": {
     "@faker-js/faker": "^7.6.0",
