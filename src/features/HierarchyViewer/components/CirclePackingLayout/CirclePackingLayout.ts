@@ -93,7 +93,6 @@ export const createTreeLayout = async ({
   cyNetDag2tree2(
     root,
     null,
-    cyNet,
     nodeTable,
     visited3,
     treeElementList,

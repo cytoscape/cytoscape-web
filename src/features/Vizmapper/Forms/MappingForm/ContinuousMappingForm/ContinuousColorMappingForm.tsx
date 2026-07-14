@@ -457,7 +457,6 @@ export function ContinuousColorMappingForm(props: {
                   horizontalPadding={GRADIENT_AXIS_HORIZONTAL_PADDING}
                   verticalPadding={GRADIENT_AXIS_VERTICAL_PADDING}
                   valuePixelScale={valuePixelScale}
-                  colorScale={colorScale}
                   labelColor={theme.palette.text.secondary}
                   strokeColor={theme.palette.text.secondary}
                   cm={m}

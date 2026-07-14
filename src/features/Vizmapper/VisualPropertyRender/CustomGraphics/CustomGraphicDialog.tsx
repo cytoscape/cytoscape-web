@@ -32,10 +32,7 @@ import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import {
-  PieChartPropertiesType,
-  RingChartPropertiesType,
-} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { AttributesForm } from './Forms/AttributesForm'
 import { ColorsForm } from './Forms/ColorsForm'
 import { PropertiesForm } from './Forms/PropertiesForm'

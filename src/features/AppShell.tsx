@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import cloneDeep from 'lodash/cloneDeep'
-import React, { ReactElement, useContext, useEffect, useRef } from 'react'
+import React, { ReactElement, useEffect, useRef } from 'react'
 import {
   Location,
   Outlet,
@@ -11,7 +11,6 @@ import {
 } from 'react-router-dom'
 
 import { initEventBus } from '../app-api/event-bus/initEventBus'
-import { AppConfigContext } from '../AppConfigContext'
 import {
   getUiStateFromDb,
   getWorkspaceFromDb,
@@ -83,8 +82,6 @@ const AppShell = (): ReactElement => {
     (state) => state.getToken,
   )
   const loadNetworkSummaries = useLoadNetworkSummaries()
-  const { ndexBaseUrl } = useContext(AppConfigContext)
-
   const setUi = useUiStateStore((state) => state.setUi)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
