@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 
-import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface URLData {
@@ -13,7 +12,6 @@ export const useOpenURL = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
-  const addApp = useAppStore((state) => state.add)
   const isValidURLData = (obj: any): obj is URLData => {
     return (
       obj &&

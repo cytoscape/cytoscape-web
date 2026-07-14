@@ -200,10 +200,12 @@ export const FilterPanel = () => {
   useEffect(() => {
     if (!shouldApplyFilter) return
 
-    // Create a filter for the selected attribute if it does not exist
+    // Read filterConfigs at execution time: this effect writes it back via
+    // updateFilterConfig/addFilterConfig, so a reactive dep would loop.
+    const { filterConfigs: currentFilterConfigs } = useFilterStore.getState()
 
-    // const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
-    const currentConfig = filterConfigs[targetNetworkId]
+    // Create a filter for the selected attribute if it does not exist
+    const currentConfig = currentFilterConfigs[targetNetworkId]
 
     const visualMapping = getMapping(vs, targetAttrName)
 
@@ -234,7 +236,7 @@ export const FilterPanel = () => {
       visualMapping,
     )
 
-    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
+    if (currentFilterConfigs[DEFAULT_FILTER_NAME] === undefined) {
       addFilterConfig(filterConfig)
       // Encode the filter settings into the URL
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)

@@ -54,16 +54,18 @@ export const SharedStyleManager = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on network switch; applySharedStyle reads fresh state
   }, [networkId, rootNetworkId])
 
+  const currentNetworkStyle: VisualStyle | undefined =
+    individualStyles[networkId]
+
   useEffect(() => {
     if (enable) {
-      const editedStyle = individualStyles[networkId]
-      if (editedStyle === undefined) {
+      if (currentNetworkStyle === undefined) {
         return
       }
-      addIndividualStyle(rootNetworkId, editedStyle)
+      addIndividualStyle(rootNetworkId, currentNetworkStyle)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on this network's style only; rootNetworkId dep would copy stale styles on root switch
-  }, [individualStyles[networkId]])
+  }, [currentNetworkStyle])
 
   const applySharedStyle = (): void => {
     const rootNetworkStyle = individualStyles[rootNetworkId]

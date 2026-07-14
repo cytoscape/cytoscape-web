@@ -810,17 +810,20 @@ export default function TableBrowser(props: {
     ],
   )
 
-  const onItemHovered = React.useCallback((cell: Item) => {
-    const rowIndex = cell[1]
-    const rowData = rows[rowIndex]
-    const cxId = rowData?.id
+  const onItemHovered = React.useCallback(
+    (cell: Item) => {
+      const rowIndex = cell[1]
+      const rowData = rows[rowIndex]
+      const cxId = rowData?.id
 
-    if (cxId != null) {
-      // TODO this operation is too expensive for large networks
-      // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
-      // setHovered(networkId, String(cxId))
-    }
-  }, [])
+      if (cxId != null) {
+        // TODO this operation is too expensive for large networks
+        // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
+        // setHovered(networkId, String(cxId))
+      }
+    },
+    [rows],
+  )
 
   const onColumnResize = React.useCallback(
     (column: GridColumn, newSize: number, colIndex: number): void => {
@@ -1006,7 +1009,17 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, currentTable, rows],
+    [
+      props.currentNetworkId,
+      currentTable,
+      rows,
+      columns,
+      postEdit,
+      networkId,
+      setNetworkModified,
+      nodeTable,
+      setCellValue,
+    ],
   )
 
   const onPaste = React.useCallback(

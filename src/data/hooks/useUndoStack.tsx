@@ -25,7 +25,6 @@ import { VisualPropertyName } from '../../models/VisualStyleModel/VisualProperty
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from './stores/RendererFunctionStore'
-import { useRendererStore } from './stores/RendererStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useUndoStore } from './stores/UndoStore'
@@ -77,14 +76,11 @@ export const useUndoStack = () => {
   const createMapping = useVisualStyleStore((state) => state.createMapping)
   const setTable = useTableStore((state) => state.setTable)
   const setColumnName = useTableStore((state) => state.setColumnName)
-  const addNodes = useNetworkStore((state) => state.addNodes)
   const addEdges = useNetworkStore((state) => state.addEdges)
   const editRows = useTableStore((state) => state.editRows)
-  const setNetwork = useNetworkStore((state) => state.setNetwork)
   const deleteColumn = useTableStore((state) => state.deleteColumn)
   const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
   const setValues = useTableStore((state) => state.setValues)
-  const setViewport = useRendererStore((state) => state.setViewport)
   const { undoStackSize } = useContext(AppConfigContext)
 
   // ID of the network on focus (can be different from the main network)
