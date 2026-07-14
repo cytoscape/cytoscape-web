@@ -12,6 +12,9 @@ import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
 import { AppIdProvider } from '../.././../app-api/AppIdContext'
+import { CyWebApi } from '../../../app-api/core'
+import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { createResourceApi } from '../../../app-api/core/resourceApi'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 import { ViewerPanel } from '../../HierarchyViewer/components'
@@ -130,15 +133,8 @@ export function usePanelEntries(): PanelEntry[] {
 
 /**
  * Build per-app APIs map for AppIdProvider.
- * Lazily imported to avoid circular dependencies.
  */
 function getPerAppApis(appId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createResourceApi } = require('../../../app-api/core/resourceApi')
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createContextMenuApi } = require('../../../app-api/core/contextMenuApi')
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { CyWebApi } = require('../../../app-api/core')
   return {
     ...CyWebApi,
     resource: createResourceApi(appId),
