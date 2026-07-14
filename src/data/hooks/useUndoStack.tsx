@@ -138,7 +138,7 @@ export const useUndoStack = () => {
       setUndoStack(currentTargetNetworkId, nextUndoStack)
       setRedoStack(currentTargetNetworkId, [])
     },
-    [targetNetworkId, setUndoStack, setRedoStack, undoStackSize],
+    [setUndoStack, setRedoStack, undoStackSize],
   )
 
   const undoLastEdit = useCallback(() => {
@@ -406,16 +406,12 @@ export const useUndoStack = () => {
     updateNodePositions,
     setMapping,
     setDiscreteMappingValue,
-    deleteDiscreteMappingValue,
     setBypass,
     setBypassMap,
     setTable,
     setColumnName,
     addEdges,
-    addNodes,
     editRows,
-    setNetwork,
-    setViewport,
     deleteNodesFromNetwork,
     deleteEdgesFromNetwork,
     deleteRows,
@@ -428,7 +424,6 @@ export const useUndoStack = () => {
     tables,
     viewModels,
     visualStyles,
-    deleteBypass,
     addNodeViews,
     addEdgeViews,
     addNodesAndEdges,
@@ -690,14 +685,9 @@ export const useUndoStack = () => {
     deleteBypass,
     setBypassMap,
     setBypass,
-    setTable,
     setColumnName,
-    addEdges,
-    addNodes,
     editRows,
-    setNetwork,
     deleteColumn,
-    setViewport,
     deleteNodesFromNetwork,
     deleteEdgesFromNetwork,
     deleteRows,

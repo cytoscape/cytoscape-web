@@ -737,15 +737,7 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [
-      props.currentNetworkId,
-      rows,
-      currentTable,
-      tables,
-      sort,
-      currentTabIndex,
-      allColumns,
-    ],
+    [rows, allColumns],
   )
 
   const onColMoved = React.useCallback(
@@ -806,7 +798,6 @@ export default function TableBrowser(props: {
     },
     [
       allColumns,
-      modelColumns,
       createUpdatedTableDisplayConfiguration,
       currentTable,
       nodeTable,
@@ -816,24 +807,20 @@ export default function TableBrowser(props: {
       setTableDisplayConfiguration,
       setNetworkModified,
       tableDisplayConfiguration,
-      virtualColumns,
     ],
   )
 
-  const onItemHovered = React.useCallback(
-    (cell: Item) => {
-      const rowIndex = cell[1]
-      const rowData = rows[rowIndex]
-      const cxId = rowData?.id
+  const onItemHovered = React.useCallback((cell: Item) => {
+    const rowIndex = cell[1]
+    const rowData = rows[rowIndex]
+    const cxId = rowData?.id
 
-      if (cxId != null) {
-        // TODO this operation is too expensive for large networks
-        // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
-        // setHovered(networkId, String(cxId))
-      }
-    },
-    [props.currentNetworkId, currentTable, tables],
-  )
+    if (cxId != null) {
+      // TODO this operation is too expensive for large networks
+      // // const eleId = isNodeTable ? `${cxId}` : translateCXEdgeId(`${cxId}`)
+      // setHovered(networkId, String(cxId))
+    }
+  }, [])
 
   const onColumnResize = React.useCallback(
     (column: GridColumn, newSize: number, colIndex: number): void => {
@@ -1019,7 +1006,7 @@ export default function TableBrowser(props: {
         }
       }
     },
-    [props.currentNetworkId, currentTable, tables, sort, rows],
+    [props.currentNetworkId, currentTable, rows],
   )
 
   const onPaste = React.useCallback(
