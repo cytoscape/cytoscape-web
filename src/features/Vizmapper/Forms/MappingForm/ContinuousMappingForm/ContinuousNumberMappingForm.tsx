@@ -154,6 +154,14 @@ export function ContinuousNumberMappingForm(props: {
   const xMapper = (d: [number, number]): number => xScale(xGetter(d)) ?? 0
   const yMapper = (d: [number, number]): number => yScale(yGetter(d)) ?? 0
 
+  // The debounced commit below must keep a stable identity (recreating it
+  // would drop pending trailing calls), so it reads the current mapping and
+  // props through this ref instead of its creation-time closure — otherwise
+  // every commit spreads the mount-time mapping and records the mount-time
+  // value as the undo "before" state, corrupting the undo stack.
+  const latest = React.useRef({ m, props, postEdit })
+  latest.current = { m, props, postEdit }
+
   const updateContinuousMapping = React.useMemo(
     () =>
       debounce(
@@ -164,6 +172,7 @@ export function ContinuousNumberMappingForm(props: {
           ltMinVpValue: VisualPropertyValueType,
           gtMaxVpValue: VisualPropertyValueType,
         ) => {
+          const { m, props, postEdit } = latest.current
           const nextMapping: ContinuousMappingFunction = {
             ...m,
             min,
@@ -202,7 +211,7 @@ export function ContinuousNumberMappingForm(props: {
         200,
         { trailing: true },
       ),
-    [],
+    [setContinuousMappingValues],
   )
 
   React.useEffect(() => {

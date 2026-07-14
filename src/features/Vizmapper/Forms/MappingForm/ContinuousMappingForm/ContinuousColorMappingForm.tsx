@@ -179,6 +179,14 @@ export function ContinuousColorMappingForm(props: {
     range: vpValueDomain,
   })
 
+  // The debounced commit below must keep a stable identity (recreating it
+  // would drop pending trailing calls), so it reads the current mapping and
+  // props through this ref instead of its creation-time closure — otherwise
+  // every commit spreads the mount-time mapping and records the mount-time
+  // value as the undo "before" state, corrupting the undo stack.
+  const latest = React.useRef({ m, props, postEdit })
+  latest.current = { m, props, postEdit }
+
   const updateContinuousMapping = React.useMemo(
     () =>
       debounce(
@@ -189,6 +197,7 @@ export function ContinuousColorMappingForm(props: {
           ltMinVpValue: VisualPropertyValueType,
           gtMaxVpValue: VisualPropertyValueType,
         ) => {
+          const { m, props, postEdit } = latest.current
           const nextMapping: ContinuousMappingFunction = {
             ...m,
             min,
@@ -228,7 +237,7 @@ export function ContinuousColorMappingForm(props: {
         { trailing: true },
       ),
 
-    [],
+    [setContinuousMappingValues],
   )
 
   React.useEffect(() => {
