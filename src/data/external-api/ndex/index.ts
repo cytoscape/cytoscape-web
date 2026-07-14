@@ -44,8 +44,10 @@ export {
 // File/folder operations
 export type { NdexFileItem, NdexFileSearchResult } from './files'
 export {
+  enrichShortcutsWithTargetSummaries,
   fetchFolderContents,
   fetchFolderInfo,
+  getNetworkIdForFileItem,
   resolveShortcut,
   searchNdexFiles,
 } from './files'

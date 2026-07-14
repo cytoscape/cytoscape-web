@@ -8,6 +8,7 @@
  */
 
 import { getNdexClient } from './client'
+import { fetchNdexSummaries } from './networkSummary'
 
 /**
  * Result item from file search or folder listing.
@@ -27,6 +28,12 @@ export interface NdexFileItem {
   cx2FileSize?: number
   subnetworkIds?: string[]
   permission?: string
+  /**
+   * For SHORTCUT items, the UUID of the network or folder the shortcut points
+   * to. Undefined for plain networks and folders. Use `getNetworkIdForFileItem`
+   * to resolve the effective id for loading/navigation.
+   */
+  targetId?: string
   attributes?: Record<string, any>
 }
 
@@ -180,6 +187,7 @@ const mapFileListItem = (item: any): NdexFileItem => {
     cx2FileSize: cx2FileSize,
     subnetworkIds: subnetworkIds,
     permission: item.permission,
+    targetId: attrs.target,
     attributes: {
       ...attrs,
       isReadOnly: item.isReadOnly,
@@ -190,5 +198,83 @@ const mapFileListItem = (item: any): NdexFileItem => {
       cx2FileSize: cx2FileSize,
       subnetworkIds: subnetworkIds,
     },
+  }
+}
+
+/**
+ * Resolves the effective network/folder id for a file item.
+ *
+ * For SHORTCUT items this is the target's UUID (so selecting/opening a shortcut
+ * acts on the network or folder it points to, not the shortcut record itself).
+ * For plain networks and folders this is just the item's own UUID.
+ */
+export const getNetworkIdForFileItem = (item: NdexFileItem): string =>
+  item.targetId ?? item.uuid
+
+/**
+ * Enriches network shortcuts with metadata from their target network summaries.
+ *
+ * Shortcut items returned by NDEx don't carry full network metrics (node count,
+ * file size, etc.), so their table rows would otherwise display zeros. This
+ * batch-fetches the summaries of all network shortcut targets in one request and
+ * copies the relevant fields onto the shortcut items.
+ *
+ * Loading/selection already works via `targetId` alone; this only improves the
+ * displayed metrics. If the summary fetch fails, the original items are returned
+ * unchanged so browsing is never blocked.
+ *
+ * @param items - File items from a search or folder listing
+ * @param accessToken - Optional authentication token
+ * @param ndexUrl - Optional NDEx base URL
+ * @returns Promise resolving to items with network shortcuts enriched
+ */
+export const enrichShortcutsWithTargetSummaries = async (
+  items: NdexFileItem[],
+  accessToken?: string,
+  ndexUrl?: string,
+): Promise<NdexFileItem[]> => {
+  const networkShortcutTargets = items
+    .filter(
+      (item) =>
+        item.type === 'SHORTCUT' &&
+        item.attributes?.target_type === 'NETWORK' &&
+        typeof item.targetId === 'string',
+    )
+    .map((item) => item.targetId as string)
+
+  if (networkShortcutTargets.length === 0) {
+    return items
+  }
+
+  try {
+    const summaries = await fetchNdexSummaries(
+      Array.from(new Set(networkShortcutTargets)),
+      accessToken,
+      ndexUrl,
+    )
+    const summaryByExternalId = new Map(
+      summaries.map((summary) => [summary.externalId, summary]),
+    )
+
+    return items.map((item) => {
+      if (item.type !== 'SHORTCUT' || item.targetId === undefined) {
+        return item
+      }
+      const summary = summaryByExternalId.get(item.targetId)
+      if (summary === undefined) {
+        return item
+      }
+      return {
+        ...item,
+        nodes: summary.nodeCount,
+        nodeCount: summary.nodeCount,
+        edges: summary.edgeCount,
+        cx2FileSize: summary.cx2FileSize,
+        subnetworkIds: (summary.subnetworkIds ?? []).map(String),
+        visibility: summary.visibility ?? item.visibility,
+      }
+    })
+  } catch {
+    return items
   }
 }

@@ -34,9 +34,11 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
+  enrichShortcutsWithTargetSummaries,
   fetchFolderContents,
   fetchFolderInfo,
   fetchNdexSummaries,
+  getNetworkIdForFileItem,
   searchNdexFiles,
 } from '../../../data/external-api/ndex'
 import { NdexFileItem } from '../../../data/external-api/ndex/files'
@@ -294,7 +296,7 @@ const FolderSection = (props: {
             cursor: 'pointer',
           }}
           hover
-          onClick={() => onFolderClick(folder.uuid)}
+          onClick={() => onFolderClick(getNetworkIdForFileItem(folder))}
         >
           <TableCell padding="checkbox" />
           <TableCell sx={{ maxWidth: 400, ...cellSx }}>
@@ -481,7 +483,12 @@ export const LoadFromNdexDialog = (
         fetchFolderContents(folderId, token, ndexBaseUrl),
         fetchFolderInfo(folderId, token, ndexBaseUrl),
       ])
-      setFolderContents(items)
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        items,
+        token,
+        ndexBaseUrl,
+      )
+      setFolderContents(enriched)
       setCurrentFolderId(folderId)
 
       // Build breadcrumb — add to current path
@@ -516,7 +523,12 @@ export const LoadFromNdexDialog = (
         token,
         ndexBaseUrl,
       )
-      setFolderContents(items)
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        items,
+        token,
+        ndexBaseUrl,
+      )
+      setFolderContents(enriched)
       setCurrentFolderId(folderId)
 
       // Trim breadcrumb path to the clicked item
@@ -571,8 +583,13 @@ export const LoadFromNdexDialog = (
           0,
           500,
           ndexBaseUrl,
-        ).then((result) => {
-          setPublicResults(result.files)
+        ).then(async (result) => {
+          const enriched = await enrichShortcutsWithTargetSummaries(
+            result.files,
+            token,
+            ndexBaseUrl,
+          )
+          setPublicResults(enriched)
           setPublicCount(result.numFound)
         }),
       )
@@ -588,8 +605,13 @@ export const LoadFromNdexDialog = (
             0,
             500,
             ndexBaseUrl,
-          ).then((result) => {
-            setPrivateResults(result.files)
+          ).then(async (result) => {
+            const enriched = await enrichShortcutsWithTargetSummaries(
+              result.files,
+              token,
+              ndexBaseUrl,
+            )
+            setPrivateResults(enriched)
             setPrivateCount(result.numFound)
           }),
         )
@@ -654,12 +676,17 @@ export const LoadFromNdexDialog = (
     const visibleNetworks = networks.slice(0, MAX_VISIBLE_ROWS)
     const rows = visibleNetworks.map((network) => {
       const {
-        uuid: externalId,
+        uuid: rowKey,
         name,
         owner,
         edges: edgeCount,
         modificationTime,
       } = network
+
+      // Resolved network id — for a SHORTCUT this is its target network, so
+      // selection and loading act on the network the shortcut points to. The
+      // shortcut's own uuid (rowKey) is kept only for React keys / test ids.
+      const externalId = getNetworkIdForFileItem(network)
 
       const nodeCount = network.nodes ?? network.nodeCount ?? (network.attributes as any)?.nodeCount ?? 0
       const cx2FileSize = network.cx2FileSize ?? (network.attributes as any)?.cx2FileSize ?? 0
@@ -681,7 +708,7 @@ export const LoadFromNdexDialog = (
       if (networkCanBeSelected) {
         return (
           <TableRow
-            key={externalId}
+            key={rowKey}
             hover
             selected={selected}
             onClick={() => toggleSelectedNetwork(externalId)}
@@ -691,7 +718,7 @@ export const LoadFromNdexDialog = (
           >
             <TableCell padding="checkbox">
               <Checkbox
-                data-testid={`load-from-ndex-network-checkbox-${externalId}`}
+                data-testid={`load-from-ndex-network-checkbox-${rowKey}`}
                 onClick={() => toggleSelectedNetwork(externalId)}
                 checked={selected}
               />
@@ -727,7 +754,7 @@ export const LoadFromNdexDialog = (
           : 'Network is too large to be loaded into Cytoscape Web.'
 
       return (
-        <Tooltip key={externalId} title={tooltipMessage}>
+        <Tooltip key={rowKey} title={tooltipMessage}>
           <TableRow
             hover={false}
             selected={false}
