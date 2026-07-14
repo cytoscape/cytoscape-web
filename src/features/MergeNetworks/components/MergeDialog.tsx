@@ -506,7 +506,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         ),
       )
       const [newCyNetwork, networkSummary] = await createMergedNetwork(
-        [...toMergeNetworksList.map((i) => i[1])],
+        toMergeNetworksList.map((i) => i[1]),
         newNetworkId,
         mergedNetworkName,
         networkRecords,
