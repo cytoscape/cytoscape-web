@@ -103,6 +103,11 @@ const CyjsRenderer = ({
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
 
+  // Holds the instance created by the mount effect: the `cy` state variable
+  // is still null in that effect's closure, so cleanup must destroy via this
+  // ref instead.
+  const cyInstance = useRef<Core | null>(null)
+
   // Used to avoid unnecessary style updates during initialization
   const isViewCreated = useRef(false)
 
@@ -1089,28 +1094,32 @@ const CyjsRenderer = ({
   /**
    * Initialize Cytoscape.js instance on mount and clean up on unmount.
    */
-  useEffect(function initializeCyjsRenderer() {
-    if (!isInitialized.current) {
-      isInitialized.current = true
-      const cy: Core = Cytoscape({
-        container: cyContainer.current,
-        hideEdgesOnViewport: true,
-        boxSelectionEnabled: true,
-      })
+  useEffect(
+    function initializeCyjsRenderer() {
+      if (!isInitialized.current) {
+        isInitialized.current = true
+        const cy: Core = Cytoscape({
+          container: cyContainer.current,
+          hideEdgesOnViewport: true,
+          boxSelectionEnabled: true,
+        })
+        cyInstance.current = cy
 
-      if (debug) {
-        window.debug.cy = cy
+        if (debug) {
+          window.debug.cy = cy
+        }
+        setCy(cy)
       }
-      setCy(cy)
-      renderNetwork()
-    }
 
-    return () => {
-      if (cy != null) {
-        cy.destroy()
+      return () => {
+        // Reset the guard so a StrictMode remount recreates the instance.
+        cyInstance.current?.destroy()
+        cyInstance.current = null
+        isInitialized.current = false
       }
-    }
-  }, [])
+    },
+    [debug],
+  )
 
   /**
    * Re-render network when Cytoscape instance changes.
