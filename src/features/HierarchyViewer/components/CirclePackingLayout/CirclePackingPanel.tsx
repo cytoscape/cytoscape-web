@@ -511,12 +511,20 @@ export const CirclePackingPanel = ({
     [transform],
   )
 
+  // The d3 zoom handler below is installed once on mount, so calling
+  // updateVisibilityForZoom directly from it would forever use the first
+  // render's closure (expandAll = false) and re-collapse circles on zoom
+  // after a search expanded them. Route every non-render call through a ref
+  // that always points at the latest render's function.
+  const updateVisibilityForZoomRef = useRef(updateVisibilityForZoom)
+  updateVisibilityForZoomRef.current = updateVisibilityForZoom
+
   /**
    * Update visibility when expand all state changes
    */
   useEffect(
     function onExpandAllChange() {
-      updateVisibilityForZoom(lastZoomLevelRef.current)
+      updateVisibilityForZoomRef.current(lastZoomLevelRef.current)
     },
     [expandAll],
   )
@@ -531,7 +539,7 @@ export const CirclePackingPanel = ({
       } else {
         setExpandAll(false)
       }
-      updateVisibilityForZoom(lastZoomLevelRef.current)
+      updateVisibilityForZoomRef.current(lastZoomLevelRef.current)
     },
     [searchState],
   )
@@ -560,26 +568,13 @@ export const CirclePackingPanel = ({
           lastZoomLevelRef.current = selectedDepthRef.current
         } else {
           lastZoomLevelRef.current = maxDepth
-          updateVisibilityForZoom(maxDepth)
+          updateVisibilityForZoomRef.current(maxDepth)
         }
       })
 
     // Share zoom behavior as a state
     zoomBehaviorRef.current = zoomBehavior
     d3Selection.select(svgRef.current).call(zoomBehaviorRef.current)
-
-    return () => {
-      if (svgRef.current) {
-        // const svg = d3Selection.select(svgRef.current)
-        // // Remove all event listeners (click, zoom, mouseenter, mousemove)
-        // svg.on('click', null)
-        // svg.on('zoom', null)
-        // // Remove all SVG content (circles, text, groups)
-        // svg.selectAll('*').remove()
-        // // Clear refs to prevent memory leaks
-        // zoomBehaviorRef.current = null
-      }
-    }
   }, [])
 
   /**
