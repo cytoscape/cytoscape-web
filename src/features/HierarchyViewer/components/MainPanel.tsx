@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Allotment } from 'allotment'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
@@ -59,8 +59,14 @@ export const MainPanel = (): JSX.Element => {
     state.getViewModel(currentNetworkId),
   )
 
-  // Selected nodes in the hierarchy
-  const selectedNodes: IdType[] = networkViewModel?.selectedNodes ?? []
+  // Selected nodes in the hierarchy. Memoized so the effect below re-runs
+  // only when the view model actually changes (Immer's structural sharing
+  // keeps .selectedNodes identity stable across unrelated updates), not on
+  // every render via a fresh `?? []` array.
+  const selectedNodes: IdType[] = useMemo(
+    () => networkViewModel?.selectedNodes ?? [],
+    [networkViewModel],
+  )
 
   // At this point, summary can be any network prop object
   const networkSummary: any = useNetworkSummaryStore(
@@ -138,9 +144,9 @@ export const MainPanel = (): JSX.Element => {
       SubsystemTag.interactionNetworkUuid
     ] as string
 
-    const visualStyle: VisualStyle = visualStyles[currentNetworkId]
+    const visualStyle: VisualStyle | undefined = visualStyles[currentNetworkId]
     const nodeLabelMappingAttr: string | undefined =
-      visualStyle.nodeLabel.mapping?.attribute
+      visualStyle?.nodeLabel?.mapping?.attribute
 
     let nameVal = row['name']
     if (nodeLabelMappingAttr !== undefined) {
@@ -156,7 +162,7 @@ export const MainPanel = (): JSX.Element => {
       setQuery(newQuery)
     }
     setInteractionNetworkId(interactionUuid)
-  }, [selectedNodes])
+  }, [selectedNodes, tableRecord, visualStyles, currentNetworkId])
 
   useEffect(() => {
     if (
