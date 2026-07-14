@@ -80,7 +80,7 @@ flowchart TB
     Hooks --> ExtApi
     ExtApi <-->|CX2 REST| NDEx
     ExtApi -->|open network| CyDesktop
-    FedApps -.->|Module Federation| Hooks
+    Hooks -.->|Module Federation| FedApps
 
     classDef featCls fill:#e8f6e8,stroke:#4a9a4a,color:#123
     classDef hookCls fill:#fff2d9,stroke:#c79a3a,color:#123
