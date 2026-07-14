@@ -9,15 +9,12 @@
     "correctness": "error"
   },
   "rules": {
-    "no-unused-vars": "warn",
+    "no-unused-vars": "error",
     "no-prototype-builtins": "warn",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
     "typescript/no-explicit-any": "off",
-    "unicorn/no-empty-file": "off",
-    "unicorn/no-useless-fallback-in-spread": "warn",
-    "unicorn/no-useless-spread": "warn",
-    "oxc/only-used-in-recursion": "warn"
+    "unicorn/no-empty-file": "off"
   },
   "ignorePatterns": ["dist/**", "build/**", "ba/**", "coverage/**"]
 }
