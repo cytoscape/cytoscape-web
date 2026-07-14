@@ -39,7 +39,74 @@ Cytoscape Web is designed to expand with two types of **Apps**. We are actively 
 
 # Developer's Guide
 
-(TBA)
+## Architecture
+
+Cytoscape Web is a React single-page app built on a strict **three-layer separation** —
+pure **Models**, **Stores** that wrap them, and **Features** (React components) that consume
+stores through hooks. State is persisted to the browser's IndexedDB, and the app talks to
+external systems (NDEx, Cytoscape Desktop, and federated Apps) through dedicated API clients
+and Module Federation.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 620, "curve": "basis"}}}%%
+flowchart TB
+    User(["User / Browser"])
+
+    subgraph app["Cytoscape Web · React single-page app"]
+      direction TB
+      Features["<b>Features</b> — React components · src/features<br/>AppShell · NetworkPanel / CyjsRenderer · Vizmapper · TableBrowser<br/>Workspace · HierarchyViewer · MergeNetworks · ServiceApps · …"]
+      Hooks["<b>Integration Hooks</b> · src/data/hooks<br/>load / save · create / delete workflows · Task hooks (Module Federation)"]
+      Stores["<b>Stores</b> — Zustand + Immer · src/data/hooks/stores<br/>Network · Table · VisualStyle · ViewModel · Workspace · Ui · Layout · Filter · Undo · …"]
+      Models["<b>Models</b> — pure TypeScript · src/models<br/>Network · Table · VisualStyle · Cx (CX2) · View · Workspace · Layout · Filter · …"]
+      subgraph datalayer["Data layer · src/data"]
+        direction LR
+        DB[("IndexedDB · Dexie<br/>serialization · migrations")]
+        ExtApi["External API clients<br/>ndex · cytoscape · error-report"]
+      end
+    end
+
+    subgraph ext["External Systems"]
+      direction TB
+      NDEx[("NDEx<br/>Network Data Exchange")]
+      CyDesktop["Cytoscape Desktop"]
+      FedApps["Service / Federated Apps"]
+    end
+
+    User --> Features
+    Features -->|store & workflow hooks| Hooks
+    Hooks --> Stores
+    Stores -->|wrap pure fns| Models
+    Stores <-.->|persist| DB
+    Hooks --> ExtApi
+    ExtApi <-->|CX2 REST| NDEx
+    ExtApi -->|open network| CyDesktop
+    Hooks -->|Module Federation| FedApps
+
+    classDef featCls fill:#e8f6e8,stroke:#4a9a4a,color:#123
+    classDef hookCls fill:#fff2d9,stroke:#c79a3a,color:#123
+    classDef storeCls fill:#e6f0fb,stroke:#3a78c7,color:#123
+    classDef modelCls fill:#f3e8fb,stroke:#8a4ac7,color:#123
+    classDef dataCls fill:#fde8ec,stroke:#c73a6a,color:#123
+    classDef extCls fill:#eeeef7,stroke:#7a7ab0,color:#123
+
+    class Features featCls
+    class Hooks hookCls
+    class Stores storeCls
+    class Models modelCls
+    class DB,ExtApi dataCls
+    class NDEx,CyDesktop,FedApps extCls
+    style app fill:#fcfcfd,stroke:#c0c0cc
+    style datalayer fill:#ffffff,stroke:#d8a0b0
+    style ext fill:#fcfcfd,stroke:#c0c0cc
+```
+
+**Layering rules** (enforced by convention):
+
+- **Models** (`src/models/`) are pure TypeScript — no React, no Zustand. Each domain exports a `<Domain>Fn` object of pure functions.
+- **Stores** (`src/data/hooks/stores/`) are Zustand + Immer stores that wrap model operations and must not import React components. Persisted stores auto-save to IndexedDB.
+- **Features** (`src/features/`) are functional React components that consume stores via hooks — either store hooks directly or the composed workflow hooks in `src/data/hooks/`.
+
+See [`CLAUDE.md`](./CLAUDE.md) and the specs under [`docs/specifications/`](./docs/specifications/) for the full architecture reference.
 
 ## Quick Start
 
