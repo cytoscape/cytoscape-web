@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/tableApi.test.ts
 // Plain Jest tests for tableApi core — no renderHook, no React context.
@@ -45,6 +45,17 @@ vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   },
 }))
 
+// ── Mock: UiStateStore ───────────────────────────────────────────────────────
+
+// vi.hoisted ensures the mock is available when vi.mock factory runs (hoisted)
+const mockUiStateSetState = vi.hoisted(() => vi.fn())
+
+vi.mock('../../data/hooks/stores/UiStateStore', () => ({
+  useUiStateStore: {
+    setState: mockUiStateSetState,
+  },
+}))
+
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
 function makeTableRecord(
@@ -65,6 +76,29 @@ function makeTableRecord(
   }
 }
 
+function makeUiState(
+  networkId: string,
+  tableType: 'node' | 'edge',
+  columnConfig: any[],
+) {
+  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+  return {
+    ui: {
+      visualStyleOptions: {
+        [networkId]: {
+          visualEditorProperties: {
+            tableDisplayConfiguration: {
+              [configKey]: {
+                columnConfiguration: columnConfig,
+              },
+            },
+          },
+        },
+      },
+    },
+  }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -77,6 +111,7 @@ beforeEach(() => {
   mockSetValues.mockReset()
   mockEditRows.mockReset()
   mockApplyValueToElements.mockReset()
+  mockUiStateSetState.mockReset()
   // Clear mock tables
   Object.keys(mockTables).forEach((k) => delete mockTables[k])
   mockNetworks.clear()
@@ -228,6 +263,108 @@ describe('deleteColumn', () => {
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
+  })
+})
+
+// --- removeColumnFromTableDisplayConfig (via deleteColumn) -------------------
+
+describe('removeColumnFromTableDisplayConfig', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('removes the column entry from node table columnConfiguration', () => {
+    mockTables['net1'] = makeTableRecord()
+    const initialConfig = [
+      { attributeName: 'score', visible: true, columnWidth: undefined },
+      { attributeName: 'name', visible: true, columnWidth: undefined },
+    ]
+    const state = makeUiState('net1', 'node', initialConfig)
+
+    tableApi.deleteColumn('net1', 'node', 'score')
+    vi.runAllTimers()
+
+    expect(mockUiStateSetState).toHaveBeenCalledOnce()
+    const updater = mockUiStateSetState.mock.calls[0][0]
+    updater(state)
+
+    expect(
+      state.ui.visualStyleOptions['net1'].visualEditorProperties
+        .tableDisplayConfiguration.nodeTable.columnConfiguration,
+    ).toEqual([{ attributeName: 'name', visible: true, columnWidth: undefined }])
+  })
+
+  it('removes the column entry from edge table columnConfiguration', () => {
+    mockTables['net1'] = makeTableRecord()
+    const initialConfig = [
+      { attributeName: 'weight', visible: true, columnWidth: undefined },
+      { attributeName: 'interaction', visible: true, columnWidth: undefined },
+    ]
+    const state = makeUiState('net1', 'edge', initialConfig)
+
+    tableApi.deleteColumn('net1', 'edge', 'weight')
+    vi.runAllTimers()
+
+    expect(mockUiStateSetState).toHaveBeenCalledOnce()
+    const updater = mockUiStateSetState.mock.calls[0][0]
+    updater(state)
+
+    expect(
+      state.ui.visualStyleOptions['net1'].visualEditorProperties
+        .tableDisplayConfiguration.edgeTable.columnConfiguration,
+    ).toEqual([
+      { attributeName: 'interaction', visible: true, columnWidth: undefined },
+    ])
+  })
+
+  it('preserves all other columns when removing a specific column', () => {
+    mockTables['net1'] = makeTableRecord()
+    const initialConfig = [
+      { attributeName: 'score', visible: true, columnWidth: undefined },
+      { attributeName: 'name', visible: true, columnWidth: undefined },
+      { attributeName: 'age', visible: false, columnWidth: 100 },
+    ]
+    const state = makeUiState('net1', 'node', initialConfig)
+
+    tableApi.deleteColumn('net1', 'node', 'name')
+    vi.runAllTimers()
+
+    const updater = mockUiStateSetState.mock.calls[0][0]
+    updater(state)
+
+    const remainingConfig =
+      state.ui.visualStyleOptions['net1'].visualEditorProperties
+        .tableDisplayConfiguration.nodeTable.columnConfiguration
+    expect(remainingConfig).toHaveLength(2)
+    expect(remainingConfig.map((c: any) => c.attributeName)).toEqual([
+      'score',
+      'age',
+    ])
+  })
+
+  it('is a no-op when tableDisplayConfiguration is absent', () => {
+    mockTables['net1'] = makeTableRecord()
+    const state = { ui: {} }
+
+    tableApi.deleteColumn('net1', 'node', 'score')
+    vi.runAllTimers()
+
+    expect(mockUiStateSetState).toHaveBeenCalledOnce()
+    const updater = mockUiStateSetState.mock.calls[0][0]
+    const result = updater(state)
+    // State should be returned unchanged when no config is present
+    expect(result).toEqual({ ui: {} })
+  })
+
+  it('does not schedule UiStateStore update when network is not found', () => {
+    tableApi.deleteColumn('missing', 'node', 'score')
+    vi.runAllTimers()
+
+    expect(mockUiStateSetState).not.toHaveBeenCalled()
   })
 })
 
