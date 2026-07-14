@@ -112,6 +112,9 @@ beforeEach(() => {
   mockEditRows.mockReset()
   mockApplyValueToElements.mockReset()
   mockUiStateSetState.mockReset()
+  // mockUiStateSetState is reset globally because both createColumn and
+  // deleteColumn schedule UiStateStore updates via setTimeout; all tests
+  // benefit from a clean mock state regardless of which API is under test.
   // Clear mock tables
   Object.keys(mockTables).forEach((k) => delete mockTables[k])
   mockNetworks.clear()
