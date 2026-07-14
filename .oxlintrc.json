@@ -12,7 +12,7 @@
     "no-unused-vars": "warn",
     "no-prototype-builtins": "warn",
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/exhaustive-deps": "error",
     "typescript/no-explicit-any": "off",
     "unicorn/no-empty-file": "off",
     "unicorn/no-useless-fallback-in-spread": "warn",

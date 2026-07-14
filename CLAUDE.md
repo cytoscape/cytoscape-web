@@ -143,7 +143,7 @@ See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and
 
 **Linting (enforced by oxlint — config in `.oxlintrc.json`):**
 
-- `correctness` category is error level; `react-hooks/rules-of-hooks` is error level
+- `correctness` category is error level; `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` are error level (the repo is at zero exhaustive-deps findings — keep it there; genuinely intentional dep omissions get `// eslint-disable-next-line react-hooks/exhaustive-deps -- <reason>` placed immediately before the dependency-array closing line)
 - `typescript/no-explicit-any` is OFF — `any` is permitted
 - Import sorting is no longer lint-enforced (the ESLint `simple-import-sort` rule had no oxlint equivalent); keep imports sorted by convention
 - Functional components only — no class components
