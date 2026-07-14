@@ -664,6 +664,12 @@ export const CirclePackingPanel = ({
         }
       }
     },
+    // Deliberately keyed on the subnetwork-side selection only: this effect
+    // syncs selection FROM the subnetwork view INTO this view, and must run
+    // exactly when those names change. Adding the other read values
+    // (selectedNodes/selectedNodeSet change on every CP-side selection)
+    // would re-fire it constantly and fight the user's local selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection sync keyed on source-of-truth only
     [selectedHierarchyNodeNames],
   )
 

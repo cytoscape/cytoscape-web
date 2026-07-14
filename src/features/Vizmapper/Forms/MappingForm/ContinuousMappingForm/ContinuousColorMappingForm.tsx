@@ -262,6 +262,11 @@ export function ContinuousColorMappingForm(props: {
           }
         }),
     )
+    // Key-driven resync: rebuild local min/max/handles from the store only
+    // when the mapped attribute changes. minState/maxState are `??` fallbacks
+    // read fresh at trigger time; adding them would reset the user's
+    // in-progress input from the (200ms-lagging, debounced) store value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resync keyed on mapping attribute only
   }, [props.visualProperty.mapping?.attribute])
 
   const createHandle = (value: number, vpValue: string): void => {
