@@ -282,33 +282,32 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setOptions({ delimiter: delimiterValue })
   }, [fileDelimiter, customFileDelimiter, setOptions])
 
-  const onColumnAssignmentTypeChange = (
-    index: number,
-    value: ColumnAssignmentType,
-  ) => {
-    const nextValidVtns = validValueTypes(value)
-    setValidValueTypeNames(nextValidVtns)
-    const nextColumns = updateColumnAssignment(value, index, columns)
+  const onColumnAssignmentTypeChange = useCallback(
+    (index: number, value: ColumnAssignmentType) => {
+      const nextValidVtns = validValueTypes(value)
+      setValidValueTypeNames(nextValidVtns)
+      const nextColumns = updateColumnAssignment(value, index, columns)
 
-    setColumns(nextColumns)
-  }
+      setColumns(nextColumns)
+    },
+    [columns],
+  )
 
-  const onValueTypeChange = (
-    index: number,
-    value: ValueTypeName,
-    delimiter?: DelimiterType,
-  ) => {
-    const nextValidCats = validColumnAssignmentTypes(value)
-    setValidColumnAssignmentTypes(nextValidCats)
-    const nextColumns = updateColumnType(value, index, columns, delimiter)
+  const onValueTypeChange = useCallback(
+    (index: number, value: ValueTypeName, delimiter?: DelimiterType) => {
+      const nextValidCats = validColumnAssignmentTypes(value)
+      setValidColumnAssignmentTypes(nextValidCats)
+      const nextColumns = updateColumnType(value, index, columns, delimiter)
 
-    nextColumns[index].invalidValues = validateColumnValues(
-      nextColumns[index],
-      rows,
-    )
+      nextColumns[index].invalidValues = validateColumnValues(
+        nextColumns[index],
+        rows,
+      )
 
-    setColumns(nextColumns)
-  }
+      setColumns(nextColumns)
+    },
+    [columns, rows],
+  )
 
   const handleConfirm = useCallback(async () => {
     const res = createNetworkFromTableData(rows, columns, undefined, name)
@@ -368,11 +367,11 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setRawText('')
   }
 
-  const handleColumnClick = (column: ColumnAssignmentState) => {
+  const handleColumnClick = useCallback((column: ColumnAssignmentState) => {
     const { meaning, dataType } = column
     setValidColumnAssignmentTypes(validColumnAssignmentTypes(dataType))
     setValidValueTypeNames(validValueTypes(meaning))
-  }
+  }, [])
 
   const tgtNodeCol = columns.find(
     (c) => c.meaning === ColumnAssignmentType.TargetNode,
@@ -490,7 +489,15 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
         })}
       </DataTable>
     ),
-    [columns, rows],
+    [
+      columns,
+      rows,
+      validColumnTypes,
+      validValueTypeNames,
+      onColumnAssignmentTypeChange,
+      onValueTypeChange,
+      handleColumnClick,
+    ],
   )
 
   return (
