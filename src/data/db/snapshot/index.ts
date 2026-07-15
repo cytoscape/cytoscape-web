@@ -8,8 +8,7 @@
  */
 
 import packageJson from '../../../../package.json'
-import config from '../../../assets/config.json'
-import { logDb } from '../../../debug'
+import { logDb, registerDebugTool } from '../../../debug'
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { Network } from '../../../models/NetworkModel'
@@ -568,11 +567,4 @@ export const manualExportSnapshot = async (
   }
 }
 
-// Expose to window.debug when debug mode is enabled
-if (config.debug) {
-  const win = window as unknown as { debug?: Record<string, any> }
-  if (win.debug === undefined) {
-    win.debug = {}
-  }
-  win.debug.exportSnapshot = manualExportSnapshot
-}
+registerDebugTool('exportSnapshot', manualExportSnapshot)

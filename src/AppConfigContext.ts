@@ -32,7 +32,6 @@ export interface AppConfig {
   openAIAPIKey: string
   googleAnalyticsId: string
   undoStackSize: number
-  debug: boolean
   debugOptions?: DebugOptions
   errorReportEndpoint: string
   maxErrorReportSnapshotSizeMB: number
@@ -74,7 +73,6 @@ export const defaultAppConfig: AppConfig = {
   openAIAPIKey: '',
   googleAnalyticsId: '',
   undoStackSize: 20,
-  debug: true,
   debugOptions: {
     disableAutoReload: false,
   },
