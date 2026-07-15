@@ -147,6 +147,7 @@ See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and
 - Import sorting is no longer lint-enforced (the ESLint `simple-import-sort` rule had no oxlint equivalent); keep imports sorted by convention
 - Functional components only — no class components
 - New JSX transform (`react-jsx`) — do NOT add `import React from 'react'` in component files
+- Use the `@/` alias for imports rooted at `src/`; relative imports remain appropriate for nearby files in the same feature or model.
 
 **Logging:**
 Use the structured `debug` logger from `src/debug.ts`, not `console.log`. Production builds use Vite's Oxc minifier to strip direct `console.*()` calls.
