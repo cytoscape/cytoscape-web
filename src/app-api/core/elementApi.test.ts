@@ -463,6 +463,24 @@ describe('elementApi', () => {
       }
     })
 
+    it('rejects an "id" key in the attributes payload (CX2 N3)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        attributes: { id: '99', name: 'shadow' },
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.cx2Code).toBe('N3')
+      }
+    })
+
     it('calls exclusiveSelect when autoSelect is true (default)', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
       mockTables['net1'] = {
@@ -606,6 +624,24 @@ describe('elementApi', () => {
           targetId: 'n2',
           attributes: {},
         })
+      }
+    })
+
+    it('rejects an "id" key in the attributes payload (CX2 E6)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createEdge('net1', 'n1', 'n2', {
+        attributes: { id: 'e99' },
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.cx2Code).toBe('E6')
       }
     })
 

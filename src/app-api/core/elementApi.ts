@@ -29,6 +29,7 @@ import { AttributeName } from '../../models/TableModel/AttributeName'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { validateNoIdAttribute } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -331,6 +332,12 @@ export const elementApi: ElementApi = {
         )
       }
 
+      const invalidAttributes = validateNoIdAttribute(
+        options?.attributes,
+        'node',
+      )
+      if (invalidAttributes) return invalidAttributes
+
       // Generate unique ID (replicate useCreateNode.generateNextNodeId)
       const existingIds = network.nodes
         .map((n) => parseInt(n.id))
@@ -405,6 +412,12 @@ export const elementApi: ElementApi = {
           `Network ${networkId} not found`,
         )
       }
+
+      const invalidAttributes = validateNoIdAttribute(
+        options?.attributes,
+        'edge',
+      )
+      if (invalidAttributes) return invalidAttributes
 
       const sourceNode = network.nodes.find((n) => n.id === sourceNodeId)
       if (!sourceNode) {
