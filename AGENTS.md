@@ -240,7 +240,7 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 | File                      | Purpose                                                                                                                                                                                             |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), debug flag, Keycloak auth, Google Analytics |
+| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics |
 | `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                                          |
 | `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                           |
 | `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                         |
