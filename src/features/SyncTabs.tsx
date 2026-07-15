@@ -1,7 +1,8 @@
 import debounce from 'lodash.debounce'
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement, useEffect, useState, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { AppConfigContext } from '../AppConfigContext'
 import {
   getDb,
   getTimestampFromDb,
@@ -21,9 +22,14 @@ export const SyncTabsAction = (): ReactElement => {
   const workspaceId = params.workspaceId ?? ''
   const networkId = params.networkId ?? ''
   const [localTimestamp, setLocalTimestamp] = useState(0)
+  const { debug } = useContext(AppConfigContext)
 
   useEffect(() => {
     const onVisibilityChange = (): void => {
+      if (debug) {
+        return
+      }
+
       if (document.hidden) {
         setLocalTimestamp(Date.now())
       } else {

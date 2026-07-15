@@ -15,13 +15,7 @@ import ErrorBoundary from './features/ErrorBoundary'
 import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
 import { initializeGoogleAnalytics } from './init/googleAnalytics'
 import { initializeKeycloak, KeycloakContext } from './init/keycloak'
-import {
-  INITIAL_LOADING_SCREEN_ID,
-  removeLoadingScreenAfterRender,
-  removeMessage,
-  updateLoadingMessage,
-  updateVersionText,
-} from './init/loadingScreen'
+import { BootScreen } from './init/BootScreen'
 import { initializeTabManager } from './init/tabManager'
 
 // Assign CyWebApi to window for external consumers (browser extensions, LLM agents).
@@ -32,7 +26,7 @@ const AUTH_INIT_TIMEOUT_MS = 4000
 const LOCAL_DEV_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
 const initializeApp = () => {
-  const { urlBaseName } = appConfig
+  const { urlBaseName, debug } = appConfig
   const rootElement: HTMLElement | null = document.getElementById('root')
   if (rootElement == null) {
     logStartup.error(
@@ -42,8 +36,17 @@ const initializeApp = () => {
     throw new Error('Root element not found')
   }
 
-  // Update version text from package.json
-  updateVersionText()
+  const root = ReactDOM.createRoot(rootElement)
+  
+  let currentLoadingMessage = 'Starting...'
+  let hasRenderedApp = false
+
+  const updateLoadingMessage = (message: string) => {
+    if (!hasRenderedApp) {
+      currentLoadingMessage = message
+      root.render(<BootScreen loadingMessage={currentLoadingMessage} />)
+    }
+  }
 
   // Show initial progress when React styles are loaded
   updateLoadingMessage('Loading application modules...')
@@ -53,7 +56,6 @@ const initializeApp = () => {
   initializeGoogleAnalytics()
   const { keycloak, handleVerify, handleCancel, checkUserVerification } =
     initializeKeycloak()
-  let hasRenderedApp = false
   const isLocalDevHost = LOCAL_DEV_HOSTS.has(window.location.hostname)
 
   const renderApp = ({
@@ -69,7 +71,6 @@ const initializeApp = () => {
   }) => {
     updateLoadingMessage('Starting application...')
 
-    const root = ReactDOM.createRoot(rootElement)
     const innerContent =
       authenticated && isEmailUnverified ? (
         <EmailVerificationModal
@@ -94,9 +95,6 @@ const initializeApp = () => {
     )
 
     root.render(outerContent)
-
-    // Remove loading screen after React app is rendered
-    removeLoadingScreenAfterRender()
   }
 
   const renderAppOnce = (options: {
@@ -120,7 +118,6 @@ const initializeApp = () => {
           `[bootstrap.tsx]:[${keycloak.init.name}]: Authentication initialization timed out, continuing without SSO`,
         )
 
-        removeMessage(INITIAL_LOADING_SCREEN_ID)
         renderAppOnce({ authenticated: false })
       }, AUTH_INIT_TIMEOUT_MS)
 
@@ -157,6 +154,7 @@ const initializeApp = () => {
       if (keycloakInitTimeout !== undefined) {
         window.clearTimeout(keycloakInitTimeout)
       }
+
       renderAppOnce({
         authenticated,
         isEmailUnverified,
@@ -174,7 +172,6 @@ const initializeApp = () => {
         e,
       )
 
-      removeMessage(INITIAL_LOADING_SCREEN_ID)
       renderAppOnce({ authenticated: false })
     })
 }

@@ -60,6 +60,10 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
   }
 }
 
+/**
+ * Dev-server-only plugin that processes simple EJS-like tags in index.html
+ * (parity with Webpack's HtmlWebpackPlugin).
+ */
 export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const appsConfigPath = path.resolve(
     __dirname,
