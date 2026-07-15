@@ -14,6 +14,19 @@ export interface CyWebEvents {
   'network:deleted': { networkId: IdType }
 
   /**
+   * Fired when nodes or edges are added to or removed from an existing
+   * network. Not fired for network creation or deletion — see
+   * network:created / network:deleted.
+   */
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
+
+  /**
    * Fired when the active (current) network changes.
    * `previousId` is an empty string if no network was active before.
    */

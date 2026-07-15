@@ -79,6 +79,22 @@ vi.mock('../../data/hooks/stores/TableStore', () => ({
   },
 }))
 
+// ── Mock: NetworkStore ────────────────────────────────────────────────────────
+
+const networkSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
+
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: {
+    getState: vi.fn(),
+    subscribe: vi.fn((selectorOrCb: any, cb?: any) => {
+      if (typeof cb === 'function') {
+        networkSubs.push({ selector: selectorOrCb, callback: cb })
+      }
+      return () => {}
+    }),
+  },
+}))
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function triggerWorkspaceSub(index: number, curr: any, prev: any): void {
@@ -100,6 +116,10 @@ function triggerTableSub(curr: any, prev: any): void {
   tableSubs[0].callback(curr, prev)
 }
 
+function triggerNetworkSub(curr: any, prev: any): void {
+  networkSubs[0].callback(curr, prev)
+}
+
 function dispatchedTypes(): string[] {
   const spy = vi.spyOn(window, 'dispatchEvent') as import('vitest').MockInstance
   return (spy.mock.calls as Array<[Event]>).map((args) => (args[0] as CustomEvent).type)
@@ -119,12 +139,79 @@ beforeEach(() => {
   viewModelSubs.length = 0
   visualStyleSubs.length = 0
   tableSubs.length = 0
+  networkSubs.length = 0
   dispatchSpy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
 })
 
 afterEach(() => {
   dispatchSpy.mockRestore()
+})
+
+// ── network:changed ───────────────────────────────────────────────────────────
+
+describe('network:changed', () => {
+  const net = (nodes: string[], edges: Array<[string, string, string]>) => ({
+    id: 'net1',
+    nodes: nodes.map((id) => ({ id })),
+    edges: edges.map(([id, s, t]) => ({ id, s, t })),
+  })
+
+  it('reports added nodes', () => {
+    const prev = net(['n1'], [])
+    const curr = net(['n1', 'n2'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+
+    expect(dispatchedTypes()).toContain('network:changed')
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      addedNodeIds: ['n2'],
+      removedNodeIds: [],
+      addedEdgeIds: [],
+      removedEdgeIds: [],
+    })
+  })
+
+  it('reports removed nodes and their cascaded edges', () => {
+    const prev = net(['n1', 'n2'], [['e0', 'n1', 'n2']])
+    const curr = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      addedNodeIds: [],
+      removedNodeIds: ['n2'],
+      addedEdgeIds: [],
+      removedEdgeIds: ['e0'],
+    })
+  })
+
+  it('does not dispatch for a newly created network (network:created covers it)', () => {
+    const curr = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map())
+
+    expect(dispatchedTypes()).not.toContain('network:changed')
+  })
+
+  it('does not dispatch when the reference changed but membership did not', () => {
+    const prev = net(['n1'], [])
+    const curr = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch when the network reference is unchanged', () => {
+    const same = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', same]]), new Map([['net1', same]]))
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
 })
 
 // ── network:created ───────────────────────────────────────────────────────────
