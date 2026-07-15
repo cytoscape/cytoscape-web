@@ -15,6 +15,7 @@ import {
   MenuItem,
   Popover,
   Select,
+  SelectChangeEvent,
   SxProps,
   Table,
   TableBody,
@@ -115,7 +116,7 @@ function BypassFormContent(props: {
     : selectedElementTable.columns[0].name
 
   const [eleNameByCol, setEleNameByCol] = useState(defaultColName)
-  const handleEleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEleNameChange = (event: SelectChangeEvent<string>) => {
     setEleNameByCol(event.target.value)
   }
 

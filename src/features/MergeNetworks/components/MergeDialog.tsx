@@ -548,7 +548,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       handleClose()
     } catch (e) {
       logUi.error(`[${handleMerge.name}]: Error merging networks:`, e)
-      setErrorMessage(`An error occurred: ${e.message}`) // Set the error message
+      setErrorMessage(
+        `An error occurred: ${e instanceof Error ? e.message : String(e)}`,
+      ) // Set the error message
       setShowError(true) // Show the error message panel
     }
   }

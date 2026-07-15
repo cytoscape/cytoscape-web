@@ -114,7 +114,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       )
     }
 
-    const handleWidthChange = (e: number) => {
+    const handleWidthChange = (value: string | number) => {
+      const e = Number(value)
       const newWidth = Math.round(Math.max(0, Math.min(e, maxWidth)))
       const newZoom = newWidth / (widthFunction?.() ?? 1)
       const newHeight = Math.round((heightFunction?.() ?? 0) * newZoom)
@@ -126,7 +127,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setHeightInches(parseFloat((newHeight / dpi).toFixed(2)))
     }
 
-    const handleHeightChange = (e: number) => {
+    const handleHeightChange = (value: string | number) => {
+      const e = Number(value)
       const newHeight = Math.round(Math.max(0, Math.min(e, maxHeight)))
       const newZoom = newHeight / (heightFunction?.() ?? 1)
       const newWidth = Math.round((widthFunction?.() ?? 0) * newZoom)
@@ -167,7 +169,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setDpi(newDpi)
     }
 
-    const handleWidthInchesChange = (e: number) => {
+    const handleWidthInchesChange = (value: string | number) => {
+      const e = Number(value)
       const newWidthInches = parseFloat(
         Math.max(0, Math.min(e, maxWidthInches)).toFixed(2),
       )
@@ -182,7 +185,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setHeightInches(parseFloat((newHeight / dpi).toFixed(2)))
     }
 
-    const handleHeightInchesChange = (e: number) => {
+    const handleHeightInchesChange = (value: string | number) => {
+      const e = Number(value)
       const newHeightInches = parseFloat(
         Math.max(0, Math.min(e, maxHeightInches)).toFixed(2),
       )

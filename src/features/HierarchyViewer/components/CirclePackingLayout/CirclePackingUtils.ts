@@ -200,8 +200,10 @@ export const displaySelectedNodes = (
 ) => {
   d3Selection
     .select('.circle-packing-wrapper')
-    .selectAll('circle')
-    .attr('stroke', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
+    .selectAll<SVGCircleElement, d3Hierarchy.HierarchyCircularNode<D3TreeNode>>(
+      'circle',
+    )
+    .attr('stroke', (d) => {
       if (selectedNodeSet.has(d.data.id)) {
         return CpDefaults.selectedBorderColor
       } else if (selectedLeaves.includes(d.data.originalId ?? d.data.id)) {
@@ -210,7 +212,7 @@ export const displaySelectedNodes = (
         return CpDefaults.borderColor
       }
     })
-    .attr('stroke-width', (d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) =>
+    .attr('stroke-width', (d) =>
       selectedNodeSet.has(d.data.id) ||
       selectedLeaves.includes(d.data.originalId ?? d.data.id)
         ? CpDefaults.borderWidthHover

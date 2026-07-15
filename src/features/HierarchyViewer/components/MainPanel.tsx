@@ -42,8 +42,8 @@ const CirclePackingRenderer: Renderer = {
   description: 'Circle Packing Renderer',
   getComponent: (
     networkData: Network,
-    initialSize: { w: number; h: number },
-    visible: boolean,
+    initialSize = { w: 0, h: 0 },
+    visible = true,
   ) => (
     <CirclePackingPanel
       rendererId={CP_RENDERER_ID}

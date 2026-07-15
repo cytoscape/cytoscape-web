@@ -1,10 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Box, Button, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
@@ -46,8 +41,9 @@ export const ServiceListPanel = () => {
         await addService(trimmedUrl)
         setWarningMessage('')
       } catch (e) {
+        const message = e instanceof Error ? e.message : String(e)
         setWarningMessage(
-          `Failed to add the service at "${trimmedUrl}" due to: ${e.message}.`,
+          `Failed to add the service at "${trimmedUrl}" due to: ${message}.`,
         )
         console.error(
           `[${ServiceListPanel.name}]:[handleAddServiceApp]: Failed to add the service from ${trimmedUrl}. ${e}`,

@@ -79,7 +79,7 @@ export const AppMenu = () => {
         }
       } catch (e) {
         setNotificationDialog(true)
-        setNotificationMessage(e.message)
+        setNotificationMessage(e instanceof Error ? e.message : String(e))
         logApp.error(`[${AppMenu.name}]: Failed to run the task: ${url}`, e)
       } finally {
         clearCurrentTask()

@@ -482,7 +482,7 @@ export const AppMenuItem: React.FC<{
   handleConfirm: () => Promise<void>
   app: ServiceApp
   showTooltip?: boolean
-}> = (props: AppMenuItemProps) => {
+}> = (props) => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   const { handleClose, app, showTooltip } = props

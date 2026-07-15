@@ -93,7 +93,8 @@ export function NodeLabelPositionPicker(props: {
           <NumberInput
             allowDecimal={false}
             value={localValue.MARGIN_X}
-            onChange={(e: number) => {
+            onChange={(value) => {
+              const e = Number(value)
               setLocalValue({
                 ...localValue,
                 MARGIN_X: e,
@@ -108,7 +109,8 @@ export function NodeLabelPositionPicker(props: {
           <NumberInput
             allowDecimal={false}
             value={localValue.MARGIN_Y}
-            onChange={(e: number) => {
+            onChange={(value) => {
+              const e = Number(value)
               setLocalValue({
                 ...localValue,
                 MARGIN_Y: e,
@@ -118,7 +120,15 @@ export function NodeLabelPositionPicker(props: {
         </Box>
       </MantineProvider>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1, mt: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 1,
+          p: 1,
+          mt: 2,
+        }}
+      >
         <Button
           variant="outlined"
           onClick={() => {

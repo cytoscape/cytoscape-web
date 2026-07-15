@@ -163,10 +163,18 @@ export const validateCx2ReferentialIntegrity = (
   // 3. validate edge bypasses
   const warnings: ValidationIssue[] = []
   const errors: ValidationIssue[] = []
-  const nodesAspect = findAspect(input, 'nodes') as unknown[]
-  const edgesAspect = findAspect(input, 'edges') as unknown[]
-  const nodeBypassesAspect = findAspect(input, 'nodeBypasses') as unknown[]
-  const edgeBypassesAspect = findAspect(input, 'edgeBypasses') as unknown[]
+  const nodesAspect = findAspect(input, 'nodes') as
+    | Array<Record<string, unknown>>
+    | undefined
+  const edgesAspect = findAspect(input, 'edges') as
+    | Array<Record<string, unknown>>
+    | undefined
+  const nodeBypassesAspect = findAspect(input, 'nodeBypasses') as
+    | Array<Record<string, unknown>>
+    | undefined
+  const edgeBypassesAspect = findAspect(input, 'edgeBypasses') as
+    | Array<Record<string, unknown>>
+    | undefined
 
   const nodeIds = new Set<number>()
   const edgeIds = new Set<number>()
@@ -375,9 +383,15 @@ export const validateCx2Attributes = (input: Cx2): ValidationResult => {
     }
   }
 
-  const nodesAspect = findAspect(input, 'nodes') as unknown[]
-  const edgesAspect = findAspect(input, 'edges') as unknown[]
-  const networkAttrsAspect = findAspect(input, 'networkAttributes') as unknown[]
+  const nodesAspect = findAspect(input, 'nodes') as
+    | Array<Record<string, unknown>>
+    | undefined
+  const edgesAspect = findAspect(input, 'edges') as
+    | Array<Record<string, unknown>>
+    | undefined
+  const networkAttrsAspect = findAspect(input, 'networkAttributes') as
+    | Array<Record<string, unknown>>
+    | undefined
 
   // Get attribute declarations for nodes and edges
   const attrDecls = attributeDeclarations[0] as

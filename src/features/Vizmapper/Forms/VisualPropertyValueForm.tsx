@@ -1,9 +1,4 @@
-import {
-  Box,
-  Divider,
-  Popover,
-  Tooltip,
-} from '@mui/material'
+import { Box, Divider, Popover, Tooltip } from '@mui/material'
 import * as React from 'react'
 
 import { IdType } from '../../../models/IdType'
@@ -69,21 +64,16 @@ import {
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
 
+type VisualPropertyRenderers = {
+  // This registry intentionally contains renderers with heterogeneous props;
+  // the visual-property metadata selects the matching renderer at runtime.
+  pickerRender: (props: any) => React.ReactElement
+  valueRender: (props: any) => React.ReactElement
+}
+
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType | null
-      onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: (reason: string) => void
-      currentNetworkId?: IdType
-      showCheckbox?: boolean
-      vpName?: VisualPropertyName
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
+  VisualPropertyRenderers
 > = {
   nodeShape: {
     pickerRender: NodeShapePicker,
@@ -264,22 +254,7 @@ const vpType2RenderMap: Record<
 // e.g. opacity needs to be rendered as 0% -> 100% instead of 0.0 to 1.0
 // another example is label rotation which will be rendered in angles
 const vpName2RenderMap: Partial<
-  Record<
-    VisualPropertyName,
-    {
-      pickerRender: (props: {
-        currentValue: VisualPropertyValueType | null
-        onValueChange: (newValue: VisualPropertyValueType) => void
-        closePopover: (reason: string) => void
-        currentNetworkId?: IdType
-        showCheckbox?: boolean
-        vpName?: VisualPropertyName
-      }) => React.ReactElement
-      valueRender: (props: {
-        value: VisualPropertyValueType
-      }) => React.ReactElement
-    }
-  >
+  Record<VisualPropertyName, VisualPropertyRenderers>
 > = {
   nodeBorderOpacity: {
     pickerRender: OpacitySlider,

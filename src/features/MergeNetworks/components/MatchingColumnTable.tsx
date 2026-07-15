@@ -2,6 +2,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -42,7 +43,7 @@ export const MatchingColumnTable = React.memo(
     )
     // Handler for the 'Matching Columns' dropdown changes
     const handleSetMatchingCols =
-      (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      (networkId: string) => (event: SelectChangeEvent<string>) => {
         const colType =
           networkRecords[networkId]?.nodeTable?.columns.find(
             (col) => col.name === event.target.value,

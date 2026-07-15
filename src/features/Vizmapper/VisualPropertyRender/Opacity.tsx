@@ -1,6 +1,6 @@
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
-import { Box, Button,Slider, Stack, Typography } from '@mui/material'
+import { Box, Button, Slider, Stack, Typography } from '@mui/material'
 import * as React from 'react'
 
 const percentToOpacity = (val: number): number => +(val / 100).toFixed(2)
@@ -27,13 +27,16 @@ export function OpacitySlider(props: {
         direction="row"
         alignItems="center"
       >
-        <VisibilityOffIcon sx={{ color: (theme) => theme.palette.text.disabled }} />
+        <VisibilityOffIcon
+          sx={{ color: (theme) => theme.palette.text.disabled }}
+        />
         <Slider
           data-testid="opacity-slider"
           valueLabelDisplay="on"
           value={opacityToPercent(localOpacityValue)}
-          onChange={(e, newVal: number) => {
-            setLocalOpacityValue(percentToOpacity(newVal))
+          onChange={(e, newVal) => {
+            const value = Array.isArray(newVal) ? newVal[0] : newVal
+            setLocalOpacityValue(percentToOpacity(value))
             // debouncedOpacityValueChange(percentToOpacity(newVal))
           }}
           marks={[
@@ -49,7 +52,9 @@ export function OpacitySlider(props: {
         />
         <VisibilityIcon />
       </Stack>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="opacity-slider-cancel-button"
           variant="outlined"

@@ -52,9 +52,7 @@ export const SearchBox = (): JSX.Element => {
     (state) => state.setQuery,
   )
 
-  const setSearchState: (searchState: string) => void = useFilterStore(
-    (state) => state.setSearchState,
-  )
+  const setSearchState = useFilterStore((state) => state.setSearchState)
 
   const searchOptions = useFilterStore((state) => state.search.options)
   const { exact } = searchOptions

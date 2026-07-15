@@ -84,10 +84,7 @@ export function castAttributes(
         Object.prototype.hasOwnProperty.call(row.nameRecord, netId) &&
         row.nameRecord[netId] !== 'None' &&
         row.nameRecord[netId] !== '' &&
-        Object.prototype.hasOwnProperty.call(
-          toMergeAttr,
-          row.nameRecord[netId],
-        )
+        Object.prototype.hasOwnProperty.call(toMergeAttr, row.nameRecord[netId])
       ) {
         const val = toMergeAttr[row.nameRecord[netId]]
         if (
@@ -284,6 +281,9 @@ export function getResonableCompatibleConvertionType(
   types: Set<ValueTypeName>,
 ): ValueTypeName {
   const curr = types.values().next().value
+  if (curr === undefined) {
+    return ValueTypeName.String
+  }
   let li = isListType(curr)
   let ret = getPlainType(curr)
   for (const type of types) {
