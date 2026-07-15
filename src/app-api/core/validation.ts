@@ -113,12 +113,14 @@ export function validateElementsExist(
 }
 
 /**
- * Verify that every ID in nodeIds exists as a node (not an edge) in the
- * network. Returns a failure naming the missing IDs (CX2 GL1).
+ * Verify that every ID exists as an element of the given kind: node IDs
+ * for node tables (CX2 GL1), edge IDs for edge tables (GL2). Returns a
+ * failure naming the missing IDs.
  */
-export function validateNodesExist(
+export function validateTableElementsExist(
   networkId: IdType,
-  nodeIds: IdType[],
+  tableType: 'node' | 'edge',
+  elementIds: IdType[],
 ): ApiFailure | undefined {
   const network = useNetworkStore.getState().networks.get(networkId)
   if (network === undefined) {
@@ -128,16 +130,31 @@ export function validateNodesExist(
     )
   }
 
-  const known = new Set(network.nodes.map((n) => n.id))
-  const missing = nodeIds.filter((id) => !known.has(id))
+  const elements: Array<{ id: IdType }> =
+    tableType === 'node' ? network.nodes : network.edges
+  const known = new Set(elements.map((el) => el.id))
+  const missing = elementIds.filter((id) => !known.has(id))
   if (missing.length > 0) {
     return fail(
-      ApiErrorCode.NodeNotFound,
-      `Nodes do not exist in network ${networkId}: ${missing.join(', ')}`,
-      'GL1',
+      tableType === 'node'
+        ? ApiErrorCode.NodeNotFound
+        : ApiErrorCode.EdgeNotFound,
+      `${tableType === 'node' ? 'Nodes' : 'Edges'} do not exist in network ${networkId}: ${missing.join(', ')}`,
+      tableType === 'node' ? 'GL1' : 'GL2',
     )
   }
   return undefined
+}
+
+/**
+ * Verify that every ID in nodeIds exists as a node (not an edge) in the
+ * network. Returns a failure naming the missing IDs (CX2 GL1).
+ */
+export function validateNodesExist(
+  networkId: IdType,
+  nodeIds: IdType[],
+): ApiFailure | undefined {
+  return validateTableElementsExist(networkId, 'node', nodeIds)
 }
 
 /**

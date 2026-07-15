@@ -135,6 +135,15 @@ function makeTableRecord(
   }
 }
 
+/** Register net1 in the NetworkStore mock with the given element IDs */
+function registerNet1(nodes: string[], edges: string[] = []): void {
+  mockNetworks.set('net1', {
+    id: 'net1',
+    nodes: nodes.map((id) => ({ id })),
+    edges: edges.map((id) => ({ id, s: nodes[0], t: nodes[0] })),
+  })
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -558,6 +567,7 @@ describe('setColumnName', () => {
 describe('setValue', () => {
   it('calls setValue and returns ok() when network exists', () => {
     mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1'])
 
     const result = tableApi.setValue('net1', 'node', 'n1', 'name', 'Bob')
 
@@ -573,6 +583,33 @@ describe('setValue', () => {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
   })
+
+  it('rejects writes to nodes that do not exist (CX2 GL1)', () => {
+    mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1'])
+
+    const result = tableApi.setValue('net1', 'node', 'ghost', 'name', 'Bob')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.cx2Code).toBe('GL1')
+    }
+    expect(mockSetValue).not.toHaveBeenCalled()
+  })
+
+  it('rejects edge-table writes keyed by a node ID (CX2 GL2)', () => {
+    mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1'], ['e0'])
+
+    const result = tableApi.setValue('net1', 'edge', 'n1', 'weight', 1)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
+      expect(result.error.cx2Code).toBe('GL2')
+    }
+  })
 })
 
 // --- setValues ---------------------------------------------------------------
@@ -580,6 +617,7 @@ describe('setValue', () => {
 describe('setValues', () => {
   it('converts app API CellEdit (id) to store CellEdit (row)', () => {
     mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1', 'n2'])
 
     const cellEdits = [
       { id: 'n1', column: 'name', value: 'Alice' },
@@ -593,6 +631,23 @@ describe('setValues', () => {
       { row: 'n1', column: 'name', value: 'Alice' },
       { row: 'n2', column: 'name', value: 'Bob' },
     ])
+  })
+
+  it('rejects the batch when any edit targets a missing element (CX2 GL1)', () => {
+    mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1'])
+
+    const result = tableApi.setValues('net1', 'node', [
+      { id: 'n1', column: 'name', value: 'Alice' },
+      { id: 'ghost', column: 'name', value: 'Boo' },
+    ])
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.message).toContain('ghost')
+    }
+    expect(mockSetValues).not.toHaveBeenCalled()
   })
 
   it('returns NetworkNotFound when network does not exist', () => {
@@ -610,6 +665,7 @@ describe('setValues', () => {
 describe('editRows', () => {
   it('converts Record to Map and calls store', () => {
     mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1', 'n2'])
 
     const rows = {
       n1: { name: 'Alice', age: 30 },
@@ -629,6 +685,21 @@ describe('editRows', () => {
     )
   })
 
+  it('rejects rows keyed by missing elements (CX2 GL1)', () => {
+    mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1'])
+
+    const result = tableApi.editRows('net1', 'node', {
+      ghost: { name: 'Boo' },
+    })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+    }
+    expect(mockEditRows).not.toHaveBeenCalled()
+  })
+
   it('returns NetworkNotFound when network does not exist', () => {
     const result = tableApi.editRows('missing', 'node', {})
 
@@ -644,6 +715,7 @@ describe('editRows', () => {
 describe('applyValueToElements', () => {
   it('calls applyValueToElements with elementIds', () => {
     mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1', 'n2'])
 
     const result = tableApi.applyValueToElements(
       'net1',
@@ -661,6 +733,22 @@ describe('applyValueToElements', () => {
       100,
       ['n1', 'n2'],
     )
+  })
+
+  it('rejects elementIds that do not exist (CX2 GL1)', () => {
+    mockTables['net1'] = makeTableRecord()
+    registerNet1(['n1'])
+
+    const result = tableApi.applyValueToElements('net1', 'node', 'score', 1, [
+      'n1',
+      'ghost',
+    ])
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+    }
+    expect(mockApplyValueToElements).not.toHaveBeenCalled()
   })
 
   it('calls applyValueToElements without elementIds (apply to all)', () => {
@@ -849,6 +937,7 @@ describe('importTableFromTsv', () => {
     ])
     const columns = [{ name: 'name', type: 'string' }]
     mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1', 'n2'])
 
     const tsv = 'id\tname\tscore\nn1\tAlice\t0.9\nn2\tBob\t0.5'
     const result = tableApi.importTableFromTsv('net1', 'node', tsv)
@@ -857,6 +946,7 @@ describe('importTableFromTsv', () => {
     if (result.success) {
       expect(result.data.rowCount).toBe(2)
       expect(result.data.newColumns).toContain('score')
+      expect(result.data.skippedRows).toEqual([])
     }
     expect(mockCreateColumn).toHaveBeenCalledWith(
       'net1',
@@ -872,6 +962,7 @@ describe('importTableFromTsv', () => {
     const nodeRows = new Map([['n1', { name: 'Alice' }]])
     const columns = [{ name: 'name', type: 'string' }]
     mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1'])
 
     const tsv = 'id\tname:string\tscore:double\nn1\tAlice\t0.9'
     const result = tableApi.importTableFromTsv('net1', 'node', tsv)
@@ -886,6 +977,25 @@ describe('importTableFromTsv', () => {
     )
   })
 
+  it('skips rows whose IDs are not in the network and reports them', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1'])
+
+    const tsv = 'id\tname\nn1\tAlice\nghost\tBoo'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv)
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.rowCount).toBe(1)
+      expect(result.data.skippedRows).toEqual(['ghost'])
+    }
+    // No cell edit may reference the unknown row
+    const edits = mockSetValues.mock.calls[0][2]
+    expect(edits.every((e: { row: string }) => e.row === 'n1')).toBe(true)
+  })
+
   it('matches rows by custom keyColumn', () => {
     const nodeRows = new Map([
       ['n1', { gene: 'TP53' }],
@@ -893,6 +1003,7 @@ describe('importTableFromTsv', () => {
     ])
     const columns = [{ name: 'gene', type: 'string' }]
     mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1', 'n2'])
 
     const tsv = 'gene\tcluster\nTP53\t0\nBRCA1\t1'
     const result = tableApi.importTableFromTsv('net1', 'node', tsv, {
@@ -903,6 +1014,30 @@ describe('importTableFromTsv', () => {
     if (result.success) {
       expect(result.data.rowCount).toBe(2)
     }
+  })
+
+  it('resolves custom key values to element IDs (no orphaned rows)', () => {
+    const nodeRows = new Map([
+      ['n1', { gene: 'TP53' }],
+      ['n2', { gene: 'BRCA1' }],
+    ])
+    const columns = [{ name: 'gene', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1', 'n2'])
+
+    const tsv = 'gene\tcluster\nTP53\t7\nUNKNOWN_GENE\t9'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv, {
+      keyColumn: 'gene',
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.rowCount).toBe(1)
+      expect(result.data.skippedRows).toEqual(['UNKNOWN_GENE'])
+    }
+    // Cell edits must be keyed by the element ID, not the gene name
+    const edits = mockSetValues.mock.calls[0][2]
+    expect(edits).toEqual([{ row: 'n1', column: 'cluster', value: 7 }])
   })
 
   it('returns InvalidInput when key column not in header', () => {
@@ -950,6 +1085,7 @@ describe('TSV round-trip', () => {
       { name: 'score', type: 'long' },
     ]
     mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1', 'n2'])
 
     // Export
     const exportResult = tableApi.exportTableToTsv('net1', 'node', {
