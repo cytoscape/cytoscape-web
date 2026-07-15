@@ -299,6 +299,9 @@ export const networkApi: NetworkApi = {
         useUiStateStore.getState().setActiveNetworkView('')
       }
 
+      // Purge per-network UI state (visualStyleOptions, column widths)
+      useUiStateStore.getState().deleteNetworkUiState(networkId)
+
       // Clear HCX validation result if it exists
       const validationResults =
         useHcxValidatorStore.getState().validationResults
@@ -334,6 +337,12 @@ export const networkApi: NetworkApi = {
 
   deleteAllNetworks() {
     try {
+      // Purge per-network UI state before the workspace forgets the IDs
+      const networkIds = useWorkspaceStore.getState().workspace.networkIds
+      networkIds.forEach((id) =>
+        useUiStateStore.getState().deleteNetworkUiState(id),
+      )
+
       useNetworkStore.getState().deleteAll()
       useNetworkSummaryStore.getState().deleteAll()
       useViewModelStore.getState().deleteAll()

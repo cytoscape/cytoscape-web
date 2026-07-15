@@ -124,6 +124,7 @@ const mockUiStateActions = {
   setActiveNetworkView: vi.fn((id: string) => {
     mockActiveNetworkView = id
   }),
+  deleteNetworkUiState: vi.fn(),
 }
 
 vi.mock('../../data/hooks/stores/UiStateStore', () => ({
@@ -434,6 +435,24 @@ describe('networkApi', () => {
       expect(mockUndoActions.deleteStack).toHaveBeenCalledWith('net1')
       expect(mockWorkspaceActions.deleteNetworkModifiedStatus).toHaveBeenCalledWith('net1')
       expect(mockWorkspaceActions.deleteNetwork).toHaveBeenCalledWith('net1')
+    })
+
+    it('purges per-network UI state (visualStyleOptions etc.)', () => {
+      networkApi.deleteNetwork('net1')
+      expect(mockUiStateActions.deleteNetworkUiState).toHaveBeenCalledWith(
+        'net1',
+      )
+    })
+
+    it('purges per-network UI state for every network on deleteAllNetworks', () => {
+      mockWorkspaceState.networkIds = ['net1', 'net2']
+      networkApi.deleteAllNetworks()
+      expect(mockUiStateActions.deleteNetworkUiState).toHaveBeenCalledWith(
+        'net1',
+      )
+      expect(mockUiStateActions.deleteNetworkUiState).toHaveBeenCalledWith(
+        'net2',
+      )
     })
 
     it('navigates to next network by default (navigate=true)', () => {
