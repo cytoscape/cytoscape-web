@@ -610,6 +610,81 @@ describe('setValue', () => {
       expect(result.error.cx2Code).toBe('GL2')
     }
   })
+
+  it('rejects a value that does not match the declared column type (CX2 A1)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'age', type: 'long' },
+    ])
+    registerNet1(['n1'])
+
+    const result = tableApi.setValue('net1', 'node', 'n1', 'age', 'not-a-number')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('A1')
+      expect(result.error.message).toContain('age')
+    }
+    expect(mockSetValue).not.toHaveBeenCalled()
+  })
+
+  it('rejects a non-integer number for an integer column (CX2 A1)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'count', type: 'integer' },
+    ])
+    registerNet1(['n1'])
+
+    const result = tableApi.setValue('net1', 'node', 'n1', 'count', 1.5)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('A1')
+    }
+  })
+
+  it('rejects a list value with mismatched element types (CX2 A1)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'tags', type: 'list_of_string' },
+    ])
+    registerNet1(['n1'])
+
+    const result = tableApi.setValue('net1', 'node', 'n1', 'tags', [
+      'a',
+      5,
+    ] as any)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('A1')
+    }
+  })
+
+  it('accepts matching values including lists', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'age', type: 'long' },
+      { name: 'tags', type: 'list_of_string' },
+    ])
+    registerNet1(['n1'])
+
+    expect(tableApi.setValue('net1', 'node', 'n1', 'age', 42).success).toBe(
+      true,
+    )
+    expect(
+      tableApi.setValue('net1', 'node', 'n1', 'tags', ['a', 'b']).success,
+    ).toBe(true)
+  })
+
+  it('passes through writes to undeclared columns unchanged', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'age', type: 'long' },
+    ])
+    registerNet1(['n1'])
+
+    const result = tableApi.setValue('net1', 'node', 'n1', 'undeclared', 'x')
+
+    expect(result.success).toBe(true)
+    expect(mockSetValue).toHaveBeenCalled()
+  })
 })
 
 // --- setValues ---------------------------------------------------------------
@@ -646,6 +721,24 @@ describe('setValues', () => {
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
       expect(result.error.message).toContain('ghost')
+    }
+    expect(mockSetValues).not.toHaveBeenCalled()
+  })
+
+  it('rejects the batch when any value mismatches its column type (CX2 A1)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'age', type: 'long' },
+    ])
+    registerNet1(['n1', 'n2'])
+
+    const result = tableApi.setValues('net1', 'node', [
+      { id: 'n1', column: 'age', value: 30 },
+      { id: 'n2', column: 'age', value: 'thirty' },
+    ])
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('A1')
     }
     expect(mockSetValues).not.toHaveBeenCalled()
   })

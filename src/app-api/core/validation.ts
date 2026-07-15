@@ -9,7 +9,11 @@
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { IdType } from '../../models/IdType'
-import { AttributeName, ValueType } from '../../models/TableModel'
+import {
+  AttributeName,
+  ValueType,
+  ValueTypeName,
+} from '../../models/TableModel'
 import { ApiErrorCode, ApiFailure, fail } from '../types/ApiResult'
 
 /**
@@ -188,6 +192,76 @@ export function validateBypassTargetScope(
       `Visual property is ${group}-scoped but these elements are not ${group}s: ${mismatched.join(', ')}`,
       'BV2',
     )
+  }
+  return undefined
+}
+
+/** Runtime check of a single (non-list) value against a CX2 scalar type */
+function scalarMatchesType(value: ValueType, type: ValueTypeName): boolean {
+  switch (type) {
+    case ValueTypeName.String:
+      return typeof value === 'string'
+    case ValueTypeName.Boolean:
+      return typeof value === 'boolean'
+    case ValueTypeName.Double:
+      return typeof value === 'number'
+    case ValueTypeName.Integer:
+    case ValueTypeName.Long:
+      return typeof value === 'number' && Number.isInteger(value)
+    default:
+      return false
+  }
+}
+
+const LIST_ELEMENT_TYPE: Partial<Record<ValueTypeName, ValueTypeName>> = {
+  [ValueTypeName.ListString]: ValueTypeName.String,
+  [ValueTypeName.ListLong]: ValueTypeName.Long,
+  [ValueTypeName.ListInteger]: ValueTypeName.Integer,
+  [ValueTypeName.ListDouble]: ValueTypeName.Double,
+  [ValueTypeName.ListBoolean]: ValueTypeName.Boolean,
+}
+
+/** Runtime check of a value (scalar or list) against a CX2 column type */
+export function valueMatchesType(
+  value: ValueType,
+  type: ValueTypeName,
+): boolean {
+  // null is a legal cell value for any column type (CX2 AI6)
+  if (value === null) return true
+
+  const elementType = LIST_ELEMENT_TYPE[type]
+  if (elementType !== undefined) {
+    return (
+      Array.isArray(value) &&
+      value.every((el) => scalarMatchesType(el, elementType))
+    )
+  }
+  return scalarMatchesType(value, type)
+}
+
+/**
+ * Verify that each edit's value matches the declared type of its target
+ * column (CX2 A1). Values are checked strictly — no coercion (CX2 NP9
+ * treats coercion as warning-level; the API rejects instead). Edits to
+ * undeclared columns pass through — declaration policy is a separate
+ * concern (see backlog item 3.2).
+ */
+export function validateValuesMatchColumnTypes(
+  columns: Array<{ name: string; type: ValueTypeName }>,
+  edits: Array<{ column: AttributeName; value: ValueType }>,
+): ApiFailure | undefined {
+  const typeByName = new Map(columns.map((c) => [c.name, c.type]))
+  for (const edit of edits) {
+    const declaredType = typeByName.get(edit.column)
+    if (declaredType === undefined) continue
+    if (!valueMatchesType(edit.value, declaredType)) {
+      return fail(
+        ApiErrorCode.InvalidInput,
+        `Value for column "${edit.column}" does not match declared type ` +
+          `${declaredType}: ${JSON.stringify(edit.value)}`,
+        'A1',
+      )
+    }
   }
   return undefined
 }

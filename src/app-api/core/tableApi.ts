@@ -23,6 +23,7 @@ import {
   validateColumnDefaultValue,
   validateColumnName,
   validateTableElementsExist,
+  validateValuesMatchColumnTypes,
 } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -402,6 +403,12 @@ export const tableApi: TableApi = {
       ])
       if (missing) return missing
 
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        [{ column, value }],
+      )
+      if (typeMismatch) return typeMismatch
+
       useTableStore
         .getState()
         .setValue(networkId, tableType as TableType, elementId, column, value)
@@ -423,6 +430,12 @@ export const tableApi: TableApi = {
         cellEdits.map((edit) => edit.id),
       )
       if (missing) return missing
+
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        cellEdits,
+      )
+      if (typeMismatch) return typeMismatch
 
       // Convert app API CellEdit {id, column, value} → store CellEdit {row, column, value}
       const storeCellEdits: StoreCellEdit[] = cellEdits.map((edit) => ({
@@ -451,6 +464,14 @@ export const tableApi: TableApi = {
         Object.keys(rows),
       )
       if (missing) return missing
+
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        Object.values(rows).flatMap((row) =>
+          Object.entries(row).map(([column, value]) => ({ column, value })),
+        ),
+      )
+      if (typeMismatch) return typeMismatch
 
       // Convert app API Record<IdType, Record<...>> → store Map<IdType, Record<...>>
       const rowsMap = new Map<IdType, Record<AttributeName, ValueType>>(
@@ -481,6 +502,12 @@ export const tableApi: TableApi = {
         )
         if (missing) return missing
       }
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        [{ column: columnName, value }],
+      )
+      if (typeMismatch) return typeMismatch
+
       useTableStore
         .getState()
         .applyValueToElements(networkId, tableType, columnName, value, elementIds)
