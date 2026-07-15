@@ -280,6 +280,83 @@ describe('createColumn', () => {
       expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
     }
   })
+
+  it('rejects the forbidden column name "id" for nodes (CX2 FK1)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn('net1', 'node', 'id', 'string', '')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('FK1')
+    }
+    expect(mockCreateColumn).not.toHaveBeenCalled()
+  })
+
+  it('rejects the forbidden column name "id" for edges (CX2 FK2)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn('net1', 'edge', 'id', 'string', '')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('FK2')
+    }
+  })
+
+  it('rejects reserved edge structural keys "s" and "t" (CX2 A8)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    for (const name of ['s', 't']) {
+      const result = tableApi.createColumn('net1', 'edge', name, 'string', '')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.cx2Code).toBe('A8')
+      }
+    }
+    expect(mockCreateColumn).not.toHaveBeenCalled()
+  })
+
+  it('allows "s" and "t" as node column names', async () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn('net1', 'node', 's', 'string', '')
+
+    expect(result.success).toBe(true)
+    // Drain the deferred display-config sync so it cannot leak into
+    // a later test's mockUiStoreState
+    await flushTimers()
+  })
+
+  it('rejects prototype-pollution column names', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn(
+      'net1',
+      'node',
+      '__proto__',
+      'string',
+      '',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+    }
+  })
+
+  it('rejects empty column names', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn('net1', 'node', '  ', 'string', '')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+    }
+  })
 })
 
 // --- deleteColumn ------------------------------------------------------------
@@ -394,6 +471,19 @@ describe('setColumnName', () => {
       attribute: 'newName',
     })
     expect(mockSetMapping).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects renaming a column to the forbidden name "id" (CX2 FK1)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.setColumnName('net1', 'node', 'oldName', 'id')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('FK1')
+    }
+    expect(mockSetColumnName).not.toHaveBeenCalled()
   })
 
   it('renames the column in the tableDisplayConfiguration', async () => {

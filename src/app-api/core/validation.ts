@@ -28,3 +28,51 @@ export function validateNoIdAttribute(
   }
   return undefined
 }
+
+/** Edge source/target keys — reserved at the CX2 structural level (A8) */
+const EDGE_STRUCTURAL_KEYS = new Set(['s', 't'])
+
+/** Keys that would pollute Object prototypes if used as record keys */
+const PROTOTYPE_POLLUTION_KEYS = new Set([
+  '__proto__',
+  'constructor',
+  'prototype',
+])
+
+/**
+ * Column names must be non-empty, must not shadow the element id
+ * (CX2 FK1 for nodes / FK2 for edges), must not collide with the edge
+ * source/target structural keys (A8), and must not be prototype-pollution
+ * vectors. Node-table "reserved" names like `name` stay allowed — they
+ * are warning-level in CX2 (AC3) and legitimately used throughout
+ * Cytoscape Web.
+ */
+export function validateColumnName(
+  columnName: string,
+  tableType: 'node' | 'edge',
+): ApiFailure | undefined {
+  if (columnName.trim() === '') {
+    return fail(ApiErrorCode.InvalidInput, 'Column name must not be empty')
+  }
+  if (columnName === 'id') {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Column name "id" is forbidden for ${tableType}s`,
+      tableType === 'node' ? 'FK1' : 'FK2',
+    )
+  }
+  if (tableType === 'edge' && EDGE_STRUCTURAL_KEYS.has(columnName)) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Column name "${columnName}" is reserved for edge source/target keys`,
+      'A8',
+    )
+  }
+  if (PROTOTYPE_POLLUTION_KEYS.has(columnName)) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Column name "${columnName}" is not allowed`,
+    )
+  }
+  return undefined
+}

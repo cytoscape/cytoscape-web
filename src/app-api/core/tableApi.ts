@@ -19,6 +19,7 @@ import {
 import { Column } from '../../models/TableModel/Column'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { validateColumnName } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -289,6 +290,9 @@ export const tableApi: TableApi = {
       if (tableRecord === undefined) {
         return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
       }
+      const invalidName = validateColumnName(columnName, tableType)
+      if (invalidName) return invalidName
+
       useTableStore
         .getState()
         .createColumn(networkId, tableType, columnName, dataType, defaultValue)
@@ -344,6 +348,9 @@ export const tableApi: TableApi = {
       if (tableRecord === undefined) {
         return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
       }
+      const invalidName = validateColumnName(newName, tableType)
+      if (invalidName) return invalidName
+
       useTableStore
         .getState()
         .setColumnName(networkId, tableType, currentName, newName)
