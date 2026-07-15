@@ -45,6 +45,76 @@ vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   },
 }))
 
+// ── Mock: VisualStyleStore (for column rename/delete mapping cascade) ────────
+
+const mockSetMapping = vi.fn()
+const mockVisualStyles: Record<string, any> = {}
+
+vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
+  useVisualStyleStore: {
+    getState: vi.fn(() => ({
+      visualStyles: mockVisualStyles,
+      setMapping: mockSetMapping,
+    })),
+  },
+}))
+
+// ── Mock: UiStateStore (for tableDisplayConfiguration cascade) ───────────────
+
+let mockUiStoreState: any = { ui: { visualStyleOptions: {} } }
+
+vi.mock('../../data/hooks/stores/UiStateStore', () => ({
+  useUiStateStore: {
+    getState: vi.fn(() => mockUiStoreState),
+    setState: vi.fn((updater: (state: any) => any) => {
+      mockUiStoreState = updater(mockUiStoreState) ?? mockUiStoreState
+    }),
+  },
+}))
+
+/** Build a UiState with a tableDisplayConfiguration for one network */
+function makeUiStateWithColumns(
+  networkId: string,
+  nodeColumns: string[],
+  edgeColumns: string[] = [],
+): any {
+  const toConfig = (names: string[]) => ({
+    columnConfiguration: names.map((attributeName) => ({
+      attributeName,
+      visible: true,
+      columnWidth: undefined,
+    })),
+  })
+  return {
+    ui: {
+      visualStyleOptions: {
+        [networkId]: {
+          visualEditorProperties: {
+            tableDisplayConfiguration: {
+              nodeTable: toConfig(nodeColumns),
+              edgeTable: toConfig(edgeColumns),
+            },
+          },
+        },
+      },
+    },
+  }
+}
+
+/** Read column names back out of the mock display config */
+function displayConfigColumns(
+  networkId: string,
+  tableType: 'nodeTable' | 'edgeTable',
+): string[] {
+  return (
+    mockUiStoreState.ui.visualStyleOptions[networkId]?.visualEditorProperties
+      ?.tableDisplayConfiguration?.[tableType]?.columnConfiguration ?? []
+  ).map((c: { attributeName: string }) => c.attributeName)
+}
+
+const flushTimers = async (): Promise<void> =>
+  await new Promise((resolve) => setTimeout(resolve, 0))
+
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
 function makeTableRecord(
@@ -80,6 +150,9 @@ beforeEach(() => {
   // Clear mock tables
   Object.keys(mockTables).forEach((k) => delete mockTables[k])
   mockNetworks.clear()
+  mockSetMapping.mockReset()
+  Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])
+  mockUiStoreState = { ui: { visualStyleOptions: {} } }
 })
 
 // --- getValue ----------------------------------------------------------------
@@ -229,6 +302,50 @@ describe('deleteColumn', () => {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
   })
+
+  it('deletes visual style mappings that reference the column', () => {
+    mockTables['net1'] = makeTableRecord()
+    mockVisualStyles['net1'] = {
+      nodeFillColor: {
+        group: 'node',
+        mapping: { type: 'DISCRETE', attribute: 'score' },
+      },
+      nodeShape: {
+        group: 'node',
+        mapping: { type: 'PASSTHROUGH', attribute: 'other' },
+      },
+    }
+
+    tableApi.deleteColumn('net1', 'node', 'score')
+
+    expect(mockSetMapping).toHaveBeenCalledWith('net1', 'nodeFillColor', undefined)
+    expect(mockSetMapping).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not touch mappings of the other element group', () => {
+    mockTables['net1'] = makeTableRecord()
+    mockVisualStyles['net1'] = {
+      edgeWidth: {
+        group: 'edge',
+        mapping: { type: 'CONTINUOUS', attribute: 'score' },
+      },
+    }
+
+    tableApi.deleteColumn('net1', 'node', 'score')
+
+    expect(mockSetMapping).not.toHaveBeenCalled()
+  })
+
+  it('removes the column from the tableDisplayConfiguration', async () => {
+    mockTables['net1'] = makeTableRecord()
+    mockUiStoreState = makeUiStateWithColumns('net1', ['name', 'score'], ['weight'])
+
+    tableApi.deleteColumn('net1', 'node', 'score')
+    await flushTimers()
+
+    expect(displayConfigColumns('net1', 'nodeTable')).toEqual(['name'])
+    expect(displayConfigColumns('net1', 'edgeTable')).toEqual(['weight'])
+  })
 })
 
 // --- setColumnName -----------------------------------------------------------
@@ -255,6 +372,41 @@ describe('setColumnName', () => {
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
+  })
+
+  it('retargets visual style mappings to the new column name', () => {
+    mockTables['net1'] = makeTableRecord()
+    mockVisualStyles['net1'] = {
+      nodeFillColor: {
+        group: 'node',
+        mapping: { type: 'DISCRETE', attribute: 'oldName' },
+      },
+      edgeWidth: {
+        group: 'edge',
+        mapping: { type: 'CONTINUOUS', attribute: 'oldName' },
+      },
+    }
+
+    tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
+
+    expect(mockSetMapping).toHaveBeenCalledWith('net1', 'nodeFillColor', {
+      type: 'DISCRETE',
+      attribute: 'newName',
+    })
+    expect(mockSetMapping).toHaveBeenCalledTimes(1)
+  })
+
+  it('renames the column in the tableDisplayConfiguration', async () => {
+    mockTables['net1'] = makeTableRecord()
+    mockUiStoreState = makeUiStateWithColumns('net1', ['name', 'oldName'])
+
+    tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
+    await flushTimers()
+
+    expect(displayConfigColumns('net1', 'nodeTable')).toEqual([
+      'name',
+      'newName',
+    ])
   })
 })
 

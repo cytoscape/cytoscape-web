@@ -5,6 +5,7 @@
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
 import {
   CellEdit as StoreCellEdit,
@@ -16,6 +17,7 @@ import {
   ValueTypeName,
 } from '../../models/TableModel'
 import { Column } from '../../models/TableModel/Column'
+import { VisualPropertyName } from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -151,6 +153,40 @@ function tableKey(tableType: AppTableType): 'nodeTable' | 'edgeTable' {
   return tableType === 'node' ? 'nodeTable' : 'edgeTable'
 }
 
+interface DisplayColumnConfig {
+  attributeName: string
+  visible?: boolean
+  columnWidth?: number
+}
+
+/**
+ * Apply an update to one table's columnConfiguration in the
+ * tableDisplayConfiguration (UiStateStore).
+ *
+ * Directly mutates the Immer-managed state. Using
+ * setTableDisplayConfiguration triggers toPlainObject + IndexedDB write
+ * which can hang inside page.evaluate(). This minimal mutation is safe
+ * because the next DB persist cycle will pick it up.
+ */
+function updateTableDisplayConfigColumns(
+  networkId: IdType,
+  tableType: AppTableType,
+  update: (cols: DisplayColumnConfig[]) => DisplayColumnConfig[],
+): void {
+  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+  useUiStateStore.setState((state: any) => {
+    const tdc =
+      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
+        ?.tableDisplayConfiguration
+    if (!tdc?.[configKey]?.columnConfiguration) return state
+
+    tdc[configKey].columnConfiguration = update(
+      tdc[configKey].columnConfiguration,
+    )
+    return state
+  })
+}
+
 /**
  * Add a column to the tableDisplayConfiguration in UiStateStore so the
  * Table Browser shows newly created columns. Without this, columns created
@@ -161,29 +197,44 @@ function syncColumnToTableDisplayConfig(
   tableType: AppTableType,
   columnName: string,
 ): void {
-  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
-  // Directly mutate the Immer-managed state to add the column entry.
-  // Using setTableDisplayConfiguration triggers toPlainObject + IndexedDB
-  // write which can hang inside page.evaluate(). This minimal mutation
-  // is safe because it runs inside the same synchronous call stack as
-  // createColumn, and the next DB persist cycle will pick it up.
-  useUiStateStore.setState((state: any) => {
-    const tdc =
-      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
-        ?.tableDisplayConfiguration
-    if (!tdc?.[configKey]?.columnConfiguration) return state
+  updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+    cols.some((c) => c.attributeName === columnName)
+      ? cols
+      : [
+          { attributeName: columnName, visible: true, columnWidth: undefined },
+          ...cols,
+        ],
+  )
+}
 
-    const colConfig = tdc[configKey].columnConfiguration
-    const exists = colConfig.some(
-      (c: { attributeName: string }) => c.attributeName === columnName,
+/**
+ * Retarget (newName given) or remove (newName undefined) visual style
+ * mappings that reference a column, limited to visual properties of the
+ * matching element group. Mirrors the Table Browser cascade so external
+ * column edits cannot leave mappings pointing at a non-existent
+ * attribute (CX2 MI1 / RC3).
+ */
+function cascadeColumnToMappings(
+  networkId: IdType,
+  tableType: AppTableType,
+  columnName: string,
+  newName?: string,
+): void {
+  const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
+  if (visualStyle === undefined) return
+
+  const setMapping = useVisualStyleStore.getState().setMapping
+  Object.entries(visualStyle).forEach(([vpName, vp]) => {
+    if (vp?.group !== tableType || vp?.mapping?.attribute !== columnName) {
+      return
+    }
+    setMapping(
+      networkId,
+      vpName as VisualPropertyName,
+      newName === undefined
+        ? undefined
+        : { ...vp.mapping, attribute: newName },
     )
-    if (exists) return state
-
-    tdc[configKey].columnConfiguration = [
-      { attributeName: columnName, visible: true, columnWidth: undefined },
-      ...colConfig,
-    ]
-    return state
   })
 }
 
@@ -266,6 +317,21 @@ export const tableApi: TableApi = {
         return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
       }
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
+
+      // Cascade: mappings referencing the column are deleted (CX2 RC3)
+      cascadeColumnToMappings(networkId, tableType, columnName)
+
+      // Deferred for the same reason as createColumn (see above)
+      setTimeout(() => {
+        try {
+          updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+            cols.filter((c) => c.attributeName !== columnName),
+          )
+        } catch {
+          // Best-effort
+        }
+      }, 0)
+
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
@@ -281,6 +347,25 @@ export const tableApi: TableApi = {
       useTableStore
         .getState()
         .setColumnName(networkId, tableType, currentName, newName)
+
+      // Cascade: mappings follow the rename so they never dangle (MI1)
+      cascadeColumnToMappings(networkId, tableType, currentName, newName)
+
+      // Deferred for the same reason as createColumn (see above)
+      setTimeout(() => {
+        try {
+          updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+            cols.map((c) =>
+              c.attributeName === currentName
+                ? { ...c, attributeName: newName }
+                : c,
+            ),
+          )
+        } catch {
+          // Best-effort
+        }
+      }, 0)
+
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
