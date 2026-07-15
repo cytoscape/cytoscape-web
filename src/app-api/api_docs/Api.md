@@ -235,6 +235,13 @@ Returns all node IDs in the network.
 
 Returns all edge IDs in the network.
 
+#### `getEdges(networkId): ApiResult<{ edges: Array<{ id, sourceId, targetId }> }>`
+
+Returns all edges with their source and target node IDs in a single call.
+Use this instead of `getEdgeIds` + per-edge `getEdge()` when building the
+network topology — it avoids one API round-trip per edge, which matters on
+networks with thousands of edges.
+
 #### `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }>`
 
 Returns all edges connected to the given node (both incoming and outgoing).

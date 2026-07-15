@@ -117,6 +117,15 @@ export interface ElementApi {
   /** Return all edge IDs in the network. */
   getEdgeIds(networkId: IdType): ApiResult<{ edgeIds: IdType[] }>
 
+  /**
+   * Return all edges with their source and target node IDs in a single
+   * call, so apps can build the network topology without one getEdge()
+   * round-trip per edge.
+   */
+  getEdges(networkId: IdType): ApiResult<{
+    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  }>
+
   /** Return all edges connected to a node (both incoming and outgoing). */
   getConnectedEdges(
     networkId: IdType,
@@ -910,7 +919,33 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }> {
+  getEdges(networkId): ApiResult<{
+    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(
+          ApiErrorCode.NetworkNotFound,
+          `Network ${networkId} not found`,
+        )
+      }
+      return ok({
+        edges: network.edges.map((e) => ({
+          id: e.id,
+          sourceId: e.s,
+          targetId: e.t,
+        })),
+      })
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  getConnectedEdges(
+    networkId,
+    nodeId,
+  ): ApiResult<{ edges: EdgeData[] }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {

@@ -960,6 +960,37 @@ describe('elementApi', () => {
       })
     })
 
+    describe('getEdges', () => {
+      it('returns all edges with source and target IDs in one call', () => {
+        const result = elementApi.getEdges('net1')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges).toEqual([
+            { id: 'e1', sourceId: 'A', targetId: 'B' },
+            { id: 'e2', sourceId: 'B', targetId: 'C' },
+            { id: 'e3', sourceId: 'A', targetId: 'D' },
+          ])
+        }
+      })
+
+      it('returns an empty array for a network with no edges', () => {
+        mockNetworks.set('empty', makeNetwork('empty', [{ id: 'X' }], []))
+        const result = elementApi.getEdges('empty')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges).toEqual([])
+        }
+      })
+
+      it('returns NetworkNotFound for invalid network', () => {
+        const result = elementApi.getEdges('invalid')
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        }
+      })
+    })
+
     describe('getConnectedEdges', () => {
       it('returns edges connected to node A', () => {
         const result = elementApi.getConnectedEdges('net1', 'A')
