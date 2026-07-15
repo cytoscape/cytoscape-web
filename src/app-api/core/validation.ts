@@ -249,6 +249,48 @@ export function validateMappingAttribute(
   return undefined
 }
 
+/**
+ * Continuous mappings require numeric, finite values for their min/max
+ * bounds and control points (CX2 V7). NaN and Infinity are rejected
+ * rather than coerced to null (NI5/NI6 are warning-level; the API
+ * rejects).
+ */
+export function validateContinuousMappingBounds(
+  attributeValues: ValueType[],
+  controlPoints?: Array<{ value: unknown }>,
+): ApiFailure | undefined {
+  if (attributeValues.length === 0) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      'attributeValues must not be empty for a continuous mapping',
+      'V7',
+    )
+  }
+  const isFiniteNumber = (v: unknown): boolean =>
+    typeof v === 'number' && Number.isFinite(v)
+
+  const badValues = attributeValues.filter((v) => !isFiniteNumber(v))
+  if (badValues.length > 0) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Continuous mapping requires numeric, finite attributeValues; got ` +
+        `${JSON.stringify(badValues.slice(0, 3))}`,
+      'V7',
+    )
+  }
+  if (controlPoints !== undefined) {
+    const badPoints = controlPoints.filter((cp) => !isFiniteNumber(cp.value))
+    if (badPoints.length > 0) {
+      return fail(
+        ApiErrorCode.InvalidInput,
+        'Continuous mapping control points must have numeric, finite values',
+        'V7',
+      )
+    }
+  }
+  return undefined
+}
+
 /** Runtime check of a single (non-list) value against a CX2 scalar type */
 function scalarMatchesType(value: ValueType, type: ValueTypeName): boolean {
   switch (type) {

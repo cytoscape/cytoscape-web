@@ -16,6 +16,7 @@ import {
 import { ApiErrorCode, ApiFailure, ApiResult, fail, ok } from '../types/ApiResult'
 import {
   validateBypassTargetScope,
+  validateContinuousMappingBounds,
   validateElementsExist,
   validateMappingAttribute,
 } from './validation'
@@ -276,6 +277,12 @@ export const visualStyleApi: VisualStyleApi = {
         true,
       )
       if (invalid) return invalid
+
+      const invalidBounds = validateContinuousMappingBounds(
+        attributeValues,
+        controlPoints,
+      )
+      if (invalidBounds) return invalidBounds
 
       store.createContinuousMapping(
         networkId,

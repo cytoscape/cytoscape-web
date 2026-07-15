@@ -677,6 +677,97 @@ describe('createContinuousMapping', () => {
     )
   })
 
+  it('rejects non-numeric attributeValues (CX2 V7)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
+
+    const result = visualStyleApi.createContinuousMapping(
+      'net1',
+      VPN.NodeHeight,
+      'double',
+      'score',
+      ['low', 'high'] as any,
+      'double',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('V7')
+    }
+    expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
+  })
+
+  it('rejects NaN and Infinity attributeValues (CX2 V7)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
+
+    const result = visualStyleApi.createContinuousMapping(
+      'net1',
+      VPN.NodeHeight,
+      'double',
+      'score',
+      [0, NaN, Infinity],
+      'double',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('V7')
+    }
+  })
+
+  it('rejects empty attributeValues (CX2 V7)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
+
+    const result = visualStyleApi.createContinuousMapping(
+      'net1',
+      VPN.NodeHeight,
+      'double',
+      'score',
+      [],
+      'double',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('V7')
+    }
+  })
+
+  it('rejects control points with non-numeric values (CX2 V7)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
+
+    const result = visualStyleApi.createContinuousMapping(
+      'net1',
+      VPN.NodeHeight,
+      'double',
+      'score',
+      [0, 100],
+      'double',
+      [
+        { value: 'zero' as any, vpValue: 20 },
+        { value: 100, vpValue: 60 },
+      ],
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('V7')
+    }
+    expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
+  })
+
   it('rejects a continuous mapping on a non-numeric attribute (CX2 MI3)', () => {
     mockVisualStyles['net1'] = {
       [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
