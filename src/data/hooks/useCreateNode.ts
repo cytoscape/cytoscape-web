@@ -148,7 +148,7 @@ export const useCreateNode = () => {
       const newNodeId = generateNextNodeId(networkId)
 
       // Prepare attributes with defaults (shallow copy to avoid mutating caller's object)
-      const attributes = { ...(options?.attributes ?? {}) }
+      const attributes = { ...options?.attributes }
       const tableRecord = tables[networkId]
       if (tableRecord?.nodeTable) {
         const hasNameColumn = tableRecord.nodeTable.columns.some(

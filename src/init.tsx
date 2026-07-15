@@ -26,7 +26,7 @@ const AUTH_INIT_TIMEOUT_MS = 4000
 const LOCAL_DEV_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
 const initializeApp = () => {
-  const { urlBaseName, debug } = appConfig
+  const { urlBaseName } = appConfig
   const rootElement: HTMLElement | null = document.getElementById('root')
   if (rootElement == null) {
     logStartup.error(

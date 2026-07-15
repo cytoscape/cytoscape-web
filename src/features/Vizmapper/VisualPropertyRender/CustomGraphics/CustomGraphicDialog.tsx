@@ -32,10 +32,7 @@ import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import {
-  PieChartPropertiesType,
-  RingChartPropertiesType,
-} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { AttributesForm } from './Forms/AttributesForm'
 import { ColorsForm } from './Forms/ColorsForm'
 import { PropertiesForm } from './Forms/PropertiesForm'
@@ -43,7 +40,6 @@ import { useCustomGraphicState } from './hooks/useCustomGraphicState'
 import { CHART_CONSTANTS, COLORS } from './utils/constants'
 import { isRingChartProperties } from './utils/typeGuards'
 import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
-
 
 /** Props for the custom graphics dialog */
 interface CustomGraphicDialogProps {
@@ -115,6 +111,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       }
     }
     prevStepRef.current = activeStep
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only on entering step 2; prevStepRef guards re-runs
   }, [
     activeStep,
     currentProps.cy_dataColumns.length,
@@ -850,10 +847,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button
-          variant="outlined"
-          onClick={onCancel}
-        >
+        <Button variant="outlined" onClick={onCancel}>
           Cancel
         </Button>
         <Box sx={{ flex: '1 1 auto' }} />
@@ -863,7 +857,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
               <Button
                 variant="outlined"
                 startIcon={<KeyboardArrowLeftIcon />}
-                onClick={handleBack} sx={{ mr: 1 }}
+                onClick={handleBack}
+                sx={{ mr: 1 }}
               >
                 Back
               </Button>

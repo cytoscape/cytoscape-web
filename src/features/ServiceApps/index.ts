@@ -138,7 +138,7 @@ export const createNetworkDataObj = (
 
     filteredEdges.forEach((edge) => {
       const row = table?.edgeTable.rows.get(edge.id)
-      
+
       const rowData: Record<string, any> = {
         source: edge.s,
         target: edge.t,
@@ -304,7 +304,7 @@ export const useRunTask = (): ((
       })
       return result
     },
-    [],
+    [submitAndProcessTask],
   )
   return runTask
 }
@@ -370,7 +370,7 @@ export const useSubmitAndProcessTask = (): {
 
       return taskResult
     },
-    [],
+    [setCurrentTask],
   )
   return { submitAndProcessTask }
 }

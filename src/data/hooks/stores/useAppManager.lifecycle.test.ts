@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // Plain Jest unit tests for the lifecycle helper functions in appLifecycle.ts.
 // These helpers are extracted from useAppManager to avoid the top-level await
 // that makes renderHook-based testing complex.
-import type { AppContext, AppContextApis } from '../../../app-api/types/AppContext'
+import type {
+  AppContext,
+  AppContextApis,
+} from '../../../app-api/types/AppContext'
 import type { CyApp } from '../../../models/AppModel/CyApp'
-import {
-  _resetCleanupRegistry,
-  registerAppCleanup,
-} from './AppCleanupRegistry'
+import { _resetCleanupRegistry, registerAppCleanup } from './AppCleanupRegistry'
 import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 
 // Minimal stub — tests only check that mount/unmount receive the apis object
@@ -21,7 +21,7 @@ function makeApp(
   id: string,
   extra?: { mount?: import('vitest').Mock; unmount?: import('vitest').Mock },
 ): CyApp {
-  return { id, name: id, components: [], ...(extra ?? {}) } as CyApp
+  return { id, name: id, components: [], ...extra } as CyApp
 }
 
 // ─── mountApp ────────────────────────────────────────────────────────────────
@@ -48,7 +48,11 @@ describe('mountApp', () => {
 
   it('adds plain apps without lifecycle to mountedApps immediately (backward-compatible)', async () => {
     const app = makeApp('plain')
-    await mountApp(app, { appId: 'plain', apis: mockApi } as AppContext, mountedApps)
+    await mountApp(
+      app,
+      { appId: 'plain', apis: mockApi } as AppContext,
+      mountedApps,
+    )
 
     // Apps without mount() are treated as mounted immediately
     expect(mountedApps.has('plain')).toBe(true)
@@ -63,7 +67,11 @@ describe('mountApp', () => {
     })
     const app = makeApp('async-app', { mount: mountFn })
 
-    await mountApp(app, { appId: 'async-app', apis: mockApi } as AppContext, mountedApps)
+    await mountApp(
+      app,
+      { appId: 'async-app', apis: mockApi } as AppContext,
+      mountedApps,
+    )
     order.push('after-mountApp')
 
     expect(order).toEqual(['mount-start', 'mount-end', 'after-mountApp'])
@@ -78,7 +86,11 @@ describe('mountApp', () => {
     const app = makeApp('err-app', { mount: mountFn })
 
     await expect(
-      mountApp(app, { appId: 'err-app', apis: mockApi } as AppContext, mountedApps),
+      mountApp(
+        app,
+        { appId: 'err-app', apis: mockApi } as AppContext,
+        mountedApps,
+      ),
     ).rejects.toThrow('mount failed')
 
     expect(mountedApps.has('err-app')).toBe(false)
@@ -91,7 +103,11 @@ describe('mountApp', () => {
 
     const mountFn = vi.fn()
     const app = makeApp('ok-app', { mount: mountFn })
-    await mountApp(app, { appId: 'ok-app', apis: mockApi } as AppContext, mountedApps)
+    await mountApp(
+      app,
+      { appId: 'ok-app', apis: mockApi } as AppContext,
+      mountedApps,
+    )
 
     expect(cleanupSpy).not.toHaveBeenCalled()
   })

@@ -58,6 +58,10 @@ interface CirclePackingPanelProps {
 const CP_WRAPPER_CLASS = 'circle-packing-wrapper'
 const SVG_ID = 'cpView'
 
+// Stable fallback so `selectedNodes` keeps the same identity across renders
+// while the circle packing view model has not been built yet
+const EMPTY_SELECTION: IdType[] = []
+
 // Color scale for the circles in the view
 const colorScale = getColorMapper([0, 5])
 
@@ -147,7 +151,8 @@ export const CirclePackingPanel = ({
     (view) => view.type === CirclePackingType,
   ) as CirclePackingView
 
-  const selectedNodes: IdType[] = circlePackingView?.selectedNodes ?? []
+  const selectedNodes: IdType[] =
+    circlePackingView?.selectedNodes ?? EMPTY_SELECTION
   const selectedNodeSet = useMemo(
     () => new Set<string>(selectedNodes),
     [selectedNodes],
@@ -494,7 +499,13 @@ export const CirclePackingPanel = ({
 
       setNetworkSwitched(true)
     },
-    [visible],
+    [
+      visible,
+      rendererId,
+      getRendererFunction,
+      setRendererFunction,
+      initialSize,
+    ],
   )
 
   /**
@@ -511,12 +522,20 @@ export const CirclePackingPanel = ({
     [transform],
   )
 
+  // The d3 zoom handler below is installed once on mount, so calling
+  // updateVisibilityForZoom directly from it would forever use the first
+  // render's closure (expandAll = false) and re-collapse circles on zoom
+  // after a search expanded them. Route every non-render call through a ref
+  // that always points at the latest render's function.
+  const updateVisibilityForZoomRef = useRef(updateVisibilityForZoom)
+  updateVisibilityForZoomRef.current = updateVisibilityForZoom
+
   /**
    * Update visibility when expand all state changes
    */
   useEffect(
     function onExpandAllChange() {
-      updateVisibilityForZoom(lastZoomLevelRef.current)
+      updateVisibilityForZoomRef.current(lastZoomLevelRef.current)
     },
     [expandAll],
   )
@@ -531,7 +550,7 @@ export const CirclePackingPanel = ({
       } else {
         setExpandAll(false)
       }
-      updateVisibilityForZoom(lastZoomLevelRef.current)
+      updateVisibilityForZoomRef.current(lastZoomLevelRef.current)
     },
     [searchState],
   )
@@ -560,26 +579,13 @@ export const CirclePackingPanel = ({
           lastZoomLevelRef.current = selectedDepthRef.current
         } else {
           lastZoomLevelRef.current = maxDepth
-          updateVisibilityForZoom(maxDepth)
+          updateVisibilityForZoomRef.current(maxDepth)
         }
       })
 
     // Share zoom behavior as a state
     zoomBehaviorRef.current = zoomBehavior
     d3Selection.select(svgRef.current).call(zoomBehaviorRef.current)
-
-    return () => {
-      if (svgRef.current) {
-        // const svg = d3Selection.select(svgRef.current)
-        // // Remove all event listeners (click, zoom, mouseenter, mousemove)
-        // svg.on('click', null)
-        // svg.on('zoom', null)
-        // // Remove all SVG content (circles, text, groups)
-        // svg.selectAll('*').remove()
-        // // Clear refs to prevent memory leaks
-        // zoomBehaviorRef.current = null
-      }
-    }
   }, [])
 
   /**
@@ -669,6 +675,12 @@ export const CirclePackingPanel = ({
         }
       }
     },
+    // Deliberately keyed on the subnetwork-side selection only: this effect
+    // syncs selection FROM the subnetwork view INTO this view, and must run
+    // exactly when those names change. Adding the other read values
+    // (selectedNodes/selectedNodeSet change on every CP-side selection)
+    // would re-fire it constantly and fight the user's local selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection sync keyed on source-of-truth only
     [selectedHierarchyNodeNames],
   )
 
@@ -788,6 +800,10 @@ export const CirclePackingPanel = ({
 
   /**
    * Redraw the circle packing layout when the view model has been updated
+   *
+   * Keyed on visualStyle only: buildCirclePackingViewModel and
+   * circlePackingView get new identities from the rebuild's own store write,
+   * so adding either as a dependency would rebuild in an infinite loop.
    */
   useEffect(
     function onVisualStyleChange() {
@@ -803,6 +819,7 @@ export const CirclePackingPanel = ({
         throw e
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- vs trigger only; rebuild writes the view model (loop)
     [visualStyle],
   )
 
@@ -944,6 +961,8 @@ export const CirclePackingPanel = ({
       }
     },
     // Only depend on hierarchy changes and network changes, not on selection changes
+    // (selection strokes are updated cheaply by onNodeSelection below)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hierarchy/network keys only; selection has its own effect
     [circlePackingView?.hierarchy, networkId, lastNetworkId],
   )
 
@@ -973,6 +992,7 @@ export const CirclePackingPanel = ({
         clearTimeout(timeoutId)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hover trigger only; a view dep would re-open the tooltip on rebuilds
     [hoveredEnter],
   )
 
@@ -990,11 +1010,15 @@ export const CirclePackingPanel = ({
         setNetworkSwitched(false)
       }
     },
-    [selectedNodes, selectedLeaves],
+    [selectedNodes, selectedLeaves, networkSwitched, selectedNodeSet],
   )
 
   /**
    * Initialize view model when initial size is available
+   *
+   * buildCirclePackingViewModel must NOT be a dependency: its identity changes
+   * with every render caused by its own store write, so adding it would
+   * rebuild the view model in an infinite loop.
    */
   useEffect(
     function onInitialSizeChange() {
@@ -1002,6 +1026,7 @@ export const CirclePackingPanel = ({
         buildCirclePackingViewModel()
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot build when the measured size arrives
     [initialSize],
   )
 

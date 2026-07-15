@@ -235,7 +235,14 @@ export const useCreateNetwork = (): (({
 
       return cyNetwork
     },
-    [],
+    [
+      addNetwork,
+      addVisualStyle,
+      addTable,
+      addViewModel,
+      addSummary,
+      createPassthroughMapping,
+    ],
   )
 
   return createNetwork

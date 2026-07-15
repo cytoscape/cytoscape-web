@@ -12,14 +12,13 @@ import {
   putAppToDb,
 } from '../db'
 vi.mock('../db', async (importOriginal) => {
-  const actual = (await importOriginal()) as typeof import('../db');
+  const actual = (await importOriginal()) as typeof import('../db')
   return {
     ...actual,
-    putAppToDb: vi.fn(actual.putAppToDb)
-  };
-});
+    putAppToDb: vi.fn(actual.putAppToDb),
+  }
+})
 
-import { serviceFetcher } from './stores/AppStore'
 import { RemoteWorkspace, useLoadWorkspace } from './useLoadWorkspace'
 
 // Mock window.location.reload
@@ -281,8 +280,7 @@ describe('useLoadWorkspace', () => {
 
   it('should continue with workspace write even if app updates fail', async () => {
     // Mock putAppToDb to fail
-    vi.mocked(putAppToDb)
-      .mockRejectedValueOnce(new Error('DB error'))
+    vi.mocked(putAppToDb).mockRejectedValueOnce(new Error('DB error'))
 
     const loadWorkspace = useLoadWorkspace()
     const workspace = createRemoteWorkspace('workspace-1', ['app-1'])
@@ -333,7 +331,8 @@ describe('useLoadWorkspace', () => {
   })
 
   it('should use custom service fetcher when provided', async () => {
-    const customFetcher = vi.fn()
+    const customFetcher = vi
+      .fn()
       .mockResolvedValue(createServiceApp('https://custom.com'))
     const loadWorkspace = useLoadWorkspace(customFetcher)
     const workspace = createRemoteWorkspace(

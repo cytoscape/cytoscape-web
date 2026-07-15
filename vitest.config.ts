@@ -11,7 +11,7 @@ export default defineConfig(async () => {
   return mergeConfig(resolvedViteConfig, {
     test: {
       environment: 'jsdom',
-      include: ['**/*.test.{ts,tsx}'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
       setupFiles: ['./vitest-setup.ts']
     },
   });

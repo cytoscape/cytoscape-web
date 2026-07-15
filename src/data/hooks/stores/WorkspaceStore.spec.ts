@@ -5,7 +5,6 @@ import { logStore } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { InstalledApp } from '../../../models/AppModel/InstalledApp'
-import { IdType } from '../../../models/IdType'
 import { Workspace } from '../../../models/WorkspaceModel'
 import { toPlainObject } from '../../db/serialization'
 import { useWorkspaceStore } from './WorkspaceStore'
@@ -743,9 +742,7 @@ describe('useWorkspaceStore', () => {
       })
 
       it('should warn and not throw for an unknown id', () => {
-        const warnSpy = vi
-          .spyOn(logStore, 'warn')
-          .mockImplementation(() => {})
+        const warnSpy = vi.spyOn(logStore, 'warn').mockImplementation(() => {})
         const { result } = renderHook(() => useWorkspaceStore())
 
         act(() => {

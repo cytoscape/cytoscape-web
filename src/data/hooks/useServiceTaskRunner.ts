@@ -199,7 +199,7 @@ export const useServiceTaskRunner = (): ((
         message: result.message,
       } as RunTaskResult
     },
-    [serviceApps, runTask, getHandler],
+    [serviceApps, runTask, getHandler, addMessage],
   )
 
   return run

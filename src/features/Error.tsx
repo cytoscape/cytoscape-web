@@ -1,6 +1,20 @@
-import { Alert, Button, CircularProgress, Grid, Snackbar, Typography } from '@mui/material'
+import {
+  Alert,
+  Button,
+  CircularProgress,
+  Grid,
+  Snackbar,
+  Typography,
+} from '@mui/material'
 import debounce from 'lodash/debounce'
-import { ReactElement, useContext, useEffect, useRef,useState } from 'react'
+import {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   isRouteErrorResponse,
   useLocation,
@@ -8,8 +22,11 @@ import {
   useRouteError,
 } from 'react-router-dom'
 
-import { type AppConfig,AppConfigContext } from '../AppConfigContext'
-import { type DatabaseSnapshot,exportDatabaseSnapshot } from '../data/db/snapshot'
+import { type AppConfig, AppConfigContext } from '../AppConfigContext'
+import {
+  type DatabaseSnapshot,
+  exportDatabaseSnapshot,
+} from '../data/db/snapshot'
 import {
   createCrashReportPayload,
   exportPartialSnapshotForNetwork,
@@ -40,16 +57,11 @@ export const Error = (): ReactElement => {
     navigate('/error', { replace: true })
   }, [navigate])
 
-  // Send error report if user has consented
-  useEffect(() => {
-    if (hasConsented && !hasReportedRef.current) {
-      hasReportedRef.current = true
-      sendErrorReportAsync()
-    }
-  }, [hasConsented])
-
-  const sendErrorReportAsync = async (): Promise<void> => {
-    if (!appConfig.errorReportEndpoint || appConfig.errorReportEndpoint === '') {
+  const sendErrorReportAsync = useCallback(async (): Promise<void> => {
+    if (
+      !appConfig.errorReportEndpoint ||
+      appConfig.errorReportEndpoint === ''
+    ) {
       return
     }
 
@@ -62,8 +74,7 @@ export const Error = (): ReactElement => {
       const errorStack = error?.stack
       const errorRoute = location.pathname
 
-      const maxSizeBytes =
-        appConfig.maxErrorReportSnapshotSizeMB * 1024 * 1024
+      const maxSizeBytes = appConfig.maxErrorReportSnapshotSizeMB * 1024 * 1024
 
       let snapshot: DatabaseSnapshot
       let snapshotType: 'full' | 'partial'
@@ -86,14 +97,12 @@ export const Error = (): ReactElement => {
           // Snapshot is too large, try to export partial snapshot with just the current network
           if (currentNetworkId && currentNetworkId !== '') {
             try {
-              const partialSnapshot = await exportPartialSnapshotForNetwork(
-                currentNetworkId,
-              )
+              const partialSnapshot =
+                await exportPartialSnapshotForNetwork(currentNetworkId)
               snapshotType = 'partial'
               snapshot = partialSnapshot
-              snapshotSizeBytes = new Blob([
-                JSON.stringify(partialSnapshot),
-              ]).size
+              snapshotSizeBytes = new Blob([JSON.stringify(partialSnapshot)])
+                .size
               logDb.info(
                 `[Error] Full snapshot too large (${fullSnapshotSizeBytes} bytes), using partial snapshot for ${currentNetworkId} (${snapshotSizeBytes} bytes)`,
               )
@@ -153,7 +162,8 @@ export const Error = (): ReactElement => {
         /^\/(?<workspaceId>[^/]+)(?:\/networks\/(?<networkId>[^/?#]+))?/,
       )
       const workspaceId = routeMatch?.groups?.workspaceId
-      const networkId = routeMatch?.groups?.networkId || currentNetworkId || undefined
+      const networkId =
+        routeMatch?.groups?.networkId || currentNetworkId || undefined
 
       const payload = createCrashReportPayload({
         url: window.location.href,
@@ -182,11 +192,23 @@ export const Error = (): ReactElement => {
       logDb.info('[Error] Error report sent successfully')
     } catch (e: unknown) {
       logDb.error('[Error] Failed to send error report:', e)
-      setReportError(e instanceof Error ? (e as Error).message : 'Failed to send error report')
+      setReportError(
+        e instanceof Error
+          ? (e as Error).message
+          : 'Failed to send error report',
+      )
     } finally {
       setIsSendingReport(false)
     }
-  }
+  }, [appConfig, error, location, currentNetworkId])
+
+  // Send error report if user has consented
+  useEffect(() => {
+    if (hasConsented && !hasReportedRef.current) {
+      hasReportedRef.current = true
+      sendErrorReportAsync()
+    }
+  }, [hasConsented, sendErrorReportAsync])
 
   const handleReset = (): void => {
     resetWorkspace().then(() => {
