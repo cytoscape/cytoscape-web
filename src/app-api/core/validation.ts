@@ -113,6 +113,34 @@ export function validateElementsExist(
 }
 
 /**
+ * Verify that every ID in nodeIds exists as a node (not an edge) in the
+ * network. Returns a failure naming the missing IDs (CX2 GL1).
+ */
+export function validateNodesExist(
+  networkId: IdType,
+  nodeIds: IdType[],
+): ApiFailure | undefined {
+  const network = useNetworkStore.getState().networks.get(networkId)
+  if (network === undefined) {
+    return fail(
+      ApiErrorCode.NetworkNotFound,
+      `Network ${networkId} not found`,
+    )
+  }
+
+  const known = new Set(network.nodes.map((n) => n.id))
+  const missing = nodeIds.filter((id) => !known.has(id))
+  if (missing.length > 0) {
+    return fail(
+      ApiErrorCode.NodeNotFound,
+      `Nodes do not exist in network ${networkId}: ${missing.join(', ')}`,
+      'GL1',
+    )
+  }
+  return undefined
+}
+
+/**
  * Verify that bypass targets match the visual property's element group:
  * node-scoped properties may only target nodes, edge-scoped only edges
  * (CX2 BV2). Call after validateElementsExist, so every ID is known to

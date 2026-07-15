@@ -6,6 +6,7 @@ import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFuncti
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { validateNodesExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -81,6 +82,12 @@ export const viewportApi: ViewportApi = {
           `Network ${networkId} not found`,
         )
       }
+      const missingNodes = validateNodesExist(
+        networkId,
+        Object.keys(positions),
+      )
+      if (missingNodes) return missingNodes
+
       // Convert PositionRecord (JSON-serializable) to Map required by store
       const positionMap = new Map<IdType, [number, number, number?]>(
         Object.entries(positions) as Array<[IdType, [number, number, number?]]>,
