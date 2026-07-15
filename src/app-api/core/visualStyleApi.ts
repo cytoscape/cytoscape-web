@@ -14,7 +14,7 @@ import {
   VisualPropertyValueTypeName,
 } from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
-import { validateElementsExist } from './validation'
+import { validateBypassTargetScope, validateElementsExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -102,12 +102,35 @@ export const visualStyleApi: VisualStyleApi = {
           'elementIds must not be empty',
         )
       }
+
+      const visualProperty = visualStyles[networkId][vpName]
+      if (visualProperty === undefined) {
+        return fail(
+          ApiErrorCode.InvalidInput,
+          `Unknown visual property ${vpName}`,
+        )
+      }
+      if (visualProperty.group === 'network') {
+        return fail(
+          ApiErrorCode.InvalidInput,
+          `Network-scoped visual property ${vpName} cannot be bypassed`,
+          'BV5',
+        )
+      }
+
       const missingElements = validateElementsExist(
         networkId,
         elementIds,
         'BV1',
       )
       if (missingElements) return missingElements
+
+      const scopeMismatch = validateBypassTargetScope(
+        networkId,
+        elementIds,
+        visualProperty.group,
+      )
+      if (scopeMismatch) return scopeMismatch
 
       useVisualStyleStore
         .getState()

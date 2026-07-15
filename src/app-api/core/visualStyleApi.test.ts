@@ -118,13 +118,21 @@ describe('setDefault', () => {
 // --- setBypass ---------------------------------------------------------------
 
 describe('setBypass', () => {
-  it('calls setBypass and returns ok() when network and elements exist', () => {
-    mockVisualStyles['net1'] = {}
+  const setupBypassFixtures = (): void => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { group: 'node' },
+      [VPN.EdgeLineColor]: { group: 'edge' },
+      [VPN.NetworkBackgroundColor]: { group: 'network' },
+    }
     mockNetworks.set('net1', {
       id: 'net1',
       nodes: [{ id: 'n1' }, { id: 'n2' }],
-      edges: [],
+      edges: [{ id: 'e0', s: 'n1', t: 'n2' }],
     })
+  }
+
+  it('calls setBypass and returns ok() when network and elements exist', () => {
+    setupBypassFixtures()
 
     const result = visualStyleApi.setBypass(
       'net1',
@@ -142,13 +150,8 @@ describe('setBypass', () => {
     )
   })
 
-  it('accepts edge IDs as bypass targets', () => {
-    mockVisualStyles['net1'] = {}
-    mockNetworks.set('net1', {
-      id: 'net1',
-      nodes: [{ id: 'n1' }, { id: 'n2' }],
-      edges: [{ id: 'e0', s: 'n1', t: 'n2' }],
-    })
+  it('accepts edge IDs as bypass targets for edge properties', () => {
+    setupBypassFixtures()
 
     const result = visualStyleApi.setBypass(
       'net1',
@@ -161,12 +164,7 @@ describe('setBypass', () => {
   })
 
   it('rejects bypass targets that do not exist in the network (CX2 BV1)', () => {
-    mockVisualStyles['net1'] = {}
-    mockNetworks.set('net1', {
-      id: 'net1',
-      nodes: [{ id: 'n1' }],
-      edges: [],
-    })
+    setupBypassFixtures()
 
     const result = visualStyleApi.setBypass(
       'net1',
@@ -180,6 +178,76 @@ describe('setBypass', () => {
       expect(result.error.code).toBe(ApiErrorCode.ElementNotFound)
       expect(result.error.cx2Code).toBe('BV1')
       expect(result.error.message).toContain('ghost')
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
+  })
+
+  it('rejects bypassing a network-scoped visual property (CX2 BV5)', () => {
+    setupBypassFixtures()
+
+    const result = visualStyleApi.setBypass(
+      'net1',
+      VPN.NetworkBackgroundColor,
+      ['n1'],
+      '#ffffff',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('BV5')
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
+  })
+
+  it('rejects a node property bypass targeting an edge (CX2 BV2)', () => {
+    setupBypassFixtures()
+
+    const result = visualStyleApi.setBypass(
+      'net1',
+      VPN.NodeBackgroundColor,
+      ['e0'],
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('BV2')
+      expect(result.error.message).toContain('e0')
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
+  })
+
+  it('rejects an edge property bypass targeting a node (CX2 BV2)', () => {
+    setupBypassFixtures()
+
+    const result = visualStyleApi.setBypass(
+      'net1',
+      VPN.EdgeLineColor,
+      ['n1'],
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('BV2')
+    }
+  })
+
+  it('rejects an unknown visual property name', () => {
+    setupBypassFixtures()
+
+    const result = visualStyleApi.setBypass(
+      'net1',
+      'notARealProperty' as any,
+      ['n1'],
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
   })

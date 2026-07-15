@@ -113,6 +113,41 @@ export function validateElementsExist(
 }
 
 /**
+ * Verify that bypass targets match the visual property's element group:
+ * node-scoped properties may only target nodes, edge-scoped only edges
+ * (CX2 BV2). Call after validateElementsExist, so every ID is known to
+ * exist and a non-node ID is necessarily an edge (and vice versa).
+ */
+export function validateBypassTargetScope(
+  networkId: IdType,
+  elementIds: IdType[],
+  group: 'node' | 'edge',
+): ApiFailure | undefined {
+  const network = useNetworkStore.getState().networks.get(networkId)
+  if (network === undefined) {
+    return fail(
+      ApiErrorCode.NetworkNotFound,
+      `Network ${networkId} not found`,
+    )
+  }
+
+  const nodeIds = new Set(network.nodes.map((n) => n.id))
+  const mismatched =
+    group === 'node'
+      ? elementIds.filter((id) => !nodeIds.has(id))
+      : elementIds.filter((id) => nodeIds.has(id))
+
+  if (mismatched.length > 0) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Visual property is ${group}-scoped but these elements are not ${group}s: ${mismatched.join(', ')}`,
+      'BV2',
+    )
+  }
+  return undefined
+}
+
+/**
  * Column default values must not be null or undefined (CX2 A6). Falsy
  * values like 0, false, and '' are valid defaults.
  */
