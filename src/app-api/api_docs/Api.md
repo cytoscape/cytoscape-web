@@ -335,6 +335,26 @@ and `network:switched` events).
 | --------------- | -------------------------------------- |
 | `INVALID_INPUT` | `name` is empty or `edgeList` is empty |
 
+#### `createNetworkFromNodeList(networkId, nodeIds, edgeIds?, options?): ApiResult<{ networkId, cyNetwork }>`
+
+Creates a new network (subnetwork) from a subset of an existing network's
+nodes. Unlike `createNetworkFromEdgeList`, isolated (unconnected) nodes are
+allowed. Element IDs are preserved; table column schemas, the selected
+attribute rows, and node positions are copied from the source network.
+
+- `edgeIds` omitted or `'all'` → induced subgraph: every source edge whose
+  endpoints are both in `nodeIds` is included.
+- Explicit `edgeIds` → only those edges; each must connect nodes in `nodeIds`.
+- `options`: `{ name?, description?, addToWorkspace? }` — name defaults to
+  `Subnetwork of <source name>`; `addToWorkspace` defaults to `false`.
+
+| Error Code          | Condition                                          |
+| ------------------- | -------------------------------------------------- |
+| `NETWORK_NOT_FOUND` | Source network does not exist                      |
+| `NODE_NOT_FOUND`    | A nodeId is not in the source network (`GL1`)      |
+| `EDGE_NOT_FOUND`    | An edgeId is not in the source network (`GL2`)     |
+| `INVALID_INPUT`     | `nodeIds` empty, or an edge endpoint not in `nodeIds` |
+
 #### `createNetworkFromCx2(props): ApiResult<{ networkId, cyNetwork }>`
 
 Creates a network from a CX2 document. Validates the CX2 structure before
