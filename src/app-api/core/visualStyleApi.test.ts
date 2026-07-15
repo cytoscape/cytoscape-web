@@ -70,12 +70,33 @@ vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   },
 }))
 
+// ── Mock: TableStore (for mapping attribute checks) ──────────────────────────
+
+const mockTables: Record<string, any> = {}
+
+vi.mock('../../data/hooks/stores/TableStore', () => ({
+  useTableStore: {
+    getState: vi.fn(() => ({
+      tables: mockTables,
+    })),
+  },
+}))
+
+/** Declare columns on net1's node/edge tables */
+function declareColumns(nodeColumns: any[], edgeColumns: any[] = []): void {
+  mockTables['net1'] = {
+    nodeTable: { rows: new Map(), columns: nodeColumns },
+    edgeTable: { rows: new Map(), columns: edgeColumns },
+  }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks()
   Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])
   mockNetworks.clear()
+  Object.keys(mockTables).forEach((k) => delete mockTables[k])
 })
 
 // --- setDefault --------------------------------------------------------------
@@ -310,8 +331,9 @@ describe('deleteBypass', () => {
 describe('createDiscreteMapping', () => {
   it('calls setMapping and returns ok() when network exists', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5' },
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5', group: 'node' },
     }
+    declareColumns([{ name: 'type', type: 'string' }])
 
     const result = visualStyleApi.createDiscreteMapping(
       'net1',
@@ -344,8 +366,9 @@ describe('createDiscreteMapping', () => {
 
   it('builds a vpValueMap from string mapping entries when attributeType is string', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5' },
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5', group: 'node' },
     }
+    declareColumns([{ name: 'type', type: 'string' }])
 
     const result = visualStyleApi.createDiscreteMapping(
       'net1',
@@ -372,8 +395,12 @@ describe('createDiscreteMapping', () => {
 
   it('parses mapping keys as numbers when attributeType is integer or double', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeHeight]: { type: 'number', defaultValue: 10 },
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
     }
+    declareColumns([
+      { name: 'degree', type: 'integer' },
+      { name: 'score', type: 'double' },
+    ])
 
     visualStyleApi.createDiscreteMapping(
       'net1',
@@ -413,13 +440,75 @@ describe('createDiscreteMapping', () => {
       }),
     )
   })
+
+  it('rejects a mapping on an undeclared attribute (CX2 MI1)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#fff', group: 'node' },
+    }
+    declareColumns([{ name: 'type', type: 'string' }])
+
+    const result = visualStyleApi.createDiscreteMapping(
+      'net1',
+      VPN.NodeBackgroundColor,
+      'notAColumn',
+      'string',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('MI1')
+    }
+    expect(mockSetMapping).not.toHaveBeenCalled()
+  })
+
+  it('rejects an attributeType that mismatches the declared column type (CX2 MI2)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#fff', group: 'node' },
+    }
+    declareColumns([{ name: 'type', type: 'string' }])
+
+    const result = visualStyleApi.createDiscreteMapping(
+      'net1',
+      VPN.NodeBackgroundColor,
+      'type',
+      'integer',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('MI2')
+    }
+  })
+
+  it('rejects a mapping on a network-scoped visual property (CX2 MC1)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NetworkBackgroundColor]: { type: 'color', defaultValue: '#fff', group: 'network' },
+    }
+    declareColumns([{ name: 'type', type: 'string' }])
+
+    const result = visualStyleApi.createDiscreteMapping(
+      'net1',
+      VPN.NetworkBackgroundColor,
+      'type',
+      'string',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('MC1')
+    }
+  })
 })
 
 // --- createContinuousMapping -------------------------------------------------
 
 describe('createContinuousMapping', () => {
   it('calls createContinuousMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeHeight]: { type: 'number', defaultValue: 10 } }
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
 
     const result = visualStyleApi.createContinuousMapping(
       'net1',
@@ -459,7 +548,10 @@ describe('createContinuousMapping', () => {
   })
 
   it('falls back to the computed defaults when no overrides are given', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeHeight]: { type: 'number', defaultValue: 10 } }
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
 
     visualStyleApi.createContinuousMapping(
       'net1',
@@ -486,7 +578,10 @@ describe('createContinuousMapping', () => {
   })
 
   it('overrides controlPoints, deriving min/max from the first/last entries', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeHeight]: { type: 'number', defaultValue: 10 } }
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
 
     const controlPoints = [
       { value: 10, vpValue: 20 },
@@ -516,7 +611,10 @@ describe('createContinuousMapping', () => {
   })
 
   it('preserves an explicit inclusive flag on overridden control points', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#ffffff' } }
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#ffffff', group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
 
     const controlPoints = [
       { value: 0, vpValue: '#000000', inclusive: true },
@@ -547,7 +645,10 @@ describe('createContinuousMapping', () => {
   })
 
   it('overrides ltMinVpValue and gtMaxVpValue while keeping computed control points', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeHeight]: { type: 'number', defaultValue: 10 } }
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'score', type: 'double' }])
 
     visualStyleApi.createContinuousMapping(
       'net1',
@@ -575,13 +676,39 @@ describe('createContinuousMapping', () => {
       'customGtMax',
     )
   })
+
+  it('rejects a continuous mapping on a non-numeric attribute (CX2 MI3)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    declareColumns([{ name: 'label', type: 'string' }])
+
+    const result = visualStyleApi.createContinuousMapping(
+      'net1',
+      VPN.NodeHeight,
+      'double',
+      'label',
+      ['a', 'b'],
+      'string',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('MI3')
+    }
+    expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
+  })
 })
 
 // --- createPassthroughMapping ------------------------------------------------
 
 describe('createPassthroughMapping', () => {
   it('calls createPassthroughMapping and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = { [VPN.NodeLabel]: { type: 'string', defaultValue: '' } }
+    mockVisualStyles['net1'] = {
+      [VPN.NodeLabel]: { type: 'string', defaultValue: '', group: 'node' },
+    }
+    declareColumns([{ name: 'name', type: 'string' }])
 
     const result = visualStyleApi.createPassthroughMapping(
       'net1',
@@ -611,6 +738,26 @@ describe('createPassthroughMapping', () => {
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
     }
+  })
+
+  it('rejects a passthrough mapping on an undeclared attribute (CX2 MI1)', () => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeLabel]: { type: 'string', defaultValue: '', group: 'node' },
+    }
+    declareColumns([{ name: 'name', type: 'string' }])
+
+    const result = visualStyleApi.createPassthroughMapping(
+      'net1',
+      VPN.NodeLabel,
+      'missingCol',
+      'string',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('MI1')
+    }
+    expect(mockCreatePassthroughMapping).not.toHaveBeenCalled()
   })
 })
 

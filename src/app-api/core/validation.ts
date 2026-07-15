@@ -8,6 +8,7 @@
 //   if (invalid) return invalid
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { IdType } from '../../models/IdType'
 import {
   AttributeName,
@@ -191,6 +192,58 @@ export function validateBypassTargetScope(
       ApiErrorCode.InvalidInput,
       `Visual property is ${group}-scoped but these elements are not ${group}s: ${mismatched.join(', ')}`,
       'BV2',
+    )
+  }
+  return undefined
+}
+
+const NUMERIC_TYPES: ReadonlySet<ValueTypeName> = new Set([
+  ValueTypeName.Integer,
+  ValueTypeName.Long,
+  ValueTypeName.Double,
+])
+
+/**
+ * Verify a visual mapping's source attribute: it must be declared as a
+ * column in the table matching the visual property's group (CX2 MI1),
+ * the caller-supplied attributeType must agree with the declared column
+ * type (MI2), and CONTINUOUS mappings additionally require a numeric
+ * source column (MI3).
+ */
+export function validateMappingAttribute(
+  networkId: IdType,
+  tableType: 'node' | 'edge',
+  attribute: AttributeName,
+  attributeType?: ValueTypeName,
+  options?: { requireNumeric?: boolean },
+): ApiFailure | undefined {
+  const tableRecord = useTableStore.getState().tables[networkId]
+  const table =
+    tableRecord?.[tableType === 'node' ? 'nodeTable' : 'edgeTable']
+  const column = table?.columns?.find(
+    (c: { name: string }) => c.name === attribute,
+  )
+  if (column === undefined) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Attribute "${attribute}" is not declared in the ${tableType} table`,
+      'MI1',
+    )
+  }
+  if (attributeType !== undefined && attributeType !== column.type) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `attributeType "${attributeType}" does not match the declared type ` +
+        `"${column.type}" of attribute "${attribute}"`,
+      'MI2',
+    )
+  }
+  if (options?.requireNumeric === true && !NUMERIC_TYPES.has(column.type)) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `CONTINUOUS mapping requires a numeric attribute; "${attribute}" is ` +
+        `${column.type}`,
+      'MI3',
     )
   }
   return undefined

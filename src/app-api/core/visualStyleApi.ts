@@ -13,8 +13,12 @@ import {
   VisualPropertyValueType,
   VisualPropertyValueTypeName,
 } from '../../models/VisualStyleModel'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
-import { validateBypassTargetScope, validateElementsExist } from './validation'
+import { ApiErrorCode, ApiFailure, ApiResult, fail, ok } from '../types/ApiResult'
+import {
+  validateBypassTargetScope,
+  validateElementsExist,
+  validateMappingAttribute,
+} from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -66,6 +70,45 @@ export interface VisualStyleApi {
   ): ApiResult
 
   removeMapping(networkId: IdType, vpName: VisualPropertyName): ApiResult
+}
+
+// ── Private helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Shared preconditions for the three mapping creators: the visual
+ * property must exist, must not be network-scoped (CX2 MC1), and its
+ * source attribute must be declared with a compatible type (MI1/MI2,
+ * plus MI3 for continuous mappings).
+ */
+function checkMappingPreconditions(
+  networkId: IdType,
+  vpName: VisualPropertyName,
+  attribute: AttributeName,
+  attributeType: ValueTypeName,
+  requireNumeric: boolean,
+): ApiFailure | undefined {
+  const visualProperty =
+    useVisualStyleStore.getState().visualStyles[networkId]?.[vpName]
+  if (visualProperty === undefined) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Unknown visual property ${vpName}`,
+    )
+  }
+  if (visualProperty.group === 'network') {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Network-scoped visual property ${vpName} cannot have a mapping`,
+      'MC1',
+    )
+  }
+  return validateMappingAttribute(
+    networkId,
+    visualProperty.group,
+    attribute,
+    attributeType,
+    { requireNumeric },
+  )
 }
 
 // ── Core implementation ──────────────────────────────────────────────────────
@@ -169,6 +212,15 @@ export const visualStyleApi: VisualStyleApi = {
           `Network ${networkId} not found`,
         )
       }
+      const invalid = checkMappingPreconditions(
+        networkId,
+        vpName,
+        attribute,
+        attributeType,
+        false,
+      )
+      if (invalid) return invalid
+
       // Build a complete discrete mapping with entries in one call
       const vpValueMap = new Map<ValueType, VisualPropertyValueType>()
       if (mapping) {
@@ -216,6 +268,15 @@ export const visualStyleApi: VisualStyleApi = {
           `Network ${networkId} not found`,
         )
       }
+      const invalid = checkMappingPreconditions(
+        networkId,
+        vpName,
+        attribute,
+        attributeType,
+        true,
+      )
+      if (invalid) return invalid
+
       store.createContinuousMapping(
         networkId,
         vpName,
@@ -263,6 +324,15 @@ export const visualStyleApi: VisualStyleApi = {
           `Network ${networkId} not found`,
         )
       }
+      const invalid = checkMappingPreconditions(
+        networkId,
+        vpName,
+        attribute,
+        attributeType,
+        false,
+      )
+      if (invalid) return invalid
+
       useVisualStyleStore
         .getState()
         .createPassthroughMapping(networkId, vpName, attribute, attributeType)
