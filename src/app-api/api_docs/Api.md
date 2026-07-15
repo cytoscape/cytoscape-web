@@ -531,6 +531,13 @@ is omitted). Triggers `data:changed`.
 
 ### Bulk Read
 
+#### `getColumns(networkId, tableType): ApiResult<{ columns: ColumnInfo[] }>`
+
+Returns only the column definitions (the table schema) without loading any
+rows. Prefer this over `getTable` when you only need the schema — on large
+tables `getTable` materializes every row. Edge tables include the `source`
+and `target` pseudo-columns, matching `getTable`'s output.
+
 #### `getTable(networkId, tableType, options?): ApiResult<{ columns, rows }>`
 
 Returns all columns (with type metadata) and all rows for the given table.

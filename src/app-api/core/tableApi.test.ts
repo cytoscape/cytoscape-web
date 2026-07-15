@@ -915,6 +915,53 @@ describe('applyValueToElements', () => {
   })
 })
 
+// --- getColumns ----------------------------------------------------------------
+
+describe('getColumns', () => {
+  it('returns column definitions without loading rows', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+    ])
+
+    const result = tableApi.getColumns('net1', 'node')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.columns).toEqual([
+        { name: 'name', type: 'string' },
+        { name: 'score', type: 'double' },
+      ])
+    }
+  })
+
+  it('prepends source/target for edge tables (matching getTable)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [], [
+      { name: 'weight', type: 'double' },
+    ])
+
+    const result = tableApi.getColumns('net1', 'edge')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.columns).toEqual([
+        { name: 'source', type: 'string' },
+        { name: 'target', type: 'string' },
+        { name: 'weight', type: 'double' },
+      ])
+    }
+  })
+
+  it('returns NetworkNotFound when network does not exist', () => {
+    const result = tableApi.getColumns('missing', 'node')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+    }
+  })
+})
+
 // --- getTable ----------------------------------------------------------------
 
 describe('getTable', () => {

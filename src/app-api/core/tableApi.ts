@@ -88,6 +88,16 @@ export interface TableApi {
     rows: Array<Record<string, ValueType>>
   }>
 
+  /**
+   * Return only the column definitions (the table schema) without
+   * loading any rows — cheap on large tables where getTable would
+   * materialize every row.
+   */
+  getColumns(
+    networkId: IdType,
+    tableType: AppTableType,
+  ): ApiResult<{ columns: ColumnInfo[] }>
+
   // --- TSV I/O ---
   exportTableToTsv(
     networkId: IdType,
@@ -528,6 +538,32 @@ export const tableApi: TableApi = {
         .getState()
         .applyValueToElements(networkId, tableType, columnName, value, elementIds)
       return ok()
+    } catch (e) {
+      return fail(ApiErrorCode.OperationFailed, String(e))
+    }
+  },
+
+  // --- getColumns -------------------------------------------------------------
+
+  getColumns(networkId, tableType): ApiResult<{ columns: ColumnInfo[] }> {
+    try {
+      const tableRecord = useTableStore.getState().tables[networkId]
+      if (tableRecord === undefined) {
+        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+      }
+      const table = tableRecord[tableKey(tableType)]
+      const columns: ColumnInfo[] = []
+      // Match getTable: edge tables report source/target pseudo-columns
+      if (tableType === 'edge') {
+        columns.push(
+          { name: 'source', type: ValueTypeName.String },
+          { name: 'target', type: ValueTypeName.String },
+        )
+      }
+      for (const col of table?.columns ?? []) {
+        columns.push({ name: col.name, type: col.type })
+      }
+      return ok({ columns })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
