@@ -58,11 +58,24 @@ vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   },
 }))
 
+// ── Mock: NetworkStore (for bypass element-existence checks) ─────────────────
+
+const mockNetworks = new Map<string, any>()
+
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: {
+    getState: vi.fn(() => ({
+      networks: mockNetworks,
+    })),
+  },
+}))
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks()
   Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])
+  mockNetworks.clear()
 })
 
 // --- setDefault --------------------------------------------------------------
@@ -105,8 +118,13 @@ describe('setDefault', () => {
 // --- setBypass ---------------------------------------------------------------
 
 describe('setBypass', () => {
-  it('calls setBypass and returns ok() when network exists', () => {
+  it('calls setBypass and returns ok() when network and elements exist', () => {
     mockVisualStyles['net1'] = {}
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      edges: [],
+    })
 
     const result = visualStyleApi.setBypass(
       'net1',
@@ -122,6 +140,48 @@ describe('setBypass', () => {
       ['n1', 'n2'],
       '#0000ff',
     )
+  })
+
+  it('accepts edge IDs as bypass targets', () => {
+    mockVisualStyles['net1'] = {}
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      edges: [{ id: 'e0', s: 'n1', t: 'n2' }],
+    })
+
+    const result = visualStyleApi.setBypass(
+      'net1',
+      VPN.EdgeLineColor,
+      ['e0'],
+      '#00ff00',
+    )
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects bypass targets that do not exist in the network (CX2 BV1)', () => {
+    mockVisualStyles['net1'] = {}
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }],
+      edges: [],
+    })
+
+    const result = visualStyleApi.setBypass(
+      'net1',
+      VPN.NodeBackgroundColor,
+      ['n1', 'ghost'],
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.ElementNotFound)
+      expect(result.error.cx2Code).toBe('BV1')
+      expect(result.error.message).toContain('ghost')
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
   })
 
   it('returns InvalidInput when elementIds is empty', () => {

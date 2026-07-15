@@ -17,6 +17,9 @@ export const ApiErrorCode = {
   /** The specified edge does not exist in the network */
   EdgeNotFound: 'EDGE_NOT_FOUND',
 
+  /** A referenced element (node or edge) does not exist in the network */
+  ElementNotFound: 'ELEMENT_NOT_FOUND',
+
   /** Input validation failed (missing/malformed parameters) */
   InvalidInput: 'INVALID_INPUT',
 

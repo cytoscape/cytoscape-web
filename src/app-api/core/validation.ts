@@ -7,6 +7,8 @@
 //   const invalid = validateNoIdAttribute(options?.attributes, 'node')
 //   if (invalid) return invalid
 
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { IdType } from '../../models/IdType'
 import { AttributeName, ValueType } from '../../models/TableModel'
 import { ApiErrorCode, ApiFailure, fail } from '../types/ApiResult'
 
@@ -72,6 +74,39 @@ export function validateColumnName(
     return fail(
       ApiErrorCode.InvalidInput,
       `Column name "${columnName}" is not allowed`,
+    )
+  }
+  return undefined
+}
+
+/**
+ * Verify that every ID in elementIds exists as a node or edge in the
+ * network. Returns a failure naming the missing IDs, tagged with the
+ * CX2 code for the calling context (e.g. 'BV1' for bypass targets).
+ */
+export function validateElementsExist(
+  networkId: IdType,
+  elementIds: IdType[],
+  cx2Code?: string,
+): ApiFailure | undefined {
+  const network = useNetworkStore.getState().networks.get(networkId)
+  if (network === undefined) {
+    return fail(
+      ApiErrorCode.NetworkNotFound,
+      `Network ${networkId} not found`,
+    )
+  }
+
+  const known = new Set<IdType>()
+  network.nodes.forEach((n) => known.add(n.id))
+  network.edges.forEach((e) => known.add(e.id))
+
+  const missing = elementIds.filter((id) => !known.has(id))
+  if (missing.length > 0) {
+    return fail(
+      ApiErrorCode.ElementNotFound,
+      `Elements do not exist in network ${networkId}: ${missing.join(', ')}`,
+      cx2Code,
     )
   }
   return undefined

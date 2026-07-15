@@ -14,6 +14,7 @@ import {
   VisualPropertyValueTypeName,
 } from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { validateElementsExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -101,6 +102,13 @@ export const visualStyleApi: VisualStyleApi = {
           'elementIds must not be empty',
         )
       }
+      const missingElements = validateElementsExist(
+        networkId,
+        elementIds,
+        'BV1',
+      )
+      if (missingElements) return missingElements
+
       useVisualStyleStore
         .getState()
         .setBypass(networkId, vpName, elementIds, vpValue)
