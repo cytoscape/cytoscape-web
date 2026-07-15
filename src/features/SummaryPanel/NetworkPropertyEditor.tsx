@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Chip,
-  Paper,
   Popover,
   TextField,
   Typography,

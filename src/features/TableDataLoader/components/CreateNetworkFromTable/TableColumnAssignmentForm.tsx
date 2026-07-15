@@ -164,6 +164,9 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     (state) => state.addNetworkIds,
   )
 
+  // Re-parse only when parse options change, merging the user's existing column
+  // assignments. `columns` must stay out of the deps: the effect calls setColumns
+  // with fresh identities, so adding it would loop and clobber user edits.
   useEffect(() => {
     const result = Papa.parse(text, {
       header: useFirstRowAsColumns,
@@ -264,6 +267,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
 
       setColumns(validatedColumns)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-parse on option change only; adding columns would loop
   }, [
     skipNLines,
     useFirstRowAsColumns,
@@ -282,33 +286,32 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setOptions({ delimiter: delimiterValue })
   }, [fileDelimiter, customFileDelimiter, setOptions])
 
-  const onColumnAssignmentTypeChange = (
-    index: number,
-    value: ColumnAssignmentType,
-  ) => {
-    const nextValidVtns = validValueTypes(value)
-    setValidValueTypeNames(nextValidVtns)
-    const nextColumns = updateColumnAssignment(value, index, columns)
+  const onColumnAssignmentTypeChange = useCallback(
+    (index: number, value: ColumnAssignmentType) => {
+      const nextValidVtns = validValueTypes(value)
+      setValidValueTypeNames(nextValidVtns)
+      const nextColumns = updateColumnAssignment(value, index, columns)
 
-    setColumns(nextColumns)
-  }
+      setColumns(nextColumns)
+    },
+    [columns],
+  )
 
-  const onValueTypeChange = (
-    index: number,
-    value: ValueTypeName,
-    delimiter?: DelimiterType,
-  ) => {
-    const nextValidCats = validColumnAssignmentTypes(value)
-    setValidColumnAssignmentTypes(nextValidCats)
-    const nextColumns = updateColumnType(value, index, columns, delimiter)
+  const onValueTypeChange = useCallback(
+    (index: number, value: ValueTypeName, delimiter?: DelimiterType) => {
+      const nextValidCats = validColumnAssignmentTypes(value)
+      setValidColumnAssignmentTypes(nextValidCats)
+      const nextColumns = updateColumnType(value, index, columns, delimiter)
 
-    nextColumns[index].invalidValues = validateColumnValues(
-      nextColumns[index],
-      rows,
-    )
+      nextColumns[index].invalidValues = validateColumnValues(
+        nextColumns[index],
+        rows,
+      )
 
-    setColumns(nextColumns)
-  }
+      setColumns(nextColumns)
+    },
+    [columns, rows],
+  )
 
   const handleConfirm = useCallback(async () => {
     const res = createNetworkFromTableData(rows, columns, undefined, name)
@@ -349,7 +352,23 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setLoading(false)
     reset()
     props.onClick()
-  }, [rows, columns, name])
+  }, [
+    rows,
+    columns,
+    name,
+    addSummary,
+    setVisualStyleOptions,
+    addNewNetwork,
+    setVisualStyle,
+    setTables,
+    setViewModel,
+    addNetworkToWorkspace,
+    setCurrentNetworkId,
+    navigateToNetwork,
+    workspace.id,
+    reset,
+    props,
+  ])
 
   const handleSelectNoneClick = () => {
     const newColumns = unselectAllColumns(columns)
@@ -368,11 +387,11 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setRawText('')
   }
 
-  const handleColumnClick = (column: ColumnAssignmentState) => {
+  const handleColumnClick = useCallback((column: ColumnAssignmentState) => {
     const { meaning, dataType } = column
     setValidColumnAssignmentTypes(validColumnAssignmentTypes(dataType))
     setValidValueTypeNames(validValueTypes(meaning))
-  }
+  }, [])
 
   const tgtNodeCol = columns.find(
     (c) => c.meaning === ColumnAssignmentType.TargetNode,
@@ -490,7 +509,15 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
         })}
       </DataTable>
     ),
-    [columns, rows],
+    [
+      columns,
+      rows,
+      validColumnTypes,
+      validValueTypeNames,
+      onColumnAssignmentTypeChange,
+      onValueTypeChange,
+      handleColumnClick,
+    ],
   )
 
   return (

@@ -71,7 +71,7 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
       setMappingSyncSetting(
         columnHasDependentProperties ? 'rename' : undefined,
       ),
-    [props.dependentVisualProperties],
+    [props.dependentVisualProperties, columnHasDependentProperties],
   )
 
   return (
@@ -170,7 +170,7 @@ export function DeleteTableColumnForm(
       setMappingSyncSetting(
         columnHasDependentProperties ? 'delete' : undefined,
       ),
-    [props.dependentVisualProperties],
+    [props.dependentVisualProperties, columnHasDependentProperties],
   )
   return (
     <Dialog
@@ -182,7 +182,9 @@ export function DeleteTableColumnForm(
     >
       <DialogTitle>Delete Column</DialogTitle>
       <DialogContent>
-        <Box>Are you sure you want to delete column &quot;{props.column.id}&quot;?</Box>
+        <Box>
+          Are you sure you want to delete column &quot;{props.column.id}&quot;?
+        </Box>
         {columnHasDependentProperties ? (
           <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
             props.column.id
@@ -255,10 +257,7 @@ export function CreateTableColumnForm(
   const submitButton = disabled ? (
     <Tooltip title="Column name must not be empty">
       <Box>
-        <Button
-          variant="contained"
-          disabled
-        >
+        <Button variant="contained" disabled>
           Confirm
         </Button>
       </Box>

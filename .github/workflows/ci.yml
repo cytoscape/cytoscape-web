@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [master, development]
 
+# Cancel superseded runs on rapid pushes, but let every push to the
+# long-lived branches run to completion so each merged commit keeps a
+# full CI result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/development' }}
+
 jobs:
   lint:
     name: Lint
@@ -63,7 +70,6 @@ jobs:
 
   integration-tests:
     name: Integration Tests (${{ matrix.browser }})
-    needs: unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:

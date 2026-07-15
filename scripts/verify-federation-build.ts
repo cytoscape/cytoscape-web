@@ -81,11 +81,21 @@ if (remoteEntryExists) {
 }
 const allJsBlob = allJs.join('\n')
 for (const name of FEDERATION_SHARED_SINGLETONS) {
-  // The plugin registers each shared dep as `<name>:{shareConfig:{singleton...`
-  // — the key is quoted only when it is not a valid JS identifier (so `react`
-  // is bare, but `react-dom` / `@mui/material` are quoted). Match either form.
+  // @module-federation/vite has emitted two registration record shapes:
+  //   <=1.16  `<name>:{shareConfig:{singleton...`  (shareConfig first)
+  //   >=1.17  `<name>:{name:\`<name>\`,version:...,shareConfig:{singleton:!0...`
+  //           (shareConfig last, after the record's async get() body)
+  // The key is quoted only when it is not a valid JS identifier (so `react`
+  // is bare, but `react-dom` / `@mui/material` are quoted), and the minifier
+  // may use backticks, single or double quotes for the inner name string.
+  // Accept either shape: require the record key AND a singleton shareConfig
+  // bound to the same name within the record (bounded window, not a hash).
   const escaped = name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
-  const registered = new RegExp(`"?${escaped}"?:\\{shareConfig`).test(allJsBlob)
+  const oldShape = new RegExp(`"?${escaped}"?: *\\{ *shareConfig`)
+  const newShape = new RegExp(
+    `"?${escaped}"?: *\\{ *name: *[\`'"]${escaped}[\`'"][\\s\\S]{0,3000}?shareConfig: *\\{ *singleton: *(?:!0|true)`,
+  )
+  const registered = oldShape.test(allJsBlob) || newShape.test(allJsBlob)
   check(`shared singleton registered: ${name}`, registered)
 }
 

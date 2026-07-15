@@ -161,6 +161,7 @@ export const useAddNetworks = (): (({
     },
     [
       summaries,
+      addSummaries,
       addNetworksToWorkspace,
       addNewNetwork,
       setVisualStyleOptions,
@@ -169,6 +170,8 @@ export const useAddNetworks = (): (({
       setTables,
       addAllOpaqueAspects,
       setCurrentNetworkId,
+      navigateToNetwork,
+      workspace.id,
     ],
   )
   return addNetworks

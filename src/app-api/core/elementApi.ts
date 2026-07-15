@@ -269,9 +269,7 @@ export const elementApi: ElementApi = {
       const row = tableRecord?.nodeTable?.rows?.get(nodeId) ?? {}
 
       // Read position from view model
-      const viewModel = useViewModelStore
-        .getState()
-        .getViewModel(networkId)
+      const viewModel = useViewModelStore.getState().getViewModel(networkId)
       const nodeView = viewModel?.nodeViews?.[nodeId]
       const position: [number, number, number?] = nodeView
         ? nodeView.z !== undefined
@@ -279,7 +277,10 @@ export const elementApi: ElementApi = {
           : [nodeView.x, nodeView.y]
         : [0, 0]
 
-      return ok({ attributes: row as Record<AttributeName, ValueType>, position })
+      return ok({
+        attributes: row as Record<AttributeName, ValueType>,
+        position,
+      })
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))
     }
@@ -315,7 +316,11 @@ export const elementApi: ElementApi = {
     }
   },
 
-  createNode(networkId, position, options): ApiResult<{ nodeId: IdType; node: NodeData }> {
+  createNode(
+    networkId,
+    position,
+    options,
+  ): ApiResult<{ nodeId: IdType; node: NodeData }> {
     try {
       const networkState = useNetworkStore.getState()
       const network = networkState.networks.get(networkId)
@@ -335,7 +340,7 @@ export const elementApi: ElementApi = {
 
       // Prepare attributes with defaults
       const attributes: Record<AttributeName, ValueType> = {
-        ...(options?.attributes ?? {}),
+        ...options?.attributes,
       }
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord?.nodeTable) {
@@ -429,7 +434,7 @@ export const elementApi: ElementApi = {
 
       // Prepare attributes with defaults
       const attributes: Record<AttributeName, ValueType> = {
-        ...(options?.attributes ?? {}),
+        ...options?.attributes,
       }
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord?.edgeTable) {
@@ -651,7 +656,11 @@ export const elementApi: ElementApi = {
               visualProperty.bypassMap.has(id),
             )
             if (hasBypassesToDelete) {
-              deleteBypass(networkId, vpName as VisualPropertyName, allDeletedIds)
+              deleteBypass(
+                networkId,
+                vpName as VisualPropertyName,
+                allDeletedIds,
+              )
             }
           }
         })
@@ -888,10 +897,7 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getConnectedEdges(
-    networkId,
-    nodeId,
-  ): ApiResult<{ edges: EdgeData[] }> {
+  getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -924,10 +930,7 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getConnectedNodes(
-    networkId,
-    nodeId,
-  ): ApiResult<{ nodeIds: IdType[] }> {
+  getConnectedNodes(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -1014,10 +1017,7 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getSuccessors(
-    networkId,
-    nodeId,
-  ): ApiResult<{ nodeIds: IdType[] }> {
+  getSuccessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -1044,10 +1044,7 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getPredecessors(
-    networkId,
-    nodeId,
-  ): ApiResult<{ nodeIds: IdType[] }> {
+  getPredecessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {

@@ -104,7 +104,7 @@ export const LayoutOptionDialog = ({
     } else {
       setDisabled(false)
     }
-  }, [selected, preferredLayout, network])
+  }, [selected, preferredLayout, network, engine.algorithms])
 
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)

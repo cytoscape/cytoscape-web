@@ -1,6 +1,6 @@
 import { Tooltip } from '@mui/material'
 import Fuse from 'fuse.js'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
@@ -9,11 +9,7 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
-import {
-  IndexedColumns,
-  Indices,
-  Operator,
-} from '../../../models/FilterModel/Search'
+import { Indices, Operator } from '../../../models/FilterModel/Search'
 import { SearchState } from '../../../models/FilterModel/SearchState'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -80,10 +76,6 @@ export const SearchBox = (): JSX.Element => {
     index: Fuse<Record<string, ValueType>>,
   ) => void = useFilterStore((state) => state.setIndex)
 
-  const indexedColumns: Record<IdType, IndexedColumns> = useFilterStore(
-    (state) => state.search.indexedColumns,
-  )
-
   const tables = useTableStore((state) => state.tables[networkId])
   const nodeTable: Table = tables?.nodeTable
   const edgeTable: Table = tables?.edgeTable
@@ -115,7 +107,9 @@ export const SearchBox = (): JSX.Element => {
         indexRecord[networkId]
 
       if (indices === undefined) {
-        logUi.warn(`[${startSearch.name}]: No search indices found for network ${networkId}`)
+        logUi.warn(
+          `[${startSearch.name}]: No search indices found for network ${networkId}`,
+        )
         addMessage({
           message: 'Search index not ready. Please wait.',
           severity: MessageSeverity.WARNING,
@@ -130,7 +124,9 @@ export const SearchBox = (): JSX.Element => {
       const isEdgeTargetSelected = searchTargets[GraphObjectType.EDGE]
 
       if (isNodeTargetSelected && nodeIndex === undefined) {
-        logUi.warn(`[${startSearch.name}]: Node index undefined for network ${networkId}`)
+        logUi.warn(
+          `[${startSearch.name}]: Node index undefined for network ${networkId}`,
+        )
         addMessage({
           message: 'Node search index not ready. Please wait.',
           severity: MessageSeverity.WARNING,
@@ -139,7 +135,9 @@ export const SearchBox = (): JSX.Element => {
       }
 
       if (isEdgeTargetSelected && edgeIndex === undefined) {
-        logUi.warn(`[${startSearch.name}]: Edge index undefined for network ${networkId}`)
+        logUi.warn(
+          `[${startSearch.name}]: Edge index undefined for network ${networkId}`,
+        )
         addMessage({
           message: 'Edge search index not ready. Please wait.',
           severity: MessageSeverity.WARNING,
@@ -156,7 +154,10 @@ export const SearchBox = (): JSX.Element => {
       let nodesToBeSelected: IdType[] = []
       let edgesToBeSelected: IdType[] = []
 
-      logUi.info(`[${startSearch.name}]: Executing search. Query: "${query}", Targets:`, searchTargets)
+      logUi.info(
+        `[${startSearch.name}]: Executing search. Query: "${query}", Targets:`,
+        searchTargets,
+      )
 
       if (isNodeTargetSelected) {
         nodesToBeSelected = runSearch(nodeIndex, query, operator, exact)
@@ -165,7 +166,9 @@ export const SearchBox = (): JSX.Element => {
         edgesToBeSelected = runSearch(edgeIndex, query, operator, exact)
       }
 
-      logUi.info(`[${startSearch.name}]: Search complete. Nodes: ${nodesToBeSelected.length}, Edges: ${edgesToBeSelected.length}`)
+      logUi.info(
+        `[${startSearch.name}]: Search complete. Nodes: ${nodesToBeSelected.length}, Edges: ${edgesToBeSelected.length}`,
+      )
 
       exclusiveSelect(networkId, nodesToBeSelected, edgesToBeSelected)
 
@@ -185,7 +188,8 @@ export const SearchBox = (): JSX.Element => {
       } else if (!isAnyTargetSelected && query !== '') {
         logUi.warn(`[${startSearch.name}]: No search target selected.`)
         addMessage({
-          message: 'No search target selected. Please select nodes and/or edges.',
+          message:
+            'No search target selected. Please select nodes and/or edges.',
           severity: MessageSeverity.WARNING,
         })
       }
@@ -194,58 +198,65 @@ export const SearchBox = (): JSX.Element => {
     }
   }
 
-  const reIndex = (forceUpdate: boolean): void => {
-    if (networkId === undefined || networkId === '') {
-      return
-    }
-
-    if (nodeTable === undefined || edgeTable === undefined) {
-      return
-    }
-
-    const currentIndex = indexRecord[networkId]
-    const currentIndexedColumns = indexedColumns[networkId]
-
-    if (currentIndexedColumns === undefined || forceUpdate) {
-      const nodeColumns = filterColumns(
-        Array.from(nodeTable.columns.values()),
-        [ValueTypeName.String, ValueTypeName.ListString],
-      )
-      const edgeColumns = filterColumns(
-        Array.from(edgeTable.columns.values()),
-        [ValueTypeName.String, ValueTypeName.ListString],
-      )
-      setIndexedColumns(
-        networkId,
-        GraphObjectType.NODE,
-        Array.from(nodeColumns),
-      )
-      setIndexedColumns(
-        networkId,
-        GraphObjectType.EDGE,
-        Array.from(edgeColumns),
-      )
-    }
-
-    try {
-      if (currentIndex === undefined) {
-        const nodeIndex = createFuseIndex(nodeTable)
-        setIndex(networkId, GraphObjectType.NODE, nodeIndex)
-
-        const edgeIndex = createFuseIndex(edgeTable)
-        setIndex(networkId, GraphObjectType.EDGE, edgeIndex)
+  const reIndex = useCallback(
+    (forceUpdate: boolean): void => {
+      if (networkId === undefined || networkId === '') {
+        return
       }
-    } catch (error) {
-      logUi.error(`[${reIndex.name}]: Error indexing`, error)
-    }
-  }
+
+      if (nodeTable === undefined || edgeTable === undefined) {
+        return
+      }
+
+      // Read the latest index state directly from the store so this callback
+      // does not need to be recreated when its own writes update the store
+      const { search } = useFilterStore.getState()
+      const currentIndex = search.index[networkId]
+      const currentIndexedColumns = search.indexedColumns[networkId]
+
+      if (currentIndexedColumns === undefined || forceUpdate) {
+        const nodeColumns = filterColumns(
+          Array.from(nodeTable.columns.values()),
+          [ValueTypeName.String, ValueTypeName.ListString],
+        )
+        const edgeColumns = filterColumns(
+          Array.from(edgeTable.columns.values()),
+          [ValueTypeName.String, ValueTypeName.ListString],
+        )
+        setIndexedColumns(
+          networkId,
+          GraphObjectType.NODE,
+          Array.from(nodeColumns),
+        )
+        setIndexedColumns(
+          networkId,
+          GraphObjectType.EDGE,
+          Array.from(edgeColumns),
+        )
+      }
+
+      try {
+        if (currentIndex === undefined) {
+          const nodeIndex = createFuseIndex(nodeTable)
+          setIndex(networkId, GraphObjectType.NODE, nodeIndex)
+
+          const edgeIndex = createFuseIndex(edgeTable)
+          setIndex(networkId, GraphObjectType.EDGE, edgeIndex)
+        }
+      } catch (error) {
+        logUi.error('[reIndex]: Error indexing', error)
+      }
+    },
+    [networkId, nodeTable, edgeTable, setIndex, setIndexedColumns],
+  )
+
   useEffect(() => {
     reIndex(false)
-  }, [nodeTable, edgeTable])
+  }, [nodeTable, edgeTable, reIndex])
 
   useEffect(() => {
     reIndex(true)
-  }, [exact])
+  }, [exact, reIndex])
 
   // Execute search when enter key is pressed
   const handleKeyDown = (

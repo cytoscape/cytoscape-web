@@ -3,6 +3,8 @@
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist/",
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsc/tsbuildinfo.json",
     "noImplicitAny": true,
     "module": "ESNext",
     "target": "ES2022",

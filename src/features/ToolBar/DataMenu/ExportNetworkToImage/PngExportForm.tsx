@@ -72,6 +72,9 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       ((widthFunction?.() / dpi) * MAX_ZOOM).toFixed(2),
     )
 
+    // One-shot init of the size fields when the renderer functions become
+    // available. zoom/dpi are the init defaults here; adding them as deps
+    // would re-run this and overwrite the values the change handlers just set.
     useEffect(() => {
       if (widthFunction && heightFunction) {
         setCustomWidth(Math.round(widthFunction() * zoom))
@@ -79,6 +82,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
         setWidthInches(parseFloat((widthFunction() / dpi).toFixed(2)))
         setHeightInches(parseFloat((heightFunction() / dpi).toFixed(2)))
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- init keyed on renderer-function availability only
     }, [widthFunction, heightFunction])
 
     useImperativeHandle(ref, () => ({

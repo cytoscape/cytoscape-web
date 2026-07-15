@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 
-import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface URLData {
@@ -13,7 +12,6 @@ export const useOpenURL = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
-  const addApp = useAppStore((state) => state.add)
   const isValidURLData = (obj: any): obj is URLData => {
     return (
       obj &&
@@ -21,20 +19,17 @@ export const useOpenURL = (): (({
       (obj.target === null || typeof obj.target === 'string')
     )
   }
-  const openURL = useCallback(
-    ({ responseObj }: ActionHandlerProps) => {
-      if (!isValidURLData(responseObj)) {
-        logApp.warn(`[${openURL.name}]: Invalid URL data:`, responseObj)
-        return
-      }
-      const { url, target } = responseObj
+  const openURL = useCallback(({ responseObj }: ActionHandlerProps) => {
+    if (!isValidURLData(responseObj)) {
+      logApp.warn(`[${openURL.name}]: Invalid URL data:`, responseObj)
+      return
+    }
+    const { url, target } = responseObj
 
-      // If target is empty string, blank or null open in a new tab
-      if (target === null) {
-        window.open(url, '_blank')
-      }
-    },
-    [addApp],
-  )
+    // If target is empty string, blank or null open in a new tab
+    if (target === null) {
+      window.open(url, '_blank')
+    }
+  }, [])
   return openURL
 }

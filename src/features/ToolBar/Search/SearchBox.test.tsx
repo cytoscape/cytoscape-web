@@ -44,19 +44,24 @@ describe('SearchBox', () => {
         ;(useMessageStore as unknown as import('vitest').Mock).mockImplementation((selector) => 
             selector({ addMessage: addMessageMock })
         )
+        const filterStoreState = {
+            search: {
+                query: 'test-query',
+                options: { exact: false, operator: 'OR' },
+                index: { 'net1': { [GraphObjectType.NODE]: {}, [GraphObjectType.EDGE]: {} } },
+                indexedColumns: { 'net1': {} }
+            },
+            setQuery: setQueryMock,
+            setSearchState: setSearchStateMock,
+            setIndexedColumns: vi.fn(),
+            setIndex: vi.fn(),
+        }
         ;(useFilterStore as unknown as import('vitest').Mock).mockImplementation((selector) =>
-            selector({
-                search: {
-                    query: 'test-query',
-                    options: { exact: false, operator: 'OR' },
-                    index: { 'net1': { [GraphObjectType.NODE]: {}, [GraphObjectType.EDGE]: {} } },
-                    indexedColumns: { 'net1': {} }
-                },
-                setQuery: setQueryMock,
-                setSearchState: setSearchStateMock,
-                setIndexedColumns: vi.fn(),
-                setIndex: vi.fn(),
-            })
+            selector(filterStoreState)
+        )
+        // reIndex reads the latest state imperatively via getState()
+        ;(useFilterStore.getState as unknown as import('vitest').Mock).mockReturnValue(
+            filterStoreState
         )
         ;(useUiStateStore as unknown as import('vitest').Mock).mockImplementation((selector) => 
             selector({ ui: { activeNetworkView: 'net1' } })

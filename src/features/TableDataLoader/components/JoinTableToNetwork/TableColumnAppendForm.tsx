@@ -29,7 +29,10 @@ import { useEffect, useState } from 'react'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
-import { Column as CyWebColumn, ValueTypeName } from '../../../../models/TableModel'
+import {
+  Column as CyWebColumn,
+  ValueTypeName,
+} from '../../../../models/TableModel'
 import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
@@ -223,13 +226,20 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
 
   const selectedTable = tableToAppend === 'node' ? nodeTable : edgeTable
 
+  // Re-derive the default key column only when the node/edge target toggles.
+  // Including nodeTable/edgeTable would overwrite the user's manually selected
+  // key column whenever the tables mutate.
   useEffect(() => {
     const table = tableToAppend === 'node' ? nodeTable : edgeTable
 
     const nextKeyColumn = validNetworkKeyColumns(table.columns)[0] ?? null
     setNetworkKeyColumn(nextKeyColumn)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on node/edge toggle; tables would reset user's key choice
   }, [tableToAppend])
 
+  // Re-parse only when parse options change, merging the user's existing column
+  // choices. `columns` must stay out of the deps: the effect calls setColumns
+  // with fresh identities, so adding it would loop.
   useEffect(() => {
     if (rawText === '') {
       return
@@ -337,6 +347,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
 
       setColumns(validatedColumns)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-parse on option change only; adding columns would loop
   }, [
     rawText,
     skipNLines,
@@ -460,7 +471,8 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
               body={(value, opts) => {
                 const { rowIndex } = opts
                 const c = columns[i]
-                const valueIsInvalid = c.invalidValues?.includes(rowIndex) ?? false
+                const valueIsInvalid =
+                  c.invalidValues?.includes(rowIndex) ?? false
                 const willBeJoined = rowsToJoin.includes(rowIndex)
                 return (
                   <Text

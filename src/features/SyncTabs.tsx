@@ -65,7 +65,7 @@ export const SyncTabsAction = (): ReactElement => {
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [workspaceId, networkId])
+  }, [workspaceId, networkId, localTimestamp, debug])
 
   const initDbListener = async (): Promise<void> => {
     const db = await getDb()

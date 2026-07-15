@@ -152,6 +152,7 @@ export const SubNetworkPanel = ({
         logUi.info(`[${SubNetworkPanel.name}]: Other model: ${type}`)
       }
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cpViewId is only a set-guard, written nowhere else
   }, [hierarchyViewModels])
 
   const queryNetworkViewModel: NetworkView | undefined =
@@ -191,6 +192,7 @@ export const SubNetworkPanel = ({
       // Clear selection in the circle packing view
       setSelectedHierarchyNodeNames([])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection change is the trigger; a tables dep would churn on every table write
   }, [queryNetworkViewModel?.selectedNodes])
 
   /**
@@ -230,6 +232,7 @@ export const SubNetworkPanel = ({
 
       exclusiveSelect(queryNetworkId, toBeSelected, [])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on CP selection; other values are fresh at trigger time
   }, [selectedNodes])
 
   // For applying default layout
@@ -311,7 +314,7 @@ export const SubNetworkPanel = ({
       return
     }
     prevQueryNetworkIdRef.current = queryNetworkId
-  }, [queryNetworkId])
+  }, [queryNetworkId, getViewModel])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {
@@ -556,6 +559,10 @@ export const SubNetworkPanel = ({
     setProcessingProgress(100)
   }
 
+  // Process fetched network data once per arrival, keyed on `data` only.
+  // registerNetwork/updateNetworkView are recreated every render and the
+  // pipeline triggers renders itself, so adding them would re-run the heavy
+  // registration/layout work in a loop.
   useEffect(() => {
     if (data === undefined) {
       return
@@ -651,6 +658,7 @@ export const SubNetworkPanel = ({
     return () => {
       setIsProcessing(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per fetched data; other deps would re-run the pipeline
   }, [data])
 
   if (isFetching || isProcessing) {
