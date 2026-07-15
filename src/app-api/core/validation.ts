@@ -15,6 +15,18 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
+import {
+  EdgeArrowShapeType,
+  EdgeLineType,
+  FontType,
+  HorizontalAlignType,
+  NodeBorderLineType,
+  NodeShapeType,
+  VerticalAlignType,
+  VisibilityType,
+  VisualPropertyName,
+  VisualPropertyValueTypeName,
+} from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiFailure, fail } from '../types/ApiResult'
 
 /**
@@ -247,6 +259,98 @@ export function validateMappingAttribute(
     )
   }
   return undefined
+}
+
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+
+/** Enum-valued visual property types and their legal values (CX2 VP5) */
+const ENUM_VALUES: Partial<Record<string, ReadonlySet<string>>> = {
+  [VisualPropertyValueTypeName.NodeShape]: new Set(
+    Object.values(NodeShapeType),
+  ),
+  [VisualPropertyValueTypeName.EdgeLine]: new Set(
+    Object.values(EdgeLineType),
+  ),
+  [VisualPropertyValueTypeName.EdgeArrowShape]: new Set(
+    Object.values(EdgeArrowShapeType),
+  ),
+  [VisualPropertyValueTypeName.NodeBorderLine]: new Set(
+    Object.values(NodeBorderLineType),
+  ),
+  [VisualPropertyValueTypeName.Visibility]: new Set(
+    Object.values(VisibilityType),
+  ),
+  [VisualPropertyValueTypeName.HorizontalAlign]: new Set(
+    Object.values(HorizontalAlignType),
+  ),
+  [VisualPropertyValueTypeName.VerticalAlign]: new Set(
+    Object.values(VerticalAlignType),
+  ),
+}
+
+/**
+ * Validate a scalar visual property value against the property's
+ * declared value type (CX2 VP1-VP6). Structured types (custom graphics,
+ * label position) are not checked here — see backlog item 3.6. Opacity
+ * properties additionally enforce the 0-1 range (VP3).
+ */
+export function validateVisualPropertyValue(
+  vpName: VisualPropertyName | string,
+  valueTypeName: VisualPropertyValueTypeName | undefined,
+  vpValue: unknown,
+): ApiFailure | undefined {
+  const invalid = (cx2Code: string, reason: string): ApiFailure =>
+    fail(
+      ApiErrorCode.InvalidInput,
+      `Invalid value for ${vpName}: ${reason} (got ${JSON.stringify(vpValue)})`,
+      cx2Code,
+    )
+
+  switch (valueTypeName) {
+    case VisualPropertyValueTypeName.Color:
+      if (typeof vpValue !== 'string' || !HEX_COLOR.test(vpValue)) {
+        return invalid('VP2', 'expected a hex color like #rrggbb')
+      }
+      return undefined
+    case VisualPropertyValueTypeName.Number: {
+      if (typeof vpValue !== 'number' || !Number.isFinite(vpValue)) {
+        return invalid('VP4', 'expected a finite number')
+      }
+      const isOpacity = String(vpName).toLowerCase().includes('opacity')
+      if (isOpacity && (vpValue < 0 || vpValue > 1)) {
+        return invalid('VP3', 'opacity must be between 0 and 1')
+      }
+      return undefined
+    }
+    case VisualPropertyValueTypeName.String:
+      return typeof vpValue === 'string'
+        ? undefined
+        : invalid('VP1', 'expected a string')
+    case VisualPropertyValueTypeName.Boolean:
+      return typeof vpValue === 'boolean'
+        ? undefined
+        : invalid('VP5', 'expected a boolean')
+    case VisualPropertyValueTypeName.Font:
+      return typeof vpValue === 'string' &&
+        new Set(Object.values(FontType)).has(vpValue as FontType)
+        ? undefined
+        : invalid('VP6', 'unknown font face')
+    default: {
+      if (valueTypeName === undefined) return undefined
+      const enumValues = ENUM_VALUES[valueTypeName]
+      if (enumValues !== undefined) {
+        return typeof vpValue === 'string' && enumValues.has(vpValue)
+          ? undefined
+          : invalid(
+              'VP5',
+              `expected one of: ${[...enumValues].join(', ')}`,
+            )
+      }
+      // Structured types (customGraphic, customGraphicPosition) and any
+      // unrecognized type names pass through — handled by item 3.6
+      return undefined
+    }
+  }
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   validateContinuousMappingBounds,
   validateElementsExist,
   validateMappingAttribute,
+  validateVisualPropertyValue,
 } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -124,6 +125,20 @@ export const visualStyleApi: VisualStyleApi = {
           `Network ${networkId} not found`,
         )
       }
+      const visualProperty = visualStyles[networkId][vpName]
+      if (visualProperty === undefined) {
+        return fail(
+          ApiErrorCode.InvalidInput,
+          `Unknown visual property ${vpName}`,
+        )
+      }
+      const invalidValue = validateVisualPropertyValue(
+        vpName,
+        visualProperty.type,
+        vpValue,
+      )
+      if (invalidValue) return invalidValue
+
       useVisualStyleStore.getState().setDefault(networkId, vpName, vpValue)
       return ok()
     } catch (e) {
@@ -161,6 +176,13 @@ export const visualStyleApi: VisualStyleApi = {
           'BV5',
         )
       }
+
+      const invalidValue = validateVisualPropertyValue(
+        vpName,
+        visualProperty.type,
+        vpValue,
+      )
+      if (invalidValue) return invalidValue
 
       const missingElements = validateElementsExist(
         networkId,

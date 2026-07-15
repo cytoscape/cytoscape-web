@@ -102,8 +102,18 @@ beforeEach(() => {
 // --- setDefault --------------------------------------------------------------
 
 describe('setDefault', () => {
+  const setupDefaultFixtures = (): void => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', group: 'node' },
+      [VPN.NodeShape]: { type: 'nodeShape', group: 'node' },
+      [VPN.NodeOpacity]: { type: 'number', group: 'node' },
+      [VPN.NodeHeight]: { type: 'number', group: 'node' },
+      [VPN.NodeLabel]: { type: 'string', group: 'node' },
+    }
+  }
+
   it('calls setDefault and returns ok() when network exists', () => {
-    mockVisualStyles['net1'] = {}
+    setupDefaultFixtures()
 
     const result = visualStyleApi.setDefault('net1', VPN.NodeBackgroundColor, '#ff0000')
 
@@ -122,8 +132,8 @@ describe('setDefault', () => {
   })
 
   it('returns OperationFailed when store throws', () => {
-    mockVisualStyles['net1'] = {}
-    mockSetDefault.mockImplementation(() => {
+    setupDefaultFixtures()
+    mockSetDefault.mockImplementationOnce(() => {
       throw new Error('store error')
     })
 
@@ -132,6 +142,101 @@ describe('setDefault', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+    }
+  })
+
+  it('rejects a malformed color value (CX2 VP2)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeBackgroundColor,
+      'not-a-color',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('VP2')
+    }
+    expect(mockSetDefault).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unknown enum value for a shape property (CX2 VP5)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeShape,
+      'dodecahedron' as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('VP5')
+    }
+  })
+
+  it('rejects an out-of-range opacity (CX2 VP3)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault('net1', VPN.NodeOpacity, 1.5)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('VP3')
+    }
+  })
+
+  it('rejects a non-numeric value for a numeric property (CX2 VP4)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeHeight,
+      'tall' as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('VP4')
+    }
+  })
+
+  it('accepts valid values for each scalar type', () => {
+    setupDefaultFixtures()
+
+    expect(
+      visualStyleApi.setDefault('net1', VPN.NodeBackgroundColor, '#0f0f0f')
+        .success,
+    ).toBe(true)
+    expect(
+      visualStyleApi.setDefault('net1', VPN.NodeShape, 'ellipse' as any)
+        .success,
+    ).toBe(true)
+    expect(
+      visualStyleApi.setDefault('net1', VPN.NodeOpacity, 0.5).success,
+    ).toBe(true)
+    expect(visualStyleApi.setDefault('net1', VPN.NodeHeight, 40).success).toBe(
+      true,
+    )
+    expect(
+      visualStyleApi.setDefault('net1', VPN.NodeLabel, 'hello').success,
+    ).toBe(true)
+  })
+
+  it('rejects an unknown visual property name', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      'notARealProperty' as any,
+      '#ffffff',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
     }
   })
 })
