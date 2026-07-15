@@ -19,7 +19,7 @@ import {
 import { Column } from '../../models/TableModel/Column'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
-import { validateColumnName } from './validation'
+import { validateColumnDefaultValue, validateColumnName } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -292,6 +292,9 @@ export const tableApi: TableApi = {
       }
       const invalidName = validateColumnName(columnName, tableType)
       if (invalidName) return invalidName
+
+      const invalidDefault = validateColumnDefaultValue(defaultValue)
+      if (invalidDefault) return invalidDefault
 
       useTableStore
         .getState()

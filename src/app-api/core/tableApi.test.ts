@@ -357,6 +357,59 @@ describe('createColumn', () => {
       expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
     }
   })
+
+  it('rejects a null default value (CX2 A6)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn(
+      'net1',
+      'node',
+      'score',
+      'double',
+      null as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('A6')
+    }
+    expect(mockCreateColumn).not.toHaveBeenCalled()
+  })
+
+  it('rejects an undefined default value (CX2 A6)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn(
+      'net1',
+      'node',
+      'score',
+      'double',
+      undefined as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('A6')
+    }
+  })
+
+  it('allows falsy but valid defaults (0, false, empty string)', async () => {
+    mockTables['net1'] = makeTableRecord()
+
+    expect(
+      tableApi.createColumn('net1', 'node', 'count', 'integer', 0).success,
+    ).toBe(true)
+    expect(
+      tableApi.createColumn('net1', 'node', 'flag', 'boolean', false).success,
+    ).toBe(true)
+    expect(
+      tableApi.createColumn('net1', 'node', 'label', 'string', '').success,
+    ).toBe(true)
+    // Drain deferred display-config syncs so they cannot leak into
+    // a later test's mockUiStoreState
+    await flushTimers()
+  })
 })
 
 // --- deleteColumn ------------------------------------------------------------

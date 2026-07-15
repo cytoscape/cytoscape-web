@@ -76,3 +76,20 @@ export function validateColumnName(
   }
   return undefined
 }
+
+/**
+ * Column default values must not be null or undefined (CX2 A6). Falsy
+ * values like 0, false, and '' are valid defaults.
+ */
+export function validateColumnDefaultValue(
+  defaultValue: ValueType | null | undefined,
+): ApiFailure | undefined {
+  if (defaultValue === null || defaultValue === undefined) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      'Column default value must not be null',
+      'A6',
+    )
+  }
+  return undefined
+}
