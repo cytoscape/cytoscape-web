@@ -335,10 +335,19 @@ export const deleteObjects = (
     }
   })
 
+  // Deleted elements must not linger in the selection state
+  const deletedIds = new Set(ids)
+
   return {
     ...networkView,
     nodeViews: newNodeViews,
     edgeViews: newEdgeViews,
+    selectedNodes: networkView.selectedNodes.filter(
+      (id) => !deletedIds.has(id),
+    ),
+    selectedEdges: networkView.selectedEdges.filter(
+      (id) => !deletedIds.has(id),
+    ),
   }
 }
 
