@@ -41,6 +41,23 @@ describe('ApiResult helpers', () => {
         expect(result.error.code).toBe(code)
       }
     })
+
+    it('tags the error with a CX2 validation code when provided', () => {
+      const result = fail(
+        ApiErrorCode.InvalidInput,
+        'Attribute "id" is forbidden for nodes',
+        'FK1',
+      )
+      expect(result.success).toBe(false)
+      expect(result.error.code).toBe('INVALID_INPUT')
+      expect(result.error.cx2Code).toBe('FK1')
+    })
+
+    it('omits cx2Code when not provided', () => {
+      const result = fail(ApiErrorCode.InvalidInput, 'bad input')
+      expect(result.error.cx2Code).toBeUndefined()
+      expect(Object.keys(result.error)).not.toContain('cx2Code')
+    })
   })
 
   describe('isOk()', () => {

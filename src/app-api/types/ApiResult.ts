@@ -57,6 +57,14 @@ export interface ApiError {
 
   /** Human-readable error description for logging and debugging */
   readonly message: string
+
+  /**
+   * CX2 validation requirement enforced by this error (e.g. 'FK1', 'BV1',
+   * 'N3'). Present only when the failure corresponds to a specific rule in
+   * the CX2 validation requirements; `code` still carries the coarse app
+   * API category (InvalidInput, NodeNotFound, ...).
+   */
+  readonly cx2Code?: string
 }
 
 /**
@@ -119,15 +127,23 @@ export function ok<T>(data?: T): ApiSuccess<T> | ApiSuccess<void> {
 /**
  * Construct a failed ApiResult from an error code and message.
  *
+ * Pass `cx2Code` when the failure enforces a specific CX2 validation
+ * requirement, so external apps can map failures back to the spec.
+ *
  * @example
  * ```typescript
  * return fail(ApiErrorCode.NetworkNotFound, `Network ${id} not found`)
+ * return fail(ApiErrorCode.InvalidInput, 'Column "id" is forbidden', 'FK1')
  * ```
  */
-export function fail(code: ApiErrorCode, message: string): ApiFailure {
+export function fail(
+  code: ApiErrorCode,
+  message: string,
+  cx2Code?: string,
+): ApiFailure {
   return {
     success: false,
-    error: { code, message },
+    error: { code, message, ...(cx2Code !== undefined && { cx2Code }) },
   }
 }
 
