@@ -6,7 +6,7 @@ This directory contains all project documentation for Cytoscape Web. Documents a
 
 | Starting Point             | When to Use                                                                                   |
 | -------------------------- | --------------------------------------------------------------------------------------------- |
-| `CLAUDE.md` (project root) | LLM context — architecture summary, commands, conventions. Loaded automatically by LLM agents |
+| `AGENTS.md` (project root) | Authoritative LLM context — architecture summary, commands, and conventions                  |
 | `docs/` (this directory)   | Detailed reference — specifications, design docs, workflow templates                          |
 | `src/features/*_docs/`     | Feature-level behavior docs — co-located with source code                                     |
 

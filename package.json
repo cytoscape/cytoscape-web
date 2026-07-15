@@ -29,9 +29,6 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "sync:agents": "node scripts/generate-agents-from-claude.js",
-    "check:agents": "run-s sync:agents gitdiff:agents",
-    "gitdiff:agents": "git diff --exit-code -- AGENTS.md",
     "test": "run-s lint test:unit test:e2e:chromium",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",

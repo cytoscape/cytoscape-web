@@ -249,8 +249,10 @@ window.addEventListener('cywebapi:ready', () => {
 
 ```typescript
 // src/app-api/core/elementApi.test.ts
-jest.mock('../../data/hooks/stores/NetworkStore', () => ({ ... }))
-jest.mock('../../data/hooks/stores/TableStore', () => ({ ... }))
+import { vi } from 'vitest'
+
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({ ... }))
+vi.mock('../../data/hooks/stores/TableStore', () => ({ ... }))
 
 describe('elementApi', () => {
   beforeEach(() => { /* reset mock store state */ })
@@ -280,11 +282,13 @@ it('returns the core elementApi object', () => {
 
 ```typescript
 // src/app-api/event-bus/initEventBus.test.ts
+import { vi } from 'vitest'
+
 // Mock store subscriptions; call initEventBus(); mutate mock state; assert dispatchEvent called
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({ ... }))
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({ ... }))
 
 it('dispatches network:created when a new network is added', () => {
-  const spy = jest.spyOn(window, 'dispatchEvent')
+  const spy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
   // trigger mock store change
   expect(spy).toHaveBeenCalledWith(
@@ -294,18 +298,18 @@ it('dispatches network:created when a new network is added', () => {
 
 it('does not dispatch on startup (startup suppression)', () => {
   // subscriptions set up AFTER initial state is already present → no spurious events
-  const spy = jest.spyOn(window, 'dispatchEvent')
+  const spy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
   expect(spy).not.toHaveBeenCalled()
 })
 ```
 
-## Webpack `exposes` Pattern
+## Vite Module Federation `exposes` Pattern
 
-Add new app API entries to `webpack.config.js` `ModuleFederationPlugin.exposes`:
+Add new app API entries to `FEDERATION_EXPOSES` in `src/app-api/federation/federationExposes.ts`; `vite.config.ts` consumes that map:
 
 ```javascript
-exposes: {
+export const FEDERATION_EXPOSES = {
   // Public App API (hook-based, for React apps via Module Federation)
   './ApiTypes':        './src/app-api/types/index.ts',
   './ElementApi':      './src/app-api/useElementApi.ts',

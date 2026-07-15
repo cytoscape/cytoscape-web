@@ -106,7 +106,7 @@ flowchart TB
 - **Stores** (`src/data/hooks/stores/`) are Zustand + Immer stores that wrap model operations and must not import React components. Persisted stores auto-save to IndexedDB.
 - **Features** (`src/features/`) are functional React components that consume stores via hooks — either store hooks directly or the composed workflow hooks in `src/data/hooks/`.
 
-See [`CLAUDE.md`](./CLAUDE.md) and the specs under [`docs/specifications/`](./docs/specifications/) for the full architecture reference.
+See [`AGENTS.md`](./AGENTS.md) and the specs under [`docs/specifications/`](./docs/specifications/) for the full architecture reference.
 
 ## Quick Start
 
@@ -148,9 +148,9 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 
 - `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to [NDEx dev server] (https://dev.ndexbio.org), please create an account on the NDEx dev server with a email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
 - `build`: build the app for production
-- `lint`: lint code according to the eslint config
-- `format`: format source code according to eslint and prettier configs
-- `test:unit`: run Jest unit tests
+- `lint`: type-check with TypeScript and lint source code with oxlint
+- `format`: format source code with Prettier
+- `test:unit`: run Vitest unit tests
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
 
 #### Installing Playwright browsers
