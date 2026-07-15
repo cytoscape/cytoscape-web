@@ -54,8 +54,17 @@ export interface CyWebEvents {
   /**
    * Fired when table data is written to a network's node or edge table.
    * `rowIds` is the set of node/edge IDs whose data changed in this write.
+   * `addedColumns`/`removedColumns` carry schema changes (a rename appears
+   * as one of each); check them first to distinguish column operations
+   * from plain row edits, since column operations may also report rowIds.
    */
-  'data:changed': { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+    addedColumns: string[]
+    removedColumns: string[]
+  }
 }
 
 /**

@@ -112,7 +112,13 @@ export interface CyWebEvents {
    * Fired when table data is written to a network's node or edge table.
    * `rowIds` is the set of node/edge IDs whose data changed in this write.
    */
-  'data:changed': { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+    addedColumns: string[]   // column names created in this change
+    removedColumns: string[] // column names deleted (rename = 1 added + 1 removed)
+  }
 }
 
 /**

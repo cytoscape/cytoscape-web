@@ -49,6 +49,23 @@ function detectChangedRowIds(curr: Table, prev: Table): IdType[] {
   return changed
 }
 
+/**
+ * Returns the column names added and removed between two table snapshots
+ * so apps can distinguish schema changes from row edits. A rename appears
+ * as one added and one removed name.
+ */
+function detectColumnChanges(
+  curr: Table,
+  prev: Table,
+): { addedColumns: string[]; removedColumns: string[] } {
+  const currNames = new Set(curr.columns.map((c) => c.name))
+  const prevNames = new Set(prev.columns.map((c) => c.name))
+  return {
+    addedColumns: [...currNames].filter((name) => !prevNames.has(name)),
+    removedColumns: [...prevNames].filter((name) => !currNames.has(name)),
+  }
+}
+
 // ── Public init function ──────────────────────────────────────────────────────
 
 /**
@@ -135,7 +152,17 @@ export function initEventBus(): void {
           const prevTable = tableType === 'node' ? prevTables.nodeTable : prevTables.edgeTable
           if (currTable === prevTable) continue
           const rowIds = detectChangedRowIds(currTable, prevTable)
-          dispatchCyWebEvent('data:changed', { networkId, tableType, rowIds })
+          const { addedColumns, removedColumns } = detectColumnChanges(
+            currTable,
+            prevTable,
+          )
+          dispatchCyWebEvent('data:changed', {
+            networkId,
+            tableType,
+            rowIds,
+            addedColumns,
+            removedColumns,
+          })
         }
       }
     },

@@ -287,17 +287,51 @@ describe('data:changed', () => {
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
     expect(dispatchedTypes()).toContain('data:changed')
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', tableType: 'node', rowIds: ['n1'] })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      tableType: 'node',
+      rowIds: ['n1'],
+      addedColumns: [],
+      removedColumns: [],
+    })
   })
 
-  it('dispatches with rowIds=[] for schema-only change (column added)', () => {
+  it('reports added columns for schema-only change', () => {
     const rows = new Map([['n1', { name: 'A' }]])
     const prevTable = { nodeTable: { id: 't1', columns: [], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
     const currTable = { nodeTable: { id: 't1', columns: [{ name: 'newCol' }], rows }, edgeTable: prevTable.edgeTable }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', tableType: 'node', rowIds: [] })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      tableType: 'node',
+      rowIds: [],
+      addedColumns: ['newCol'],
+      removedColumns: [],
+    })
+  })
+
+  it('reports removed columns when a column is deleted', () => {
+    const rows = new Map([['n1', { name: 'A' }]])
+    const prevTable = { nodeTable: { id: 't1', columns: [{ name: 'name' }, { name: 'score' }], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
+    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'name' }], rows }, edgeTable: prevTable.edgeTable }
+
+    triggerTableSub({ net1: currTable }, { net1: prevTable })
+
+    expect(dispatchedDetails()[0].addedColumns).toEqual([])
+    expect(dispatchedDetails()[0].removedColumns).toEqual(['score'])
+  })
+
+  it('reports a rename as one added and one removed column', () => {
+    const rows = new Map([['n1', { oldName: 'A' }]])
+    const prevTable = { nodeTable: { id: 't1', columns: [{ name: 'oldName' }], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
+    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'newName' }], rows }, edgeTable: prevTable.edgeTable }
+
+    triggerTableSub({ net1: currTable }, { net1: prevTable })
+
+    expect(dispatchedDetails()[0].addedColumns).toEqual(['newName'])
+    expect(dispatchedDetails()[0].removedColumns).toEqual(['oldName'])
   })
 
   it('includes all changed row IDs on bulk change', () => {
