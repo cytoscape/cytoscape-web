@@ -109,7 +109,20 @@ describe('setDefault', () => {
       [VPN.NodeOpacity]: { type: 'number', group: 'node' },
       [VPN.NodeHeight]: { type: 'number', group: 'node' },
       [VPN.NodeLabel]: { type: 'string', group: 'node' },
+      [VPN.NodeLabelPosition]: { type: 'nodeLabelPosition', group: 'node' },
+      nodeCustomGraphic: { type: 'customGraphic', group: 'node' },
+      nodeCustomGraphicPos: { type: 'customGraphicPosition', group: 'node' },
     }
+  }
+
+  const validLabelPosition = {
+    HORIZONTAL_ALIGN: 'center',
+    VERTICAL_ALIGN: 'top',
+    HORIZONTAL_ANCHOR: 'left',
+    VERTICAL_ANCHOR: 'bottom',
+    MARGIN_X: 0,
+    MARGIN_Y: 2.5,
+    JUSTIFICATION: 'center',
   }
 
   it('calls setDefault and returns ok() when network exists', () => {
@@ -237,6 +250,100 @@ describe('setDefault', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+    }
+  })
+
+  it('accepts a complete, valid label position object', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeLabelPosition,
+      validLabelPosition as any,
+    )
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a label position missing a mandatory key (CX2 VP7)', () => {
+    setupDefaultFixtures()
+    const { HORIZONTAL_ALIGN, ...partial } = validLabelPosition
+    void HORIZONTAL_ALIGN
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeLabelPosition,
+      partial as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('VP7')
+      expect(result.error.message).toContain('HORIZONTAL_ALIGN')
+    }
+    expect(mockSetDefault).not.toHaveBeenCalled()
+  })
+
+  it('rejects a label position with a non-numeric margin (CX2 VP7)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault('net1', VPN.NodeLabelPosition, {
+      ...validLabelPosition,
+      MARGIN_X: 'far',
+    } as any)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('VP7')
+    }
+  })
+
+  it('rejects a custom graphics object with an unknown type (CX2 VP9)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      'nodeCustomGraphic' as any,
+      { type: 'hologram', name: 'none', properties: {} } as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('VP9')
+    }
+  })
+
+  it('accepts a valid custom graphics object', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      'nodeCustomGraphic' as any,
+      { type: 'none', name: 'none', properties: {} } as any,
+    )
+
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a custom graphics position with a bad anchor (CX2 VP10)', () => {
+    setupDefaultFixtures()
+
+    const result = visualStyleApi.setDefault(
+      'net1',
+      'nodeCustomGraphicPos' as any,
+      {
+        JUSTIFICATION: 'center',
+        MARGIN_X: 0,
+        MARGIN_Y: 0,
+        ENTITY_ANCHOR: 'Q',
+        GRAPHICS_ANCHOR: 'C',
+      } as any,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.cx2Code).toBe('VP10')
     }
   })
 })

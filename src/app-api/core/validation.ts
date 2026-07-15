@@ -27,6 +27,10 @@ import {
   VisualPropertyName,
   VisualPropertyValueTypeName,
 } from '../../models/VisualStyleModel'
+import {
+  CustomGraphicsNameType,
+  CustomGraphicsTypeType,
+} from '../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { ApiErrorCode, ApiFailure, fail } from '../types/ApiResult'
 
 /**
@@ -288,11 +292,86 @@ const ENUM_VALUES: Partial<Record<string, ReadonlySet<string>>> = {
   ),
 }
 
+const POSITION_VALUES = new Set(['center', 'top', 'bottom', 'left', 'right'])
+const ANCHOR_VALUES = new Set(['C', 'N', 'S', 'E', 'W'])
+const JUSTIFICATION_VALUES = new Set(['left', 'center', 'right'])
+const CUSTOM_GRAPHICS_TYPES = new Set<string>(
+  Object.values(CustomGraphicsTypeType),
+)
+const CUSTOM_GRAPHICS_NAMES = new Set<string>(
+  Object.values(CustomGraphicsNameType),
+)
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v)
+}
+
+/** Structural check for NodeLabelPositionType — returns a reason or undefined */
+function labelPositionProblem(v: unknown): string | undefined {
+  if (!isRecord(v)) return 'expected a label position object'
+  for (const key of [
+    'HORIZONTAL_ALIGN',
+    'VERTICAL_ALIGN',
+    'HORIZONTAL_ANCHOR',
+    'VERTICAL_ANCHOR',
+    'JUSTIFICATION',
+  ]) {
+    const value = v[key]
+    if (typeof value !== 'string' || !POSITION_VALUES.has(value)) {
+      return `${key} must be one of: ${[...POSITION_VALUES].join(', ')}`
+    }
+  }
+  for (const key of ['MARGIN_X', 'MARGIN_Y']) {
+    const value = v[key]
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return `${key} must be a finite number`
+    }
+  }
+  return undefined
+}
+
+/** Structural check for CustomGraphicsType — returns a reason or undefined */
+function customGraphicsProblem(v: unknown): string | undefined {
+  if (!isRecord(v)) return 'expected a custom graphics object'
+  if (typeof v.type !== 'string' || !CUSTOM_GRAPHICS_TYPES.has(v.type)) {
+    return `type must be one of: ${[...CUSTOM_GRAPHICS_TYPES].join(', ')}`
+  }
+  if (typeof v.name !== 'string' || !CUSTOM_GRAPHICS_NAMES.has(v.name)) {
+    return 'unknown custom graphics name'
+  }
+  if (!isRecord(v.properties)) return 'properties must be an object'
+  return undefined
+}
+
+/** Structural check for CustomGraphicsPositionType */
+function customGraphicsPositionProblem(v: unknown): string | undefined {
+  if (!isRecord(v)) return 'expected a custom graphics position object'
+  if (
+    typeof v.JUSTIFICATION !== 'string' ||
+    !JUSTIFICATION_VALUES.has(v.JUSTIFICATION)
+  ) {
+    return `JUSTIFICATION must be one of: ${[...JUSTIFICATION_VALUES].join(', ')}`
+  }
+  for (const key of ['MARGIN_X', 'MARGIN_Y']) {
+    const value = v[key]
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return `${key} must be a finite number`
+    }
+  }
+  for (const key of ['ENTITY_ANCHOR', 'GRAPHICS_ANCHOR']) {
+    const value = v[key]
+    if (typeof value !== 'string' || !ANCHOR_VALUES.has(value)) {
+      return `${key} must be one of: ${[...ANCHOR_VALUES].join(', ')}`
+    }
+  }
+  return undefined
+}
+
 /**
- * Validate a scalar visual property value against the property's
- * declared value type (CX2 VP1-VP6). Structured types (custom graphics,
- * label position) are not checked here — see backlog item 3.6. Opacity
- * properties additionally enforce the 0-1 range (VP3).
+ * Validate a visual property value against the property's declared
+ * value type — scalars (CX2 VP1-VP6) and structured values: label
+ * position (VP7), custom graphics (VP9), and custom graphics position
+ * (VP10). Opacity properties additionally enforce the 0-1 range (VP3).
  */
 export function validateVisualPropertyValue(
   vpName: VisualPropertyName | string,
@@ -335,6 +414,18 @@ export function validateVisualPropertyValue(
         new Set(Object.values(FontType)).has(vpValue as FontType)
         ? undefined
         : invalid('VP6', 'unknown font face')
+    case 'nodeLabelPosition': {
+      const problem = labelPositionProblem(vpValue)
+      return problem === undefined ? undefined : invalid('VP7', problem)
+    }
+    case VisualPropertyValueTypeName.CustomGraphic: {
+      const problem = customGraphicsProblem(vpValue)
+      return problem === undefined ? undefined : invalid('VP9', problem)
+    }
+    case VisualPropertyValueTypeName.CustomGraphicPosition: {
+      const problem = customGraphicsPositionProblem(vpValue)
+      return problem === undefined ? undefined : invalid('VP10', problem)
+    }
     default: {
       if (valueTypeName === undefined) return undefined
       const enumValues = ENUM_VALUES[valueTypeName]
@@ -346,8 +437,7 @@ export function validateVisualPropertyValue(
               `expected one of: ${[...enumValues].join(', ')}`,
             )
       }
-      // Structured types (customGraphic, customGraphicPosition) and any
-      // unrecognized type names pass through — handled by item 3.6
+      // Unrecognized type names pass through unvalidated
       return undefined
     }
   }
