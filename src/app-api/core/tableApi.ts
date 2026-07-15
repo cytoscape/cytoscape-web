@@ -22,6 +22,7 @@ import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
 import {
   validateColumnDefaultValue,
   validateColumnName,
+  validateColumnNameAvailable,
   validateTableElementsExist,
   validateValuesMatchColumnTypes,
 } from './validation'
@@ -303,6 +304,12 @@ export const tableApi: TableApi = {
       const invalidName = validateColumnName(columnName, tableType)
       if (invalidName) return invalidName
 
+      const duplicateName = validateColumnNameAvailable(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        columnName,
+      )
+      if (duplicateName) return duplicateName
+
       const invalidDefault = validateColumnDefaultValue(defaultValue)
       if (invalidDefault) return invalidDefault
 
@@ -363,6 +370,15 @@ export const tableApi: TableApi = {
       }
       const invalidName = validateColumnName(newName, tableType)
       if (invalidName) return invalidName
+
+      // Self-rename is a harmless no-op; anything else must not collide
+      if (newName !== currentName) {
+        const duplicateName = validateColumnNameAvailable(
+          tableRecord[tableKey(tableType)]?.columns ?? [],
+          newName,
+        )
+        if (duplicateName) return duplicateName
+      }
 
       useTableStore
         .getState()

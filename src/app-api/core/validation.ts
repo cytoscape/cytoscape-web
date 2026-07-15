@@ -320,6 +320,24 @@ export function validateValuesMatchColumnTypes(
 }
 
 /**
+ * A new or renamed column must not collide with an already-declared
+ * column in the same table (CX2 AC6 / AI1).
+ */
+export function validateColumnNameAvailable(
+  columns: Array<{ name: string }>,
+  columnName: string,
+): ApiFailure | undefined {
+  if (columns.some((c) => c.name === columnName)) {
+    return fail(
+      ApiErrorCode.InvalidInput,
+      `Column "${columnName}" already exists`,
+      'AC6',
+    )
+  }
+  return undefined
+}
+
+/**
  * Column default values must not be null or undefined (CX2 A6). Falsy
  * values like 0, false, and '' are valid defaults.
  */

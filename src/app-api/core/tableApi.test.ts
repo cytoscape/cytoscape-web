@@ -367,6 +367,21 @@ describe('createColumn', () => {
     }
   })
 
+  it('rejects a column name that already exists (CX2 AC6)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+    ])
+
+    const result = tableApi.createColumn('net1', 'node', 'score', 'double', 0)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('AC6')
+    }
+    expect(mockCreateColumn).not.toHaveBeenCalled()
+  })
+
   it('rejects a null default value (CX2 A6)', () => {
     mockTables['net1'] = makeTableRecord()
 
@@ -533,6 +548,32 @@ describe('setColumnName', () => {
       attribute: 'newName',
     })
     expect(mockSetMapping).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects renaming a column to a name that already exists (CX2 AC6)', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+      { name: 'weight', type: 'double' },
+    ])
+
+    const result = tableApi.setColumnName('net1', 'node', 'score', 'weight')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.cx2Code).toBe('AC6')
+    }
+    expect(mockSetColumnName).not.toHaveBeenCalled()
+  })
+
+  it('treats a self-rename as a no-op rather than a duplicate', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+    ])
+
+    const result = tableApi.setColumnName('net1', 'node', 'score', 'score')
+
+    expect(result.success).toBe(true)
   })
 
   it('rejects renaming a column to the forbidden name "id" (CX2 FK1)', () => {
