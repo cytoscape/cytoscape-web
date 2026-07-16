@@ -1,10 +1,10 @@
 import { IdType } from '../../IdType'
 import { Edge, Network } from '../../NetworkModel'
-import { NodeView } from '../../ViewModel'
-import { ValueType } from '../../TableModel'
-import { TableType } from '../../StoreModel/TableStoreModel'
-import { VisualStyle } from '../../VisualStyleModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
+import { TableType } from '../../StoreModel/TableStoreModel'
+import { ValueType } from '../../TableModel'
+import { NodeView } from '../../ViewModel'
+import { VisualStyle } from '../../VisualStyleModel'
 
 /**
  * Store actions interface for node operations

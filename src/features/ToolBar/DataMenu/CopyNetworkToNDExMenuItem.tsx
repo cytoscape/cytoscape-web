@@ -1,8 +1,6 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
-import { Tooltip } from '@mui/material'
 import { ReactElement, useContext, useState } from 'react'
 
-import { AppConfigContext } from '../../../AppConfigContext'
 import {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
@@ -33,11 +31,9 @@ import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorSt
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showHcxValidationDialog, setShowHcxValidationDialog] =
     useState<boolean>(false)
   const { navigateToNetwork } = useUrlNavigation()
@@ -126,11 +122,12 @@ export const CopyNetworkToNDExMenuItem = (
         severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
       logUi.error(
         `[${CopyNetworkToNDExMenuItem.name}]:[${saveCopyToNDEx.name}] Failed to save a copy of the current network to NDEx`,
         e,
       )
-      if (e.message.includes(TimeOutErrorIndicator)) {
+      if (message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,
           duration: 4000,
@@ -138,9 +135,7 @@ export const CopyNetworkToNDExMenuItem = (
         })
       } else {
         addMessage({
-          message: `Error: Could not save a copy of the current network to NDEx. ${
-            e.message as string
-          }`,
+          message: `Error: Could not save a copy of the current network to NDEx. ${message}`,
           duration: 4000,
           severity: MessageSeverity.ERROR,
         })
@@ -181,14 +176,14 @@ export const CopyNetworkToNDExMenuItem = (
         disabled={!enabled}
         onClick={handleClick}
       />
-    {enabled && (
-      <HcxValidationSaveDialog
-        open={showHcxValidationDialog}
-        onClose={() => setShowHcxValidationDialog(false)}
-        onSubmit={() => handleSaveCurrentNetworkToNDEx()}
-        validationResult={validationResults?.[currentNetworkId]}
-      />
-    )}
+      {enabled && (
+        <HcxValidationSaveDialog
+          open={showHcxValidationDialog}
+          onClose={() => setShowHcxValidationDialog(false)}
+          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+          validationResult={validationResults?.[currentNetworkId]}
+        />
+      )}
     </>
   )
 }

@@ -16,11 +16,11 @@ import { MenuItem as NestedMenuItem } from 'primereact/menuitem'
 import { useState } from 'react'
 import React from 'react'
 
-import { logApp } from '../../../debug'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logApp } from '../../../debug'
 import {
   inputColumnFilterFn,
   validateParameter,
@@ -58,6 +58,10 @@ export const InputColumns = (props: AppMenuItemProps) => {
       (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
     ) ?? []
 
+  // Initialize column defaults once per dialog open (this component remounts
+  // each time the dialog opens). Adding inputColumns/column deps would re-fire
+  // after the effect's own store write — an update loop that also reverts the
+  // user's dropdown selection back to the default.
   React.useEffect(() => {
     app.serviceInputDefinition?.inputColumns.forEach((inputColumn) => {
       const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
@@ -67,6 +71,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
         updateInputColumn(app.url, inputColumn.name, validColumns[0].name)
       }
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- init defaults once per dialog open
   }, [])
 
   return app.serviceInputDefinition?.inputColumns.map((inputColumn, i) => {
@@ -270,7 +275,9 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={(parameter.value ?? parameter.defaultValue) === 'true'}
+                  checked={
+                    (parameter.value ?? parameter.defaultValue) === 'true'
+                  }
                   onChange={(e) =>
                     updateServiceParameter(
                       app.url,
@@ -475,7 +482,7 @@ export const AppMenuItem: React.FC<{
   handleConfirm: () => Promise<void>
   app: ServiceApp
   showTooltip?: boolean
-}> = (props: AppMenuItemProps) => {
+}> = (props) => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   const { handleClose, app, showTooltip } = props
@@ -616,7 +623,8 @@ const path2menu = (
       // and follow that path
       const intermediateItem = existingDupMenuItems.filter(
         (item) =>
-          !item.hasOwnProperty('template') || item.template === undefined,
+          !Object.prototype.hasOwnProperty.call(item, 'template') ||
+          item.template === undefined,
       ) as NestedMenuItem[]
 
       if (intermediateItem.length > 0) {

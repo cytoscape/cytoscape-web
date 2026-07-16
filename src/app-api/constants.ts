@@ -4,3 +4,5 @@
  * This URL will be updated to the App Store catalog URL when deployed.
  */
 export const DEFAULT_MANIFEST_URL = '/apps.json'
+
+export const EXTERNAL_APPS_ENABLED = true

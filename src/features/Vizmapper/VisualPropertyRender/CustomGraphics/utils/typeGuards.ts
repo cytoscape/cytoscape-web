@@ -1,7 +1,7 @@
 import {
+  NonePropertiesType,
   PieChartPropertiesType,
   RingChartPropertiesType,
-  NonePropertiesType,
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 type AllPropertiesType =

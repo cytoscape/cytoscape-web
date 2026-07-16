@@ -64,7 +64,7 @@ export function NodeShapePicker(props: {
   onValueChange: (shape: NodeShapeType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedNodeShapes = Object.values(NodeShapeType).sort()
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? NodeShapeType.Rectangle,

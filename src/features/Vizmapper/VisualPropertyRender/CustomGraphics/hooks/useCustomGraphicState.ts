@@ -1,15 +1,16 @@
 import * as React from 'react'
-import { CustomGraphicsType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+
+import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
+import { useWorkspaceStore } from '../../../../../data/hooks/stores/WorkspaceStore'
+import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../../models/VisualStyleModel/impl/defaultVisualStyle'
+import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import { CustomGraphicsType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
-import { useWorkspaceStore } from '../../../../../data/hooks/stores/WorkspaceStore'
 import { hasNumericColumns } from '../utils/numericColumnUtils'
 import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
 

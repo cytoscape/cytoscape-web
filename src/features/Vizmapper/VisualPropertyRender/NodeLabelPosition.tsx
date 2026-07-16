@@ -18,7 +18,7 @@ export function NodeLabelPositionPicker(props: {
   onValueChange: (labelPosition: NodeLabelPositionType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
 
   const [labelOrientation, setlabelOrientation] =
     React.useState<NodeLabelOrientationType>(
@@ -93,7 +93,8 @@ export function NodeLabelPositionPicker(props: {
           <NumberInput
             allowDecimal={false}
             value={localValue.MARGIN_X}
-            onChange={(e: number) => {
+            onChange={(value) => {
+              const e = Number(value)
               setLocalValue({
                 ...localValue,
                 MARGIN_X: e,
@@ -108,7 +109,8 @@ export function NodeLabelPositionPicker(props: {
           <NumberInput
             allowDecimal={false}
             value={localValue.MARGIN_Y}
-            onChange={(e: number) => {
+            onChange={(value) => {
+              const e = Number(value)
               setLocalValue({
                 ...localValue,
                 MARGIN_Y: e,
@@ -118,7 +120,15 @@ export function NodeLabelPositionPicker(props: {
         </Box>
       </MantineProvider>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1, mt: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 1,
+          p: 1,
+          mt: 2,
+        }}
+      >
         <Button
           variant="outlined"
           onClick={() => {
@@ -142,8 +152,6 @@ export function NodeLabelPositionPicker(props: {
   )
 }
 
-export function NodeLabelPositionRender(props: {
-  value: NodeLabelPositionType
-}): React.ReactElement {
+export function NodeLabelPositionRender(): React.ReactElement {
   return <Typography variant="body1" sx={{ fontSize: 8 }}></Typography>
 }

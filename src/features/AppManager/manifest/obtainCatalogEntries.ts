@@ -1,4 +1,7 @@
-import { DEFAULT_MANIFEST_URL } from '../../../app-api/constants'
+import {
+  DEFAULT_MANIFEST_URL,
+  EXTERNAL_APPS_ENABLED,
+} from '../../../app-api/constants'
 import { logApp } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
@@ -14,6 +17,11 @@ import { parseManifest } from './parseManifest'
 export async function obtainCatalogEntries(
   source: ManifestSource | undefined,
 ): Promise<AppCatalogEntry[]> {
+  if (!EXTERNAL_APPS_ENABLED) {
+    logApp.info('[obtainCatalogEntries]: External app loading is disabled')
+    return []
+  }
+
   if (source === undefined || source.type === 'url') {
     const url = source?.type === 'url' ? source.url : DEFAULT_MANIFEST_URL
     return fetchManifest(url)

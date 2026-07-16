@@ -1,7 +1,6 @@
 import { NavigateOptions } from 'react-router-dom'
 
-import config from '../../../assets/config.json'
-import { logHistory } from '../../../debug'
+import { logHistory, registerDebugTool } from '../../../debug'
 import { NavigationConfig } from './NavigationConfig'
 
 let lastNetworkId: string = '' // Last displayed network ID
@@ -426,20 +425,14 @@ export const initHistoryClearing = (): void => {
   })
 }
 
-if (config.debug) {
-  if (window.debug === undefined) {
-    window.debug = {}
-  }
-
-  window.debug.history = {
-    getInfo: getHistoryInfo,
-    printDebug: printHistoryDebug,
-    getEntries: () => historyEntries,
-    getBrowserLength: () => window.history.length,
-    getCurrentState: getCurrentHistoryState,
-    clearInternal: clearInternalHistory,
-    resetToRoot: resetNavigationToRoot,
-    clearBrowser: clearBrowserHistory,
-    initClearing: initHistoryClearing,
-  }
-}
+registerDebugTool('history', {
+  getInfo: getHistoryInfo,
+  printDebug: printHistoryDebug,
+  getEntries: () => historyEntries,
+  getBrowserLength: () => window.history.length,
+  getCurrentState: getCurrentHistoryState,
+  clearInternal: clearInternalHistory,
+  resetToRoot: resetNavigationToRoot,
+  clearBrowser: clearBrowserHistory,
+  initClearing: initHistoryClearing,
+})

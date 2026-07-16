@@ -8,13 +8,15 @@ import { create, StateCreator, StoreApi } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
-import { deleteDb, putWorkspaceToDb } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { InstalledApp } from '../../../models/AppModel/InstalledApp'
 import { IdType } from '../../../models/IdType'
 import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
 import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
+import { deleteDb, putWorkspaceToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -157,6 +159,46 @@ export const useWorkspaceStore = create(
           set((state) => {
             state.workspace = WorkspaceImpl.deleteAllNetworkModifiedStatuses(
               state.workspace,
+            )
+            return state
+          })
+        },
+
+        addInstalledApp: (app: InstalledApp) => {
+          set((state) => {
+            state.workspace = WorkspaceImpl.addInstalledApp(
+              state.workspace,
+              app,
+            )
+            return state
+          })
+        },
+
+        removeInstalledApp: (id: IdType) => {
+          set((state) => {
+            state.workspace = WorkspaceImpl.removeInstalledApp(
+              state.workspace,
+              id,
+            )
+            return state
+          })
+        },
+
+        setInstalledAppStatus: (id: IdType, status: AppStatus) => {
+          set((state) => {
+            const exists = (state.workspace.installedApps ?? []).some(
+              (a) => a.entry.id === id,
+            )
+            if (!exists) {
+              logStore.warn(
+                `[${useWorkspaceStore.name}]: setInstalledAppStatus: app "${id}" not found in installedApps`,
+              )
+              return state
+            }
+            state.workspace = WorkspaceImpl.setInstalledAppStatus(
+              state.workspace,
+              id,
+              status,
             )
             return state
           })

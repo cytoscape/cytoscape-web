@@ -1,24 +1,41 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
-import { AttributeName, Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+import { Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
-import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
 import { useTableStore } from './TableStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putTablesToDb: jest.fn().mockResolvedValue(undefined),
-  deleteTablesFromDb: jest.fn().mockResolvedValue(undefined),
-  clearTablesFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock the workspace store to provide a current network ID
-jest.mock('./WorkspaceStore', () => ({
+vi.mock('./WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },

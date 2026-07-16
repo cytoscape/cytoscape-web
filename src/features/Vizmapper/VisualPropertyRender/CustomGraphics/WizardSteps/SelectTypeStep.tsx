@@ -1,7 +1,8 @@
-import * as React from 'react'
-import { Box, Typography, Alert } from '@mui/material'
-import PieChartIcon from '@mui/icons-material/PieChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
+import PieChartIcon from '@mui/icons-material/PieChart'
+import { Alert,Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 
 export type CustomGraphicKind =

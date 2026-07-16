@@ -6,7 +6,6 @@ import { Network } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
-import { NetworkView } from '../../../../models/ViewModel'
 import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
 import {
   MappingFunctionType,
@@ -227,7 +226,6 @@ export function createNetworkFromTableData(
   let nodeIdIndex = 0
   let edgeIdIndex = 0
   const nodeIdMap = new Map<string, number>()
-  const edgeIdMap = new Map<string, number>()
   rows.forEach((row) => {
     let srcNodeId: number | undefined = undefined
     let tgtNodeId: number | undefined = undefined

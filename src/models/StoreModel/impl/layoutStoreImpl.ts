@@ -1,9 +1,4 @@
-import {
-  defAlgorithm,
-  defHierarchicalAlgorithm,
-  getLayout,
-  LayoutEngines,
-} from '../../LayoutModel/impl/layoutSelection'
+import { getLayout } from '../../LayoutModel/impl/layoutSelection'
 import { LayoutAlgorithm } from '../../LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutModel/LayoutEngine'
 import { Property } from '../../PropertyModel/Property'

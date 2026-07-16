@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { AppStatus } from '../../AppModel/AppStatus'
 import { CyApp } from '../../AppModel/CyApp'
 import { ServiceApp } from '../../AppModel/ServiceApp'
@@ -22,6 +24,7 @@ const createDefaultState = (): AppState => {
     serviceApps: {},
     currentTask: undefined,
     catalog: {},
+    catalogSources: {},
     loadStates: {},
     manifestSource: undefined,
   }
@@ -55,10 +58,7 @@ describe('AppStoreImpl', () => {
       const state = createDefaultState()
       const app1 = createTestApp('app-1')
       const app2 = createTestApp('app-2')
-      const apps = [
-        { id: 'app-1', cached: app1 },
-        { id: 'app-2', cached: app2 },
-      ]
+      const apps = [app1, app2]
       const serviceApps: ServiceApp[] = []
 
       const result = restore(state, apps, serviceApps)
@@ -396,6 +396,9 @@ describe('AppStoreImpl', () => {
       })
       state = clearCurrentTask(state)
       state = removeService(state, 'https://example.com/service')
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.apps).toBe(originalApps)

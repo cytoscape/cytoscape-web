@@ -24,7 +24,6 @@ import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { NetworkView } from '../../models/ViewModel'
 import { Workspace } from '../../models/WorkspaceModel'
 import { HcxMetaTag } from '../HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../HierarchyViewer/model/impl/hcxValidators'
@@ -57,7 +56,6 @@ import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
-
 
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
@@ -138,7 +136,7 @@ const WorkSpaceEditor = (): JSX.Element => {
    */
   useViewModelStore.subscribe(
     (state) => state.getViewModel(currentNetworkId),
-    (nextViewModel: NetworkView, prevViewModel: NetworkView) => {
+    (nextViewModel, prevViewModel) => {
       if (prevViewModel === undefined || nextViewModel === undefined) {
         return
       }
@@ -333,6 +331,14 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Swaps the current network when URL parameter changes
    * This is an expensive operation that loads network data, styles, tables, and views
    * Uses a loading ref to prevent concurrent loads
+   *
+   * NOTE: This effect is intentionally keyed only on params.networkId
+   * (URL-driven network swap). A param change triggers a re-render first,
+   * so the effect always runs with a fresh closure over
+   * loadCurrentNetworkById and the store actions. Adding those functions
+   * to the deps would re-trigger this expensive full reload on unrelated
+   * re-renders (loadCurrentNetworkById reads render-scoped values such as
+   * layoutEngines), so they are deliberately omitted.
    */
   useEffect(
     function swapCurrentNetworkHook() {
@@ -362,7 +368,6 @@ const WorkSpaceEditor = (): JSX.Element => {
           } else {
             setActiveNetworkView(networkIdFromParams)
           }
-           
         })
         .catch((error) => {
           logUi.error(
@@ -373,6 +378,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           isLoadingRef.current = false
         })
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional key-driven network swap (see comment above)
     [params.networkId],
   )
 
@@ -410,9 +416,11 @@ const WorkSpaceEditor = (): JSX.Element => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: (theme) => theme.palette.background.paper,
+                      backgroundColor: (theme) =>
+                        theme.palette.background.paper,
                       color: (theme) => theme.palette.text.secondary,
-                      borderRight: (theme) => `2px solid ${theme.palette.divider}`,
+                      borderRight: (theme) =>
+                        `2px solid ${theme.palette.divider}`,
                       cursor: 'pointer',
                       '&:hover': {
                         color: (theme) => theme.palette.text.primary,
@@ -431,7 +439,8 @@ const WorkSpaceEditor = (): JSX.Element => {
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
-                    borderRight: (theme) => `4px solid ${theme.palette.divider}`,
+                    borderRight: (theme) =>
+                      `4px solid ${theme.palette.divider}`,
                   }}
                 >
                   <Box
@@ -445,9 +454,12 @@ const WorkSpaceEditor = (): JSX.Element => {
                       allotmentDimensions={allotmentDimensions}
                     />
                   </Box>
-                  <Box sx={{
-                    borderTop: (theme) => `2px solid ${theme.palette.divider}`,
-                  }}>
+                  <Box
+                    sx={{
+                      borderTop: (theme) =>
+                        `2px solid ${theme.palette.divider}`,
+                    }}
+                  >
                     <LayoutToolsBasePanel />
                   </Box>
                 </Box>
@@ -485,8 +497,8 @@ const WorkSpaceEditor = (): JSX.Element => {
                     borderTop: (theme) => `2px solid ${theme.palette.divider}`,
                     cursor: 'pointer',
                     '&:hover': {
-                        color: (theme) => theme.palette.text.primary,
-                      },
+                      color: (theme) => theme.palette.text.primary,
+                    },
                   }}
                 >
                   <ExpandLessIcon />
@@ -513,7 +525,8 @@ const WorkSpaceEditor = (): JSX.Element => {
                     setHeight={setTableBrowserHeight}
                     height={tableBrowserHeight}
                     currentNetworkId={
-                      activeNetworkView === undefined || activeNetworkView === ''
+                      activeNetworkView === undefined ||
+                      activeNetworkView === ''
                         ? currentNetworkId
                         : activeNetworkView
                     }
@@ -541,13 +554,15 @@ const WorkSpaceEditor = (): JSX.Element => {
                 title="Close panel"
                 show={panels.right === PanelState.OPEN}
               />
-              <Box sx={{
-                flexGrow: 1,
-                width: '100%',
-                minHeight: 0,
-                overflow: 'hidden',
-                backgroundColor: (theme) => theme.palette.background.paper,
-              }}>
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  width: '100%',
+                  minHeight: 0,
+                  overflow: 'hidden',
+                  backgroundColor: (theme) => theme.palette.background.paper,
+                }}
+              >
                 <SidePanel />
               </Box>
             </Box>
@@ -560,9 +575,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         title="Open panel"
         show={panels.right === PanelState.CLOSED}
       />
-      <JoinTableToNetworkForm
-        onClick={() => showTableJoinForm(false)}
-      />
+      <JoinTableToNetworkForm onClick={() => showTableJoinForm(false)} />
       <CreateNetworkFromTableForm
         onClick={() => showCreateNetworkFromTableForm(false)}
       />

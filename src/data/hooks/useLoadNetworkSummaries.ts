@@ -1,8 +1,8 @@
-import { fetchNdexSummaries } from '../external-api/ndex'
-import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../db'
 import { logDb } from '../../debug'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../db'
+import { fetchNdexSummaries } from '../external-api/ndex'
 
 /**
  * Hook that returns a function to load network summaries from cache or NDEx.

@@ -1,3 +1,5 @@
+import { describe, expect, it, vi } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { GraphObjectType } from '../../NetworkModel'
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
@@ -139,7 +141,7 @@ describe('FilterStoreImpl', () => {
   describe('setConverter', () => {
     it('should set converter function', () => {
       const state = createDefaultState()
-      const converter = jest.fn((result: any) => result)
+      const converter = vi.fn((result: any) => result)
 
       const result = setConverter(state, converter)
 
@@ -260,6 +262,9 @@ describe('FilterStoreImpl', () => {
       state = addFilterConfig(state, createTestFilterConfig('filter-1'))
       state = updateRange(state, 'filter-1', { min: 10, max: 90 })
       state = deleteFilterConfig(state, 'filter-1')
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.search).toBe(originalSearch)

@@ -1,6 +1,6 @@
 import { GraphObject } from './GraphObject'
 
 /**
- * Marker interface for nodes
+ * Marker type for nodes
  */
-export interface Node extends GraphObject {}
+export type Node = GraphObject

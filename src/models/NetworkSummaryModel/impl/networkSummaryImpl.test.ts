@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { NetworkSummary } from '../NetworkSummary'
 import {
@@ -319,6 +321,9 @@ describe('NetworkSummaryImpl', () => {
       state = update(state, 'network-1', { version: '3.0' })
       state = deleteSummary(state, 'network-1')
       state = deleteAll(state)
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.summaries).toBe(originalSummaries)

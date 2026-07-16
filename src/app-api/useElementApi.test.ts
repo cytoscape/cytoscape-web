@@ -1,63 +1,63 @@
 // src/app-api/useElementApi.test.ts
 // Trivial hook test: verifies hook returns core elementApi object.
-
 import { renderHook } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import { elementApi } from './core/elementApi'
 import { useElementApi } from './useElementApi'
 
 // Mock all stores so the core module can be imported in a test environment
-jest.mock('../data/hooks/stores/NetworkStore', () => ({
-  useNetworkStore: { getState: jest.fn(() => ({ networks: new Map() })) },
+vi.mock('../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: { getState: vi.fn(() => ({ networks: new Map() })) },
 }))
-jest.mock('../data/hooks/stores/TableStore', () => ({
-  useTableStore: { getState: jest.fn(() => ({ tables: {} })) },
+vi.mock('../data/hooks/stores/TableStore', () => ({
+  useTableStore: { getState: vi.fn(() => ({ tables: {} })) },
 }))
-jest.mock('../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       viewModels: {},
-      deleteObjects: jest.fn(),
-      addNodeView: jest.fn(),
-      addEdgeView: jest.fn(),
-      exclusiveSelect: jest.fn(),
-      getViewModel: jest.fn(),
+      deleteObjects: vi.fn(),
+      addNodeView: vi.fn(),
+      addEdgeView: vi.fn(),
+      exclusiveSelect: vi.fn(),
+      getViewModel: vi.fn(),
     })),
   },
 }))
-jest.mock('../data/hooks/stores/VisualStyleStore', () => ({
+vi.mock('../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
-    getState: jest.fn(() => ({ visualStyles: {}, deleteBypass: jest.fn() })),
+    getState: vi.fn(() => ({ visualStyles: {}, deleteBypass: vi.fn() })),
   },
 }))
-jest.mock('../data/hooks/stores/NetworkSummaryStore', () => ({
+vi.mock('../data/hooks/stores/NetworkSummaryStore', () => ({
   useNetworkSummaryStore: {
-    getState: jest.fn(() => ({ update: jest.fn() })),
+    getState: vi.fn(() => ({ update: vi.fn() })),
   },
 }))
-jest.mock('../data/hooks/stores/UndoStore', () => ({
+vi.mock('../data/hooks/stores/UndoStore', () => ({
   useUndoStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       undoRedoStacks: {},
-      setUndoStack: jest.fn(),
-      setRedoStack: jest.fn(),
+      setUndoStack: vi.fn(),
+      setRedoStack: vi.fn(),
     })),
   },
 }))
-jest.mock('../data/hooks/stores/UiStateStore', () => ({
+vi.mock('../data/hooks/stores/UiStateStore', () => ({
   useUiStateStore: {
-    getState: jest.fn(() => ({ ui: { activeNetworkView: '' } })),
+    getState: vi.fn(() => ({ ui: { activeNetworkView: '' } })),
   },
 }))
-jest.mock('../data/hooks/stores/WorkspaceStore', () => ({
+vi.mock('../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({ workspace: { currentNetworkId: '' } })),
+    getState: vi.fn(() => ({ workspace: { currentNetworkId: '' } })),
   },
 }))
-jest.mock('../models/CyNetworkModel', () => ({
-  createNodesCore: jest.fn(),
-  createEdgesCore: jest.fn(),
-  deleteNodesCore: jest.fn().mockReturnValue({
+vi.mock('../models/CyNetworkModel', () => ({
+  createNodesCore: vi.fn(),
+  createEdgesCore: vi.fn(),
+  deleteNodesCore: vi.fn().mockReturnValue({
     deletedNodeIds: [],
     deletedEdges: [],
     deletedNodeViews: [],
@@ -65,7 +65,7 @@ jest.mock('../models/CyNetworkModel', () => ({
     deletedNodeRows: new Map(),
     deletedEdgeRows: new Map(),
   }),
-  deleteEdgesCore: jest.fn().mockReturnValue({
+  deleteEdgesCore: vi.fn().mockReturnValue({
     deletedEdgeIds: [],
     deletedEdgeViews: [],
     deletedEdgeRows: new Map(),

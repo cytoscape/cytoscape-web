@@ -1,15 +1,16 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/data/hooks/stores/useAppManager.lifecycle.test.ts
 //
 // Plain Jest unit tests for the lifecycle helper functions in appLifecycle.ts.
 // These helpers are extracted from useAppManager to avoid the top-level await
 // that makes renderHook-based testing complex.
-
-import type { AppContext, AppContextApis } from '../../../app-api/types/AppContext'
+import type {
+  AppContext,
+  AppContextApis,
+} from '../../../app-api/types/AppContext'
 import type { CyApp } from '../../../models/AppModel/CyApp'
-import {
-  _resetCleanupRegistry,
-  registerAppCleanup,
-} from './AppCleanupRegistry'
+import { _resetCleanupRegistry, registerAppCleanup } from './AppCleanupRegistry'
 import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 
 // Minimal stub — tests only check that mount/unmount receive the apis object
@@ -18,9 +19,9 @@ const mockApi = {} as AppContextApis
 // Helper: build a minimal CyApp, optionally with lifecycle methods
 function makeApp(
   id: string,
-  extra?: { mount?: jest.Mock; unmount?: jest.Mock },
+  extra?: { mount?: import('vitest').Mock; unmount?: import('vitest').Mock },
 ): CyApp {
-  return { id, name: id, components: [], ...(extra ?? {}) } as CyApp
+  return { id, name: id, components: [], ...extra } as CyApp
 }
 
 // ─── mountApp ────────────────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ describe('mountApp', () => {
   })
 
   it('calls mount() with correct AppContext when app implements lifecycle', async () => {
-    const mountFn = jest.fn()
+    const mountFn = vi.fn()
     const app = makeApp('app1', { mount: mountFn })
     const ctx = { appId: 'app1', apis: mockApi } as AppContext
 
@@ -47,7 +48,11 @@ describe('mountApp', () => {
 
   it('adds plain apps without lifecycle to mountedApps immediately (backward-compatible)', async () => {
     const app = makeApp('plain')
-    await mountApp(app, { appId: 'plain', apis: mockApi } as AppContext, mountedApps)
+    await mountApp(
+      app,
+      { appId: 'plain', apis: mockApi } as AppContext,
+      mountedApps,
+    )
 
     // Apps without mount() are treated as mounted immediately
     expect(mountedApps.has('plain')).toBe(true)
@@ -55,14 +60,18 @@ describe('mountApp', () => {
 
   it('awaits async mount() before resolving', async () => {
     const order: string[] = []
-    const mountFn = jest.fn().mockImplementation(async () => {
+    const mountFn = vi.fn().mockImplementation(async () => {
       order.push('mount-start')
       await Promise.resolve()
       order.push('mount-end')
     })
     const app = makeApp('async-app', { mount: mountFn })
 
-    await mountApp(app, { appId: 'async-app', apis: mockApi } as AppContext, mountedApps)
+    await mountApp(
+      app,
+      { appId: 'async-app', apis: mockApi } as AppContext,
+      mountedApps,
+    )
     order.push('after-mountApp')
 
     expect(order).toEqual(['mount-start', 'mount-end', 'after-mountApp'])
@@ -70,14 +79,18 @@ describe('mountApp', () => {
   })
 
   it('propagates mount() errors, runs cleanupAllForApp, and does NOT record the app', async () => {
-    const cleanupSpy = jest.fn()
+    const cleanupSpy = vi.fn()
     registerAppCleanup(cleanupSpy)
 
-    const mountFn = jest.fn().mockRejectedValue(new Error('mount failed'))
+    const mountFn = vi.fn().mockRejectedValue(new Error('mount failed'))
     const app = makeApp('err-app', { mount: mountFn })
 
     await expect(
-      mountApp(app, { appId: 'err-app', apis: mockApi } as AppContext, mountedApps),
+      mountApp(
+        app,
+        { appId: 'err-app', apis: mockApi } as AppContext,
+        mountedApps,
+      ),
     ).rejects.toThrow('mount failed')
 
     expect(mountedApps.has('err-app')).toBe(false)
@@ -85,12 +98,16 @@ describe('mountApp', () => {
   })
 
   it('does not call cleanupAllForApp when mount() succeeds', async () => {
-    const cleanupSpy = jest.fn()
+    const cleanupSpy = vi.fn()
     registerAppCleanup(cleanupSpy)
 
-    const mountFn = jest.fn()
+    const mountFn = vi.fn()
     const app = makeApp('ok-app', { mount: mountFn })
-    await mountApp(app, { appId: 'ok-app', apis: mockApi } as AppContext, mountedApps)
+    await mountApp(
+      app,
+      { appId: 'ok-app', apis: mockApi } as AppContext,
+      mountedApps,
+    )
 
     expect(cleanupSpy).not.toHaveBeenCalled()
   })
@@ -109,7 +126,7 @@ describe('unmountApp', () => {
   it('calls cleanupAllForApp BEFORE unmount()', async () => {
     const order: string[] = []
     registerAppCleanup(() => order.push('cleanup'))
-    const unmountFn = jest.fn().mockImplementation(() => order.push('unmount'))
+    const unmountFn = vi.fn().mockImplementation(() => order.push('unmount'))
     const app = makeApp('order-test', { unmount: unmountFn })
     mountedApps.add('order-test')
 
@@ -119,7 +136,7 @@ describe('unmountApp', () => {
   })
 
   it('calls unmount() when app was previously mounted', async () => {
-    const unmountFn = jest.fn()
+    const unmountFn = vi.fn()
     const app = makeApp('b1', { unmount: unmountFn })
     mountedApps.add('b1')
 
@@ -130,7 +147,7 @@ describe('unmountApp', () => {
   })
 
   it('does NOT call unmount() when app was never mounted', async () => {
-    const unmountFn = jest.fn()
+    const unmountFn = vi.fn()
     const app = makeApp('never', { unmount: unmountFn })
 
     await unmountApp(app, mountedApps)
@@ -149,7 +166,7 @@ describe('unmountApp', () => {
   })
 
   it('swallows unmount() errors and still removes the app from mountedApps', async () => {
-    const unmountFn = jest.fn().mockRejectedValue(new Error('unmount failed'))
+    const unmountFn = vi.fn().mockRejectedValue(new Error('unmount failed'))
     const app = makeApp('err-app', { unmount: unmountFn })
     mountedApps.add('err-app')
 
@@ -159,7 +176,7 @@ describe('unmountApp', () => {
   })
 
   it('is idempotent — second call is a no-op', async () => {
-    const unmountFn = jest.fn()
+    const unmountFn = vi.fn()
     const app = makeApp('idem', { unmount: unmountFn })
     mountedApps.add('idem')
 
@@ -180,8 +197,8 @@ describe('unmountAllApps', () => {
   })
 
   it('calls unmount() on all mounted apps (simulates beforeunload)', async () => {
-    const unmount1 = jest.fn()
-    const unmount2 = jest.fn()
+    const unmount1 = vi.fn()
+    const unmount2 = vi.fn()
     const app1 = makeApp('c1', { unmount: unmount1 })
     const app2 = makeApp('c2', { unmount: unmount2 })
     const registry = new Map<string, CyApp>([
@@ -199,7 +216,7 @@ describe('unmountAllApps', () => {
   })
 
   it('does NOT call unmount() for apps that were never mounted', async () => {
-    const unmountFn = jest.fn()
+    const unmountFn = vi.fn()
     const app = makeApp('d1', { unmount: unmountFn })
     const registry = new Map<string, CyApp>([['d1', app]])
     // mountedApps is empty — app was never mounted
@@ -218,7 +235,7 @@ describe('unmountAllApps', () => {
   })
 
   it('is a no-op when mountedApps is empty', async () => {
-    const unmountFn = jest.fn()
+    const unmountFn = vi.fn()
     const app = makeApp('e1', { unmount: unmountFn })
     const registry = new Map<string, CyApp>([['e1', app]])
 

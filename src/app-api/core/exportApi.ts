@@ -8,9 +8,9 @@ import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
-import { IdType } from '../../models/IdType'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 import { CyNetwork } from '../../models/CyNetworkModel/CyNetwork'
+import { IdType } from '../../models/IdType'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────

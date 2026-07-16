@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { Renderer } from '../Renderer'
 import { ViewPort } from '../ViewPort'
@@ -154,6 +156,9 @@ describe('RendererImpl', () => {
       let state = add(original, createTestRenderer('renderer-1'))
       state = setViewport(state, 'renderer-1', 'network-1' as IdType, createTestViewport())
       state = deleteRenderer(state, 'renderer-1')
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.renderers).toBe(originalRenderers)

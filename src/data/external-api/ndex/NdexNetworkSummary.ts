@@ -1,7 +1,4 @@
-import {
-  NetworkProperty,
-  NetworkSummary,
-} from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { NdexNetworkProperty } from './NdexNetworkProperty'
 
 /**

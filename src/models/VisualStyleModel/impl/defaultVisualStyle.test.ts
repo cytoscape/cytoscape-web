@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
+
 import { VisualPropertyGroup } from '../VisualPropertyGroup'
-import { NodeVisualPropertyName } from '../VisualPropertyName'
-import { EdgeVisualPropertyName } from '../VisualPropertyName'
 import {
   DEFAULT_CUSTOM_GRAPHICS,
   DEFAULT_CUSTOM_GRAPHICS_POSITION,

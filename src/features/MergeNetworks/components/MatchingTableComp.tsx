@@ -1,5 +1,4 @@
 //import the necessary libraries and components
-import { PriorityHigh as PriorityHighIcon } from '@mui/icons-material'
 import {
   Paper,
   Table,
@@ -11,11 +10,10 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material'
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
-import { Column } from '../../../models/TableModel/Column'
 import {
   MergeType,
   NetworkRecord,
@@ -46,18 +44,26 @@ export const MatchingTableComp = React.memo(
     mergeOpType,
     mergeWithinNetwork,
   }: MatchingTableProps) => {
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // ones that match the current table view.
+    const nodeRows = useNodeMatchingTableStore((state) => state.rows)
+    const edgeRows = useEdgeMatchingTableStore((state) => state.rows)
+    const netRows = useNetMatchingTableStore((state) => state.rows)
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const tableData =
       tableView === TableView.node
-        ? useNodeMatchingTableStore((state) => state.rows)
+        ? nodeRows
         : tableView === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.rows)
-          : useNetMatchingTableStore((state) => state.rows)
+          ? edgeRows
+          : netRows
     const setMatchingTable =
       tableView === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : tableView === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     // Handler for 'Merged Network' changes
     const onMergedNetworkChange = (
       e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -71,26 +77,31 @@ export const MatchingTableComp = React.memo(
       (state) => state.setIsOpen,
     )
     const setMergeTooltipText = useMergeToolTipStore((state) => state.setText)
-    const name2RowId = new Map<string, number[]>()
-    const emptyRowIds = new Set<number>()
-    tableData.forEach((row) => {
-      const name = row.mergedNetwork
-      if (name.length > 0) {
-        if (name2RowId.has(row.mergedNetwork)) {
-          name2RowId.get(row.mergedNetwork)?.push(row.id)
+    // Memoized so the Sets keep a stable identity between renders and the
+    // effect below only re-runs when tableData actually changes
+    const { emptyRowIds, duplicatedNamesIds } = useMemo(() => {
+      const name2RowId = new Map<string, number[]>()
+      const emptyRowIds = new Set<number>()
+      tableData.forEach((row) => {
+        const name = row.mergedNetwork
+        if (name.length > 0) {
+          if (name2RowId.has(row.mergedNetwork)) {
+            name2RowId.get(row.mergedNetwork)?.push(row.id)
+          } else {
+            name2RowId.set(row.mergedNetwork, [row.id])
+          }
         } else {
-          name2RowId.set(row.mergedNetwork, [row.id])
+          emptyRowIds.add(row.id)
         }
-      } else {
-        emptyRowIds.add(row.id)
-      }
-    })
-    //get rows that have duplicated name
-    const duplicatedNamesIds = new Set(
-      Array.from(name2RowId.values())
-        .filter((ids) => ids.length > 1)
-        .reduce((acc, val) => acc.concat(val), []),
-    )
+      })
+      //get rows that have duplicated name
+      const duplicatedNamesIds = new Set(
+        Array.from(name2RowId.values())
+          .filter((ids) => ids.length > 1)
+          .reduce((acc, val) => acc.concat(val), []),
+      )
+      return { emptyRowIds, duplicatedNamesIds }
+    }, [tableData])
 
     useEffect(() => {
       if (netLst.length > 0) {
@@ -148,7 +159,17 @@ export const MatchingTableComp = React.memo(
         setMergeTooltipIsOpen(true)
         setMergeTooltipText('Please select networks to merge')
       }
-    }, [duplicatedNamesIds, emptyRowIds, netLst, mergeOpType])
+    }, [
+      duplicatedNamesIds,
+      emptyRowIds,
+      netLst,
+      mergeOpType,
+      setMergeTooltipText,
+      setMergeTooltipIsOpen,
+      mergeWithinNetwork,
+      tableData.length,
+      tableView,
+    ])
 
     const getTooltipMessage = (
       row: MatchingTableRow,
@@ -159,7 +180,7 @@ export const MatchingTableComp = React.memo(
       if (row.hasConflicts) {
         const conflictDescription: string[] = []
         const typeSet = new Set<ValueTypeName | 'None'>()
-        for (const [_, netId] of netLst) {
+        for (const [, netId] of netLst) {
           if (
             row.nameRecord[netId] !== 'None' &&
             row.typeRecord[netId] !== undefined &&
@@ -297,3 +318,5 @@ export const MatchingTableComp = React.memo(
     )
   },
 )
+
+MatchingTableComp.displayName = 'MatchingTableComp'

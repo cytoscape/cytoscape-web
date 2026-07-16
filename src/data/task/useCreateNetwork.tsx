@@ -7,11 +7,6 @@
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
-import { useNetworkStore } from '../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { useTableStore } from '../hooks/stores/TableStore'
-import { useViewModelStore } from '../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { IdType } from '../../models'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import NetworkFn, {
@@ -38,6 +33,11 @@ import VisualStyleFn, {
   VisualPropertyName,
   VisualStyle,
 } from '../../models/VisualStyleModel'
+import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../hooks/stores/TableStore'
+import { useViewModelStore } from '../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 
 const toNode = (id: IdType): Node => {
   return {
@@ -235,7 +235,14 @@ export const useCreateNetwork = (): (({
 
       return cyNetwork
     },
-    [],
+    [
+      addNetwork,
+      addVisualStyle,
+      addTable,
+      addViewModel,
+      addSummary,
+      createPassthroughMapping,
+    ],
   )
 
   return createNetwork

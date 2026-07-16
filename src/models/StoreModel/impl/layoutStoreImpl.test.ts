@@ -1,7 +1,9 @@
+import { describe, expect, it, vi } from 'vitest'
+
 import { LayoutState, setIsRunning, setLayoutOption, setPreferredLayout } from './layoutStoreImpl'
 
 // Mock the layout selection module
-jest.mock('../../LayoutModel/impl/layoutSelection', () => {
+vi.mock('../../LayoutModel/impl/layoutSelection', () => {
   const mockGridAlgorithm = {
     name: 'grid',
     engineName: 'cyjs',
@@ -44,7 +46,7 @@ jest.mock('../../LayoutModel/impl/layoutSelection', () => {
       description: 'Default hierarchical layout',
       parameters: {},
     },
-    getLayout: jest.fn((engineName: string, algorithmName: string) => {
+    getLayout: vi.fn((engineName: string, algorithmName: string) => {
       if (engineName === 'cyjs' && algorithmName === 'grid') {
         return mockGridAlgorithm
       }
@@ -53,8 +55,9 @@ jest.mock('../../LayoutModel/impl/layoutSelection', () => {
   }
 })
 
+import { defAlgorithm, defHierarchicalAlgorithm, LayoutEngines } from '../../LayoutModel/impl/layoutSelection'
+
 const createDefaultState = (): LayoutState => {
-  const { defAlgorithm, defHierarchicalAlgorithm, LayoutEngines } = require('../../LayoutModel/impl/layoutSelection')
   return {
     layoutEngines: LayoutEngines,
     preferredLayout: defAlgorithm,
@@ -134,6 +137,9 @@ describe('LayoutStoreImpl', () => {
       let state = setPreferredLayout(original, 'cyjs', 'grid')
       state = setIsRunning(state, true)
       state = setLayoutOption(state, 'cyjs', 'grid', 'spacing', 100)
+
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.layoutEngines).toBe(originalLayoutEngines)

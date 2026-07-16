@@ -6,7 +6,7 @@ export function StringInput(props: {
   onValueChange: (value: string) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
 
   const [localValue, setLocalValue] = React.useState(currentValue ?? '')
 

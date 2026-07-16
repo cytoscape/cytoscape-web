@@ -23,7 +23,6 @@ export const NetworkTabs = ({
   isActive,
   bgColor,
   handleClick,
-  setIsActive,
 }: NetworkTabsProps) => {
   const selected = useUiStateStore(
     (state) => state.ui.networkViewUi.activeTabIndex,

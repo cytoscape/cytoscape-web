@@ -1,1 +1,1 @@
-export { OpaqueAspects } from './OpaqueAspects'
+export type { OpaqueAspects } from './OpaqueAspects'

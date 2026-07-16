@@ -1,10 +1,12 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { getNdexClient } from './client'
 import { fetchGeneNamesFromIds, fetchNdexInterconnectQuery } from './query'
 
 // Mock the NDEx client module
-jest.mock('./client', () => ({
-  getNdexClient: jest.fn(),
+vi.mock('./client', () => ({
+  getNdexClient: vi.fn(),
 }))
 
 // Helper function shared across tests
@@ -14,12 +16,12 @@ const createMockCx2Network = (): Cx2 => {
 }
 
 describe('fetchNdexInterconnectQuery', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should execute an interconnect query with parameters', async () => {
@@ -30,7 +32,7 @@ describe('fetchNdexInterconnectQuery', () => {
 
     const mockClient = {
       networks: {
-        interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -60,7 +62,7 @@ describe('fetchNdexInterconnectQuery', () => {
 
     const mockClient = {
       networks: {
-        interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -89,7 +91,7 @@ describe('fetchNdexInterconnectQuery', () => {
 
     const mockClient = {
       networks: {
-        interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -113,7 +115,7 @@ describe('fetchNdexInterconnectQuery', () => {
 
     const mockClient = {
       networks: {
-        interConnectQuery: jest.fn().mockRejectedValue(mockError),
+        interConnectQuery: vi.fn().mockRejectedValue(mockError),
       },
     }
 
@@ -129,12 +131,12 @@ describe('fetchNdexInterconnectQuery', () => {
 })
 
 describe('fetchGeneNamesFromIds', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch gene names from member IDs', async () => {
@@ -149,8 +151,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest
-          .fn()
+        getAttributesOfSelectedNodes: vi.fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -183,8 +184,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest
-          .fn()
+        getAttributesOfSelectedNodes: vi.fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -210,8 +210,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest
-          .fn()
+        getAttributesOfSelectedNodes: vi.fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -238,8 +237,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest
-          .fn()
+        getAttributesOfSelectedNodes: vi.fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -262,8 +260,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest
-          .fn()
+        getAttributesOfSelectedNodes: vi.fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -283,7 +280,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest.fn().mockRejectedValue(mockError),
+        getAttributesOfSelectedNodes: vi.fn().mockRejectedValue(mockError),
       },
     }
 
@@ -308,7 +305,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
       },
     }
 
@@ -338,8 +335,7 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: jest
-          .fn()
+        getAttributesOfSelectedNodes: vi.fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }

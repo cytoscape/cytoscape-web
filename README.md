@@ -39,7 +39,74 @@ Cytoscape Web is designed to expand with two types of **Apps**. We are actively 
 
 # Developer's Guide
 
-(TBA)
+## Architecture
+
+Cytoscape Web is a React single-page app built on a strict **three-layer separation** —
+pure **Models**, **Stores** that wrap them, and **Features** (React components) that consume
+stores through hooks. State is persisted to the browser's IndexedDB, and the app talks to
+external systems (NDEx, Cytoscape Desktop, and federated Apps) through dedicated API clients
+and Module Federation.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 620, "curve": "basis"}}}%%
+flowchart TB
+    User(["User / Browser"])
+
+    subgraph app["Cytoscape Web · React single-page app"]
+      direction TB
+      Features["<b>Features</b> — React components · src/features<br/>AppShell · NetworkPanel / CyjsRenderer · Vizmapper · TableBrowser<br/>Workspace · HierarchyViewer · MergeNetworks · ServiceApps · …"]
+      Hooks["<b>Integration Hooks</b> · src/data/hooks<br/>load / save · create / delete workflows · Task hooks (Module Federation)"]
+      Stores["<b>Stores</b> — Zustand + Immer · src/data/hooks/stores<br/>Network · Table · VisualStyle · ViewModel · Workspace · Ui · Layout · Filter · Undo · …"]
+      Models["<b>Models</b> — pure TypeScript · src/models<br/>Network · Table · VisualStyle · Cx (CX2) · View · Workspace · Layout · Filter · …"]
+      subgraph datalayer["Data layer · src/data"]
+        direction LR
+        DB[("IndexedDB · Dexie<br/>serialization · migrations")]
+        ExtApi["External API clients<br/>ndex · cytoscape · error-report"]
+      end
+    end
+
+    subgraph ext["External Systems"]
+      direction TB
+      NDEx[("NDEx<br/>Network Data Exchange")]
+      CyDesktop["Cytoscape Desktop"]
+      FedApps["Service / Federated Apps"]
+    end
+
+    User --> Features
+    Features -->|store & workflow hooks| Hooks
+    Hooks --> Stores
+    Stores -->|wrap pure fns| Models
+    Stores <-.->|persist| DB
+    Hooks --> ExtApi
+    ExtApi <-->|CX2 REST| NDEx
+    ExtApi -->|open network| CyDesktop
+    Hooks -->|Module Federation| FedApps
+
+    classDef featCls fill:#e8f6e8,stroke:#4a9a4a,color:#123
+    classDef hookCls fill:#fff2d9,stroke:#c79a3a,color:#123
+    classDef storeCls fill:#e6f0fb,stroke:#3a78c7,color:#123
+    classDef modelCls fill:#f3e8fb,stroke:#8a4ac7,color:#123
+    classDef dataCls fill:#fde8ec,stroke:#c73a6a,color:#123
+    classDef extCls fill:#eeeef7,stroke:#7a7ab0,color:#123
+
+    class Features featCls
+    class Hooks hookCls
+    class Stores storeCls
+    class Models modelCls
+    class DB,ExtApi dataCls
+    class NDEx,CyDesktop,FedApps extCls
+    style app fill:#fcfcfd,stroke:#c0c0cc
+    style datalayer fill:#ffffff,stroke:#d8a0b0
+    style ext fill:#fcfcfd,stroke:#c0c0cc
+```
+
+**Layering rules** (enforced by convention):
+
+- **Models** (`src/models/`) are pure TypeScript — no React, no Zustand. Each domain exports a `<Domain>Fn` object of pure functions.
+- **Stores** (`src/data/hooks/stores/`) are Zustand + Immer stores that wrap model operations and must not import React components. Persisted stores auto-save to IndexedDB.
+- **Features** (`src/features/`) are functional React components that consume stores via hooks — either store hooks directly or the composed workflow hooks in `src/data/hooks/`.
+
+See [`AGENTS.md`](./AGENTS.md) and the specs under [`docs/specifications/`](./docs/specifications/) for the full architecture reference.
 
 ## Quick Start
 
@@ -81,9 +148,9 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 
 - `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to [NDEx dev server] (https://dev.ndexbio.org), please create an account on the NDEx dev server with a email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
 - `build`: build the app for production
-- `lint`: lint code according to the eslint config
-- `format`: format source code according to eslint and prettier configs
-- `test:unit`: run Jest unit tests
+- `lint`: type-check with TypeScript and lint source code with oxlint
+- `format`: format source code with Prettier
+- `test:unit`: run Vitest unit tests
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
 
 #### Installing Playwright browsers
@@ -115,51 +182,9 @@ npm run test:e2e -- --project=chromium --project=webkit
 
 Available project names are `chromium`, `firefox`, and `webkit` (matching `playwright.config.ts`).
 
-### Windows-Specific Setup Instructions
+### Windows
 
-For Windows users, environment variables need to be set differently. Follow these steps to run the development server.
-
-1.  **Modify `package.json` scripts**
-    Update the `dev` and `buid` scripts in `package.json` like this
-
-    ```
-     "build": "set \"REACT_APP_GIT_COMMIT=%COMMIT_HASH%\" && set \"REACT_APP_BUILD_TIMESTAMP=%BUILD_TIMESTAMP%\" && webpack --mode production",
-     "dev": "set \"REACT_APP_GIT_COMMIT=%COMMIT_HASH%\" && set \"REACT_APP_BUILD_TIMESTAMP=%BUILD_TIMESTAMP%\" && webpack serve --open --mode development",
-    ```
-
-2.  **Manually set environment variables in the terminal**
-
-    Run the Git commands manually to get your commit hash, these values will be used in `.env` file:
-
-    ```bash
-      git rev-parse HEAD
-    ```
-
-    ```bash
-      git show -s --format=%cI HEAD
-    ```
-
-    Copy the output of the commands and update in `.env` file as follow :
-
-    ```env
-      REACT_APP_GIT_COMMIT=<your_commit_hash>
-      REACT_APP_BUILD_TIMESTAMP=<your_build_timestamp>
-    ```
-
-    For example, if your Git commit hash is `abc1234` and the timestamp is `2024-10-24T10:00:00`, your `.env` would look like this:
-
-    ```env
-      REACT_APP_GIT_COMMIT=abc1234
-      REACT_APP_BUILD_TIMESTAMP=2024-10-24T10:00:00
-    ```
-
-3.  **Start the development server**
-
-    After setting the environment variables, run:
-
-    ```
-     npm dev
-    ```
+No Windows-specific setup is required. Build metadata (git commit, timestamps) is computed automatically inside `vite.config.ts`, and scripts that set environment variables use `cross-env`, so `npm run dev`, `npm run build`, and the test commands work the same on Windows, macOS, and Linux.
 
 ## Deploy on Netlify
 

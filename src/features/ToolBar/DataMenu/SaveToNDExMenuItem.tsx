@@ -40,11 +40,11 @@ import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorSt
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
-  const [showHcxValidationDialog, setShowHcxValidationDialog] = useState<boolean>(false)
+  const [showHcxValidationDialog, setShowHcxValidationDialog] =
+    useState<boolean>(false)
   const [editPermission, setEditPermission] = useState<boolean>(false)
   const [tooltipText, setTooltipText] = useState<string>('')
   const currentNetworkId = useWorkspaceStore(
@@ -78,10 +78,6 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
     useWorkspaceStore(
       (state) => state.workspace.networkModified[currentNetworkId],
     ) ?? false
-
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
 
   const setNetworkModified = useWorkspaceStore(
     (state) => state.setNetworkModified,
@@ -199,8 +195,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
       logUi.error(`[${saveCopyToNDEx.name}]: Error saving copy to NDEx`, e)
-      if (e.message.includes(TimeOutErrorIndicator)) {
+      if (message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorMessage,
           duration: 4000,
@@ -208,9 +205,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         })
       } else {
         addMessage({
-          message: `Error: Could not save a copy of the current network to NDEx. ${
-            e.message as string
-          }`,
+          message: `Error: Could not save a copy of the current network to NDEx. ${message}`,
           duration: 4000,
           severity: MessageSeverity.ERROR,
         })
@@ -257,11 +252,12 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         await overwriteNDExNetwork(accessToken)
       }
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
       logUi.error(
         `[${handleSaveCurrentNetworkToNDEx.name}]: Error saving current network to NDEx`,
         e,
       )
-      if (e.message.includes(TimeOutErrorIndicator)) {
+      if (message.includes(TimeOutErrorIndicator)) {
         addMessage({
           message: TimeOutErrorIndicator,
           duration: 4000,
@@ -269,9 +265,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         })
       } else {
         addMessage({
-          message: `Error: Could not overwrite the current network to NDEx. ${
-            e.message as string
-          }`,
+          message: `Error: Could not overwrite the current network to NDEx. ${message}`,
           duration: 4000,
           severity: MessageSeverity.ERROR,
         })
@@ -335,17 +329,17 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         disabled={!enabled}
         onClick={handleClick}
       />
-    {enabled && (
-      <>
-        {dialog}
-        <HcxValidationSaveDialog
-          open={showHcxValidationDialog}
-          onClose={() => setShowHcxValidationDialog(false)}
-          onSubmit={() => handleSaveCurrentNetworkToNDEx()}
-          validationResult={validationResults?.[currentNetworkId]}
-        />
-      </>
-    )}
+      {enabled && (
+        <>
+          {dialog}
+          <HcxValidationSaveDialog
+            open={showHcxValidationDialog}
+            onClose={() => setShowHcxValidationDialog(false)}
+            onSubmit={() => handleSaveCurrentNetworkToNDEx()}
+            validationResult={validationResults?.[currentNetworkId]}
+          />
+        </>
+      )}
     </>
   )
 }

@@ -1,10 +1,11 @@
-import * as React from 'react'
-import { Box, Typography } from '@mui/material'
-import PieChartIcon from '@mui/icons-material/PieChart'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
+import PieChartIcon from '@mui/icons-material/PieChart'
 import SettingsIcon from '@mui/icons-material/Settings'
 import VisibilityIcon from '@mui/icons-material/Visibility'
+import { Box, Typography } from '@mui/material'
+import * as React from 'react'
+
 import { COLORS } from '../utils/constants'
 
 export enum WizardStep {

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { detectBestDelimiter } from '../model/impl/DelimiterUtils'
 
 describe('detectBestDelimiter utility', () => {

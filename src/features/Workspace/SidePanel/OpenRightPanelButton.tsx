@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
-import { Box, Button, IconButton, Tooltip } from '@mui/material'
+import { Box, IconButton, Tooltip } from '@mui/material'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { Panel } from '../../../models/UiModel/Panel'
@@ -59,7 +59,7 @@ export const OpenRightPanelButton = ({
           >
             <ChevronLeft />
           </IconButton>
-          </Box>
+        </Box>
       ) : (
         // Button for closing the panel
         <IconButton

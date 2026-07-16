@@ -20,19 +20,26 @@ export const TypeDropDownTemplate = React.memo(
   ({ type, rowData, rowIndex, netLst }: typeDropDownTemplateProps) => {
     const typeLst: Set<ValueTypeName | 'None'> = new Set(
       netLst
-        .filter((pair) => rowData.typeRecord.hasOwnProperty(pair[1]))
+        .filter((pair) =>
+          Object.prototype.hasOwnProperty.call(rowData.typeRecord, pair[1]),
+        )
         .map((pair) => rowData.typeRecord[pair[1]]),
     )
     const typeOptions = getAllConvertiableTypes(typeLst).map((type) => ({
       label: type,
       value: type,
     }))
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // one that matches the current table view.
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const setMatchingTable =
       type === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : type === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     const onDropDownChange = (
       e: SelectChangeEvent<any>,
       rowData: MatchingTableRow,
@@ -63,3 +70,5 @@ export const TypeDropDownTemplate = React.memo(
     )
   },
 )
+
+TypeDropDownTemplate.displayName = 'TypeDropDownTemplate'

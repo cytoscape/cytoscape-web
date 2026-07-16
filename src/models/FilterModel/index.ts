@@ -1,6 +1,6 @@
 export { DisplayMode } from './DisplayMode'
-export { Filter } from './Filter'
-export { FilterConfig } from './FilterConfig'
+export type { Filter } from './Filter'
+export type { FilterConfig } from './FilterConfig'
 export { FilterWidgetType } from './FilterWidgetType'
 export { getBasicFilter } from './impl/simpleFilter'
 export { SelectionType } from './SelectionType'

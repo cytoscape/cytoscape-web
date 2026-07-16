@@ -11,13 +11,17 @@ export interface KeycloakConfig {
   clientId: string
 }
 
+export interface DebugOptions {
+  disableAutoReload?: boolean
+}
+
 /**
  * Application-wide configuration
  * Loaded from assets/config.json and provided via React context
  */
 export interface AppConfig {
   ndexBaseUrl: string
-  options?: {}
+  options?: Record<string, unknown>
   defaultServices: string[]
   keycloakConfig: KeycloakConfig
   maxNetworkElementsThreshold: number
@@ -28,9 +32,12 @@ export interface AppConfig {
   openAIAPIKey: string
   googleAnalyticsId: string
   undoStackSize: number
-  debug: boolean
+  debugOptions?: DebugOptions
   errorReportEndpoint: string
   maxErrorReportSnapshotSizeMB: number
+  // Origins from which external apps may be installed (App Store CDN, etc.).
+  // localhost origins are additionally allowed when the host itself runs on localhost.
+  appInstallAllowedOrigins: string[]
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -66,9 +73,12 @@ export const defaultAppConfig: AppConfig = {
   openAIAPIKey: '',
   googleAnalyticsId: '',
   undoStackSize: 20,
-  debug: true,
+  debugOptions: {
+    disableAutoReload: false,
+  },
   errorReportEndpoint: '',
   maxErrorReportSnapshotSizeMB: 10,
+  appInstallAllowedOrigins: ['https://apps.cytoscape.org'],
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

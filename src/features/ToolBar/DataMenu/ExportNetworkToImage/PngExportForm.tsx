@@ -10,7 +10,7 @@ import {
   Slider,
   Typography,
 } from '@mui/material'
-//@ts-expect-error
+//@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 
@@ -72,6 +72,9 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       ((widthFunction?.() / dpi) * MAX_ZOOM).toFixed(2),
     )
 
+    // One-shot init of the size fields when the renderer functions become
+    // available. zoom/dpi are the init defaults here; adding them as deps
+    // would re-run this and overwrite the values the change handlers just set.
     useEffect(() => {
       if (widthFunction && heightFunction) {
         setCustomWidth(Math.round(widthFunction() * zoom))
@@ -79,6 +82,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
         setWidthInches(parseFloat((widthFunction() / dpi).toFixed(2)))
         setHeightInches(parseFloat((heightFunction() / dpi).toFixed(2)))
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- init keyed on renderer-function availability only
     }, [widthFunction, heightFunction])
 
     useImperativeHandle(ref, () => ({
@@ -110,7 +114,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       )
     }
 
-    const handleWidthChange = (e: number) => {
+    const handleWidthChange = (value: string | number) => {
+      const e = Number(value)
       const newWidth = Math.round(Math.max(0, Math.min(e, maxWidth)))
       const newZoom = newWidth / (widthFunction?.() ?? 1)
       const newHeight = Math.round((heightFunction?.() ?? 0) * newZoom)
@@ -122,7 +127,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setHeightInches(parseFloat((newHeight / dpi).toFixed(2)))
     }
 
-    const handleHeightChange = (e: number) => {
+    const handleHeightChange = (value: string | number) => {
+      const e = Number(value)
       const newHeight = Math.round(Math.max(0, Math.min(e, maxHeight)))
       const newZoom = newHeight / (heightFunction?.() ?? 1)
       const newWidth = Math.round((widthFunction?.() ?? 0) * newZoom)
@@ -163,7 +169,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setDpi(newDpi)
     }
 
-    const handleWidthInchesChange = (e: number) => {
+    const handleWidthInchesChange = (value: string | number) => {
+      const e = Number(value)
       const newWidthInches = parseFloat(
         Math.max(0, Math.min(e, maxWidthInches)).toFixed(2),
       )
@@ -178,7 +185,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setHeightInches(parseFloat((newHeight / dpi).toFixed(2)))
     }
 
-    const handleHeightInchesChange = (e: number) => {
+    const handleHeightInchesChange = (value: string | number) => {
+      const e = Number(value)
       const newHeightInches = parseFloat(
         Math.max(0, Math.min(e, maxHeightInches)).toFixed(2),
       )
@@ -351,5 +359,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+PngExportForm.displayName = 'PngExportForm'
 
 export default PngExportForm

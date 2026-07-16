@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../TableModel'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'

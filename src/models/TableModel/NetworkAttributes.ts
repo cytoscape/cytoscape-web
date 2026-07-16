@@ -1,5 +1,6 @@
-import { IdType } from '../IdType'
-import { AttributeName, ValueType } from '.'
+import type { IdType } from '../IdType'
+import type { AttributeName } from './AttributeName'
+import type { ValueType } from './ValueType'
 
 /**
  * Network attributes stored as a Record

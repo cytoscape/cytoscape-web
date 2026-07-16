@@ -8,7 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-//@ts-expect-error
+//@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useImperativeHandle, useState } from 'react'
 
@@ -199,5 +199,7 @@ const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+PdfExportForm.displayName = 'PdfExportForm'
 
 export default PdfExportForm

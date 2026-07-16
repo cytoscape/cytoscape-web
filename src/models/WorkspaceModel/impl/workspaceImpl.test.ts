@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { Workspace } from '../Workspace'
 import {
@@ -9,9 +11,9 @@ import {
   deleteCurrentNetwork,
   deleteNetwork,
   deleteNetworkModifiedStatus,
-  setIsRemote,
-  setId,
   setCurrentNetworkId,
+  setId,
+  setIsRemote,
   setName,
   setNetworkModified,
 } from './workspaceImpl'
@@ -511,6 +513,9 @@ describe('WorkspaceImpl', () => {
       workspace = addNetworkIds(workspace, ['network-1', 'network-2'])
       workspace = setCurrentNetworkId(workspace, 'network-1')
       workspace = setNetworkModified(workspace, 'network-1', true)
+
+      // The chained operations produce a new workspace object
+      expect(workspace).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.id).toBe(originalId)

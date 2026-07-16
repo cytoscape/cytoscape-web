@@ -625,15 +625,21 @@ Sets a per-element override. `elementIds` must be non-empty.
 
 Removes per-element overrides.
 
-#### `createDiscreteMapping(networkId, vpName, attribute, attributeType): ApiResult`
+#### `createDiscreteMapping(networkId, vpName, attribute, attributeType, mapping?): ApiResult`
 
 Creates a discrete (lookup-table) mapping for `vpName` based on the specified
-node/edge attribute.
+node/edge attribute. `mapping` is an optional `Record<string, VisualPropertyValueType>`
+of attribute-value keys (stringified; parsed back to `integer`/`long`/`double` per
+`attributeType`) to visual property values.
 
-#### `createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType): ApiResult`
+#### `createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType, controlPoints?, ltMinVpValue?, gtMaxVpValue?): ApiResult`
 
 Creates a continuous (interpolated) mapping. `attributeValues` defines the
-control point values on the data axis.
+control point values on the data axis. By default, `min`/`max`/`controlPoints`/
+`ltMinVpValue`/`gtMaxVpValue` are computed automatically from `attributeValues`
+and `vpType`. Pass `controlPoints` to override the interpolation points (`min`/
+`max` are derived from the first/last entries); pass `ltMinVpValue`/`gtMaxVpValue`
+to override the values used below/above the range.
 
 #### `createPassthroughMapping(networkId, vpName, attribute, attributeType): ApiResult`
 

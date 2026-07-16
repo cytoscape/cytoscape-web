@@ -8,9 +8,10 @@ import {
   getWorkspaceFromDb,
   putTimestampToDb,
 } from '../data/db'
+import { useDebugEnabled } from '../data/hooks/useDebugEnabled'
+import { useAppStore } from '../data/hooks/stores/AppStore'
 import { logUi } from '../debug'
 import { ServiceStatus } from '../models/AppModel/ServiceStatus'
-import { useAppStore } from '../data/hooks/stores/AppStore'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
@@ -21,9 +22,14 @@ export const SyncTabsAction = (): ReactElement => {
   const workspaceId = params.workspaceId ?? ''
   const networkId = params.networkId ?? ''
   const [localTimestamp, setLocalTimestamp] = useState(0)
+  const debug = useDebugEnabled()
 
   useEffect(() => {
     const onVisibilityChange = (): void => {
+      if (debug) {
+        return
+      }
+
       if (document.hidden) {
         setLocalTimestamp(Date.now())
       } else {
@@ -59,7 +65,7 @@ export const SyncTabsAction = (): ReactElement => {
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [workspaceId, networkId])
+  }, [workspaceId, networkId, localTimestamp, debug])
 
   const initDbListener = async (): Promise<void> => {
     const db = await getDb()

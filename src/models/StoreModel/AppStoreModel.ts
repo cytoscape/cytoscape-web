@@ -2,6 +2,7 @@ import { AppCatalogEntry } from '../AppModel/AppCatalogEntry'
 import { AppLoadState } from '../AppModel/AppLoadState'
 import { AppStatus } from '../AppModel/AppStatus'
 import { CyApp } from '../AppModel/CyApp'
+import { AppSource } from '../AppModel/InstalledApp'
 import { ManifestSource } from '../AppModel/ManifestSource'
 import { ServiceApp } from '../AppModel/ServiceApp'
 import { ServiceAppTask } from '../AppModel/ServiceAppTask'
@@ -15,8 +16,12 @@ export interface AppState {
   // Status of the remote task
   currentTask?: ServiceAppTask
 
-  // Manifest-derived app catalog (re-fetched each session, not persisted)
+  // Merged app catalog (manifest ∪ workspace.installedApps), session-local
   catalog: Record<string, AppCatalogEntry>
+
+  // Provenance of each merged catalog entry (manifest | appstore | snapshot),
+  // session-local; consumed by the App Manager UI to decide removability
+  catalogSources: Record<string, AppSource>
 
   // Per-app runtime load state (session-local, not persisted)
   loadStates: Record<string, AppLoadState>
@@ -27,11 +32,10 @@ export interface AppState {
 
 export interface AppAction {
   /**
-   * Try to restore app states from IndexedDB
-   *
-   * @returns
+   * Seed the session apps map with the given records (built by the caller from
+   * workspace.installedApps, §8.4) and restore service apps from IndexedDB.
    */
-  restore: (appIds: string[]) => Promise<void>
+  restore: (apps: CyApp[]) => Promise<void>
 
   /**
    * Add an app from the external module
@@ -102,9 +106,13 @@ export interface AppAction {
   updateInputColumn: (url: string, name: string, columnName: string) => void
 
   /**
-   * Replace the entire catalog with new entries from the manifest
+   * Replace the entire catalog with new entries plus their provenance.
+   * When `sources` is omitted, every entry defaults to `'manifest'`.
    */
-  setCatalog: (entries: AppCatalogEntry[]) => void
+  setCatalog: (
+    entries: AppCatalogEntry[],
+    sources?: Record<string, AppSource>,
+  ) => void
 
   /**
    * Set the runtime load state for a specific app

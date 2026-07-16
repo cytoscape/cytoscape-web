@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../../models/TableModel'
 import { ColumnAssignmentType } from '../model/ColumnAssignmentType'
 import { validValueTypes } from '../model/impl/CreateNetworkFromTable'

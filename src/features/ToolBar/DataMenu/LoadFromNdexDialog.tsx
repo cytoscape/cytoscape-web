@@ -34,9 +34,11 @@ import { ReactElement, useContext, useEffect, useMemo, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
+  enrichShortcutsWithTargetSummaries,
   fetchFolderContents,
   fetchFolderInfo,
   fetchNdexSummaries,
+  getNetworkIdForFileItem,
   searchNdexFiles,
 } from '../../../data/external-api/ndex'
 import { NdexFileItem } from '../../../data/external-api/ndex/files'
@@ -77,8 +79,7 @@ const splitByType = (
   for (const item of items) {
     if (
       item.type === 'FOLDER' ||
-      (item.type === 'SHORTCUT' &&
-        item.attributes?.target_type === 'FOLDER')
+      (item.type === 'SHORTCUT' && item.attributes?.target_type === 'FOLDER')
     ) {
       folders.push(item)
     } else {
@@ -104,7 +105,7 @@ const ownerCellSx = {
 const visibilityCellSx = {
   maxWidth: 50,
   textAlign: 'center',
-  color: 'inherit'
+  color: 'inherit',
 } as const
 const visibilityTextSx = {
   color: 'inherit',
@@ -185,7 +186,7 @@ const FolderBreadcrumbs = (props: {
     >
       {path.map((item, index) => {
         const isLast = index === path.length - 1
-        
+
         let icon: ReactElement | null = null
         if (index === 0) {
           if (item.name.includes('My Drive')) {
@@ -198,7 +199,7 @@ const FolderBreadcrumbs = (props: {
             icon = <Search fontSize="small" />
           }
         }
-        
+
         const content = (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {icon}
@@ -294,15 +295,12 @@ const FolderSection = (props: {
             cursor: 'pointer',
           }}
           hover
-          onClick={() => onFolderClick(folder.uuid)}
+          onClick={() => onFolderClick(getNetworkIdForFileItem(folder))}
         >
           <TableCell padding="checkbox" />
           <TableCell sx={{ maxWidth: 400, ...cellSx }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FolderIcon
-                fontSize="small"
-                sx={{ color: 'primary.light' }}
-              />
+              <FolderIcon fontSize="small" sx={{ color: 'primary.light' }} />
               {folder.name}
             </Box>
           </TableCell>
@@ -310,7 +308,10 @@ const FolderSection = (props: {
             {folder.owner ?? ''}
           </TableCell>
           <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 'bold' }}>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', fontWeight: 'bold' }}
+            >
               {folder.visibility}
             </Typography>
           </TableCell>
@@ -370,9 +371,7 @@ export const LoadFromNdexDialog = (
     activeTab === 'private' ? 'Private Networks' : 'Latest Networks'
 
   // Folder navigation state
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(
-    null,
-  )
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbItem[]>([
     { name: rootName, id: null },
   ])
@@ -449,8 +448,7 @@ export const LoadFromNdexDialog = (
           {} as Record<IdType, NetworkSummary>,
         ),
       )
-      const nextCurrentNetworkId: IdType | undefined =
-        summaries[0]?.externalId
+      const nextCurrentNetworkId: IdType | undefined = summaries[0]?.externalId
 
       if (nextCurrentNetworkId !== undefined) {
         setCurrentNetworkId(nextCurrentNetworkId)
@@ -465,11 +463,9 @@ export const LoadFromNdexDialog = (
       setSuccessMessage(`${summaries.length} network(s) loaded`)
       setSelectedNetworks([])
     } catch (e) {
-      setErrorMessage(e.message)
+      setErrorMessage(e instanceof Error ? e.message : String(e))
     }
   }
-
-
 
   // Navigate into a folder
   const navigateToFolder = async (folderId: string): Promise<void> => {
@@ -481,14 +477,16 @@ export const LoadFromNdexDialog = (
         fetchFolderContents(folderId, token, ndexBaseUrl),
         fetchFolderInfo(folderId, token, ndexBaseUrl),
       ])
-      setFolderContents(items)
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        items,
+        token,
+        ndexBaseUrl,
+      )
+      setFolderContents(enriched)
       setCurrentFolderId(folderId)
 
       // Build breadcrumb — add to current path
-      setBreadcrumbPath((prev) => [
-        ...prev,
-        { name: info.name, id: folderId },
-      ])
+      setBreadcrumbPath((prev) => [...prev, { name: info.name, id: folderId }])
     } catch (err: any) {
       logUi.error('Failed to navigate to folder', err)
       setErrorMessage(err.message)
@@ -511,12 +509,13 @@ export const LoadFromNdexDialog = (
     setErrorMessage(undefined)
     try {
       const token = await getToken()
-      const items = await fetchFolderContents(
-        folderId,
+      const items = await fetchFolderContents(folderId, token, ndexBaseUrl)
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        items,
         token,
         ndexBaseUrl,
       )
-      setFolderContents(items)
+      setFolderContents(enriched)
       setCurrentFolderId(folderId)
 
       // Trim breadcrumb path to the clicked item
@@ -544,9 +543,7 @@ export const LoadFromNdexDialog = (
 
     setBreadcrumbPath([
       {
-        name: trimmedQuery
-          ? `Search: "${trimmedQuery}"`
-          : tabRootName,
+        name: trimmedQuery ? `Search: "${trimmedQuery}"` : tabRootName,
         id: null,
       },
     ])
@@ -555,8 +552,7 @@ export const LoadFromNdexDialog = (
     try {
       const token = authenticated ? await getToken() : undefined
       const userName = client?.tokenParsed?.preferred_username
-      const ownerFilter =
-        onlyMine && authenticated ? userName : undefined
+      const ownerFilter = onlyMine && authenticated ? userName : undefined
 
       // Fire search requests in parallel
       const promises: Promise<any>[] = []
@@ -571,8 +567,13 @@ export const LoadFromNdexDialog = (
           0,
           500,
           ndexBaseUrl,
-        ).then((result) => {
-          setPublicResults(result.files)
+        ).then(async (result) => {
+          const enriched = await enrichShortcutsWithTargetSummaries(
+            result.files,
+            token,
+            ndexBaseUrl,
+          )
+          setPublicResults(enriched)
           setPublicCount(result.numFound)
         }),
       )
@@ -588,8 +589,13 @@ export const LoadFromNdexDialog = (
             0,
             500,
             ndexBaseUrl,
-          ).then((result) => {
-            setPrivateResults(result.files)
+          ).then(async (result) => {
+            const enriched = await enrichShortcutsWithTargetSummaries(
+              result.files,
+              token,
+              ndexBaseUrl,
+            )
+            setPrivateResults(enriched)
             setPrivateCount(result.numFound)
           }),
         )
@@ -600,9 +606,7 @@ export const LoadFromNdexDialog = (
         (r) => r.status === 'rejected',
       ) as PromiseRejectedResult[]
       if (rejected.length > 0) {
-        setErrorMessage(
-          rejected[0].reason?.message || 'Failed to search NDEx',
-        )
+        setErrorMessage(rejected[0].reason?.message || 'Failed to search NDEx')
       }
     } catch (err: any) {
       setErrorMessage(err.message)
@@ -632,13 +636,17 @@ export const LoadFromNdexDialog = (
       setActiveTab('public')
       setOnlyMine(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on open/close transitions; executeSearch sets state every call
   }, [open])
 
-  // Re-fetch when "Only mine" filter changes
+  // Re-fetch when "Only mine" filter changes.
+  // `open` and `lastSearchQuery` are guards/arguments, not triggers: adding
+  // them would double-fetch on dialog open and re-run every user search.
   useEffect(() => {
     if (open) {
       void executeSearch(lastSearchQuery)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onlyMine toggle is the sole trigger
   }, [onlyMine])
 
   const emptyMessage =
@@ -654,16 +662,28 @@ export const LoadFromNdexDialog = (
     const visibleNetworks = networks.slice(0, MAX_VISIBLE_ROWS)
     const rows = visibleNetworks.map((network) => {
       const {
-        uuid: externalId,
+        uuid: rowKey,
         name,
         owner,
         edges: edgeCount,
         modificationTime,
       } = network
 
-      const nodeCount = network.nodes ?? network.nodeCount ?? (network.attributes as any)?.nodeCount ?? 0
-      const cx2FileSize = network.cx2FileSize ?? (network.attributes as any)?.cx2FileSize ?? 0
-      const subnetworkIds = network.subnetworkIds ?? (network.attributes as any)?.subnetworkIds ?? []
+      // Resolved network id — for a SHORTCUT this is its target network, so
+      // selection and loading act on the network the shortcut points to. The
+      // shortcut's own uuid (rowKey) is kept only for React keys / test ids.
+      const externalId = getNetworkIdForFileItem(network)
+      const nodeCount =
+        network.nodes ??
+        network.nodeCount ??
+        (network.attributes as any)?.nodeCount ??
+        0
+      const cx2FileSize =
+        network.cx2FileSize ?? (network.attributes as any)?.cx2FileSize ?? 0
+      const subnetworkIds =
+        network.subnetworkIds ??
+        (network.attributes as any)?.subnetworkIds ??
+        []
 
       const selected = selectedNetworks.includes(externalId)
       const networkAlreadyLoaded = networkIds.includes(externalId)
@@ -681,7 +701,7 @@ export const LoadFromNdexDialog = (
       if (networkCanBeSelected) {
         return (
           <TableRow
-            key={externalId}
+            key={rowKey}
             hover
             selected={selected}
             onClick={() => toggleSelectedNetwork(externalId)}
@@ -691,31 +711,21 @@ export const LoadFromNdexDialog = (
           >
             <TableCell padding="checkbox">
               <Checkbox
-                data-testid={`load-from-ndex-network-checkbox-${externalId}`}
+                data-testid={`load-from-ndex-network-checkbox-${rowKey}`}
                 onClick={() => toggleSelectedNetwork(externalId)}
                 checked={selected}
               />
             </TableCell>
-            <TableCell sx={nameCellSx}>
-              {name}
-            </TableCell>
-            <TableCell sx={ownerCellSx}>
-              {owner ?? ''}
-            </TableCell>
+            <TableCell sx={nameCellSx}>{name}</TableCell>
+            <TableCell sx={ownerCellSx}>{owner ?? ''}</TableCell>
             <TableCell sx={visibilityCellSx}>
               <Typography variant="caption" sx={visibilityTextSx}>
                 {network.visibility}
               </Typography>
             </TableCell>
-            <TableCell sx={countCellSx}>
-              {nodeCount}
-            </TableCell>
-            <TableCell sx={countCellSx}>
-              {edgeCount ?? 0}
-            </TableCell>
-            <TableCell sx={countCellSx}>
-              {dateDisplay}
-            </TableCell>
+            <TableCell sx={countCellSx}>{nodeCount}</TableCell>
+            <TableCell sx={countCellSx}>{edgeCount ?? 0}</TableCell>
+            <TableCell sx={countCellSx}>{dateDisplay}</TableCell>
           </TableRow>
         )
       }
@@ -727,7 +737,7 @@ export const LoadFromNdexDialog = (
           : 'Network is too large to be loaded into Cytoscape Web.'
 
       return (
-        <Tooltip key={externalId} title={tooltipMessage}>
+        <Tooltip key={rowKey} title={tooltipMessage}>
           <TableRow
             hover={false}
             selected={false}
@@ -769,8 +779,8 @@ export const LoadFromNdexDialog = (
         <TableRow key="__truncation_notice__">
           <TableCell colSpan={7} sx={truncationNoticeSx}>
             <Typography variant="body2" color="text.secondary">
-              Showing {MAX_VISIBLE_ROWS} of {networks.length} networks.
-              Use search to narrow results.
+              Showing {MAX_VISIBLE_ROWS} of {networks.length} networks. Use
+              search to narrow results.
             </Typography>
           </TableCell>
         </TableRow>,
@@ -808,7 +818,7 @@ export const LoadFromNdexDialog = (
 
     return (
       <TableContainer
-        sx={{ 
+        sx={{
           height: 420,
           borderRadius: 1,
         }}
@@ -816,8 +826,15 @@ export const LoadFromNdexDialog = (
         <Table size="small" stickyHeader>
           {networks.length > 0 && (
             <TableHead>
-              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.subtle }}>
-                <TableCell padding="checkbox" sx={{ backgroundColor: 'inherit' }} />
+              <TableRow
+                sx={{
+                  backgroundColor: (theme) => theme.palette.background.subtle,
+                }}
+              >
+                <TableCell
+                  padding="checkbox"
+                  sx={{ backgroundColor: 'inherit' }}
+                />
                 <TableCell sx={{ backgroundColor: 'inherit' }}>
                   <Typography variant="caption" fontWeight="bold">
                     Network
@@ -860,9 +877,10 @@ export const LoadFromNdexDialog = (
               <TableRow>
                 <TableCell
                   colSpan={7}
-                  sx={{ 
+                  sx={{
                     py: 0.5,
-                    backgroundColor: (theme) => theme.palette.background.default,
+                    backgroundColor: (theme) =>
+                      theme.palette.background.default,
                   }}
                 >
                   <Typography variant="subtitle2" fontWeight="bold">
@@ -888,7 +906,11 @@ export const LoadFromNdexDialog = (
   )
 
   const privateTab = authenticated ? (
-    <Tooltip arrow placement="bottom" title="Search for private or unlisted networks shared with you">
+    <Tooltip
+      arrow
+      placement="bottom"
+      title="Search for private or unlisted networks shared with you"
+    >
       <Tab
         label={tabLabel('Private & Unlisted', privateCount)}
         sx={{ textTransform: 'none' }}
@@ -985,9 +1007,7 @@ export const LoadFromNdexDialog = (
               setActiveTab(newTab)
               setCurrentFolderId(null)
               const tabRootName =
-                newTab === 'private'
-                  ? 'Private Networks'
-                  : 'Latest Networks'
+                newTab === 'private' ? 'Private Networks' : 'Latest Networks'
               setBreadcrumbPath([
                 {
                   name: lastSearchQuery

@@ -19,35 +19,30 @@ export async function loadRemoteApp(
   appRegistry: Map<string, CyApp>,
 ): Promise<CyApp | undefined> {
   try {
-    const module = await loadModule(id, './AppConfig', url)
-    if (module === undefined || module === null) {
+    const remoteAppModule = await loadModule(id, './AppConfig', url)
+    const remoteApp = (remoteAppModule as { default?: CyApp }).default
+
+    if (remoteApp === undefined) {
       logApp.warn(
-        `[loadRemoteApp]: loadModule returned ${String(module)} for app "${id}"`,
+        `[loadRemoteApp]: Remote app "${id}" from ${url} did not expose a default AppConfig export`,
       )
       return undefined
     }
 
-    // The remote module should default-export a CyApp object
-    const cyApp: CyApp | undefined = module.default ?? module
-    if (cyApp === undefined || cyApp === null) {
+    if (remoteApp.id !== id) {
       logApp.warn(
-        `[loadRemoteApp]: No CyApp export found for app "${id}"`,
+        `[loadRemoteApp]: Remote app id mismatch. Expected "${id}", received "${remoteApp.id}" from ${url}`,
       )
       return undefined
     }
 
-    // Validate that the CyApp.id matches the manifest id
-    if (cyApp.id !== id) {
-      logApp.warn(
-        `[loadRemoteApp]: CyApp.id mismatch for app "${id}": expected "${id}", got "${cyApp.id}"`,
-      )
-      return undefined
-    }
-
-    appRegistry.set(id, cyApp)
-    return cyApp
+    appRegistry.set(id, remoteApp)
+    return remoteApp
   } catch (error) {
-    logApp.warn(`[loadRemoteApp]: Failed to load app "${id}":`, error)
+    logApp.warn(
+      `[loadRemoteApp]: Failed to load remote app "${id}" from ${url}:`,
+      error,
+    )
     return undefined
   }
 }

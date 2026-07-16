@@ -6,7 +6,38 @@ on:
   pull_request:
     branches: [master, development]
 
+# Cancel superseded runs on rapid pushes, but let every push to the
+# long-lived branches run to completion so each merged commit keeps a
+# full CI result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/development' }}
+
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Run lint
+        run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Run build
+        run: npm run build
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -14,20 +45,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+      - uses: ./.github/actions/setup-node-dependencies
 
       - name: Run unit tests
         run: npm run test:unit
 
   integration-tests:
     name: Integration Tests (${{ matrix.browser }})
-    needs: unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -35,18 +59,14 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
       options: --user 1001
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup-node-dependencies
         with:
-          node-version-file: .nvmrc
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+          cache-suffix: playwright-noble
 
       - name: Run integration tests
         run: npm run test:e2e -- --project=${{ matrix.browser }}

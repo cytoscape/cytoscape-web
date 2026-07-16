@@ -1,11 +1,8 @@
-import * as React from 'react'
 import { Box } from '@mui/material'
+import * as React from 'react'
+
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
-import {
-  CustomGraphicsNameType,
-  PieChartPropertiesType,
-  RingChartPropertiesType,
-} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { PieChartRender as PieChartRenderComponent } from './PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from './RingChartRender'
 import { CHART_CONSTANTS } from './utils/constants'

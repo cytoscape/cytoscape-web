@@ -195,7 +195,7 @@ const computeCustomGraphicSizeProperties = (
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
 ) => {
-  const { defaultValue, mapping, bypassMap, name, group } = vp
+  const { defaultValue, mapping, bypassMap } = vp
   const bypass = bypassMap.get(id)
   if (bypass !== undefined) {
     return bypass as number
@@ -234,6 +234,12 @@ export const computePieChartProperties = (
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
   const pieValues = value.properties as PieChartPropertiesType
+
+  // Skip rendering when there are no data columns to drive the chart
+  if (!pieValues.cy_dataColumns || pieValues.cy_dataColumns.length === 0) {
+    return piePairsToAdd
+  }
+
   const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
     const attributeValue = row[attribute] as number
     const value = attributeValue ?? 0
@@ -291,6 +297,12 @@ export const computeRingChartProperties = (
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
   const pieValues = value.properties as RingChartPropertiesType
+
+  // Skip rendering when there are no data columns to drive the chart
+  if (!pieValues.cy_dataColumns || pieValues.cy_dataColumns.length === 0) {
+    return piePairsToAdd
+  }
+
   const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
     const attributeValue = row[attribute] as number
     const value = attributeValue ?? 0
@@ -352,12 +364,7 @@ export const computeImageProperties = (
   customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
 ) => {
-  const size = computeCustomGraphicSizeProperties(
-    id,
-    customGraphicsSizeVp,
-    mappers,
-    row,
-  )
+  computeCustomGraphicSizeProperties(id, customGraphicsSizeVp, mappers, row)
 }
 
 export const computeCustomGraphicsProperties = (

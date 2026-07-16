@@ -10,11 +10,11 @@ import {
 import { ReactElement, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { useDeleteCyNetwork } from '../data/hooks/useDeleteCyNetwork'
 import { useUrlNavigation } from '../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
+import { useDeleteCyNetwork } from '../data/hooks/useDeleteCyNetwork'
 import { waitSeconds } from '../utils/waitSeconds'
 
 export const UpdateNetworkDialog = (props: {

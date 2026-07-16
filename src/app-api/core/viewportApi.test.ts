@@ -1,16 +1,17 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/viewportApi.test.ts
 // Plain Jest tests for viewportApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { viewportApi } from './viewportApi'
 
 // ── Mock: RendererFunctionStore ───────────────────────────────────────────────
 
-const mockGetFunction = jest.fn()
+const mockGetFunction = vi.fn()
 
-jest.mock('../../data/hooks/stores/RendererFunctionStore', () => ({
+vi.mock('../../data/hooks/stores/RendererFunctionStore', () => ({
   useRendererFunctionStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       getFunction: mockGetFunction,
     })),
   },
@@ -18,12 +19,12 @@ jest.mock('../../data/hooks/stores/RendererFunctionStore', () => ({
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
 
-const mockGetViewModel = jest.fn()
-const mockUpdateNodePositions = jest.fn()
+const mockGetViewModel = vi.fn()
+const mockUpdateNodePositions = vi.fn()
 
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       getViewModel: mockGetViewModel,
       updateNodePositions: mockUpdateNodePositions,
     })),
@@ -39,14 +40,14 @@ function makeNetworkView(nodeViews: Record<string, any> = {}) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
 })
 
 // --- fit ---------------------------------------------------------------------
 
 describe('fit', () => {
   it('calls fit function and returns ok() when registered', async () => {
-    const mockFitFn = jest.fn()
+    const mockFitFn = vi.fn()
     mockGetFunction.mockReturnValue(mockFitFn)
 
     const result = await viewportApi.fit('net1')
@@ -68,7 +69,7 @@ describe('fit', () => {
   })
 
   it('returns OperationFailed when fit function throws', async () => {
-    const mockFitFn = jest.fn().mockImplementation(() => {
+    const mockFitFn = vi.fn().mockImplementation(() => {
       throw new Error('renderer error')
     })
     mockGetFunction.mockReturnValue(mockFitFn)

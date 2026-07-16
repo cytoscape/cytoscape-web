@@ -1,6 +1,6 @@
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
 import { MenuItem } from 'primereact/menuitem'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { AppIdProvider } from '../../../app-api/AppIdContext'
 import { CyWebApi } from '../../../app-api/core'
@@ -24,7 +24,6 @@ import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { DropdownMenu } from '../DropdownMenu'
 import { createMenuItems } from './MenuFactory'
-
 
 export const AppMenu = () => {
   const run = useServiceTaskRunner()
@@ -66,34 +65,34 @@ export const AppMenu = () => {
     setOpenDialog(isDialogOpen)
   }
 
-  const handleRun = async (url: string): Promise<void> => {
-    setOpen(false)
+  const handleRun = useCallback(
+    async (url: string): Promise<void> => {
+      setOpen(false)
 
-    // Now run the task
-    setOpenTaskDialog(true)
-    try {
-      const result = await run(url)
-      if (result.status !== ServiceStatus.Complete) {
+      // Now run the task
+      setOpenTaskDialog(true)
+      try {
+        const result = await run(url)
+        if (result.status !== ServiceStatus.Complete) {
+          setNotificationDialog(true)
+          setNotificationMessage(result.message)
+        }
+      } catch (e) {
         setNotificationDialog(true)
-        setNotificationMessage(result.message)
+        setNotificationMessage(e instanceof Error ? e.message : String(e))
+        logApp.error(`[${AppMenu.name}]: Failed to run the task: ${url}`, e)
+      } finally {
+        clearCurrentTask()
       }
-    } catch (e) {
-      setNotificationDialog(true)
-      setNotificationMessage(e.message)
-      logApp.error(
-        `[${AppMenu.name}]:[${handleRun.name}]: Failed to run the task: ${url}`,
-        e,
-      )
-    } finally {
-      clearCurrentTask()
-    }
 
-    setOpenTaskDialog(false)
-  }
+      setOpenTaskDialog(false)
+    },
+    [run, clearCurrentTask],
+  )
 
-  const handleClose = (): void => {
+  const handleClose = useCallback((): void => {
     setOpen(false)
-  }
+  }, [])
 
   useEffect(() => {
     // Filter and use only active apps
@@ -140,26 +139,10 @@ export const AppMenu = () => {
     ]
   }
 
-  useEffect(() => {
-    const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    const divider: MenuItem[] =
-      menuModel.length > 0 || appMenuItems.length > 0
-        ? [{ separator: true }]
-        : []
-    setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
-  }, [serviceApps, apps])
-
-  useEffect(() => {
-    // Create base menu items
-    setMenuModel(getBaseMenu())
-    setOpen(false)
-  }, [])
-
   // Read runtime menu resources from AppResourceStore
   const runtimeResources = useAppResourceStore((state) => state.resources)
 
-  const createAppMenu = (): MenuItem[] => {
+  const createAppMenu = useCallback((): MenuItem[] => {
     // 1. Collect runtime 'apps-menu' resources
     const runtimeMenuItems: MenuItem[] = runtimeResources
       .filter((r: RegisteredAppResource) => {
@@ -239,7 +222,23 @@ export const AppMenu = () => {
 
     // 3. Merge: runtime first, then manifest
     return [...runtimeMenuItems, ...manifestMenuItems]
-  }
+  }, [runtimeResources, apps, componentList, handleClose])
+
+  useEffect(() => {
+    const appMenuItems: MenuItem[] = createAppMenu()
+    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
+    const divider: MenuItem[] =
+      menuModel.length > 0 || appMenuItems.length > 0
+        ? [{ separator: true }]
+        : []
+    setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
+  }, [serviceApps, createAppMenu, handleRun])
+
+  useEffect(() => {
+    // Create base menu items
+    setMenuModel(getBaseMenu())
+    setOpen(false)
+  }, [])
 
   // TODO test whether this behavior is still correct after refactoring (no more button click events)
   useEffect(() => {
@@ -249,7 +248,7 @@ export const AppMenu = () => {
       const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
       setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
     }
-  }, [open])
+  }, [open, isInitialClick, serviceApps, createAppMenu, handleRun])
 
   return (
     <>

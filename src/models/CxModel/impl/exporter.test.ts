@@ -1,24 +1,25 @@
+import { describe, expect, it } from 'vitest'
+
 import { CyNetwork } from '../../CyNetworkModel'
 import { Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { NetworkAttributes } from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
-import { Table } from '../../TableModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
 import { NetworkView } from '../../ViewModel'
 import { createViewModel } from '../../ViewModel/impl/viewModelImpl'
 import { VisualStyle } from '../../VisualStyleModel'
 import VisualStyleFn from '../../VisualStyleModel'
-import { CustomGraphicsType } from '../../VisualStyleModel/VisualPropertyValue'
-import { PassthroughMappingFunction } from '../../VisualStyleModel/VisualMappingFunction'
-import { MappingFunctionType } from '../../VisualStyleModel/VisualMappingFunction'
-import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
 import {
+  setBypass,
   setDefault,
   setMapping,
-  setBypass,
 } from '../../VisualStyleModel/impl/visualStyleImpl'
+import { PassthroughMappingFunction } from '../../VisualStyleModel/VisualMappingFunction'
+import { MappingFunctionType } from '../../VisualStyleModel/VisualMappingFunction'
+import { CustomGraphicsType } from '../../VisualStyleModel/VisualPropertyValue'
+import { VisualPropertyValueTypeName } from '../../VisualStyleModel/VisualPropertyValueTypeName'
 import { Cx2 } from '../Cx2'
 import { createCyNetworkFromCx2 } from './converter'
 import { exportCyNetworkToCx2 } from './exporter'
@@ -60,7 +61,7 @@ describe('exporter', () => {
 
       // Check for status
       const statusAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('status'),
+        Object.prototype.hasOwnProperty.call(aspect, 'status'),
       )
       expect(statusAspect).toBeDefined()
       if (statusAspect) {
@@ -107,7 +108,7 @@ describe('exporter', () => {
 
       // Check for nodes aspect
       const nodesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('nodes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'nodes'),
       )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
@@ -117,7 +118,7 @@ describe('exporter', () => {
 
       // Check for edges aspect
       const edgesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('edges'),
+        Object.prototype.hasOwnProperty.call(aspect, 'edges'),
       )
       expect(edgesAspect).toBeDefined()
       if (edgesAspect) {
@@ -161,7 +162,7 @@ describe('exporter', () => {
 
       // Check for network attributes
       const networkAttributesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('networkAttributes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'networkAttributes'),
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
@@ -214,7 +215,7 @@ describe('exporter', () => {
 
       // Check for network attributes
       const networkAttributesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('networkAttributes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'networkAttributes'),
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
@@ -273,7 +274,7 @@ describe('exporter', () => {
 
       // Check for visual editor properties
       const visualEditorPropertiesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('visualEditorProperties'),
+        Object.prototype.hasOwnProperty.call(aspect, 'visualEditorProperties'),
       )
       expect(visualEditorPropertiesAspect).toBeDefined()
       if (visualEditorPropertiesAspect) {
@@ -322,7 +323,7 @@ describe('exporter', () => {
 
       // Check for custom aspect
       const customAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('customAspect'),
+        Object.prototype.hasOwnProperty.call(aspect, 'customAspect'),
       )
       expect(customAspect).toBeDefined()
       if (customAspect) {
@@ -371,7 +372,7 @@ describe('exporter', () => {
 
       // Check for nodes with positions
       const nodesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('nodes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'nodes'),
       )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
@@ -440,7 +441,7 @@ describe('exporter', () => {
 
       // Check for attribute declarations
       const attributeDeclarationsAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('attributeDeclarations'),
+        Object.prototype.hasOwnProperty.call(aspect, 'attributeDeclarations'),
       )
       expect(attributeDeclarationsAspect).toBeDefined()
       if (attributeDeclarationsAspect) {
@@ -542,7 +543,7 @@ describe('exporter', () => {
 
       // Verify nodes exist
       const nodesAspect = exportedCx2.find((aspect: any) =>
-        aspect.hasOwnProperty('nodes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'nodes'),
       )
       expect(nodesAspect).toBeDefined()
       if (nodesAspect) {
@@ -551,7 +552,7 @@ describe('exporter', () => {
 
       // Verify edges exist
       const edgesAspect = exportedCx2.find((aspect: any) =>
-        aspect.hasOwnProperty('edges'),
+        Object.prototype.hasOwnProperty.call(aspect, 'edges'),
       )
       expect(edgesAspect).toBeDefined()
       if (edgesAspect) {
@@ -560,7 +561,7 @@ describe('exporter', () => {
 
       // Verify network attributes exist
       const networkAttributesAspect = exportedCx2.find((aspect: any) =>
-        aspect.hasOwnProperty('networkAttributes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'networkAttributes'),
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
@@ -606,7 +607,7 @@ describe('exporter', () => {
 
       // Check that override name is used
       const networkAttributesAspect = cx2.find((aspect: any) =>
-        aspect.hasOwnProperty('networkAttributes'),
+        Object.prototype.hasOwnProperty.call(aspect, 'networkAttributes'),
       )
       expect(networkAttributesAspect).toBeDefined()
       if (networkAttributesAspect) {
@@ -646,7 +647,7 @@ describe('exporter', () => {
 
         // Check visual properties defaults
         const visualPropertiesAspect = cx2.find((aspect: any) =>
-          aspect.hasOwnProperty('visualProperties'),
+          Object.prototype.hasOwnProperty.call(aspect, 'visualProperties'),
         )
         expect(visualPropertiesAspect).toBeDefined()
         if (visualPropertiesAspect) {
@@ -701,7 +702,7 @@ describe('exporter', () => {
 
         // Check visual properties defaults
         const visualPropertiesAspect = cx2.find((aspect: any) =>
-          aspect.hasOwnProperty('visualProperties'),
+          Object.prototype.hasOwnProperty.call(aspect, 'visualProperties'),
         )
         expect(visualPropertiesAspect).toBeDefined()
         if (visualPropertiesAspect) {
@@ -758,7 +759,7 @@ describe('exporter', () => {
 
         // Check visual properties mappings
         const visualPropertiesAspect = cx2.find((aspect: any) =>
-          aspect.hasOwnProperty('visualProperties'),
+          Object.prototype.hasOwnProperty.call(aspect, 'visualProperties'),
         )
         expect(visualPropertiesAspect).toBeDefined()
         if (visualPropertiesAspect) {
@@ -820,7 +821,7 @@ describe('exporter', () => {
 
         // Check node bypasses
         const nodeBypassesAspect = cx2.find((aspect: any) =>
-          aspect.hasOwnProperty('nodeBypasses'),
+          Object.prototype.hasOwnProperty.call(aspect, 'nodeBypasses'),
         )
         expect(nodeBypassesAspect).toBeDefined()
         if (nodeBypassesAspect) {
@@ -873,7 +874,7 @@ describe('exporter', () => {
 
         // Check visual properties defaults
         const visualPropertiesAspect = cx2.find((aspect: any) =>
-          aspect.hasOwnProperty('visualProperties'),
+          Object.prototype.hasOwnProperty.call(aspect, 'visualProperties'),
         )
         expect(visualPropertiesAspect).toBeDefined()
         if (visualPropertiesAspect) {
@@ -934,7 +935,7 @@ describe('exporter', () => {
 
         // Check visual properties defaults
         const visualPropertiesAspect = cx2.find((aspect: any) =>
-          aspect.hasOwnProperty('visualProperties'),
+          Object.prototype.hasOwnProperty.call(aspect, 'visualProperties'),
         )
         expect(visualPropertiesAspect).toBeDefined()
         if (visualPropertiesAspect) {

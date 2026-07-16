@@ -2,12 +2,12 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import {
   Box,
   Button,
-  Radio,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Radio,
   Table,
   TableBody,
   TableCell,
@@ -15,7 +15,13 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import React, { ReactElement, useContext, useEffect, useState } from 'react'
+import React, {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
@@ -32,7 +38,6 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { dateFormatter } from '../../../utils/dateFormat'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 
-
 export const LoadWorkspaceDialog: React.FC<{
   open: boolean
   handleClose: () => void
@@ -43,7 +48,7 @@ export const LoadWorkspaceDialog: React.FC<{
   )
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const setWorkspaceIsRemote = useWorkspaceStore((state) => state.setIsRemote)
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, appInstallAllowedOrigins } = useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const addMessage = useMessageStore((state) => state.addMessage)
   const apps = useAppStore((state) => state.apps)
@@ -61,7 +66,7 @@ export const LoadWorkspaceDialog: React.FC<{
     setOpenDialog(false)
   }
 
-  const fetchWorkspaces = async (): Promise<void> => {
+  const fetchWorkspaces = useCallback(async (): Promise<void> => {
     const token = await getToken()
     fetchMyNdexWorkspaces(token)
       .then(setMyWorkspaces)
@@ -73,7 +78,7 @@ export const LoadWorkspaceDialog: React.FC<{
               ? error
               : 'Unknown error occurred'
         logUi.error(
-          `[${LoadWorkspaceDialog.name}]:[${handleCloseDialog.name}] Error fetching workspaces from NDEx`,
+          `[${LoadWorkspaceDialog.name}]:[fetchWorkspaces] Error fetching workspaces from NDEx`,
           error,
         )
 
@@ -83,12 +88,13 @@ export const LoadWorkspaceDialog: React.FC<{
           severity: MessageSeverity.ERROR,
         })
       })
-  }
+  }, [getToken, addMessage])
+
   useEffect(() => {
     if (open) {
       fetchWorkspaces()
     }
-  }, [open])
+  }, [open, fetchWorkspaces])
 
   const handleRowSelect = (workspaceId: string): void => {
     setSelectedWorkspaceId((prevId) =>
@@ -117,7 +123,12 @@ export const LoadWorkspaceDialog: React.FC<{
     )
     if (selectedWorkspace) {
       try {
-        await loadWorkspace(selectedWorkspace, apps, serviceApps)
+        await loadWorkspace(
+          selectedWorkspace,
+          apps,
+          serviceApps,
+          appInstallAllowedOrigins,
+        )
         handleClose()
         // Reload the page to apply changes
         window.location.reload()
@@ -314,10 +325,7 @@ export const LoadWorkspaceDialog: React.FC<{
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button
-                variant="outlined"
-                onClick={handleCloseDialog}
-              >
+              <Button variant="outlined" onClick={handleCloseDialog}>
                 Cancel
               </Button>
               <Button

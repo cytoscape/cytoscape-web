@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
-import { logApi, logUi } from '../../../debug'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
@@ -13,6 +12,7 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import { logApi, logUi } from '../../../debug'
 import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
 import { FilterConfig } from '../../../models/FilterModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
@@ -152,6 +152,7 @@ export const SubNetworkPanel = ({
         logUi.info(`[${SubNetworkPanel.name}]: Other model: ${type}`)
       }
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cpViewId is only a set-guard, written nowhere else
   }, [hierarchyViewModels])
 
   const queryNetworkViewModel: NetworkView | undefined =
@@ -191,6 +192,7 @@ export const SubNetworkPanel = ({
       // Clear selection in the circle packing view
       setSelectedHierarchyNodeNames([])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection change is the trigger; a tables dep would churn on every table write
   }, [queryNetworkViewModel?.selectedNodes])
 
   /**
@@ -230,6 +232,7 @@ export const SubNetworkPanel = ({
 
       exclusiveSelect(queryNetworkId, toBeSelected, [])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on CP selection; other values are fresh at trigger time
   }, [selectedNodes])
 
   // For applying default layout
@@ -272,13 +275,16 @@ export const SubNetworkPanel = ({
     interactionSourceUrl = ndexBaseUrl
   }
 
+  // Convert query nodeIds to comma-separated string for the NDEx interconnect API
+  const queryString = query?.nodeIds?.join(',') ?? ''
+
   const result = useQuery({
     queryKey: [
       hierarchyId,
       interactionSourceUrl,
       rootNetworkId,
       subsystemNodeId,
-      query,
+      queryString,
       interactionNetworkId,
     ],
     queryFn: async ({ queryKey }) => {
@@ -308,7 +314,7 @@ export const SubNetworkPanel = ({
       return
     }
     prevQueryNetworkIdRef.current = queryNetworkId
-  }, [queryNetworkId])
+  }, [queryNetworkId, getViewModel])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {
@@ -553,6 +559,10 @@ export const SubNetworkPanel = ({
     setProcessingProgress(100)
   }
 
+  // Process fetched network data once per arrival, keyed on `data` only.
+  // registerNetwork/updateNetworkView are recreated every render and the
+  // pipeline triggers renders itself, so adding them would re-run the heavy
+  // registration/layout work in a loop.
   useEffect(() => {
     if (data === undefined) {
       return
@@ -648,6 +658,7 @@ export const SubNetworkPanel = ({
     return () => {
       setIsProcessing(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per fetched data; other deps would re-run the pipeline
   }, [data])
 
   if (isFetching || isProcessing) {

@@ -1,6 +1,3 @@
-import { Cx2 } from '../Cx2'
-import { CoreAspectTag } from '../Cx2/CoreAspectTag'
-
 /**
  * Validation options for CX validation
  */

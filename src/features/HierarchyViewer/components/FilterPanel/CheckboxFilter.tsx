@@ -1,7 +1,7 @@
 import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
@@ -18,7 +18,6 @@ import { IdType } from '../../../../models/IdType'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
 import { Table, ValueType } from '../../../../models/TableModel'
-import { NetworkView } from '../../../../models/ViewModel'
 import {
   DiscreteMappingFunction,
   VisualPropertyValueType,
@@ -57,11 +56,9 @@ export const CheckboxFilter = ({
 
   const setBypassMap = useVisualStyleStore((state) => state.setBypassMap)
 
-  const getViewModel = useViewModelStore((state) => state.getViewModel)
   const visualStyleExists = useVisualStyleStore(
     (state) => state.visualStyles[targetNetworkId] !== undefined,
   )
-  const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
   const discreteFilterDetails = filterConfig.discreteFilterDetails ?? []
@@ -76,22 +73,21 @@ export const CheckboxFilter = ({
   // Check if all options are selected
   const currentSelectedOptions = filterConfig.range as DiscreteRange<ValueType>
 
-  // Apply the filter to the table
-  const applyFilter = () => {
+  // Apply the filter to the table. Memoized so effects can depend on it:
+  // its identity changes exactly when its inputs change — including
+  // visualStyleExists, which re-applies the filter once a late-loading
+  // visual style arrives (previously the mount-only apply ran before the
+  // style existed and the filter never took effect).
+  const applyFilter = useCallback(() => {
     if (!visualStyleExists) {
       return
     }
 
-    let filtered: IdType[] = []
     // Current range stored in the config
     const discreteRange: DiscreteRange<ValueType> =
       filterConfig.range as DiscreteRange<ValueType>
     const basicFilter: Filter = getBasicFilter()
-    filtered = basicFilter.applyDiscreteFilter(
-      discreteRange,
-      table,
-      attributeName,
-    )
+    basicFilter.applyDiscreteFilter(discreteRange, table, attributeName)
 
     const idsToFilter: IdType[] = []
     const idsToExclude: IdType[] = []
@@ -144,7 +140,14 @@ export const CheckboxFilter = ({
         : EdgeVisualPropertyName.EdgeVisibility
 
     setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
-  }
+  }, [
+    visualStyleExists,
+    filterConfig,
+    table,
+    attributeName,
+    targetNetworkId,
+    setBypassMap,
+  ])
 
   useEffect(() => {
     setAllOptions(getAllDiscreteValues(table.rows, attributeName))
@@ -208,7 +211,10 @@ export const CheckboxFilter = ({
   }
 
   /**
-   * update the filter range when the target network changes
+   * Apply the filter when it is enabled, the target network changes, the
+   * selected range changes, or applyFilter's inputs (table, config, a
+   * late-loading visual style) change. This also covers the initial apply
+   * on mount.
    */
   useEffect(() => {
     //Apply the filter from the existing filter store
@@ -218,16 +224,13 @@ export const CheckboxFilter = ({
       // Select all nodes / edges
       exclusiveSelect(targetNetworkId, [], [])
     }
-  }, [enableFilter, targetNetworkId, currentSelectedOptions.values])
-
-  /**
-   * Apply filter after initialization if the filter is enabled
-   */
-  useEffect(() => {
-    if (enableFilter && visualStyleExists) {
-      applyFilter()
-    }
-  }, [])
+  }, [
+    enableFilter,
+    targetNetworkId,
+    currentSelectedOptions.values,
+    applyFilter,
+    exclusiveSelect,
+  ])
 
   const isAllSelected: boolean =
     allOptions.length > 0 &&

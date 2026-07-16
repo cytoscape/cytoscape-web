@@ -2,8 +2,8 @@
 //
 // Plain Jest tests for the per-app ResourceApi factory.
 // Mocks AppResourceStore, AppStore, and WorkspaceStore.
-
 import { enableMapSet } from 'immer'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
@@ -15,20 +15,20 @@ enableMapSet()
 
 // ── Mock stores ─────────────────────────────────────────────────
 
-jest.mock('../../data/hooks/stores/AppResourceStore', () => ({
-  useAppResourceStore: { getState: jest.fn() },
+vi.mock('../../data/hooks/stores/AppResourceStore', () => ({
+  useAppResourceStore: { getState: vi.fn() },
 }))
 
-jest.mock('../../data/hooks/stores/AppStore', () => ({
-  useAppStore: { getState: jest.fn() },
+vi.mock('../../data/hooks/stores/AppStore', () => ({
+  useAppStore: { getState: vi.fn() },
 }))
 
-jest.mock('../../data/hooks/stores/WorkspaceStore', () => ({
-  useWorkspaceStore: { getState: jest.fn() },
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+  useWorkspaceStore: { getState: vi.fn() },
 }))
 
-jest.mock('../../debug', () => ({
-  logApp: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
+vi.mock('../../debug', () => ({
+  logApp: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
 const DummyComponent = () => null
@@ -36,18 +36,18 @@ const DummyComponent = () => null
 function makeMockResourceStore(
   overrides: Partial<{
     resources: any[]
-    upsertResource: jest.Mock
-    removeResource: jest.Mock
-    hasResource: jest.Mock
-    removeAllByAppId: jest.Mock
+    upsertResource: import('vitest').Mock
+    removeResource: import('vitest').Mock
+    hasResource: import('vitest').Mock
+    removeAllByAppId: import('vitest').Mock
   }> = {},
 ) {
   return {
     resources: [],
-    upsertResource: jest.fn(),
-    removeResource: jest.fn(),
-    hasResource: jest.fn(() => false),
-    removeAllByAppId: jest.fn(),
+    upsertResource: vi.fn(),
+    removeResource: vi.fn(),
+    hasResource: vi.fn(() => false),
+    removeAllByAppId: vi.fn(),
     ...overrides,
   }
 }
@@ -57,16 +57,15 @@ describe('createResourceApi', () => {
 
   beforeEach(() => {
     mockStore = makeMockResourceStore()
-    jest
-      .mocked(useAppResourceStore.getState)
+    vi.mocked(useAppResourceStore.getState)
       .mockReturnValue(mockStore as any)
-    jest.mocked(useAppStore.getState).mockReturnValue({
+    vi.mocked(useAppStore.getState).mockReturnValue({
       apps: { app1: { status: AppStatus.Active } },
     } as any)
-    jest.mocked(useWorkspaceStore.getState).mockReturnValue({
+    vi.mocked(useWorkspaceStore.getState).mockReturnValue({
       workspace: { currentNetworkId: 'net1' },
     } as any)
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   // ── getSupportedSlots ───────────────────────────────────────────
@@ -428,8 +427,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      jest
-        .mocked(useAppResourceStore.getState)
+      vi.mocked(useAppResourceStore.getState)
         .mockReturnValue(mockStore as any)
 
       const api = createResourceApi('app1')
@@ -459,10 +457,9 @@ describe('createResourceApi', () => {
       mockStore.resources = [
         { id: 'P1', appId: 'app1', slot: 'right-panel', component: {} },
       ]
-      jest
-        .mocked(useAppResourceStore.getState)
+      vi.mocked(useAppResourceStore.getState)
         .mockReturnValue(mockStore as any)
-      jest.mocked(useAppStore.getState).mockReturnValue({
+      vi.mocked(useAppStore.getState).mockReturnValue({
         apps: { app1: { status: AppStatus.Inactive } },
       } as any)
 
@@ -485,10 +482,9 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      jest
-        .mocked(useAppResourceStore.getState)
+      vi.mocked(useAppResourceStore.getState)
         .mockReturnValue(mockStore as any)
-      jest.mocked(useWorkspaceStore.getState).mockReturnValue({
+      vi.mocked(useWorkspaceStore.getState).mockReturnValue({
         workspace: { currentNetworkId: '' },
       } as any)
 
@@ -511,8 +507,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      jest
-        .mocked(useAppResourceStore.getState)
+      vi.mocked(useAppResourceStore.getState)
         .mockReturnValue(mockStore as any)
 
       const api = createResourceApi('app1')
@@ -534,8 +529,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      jest
-        .mocked(useAppResourceStore.getState)
+      vi.mocked(useAppResourceStore.getState)
         .mockReturnValue(mockStore as any)
       // AppStore: active, WorkspaceStore: has network (default mocks)
 

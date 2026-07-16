@@ -3,7 +3,7 @@ import cytoscape from 'cytoscape'
 
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
-import { Edge,Network, Node } from '..'
+import { Edge, Network, Node } from '..'
 
 const GroupType = { Nodes: 'nodes', Edges: 'edges' } as const
 type GroupType = (typeof GroupType)[keyof typeof GroupType]
@@ -131,7 +131,7 @@ export const createCyJSON = (network: Network): object => {
  *
  * @returns Network instance
  */
-export const createNetworkFromCyjs = (id: IdType, cyjs: any): Network => {
+export const createNetworkFromCyjs = (id: IdType): Network => {
   // TODO: Implement
   const network = createNetwork(id)
   return network
@@ -140,10 +140,7 @@ export const createNetworkFromCyjs = (id: IdType, cyjs: any): Network => {
 /**
  * Create a new network object from SIF
  */
-export const createFromSif = (
-  id: IdType,
-  sif: [string, string, string?],
-): Network => {
+export const createFromSif = (id: IdType): Network => {
   const network = createNetwork(id)
   return network
 }
@@ -236,7 +233,7 @@ export const deleteEdges = (
 export const addNodeRow = (
   network: Network,
   newNodeId: IdType,
-  row?: Record<AttributeName, ValueType>,
+  _row?: Record<AttributeName, ValueType>,
 ): Network => {
   const networkImpl = network as NetworkImpl
   const store = networkImpl.store

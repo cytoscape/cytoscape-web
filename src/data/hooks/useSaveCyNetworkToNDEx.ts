@@ -1,9 +1,4 @@
 import {
-  fetchNdexSummaries,
-  getNetworkValidationStatus,
-  updateNdexNetwork,
-} from '../external-api/ndex'
-import {
   Network,
   NetworkSummary,
   NetworkView,
@@ -14,6 +9,11 @@ import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import {
+  fetchNdexSummaries,
+  getNetworkValidationStatus,
+  updateNdexNetwork,
+} from '../external-api/ndex'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 
 /**

@@ -1,17 +1,18 @@
 import { act, renderHook } from '@testing-library/react'
 import Keycloak from 'keycloak-js'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useCredentialStore } from './CredentialStore'
 
 // Mock Keycloak
-jest.mock('keycloak-js', () => {
-  return jest.fn().mockImplementation(() => {
+vi.mock('keycloak-js', () => {
+  return { default: vi.fn().mockImplementation(function() {
     return {
       token: 'mock-token',
       tokenParsed: { sub: 'user-123' },
-      updateToken: jest.fn().mockResolvedValue(true),
+      updateToken: vi.fn().mockResolvedValue(true),
     }
-  })
+  }) }
 })
 
 describe('useCredentialStore', () => {
@@ -33,7 +34,7 @@ describe('useCredentialStore', () => {
       const { result } = renderHook(() => useCredentialStore())
       const client = new Keycloak()
       client.token = 'test-token'
-      client.updateToken = jest.fn().mockResolvedValue(true)
+      client.updateToken = vi.fn().mockResolvedValue(true)
 
       act(() => {
         result.current.setClient(client)
@@ -49,7 +50,7 @@ describe('useCredentialStore', () => {
       const { result } = renderHook(() => useCredentialStore())
       const client = new Keycloak()
       client.token = undefined
-      client.updateToken = jest.fn().mockResolvedValue(true)
+      client.updateToken = vi.fn().mockResolvedValue(true)
 
       act(() => {
         result.current.setClient(client)
@@ -67,7 +68,7 @@ describe('useCredentialStore', () => {
       const client = new Keycloak()
       client.token = 'test-token'
       client.tokenParsed = { sub: 'user-123', name: 'Test User' }
-      client.updateToken = jest.fn().mockResolvedValue(true)
+      client.updateToken = vi.fn().mockResolvedValue(true)
 
       act(() => {
         result.current.setClient(client)
@@ -83,7 +84,7 @@ describe('useCredentialStore', () => {
       const { result } = renderHook(() => useCredentialStore())
       const client = new Keycloak()
       client.token = undefined
-      client.updateToken = jest.fn().mockResolvedValue(true)
+      client.updateToken = vi.fn().mockResolvedValue(true)
 
       act(() => {
         result.current.setClient(client)

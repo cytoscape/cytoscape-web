@@ -9,12 +9,10 @@ import {
 } from '@mantine/core'
 import { Dropzone, FileWithPath } from '@mantine/dropzone'
 import { ModalsProvider } from '@mantine/modals'
-import Papa from 'papaparse'
 import { PrimeReactProvider } from 'primereact/api'
 import { v4 as uuidv4 } from 'uuid'
 
 import { putNetworkSummaryToDb } from '../../data/db'
-import { logUi } from '../../debug'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -25,6 +23,7 @@ import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../debug'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
@@ -39,10 +38,7 @@ import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { generateUniqueName } from '../../utils/generateUniqueName'
 import { createDataFromLocalSif } from '../../utils/sifUtils'
 import { validateSif } from '../../utils/sifUtils'
-import {
-  convertFileDelimiterToEffective,
-  detectBestDelimiter,
-} from '../TableDataLoader/model/impl/DelimiterUtils'
+import { detectBestDelimiter } from '../TableDataLoader/model/impl/DelimiterUtils'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,

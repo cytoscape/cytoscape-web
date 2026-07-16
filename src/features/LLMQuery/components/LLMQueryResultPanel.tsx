@@ -72,7 +72,7 @@ export const LLMQueryResultPanel = (props: {
       setLLMResult(LLMResponse)
     } catch (e) {
       addMessage({
-        message: `Error querying LLM model: ${e.message as string}`,
+        message: `Error querying LLM model: ${e instanceof Error ? e.message : String(e)}`,
         duration: 6000,
         severity: MessageSeverity.ERROR,
       })

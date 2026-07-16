@@ -64,7 +64,8 @@ export const deleteAspects = (
     return state
   }
 
-  const { [networkId]: deleted, ...restOpaqueAspects } = state.opaqueAspects
+  const restOpaqueAspects = { ...state.opaqueAspects }
+  delete restOpaqueAspects[networkId]
   return {
     ...state,
     opaqueAspects: restOpaqueAspects,
@@ -84,7 +85,8 @@ export const deleteSingleAspect = (
     return state
   }
 
-  const { [aspectName]: deleted, ...restAspects } = networkAspects
+  const restAspects = { ...networkAspects }
+  delete restAspects[aspectName]
   return {
     ...state,
     opaqueAspects: {

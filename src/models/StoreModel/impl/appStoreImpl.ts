@@ -3,6 +3,7 @@ import { AppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
+import { AppSource } from '../../AppModel/InstalledApp'
 import { ManifestSource } from '../../AppModel/ManifestSource'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
@@ -24,7 +25,11 @@ const stripLazyRefs = (
   if (components === undefined || components === null) {
     return []
   }
-  return components.map(({ component: _lazy, ...rest }) => rest)
+  return components.map((component) => {
+    const rest = { ...component }
+    delete (rest as any).component
+    return rest
+  })
 }
 
 /**
@@ -35,7 +40,8 @@ const stripLazyRefs = (
  * in useAppManager.ts (which stores them in the Immer-free AppResourceStore).
  */
 const stripResources = (app: CyApp): Omit<CyApp, 'resources'> => {
-  const { resources: _resources, ...rest } = app as any
+  const rest = { ...(app as any) }
+  delete rest.resources
   return rest
 }
 
@@ -44,23 +50,25 @@ export interface AppState {
   serviceApps: Record<string, ServiceApp>
   currentTask?: ServiceAppTask
   catalog: Record<string, AppCatalogEntry>
+  catalogSources: Record<string, AppSource>
   loadStates: Record<string, AppLoadState>
   manifestSource?: ManifestSource
 }
 
 /**
- * Restore apps from database
+ * Seed the session apps map with the given records and restore service apps.
+ *
+ * Apps are seeded from `workspace.installedApps` (the durable status source,
+ * §8.4), not the deprecated global `apps` IndexedDB store.
  */
 export const restore = (
   state: AppState,
-  apps: Array<{ id: string; cached: CyApp | undefined }>,
+  apps: CyApp[],
   serviceApps: ServiceApp[],
 ): AppState => {
   const newApps = { ...state.apps }
-  apps.forEach(({ id, cached }) => {
-    if (cached !== undefined) {
-      newApps[id] = cached
-    }
+  apps.forEach((app) => {
+    newApps[app.id] = app
   })
 
   const newServiceApps = { ...state.serviceApps }
@@ -165,7 +173,8 @@ export const addService = (
  * Remove a service app
  */
 export const removeService = (state: AppState, url: string): AppState => {
-  const { [url]: deleted, ...restServiceApps } = state.serviceApps
+  const restServiceApps = { ...state.serviceApps }
+  delete restServiceApps[url]
   return {
     ...state,
     serviceApps: restServiceApps,
@@ -303,19 +312,25 @@ export const updateInputColumn = (
 }
 
 /**
- * Replace the entire catalog with entries keyed by id
+ * Replace the entire catalog with entries keyed by id, along with each
+ * entry's provenance. When `sources` is omitted, every entry defaults to
+ * `'manifest'`.
  */
 export const setCatalog = (
   state: AppState,
   entries: AppCatalogEntry[],
+  sources?: Record<string, AppSource>,
 ): AppState => {
   const catalog: Record<string, AppCatalogEntry> = {}
+  const catalogSources: Record<string, AppSource> = {}
   for (const entry of entries) {
     catalog[entry.id] = entry
+    catalogSources[entry.id] = sources?.[entry.id] ?? 'manifest'
   }
   return {
     ...state,
     catalog,
+    catalogSources,
   }
 }
 
@@ -353,8 +368,10 @@ export const setManifestSource = (
  * Remove an app from apps and loadStates
  */
 export const removeApp = (state: AppState, id: string): AppState => {
-  const { [id]: _removedApp, ...restApps } = state.apps
-  const { [id]: _removedLoadState, ...restLoadStates } = state.loadStates
+  const restApps = { ...state.apps }
+  delete restApps[id]
+  const restLoadStates = { ...state.loadStates }
+  delete restLoadStates[id]
   return {
     ...state,
     apps: restApps,

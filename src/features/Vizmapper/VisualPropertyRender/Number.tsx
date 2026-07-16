@@ -1,12 +1,5 @@
-import {
-  Box,
-  Button,
-  Checkbox,
-  FormControlLabel,
-  TextField,
-  Typography,
-} from '@mui/material'
-import { ChangeEvent,useEffect, useState } from 'react'
+import { Box, Button, TextField, Typography } from '@mui/material'
+import { useState } from 'react'
 import React from 'react'
 
 import { IdType } from '../../../models/IdType'

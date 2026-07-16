@@ -4,18 +4,21 @@ This guide explains how to enable and use debug logging in Cytoscape Web using t
 
 ---
 
-## 1. Enable Debug Mode via `config.json`
+## 1. Enable and Disable Debug Mode
 
-To globally enable debug logging, set the `debug` flag in your configuration file:
+Debug mode follows the Vite build mode by default:
 
-```json
-{
-  ...
-  "debug": true
-}
-```
+- Development builds start with debug mode enabled.
+- Production builds start with debug mode disabled.
 
-When `debug` is set to `true`, all debug namespaces will be enabled automatically at startup.
+Press the backtick/tilde key (the key immediately below Escape on a US
+keyboard) to toggle debug mode at runtime. The choice is saved in
+`localStorage` under `cyweb-debug-enabled`, so it survives reloads and overrides
+the build default. The shortcut is ignored while typing in form fields.
+
+Enabling debug mode activates all structured logging namespaces and exposes
+registered developer tools under `window.debug`. Disabling it removes those
+tools and stops structured logging.
 
 ---
 
@@ -54,14 +57,14 @@ You can control which debug messages appear in the browser console by setting th
 
 ### General principles
 
-Use `console.log` for temporary debugging during development, but remove these before committing. For permanent or shared logs, use the structured debug logger.
+Use the structured debug logger rather than `console.log`.
 
 ### Enable All Debug Logs
 
 Open your browser's DevTools console and enter:
 
 ```js
-localStorage.debug = '*'
+localStorage.setItem('cyweb-debug-enabled', 'true')
 ```
 
 ### Enable Specific Namespaces
@@ -81,7 +84,7 @@ localStorage.debug = 'db:*,store:info,api:error'
 To turn off all debug logs:
 
 ```js
-localStorage.debug = ''
+localStorage.setItem('cyweb-debug-enabled', 'false')
 ```
 
 ---
@@ -89,11 +92,11 @@ localStorage.debug = ''
 ## 4. Example Usage in Code
 
 ```typescript
-import { logDb } from './debug/index'
+import { logDb } from './debug'
 
 logDb.info('Database opened successfully')
 logDb.warn('Database response is slow')
-logDeb.error('Failed to open database', error)
+logDb.error('Failed to open database', error)
 ```
 
 ---
@@ -102,7 +105,9 @@ logDeb.error('Failed to open database', error)
 
 - Only messages from enabled namespaces and levels will appear in the console.
 - You can combine multiple namespaces and levels for fine-grained control.
-- Changes to `localStorage.debug` take effect immediately and persist across page reloads.
+- The backtick/tilde toggle takes effect immediately and persists across page reloads.
+- Direct changes to `localStorage.debug` control namespace filtering but do not toggle `window.debug` tools.
+- Reload after directly changing `cyweb-debug-enabled`; use the keyboard shortcut for an immediate change.
 
 ---
 
@@ -112,14 +117,14 @@ For debugging and inspection, some core objects are exposed on the global `windo
 
 ### Cytoscape.js Instance
 
-When debug mode is enabled, the Cytoscape.js instance is available as `window.cy`.  
+When debug mode is enabled, the Cytoscape.js instance is available as `window.debug.cy`.  
 This lets you run commands and inspect the network directly:
 
 ```js
-window.cy.elements() // Get all elements
-window.cy.layout({ name: 'cose' }).run() // Run a layout
-window.cy.zoom(2) // Set zoom level
-window.cy.pan({ x: 100, y: 100 }) // Pan the viewport
+window.debug.cy.elements() // Get all elements
+window.debug.cy.layout({ name: 'cose' }).run() // Run a layout
+window.debug.cy.zoom(2) // Set zoom level
+window.debug.cy.pan({ x: 100, y: 100 }) // Pan the viewport
 ```
 
 ### Other Exposed Objects
@@ -127,8 +132,8 @@ window.cy.pan({ x: 100, y: 100 }) // Pan the viewport
 Depending on your app setup, you may also find other objects such as:
 
 ```js
-window.cy // cy.js renderer
-window.db // indexeddb instance
+window.debug.cy // cy.js renderer
+window.debug.db // IndexedDB instance
 // ...
 ```
 
@@ -155,25 +160,24 @@ interface Window {
 
 ```typescript
 // Make the database instance available globally
-if (config.debug) {
-  ;(window as any).debug.db = db
-}
+registerDebugTool('db', db)
 
 // Expose Cytoscape.js instance
-;(window as any).debug.cy = cy
+registerDebugTool('cy', cy)
 ```
 
-Now you can access these objects directly in the browser console, e.g. `window.debug.db`, `window.debug.cy`, or `window.store`.
+Now you can access these objects directly in the browser console, e.g. `window.debug.db` or `window.debug.cy`.
 
 ---
 
 ## 7. Troubleshooting
 
-- If you do not see debug logs, check that `config.debug` is set to `true` and that `localStorage.debug` is configured correctly.
+- If you do not see debug logs, press backtick/tilde and ensure the browser console's verbose level is visible.
 - **Important:**  
   In your browser's DevTools, make sure the "Verbose" (or "Info") log level is enabled.  
   Some browsers filter out debug output by default—enable "Verbose" to see all debug messages.
-- For production, set `config.debug` to `false` and clear `localStorage.debug` to disable debug output.
+- Production starts with debug disabled unless a saved user override enables it.
+- why-did-you-render is loaded only in development builds and is omitted from production bundles.
 - Use the browser console to inspect global objects via `window`.
 
 ---
@@ -181,6 +185,6 @@ Now you can access these objects directly in the browser console, e.g. `window.d
 ## References
 
 - [`debug` package documentation](https://github.com/debug-js/debug)
-- Cytoscape Web source code: `src/debug/index.ts`
+- Cytoscape Web source code: `src/debug.ts`
 
 ---

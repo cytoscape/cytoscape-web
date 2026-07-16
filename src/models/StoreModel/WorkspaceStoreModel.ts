@@ -1,3 +1,5 @@
+import { AppStatus } from '../AppModel/AppStatus'
+import { InstalledApp } from '../AppModel/InstalledApp'
 import { IdType } from '../IdType'
 import { Workspace } from '../WorkspaceModel'
 
@@ -37,6 +39,19 @@ export interface WorkspaceActions {
   deleteNetworkModifiedStatus: (networkId: IdType) => void
 
   deleteAllNetworkModifiedStatuses: () => void
+
+  // Installed apps (workspace-scoped app install records).
+  // Must only be called after workspace hydration (workspace.id !== ''),
+  // otherwise the persist wrapper silently drops the write.
+
+  // Add or replace an installed app (upsert by entry.id)
+  addInstalledApp: (app: InstalledApp) => void
+
+  // Remove an installed app by id
+  removeInstalledApp: (id: IdType) => void
+
+  // Update the status of an installed app; no-op + warning if id is absent
+  setInstalledAppStatus: (id: IdType, status: AppStatus) => void
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions

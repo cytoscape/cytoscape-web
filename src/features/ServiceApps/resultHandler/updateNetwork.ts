@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 
-import { logApi, logStore } from '../../../debug'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
@@ -12,8 +11,8 @@ import {
 } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logApi, logStore } from '../../../debug'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
   getAttributeDeclarations,

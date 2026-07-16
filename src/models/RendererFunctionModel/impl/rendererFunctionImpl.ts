@@ -1,8 +1,13 @@
 import { IdType } from '../../IdType'
 
+export type RendererFunction = (...args: any[]) => any
+
 export interface RendererFunctionState {
-  rendererFunctions: Map<string, Map<string, Function>>
-  rendererFunctionsByNetworkId: Map<IdType, Map<string, Map<string, Function>>>
+  rendererFunctions: Map<string, Map<string, RendererFunction>>
+  rendererFunctionsByNetworkId: Map<
+    IdType,
+    Map<string, Map<string, RendererFunction>>
+  >
 }
 
 /**
@@ -12,12 +17,12 @@ export const setFunction = (
   state: RendererFunctionState,
   rendererName: string,
   functionName: string,
-  rendererFunction: Function,
+  rendererFunction: RendererFunction,
   networkId?: IdType,
 ): RendererFunctionState => {
   const newRendererFunctions = new Map(state.rendererFunctions)
   if (!newRendererFunctions.has(rendererName)) {
-    newRendererFunctions.set(rendererName, new Map<string, Function>())
+    newRendererFunctions.set(rendererName, new Map<string, RendererFunction>())
   }
   const rendererMap = newRendererFunctions.get(rendererName)!
   const newRendererMap = new Map(rendererMap)
@@ -32,13 +37,13 @@ export const setFunction = (
     if (!newRendererFunctionsByNetworkId.has(networkId)) {
       newRendererFunctionsByNetworkId.set(
         networkId,
-        new Map<string, Map<string, Function>>(),
+        new Map<string, Map<string, RendererFunction>>(),
       )
     }
     const networkMap = newRendererFunctionsByNetworkId.get(networkId)!
     const newNetworkMap = new Map(networkMap)
     if (!newNetworkMap.has(rendererName)) {
-      newNetworkMap.set(rendererName, new Map<string, Function>())
+      newNetworkMap.set(rendererName, new Map<string, RendererFunction>())
     }
     const rendererMapInNetwork = newNetworkMap.get(rendererName)!
     const newRendererMapInNetwork = new Map(rendererMapInNetwork)
@@ -61,7 +66,7 @@ export const getFunction = (
   rendererName: string,
   functionName: string,
   networkId?: IdType,
-): Function | undefined => {
+): RendererFunction | undefined => {
   if (networkId) {
     return state.rendererFunctionsByNetworkId
       .get(networkId)

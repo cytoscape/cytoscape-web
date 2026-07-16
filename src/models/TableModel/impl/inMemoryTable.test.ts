@@ -1,6 +1,7 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { Column } from '../Column'
-import { Table } from '../Table'
 import { ValueType } from '../ValueType'
 import {
   addColumn,
@@ -102,9 +103,8 @@ describe('InMemoryTable', () => {
   describe('addColumn', () => {
     it('should return the table unchanged', () => {
       const table = createTable('test-table')
-      const newColumns: Column[] = [{ name: 'newCol', type: 'string' }]
 
-      const result = addColumn(table, newColumns)
+      const result = addColumn(table)
 
       expect(result).toBe(table)
       // Note: addColumn currently doesn't modify the table
@@ -672,6 +672,9 @@ describe('InMemoryTable', () => {
       table = applyValueToElements(table, 'newCol', 200, ['n1'])
       table = duplicateColumn(table, 'newCol1')
       table = deleteRows(table, ['n1'])
+
+      // The chained operations produce a new table object
+      expect(table).not.toBe(original)
 
       // Verify original is unchanged
       expect(original.columns).toBe(originalColumns)

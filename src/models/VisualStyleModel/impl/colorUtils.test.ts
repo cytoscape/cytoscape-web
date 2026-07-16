@@ -1,5 +1,7 @@
-import { ColorType } from '../VisualPropertyValue/ColorType'
+import { describe, expect, it } from 'vitest'
+
 import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
+import { ColorType } from '../VisualPropertyValue/ColorType'
 import { generateRandomColor, pickEvenly } from './colorUtils'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/colorUtils.test.ts

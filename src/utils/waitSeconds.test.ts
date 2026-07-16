@@ -1,13 +1,15 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { waitSeconds } from './waitSeconds'
 
 describe('waitSeconds', () => {
   beforeEach(() => {
-    jest.useFakeTimers()
+    vi.useFakeTimers()
   })
 
   afterEach(() => {
-    jest.runOnlyPendingTimers()
-    jest.useRealTimers()
+    vi.runOnlyPendingTimers()
+    vi.useRealTimers()
   })
 
   it('should return a Promise', () => {
@@ -27,7 +29,7 @@ describe('waitSeconds', () => {
     expect(resolved).toBe(false)
 
     // Fast-forward 1 second
-    jest.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(1000)
 
     // Wait for promise to resolve using flushPromises pattern
     await Promise.resolve()
@@ -52,7 +54,7 @@ describe('waitSeconds', () => {
       expect(resolved).toBe(false)
 
       // Fast-forward the exact amount
-      jest.advanceTimersByTime(milliseconds)
+      vi.advanceTimersByTime(milliseconds)
 
       // Allow promise to resolve
       await Promise.resolve()
@@ -71,7 +73,7 @@ describe('waitSeconds', () => {
     expect(resolved).toBe(false)
 
     // Fast-forward 200ms
-    jest.advanceTimersByTime(200)
+    vi.advanceTimersByTime(200)
 
     await Promise.resolve()
     expect(resolved).toBe(true)
@@ -86,7 +88,7 @@ describe('waitSeconds', () => {
     })
 
     // Should resolve immediately (0ms)
-    jest.advanceTimersByTime(0)
+    vi.advanceTimersByTime(0)
 
     await Promise.resolve()
     expect(resolved).toBe(true)
@@ -101,7 +103,7 @@ describe('waitSeconds', () => {
     })
 
     // Fast-forward only 1 second
-    jest.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(1000)
 
     // Allow any pending promises to process
     await Promise.resolve()
@@ -110,7 +112,7 @@ describe('waitSeconds', () => {
     expect(resolved).toBe(false)
 
     // Now fast-forward the remaining second
-    jest.advanceTimersByTime(1000)
+    vi.advanceTimersByTime(1000)
     await Promise.resolve()
     expect(resolved).toBe(true)
   })
@@ -123,17 +125,17 @@ describe('waitSeconds', () => {
     waitSeconds(0.3).then(() => results.push(3))
 
     // Advance by 100ms - only first should resolve
-    jest.advanceTimersByTime(100)
+    vi.advanceTimersByTime(100)
     await Promise.resolve()
     expect(results).toEqual([1])
 
     // Advance by another 100ms - second should resolve
-    jest.advanceTimersByTime(100)
+    vi.advanceTimersByTime(100)
     await Promise.resolve()
     expect(results).toEqual([1, 2])
 
     // Advance by another 100ms - third should resolve
-    jest.advanceTimersByTime(100)
+    vi.advanceTimersByTime(100)
     await Promise.resolve()
     expect(results).toEqual([1, 2, 3])
   })

@@ -18,7 +18,7 @@ import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
-import { DisplayMode, FilterConfig } from '../../../../models/FilterModel'
+import { FilterConfig } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 import { IdType } from '../../../../models/IdType'
 import { GraphObjectType } from '../../../../models/NetworkModel'
@@ -131,6 +131,9 @@ export const FilterPanel = () => {
 
   /**
    * Enable filter if URL parameters are set
+   *
+   * Mount-only by design: re-running would call setIsFilterEnabled with the
+   * (never-updated) URL value and snap the user's toggle back to it.
    */
   useEffect(() => {
     const filterEnabled = searchParams.get(FilterUrlParams.FILTER_ENABLED)
@@ -164,10 +167,14 @@ export const FilterPanel = () => {
       )
       // setSearchParams(searchParams)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only URL-param init; re-runs would clobber the toggle
   }, [])
 
   /**
    * Add visual mapping to the filter config
+   *
+   * `selectedFilter` must NOT be a dependency: this effect writes it back via
+   * updateFilterConfig with a fresh object, so adding it would loop forever.
    */
   useEffect(() => {
     if (selectedFilter === undefined) return
@@ -178,6 +185,7 @@ export const FilterPanel = () => {
 
     const newFilterConfig = { ...selectedFilter, visualMapping }
     updateFilterConfig(newFilterConfig.name, newFilterConfig)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- vs trigger only; selectedFilter is written here (loop)
   }, [vs])
 
   /**
@@ -186,15 +194,18 @@ export const FilterPanel = () => {
   useEffect(() => {
     searchParams.set(FilterUrlParams.FILTER_ENABLED, isFilterEnabled.toString())
     // setSearchParams(searchParams)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the toggle; searchParams is fresh each render
   }, [isFilterEnabled])
 
   useEffect(() => {
     if (!shouldApplyFilter) return
 
-    // Create a filter for the selected attribute if it does not exist
+    // Read filterConfigs at execution time: this effect writes it back via
+    // updateFilterConfig/addFilterConfig, so a reactive dep would loop.
+    const { filterConfigs: currentFilterConfigs } = useFilterStore.getState()
 
-    // const currentConfig: FilterConfig = filterConfigs[DEFAULT_FILTER_NAME]
-    const currentConfig = filterConfigs[targetNetworkId]
+    // Create a filter for the selected attribute if it does not exist
+    const currentConfig = currentFilterConfigs[targetNetworkId]
 
     const visualMapping = getMapping(vs, targetAttrName)
 
@@ -225,7 +236,7 @@ export const FilterPanel = () => {
       visualMapping,
     )
 
-    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
+    if (currentFilterConfigs[DEFAULT_FILTER_NAME] === undefined) {
       addFilterConfig(filterConfig)
       // Encode the filter settings into the URL
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
@@ -238,7 +249,18 @@ export const FilterPanel = () => {
     } else {
       // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
     }
-  }, [targetAttrName, selectedObjectType, vs])
+  }, [
+    targetAttrName,
+    selectedObjectType,
+    vs,
+    shouldApplyFilter,
+    addFilterConfig,
+    updateFilterConfig,
+    table,
+    targetNetworkId,
+    searchParams,
+    isFilterEnabled,
+  ])
 
   if (!shouldApplyFilter || selectedFilter === undefined || table === undefined)
     return null

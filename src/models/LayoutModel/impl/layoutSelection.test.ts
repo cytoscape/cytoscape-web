@@ -1,7 +1,7 @@
+import { describe, expect, it, vi } from 'vitest'
+
 import NetworkFn from '../../NetworkModel'
-import { NetworkSummary } from '../../NetworkSummaryModel'
 import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
-import { LayoutAlgorithm } from '../LayoutAlgorithm'
 import { LayoutEngine } from '../LayoutEngine'
 import {
   defAlgorithm,
@@ -13,12 +13,12 @@ import {
 } from './layoutSelection'
 
 // Mock the isHCX function to avoid dependency issues
-jest.mock('../../../features/HierarchyViewer/utils/hierarchyUtil', () => ({
-  isHCX: jest.fn(() => false),
+vi.mock('../../../features/HierarchyViewer/utils/hierarchyUtil', () => ({
+  isHCX: vi.fn(() => false),
 }))
 
 // Mock Cosmos layout to avoid dependency issues with @cosmograph/cosmos
-jest.mock('./Cosmos/cosmosLayout', () => ({
+vi.mock('./Cosmos/cosmosLayout', () => ({
   CosmosLayout: {
     name: 'cosmos',
     algorithms: {

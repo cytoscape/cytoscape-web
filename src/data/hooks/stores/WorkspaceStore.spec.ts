@@ -1,15 +1,59 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { IdType } from '../../../models/IdType'
+import { logStore } from '../../../debug'
+import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { InstalledApp } from '../../../models/AppModel/InstalledApp'
 import { Workspace } from '../../../models/WorkspaceModel'
+import { toPlainObject } from '../../db/serialization'
 import { useWorkspaceStore } from './WorkspaceStore'
 
+const FIXED_TIME = '2026-06-01T00:00:00.000Z'
+
+const sampleEntry = (id: string): AppCatalogEntry => ({
+  id,
+  url: `https://apps.cytoscape.org/web/${id}/1.0.0/remoteEntry.js`,
+  author: 'Test Author',
+  name: `${id} app`,
+  version: '1.0.0',
+})
+
+const sampleInstalledApp = (
+  id: string,
+  status: AppStatus = AppStatus.Inactive,
+): InstalledApp => ({
+  entry: sampleEntry(id),
+  status,
+  source: 'appstore',
+  installedAt: FIXED_TIME,
+})
+
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  deleteDb: jest.fn().mockResolvedValue(undefined),
-  putWorkspaceToDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof import('../../db')
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 describe('useWorkspaceStore', () => {
   beforeEach(() => {
@@ -597,6 +641,132 @@ describe('useWorkspaceStore', () => {
       expect(result.current.workspace.networkIds).toContain('network-1')
       expect(result.current.workspace.networkIds).toContain('network-2')
       expect(result.current.workspace.networkIds).toHaveLength(2)
+    })
+  })
+
+  describe('installedApps', () => {
+    describe('addInstalledApp', () => {
+      it('should add an installed app record', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.addInstalledApp(sampleInstalledApp('hello'))
+        })
+
+        expect(result.current.workspace.installedApps).toEqual([
+          sampleInstalledApp('hello'),
+        ])
+      })
+
+      it('should replace (not duplicate) when adding the same id again', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.addInstalledApp(
+            sampleInstalledApp('hello', AppStatus.Inactive),
+          )
+          result.current.addInstalledApp(
+            sampleInstalledApp('hello', AppStatus.Active),
+          )
+        })
+
+        expect(result.current.workspace.installedApps).toHaveLength(1)
+        expect(result.current.workspace.installedApps?.[0].status).toBe(
+          AppStatus.Active,
+        )
+      })
+
+      it('should preserve position when replacing an existing record', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.addInstalledApp(sampleInstalledApp('a'))
+          result.current.addInstalledApp(sampleInstalledApp('b'))
+          result.current.addInstalledApp(
+            sampleInstalledApp('a', AppStatus.Active),
+          )
+        })
+
+        const ids = result.current.workspace.installedApps?.map(
+          (x) => x.entry.id,
+        )
+        expect(ids).toEqual(['a', 'b'])
+        expect(result.current.workspace.installedApps?.[0].status).toBe(
+          AppStatus.Active,
+        )
+      })
+    })
+
+    describe('removeInstalledApp', () => {
+      it('should remove an installed app by id', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.addInstalledApp(sampleInstalledApp('a'))
+          result.current.addInstalledApp(sampleInstalledApp('b'))
+          result.current.removeInstalledApp('a')
+        })
+
+        const ids = result.current.workspace.installedApps?.map(
+          (x) => x.entry.id,
+        )
+        expect(ids).toEqual(['b'])
+      })
+
+      it('should be a safe no-op for an unknown id', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.addInstalledApp(sampleInstalledApp('a'))
+          result.current.removeInstalledApp('unknown')
+        })
+
+        expect(result.current.workspace.installedApps).toHaveLength(1)
+      })
+    })
+
+    describe('setInstalledAppStatus', () => {
+      it('should update the status of an installed app', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.addInstalledApp(
+            sampleInstalledApp('hello', AppStatus.Inactive),
+          )
+          result.current.setInstalledAppStatus('hello', AppStatus.Active)
+        })
+
+        expect(result.current.workspace.installedApps?.[0].status).toBe(
+          AppStatus.Active,
+        )
+      })
+
+      it('should warn and not throw for an unknown id', () => {
+        const warnSpy = vi.spyOn(logStore, 'warn').mockImplementation(() => {})
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.setInstalledAppStatus('unknown', AppStatus.Active)
+        })
+
+        expect(warnSpy).toHaveBeenCalled()
+        expect(result.current.workspace.installedApps ?? []).toEqual([])
+        warnSpy.mockRestore()
+      })
+    })
+
+    describe('persistence', () => {
+      it('installedApps survives a toPlainObject round-trip', () => {
+        const { result } = renderHook(() => useWorkspaceStore())
+
+        act(() => {
+          result.current.setId('ws-1')
+          result.current.addInstalledApp(sampleInstalledApp('hello'))
+        })
+
+        const plain = toPlainObject(result.current.workspace)
+        expect(plain.installedApps).toEqual([sampleInstalledApp('hello')])
+      })
     })
   })
 })

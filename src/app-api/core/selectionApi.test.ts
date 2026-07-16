@@ -1,20 +1,21 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 // src/app-api/core/selectionApi.test.ts
 // Plain Jest tests for selectionApi core — no renderHook, no React context.
-
 import { ApiErrorCode } from '../types/ApiResult'
 import { selectionApi } from './selectionApi'
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
 
-const mockGetViewModel = jest.fn()
-const mockExclusiveSelect = jest.fn()
-const mockAdditiveSelect = jest.fn()
-const mockAdditiveUnselect = jest.fn()
-const mockToggleSelected = jest.fn()
+const mockGetViewModel = vi.fn()
+const mockExclusiveSelect = vi.fn()
+const mockAdditiveSelect = vi.fn()
+const mockAdditiveUnselect = vi.fn()
+const mockToggleSelected = vi.fn()
 
-jest.mock('../../data/hooks/stores/ViewModelStore', () => ({
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       getViewModel: mockGetViewModel,
       exclusiveSelect: mockExclusiveSelect,
       additiveSelect: mockAdditiveSelect,
@@ -39,7 +40,7 @@ function makeNetworkView(overrides?: {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
 })
 
 // --- exclusiveSelect ---------------------------------------------------------

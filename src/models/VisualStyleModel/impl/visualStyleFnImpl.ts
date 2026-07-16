@@ -1,34 +1,13 @@
-import isEqual from 'lodash/isEqual'
-import uniqWith from 'lodash/uniqWith'
-
-import { ValueType } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
 import {
-  Bypass,
-  ContinuousFunctionControlPoint,
-  ContinuousMappingFunction,
-  CustomGraphicsType,
-  DiscreteMappingFunction,
-  MappingFunctionType,
   NetworkViewSources,
-  PassthroughMappingFunction,
   VisualProperty,
   VisualPropertyGroup,
-  VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
 } from '..'
-import { CustomGraphicsPositionType } from '../VisualPropertyValue/CustomGraphicsType'
-import { VisualStyleOptions } from '../VisualStyleOptions'
 import { createNewNetworkView, updateNetworkView } from './computeViewUtil'
-import {
-  CXCustomGraphicsType,
-} from './cxVisualPropertyConverter'
-import {
-  DEFAULT_CUSTOM_GRAPHICS,
-  DEFAULT_CUSTOM_GRAPHICS_POSITION,
-  getDefaultVisualStyle,
-} from './defaultVisualStyle'
+import { getDefaultVisualStyle } from './defaultVisualStyle'
 
 const sortByDisplayName = (
   a: VisualProperty<VisualPropertyValueType>,

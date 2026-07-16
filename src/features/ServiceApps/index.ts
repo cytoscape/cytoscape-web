@@ -138,7 +138,7 @@ export const createNetworkDataObj = (
 
     filteredEdges.forEach((edge) => {
       const row = table?.edgeTable.rows.get(edge.id)
-      
+
       const rowData: Record<string, any> = {
         source: edge.s,
         target: edge.t,
@@ -208,7 +208,7 @@ const filterTable = (
           // Filter the columns for the current row
           const filteredRow = selectedColumns.reduce(
             (colAcc, columnName) => {
-              if (row.hasOwnProperty(columnName)) {
+              if (Object.prototype.hasOwnProperty.call(row, columnName)) {
                 colAcc[columnName] = row[columnName]
               }
               return colAcc
@@ -228,7 +228,7 @@ const filterTable = (
       (acc, [nodeId, row]) => {
         const filteredRow = selectedColumns.reduce(
           (colAcc, columnName) => {
-            if (row.hasOwnProperty(columnName)) {
+            if (Object.prototype.hasOwnProperty.call(row, columnName)) {
               colAcc[columnName] = row[columnName]
             }
             return colAcc
@@ -304,7 +304,7 @@ export const useRunTask = (): ((
       })
       return result
     },
-    [],
+    [submitAndProcessTask],
   )
   return runTask
 }
@@ -370,7 +370,7 @@ export const useSubmitAndProcessTask = (): {
 
       return taskResult
     },
-    [],
+    [setCurrentTask],
   )
   return { submitAndProcessTask }
 }

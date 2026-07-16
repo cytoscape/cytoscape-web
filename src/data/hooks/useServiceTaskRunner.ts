@@ -5,15 +5,6 @@ import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
 // TODO: Move these from features to other folders
 import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
-import { useAppStore } from './stores/AppStore'
-import { useNetworkStore } from './stores/NetworkStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
-import { useTableStore } from './stores/TableStore'
-import { useUiStateStore } from './stores/UiStateStore'
-import { useViewModelStore } from './stores/ViewModelStore'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
-import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ServiceAppAction } from '../../models/AppModel/ServiceAppAction'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
@@ -25,7 +16,16 @@ import { TableRecord } from '../../models/StoreModel/TableStoreModel'
 import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
+import { useAppStore } from './stores/AppStore'
 import { useMessageStore } from './stores/MessageStore'
+import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
+import { useTableStore } from './stores/TableStore'
+import { useUiStateStore } from './stores/UiStateStore'
+import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
+import { useWorkspaceStore } from './stores/WorkspaceStore'
 export interface RunTaskResult {
   status: ServiceStatus
   algorithmName: string
@@ -199,7 +199,7 @@ export const useServiceTaskRunner = (): ((
         message: result.message,
       } as RunTaskResult
     },
-    [serviceApps, runTask, getHandler],
+    [serviceApps, runTask, getHandler, addMessage],
   )
 
   return run

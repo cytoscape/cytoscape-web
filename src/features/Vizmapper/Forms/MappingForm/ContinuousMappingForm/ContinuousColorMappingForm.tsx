@@ -37,7 +37,6 @@ import { ColorPalettePicker } from './ColorPalettePicker'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
 import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
 
-
 // color mapping form for now
 export function ContinuousColorMappingForm(props: {
   currentNetworkId: IdType
@@ -47,10 +46,14 @@ export function ContinuousColorMappingForm(props: {
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
-  if (m == null) {
-    return <Box></Box>
+  // Fall back to a harmless empty mapping so the hooks below can run
+  // unconditionally; the component still bails out before rendering when
+  // the real mapping is missing (see the early return above the JSX below).
+  const { min, max, controlPoints } = m ?? {
+    min: { value: 0, vpValue: '' },
+    max: { value: 0, vpValue: '' },
+    controlPoints: [] as ContinuousFunctionControlPoint[],
   }
-  const { min, max, controlPoints } = m
 
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
@@ -175,6 +178,14 @@ export function ContinuousColorMappingForm(props: {
     range: vpValueDomain,
   })
 
+  // The debounced commit below must keep a stable identity (recreating it
+  // would drop pending trailing calls), so it reads the current mapping and
+  // props through this ref instead of its creation-time closure — otherwise
+  // every commit spreads the mount-time mapping and records the mount-time
+  // value as the undo "before" state, corrupting the undo stack.
+  const latest = React.useRef({ m, props, postEdit })
+  latest.current = { m, props, postEdit }
+
   const updateContinuousMapping = React.useMemo(
     () =>
       debounce(
@@ -185,6 +196,7 @@ export function ContinuousColorMappingForm(props: {
           ltMinVpValue: VisualPropertyValueType,
           gtMaxVpValue: VisualPropertyValueType,
         ) => {
+          const { m, props, postEdit } = latest.current
           const nextMapping: ContinuousMappingFunction = {
             ...m,
             min,
@@ -224,7 +236,7 @@ export function ContinuousColorMappingForm(props: {
         { trailing: true },
       ),
 
-    [],
+    [setContinuousMappingValues],
   )
 
   React.useEffect(() => {
@@ -249,6 +261,11 @@ export function ContinuousColorMappingForm(props: {
           }
         }),
     )
+    // Key-driven resync: rebuild local min/max/handles from the store only
+    // when the mapped attribute changes. minState/maxState are `??` fallbacks
+    // read fresh at trigger time; adding them would reset the user's
+    // in-progress input from the (200ms-lagging, debounced) store value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resync keyed on mapping attribute only
   }, [props.visualProperty.mapping?.attribute])
 
   const createHandle = (value: number, vpValue: string): void => {
@@ -306,9 +323,12 @@ export function ContinuousColorMappingForm(props: {
         value: max,
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on handle edits; the [minState]/[maxState] effects own the inverse clamping
   }, [handles])
 
   // anytime someone changes the min value, make sure all handle values are greater than the min
+  // note: `handles` must stay out of the deps — setHandles creates new identities
+  // every run, so adding it would re-trigger this effect forever
   React.useEffect(() => {
     const newHandles = [...handles]
       .map((h) => {
@@ -332,9 +352,12 @@ export function ContinuousColorMappingForm(props: {
     setAddHandleFormValue(
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- min-edit trigger only; adding handles would loop
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
+  // note: `handles` must stay out of the deps — setHandles creates new identities
+  // every run, so adding it would re-trigger this effect forever
   React.useEffect(() => {
     const newHandles = [...handles]
       .map((h) => {
@@ -358,7 +381,12 @@ export function ContinuousColorMappingForm(props: {
     setAddHandleFormValue(
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- max-edit trigger only; adding handles would loop
   }, [maxState])
+
+  if (m == null) {
+    return <Box></Box>
+  }
 
   return (
     <Paper
@@ -429,7 +457,6 @@ export function ContinuousColorMappingForm(props: {
                   horizontalPadding={GRADIENT_AXIS_HORIZONTAL_PADDING}
                   verticalPadding={GRADIENT_AXIS_VERTICAL_PADDING}
                   valuePixelScale={valuePixelScale}
-                  colorScale={colorScale}
                   labelColor={theme.palette.text.secondary}
                   strokeColor={theme.palette.text.secondary}
                   cm={m}
@@ -449,10 +476,10 @@ export function ContinuousColorMappingForm(props: {
                   bounds="parent"
                   axis="x"
                   handle=".handle"
-                  onStart={(e) => {
+                  onStart={() => {
                     setlastDraggedHandleId(h.id)
                   }}
-                  onStop={(e) => {
+                  onStop={() => {
                     setlastDraggedHandleId(h.id)
                   }}
                   onDrag={(e, data) => {
@@ -507,11 +534,13 @@ export function ContinuousColorMappingForm(props: {
                             right: -10,
                             width: 20,
                             height: 20,
-                            backgroundColor: (theme) => theme.palette.text.secondary,
+                            backgroundColor: (theme) =>
+                              theme.palette.text.secondary,
                             color: (theme) => theme.palette.background.default,
                             '&:hover': {
                               cursor: 'pointer',
-                              backgroundColor: (theme) => theme.palette.text.primary,
+                              backgroundColor: (theme) =>
+                                theme.palette.text.primary,
                               color: (theme) => theme.palette.background.paper,
                             },
                           }}
@@ -582,7 +611,10 @@ export function ContinuousColorMappingForm(props: {
                       <ArrowDropDownIcon
                         sx={{
                           fontSize: '40px',
-                          color: (theme) => isEndHandle ? theme.palette.text.disabled : theme.palette.text.secondary,
+                          color: (theme) =>
+                            isEndHandle
+                              ? theme.palette.text.disabled
+                              : theme.palette.text.secondary,
                           zIndex: 3,
                         }}
                       />
@@ -608,7 +640,12 @@ export function ContinuousColorMappingForm(props: {
                 }}
               >
                 <ArrowLeftIcon
-                  sx={{ fontSize: 40, position: 'absolute', left: -27, color: (theme) => theme.palette.text.disabled }}
+                  sx={{
+                    fontSize: 40,
+                    position: 'absolute',
+                    left: -27,
+                    color: (theme) => theme.palette.text.disabled,
+                  }}
                 />
                 <VisualPropertyValueForm
                   currentValue={m.ltMinVpValue}
@@ -643,7 +680,12 @@ export function ContinuousColorMappingForm(props: {
                 }}
               >
                 <ArrowRightIcon
-                  sx={{ fontSize: 40, position: 'absolute', left: 35, color: (theme) => theme.palette.text.disabled }}
+                  sx={{
+                    fontSize: 40,
+                    position: 'absolute',
+                    left: 35,
+                    color: (theme) => theme.palette.text.disabled,
+                  }}
                 />
                 <VisualPropertyValueForm
                   currentValue={m.gtMaxVpValue}

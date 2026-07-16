@@ -4,19 +4,16 @@ import {
   Alert,
   Box,
   Button,
-  Center,
   Divider,
   Group,
   Group as MantineGroup,
   NumberInput,
   Popover,
   Radio,
-  Select,
   Space,
   Switch,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from '@mantine/core'
 import {
@@ -27,16 +24,8 @@ import {
 import Papa from 'papaparse'
 import { Column } from 'primereact/column'
 import { DataTable, DataTableValue } from 'primereact/datatable'
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { AppConfigContext } from '../../../../AppConfigContext'
 import { putNetworkSummaryToDb } from '../../../../data/db'
 import { useUrlNavigation } from '../../../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../../../data/hooks/stores/NetworkStore'
@@ -52,10 +41,6 @@ import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
 import { DelimiterType } from '../../model/DelimiterType'
 import {
-  convertFileDelimiterToEffective,
-  convertFileDelimiterToStorageValue,
-} from '../../model/impl/DelimiterUtils'
-import {
   createNetworkFromTableData,
   DEFAULT_COLUMN_DATA_TYPE,
   DEFAULT_COLUMN_MEANING,
@@ -68,13 +53,14 @@ import {
   valueTypeName2Label,
 } from '../../model/impl/CreateNetworkFromTable'
 import {
+  convertFileDelimiterToEffective,
+  convertFileDelimiterToStorageValue,
+} from '../../model/impl/DelimiterUtils'
+import {
   generateInferredColumnAssignment,
   validateColumnValues,
 } from '../../model/impl/ParseValues'
-import {
-  CreateNetworkFromTableStep,
-  useCreateNetworkFromTableStore,
-} from '../../store/createNetworkFromTableStore'
+import { useCreateNetworkFromTableStore } from '../../store/createNetworkFromTableStore'
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import {
   ColumnAssignmentTypeForm,
@@ -132,8 +118,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     return (result.data as DataTableValue[]).map((row) => {
       if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
         const newRow: Record<string, any> = {}
@@ -153,13 +137,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     })
   })
   const [columns, setColumns] = useState<ColumnAssignmentState[]>(() => {
-    const result = Papa.parse(text, {
-      header: useFirstRowAsColumns,
-      skipEmptyLines: true,
-      delimiter: effectiveFileDelimiter,
-    })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     const nextColumns = generateInferredColumnAssignment(
       rows as DataTableValue[],
     )
@@ -171,7 +148,6 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     (state) => state.setCurrentNetworkId,
   )
 
-  const ui = useUiStateStore((state) => state.ui)
   const setVisualStyleOptions = useUiStateStore(
     (state) => state.setVisualStyleOptions,
   )
@@ -188,8 +164,9 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     (state) => state.addNetworkIds,
   )
 
-  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
-
+  // Re-parse only when parse options change, merging the user's existing column
+  // assignments. `columns` must stay out of the deps: the effect calls setColumns
+  // with fresh identities, so adding it would loop and clobber user edits.
   useEffect(() => {
     const result = Papa.parse(text, {
       header: useFirstRowAsColumns,
@@ -290,6 +267,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
 
       setColumns(validatedColumns)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-parse on option change only; adding columns would loop
   }, [
     skipNLines,
     useFirstRowAsColumns,
@@ -308,33 +286,32 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setOptions({ delimiter: delimiterValue })
   }, [fileDelimiter, customFileDelimiter, setOptions])
 
-  const onColumnAssignmentTypeChange = (
-    index: number,
-    value: ColumnAssignmentType,
-  ) => {
-    const nextValidVtns = validValueTypes(value)
-    setValidValueTypeNames(nextValidVtns)
-    const nextColumns = updateColumnAssignment(value, index, columns)
+  const onColumnAssignmentTypeChange = useCallback(
+    (index: number, value: ColumnAssignmentType) => {
+      const nextValidVtns = validValueTypes(value)
+      setValidValueTypeNames(nextValidVtns)
+      const nextColumns = updateColumnAssignment(value, index, columns)
 
-    setColumns(nextColumns)
-  }
+      setColumns(nextColumns)
+    },
+    [columns],
+  )
 
-  const onValueTypeChange = (
-    index: number,
-    value: ValueTypeName,
-    delimiter?: DelimiterType,
-  ) => {
-    const nextValidCats = validColumnAssignmentTypes(value)
-    setValidColumnAssignmentTypes(nextValidCats)
-    const nextColumns = updateColumnType(value, index, columns, delimiter)
+  const onValueTypeChange = useCallback(
+    (index: number, value: ValueTypeName, delimiter?: DelimiterType) => {
+      const nextValidCats = validColumnAssignmentTypes(value)
+      setValidColumnAssignmentTypes(nextValidCats)
+      const nextColumns = updateColumnType(value, index, columns, delimiter)
 
-    nextColumns[index].invalidValues = validateColumnValues(
-      nextColumns[index],
-      rows,
-    )
+      nextColumns[index].invalidValues = validateColumnValues(
+        nextColumns[index],
+        rows,
+      )
 
-    setColumns(nextColumns)
-  }
+      setColumns(nextColumns)
+    },
+    [columns, rows],
+  )
 
   const handleConfirm = useCallback(async () => {
     const res = createNetworkFromTableData(rows, columns, undefined, name)
@@ -375,7 +352,23 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setLoading(false)
     reset()
     props.onClick()
-  }, [rows, columns, name])
+  }, [
+    rows,
+    columns,
+    name,
+    addSummary,
+    setVisualStyleOptions,
+    addNewNetwork,
+    setVisualStyle,
+    setTables,
+    setViewModel,
+    addNetworkToWorkspace,
+    setCurrentNetworkId,
+    navigateToNetwork,
+    workspace.id,
+    reset,
+    props,
+  ])
 
   const handleSelectNoneClick = () => {
     const newColumns = unselectAllColumns(columns)
@@ -394,11 +387,11 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
     setRawText('')
   }
 
-  const handleColumnClick = (column: ColumnAssignmentState) => {
+  const handleColumnClick = useCallback((column: ColumnAssignmentState) => {
     const { meaning, dataType } = column
     setValidColumnAssignmentTypes(validColumnAssignmentTypes(dataType))
     setValidValueTypeNames(validValueTypes(meaning))
-  }
+  }, [])
 
   const tgtNodeCol = columns.find(
     (c) => c.meaning === ColumnAssignmentType.TargetNode,
@@ -516,7 +509,15 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
         })}
       </DataTable>
     ),
-    [columns, rows],
+    [
+      columns,
+      rows,
+      validColumnTypes,
+      validValueTypeNames,
+      onColumnAssignmentTypeChange,
+      onValueTypeChange,
+      handleColumnClick,
+    ],
   )
 
   return (

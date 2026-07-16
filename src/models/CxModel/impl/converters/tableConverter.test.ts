@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../../Cx2'
 import { createTablesFromCx } from './tableConverter'
 
@@ -66,14 +68,20 @@ describe('tableConverter', () => {
       const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
 
       expect(nodeTable.columns.length).toBe(2)
-      expect(nodeTable.columns.find(c => c.name === 'name')).toBeDefined()
-      expect(nodeTable.columns.find(c => c.name === 'score')).toBeDefined()
-      expect(nodeTable.columns.find(c => c.name === 'name')?.type).toBe('string')
-      expect(nodeTable.columns.find(c => c.name === 'score')?.type).toBe('double')
+      expect(nodeTable.columns.find((c) => c.name === 'name')).toBeDefined()
+      expect(nodeTable.columns.find((c) => c.name === 'score')).toBeDefined()
+      expect(nodeTable.columns.find((c) => c.name === 'name')?.type).toBe(
+        'string',
+      )
+      expect(nodeTable.columns.find((c) => c.name === 'score')?.type).toBe(
+        'double',
+      )
 
       expect(edgeTable.columns.length).toBe(2)
-      expect(edgeTable.columns.find(c => c.name === 'weight')).toBeDefined()
-      expect(edgeTable.columns.find(c => c.name === 'interaction')).toBeDefined()
+      expect(edgeTable.columns.find((c) => c.name === 'weight')).toBeDefined()
+      expect(
+        edgeTable.columns.find((c) => c.name === 'interaction'),
+      ).toBeDefined()
     })
 
     it('should create tables with node attributes', () => {
@@ -118,7 +126,7 @@ describe('tableConverter', () => {
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [nodeTable] = createTablesFromCx(networkId, cx2)
 
       expect(nodeTable.rows.size).toBe(2)
       const node1Row = nodeTable.rows.get('1')
@@ -153,10 +161,7 @@ describe('tableConverter', () => {
           ],
         },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [
@@ -176,7 +181,7 @@ describe('tableConverter', () => {
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [, edgeTable] = createTablesFromCx(networkId, cx2)
 
       expect(edgeTable.rows.size).toBe(1)
       const edge1Row = edgeTable.rows.get('e1')
@@ -222,7 +227,7 @@ describe('tableConverter', () => {
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [nodeTable] = createTablesFromCx(networkId, cx2)
 
       const node1Row = nodeTable.rows.get('1')
       expect(node1Row).toBeDefined()
@@ -267,7 +272,7 @@ describe('tableConverter', () => {
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [nodeTable] = createTablesFromCx(networkId, cx2)
 
       const node1Row = nodeTable.rows.get('1')
       expect(node1Row).toBeDefined()
@@ -293,10 +298,7 @@ describe('tableConverter', () => {
           ],
         },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [],
@@ -306,7 +308,7 @@ describe('tableConverter', () => {
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [nodeTable] = createTablesFromCx(networkId, cx2)
 
       expect(nodeTable.rows.size).toBe(2)
       expect(nodeTable.rows.get('1')).toEqual({})
@@ -329,22 +331,17 @@ describe('tableConverter', () => {
           ],
         },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           status: [{ success: true }],
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [, edgeTable] = createTablesFromCx(networkId, cx2)
 
       expect(edgeTable.rows.size).toBe(1)
       expect(edgeTable.rows.get('e1')).toEqual({})
@@ -378,9 +375,13 @@ describe('tableConverter', () => {
         },
       ]
 
-      const [nodeTable, edgeTable] = createTablesFromCx(networkId, cx2)
+      const [nodeTable] = createTablesFromCx(networkId, cx2)
 
-      expect(nodeTable.columns.map(c => c.name)).toEqual(['alpha', 'beta', 'zeta'])
+      expect(nodeTable.columns.map((c) => c.name)).toEqual([
+        'alpha',
+        'beta',
+        'zeta',
+      ])
     })
 
     it('should handle nodes and edges with no attribute declarations', () => {
@@ -388,15 +389,10 @@ describe('tableConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           status: [{ success: true }],
@@ -412,4 +408,3 @@ describe('tableConverter', () => {
     })
   })
 })
-

@@ -6,6 +6,8 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
 import { AttributeName, ValueType, ValueTypeName } from '../../models/TableModel'
 import {
+  ContinuousFunctionControlPoint,
+  ContinuousMappingFunction,
   MappingFunctionType,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -50,6 +52,9 @@ export interface VisualStyleApi {
     attribute: AttributeName,
     attributeValues: ValueType[],
     attributeType: ValueTypeName,
+    controlPoints?: ContinuousFunctionControlPoint[],
+    ltMinVpValue?: VisualPropertyValueType,
+    gtMaxVpValue?: VisualPropertyValueType,
   ): ApiResult
 
   createPassthroughMapping(
@@ -168,25 +173,50 @@ export const visualStyleApi: VisualStyleApi = {
     attribute,
     attributeValues,
     attributeType,
+    controlPoints,
+    ltMinVpValue,
+    gtMaxVpValue,
   ): ApiResult {
     try {
-      const visualStyles = useVisualStyleStore.getState().visualStyles
-      if (visualStyles[networkId] === undefined) {
+      const store = useVisualStyleStore.getState()
+      if (store.visualStyles[networkId] === undefined) {
         return fail(
           ApiErrorCode.NetworkNotFound,
           `Network ${networkId} not found`,
         )
       }
-      useVisualStyleStore
-        .getState()
-        .createContinuousMapping(
+      store.createContinuousMapping(
+        networkId,
+        vpName,
+        vpType,
+        attribute,
+        attributeValues,
+        attributeType,
+      )
+
+      // createContinuousMapping computes default min/max/controlPoints/lt/gt values;
+      // read them back so any caller-supplied overrides can fall back to those defaults.
+      const currentMapping = useVisualStyleStore.getState().visualStyles[networkId][
+        vpName
+      ].mapping as ContinuousMappingFunction | undefined
+      if (currentMapping) {
+        const effectiveControlPoints = controlPoints ?? currentMapping.controlPoints
+        const min: ContinuousFunctionControlPoint = controlPoints
+          ? controlPoints[0]
+          : currentMapping.min
+        const max: ContinuousFunctionControlPoint = controlPoints
+          ? controlPoints[controlPoints.length - 1]
+          : currentMapping.max
+        useVisualStyleStore.getState().setContinuousMappingValues(
           networkId,
           vpName,
-          vpType,
-          attribute,
-          attributeValues,
-          attributeType,
+          min,
+          max,
+          effectiveControlPoints,
+          ltMinVpValue ?? currentMapping.ltMinVpValue,
+          gtMaxVpValue ?? currentMapping.gtMaxVpValue,
         )
+      }
       return ok()
     } catch (e) {
       return fail(ApiErrorCode.OperationFailed, String(e))

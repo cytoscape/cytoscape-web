@@ -11,7 +11,14 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { lazy, ReactElement, Suspense, useRef, useState } from 'react'
+import {
+  FC,
+  lazy,
+  ReactElement,
+  Suspense,
+  useRef,
+  useState,
+} from 'react'
 
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
@@ -171,7 +178,7 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
   )
 }
 
-export const ExportImageMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const ExportImageMenuItem: FC<BaseMenuItemProps> = () => {
   const [show, setShow] = useState(false)
 
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)

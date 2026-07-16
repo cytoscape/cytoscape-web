@@ -1,3 +1,5 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { getNdexClient } from './client'
 import {
   deleteNdexWorkspace,
@@ -7,12 +9,12 @@ import {
 } from './workspace'
 
 // Mock the NDEx client module
-jest.mock('./client', () => ({
-  getNdexClient: jest.fn(),
+vi.mock('./client', () => ({
+  getNdexClient: vi.fn(),
 }))
 
 describe('fetchMyNdexWorkspaces', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -24,7 +26,7 @@ describe('fetchMyNdexWorkspaces', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch user workspaces from NDEx', async () => {
@@ -36,7 +38,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
       },
     }
 
@@ -57,7 +59,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
       },
     }
 
@@ -76,7 +78,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
       },
     }
 
@@ -94,7 +96,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
       },
     }
 
@@ -121,7 +123,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
       },
     }
 
@@ -139,7 +141,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockRejectedValue(mockError),
+        getUserCyWebWorkspaces: vi.fn().mockRejectedValue(mockError),
       },
     }
 
@@ -159,7 +161,7 @@ describe('fetchMyNdexWorkspaces', () => {
 
     const mockClient = {
       workspace: {
-        getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
       },
     }
 
@@ -175,7 +177,7 @@ describe('fetchMyNdexWorkspaces', () => {
 })
 
 describe('fetchMyNdexAccountNetworks', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -185,7 +187,7 @@ describe('fetchMyNdexAccountNetworks', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch account networks from NDEx', async () => {
@@ -197,10 +199,9 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: jest
-          .fn()
+        authenticate: vi.fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
-        getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
     }
 
@@ -225,10 +226,9 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: jest
-          .fn()
+        authenticate: vi.fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
-        getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
     }
 
@@ -251,10 +251,9 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: jest
-          .fn()
+        authenticate: vi.fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
-        getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
     }
 
@@ -277,10 +276,9 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: jest
-          .fn()
+        authenticate: vi.fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
-        getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
     }
 
@@ -298,10 +296,9 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: jest
-          .fn()
+        authenticate: vi.fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
-        getAccountPageNetworks: jest.fn().mockRejectedValue(mockError),
+        getAccountPageNetworks: vi.fn().mockRejectedValue(mockError),
       },
     }
 
@@ -316,7 +313,7 @@ describe('fetchMyNdexAccountNetworks', () => {
 })
 
 describe('searchNdexNetworks', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -326,7 +323,7 @@ describe('searchNdexNetworks', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should search networks in NDEx without authentication', async () => {
@@ -341,7 +338,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
         },
       },
     }
@@ -370,7 +367,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
         },
       },
     }
@@ -397,7 +394,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
         },
       },
     }
@@ -425,7 +422,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
         },
       },
     }
@@ -453,7 +450,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
         },
       },
     }
@@ -471,7 +468,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockResolvedValue(undefined),
+          searchNetworks: vi.fn().mockResolvedValue(undefined),
         },
       },
     }
@@ -490,7 +487,7 @@ describe('searchNdexNetworks', () => {
     const mockClient = {
       networks: {
         v2: {
-          searchNetworks: jest.fn().mockRejectedValue(mockError),
+          searchNetworks: vi.fn().mockRejectedValue(mockError),
         },
       },
     }
@@ -506,12 +503,12 @@ describe('searchNdexNetworks', () => {
 })
 
 describe('deleteNdexWorkspace', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should delete a workspace from NDEx', async () => {
@@ -520,7 +517,7 @@ describe('deleteNdexWorkspace', () => {
 
     const mockClient = {
       workspace: {
-        deleteCyWebWorkspace: jest.fn().mockResolvedValue(undefined),
+        deleteCyWebWorkspace: vi.fn().mockResolvedValue(undefined),
       },
     }
 
@@ -541,7 +538,7 @@ describe('deleteNdexWorkspace', () => {
 
     const mockClient = {
       workspace: {
-        deleteCyWebWorkspace: jest.fn().mockResolvedValue(undefined),
+        deleteCyWebWorkspace: vi.fn().mockResolvedValue(undefined),
       },
     }
 
@@ -562,7 +559,7 @@ describe('deleteNdexWorkspace', () => {
 
     const mockClient = {
       workspace: {
-        deleteCyWebWorkspace: jest.fn().mockRejectedValue(mockError),
+        deleteCyWebWorkspace: vi.fn().mockRejectedValue(mockError),
       },
     }
 

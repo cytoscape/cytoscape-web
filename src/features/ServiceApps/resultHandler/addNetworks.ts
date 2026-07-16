@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
 import { putNetworkSummaryToDb } from '../../../data/db'
-import { logApp } from '../../../debug'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -12,8 +11,8 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logApp } from '../../../debug'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
@@ -26,10 +25,10 @@ import {
   NetworkProperty,
   Visibility,
 } from '../../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
 import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
-import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 export const useAddNetworks = (): (({
   responseObj,
@@ -54,7 +53,7 @@ export const useAddNetworks = (): (({
   const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
   const addNetworks = useCallback(
-    async ({ responseObj, networkId }: ActionHandlerProps) => {
+    async ({ responseObj }: ActionHandlerProps) => {
       if (!Array.isArray(responseObj)) {
         logApp.warn(
           `[${addNetworks.name}]: Invalid addNetwork response: Expected an array`,
@@ -162,6 +161,7 @@ export const useAddNetworks = (): (({
     },
     [
       summaries,
+      addSummaries,
       addNetworksToWorkspace,
       addNewNetwork,
       setVisualStyleOptions,
@@ -170,6 +170,8 @@ export const useAddNetworks = (): (({
       setTables,
       addAllOpaqueAspects,
       setCurrentNetworkId,
+      navigateToNetwork,
+      workspace.id,
     ],
   )
   return addNetworks

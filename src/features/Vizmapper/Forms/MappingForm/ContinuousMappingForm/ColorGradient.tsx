@@ -16,7 +16,6 @@ export interface ColorGradiientProps {
   horizontalPadding: number
   verticalPadding: number
   valuePixelScale: ScaleLinear<number, number>
-  colorScale: ScaleLinear<string, string>
   labelColor?: string
   strokeColor?: string
   cm: ContinuousMappingFunction
@@ -32,7 +31,6 @@ export function ColorGradient(props: ColorGradiientProps): React.ReactElement {
     horizontalPadding,
     verticalPadding,
     valuePixelScale,
-    colorScale,
     labelColor = 'rgba(0, 0, 0, 0.7)',
     strokeColor = 'rgba(0, 0, 0, 0.7)',
     cm,

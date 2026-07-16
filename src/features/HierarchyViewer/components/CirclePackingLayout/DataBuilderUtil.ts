@@ -55,7 +55,6 @@ export const findRoot = (cyNet: Core): NodeSingular => {
  *
  * @param node
  * @param parentId
- * @param cyNet
  * @param nodeTable
  * @param visited
  * @param treeElements
@@ -64,7 +63,6 @@ export const findRoot = (cyNet: Core): NodeSingular => {
 export const cyNetDag2tree2 = (
   node: NodeSingular,
   parentId: string | null,
-  cyNet: Core,
   nodeTable: Table,
   visited: Record<string, number>,
   treeElements: any[],
@@ -153,7 +151,6 @@ export const cyNetDag2tree2 = (
     cyNetDag2tree2(
       child,
       newNodeId,
-      cyNet,
       nodeTable,
       visited,
       treeElements,
