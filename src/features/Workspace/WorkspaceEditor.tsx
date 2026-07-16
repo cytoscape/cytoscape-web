@@ -24,7 +24,6 @@ import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { NetworkView } from '../../models/ViewModel'
 import { Workspace } from '../../models/WorkspaceModel'
 import { HcxMetaTag } from '../HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../HierarchyViewer/model/impl/hcxValidators'
@@ -137,7 +136,7 @@ const WorkSpaceEditor = (): JSX.Element => {
    */
   useViewModelStore.subscribe(
     (state) => state.getViewModel(currentNetworkId),
-    (nextViewModel: NetworkView, prevViewModel: NetworkView) => {
+    (nextViewModel, prevViewModel) => {
       if (prevViewModel === undefined || nextViewModel === undefined) {
         return
       }

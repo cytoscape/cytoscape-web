@@ -14,9 +14,13 @@
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "sourceMap": true,
+    "strict": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },

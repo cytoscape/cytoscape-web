@@ -9,9 +9,8 @@ import Cytoscape, {
   SingularElementArgument,
 } from 'cytoscape'
 import debounce from 'lodash.debounce'
-import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
+import { ReactElement, useEffect, useRef, useState } from 'react'
 
-import { AppConfigContext } from '../../../AppConfigContext'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
@@ -23,6 +22,7 @@ import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore
 import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 import { useCreateNode } from '../../../data/hooks/useCreateNode'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
+import { logUi, registerDebugTool } from '../../../debug'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
@@ -43,7 +43,6 @@ import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { registerCyExtensions } from './registerCyExtensions'
 
 registerCyExtensions()
-import { logUi } from '../../../debug'
 
 interface NetworkRendererProps {
   network?: Network
@@ -260,9 +259,6 @@ const CyjsRenderer = ({
 
   // Undo/redo stack for post-edit actions
   const { postEdit } = useUndoStack()
-
-  // Debug flag from app config context
-  const { debug } = useContext(AppConfigContext)
 
   // Layout running state from layout store
   let isRunning: boolean = useLayoutStore((state) => state.isRunning)
@@ -1137,32 +1133,34 @@ const CyjsRenderer = ({
   /**
    * Initialize Cytoscape.js instance on mount and clean up on unmount.
    */
-  useEffect(
-    function initializeCyjsRenderer() {
-      if (!isInitialized.current) {
-        isInitialized.current = true
-        const cy: Core = Cytoscape({
-          container: cyContainer.current,
-          hideEdgesOnViewport: true,
-          boxSelectionEnabled: true,
-        })
-        cyInstance.current = cy
+  useEffect(function initializeCyjsRenderer() {
+    if (!isInitialized.current) {
+      isInitialized.current = true
+      const cy: Core = Cytoscape({
+        container: cyContainer.current,
+        hideEdgesOnViewport: true,
+        boxSelectionEnabled: true,
+      })
+      cyInstance.current = cy
 
-        if (debug) {
-          window.debug.cy = cy
-        }
-        setCy(cy)
-      }
+      const unregisterDebugTool = registerDebugTool('cy', cy)
+      setCy(cy)
 
       return () => {
-        // Reset the guard so a StrictMode remount recreates the instance.
+        unregisterDebugTool()
         cyInstance.current?.destroy()
         cyInstance.current = null
         isInitialized.current = false
       }
-    },
-    [debug],
-  )
+    }
+
+    return () => {
+      // Reset the guard so a StrictMode remount recreates the instance.
+      cyInstance.current?.destroy()
+      cyInstance.current = null
+      isInitialized.current = false
+    }
+  }, [])
 
   /**
    * Re-render network when Cytoscape instance changes.

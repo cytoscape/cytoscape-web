@@ -235,10 +235,15 @@ export const compareLists = (
 ): number =>
   compareStrings(serializeValueList(a), serializeValueList(b), sortDirection)
 
-export const sortFnToType: Record<
-  ValueTypeName,
-  (a: ValueType, b: ValueType, sortDirection: SortDirection) => number
-> = {
+type SortFunction = {
+  bivarianceHack(
+    a: ValueType,
+    b: ValueType,
+    sortDirection: SortDirection,
+  ): number
+}['bivarianceHack']
+
+export const sortFnToType: Record<ValueTypeName, SortFunction> = {
   [ValueTypeName.ListString]: compareLists,
   [ValueTypeName.ListLong]: compareLists,
   [ValueTypeName.ListInteger]: compareLists,

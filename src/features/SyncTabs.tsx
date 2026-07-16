@@ -1,14 +1,14 @@
 import debounce from 'lodash.debounce'
-import { ReactElement, useEffect, useState, useContext } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { AppConfigContext } from '../AppConfigContext'
 import {
   getDb,
   getTimestampFromDb,
   getWorkspaceFromDb,
   putTimestampToDb,
 } from '../data/db'
+import { useDebugEnabled } from '../data/hooks/useDebugEnabled'
 import { useAppStore } from '../data/hooks/stores/AppStore'
 import { logUi } from '../debug'
 import { ServiceStatus } from '../models/AppModel/ServiceStatus'
@@ -22,7 +22,7 @@ export const SyncTabsAction = (): ReactElement => {
   const workspaceId = params.workspaceId ?? ''
   const networkId = params.networkId ?? ''
   const [localTimestamp, setLocalTimestamp] = useState(0)
-  const { debug } = useContext(AppConfigContext)
+  const debug = useDebugEnabled()
 
   useEffect(() => {
     const onVisibilityChange = (): void => {

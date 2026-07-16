@@ -1,6 +1,5 @@
 {
   "ndexBaseUrl": "dev1.ndexbio.org",
-  "debug": true,
   "debugOptions": {
     "disableAutoReload": true
   },
@@ -27,7 +26,5 @@
   "undoStackSize": 20,
   "errorReportEndpoint": "https://dev1.ndexbio.org/report",
   "maxErrorReportSnapshotSizeMB": 10,
-  "appInstallAllowedOrigins": [
-    "https://apps.cytoscape.org"
-  ]
+  "appInstallAllowedOrigins": ["https://apps.cytoscape.org"]
 }

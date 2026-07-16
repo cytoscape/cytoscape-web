@@ -10,7 +10,7 @@
  */
 
 import packageJson from '../../../../package.json'
-import { logDb } from '../../../debug'
+import { logDb, registerDebugTool } from '../../../debug'
 import { getDatabaseVersion } from '../index'
 import type { DatabaseSnapshot } from './index'
 import { exportDatabaseSnapshot } from './index'
@@ -412,12 +412,4 @@ export const manualExportAppState = async (
   }
 }
 
-// Expose to window.debug when debug mode is enabled
-import config from '../../../assets/config.json'
-if (config.debug) {
-  const win = window as unknown as { debug?: Record<string, any> }
-  if (win.debug === undefined) {
-    win.debug = {}
-  }
-  win.debug.exportAppState = manualExportAppState
-}
+registerDebugTool('exportAppState', manualExportAppState)

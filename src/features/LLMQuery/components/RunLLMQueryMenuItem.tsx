@@ -23,7 +23,6 @@ import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
 
-
 export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
@@ -126,7 +125,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
         message: `Failed to get gene symbols for the selected subsystem nodes from NDEx server.  The visibility of the network in the ${
           HcxMetaTag.interactionNetworkUUID
         } attribute is most likely private. Error message: ${
-          e.message as string
+          e instanceof Error ? e.message : String(e)
         }`,
         duration: 8000,
         severity: MessageSeverity.ERROR,
@@ -168,7 +167,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
       setLLMResult(LLMResponse)
     } catch (e) {
       addMessage({
-        message: `Error querying LLM model: ${e.message as string}`,
+        message: `Error querying LLM model: ${e instanceof Error ? e.message : String(e)}`,
         duration: 10000,
         severity: MessageSeverity.ERROR,
       })

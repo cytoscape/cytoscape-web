@@ -110,6 +110,9 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
     base: config.urlBaseName !== '' ? config.urlBaseName : '/',
     plugins,
     resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
       extensions: ['.tsx', '.ts', '.js', '.jsx'],
     },
     server: {
@@ -126,11 +129,9 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       // this, Rolldown errors with REQUIRE_TLA on shared deps (@mui/@emotion).
       target: 'esnext',
       // Minifier is left at Vite 8's default (Oxc, fast).
-      // Source maps in development builds only. Production omits them —
-      // matching the old webpack config (`devtool: false` in production) and
-      // shaving build time by skipping multi-MB .map generation. (The dev
-      // server emits source maps regardless of this setting.)
-      sourcemap: mode !== 'production',
+      // Referenced source maps are fetched by browsers when developer tooling
+      // requests them; normal page loads do not download the .map files.
+      sourcemap: true,
       // Strip console.* from production bundles (parity with the old Terser
       // `drop_console: true`). Vite 8's Oxc minifier is configured through
       // Rolldown's minify.compress options.

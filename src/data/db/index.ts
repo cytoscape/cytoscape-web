@@ -2,8 +2,7 @@ import 'dexie-observable'
 
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
-import config from '../../assets/config.json'
-import { logDb } from '../../debug'
+import { logDb, registerDebugTool } from '../../debug'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -173,13 +172,7 @@ export const initializeDb = async (): Promise<void> => {
     )
   })
 
-  if (config.debug) {
-    const win = window as unknown as { debug?: Record<string, any> }
-    if (win.debug === undefined) {
-      win.debug = {}
-    }
-    win.debug.db = db
-  }
+  registerDebugTool('db', db)
 }
 
 export const getDatabaseVersion = (): number => {
@@ -779,7 +772,11 @@ export const getAppSettingFromDb = async (key: string): Promise<any> => {
     const entry = await db.appSettings.get({ key })
     return entry?.value
   } catch (e) {
-    logDb.warn('[getAppSettingFromDb] Failed to read setting, returning undefined:', key, e)
+    logDb.warn(
+      '[getAppSettingFromDb] Failed to read setting, returning undefined:',
+      key,
+      e,
+    )
     return undefined
   }
 }

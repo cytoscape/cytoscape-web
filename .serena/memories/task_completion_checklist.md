@@ -6,7 +6,7 @@ When completing a coding task in this project, follow these steps:
 ```bash
 npm run lint
 ```
-Fix any errors, especially import sorting (`eslint-plugin-simple-import-sort` is at error level).
+Fix all TypeScript and oxlint errors.
 
 ## 2. Format
 ```bash
@@ -18,7 +18,7 @@ Ensures Prettier formatting is applied (no semicolons, single quotes, trailing c
 ```bash
 npm run test:unit
 ```
-Jest tests with jsdom environment. Tests are co-located with source files.
+Vitest tests with a jsdom environment. Tests are co-located with source files.
 
 ## 4. Run E2E Tests (if UI changed)
 ```bash
@@ -30,7 +30,7 @@ Playwright tests against localhost:5500.
 ```bash
 npm run build
 ```
-Ensures production build succeeds (import sort errors will fail the build).
+Ensures the production build succeeds.
 
 ## Key Reminders
 - Do NOT use `console.log` — use the structured `debug` logger from `src/debug.ts`
@@ -41,4 +41,4 @@ Ensures production build succeeds (import sort errors will fail the build).
 - `core/` files in `src/app-api/core/` must have **zero React imports**
 - App API core functions must return `ApiResult<T>`, never throw
 - Public API types must be JSON-serializable (`Record` not `Map`, `T[]` not `Set`)
-- CLAUDE.md is the source of truth; AGENTS.md is auto-generated (`npm run sync:agents`)
+- AGENTS.md is the source of truth; CLAUDE.md includes it with `@AGENTS.md`

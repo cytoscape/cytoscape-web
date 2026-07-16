@@ -463,7 +463,7 @@ export const LoadFromNdexDialog = (
       setSuccessMessage(`${summaries.length} network(s) loaded`)
       setSelectedNetworks([])
     } catch (e) {
-      setErrorMessage(e.message)
+      setErrorMessage(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -509,11 +509,7 @@ export const LoadFromNdexDialog = (
     setErrorMessage(undefined)
     try {
       const token = await getToken()
-      const items = await fetchFolderContents(
-        folderId,
-        token,
-        ndexBaseUrl,
-      )
+      const items = await fetchFolderContents(folderId, token, ndexBaseUrl)
       const enriched = await enrichShortcutsWithTargetSummaries(
         items,
         token,

@@ -39,7 +39,7 @@ export const SnackbarMessageList = (): React.ReactElement => {
   }
 
   const handleSnackbarClose = (
-    event: React.SyntheticEvent,
+    event: Event | React.SyntheticEvent,
     reason: SnackbarCloseReason,
   ): void => {
     if (reason === 'clickaway') {

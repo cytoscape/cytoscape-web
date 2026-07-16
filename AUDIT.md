@@ -6,7 +6,9 @@
 >
 > This file is the synthesized, deduplicated report. Full per-finding detail (evidence with file:line citations, verifier corrections): [findings/FINDINGS.md](./findings/FINDINGS.md). Raw structured data: [findings/dx-findings.json](./findings/dx-findings.json).
 >
-> **Status update (2026-07-14):** items 1, 3, and 4 of the suggested order below have been addressed on this branch — the Vitest include fix (`6c47d88f`), CI parallelization + concurrency (`300e8550`), and the lint-loop speedups (`703c8d6b`, `986494a7`, `de3b7d53`, with oxlint replacing the planned `eslint --cache`). The findings are preserved below as originally written; line numbers cited for `vitest.config.ts`, `ci.yml`, `package.json` scripts, and the ESLint config predate those commits.
+> **Status update (2026-07-15):** items 1, 3, 4, and 5 in the suggested order have been addressed on this branch. The documentation correction made `AGENTS.md` authoritative, reduced `CLAUDE.md` to `@AGENTS.md`, removed the obsolete sync scripts, and updated the remaining Vite/Vitest guidance. The `tsconfig.eslint.json` subfinding was already resolved because that deleted config no longer exists. The findings are preserved below as originally written; cited line numbers predate these changes.
+>
+> **Additional update (2026-07-15):** the `@/` source alias, installed-dependency CI caching, production source maps, and full TypeScript strict mode have also been implemented. Production maps are referenced by JavaScript for on-demand DevTools loading and are not linked from HTML.
 
 ## Fix these first — verified defects, not just improvements
 
