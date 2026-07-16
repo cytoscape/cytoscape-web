@@ -17,7 +17,7 @@ import { DropdownMenuItem } from '../DropdownMenu'
 export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { createNode } = useCreateNode()
 
-  const [disabled, setDisabled] = useState<boolean>(false)
+  const [disabled, setDisabled] = useState<boolean>(true)
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -57,6 +57,7 @@ export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   useEffect(() => {
     // Disable the menu item if the sub network view is selected, creation is not enabled, or network is a hierarchy
     if (
+      currentNetworkId &&
       targetNetworkId === currentNetworkId &&
       isCreationEnabled &&
       !isHierarchy
