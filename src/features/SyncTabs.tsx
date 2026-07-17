@@ -1,7 +1,8 @@
 import debounce from 'lodash.debounce'
-import { ReactElement, useEffect, useState } from 'react'
+import { ReactElement, useContext, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { AppConfigContext } from '../AppConfigContext'
 import {
   getDb,
   getTimestampFromDb,
@@ -23,10 +24,14 @@ export const SyncTabsAction = (): ReactElement => {
   const networkId = params.networkId ?? ''
   const [localTimestamp, setLocalTimestamp] = useState(0)
   const debug = useDebugEnabled()
+  // Deploy-level kill switch for the tab-focus auto reload (config.json),
+  // alongside the runtime debug-mode toggle which also suppresses it.
+  const { debugOptions } = useContext(AppConfigContext)
+  const disableAutoReload = debugOptions?.disableAutoReload ?? false
 
   useEffect(() => {
     const onVisibilityChange = (): void => {
-      if (debug) {
+      if (debug || disableAutoReload) {
         return
       }
 
@@ -65,7 +70,7 @@ export const SyncTabsAction = (): ReactElement => {
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [workspaceId, networkId, localTimestamp, debug])
+  }, [workspaceId, networkId, localTimestamp, debug, disableAutoReload])
 
   const initDbListener = async (): Promise<void> => {
     const db = await getDb()
