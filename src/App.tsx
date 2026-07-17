@@ -22,6 +22,7 @@ import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { MessagePanel } from './features/Messages'
 import { RedirectPanel } from './features/RedirectPanel'
+import { BootScreen } from './init/BootScreen'
 import { KeycloakContext } from './init/keycloak'
 import { theme } from './theme'
 
@@ -40,15 +41,11 @@ const router = createBrowserRouter(
     <Route
       path="/"
       element={
+        // BootScreen (not a bare message panel) so the boot visual persists
+        // as one continuous screen until the app shell can render — avoids a
+        // jarring full-screen context switch mid-boot.
         <Suspense
-          fallback={
-            <Box sx={{ width: '100%', height: '100vh' }}>
-              <MessagePanel
-                message="Preparing your workspace..."
-                data-testid="app-shell-loading"
-              />
-            </Box>
-          }
+          fallback={<BootScreen loadingMessage="Preparing your workspace..." />}
         >
           <AppShell />
         </Suspense>
