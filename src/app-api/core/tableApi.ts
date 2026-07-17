@@ -18,7 +18,7 @@ import {
 } from '../../models/TableModel'
 import { Column } from '../../models/TableModel/Column'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, ElementCodes, fail, ok } from '../types/ApiResult'
 import {
   validateColumnDefaultValue,
   validateColumnName,
@@ -267,20 +267,21 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const row = table?.rows?.get(elementId)
       if (row === undefined) {
-        const code =
+        return fail(
           tableType === 'node'
-            ? ApiErrorCode.NodeNotFound
-            : ApiErrorCode.EdgeNotFound
-        return fail(code, `Element ${elementId} not found in ${tableType} table`)
+            ? ElementCodes.NODE_NOT_FOUND
+            : ElementCodes.EDGE_NOT_FOUND,
+          elementId,
+        )
       }
       return ok({ value: row[column] as ValueType })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -288,20 +289,21 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const row = table?.rows?.get(elementId)
       if (row === undefined) {
-        const code =
+        return fail(
           tableType === 'node'
-            ? ApiErrorCode.NodeNotFound
-            : ApiErrorCode.EdgeNotFound
-        return fail(code, `Element ${elementId} not found in ${tableType} table`)
+            ? ElementCodes.NODE_NOT_FOUND
+            : ElementCodes.EDGE_NOT_FOUND,
+          elementId,
+        )
       }
       return ok({ row: row as Record<AttributeName, ValueType> })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -309,7 +311,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const invalidName = validateColumnName(columnName, tableType)
       if (invalidName) return invalidName
@@ -340,7 +342,7 @@ export const tableApi: TableApi = {
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -348,7 +350,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
 
@@ -368,7 +370,7 @@ export const tableApi: TableApi = {
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -376,7 +378,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const invalidName = validateColumnName(newName, tableType)
       if (invalidName) return invalidName
@@ -414,7 +416,7 @@ export const tableApi: TableApi = {
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -422,7 +424,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const missing = validateTableElementsExist(networkId, tableType, [
         elementId,
@@ -440,7 +442,7 @@ export const tableApi: TableApi = {
         .setValue(networkId, tableType as TableType, elementId, column, value)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -448,7 +450,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const missing = validateTableElementsExist(
         networkId,
@@ -474,7 +476,7 @@ export const tableApi: TableApi = {
         .setValues(networkId, tableType as TableType, storeCellEdits)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -482,7 +484,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const missing = validateTableElementsExist(
         networkId,
@@ -510,7 +512,7 @@ export const tableApi: TableApi = {
         .editRows(networkId, tableType as TableType, rowsMap)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -518,7 +520,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       if (elementIds !== undefined && elementIds.length > 0) {
         const missing = validateTableElementsExist(
@@ -539,7 +541,7 @@ export const tableApi: TableApi = {
         .applyValueToElements(networkId, tableType, columnName, value, elementIds)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -549,7 +551,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const columns: ColumnInfo[] = []
@@ -565,7 +567,7 @@ export const tableApi: TableApi = {
       }
       return ok({ columns })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -575,7 +577,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const allColumns: Column[] = table?.columns ?? []
@@ -623,7 +625,7 @@ export const tableApi: TableApi = {
 
       return ok({ columns: columnInfos, rows })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -657,7 +659,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const existingColumns = new Map(
@@ -667,7 +669,7 @@ export const tableApi: TableApi = {
       const lines = tsvText.split('\n').filter((l) => l.trim() !== '')
       if (lines.length < 2) {
         return fail(
-          ApiErrorCode.InvalidInput,
+          AppCodes.INVALID_INPUT,
           'TSV must have at least a header line and one data line',
         )
       }
@@ -694,7 +696,7 @@ export const tableApi: TableApi = {
       const keyIndex = colNames.indexOf(keyColumn)
       if (keyIndex < 0) {
         return fail(
-          ApiErrorCode.InvalidInput,
+          AppCodes.INVALID_INPUT,
           `Key column "${keyColumn}" not found in TSV header`,
         )
       }
@@ -802,7 +804,7 @@ export const tableApi: TableApi = {
       const uniqueRows = new Set(cellEdits.map((e) => e.row))
       return ok({ rowCount: uniqueRows.size, newColumns, skippedRows })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

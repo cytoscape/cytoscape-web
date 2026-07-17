@@ -32,7 +32,7 @@ import TableFn, {
 } from '../../models/TableModel'
 import { createViewModel } from '../../models/ViewModel/impl/viewModelImpl'
 import VisualStyleFn, { VisualPropertyName } from '../../models/VisualStyleModel'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 import {
   validateNodesExist,
   validateTableElementsExist,
@@ -180,13 +180,10 @@ export const networkApi: NetworkApi = {
   }) {
     try {
       if (!name || name.trim() === '') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'name is required and must be non-empty',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'name is required and must be non-empty')
       }
       if (!edgeList || edgeList.length === 0) {
-        return fail(ApiErrorCode.InvalidInput, 'edgeList must be non-empty')
+        return fail(AppCodes.INVALID_INPUT, 'edgeList must be non-empty')
       }
 
       const cyNetwork = assembleCyNetworkFromEdgeList(name, description, edgeList)
@@ -224,7 +221,7 @@ export const networkApi: NetworkApi = {
 
       return ok({ networkId, cyNetwork })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -232,13 +229,10 @@ export const networkApi: NetworkApi = {
     try {
       const source = useNetworkStore.getState().networks.get(networkId)
       if (source === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       if (!nodeIds || nodeIds.length === 0) {
-        return fail(ApiErrorCode.InvalidInput, 'nodeIds must be non-empty')
+        return fail(AppCodes.INVALID_INPUT, 'nodeIds must be non-empty')
       }
       const missingNodes = validateNodesExist(networkId, nodeIds)
       if (missingNodes) return missingNodes
@@ -265,7 +259,7 @@ export const networkApi: NetworkApi = {
         )
         if (dangling.length > 0) {
           return fail(
-            ApiErrorCode.InvalidInput,
+            AppCodes.INVALID_INPUT,
             `Edges reference nodes outside nodeIds: ${dangling
               .map((e) => e.id)
               .join(', ')}`,
@@ -380,7 +374,7 @@ export const networkApi: NetworkApi = {
 
       return ok({ networkId: newNetworkId, cyNetwork })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -388,10 +382,7 @@ export const networkApi: NetworkApi = {
     try {
       const validation = validateCX2(cxData)
       if (!validation.isValid) {
-        return fail(
-          ApiErrorCode.InvalidCx2,
-          validation.errorMessage ?? 'CX2 validation failed',
-        )
+        return fail(AppCodes.INVALID_CX2, validation.errorMessage ?? 'CX2 validation failed')
       }
 
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
@@ -445,7 +436,7 @@ export const networkApi: NetworkApi = {
 
       return ok({ networkId: network.id, cyNetwork })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -453,10 +444,7 @@ export const networkApi: NetworkApi = {
     try {
       const networkExists = useNetworkStore.getState().networks.has(networkId)
       if (!networkExists) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       const navigate = options?.navigate ?? true
@@ -503,7 +491,7 @@ export const networkApi: NetworkApi = {
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -511,10 +499,7 @@ export const networkApi: NetworkApi = {
     const currentNetworkId =
       useWorkspaceStore.getState().workspace.currentNetworkId
     if (!currentNetworkId || currentNetworkId === '') {
-      return fail(
-        ApiErrorCode.NoCurrentNetwork,
-        'No network is currently selected',
-      )
+      return fail(AppCodes.NO_CURRENT_NETWORK)
     }
     return networkApi.deleteNetwork(currentNetworkId, options)
   },
@@ -541,7 +526,7 @@ export const networkApi: NetworkApi = {
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

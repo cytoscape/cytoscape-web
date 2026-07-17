@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // src/app-api/core/visualStyleApi.test.ts
 // Plain Jest tests for visualStyleApi core — no renderHook, no React context.
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, StyleCodes } from '../types/ApiResult'
 import { visualStyleApi } from './visualStyleApi'
 
 const VPN = VisualPropertyName
@@ -139,7 +139,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockSetDefault).not.toHaveBeenCalled()
   })
@@ -154,7 +154,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 
@@ -169,8 +169,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('VP2')
+      expect(result.error.code).toBe(StyleCodes.INVALID_COLOR.code)
     }
     expect(mockSetDefault).not.toHaveBeenCalled()
   })
@@ -186,7 +185,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('VP5')
+      expect(result.error.code).toBe(StyleCodes.INVALID_ENUM_VALUE.code)
     }
   })
 
@@ -197,7 +196,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('VP3')
+      expect(result.error.code).toBe(StyleCodes.INVALID_OPACITY.code)
     }
   })
 
@@ -212,7 +211,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('VP4')
+      expect(result.error.code).toBe(StyleCodes.INVALID_NUMBER.code)
     }
   })
 
@@ -249,7 +248,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -278,8 +277,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('VP7')
+      expect(result.error.code).toBe(StyleCodes.INVALID_LABEL_POSITION.code)
       expect(result.error.message).toContain('HORIZONTAL_ALIGN')
     }
     expect(mockSetDefault).not.toHaveBeenCalled()
@@ -295,7 +293,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('VP7')
+      expect(result.error.code).toBe(StyleCodes.INVALID_LABEL_POSITION.code)
     }
   })
 
@@ -310,7 +308,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('VP9')
+      expect(result.error.code).toBe(StyleCodes.INVALID_CUSTOM_GRAPHICS.code)
     }
   })
 
@@ -343,7 +341,7 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('VP10')
+      expect(result.error.code).toBe(StyleCodes.INVALID_CUSTOM_GRAPHICS_POSITION.code)
     }
   })
 })
@@ -408,8 +406,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.ElementNotFound)
-      expect(result.error.cx2Code).toBe('BV1')
+      expect(result.error.code).toBe(StyleCodes.BYPASS_TARGET_NOT_FOUND.code)
       expect(result.error.message).toContain('ghost')
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
@@ -427,8 +424,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('BV5')
+      expect(result.error.code).toBe(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN.code)
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
   })
@@ -445,8 +441,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('BV2')
+      expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
       expect(result.error.message).toContain('e0')
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
@@ -464,7 +459,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('BV2')
+      expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
     }
   })
 
@@ -480,7 +475,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
   })
@@ -492,7 +487,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
   })
@@ -507,7 +502,7 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -533,7 +528,7 @@ describe('deleteBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -572,7 +567,7 @@ describe('createDiscreteMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -668,8 +663,7 @@ describe('createDiscreteMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('MI1')
+      expect(result.error.code).toBe(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED.code)
     }
     expect(mockSetMapping).not.toHaveBeenCalled()
   })
@@ -689,7 +683,7 @@ describe('createDiscreteMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('MI2')
+      expect(result.error.code).toBe(StyleCodes.MAPPING_TYPE_MISMATCH.code)
     }
   })
 
@@ -708,7 +702,7 @@ describe('createDiscreteMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('MC1')
+      expect(result.error.code).toBe(StyleCodes.NETWORK_SCOPED_MAPPING_FORBIDDEN.code)
     }
   })
 })
@@ -754,7 +748,7 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockSetContinuousMappingValues).not.toHaveBeenCalled()
   })
@@ -906,8 +900,7 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('V7')
+      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
     }
     expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
   })
@@ -929,7 +922,7 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('V7')
+      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
     }
   })
 
@@ -950,7 +943,7 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('V7')
+      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
     }
   })
 
@@ -975,7 +968,7 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('V7')
+      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
     }
     expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
   })
@@ -997,8 +990,7 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('MI3')
+      expect(result.error.code).toBe(StyleCodes.MAPPING_REQUIRES_NUMERIC.code)
     }
     expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
   })
@@ -1039,7 +1031,7 @@ describe('createPassthroughMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -1058,7 +1050,7 @@ describe('createPassthroughMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('MI1')
+      expect(result.error.code).toBe(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED.code)
     }
     expect(mockCreatePassthroughMapping).not.toHaveBeenCalled()
   })
@@ -1081,7 +1073,7 @@ describe('removeMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })

@@ -13,7 +13,14 @@ import {
   VisualPropertyValueType,
   VisualPropertyValueTypeName,
 } from '../../models/VisualStyleModel'
-import { ApiErrorCode, ApiFailure, ApiResult, fail, ok } from '../types/ApiResult'
+import {
+  AppCodes,
+  ApiFailure,
+  ApiResult,
+  StyleCodes,
+  fail,
+  ok,
+} from '../types/ApiResult'
 import {
   validateBypassTargetScope,
   validateContinuousMappingBounds,
@@ -92,17 +99,10 @@ function checkMappingPreconditions(
   const visualProperty =
     useVisualStyleStore.getState().visualStyles[networkId]?.[vpName]
   if (visualProperty === undefined) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `Unknown visual property ${vpName}`,
-    )
+    return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
   }
   if (visualProperty.group === 'network') {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `Network-scoped visual property ${vpName} cannot have a mapping`,
-      'MC1',
-    )
+    return fail(StyleCodes.NETWORK_SCOPED_MAPPING_FORBIDDEN, vpName)
   }
   return validateMappingAttribute(
     networkId,
@@ -120,17 +120,11 @@ export const visualStyleApi: VisualStyleApi = {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const visualProperty = visualStyles[networkId][vpName]
       if (visualProperty === undefined) {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          `Unknown visual property ${vpName}`,
-        )
+        return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
       }
       const invalidValue = validateVisualPropertyValue(
         vpName,
@@ -142,7 +136,7 @@ export const visualStyleApi: VisualStyleApi = {
       useVisualStyleStore.getState().setDefault(networkId, vpName, vpValue)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -150,31 +144,18 @@ export const visualStyleApi: VisualStyleApi = {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       if (elementIds.length === 0) {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'elementIds must not be empty',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'elementIds must not be empty')
       }
 
       const visualProperty = visualStyles[networkId][vpName]
       if (visualProperty === undefined) {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          `Unknown visual property ${vpName}`,
-        )
+        return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
       }
       if (visualProperty.group === 'network') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          `Network-scoped visual property ${vpName} cannot be bypassed`,
-          'BV5',
-        )
+        return fail(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN, vpName)
       }
 
       const invalidValue = validateVisualPropertyValue(
@@ -184,11 +165,7 @@ export const visualStyleApi: VisualStyleApi = {
       )
       if (invalidValue) return invalidValue
 
-      const missingElements = validateElementsExist(
-        networkId,
-        elementIds,
-        'BV1',
-      )
+      const missingElements = validateElementsExist(networkId, elementIds)
       if (missingElements) return missingElements
 
       const scopeMismatch = validateBypassTargetScope(
@@ -203,7 +180,7 @@ export const visualStyleApi: VisualStyleApi = {
         .setBypass(networkId, vpName, elementIds, vpValue)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -211,17 +188,14 @@ export const visualStyleApi: VisualStyleApi = {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useVisualStyleStore
         .getState()
         .deleteBypass(networkId, vpName, elementIds)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -230,10 +204,7 @@ export const visualStyleApi: VisualStyleApi = {
       const store = useVisualStyleStore.getState()
       const visualStyles = store.visualStyles
       if (visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const invalid = checkMappingPreconditions(
         networkId,
@@ -268,7 +239,7 @@ export const visualStyleApi: VisualStyleApi = {
       })
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -286,10 +257,7 @@ export const visualStyleApi: VisualStyleApi = {
     try {
       const store = useVisualStyleStore.getState()
       if (store.visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const invalid = checkMappingPreconditions(
         networkId,
@@ -340,7 +308,7 @@ export const visualStyleApi: VisualStyleApi = {
       }
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -348,10 +316,7 @@ export const visualStyleApi: VisualStyleApi = {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const invalid = checkMappingPreconditions(
         networkId,
@@ -367,7 +332,7 @@ export const visualStyleApi: VisualStyleApi = {
         .createPassthroughMapping(networkId, vpName, attribute, attributeType)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -375,15 +340,12 @@ export const visualStyleApi: VisualStyleApi = {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useVisualStyleStore.getState().removeMapping(networkId, vpName)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

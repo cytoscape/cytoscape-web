@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/viewportApi.test.ts
 // Plain Jest tests for viewportApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { viewportApi } from './viewportApi'
 
 // ── Mock: RendererFunctionStore ───────────────────────────────────────────────
@@ -77,7 +77,7 @@ describe('fit', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.FunctionNotAvailable)
+      expect(result.error.code).toBe(AppCodes.FUNCTION_NOT_AVAILABLE.code)
     }
   })
 
@@ -91,7 +91,7 @@ describe('fit', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 })
@@ -158,7 +158,7 @@ describe('getNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -206,8 +206,7 @@ describe('updateNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
-      expect(result.error.cx2Code).toBe('GL1')
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       expect(result.error.message).toContain('ghost')
     }
     expect(mockUpdateNodePositions).not.toHaveBeenCalled()
@@ -225,7 +224,7 @@ describe('updateNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
     }
   })
 
@@ -236,7 +235,7 @@ describe('updateNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockUpdateNodePositions).not.toHaveBeenCalled()
   })
@@ -252,7 +251,7 @@ describe('updateNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 })

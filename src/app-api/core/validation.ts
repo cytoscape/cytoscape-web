@@ -1,8 +1,9 @@
 // src/app-api/core/validation.ts
 // Shared input-validation guards for app API core functions.
 //
-// Guards return an ApiFailure tagged with the CX2 validation code they
-// enforce (see ApiError.cx2Code), or undefined when the input is valid:
+// Guards return an ApiFailure built from the precise error code they
+// enforce (ElementCodes/TableCodes/StyleCodes/AppCodes — see
+// src/app-api/types/ApiResult.ts), or undefined when the input is valid:
 //
 //   const invalid = validateNoIdAttribute(options?.attributes, 'node')
 //   if (invalid) return invalid
@@ -31,7 +32,14 @@ import {
   CustomGraphicsNameType,
   CustomGraphicsTypeType,
 } from '../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { ApiErrorCode, ApiFailure, fail } from '../types/ApiResult'
+import {
+  AppCodes,
+  ApiFailure,
+  ElementCodes,
+  fail,
+  StyleCodes,
+  TableCodes,
+} from '../types/ApiResult'
 
 /**
  * Element attribute payloads must not contain an "id" key — the element
@@ -44,9 +52,9 @@ export function validateNoIdAttribute(
 ): ApiFailure | undefined {
   if (attributes !== undefined && 'id' in attributes) {
     return fail(
-      ApiErrorCode.InvalidInput,
-      `Attribute "id" is forbidden in the ${elementType} attributes payload`,
-      elementType === 'node' ? 'N3' : 'E6',
+      elementType === 'node'
+        ? ElementCodes.NODE_ID_FORBIDDEN
+        : ElementCodes.EDGE_ID_FORBIDDEN,
     )
   }
   return undefined
@@ -75,25 +83,21 @@ export function validateColumnName(
   tableType: 'node' | 'edge',
 ): ApiFailure | undefined {
   if (columnName.trim() === '') {
-    return fail(ApiErrorCode.InvalidInput, 'Column name must not be empty')
+    return fail(AppCodes.INVALID_INPUT, 'Column name must not be empty')
   }
   if (columnName === 'id') {
     return fail(
-      ApiErrorCode.InvalidInput,
-      `Column name "id" is forbidden for ${tableType}s`,
-      tableType === 'node' ? 'FK1' : 'FK2',
+      tableType === 'node'
+        ? TableCodes.NODE_ID_COLUMN_FORBIDDEN
+        : TableCodes.EDGE_ID_COLUMN_FORBIDDEN,
     )
   }
   if (tableType === 'edge' && EDGE_STRUCTURAL_KEYS.has(columnName)) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `Column name "${columnName}" is reserved for edge source/target keys`,
-      'A8',
-    )
+    return fail(TableCodes.EDGE_STRUCTURAL_KEY_RESERVED, columnName)
   }
   if (PROTOTYPE_POLLUTION_KEYS.has(columnName)) {
     return fail(
-      ApiErrorCode.InvalidInput,
+      AppCodes.INVALID_INPUT,
       `Column name "${columnName}" is not allowed`,
     )
   }
@@ -102,20 +106,16 @@ export function validateColumnName(
 
 /**
  * Verify that every ID in elementIds exists as a node or edge in the
- * network. Returns a failure naming the missing IDs, tagged with the
- * CX2 code for the calling context (e.g. 'BV1' for bypass targets).
+ * network — used for bypass target existence (CX2 BV1). Returns a
+ * failure naming the missing IDs.
  */
 export function validateElementsExist(
   networkId: IdType,
   elementIds: IdType[],
-  cx2Code?: string,
 ): ApiFailure | undefined {
   const network = useNetworkStore.getState().networks.get(networkId)
   if (network === undefined) {
-    return fail(
-      ApiErrorCode.NetworkNotFound,
-      `Network ${networkId} not found`,
-    )
+    return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
   }
 
   const known = new Set<IdType>()
@@ -124,11 +124,7 @@ export function validateElementsExist(
 
   const missing = elementIds.filter((id) => !known.has(id))
   if (missing.length > 0) {
-    return fail(
-      ApiErrorCode.ElementNotFound,
-      `Elements do not exist in network ${networkId}: ${missing.join(', ')}`,
-      cx2Code,
-    )
+    return fail(StyleCodes.BYPASS_TARGET_NOT_FOUND, missing.join(', '))
   }
   return undefined
 }
@@ -145,10 +141,7 @@ export function validateTableElementsExist(
 ): ApiFailure | undefined {
   const network = useNetworkStore.getState().networks.get(networkId)
   if (network === undefined) {
-    return fail(
-      ApiErrorCode.NetworkNotFound,
-      `Network ${networkId} not found`,
-    )
+    return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
   }
 
   const elements: Array<{ id: IdType }> =
@@ -158,10 +151,9 @@ export function validateTableElementsExist(
   if (missing.length > 0) {
     return fail(
       tableType === 'node'
-        ? ApiErrorCode.NodeNotFound
-        : ApiErrorCode.EdgeNotFound,
-      `${tableType === 'node' ? 'Nodes' : 'Edges'} do not exist in network ${networkId}: ${missing.join(', ')}`,
-      tableType === 'node' ? 'GL1' : 'GL2',
+        ? ElementCodes.NODE_NOT_FOUND
+        : ElementCodes.EDGE_NOT_FOUND,
+      missing.join(', '),
     )
   }
   return undefined
@@ -191,10 +183,7 @@ export function validateBypassTargetScope(
 ): ApiFailure | undefined {
   const network = useNetworkStore.getState().networks.get(networkId)
   if (network === undefined) {
-    return fail(
-      ApiErrorCode.NetworkNotFound,
-      `Network ${networkId} not found`,
-    )
+    return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
   }
 
   const nodeIds = new Set(network.nodes.map((n) => n.id))
@@ -204,11 +193,7 @@ export function validateBypassTargetScope(
       : elementIds.filter((id) => nodeIds.has(id))
 
   if (mismatched.length > 0) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `Visual property is ${group}-scoped but these elements are not ${group}s: ${mismatched.join(', ')}`,
-      'BV2',
-    )
+    return fail(StyleCodes.BYPASS_SCOPE_MISMATCH, group, mismatched.join(', '))
   }
   return undefined
 }
@@ -240,27 +225,18 @@ export function validateMappingAttribute(
     (c: { name: string }) => c.name === attribute,
   )
   if (column === undefined) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `Attribute "${attribute}" is not declared in the ${tableType} table`,
-      'MI1',
-    )
+    return fail(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED, attribute, tableType)
   }
   if (attributeType !== undefined && attributeType !== column.type) {
     return fail(
-      ApiErrorCode.InvalidInput,
-      `attributeType "${attributeType}" does not match the declared type ` +
-        `"${column.type}" of attribute "${attribute}"`,
-      'MI2',
+      StyleCodes.MAPPING_TYPE_MISMATCH,
+      attributeType,
+      column.type,
+      attribute,
     )
   }
   if (options?.requireNumeric === true && !NUMERIC_TYPES.has(column.type)) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `CONTINUOUS mapping requires a numeric attribute; "${attribute}" is ` +
-        `${column.type}`,
-      'MI3',
-    )
+    return fail(StyleCodes.MAPPING_REQUIRES_NUMERIC, attribute, column.type)
   }
   return undefined
 }
@@ -378,53 +354,60 @@ export function validateVisualPropertyValue(
   valueTypeName: VisualPropertyValueTypeName | undefined,
   vpValue: unknown,
 ): ApiFailure | undefined {
-  const invalid = (cx2Code: string, reason: string): ApiFailure =>
-    fail(
-      ApiErrorCode.InvalidInput,
-      `Invalid value for ${vpName}: ${reason} (got ${JSON.stringify(vpValue)})`,
-      cx2Code,
-    )
-
   switch (valueTypeName) {
     case VisualPropertyValueTypeName.Color:
       if (typeof vpValue !== 'string' || !HEX_COLOR.test(vpValue)) {
-        return invalid('VP2', 'expected a hex color like #rrggbb')
+        return fail(
+          StyleCodes.INVALID_COLOR,
+          vpName,
+          'expected a hex color like #rrggbb',
+        )
       }
       return undefined
     case VisualPropertyValueTypeName.Number: {
       if (typeof vpValue !== 'number' || !Number.isFinite(vpValue)) {
-        return invalid('VP4', 'expected a finite number')
+        return fail(StyleCodes.INVALID_NUMBER, vpName, 'expected a finite number')
       }
       const isOpacity = String(vpName).toLowerCase().includes('opacity')
       if (isOpacity && (vpValue < 0 || vpValue > 1)) {
-        return invalid('VP3', 'opacity must be between 0 and 1')
+        return fail(
+          StyleCodes.INVALID_OPACITY,
+          vpName,
+          'opacity must be between 0 and 1',
+        )
       }
       return undefined
     }
     case VisualPropertyValueTypeName.String:
       return typeof vpValue === 'string'
         ? undefined
-        : invalid('VP1', 'expected a string')
+        : fail(StyleCodes.INVALID_LABEL, vpName, 'expected a string')
     case VisualPropertyValueTypeName.Boolean:
       return typeof vpValue === 'boolean'
         ? undefined
-        : invalid('VP5', 'expected a boolean')
+        : fail(StyleCodes.INVALID_ENUM_VALUE, vpName, 'expected a boolean')
     case VisualPropertyValueTypeName.Font:
       return typeof vpValue === 'string' &&
         new Set(Object.values(FontType)).has(vpValue as FontType)
         ? undefined
-        : invalid('VP6', 'unknown font face')
+        : fail(StyleCodes.INVALID_FONT_FACE, vpName, 'unknown font face')
     case 'nodeLabelPosition': {
       const problem = labelPositionProblem(vpValue)
-      return problem === undefined ? undefined : invalid('VP7', problem)
+      return problem === undefined
+        ? undefined
+        : fail(StyleCodes.INVALID_LABEL_POSITION, vpName, problem)
     }
     case VisualPropertyValueTypeName.CustomGraphic: {
       const problem = customGraphicsProblem(vpValue)
-      return problem === undefined ? undefined : invalid('VP9', problem)
+      return problem === undefined
+        ? undefined
+        : fail(StyleCodes.INVALID_CUSTOM_GRAPHICS, vpName, problem)
     }
     case VisualPropertyValueTypeName.CustomGraphicPosition: {
       const problem = customGraphicsPositionProblem(vpValue)
-      return problem === undefined ? undefined : invalid('VP10', problem)
+      return problem === undefined
+        ? undefined
+        : fail(StyleCodes.INVALID_CUSTOM_GRAPHICS_POSITION, vpName, problem)
     }
     default: {
       if (valueTypeName === undefined) return undefined
@@ -432,8 +415,9 @@ export function validateVisualPropertyValue(
       if (enumValues !== undefined) {
         return typeof vpValue === 'string' && enumValues.has(vpValue)
           ? undefined
-          : invalid(
-              'VP5',
+          : fail(
+              StyleCodes.INVALID_ENUM_VALUE,
+              vpName,
               `expected one of: ${[...enumValues].join(', ')}`,
             )
       }
@@ -455,9 +439,8 @@ export function validateContinuousMappingBounds(
 ): ApiFailure | undefined {
   if (attributeValues.length === 0) {
     return fail(
-      ApiErrorCode.InvalidInput,
+      StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC,
       'attributeValues must not be empty for a continuous mapping',
-      'V7',
     )
   }
   const isFiniteNumber = (v: unknown): boolean =>
@@ -466,19 +449,17 @@ export function validateContinuousMappingBounds(
   const badValues = attributeValues.filter((v) => !isFiniteNumber(v))
   if (badValues.length > 0) {
     return fail(
-      ApiErrorCode.InvalidInput,
-      `Continuous mapping requires numeric, finite attributeValues; got ` +
+      StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC,
+      `attributeValues must be numeric and finite; got ` +
         `${JSON.stringify(badValues.slice(0, 3))}`,
-      'V7',
     )
   }
   if (controlPoints !== undefined) {
     const badPoints = controlPoints.filter((cp) => !isFiniteNumber(cp.value))
     if (badPoints.length > 0) {
       return fail(
-        ApiErrorCode.InvalidInput,
-        'Continuous mapping control points must have numeric, finite values',
-        'V7',
+        StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC,
+        'control points must have numeric, finite values',
       )
     }
   }
@@ -545,10 +526,10 @@ export function validateValuesMatchColumnTypes(
     if (declaredType === undefined) continue
     if (!valueMatchesType(edit.value, declaredType)) {
       return fail(
-        ApiErrorCode.InvalidInput,
-        `Value for column "${edit.column}" does not match declared type ` +
-          `${declaredType}: ${JSON.stringify(edit.value)}`,
-        'A1',
+        TableCodes.VALUE_TYPE_MISMATCH,
+        edit.column,
+        declaredType,
+        JSON.stringify(edit.value),
       )
     }
   }
@@ -564,11 +545,7 @@ export function validateColumnNameAvailable(
   columnName: string,
 ): ApiFailure | undefined {
   if (columns.some((c) => c.name === columnName)) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      `Column "${columnName}" already exists`,
-      'AC6',
-    )
+    return fail(TableCodes.COLUMN_ALREADY_EXISTS, columnName)
   }
   return undefined
 }
@@ -581,11 +558,7 @@ export function validateColumnDefaultValue(
   defaultValue: ValueType | null | undefined,
 ): ApiFailure | undefined {
   if (defaultValue === null || defaultValue === undefined) {
-    return fail(
-      ApiErrorCode.InvalidInput,
-      'Column default value must not be null',
-      'A6',
-    )
+    return fail(TableCodes.COLUMN_DEFAULT_NULL)
   }
   return undefined
 }

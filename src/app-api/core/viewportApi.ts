@@ -5,7 +5,7 @@
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 import { validateNodesExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -33,15 +33,12 @@ export const viewportApi: ViewportApi = {
         .getState()
         .getFunction('cyjs', 'fit', networkId)
       if (fn === undefined) {
-        return fail(
-          ApiErrorCode.FunctionNotAvailable,
-          `Fit function not registered for network ${networkId}`,
-        )
+        return fail(AppCodes.FUNCTION_NOT_AVAILABLE, 'fit')
       }
       fn()
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -52,10 +49,7 @@ export const viewportApi: ViewportApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const positions: PositionRecord = {}
       for (const nodeId of nodeIds) {
@@ -69,7 +63,7 @@ export const viewportApi: ViewportApi = {
       }
       return ok({ positions })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -77,10 +71,7 @@ export const viewportApi: ViewportApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const missingNodes = validateNodesExist(
         networkId,
@@ -95,7 +86,7 @@ export const viewportApi: ViewportApi = {
       useViewModelStore.getState().updateNodePositions(networkId, positionMap)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

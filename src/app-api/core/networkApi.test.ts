@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/networkApi.test.ts
 // Plain Jest tests for networkApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { networkApi } from './networkApi'
 
 // ── Mock: uuid ────────────────────────────────────────────────────────────────
@@ -313,7 +313,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -324,7 +324,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -335,7 +335,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -349,7 +349,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })
@@ -374,7 +374,7 @@ describe('networkApi', () => {
       const result = networkApi.createNetworkFromCx2({ cxData: fakeCx2 as any })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidCx2)
+        expect(result.error.code).toBe(AppCodes.INVALID_CX2.code)
         expect(result.error.message).toBe('Bad CX2')
       }
     })
@@ -419,7 +419,7 @@ describe('networkApi', () => {
       const result = networkApi.createNetworkFromCx2({ cxData: fakeCx2 as any })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })
@@ -530,7 +530,7 @@ describe('networkApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
         expect(result.error.message).toContain('e1')
       }
       expect(mockNetworkActions.add).not.toHaveBeenCalled()
@@ -543,7 +543,7 @@ describe('networkApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -558,7 +558,7 @@ describe('networkApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
+        expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
       }
     })
 
@@ -601,7 +601,7 @@ describe('networkApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -682,7 +682,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteNetwork('missing')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -704,7 +704,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteNetwork('net1')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })
@@ -717,7 +717,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteCurrentNetwork()
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NoCurrentNetwork)
+        expect(result.error.code).toBe(AppCodes.NO_CURRENT_NETWORK.code)
       }
     })
 
@@ -760,7 +760,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteAllNetworks()
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })

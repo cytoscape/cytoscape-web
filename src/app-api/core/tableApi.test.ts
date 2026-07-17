@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/tableApi.test.ts
 // Plain Jest tests for tableApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, ElementCodes, TableCodes } from '../types/ApiResult'
 import { tableApi } from './tableApi'
 
 // ── Mock: TableStore ──────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ describe('getValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -195,7 +195,7 @@ describe('getValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
     }
   })
 
@@ -207,7 +207,7 @@ describe('getValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
+      expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
     }
   })
 })
@@ -232,7 +232,7 @@ describe('getRow', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -243,7 +243,7 @@ describe('getRow', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
     }
   })
 })
@@ -271,7 +271,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockCreateColumn).not.toHaveBeenCalled()
   })
@@ -286,7 +286,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 
@@ -297,8 +297,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('FK1')
+      expect(result.error.code).toBe(TableCodes.NODE_ID_COLUMN_FORBIDDEN.code)
     }
     expect(mockCreateColumn).not.toHaveBeenCalled()
   })
@@ -310,8 +309,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('FK2')
+      expect(result.error.code).toBe(TableCodes.EDGE_ID_COLUMN_FORBIDDEN.code)
     }
   })
 
@@ -322,7 +320,7 @@ describe('createColumn', () => {
       const result = tableApi.createColumn('net1', 'edge', name, 'string', '')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.cx2Code).toBe('A8')
+        expect(result.error.code).toBe(TableCodes.EDGE_STRUCTURAL_KEY_RESERVED.code)
       }
     }
     expect(mockCreateColumn).not.toHaveBeenCalled()
@@ -352,7 +350,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -363,7 +361,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -376,8 +374,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('AC6')
+      expect(result.error.code).toBe(TableCodes.COLUMN_ALREADY_EXISTS.code)
     }
     expect(mockCreateColumn).not.toHaveBeenCalled()
   })
@@ -395,8 +392,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('A6')
+      expect(result.error.code).toBe(TableCodes.COLUMN_DEFAULT_NULL.code)
     }
     expect(mockCreateColumn).not.toHaveBeenCalled()
   })
@@ -414,7 +410,7 @@ describe('createColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('A6')
+      expect(result.error.code).toBe(TableCodes.COLUMN_DEFAULT_NULL.code)
     }
   })
 
@@ -453,7 +449,7 @@ describe('deleteColumn', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -524,7 +520,7 @@ describe('setColumnName', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -560,8 +556,7 @@ describe('setColumnName', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('AC6')
+      expect(result.error.code).toBe(TableCodes.COLUMN_ALREADY_EXISTS.code)
     }
     expect(mockSetColumnName).not.toHaveBeenCalled()
   })
@@ -583,8 +578,7 @@ describe('setColumnName', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('FK1')
+      expect(result.error.code).toBe(TableCodes.NODE_ID_COLUMN_FORBIDDEN.code)
     }
     expect(mockSetColumnName).not.toHaveBeenCalled()
   })
@@ -621,7 +615,7 @@ describe('setValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -633,8 +627,7 @@ describe('setValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
-      expect(result.error.cx2Code).toBe('GL1')
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
     }
     expect(mockSetValue).not.toHaveBeenCalled()
   })
@@ -647,8 +640,7 @@ describe('setValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
-      expect(result.error.cx2Code).toBe('GL2')
+      expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
     }
   })
 
@@ -662,8 +654,7 @@ describe('setValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
-      expect(result.error.cx2Code).toBe('A1')
+      expect(result.error.code).toBe(TableCodes.VALUE_TYPE_MISMATCH.code)
       expect(result.error.message).toContain('age')
     }
     expect(mockSetValue).not.toHaveBeenCalled()
@@ -679,7 +670,7 @@ describe('setValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('A1')
+      expect(result.error.code).toBe(TableCodes.VALUE_TYPE_MISMATCH.code)
     }
   })
 
@@ -696,7 +687,7 @@ describe('setValue', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('A1')
+      expect(result.error.code).toBe(TableCodes.VALUE_TYPE_MISMATCH.code)
     }
   })
 
@@ -760,7 +751,7 @@ describe('setValues', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       expect(result.error.message).toContain('ghost')
     }
     expect(mockSetValues).not.toHaveBeenCalled()
@@ -779,7 +770,7 @@ describe('setValues', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.cx2Code).toBe('A1')
+      expect(result.error.code).toBe(TableCodes.VALUE_TYPE_MISMATCH.code)
     }
     expect(mockSetValues).not.toHaveBeenCalled()
   })
@@ -789,7 +780,7 @@ describe('setValues', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -829,7 +820,7 @@ describe('editRows', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
     }
     expect(mockEditRows).not.toHaveBeenCalled()
   })
@@ -839,7 +830,7 @@ describe('editRows', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -880,7 +871,7 @@ describe('applyValueToElements', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
     }
     expect(mockApplyValueToElements).not.toHaveBeenCalled()
   })
@@ -910,7 +901,7 @@ describe('applyValueToElements', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -957,7 +948,7 @@ describe('getColumns', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -1038,7 +1029,7 @@ describe('getTable', () => {
     const result = tableApi.getTable('missing', 'node')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -1229,7 +1220,7 @@ describe('importTableFromTsv', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -1240,7 +1231,7 @@ describe('importTableFromTsv', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -1248,7 +1239,7 @@ describe('importTableFromTsv', () => {
     const result = tableApi.importTableFromTsv('missing', 'node', 'id\tname\nn1\tAlice')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
