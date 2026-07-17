@@ -21,7 +21,6 @@ export const SearchButtons = ({
         justifyContent: 'flex-end',
         gap: (theme) => theme.spacing(1),
         padding: 0,
-        mt: 4,
       }}
     >
       <Button
