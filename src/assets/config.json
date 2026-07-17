@@ -1,7 +1,7 @@
 {
   "ndexBaseUrl": "dev1.ndexbio.org",
   "debugOptions": {
-    "disableAutoReload": false
+    "disableAutoReload": true
   },
   "keycloakConfig": {
     "url": "https://dev1.ndexbio.org/auth2",
@@ -20,7 +20,7 @@
   "maxNetworkElementsThreshold": 26000,
   "maxEdgeCountThreshold": 20000,
   "maxNetworkFileSize": 524288000,
-  "urlBaseName": "/cytoscape/",
+  "urlBaseName": "/",
   "openAIAPIKey": "",
   "googleAnalyticsId": "G-B3X9SFXC2P",
   "undoStackSize": 20,
