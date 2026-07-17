@@ -15,25 +15,22 @@ API** (per-app factory), a **Resource Registration API** (Phase 2), an **Event B
 All app API operations return `ApiResult<T>`, a discriminated union:
 
 - `{ success: true, data: T }` — operation succeeded
-- `{ success: false, error: { code, message } }` — operation failed
+- `{ success: false, error: { code, severity, message } }` — operation failed
 
 App API hooks **never** throw exceptions across the API boundary.
 
 ## Error Codes
 
-| Code                          | When Returned                                          |
-| ----------------------------- | ------------------------------------------------------ |
-| `NETWORK_NOT_FOUND`           | The specified network ID does not exist                |
-| `NODE_NOT_FOUND`              | The specified node ID does not exist in the network    |
-| `EDGE_NOT_FOUND`              | The specified edge ID does not exist in the network    |
-| `INVALID_INPUT`               | Input validation failed (missing/malformed parameters) |
-| `INVALID_CX2`                 | CX2 data failed structural validation                  |
-| `OPERATION_FAILED`            | An internal store operation threw an unexpected error  |
-| `LAYOUT_ENGINE_NOT_FOUND`     | The requested layout engine is not registered          |
-| `FUNCTION_NOT_AVAILABLE`      | A renderer function (e.g., fit) is not registered yet  |
-| `NO_CURRENT_NETWORK`          | No network is currently selected in the workspace      |
-| `CONTEXT_MENU_ITEM_NOT_FOUND` | The specified context menu item ID does not exist      |
-| `RESOURCE_NOT_FOUND`          | The specified resource ID is not registered by this app |
+Every failure carries a `code`, a `severity` (`'error'` or `'warning'` — see the
+[MI1/MI2/MI3 caveat](./ErrorCodes.md#mi1) for what `severity` means when a code is
+always blocking regardless), and a `message`. Codes that enforce a CX2 validation
+requirement reuse the CX2 code string directly (`FK1`, `BV1`, `MI3`, …); concepts
+with no CX2 equivalent (workspace/registry/runtime state) use a distinct `APP*`
+namespace that can never collide with a future CX2 code addition.
+
+See **[ErrorCodes.md](./ErrorCodes.md)** for the full catalog — one entry per code,
+with severity, message, which methods return it, and (for CX2-derived codes) the
+corresponding CX2 spec provenance.
 
 ## Module Federation Entry
 
@@ -41,7 +38,7 @@ External apps import types from `cyweb/ApiTypes`:
 
 ```typescript
 import type { ApiResult, IdType } from 'cyweb/ApiTypes'
-import { ApiErrorCode, ok, fail } from 'cyweb/ApiTypes'
+import { AppCodes, ElementCodes, ok, fail } from 'cyweb/ApiTypes'
 ```
 
 ## App API Hooks
@@ -117,19 +114,19 @@ interface CreateEdgeOptions {
 
 Returns a node's table attributes and its current position from the view model.
 
-| Error Code          | Condition                                  |
-| ------------------- | ------------------------------------------ |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist                 |
-| `NODE_NOT_FOUND`    | `nodeId` does not exist in the network     |
+| Error Code | Condition                              |
+| ---------- | --------------------------------------- |
+| `APP1`     | `networkId` does not exist              |
+| `GL1`      | `nodeId` does not exist in the network  |
 
 #### `getEdge(networkId, edgeId): ApiResult<EdgeData>`
 
 Returns an edge's source/target IDs and table attributes.
 
-| Error Code          | Condition                                  |
-| ------------------- | ------------------------------------------ |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist                 |
-| `EDGE_NOT_FOUND`    | `edgeId` does not exist in the network     |
+| Error Code | Condition                              |
+| ---------- | --------------------------------------- |
+| `APP1`     | `networkId` does not exist              |
+| `GL2`      | `edgeId` does not exist in the network  |
 
 #### `createNode(networkId, position, options?): ApiResult<{ nodeId: IdType; node: NodeData }>`
 
@@ -146,9 +143,10 @@ If `options.bypass` is provided, visual property bypasses are applied atomically
 immediately after the node is created (single operation — no separate `setBypass`
 call required).
 
-| Error Code          | Condition                  |
-| ------------------- | -------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist |
+| Error Code | Condition                  |
+| ---------- | --------------------------- |
+| `APP1`     | `networkId` does not exist  |
+| `N3`       | `options.attributes` contains an `id` key |
 
 #### `createEdge(networkId, sourceNodeId, targetNodeId, options?): ApiResult<{ edgeId: IdType; edge: EdgeData }>`
 
@@ -164,21 +162,22 @@ defaults to `"<source> (interacts with) <target>"`.
 If `options.bypass` is provided, visual property bypasses are applied atomically
 immediately after the edge is created.
 
-| Error Code          | Condition                                    |
-| ------------------- | -------------------------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist                   |
-| `NODE_NOT_FOUND`    | `sourceNodeId` or `targetNodeId` not found   |
+| Error Code | Condition                                    |
+| ---------- | --------------------------------------------- |
+| `APP1`     | `networkId` does not exist                    |
+| `E6`       | `options.attributes` contains an `id` key     |
+| `GL1`      | `sourceNodeId` or `targetNodeId` not found     |
 
 #### `moveEdge(networkId, edgeId, newSourceId, newTargetId): ApiResult`
 
 Reconnects an existing edge to different endpoints. Updates `source`/`target`
 columns in the edge table if they exist. Adds an undo entry.
 
-| Error Code          | Condition                                    |
-| ------------------- | -------------------------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist                   |
-| `EDGE_NOT_FOUND`    | `edgeId` does not exist                      |
-| `NODE_NOT_FOUND`    | `newSourceId` or `newTargetId` not found     |
+| Error Code | Condition                                |
+| ---------- | ------------------------------------------ |
+| `APP1`     | `networkId` does not exist                  |
+| `GL2`      | `edgeId` does not exist                     |
+| `GL1`      | `newSourceId` or `newTargetId` not found     |
 
 #### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges }>`
 
@@ -191,11 +190,11 @@ Returns:
 - `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each
   incidentally-deleted edge (edges connected to the deleted nodes)
 
-| Error Code          | Condition                               |
-| ------------------- | --------------------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist              |
-| `INVALID_INPUT`     | `nodeIds` is empty                      |
-| `NODE_NOT_FOUND`    | None of the specified nodes exist       |
+| Error Code | Condition                          |
+| ---------- | ------------------------------------ |
+| `APP1`     | `networkId` does not exist           |
+| `APP9`     | `nodeIds` is empty                   |
+| `GL1`      | None of the specified nodes exist    |
 
 #### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges }>`
 
@@ -205,11 +204,11 @@ Returns:
 - `deletedEdgeCount` — number of removed edges
 - `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each deleted edge
 
-| Error Code          | Condition                               |
-| ------------------- | --------------------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist              |
-| `INVALID_INPUT`     | `edgeIds` is empty                      |
-| `EDGE_NOT_FOUND`    | None of the specified edges exist       |
+| Error Code | Condition                          |
+| ---------- | ------------------------------------ |
+| `APP1`     | `networkId` does not exist           |
+| `APP9`     | `edgeIds` is empty                   |
+| `GL2`      | None of the specified edges exist    |
 
 #### `generateNextNodeId(networkId): IdType`
 
@@ -282,10 +281,10 @@ Returns nodes with no outgoing edges (leaves of the directed graph).
 
 **Common errors for graph traversal methods:**
 
-| Error Code          | When                                            |
-|---------------------|-------------------------------------------------|
-| `NETWORK_NOT_FOUND` | The specified network does not exist             |
-| `NODE_NOT_FOUND`    | The specified node does not exist (node-scoped)  |
+| Error Code | When                                             |
+| ---------- | ------------------------------------------------ |
+| `APP1`     | The specified network does not exist              |
+| `GL1`      | The specified node does not exist (node-scoped)   |
 
 ---
 
@@ -331,9 +330,9 @@ ViewModelStore, and NetworkSummaryStore. If `addToWorkspace: true`, the network 
 added to WorkspaceStore and set as the current network (firing `network:created`
 and `network:switched` events).
 
-| Error Code      | Condition                              |
-| --------------- | -------------------------------------- |
-| `INVALID_INPUT` | `name` is empty or `edgeList` is empty |
+| Error Code | Condition                              |
+| ---------- | ---------------------------------------- |
+| `APP9`     | `name` is empty or `edgeList` is empty   |
 
 #### `createNetworkFromNodeList(networkId, nodeIds, edgeIds?, options?): ApiResult<{ networkId, cyNetwork }>`
 
@@ -348,12 +347,12 @@ attribute rows, and node positions are copied from the source network.
 - `options`: `{ name?, description?, addToWorkspace? }` — name defaults to
   `Subnetwork of <source name>`; `addToWorkspace` defaults to `false`.
 
-| Error Code          | Condition                                          |
-| ------------------- | -------------------------------------------------- |
-| `NETWORK_NOT_FOUND` | Source network does not exist                      |
-| `NODE_NOT_FOUND`    | A nodeId is not in the source network (`GL1`)      |
-| `EDGE_NOT_FOUND`    | An edgeId is not in the source network (`GL2`)     |
-| `INVALID_INPUT`     | `nodeIds` empty, or an edge endpoint not in `nodeIds` |
+| Error Code | Condition                                              |
+| ---------- | --------------------------------------------------------- |
+| `APP1`     | Source network does not exist                              |
+| `GL1`      | A nodeId is not in the source network                      |
+| `GL2`      | An edgeId is not in the source network                     |
+| `APP9`     | `nodeIds` empty, or an edge endpoint not in `nodeIds`      |
 
 #### `createNetworkFromCx2(props): ApiResult<{ networkId, cyNetwork }>`
 
@@ -363,26 +362,26 @@ importing. Infers network name and description from CX2 `networkAttributes`.
 If `addToWorkspace: true`, adds to WorkspaceStore (fires `network:created`).
 If `navigate: true`, sets as current network (fires `network:switched`).
 
-| Error Code          | Condition                        |
-| ------------------- | -------------------------------- |
-| `INVALID_CX2`       | CX2 structural validation failed |
+| Error Code | Condition                          |
+| ---------- | ------------------------------------ |
+| `APP8`     | CX2 structural validation failed     |
 
 #### `deleteNetwork(networkId, options?): ApiResult`
 
 Deletes a network from all stores. Fires `network:deleted`. If `navigate: true`
 (default), switches to the next available network.
 
-| Error Code          | Condition                  |
-| ------------------- | -------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist |
+| Error Code | Condition                  |
+| ---------- | --------------------------- |
+| `APP1`     | `networkId` does not exist  |
 
 #### `deleteCurrentNetwork(options?): ApiResult`
 
 Deletes the currently active network. Delegates to `deleteNetwork`.
 
-| Error Code          | Condition                           |
-| ------------------- | ----------------------------------- |
-| `NO_CURRENT_NETWORK` | No network is currently selected   |
+| Error Code | Condition                          |
+| ---------- | ------------------------------------ |
+| `APP2`     | No network is currently selected     |
 
 #### `deleteAllNetworks(): ApiResult`
 
@@ -432,7 +431,7 @@ Toggles the selection state of each specified ID.
 
 Returns the current selection state.
 
-All methods return `NETWORK_NOT_FOUND` if the view model for `networkId` is not found.
+All methods return `APP1` if the view model for `networkId` is not found.
 
 ---
 
@@ -458,28 +457,30 @@ type PositionRecord = Record<IdType, [number, number, number?]>
 Fits the viewport to show all elements. Calls the renderer's registered `fit`
 function. This is async because it delegates to the renderer.
 
-| Error Code               | Condition                                     |
-| ------------------------ | --------------------------------------------- |
-| `NETWORK_NOT_FOUND`      | `networkId` does not exist                    |
-| `FUNCTION_NOT_AVAILABLE` | Fit function not yet registered for this view |
+| Error Code | Condition                                        |
+| ---------- | --------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                          |
+| `APP5`     | Fit function not yet registered for this view       |
 
 #### `getNodePositions(networkId, nodeIds): ApiResult<{ positions: PositionRecord }>`
 
 Returns current `[x, y, z?]` positions for the specified nodes. Nodes without
 a view model entry are silently omitted from the result.
 
-| Error Code          | Condition                  |
-| ------------------- | -------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist |
+| Error Code | Condition                  |
+| ---------- | --------------------------- |
+| `APP1`     | `networkId` does not exist  |
 
 #### `updateNodePositions(networkId, positions): ApiResult`
 
 Bulk-updates node positions in the view model. Accepts a `PositionRecord`
 (plain object) and converts it internally to a `Map` before writing to the store.
+Rejects (does not partially apply) if any key is not a node ID in the network.
 
-| Error Code          | Condition                  |
-| ------------------- | -------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` does not exist |
+| Error Code | Condition                                |
+| ---------- | ------------------------------------------- |
+| `APP1`     | `networkId` does not exist                  |
+| `GL1`      | A position key is not a node in the network |
 
 ---
 
@@ -510,44 +511,98 @@ via the Event Bus (the TableStore subscription in `initEventBus` fires automatic
 
 #### `getValue(networkId, tableType, elementId, column): ApiResult<{ value: ValueType }>`
 
-Returns the value of a single cell. Returns `NODE_NOT_FOUND` / `EDGE_NOT_FOUND`
-if the element row is not found.
+Returns the value of a single cell.
+
+| Error Code | Condition                                          |
+| ---------- | ----------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                              |
+| `GL1`/`GL2`| `elementId` row not found (`GL1` node, `GL2` edge)      |
 
 #### `getRow(networkId, tableType, elementId): ApiResult<{ row: Record<AttributeName, ValueType> }>`
 
-Returns the full attribute row for a single element.
+Returns the full attribute row for a single element. Same error codes as `getValue`.
 
 #### `createColumn(networkId, tableType, columnName, dataType, defaultValue): ApiResult`
 
 Creates a new column with the given data type and default value.
 Triggers `data:changed` with an empty `rowIds` array (schema-only change).
 
+| Error Code | Condition                                             |
+| ---------- | ---------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                  |
+| `FK1`/`FK2`| `columnName` is `"id"` (`FK1` node table, `FK2` edge table)  |
+| `A8`       | `columnName` is `"s"`/`"t"` on an edge table                 |
+| `AC6`      | `columnName` already exists on this table                    |
+| `A6`       | `defaultValue` is `null` or `undefined`                      |
+
 #### `deleteColumn(networkId, tableType, columnName): ApiResult`
 
-Deletes a column. Triggers `data:changed` with an empty `rowIds` array.
+Deletes a column. Cascades: removes any visual style mapping referencing the
+column, and removes the column from the Table Browser display config.
+Triggers `data:changed` with an empty `rowIds` array.
+
+| Error Code | Condition                  |
+| ---------- | --------------------------- |
+| `APP1`     | `networkId` does not exist  |
 
 #### `setColumnName(networkId, tableType, currentName, newName): ApiResult`
 
-Renames a column. Triggers `data:changed` with an empty `rowIds` array.
+Renames a column. Cascades: retargets any visual style mapping referencing the
+column, and updates the Table Browser display config. Renaming to the current
+name is a no-op, not a collision. Triggers `data:changed` with an empty
+`rowIds` array.
+
+| Error Code | Condition                                                |
+| ---------- | ------------------------------------------------------------ |
+| `APP1`     | `networkId` does not exist                                    |
+| `FK1`/`FK2`| `newName` is `"id"` (`FK1` node table, `FK2` edge table)       |
+| `A8`       | `newName` is `"s"`/`"t"` on an edge table                      |
+| `AC6`      | `newName` already exists and differs from `currentName`       |
 
 #### `setValue(networkId, tableType, elementId, column, value): ApiResult`
 
 Sets a single cell value. Triggers `data:changed`.
 
+| Error Code | Condition                                          |
+| ---------- | ----------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                              |
+| `GL1`/`GL2`| `elementId` not found (`GL1` node, `GL2` edge)          |
+| `A1`       | `value` does not match the declared type of `column`    |
+
 #### `setValues(networkId, tableType, cellEdits): ApiResult`
 
 Bulk cell edit. Converts `CellEdit[]` (app format, uses `id`) to the store format
-(uses `row`) internally. Triggers `data:changed`.
+(uses `row`) internally. Rejects the whole batch (no partial application) if
+any edit fails validation. Triggers `data:changed`.
+
+| Error Code | Condition                                                |
+| ---------- | -------------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                      |
+| `GL1`/`GL2`| Any edit's `id` not found (`GL1` node, `GL2` edge)               |
+| `A1`       | Any edit's `value` does not match its column's declared type     |
 
 #### `editRows(networkId, tableType, rows): ApiResult`
 
 Bulk row edit via a `Record<IdType, Record<AttributeName, ValueType>>`.
-Converts to `Map` internally. Triggers `data:changed`.
+Converts to `Map` internally. Rejects the whole batch if any value fails
+validation. Triggers `data:changed`.
+
+| Error Code | Condition                                                |
+| ---------- | -------------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                      |
+| `GL1`/`GL2`| Any row's key not found (`GL1` node, `GL2` edge)                 |
+| `A1`       | Any value does not match its column's declared type              |
 
 #### `applyValueToElements(networkId, tableType, columnName, value, elementIds?): ApiResult`
 
 Sets the same value for all specified elements (or all elements if `elementIds`
 is omitted). Triggers `data:changed`.
+
+| Error Code | Condition                                                |
+| ---------- | -------------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                      |
+| `GL1`/`GL2`| An `elementIds` entry not found (`GL1` node, `GL2` edge)         |
+| `A1`       | `value` does not match the declared type of `columnName`         |
 
 ### Bulk Read
 
@@ -599,10 +654,12 @@ if (result.success) {
 }
 ```
 
-#### `importTableFromTsv(networkId, tableType, tsvText, options?): ApiResult<{ rowCount, newColumns }>`
+#### `importTableFromTsv(networkId, tableType, tsvText, options?): ApiResult<{ rowCount, newColumns, skippedRows }>`
 
 Parses a TSV string and writes data into the table. Creates new columns as
-needed. Matches rows by a key column (default: `id`).
+needed. Matches rows by resolving the key column's value to element IDs — TSV
+rows whose key value matches no element are skipped (never creating orphaned
+rows) and their key values are returned in `skippedRows`.
 
 **Options:**
 - `keyColumn?: string` — column in the TSV to use as element ID (default: `'id'`)
@@ -616,15 +673,16 @@ const result = tableApi.importTableFromTsv(networkId, 'node', tsv)
 if (result.success) {
   console.log(result.data.newColumns) // ['cluster', 'pagerank']
   console.log(result.data.rowCount)   // 2
+  console.log(result.data.skippedRows) // [] — no unmatched key values
 }
 ```
 
-| Error Code          | Condition                               |
-| ------------------- | --------------------------------------- |
-| `NETWORK_NOT_FOUND` | Table record for `networkId` not found  |
-| `INVALID_INPUT`     | TSV has < 2 lines or key column missing |
+| Error Code | Condition                                  |
+| ---------- | --------------------------------------------- |
+| `APP1`     | Table record for `networkId` not found          |
+| `APP9`     | TSV has < 2 lines or key column missing          |
 
-All methods return `NETWORK_NOT_FOUND` if the table record for `networkId` is not found.
+All methods in this API return `APP1` if the table record for `networkId` is not found.
 
 ---
 
@@ -645,19 +703,38 @@ subscription in `initEventBus` fires on any property change).
 #### `setDefault(networkId, vpName, vpValue): ApiResult`
 
 Sets the default value for a visual property (applies to all elements without a
-bypass or mapping).
+bypass or mapping). `vpValue` is validated against the property's declared value
+type before being written.
+
+| Error Code                            | Condition                                    |
+| -------------------------------------- | --------------------------------------------- |
+| `APP1`                                  | `networkId` does not exist                    |
+| `APP9`                                  | `vpName` is not a known visual property        |
+| `VP1`/`VP2`/`VP3`/`VP4`/`VP5`/`VP6`/`VP7`/`VP9`/`VP10` | `vpValue` invalid for the property's value type (see [ErrorCodes.md](./ErrorCodes.md)) |
 
 #### `setBypass(networkId, vpName, elementIds, vpValue): ApiResult`
 
-Sets a per-element override. `elementIds` must be non-empty.
+Sets a per-element override. `elementIds` must be non-empty and must match the
+property's node/edge scope; network-scoped properties cannot be bypassed.
 
-| Error Code          | Condition              |
-| ------------------- | ---------------------- |
-| `INVALID_INPUT`     | `elementIds` is empty  |
+| Error Code | Condition                                              |
+| ---------- | ---------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                   |
+| `APP9`     | `elementIds` is empty, or `vpName` is not a known property   |
+| `BV5`      | `vpName` is a network-scoped property                        |
+| `BV1`      | An `elementIds` entry does not exist in the network           |
+| `BV2`      | An `elementIds` entry doesn't match the property's node/edge scope |
+| `VP1`–`VP10` | `vpValue` invalid for the property's value type (same codes as `setDefault`) |
 
 #### `deleteBypass(networkId, vpName, elementIds): ApiResult`
 
-Removes per-element overrides.
+Removes per-element overrides. Intentionally unguarded against non-existent
+element IDs, so cleanup of stale bypasses (e.g. after external deletion) always
+succeeds.
+
+| Error Code | Condition                  |
+| ---------- | --------------------------- |
+| `APP1`     | `networkId` does not exist  |
 
 #### `createDiscreteMapping(networkId, vpName, attribute, attributeType, mapping?): ApiResult`
 
@@ -665,6 +742,13 @@ Creates a discrete (lookup-table) mapping for `vpName` based on the specified
 node/edge attribute. `mapping` is an optional `Record<string, VisualPropertyValueType>`
 of attribute-value keys (stringified; parsed back to `integer`/`long`/`double` per
 `attributeType`) to visual property values.
+
+| Error Code | Condition                                                   |
+| ---------- | ------------------------------------------------------------------ |
+| `APP1`     | `networkId` does not exist                                           |
+| `MC1`      | `vpName` is a network-scoped property                                |
+| `MI1`      | `attribute` is not declared in the matching node/edge table          |
+| `MI2`      | `attributeType` does not match the declared column type               |
 
 #### `createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType, controlPoints?, ltMinVpValue?, gtMaxVpValue?): ApiResult`
 
@@ -675,15 +759,31 @@ and `vpType`. Pass `controlPoints` to override the interpolation points (`min`/
 `max` are derived from the first/last entries); pass `ltMinVpValue`/`gtMaxVpValue`
 to override the values used below/above the range.
 
+| Error Code | Condition                                                   |
+| ---------- | ------------------------------------------------------------------ |
+| `APP1`     | `networkId` does not exist                                           |
+| `MC1`      | `vpName` is a network-scoped property                                |
+| `MI1`      | `attribute` is not declared in the matching node/edge table          |
+| `MI2`      | `attributeType` does not match the declared column type               |
+| `MI3`      | The source column is non-numeric                                     |
+| `V7`       | `attributeValues` empty/non-numeric, or a control point is non-numeric |
+
 #### `createPassthroughMapping(networkId, vpName, attribute, attributeType): ApiResult`
 
 Creates a passthrough mapping (attribute value used directly as the visual value).
+
+| Error Code | Condition                                                   |
+| ---------- | ------------------------------------------------------------------ |
+| `APP1`     | `networkId` does not exist                                           |
+| `MC1`      | `vpName` is a network-scoped property                                |
+| `MI1`      | `attribute` is not declared in the matching node/edge table          |
+| `MI2`      | `attributeType` does not match the declared column type               |
 
 #### `removeMapping(networkId, vpName): ApiResult`
 
 Removes any mapping for the specified visual property.
 
-All methods return `NETWORK_NOT_FOUND` if the visual style for `networkId` is not found.
+All methods in this API return `APP1` if the visual style for `networkId` is not found.
 
 ---
 
@@ -726,10 +826,10 @@ Applies a layout algorithm asynchronously. Lifecycle:
 
 Pre-layout positions are snapshotted for undo.
 
-| Error Code               | Condition                                          |
-| ------------------------ | -------------------------------------------------- |
-| `NETWORK_NOT_FOUND`      | `networkId` does not exist                         |
-| `LAYOUT_ENGINE_NOT_FOUND`| No engine registered for `algorithmName`           |
+| Error Code | Condition                                     |
+| ---------- | ------------------------------------------------ |
+| `APP1`     | `networkId` does not exist                          |
+| `APP4`     | No engine registered for `algorithmName`             |
 
 #### `getAvailableLayouts(): ApiResult<LayoutAlgorithmInfo[]>`
 
@@ -762,9 +862,9 @@ interface ExportOptions {
 Assembles the network from NetworkStore, TableStore, VisualStyleStore, ViewModelStore,
 OpaqueAspectStore, and NetworkSummaryStore, then serializes to CX2 format.
 
-| Error Code          | Condition                                             |
-| ------------------- | ----------------------------------------------------- |
-| `NETWORK_NOT_FOUND` | Network, tables, visual style, or view model not found |
+| Error Code | Condition                                                  |
+| ---------- | ---------------------------------------------------------------- |
+| `APP1`     | Network, tables, visual style, or view model not found — all four checks collapse to this one code (see [ErrorCodes.md](./ErrorCodes.md)) |
 
 ---
 
@@ -818,34 +918,34 @@ NetworkSummaryStore are **silently omitted**.
 
 Returns summary metadata for a single network.
 
-| Error Code          | Condition                                             |
-| ------------------- | ----------------------------------------------------- |
-| `NETWORK_NOT_FOUND` | `networkId` is not in the workspace or summary missing |
+| Error Code | Condition                                                |
+| ---------- | ---------------------------------------------------------- |
+| `APP1`     | `networkId` is not in the workspace or summary missing       |
 
 #### `getCurrentNetworkId(): ApiResult<{ networkId: IdType }>`
 
 Returns the currently active network ID.
 
-| Error Code           | Condition                        |
-| -------------------- | -------------------------------- |
-| `NO_CURRENT_NETWORK` | No networks are open             |
+| Error Code | Condition                |
+| ---------- | --------------------------- |
+| `APP2`     | No networks are open         |
 
 #### `switchCurrentNetwork(networkId): ApiResult`
 
 Switches the active network. Triggers `network:switched` via the Event Bus.
 
-| Error Code          | Condition                          |
-| ------------------- | ---------------------------------- |
-| `INVALID_INPUT`     | `networkId` is empty/whitespace    |
-| `NETWORK_NOT_FOUND` | `networkId` is not in the workspace |
+| Error Code | Condition                             |
+| ---------- | ---------------------------------------- |
+| `APP9`     | `networkId` is empty/whitespace            |
+| `APP1`     | `networkId` is not in the workspace        |
 
 #### `setWorkspaceName(name): ApiResult`
 
 Renames the workspace. The name is trimmed before being stored.
 
-| Error Code      | Condition                              |
-| --------------- | -------------------------------------- |
-| `INVALID_INPUT` | `name` is empty after trimming         |
+| Error Code | Condition                        |
+| ---------- | ------------------------------------ |
+| `APP9`     | `name` is empty after trimming         |
 
 ---
 
@@ -909,17 +1009,17 @@ Items registered via `AppContext.apis.contextMenu` are automatically cleaned up
 when the app is disabled or mount() fails (via `cleanupAllForApp`). Explicit
 removal in `unmount()` is redundant but harmless.
 
-| Error Code      | Condition                        |
-| --------------- | -------------------------------- |
-| `INVALID_INPUT` | `label` is empty or whitespace   |
+| Error Code | Condition                          |
+| ---------- | -------------------------------------- |
+| `APP9`     | `label` is empty or whitespace           |
 
 #### `removeContextMenuItem(itemId): ApiResult`
 
 Removes a previously registered context menu item.
 
-| Error Code                    | Condition                    |
-| ----------------------------- | ---------------------------- |
-| `CONTEXT_MENU_ITEM_NOT_FOUND` | `itemId` is unknown          |
+| Error Code | Condition             |
+| ---------- | ------------------------ |
+| `APP6`     | `itemId` is unknown        |
 
 ### Example
 
@@ -1018,21 +1118,22 @@ Registers a panel in the `'right-panel'` slot. Uses upsert semantics: if a
 panel with the same `id` is already registered by this app, it is replaced
 in place (preserving tab selection).
 
-| Error Code      | Condition                                    |
-| --------------- | -------------------------------------------- |
-| `INVALID_INPUT` | `id` empty, `component` not a valid React type |
+| Error Code | Condition                                        |
+| ---------- | ----------------------------------------------------- |
+| `APP9`     | `id` empty, `component` not a valid React type           |
 
 #### `unregisterPanel(panelId): ApiResult`
 
-Removes a panel. Returns `RESOURCE_NOT_FOUND` if the panel is not registered.
+Removes a panel. Returns `APP7` if the panel is not registered.
 
 #### `registerMenuItem(options): ApiResult<{ resourceId: string }>`
 
-Registers a menu item in the `'apps-menu'` slot. Uses upsert semantics.
+Registers a menu item in the `'apps-menu'` slot. Uses upsert semantics. Same
+error codes as `registerPanel`.
 
 #### `unregisterMenuItem(menuItemId): ApiResult`
 
-Removes a menu item.
+Removes a menu item. Returns `APP7` if the menu item is not registered.
 
 #### `unregisterAll(): ApiResult`
 
