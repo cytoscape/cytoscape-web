@@ -1,6 +1,5 @@
 import './styles/index.css'
 
-import { Box } from '@mui/material'
 import CssBaseline from '@mui/material/CssBaseline'
 import {
   Experimental_CssVarsProvider as CssVarsProvider,
@@ -20,9 +19,9 @@ import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
-import { MessagePanel } from './features/Messages'
 import { RedirectPanel } from './features/RedirectPanel'
 import { AppShellSkeleton } from './features/AppShellSkeleton'
+import { WorkspaceSkeleton } from './features/WorkspaceSkeleton'
 import { KeycloakContext } from './init/keycloak'
 import { theme } from './theme'
 
@@ -53,15 +52,10 @@ const router = createBrowserRouter(
       <Route
         path=":workspaceId"
         element={
+          // Same skeleton the shell fallback composes, so the content region
+          // keeps its shape while the WorkspaceEditor chunk loads.
           <Suspense
-            fallback={
-              <Box sx={{ width: '100%', height: '100vh' }}>
-                <MessagePanel
-                  message={'Initializing Workspace...'}
-                  data-testid="workspace-editor-loading"
-                />
-              </Box>
-            }
+            fallback={<WorkspaceSkeleton message="Initializing Workspace..." />}
           >
             <WorkspaceEditor />
           </Suspense>
