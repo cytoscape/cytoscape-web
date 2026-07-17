@@ -61,23 +61,71 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
 }
 
 /**
- * Fills in the static boot shell's placeholders in index.html: the app
- * version shown before the JS bundle loads, and the auth server origin for
- * the preconnect hint (derived from config.json so it can't drift).
- * Runs `order: 'pre'` so Vite's own %ENV% HTML replacement never sees (and
- * warns about) these placeholders.
+ * Build-only plugin that paints the boot splash before the Module
+ * Federation bootstrap finishes.
+ *
+ * The generated mf-entry-bootstrap awaits the federation runtime's
+ * share-scope setup, which transitively downloads the ~700kB MUI shared
+ * chunk (react-dom is co-located in it) before src/index.tsx ever runs —
+ * so nothing in the normal entry graph can paint sooner than that
+ * download. This plugin emits src/init/bootSplashEntry.ts as its own tiny
+ * chunk (its graph is just the splash) and injects it as the FIRST module
+ * script in index.html, so the splash paints within a few round-trips.
+ * It also preloads the dynamically-imported init chunk, which Vite's own
+ * preload injection misses (one discovery round-trip saved).
  */
-function bootShellPlugin(): Plugin {
-  const authOrigin = new URL(config.keycloakConfig.url).origin
+function bootSplashPlugin(): Plugin {
   return {
-    name: 'boot-shell',
-    transformIndexHtml: {
-      order: 'pre',
-      handler(html: string) {
-        return html
-          .replaceAll('%APP_VERSION%', packageJson.version)
-          .replaceAll('%AUTH_ORIGIN%', authOrigin)
-      },
+    name: 'boot-splash',
+    apply: 'build',
+    buildStart() {
+      this.emitFile({
+        type: 'chunk',
+        id: 'src/init/bootSplashEntry.ts',
+        name: 'bootSplash',
+      })
+    },
+    // writeBundle (after index.html is finalized on disk): transformIndexHtml
+    // hooks run before Vite injects its own preload tags.
+    writeBundle(options, bundle) {
+      const htmlPath = path.resolve(options.dir ?? 'dist', 'index.html')
+      if (!fs.existsSync(htmlPath)) return
+
+      let html = fs.readFileSync(htmlPath, 'utf8')
+      const base = config.urlBaseName !== '' ? config.urlBaseName : '/'
+
+      const findChunk = (facadeSuffix: string) => {
+        const chunk = Object.values(bundle).find(
+          (c) =>
+            c.type === 'chunk' &&
+            ((c as { facadeModuleId?: string | null }).facadeModuleId ?? '').endsWith(facadeSuffix),
+        )
+        return chunk as { fileName: string; imports: string[] } | undefined
+      }
+
+      const splashChunk = findChunk('src/init/bootSplashEntry.ts')
+      if (splashChunk !== undefined) {
+        const splashPreloads = splashChunk.imports
+          .map(
+            (fileName) =>
+              `<link rel="modulepreload" crossorigin href="${base}${fileName}">`,
+          )
+          .join('')
+        html = html.replace(
+          '<script type="module"',
+          `${splashPreloads}<script type="module" crossorigin src="${base}${splashChunk.fileName}"></script><script type="module"`,
+        )
+      }
+
+      const initChunk = findChunk('src/init.tsx')
+      if (initChunk !== undefined) {
+        html = html.replace(
+          '</head>',
+          `<link rel="modulepreload" crossorigin href="${base}${initChunk.fileName}"></head>`,
+        )
+      }
+
+      fs.writeFileSync(htmlPath, html)
     },
   }
 }
@@ -107,7 +155,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     appsConfigPlugin(appsConfigPath),
-    bootShellPlugin(),
+    bootSplashPlugin(),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old
