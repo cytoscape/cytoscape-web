@@ -7,7 +7,6 @@ import omit from 'lodash/omit'
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
-import { useCredentialStore } from '../../data/hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -91,10 +90,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
-
-  const getToken: () => Promise<string> = useCredentialStore(
-    (state) => state.getToken,
-  )
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -222,14 +217,11 @@ const WorkSpaceEditor = (): JSX.Element => {
    */
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
-      const currentToken = await getToken()
-
-      const summaryMap = await loadNetworkSummaries([networkId], currentToken)
+      // Cached summaries/content resolve immediately; the loaders only wait
+      // for the auth token when they actually fetch from NDEx (cache miss).
+      const summaryMap = await loadNetworkSummaries([networkId])
       const summary = summaryMap[networkId]
-      const cyNetworkData: CyNetwork = await loadCyNetwork(
-        networkId,
-        currentToken,
-      )
+      const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
       const {
         network,
         nodeTable,

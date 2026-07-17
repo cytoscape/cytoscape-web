@@ -61,9 +61,27 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
 }
 
 /**
- * Dev-server-only plugin that processes simple EJS-like tags in index.html
- * (parity with Webpack's HtmlWebpackPlugin).
+ * Fills in the static boot shell's placeholders in index.html: the app
+ * version shown before the JS bundle loads, and the auth server origin for
+ * the preconnect hint (derived from config.json so it can't drift).
+ * Runs `order: 'pre'` so Vite's own %ENV% HTML replacement never sees (and
+ * warns about) these placeholders.
  */
+function bootShellPlugin(): Plugin {
+  const authOrigin = new URL(config.keycloakConfig.url).origin
+  return {
+    name: 'boot-shell',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html: string) {
+        return html
+          .replaceAll('%APP_VERSION%', packageJson.version)
+          .replaceAll('%AUTH_ORIGIN%', authOrigin)
+      },
+    },
+  }
+}
+
 export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const appsConfigPath = path.resolve(
     __dirname,
@@ -89,6 +107,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     appsConfigPlugin(appsConfigPath),
+    bootShellPlugin(),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old

@@ -4,26 +4,49 @@ import { enableMapSet } from 'immer'
 import React from 'react'
 import * as ReactDOM from 'react-dom/client'
 
-import { App } from './App'
-import { CyWebApi } from './app-api/core'
 import { AppConfigContext } from './AppConfigContext'
 import appConfig from './assets/config.json'
+import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 // this allows immer to work with Map and Set
 import { initializeDebug, logStartup } from './debug'
-import { EmailVerificationModal } from './features/EmailVerification'
 import ErrorBoundary from './features/ErrorBoundary'
-import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
+import { AppBootstrap, AuthResolution } from './init/AppBootstrap'
 import { initializeGoogleAnalytics } from './init/googleAnalytics'
 import { initializeKeycloak, KeycloakContext } from './init/keycloak'
-import { BootScreen } from './init/BootScreen'
 import { initializeTabManager } from './init/tabManager'
 
-// Assign CyWebApi to window for external consumers (browser extensions, LLM agents).
-// Event bus and cywebapi:ready are wired in AppShell after stores hydrate from IndexedDB.
-;(window as any).CyWebApi = CyWebApi
+// Assign CyWebApi to window for external consumers (browser extensions, LLM
+// agents). Loaded asynchronously — it pulls in the store/data layer, which
+// must not block the boot chunk. Consumers already have to wait for the
+// cywebapi:ready event (wired in AppShell after stores hydrate) before use.
+void import('./app-api/core').then(({ CyWebApi }) => {
+  ;(window as any).CyWebApi = CyWebApi
+})
 
 const AUTH_INIT_TIMEOUT_MS = 4000
 const LOCAL_DEV_HOSTS = new Set(['127.0.0.1', 'localhost'])
+
+// Dev-only: `?authDelay[=ms]` holds keycloak init's resolution to simulate the
+// production silent-SSO round-trip, so the boot screen handoff can be observed
+// locally. Compiled away in production builds.
+const DEFAULT_SIMULATED_AUTH_DELAY_MS = 1500
+
+const getSimulatedAuthDelayMs = (): number => {
+  if (!import.meta.env.DEV) return 0
+  const raw = new URLSearchParams(window.location.search).get('authDelay')
+  if (raw === null) return 0
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_SIMULATED_AUTH_DELAY_MS
+}
+
+const UNAUTHENTICATED: AuthResolution = {
+  authenticated: false,
+  isEmailUnverified: false,
+  userName: '',
+  userEmail: '',
+}
 
 const initializeApp = () => {
   const { urlBaseName } = appConfig
@@ -37,19 +60,7 @@ const initializeApp = () => {
   }
 
   const root = ReactDOM.createRoot(rootElement)
-  
-  let currentLoadingMessage = 'Starting...'
-  let hasRenderedApp = false
 
-  const updateLoadingMessage = (message: string) => {
-    if (!hasRenderedApp) {
-      currentLoadingMessage = message
-      root.render(<BootScreen loadingMessage={currentLoadingMessage} />)
-    }
-  }
-
-  // Show initial progress when React styles are loaded
-  updateLoadingMessage('Loading application modules...')
   enableMapSet()
   initializeDebug()
   initializeTabManager()
@@ -58,58 +69,19 @@ const initializeApp = () => {
     initializeKeycloak()
   const isLocalDevHost = LOCAL_DEV_HOSTS.has(window.location.hostname)
 
-  const renderApp = ({
-    authenticated,
-    isEmailUnverified = false,
-    userName = '',
-    userEmail = '',
-  }: {
-    authenticated: boolean
-    isEmailUnverified?: boolean
-    userName?: string
-    userEmail?: string
-  }) => {
-    updateLoadingMessage('Starting application...')
+  // Optimistic render: the app renders immediately while the SSO check runs
+  // in the background. Credentialed requests (CredentialStore.getToken) are
+  // held until completeAuthInitialization so a logged-in user's startup
+  // fetches can't go out anonymously. Every terminal path below (success,
+  // failure, timeout) must complete initialization and resolve the promise.
+  const { beginAuthInitialization, completeAuthInitialization } =
+    useCredentialStore.getState()
+  beginAuthInitialization()
 
-    const innerContent =
-      authenticated && isEmailUnverified ? (
-        <EmailVerificationModal
-          userName={userName}
-          userEmail={userEmail}
-          onVerify={handleVerify}
-          onCancel={handleCancel}
-        />
-      ) : (
-        <FeatureAvailabilityProvider>
-          <App />
-        </FeatureAvailabilityProvider>
-      )
-    const outerContent = (
-      <AppConfigContext.Provider value={appConfig}>
-        <React.StrictMode>
-          <KeycloakContext.Provider value={keycloak}>
-            <ErrorBoundary>{innerContent}</ErrorBoundary>
-          </KeycloakContext.Provider>
-        </React.StrictMode>
-      </AppConfigContext.Provider>
-    )
-
-    root.render(outerContent)
-  }
-
-  const renderAppOnce = (options: {
-    authenticated: boolean
-    isEmailUnverified?: boolean
-    userName?: string
-    userEmail?: string
-  }) => {
-    if (hasRenderedApp) {
-      return
-    }
-
-    hasRenderedApp = true
-    renderApp(options)
-  }
+  let resolveAuth!: (resolution: AuthResolution) => void
+  const authResolution = new Promise<AuthResolution>((resolve) => {
+    resolveAuth = resolve
+  })
 
   const keycloakInitTimeout = isLocalDevHost
     ? undefined
@@ -118,7 +90,8 @@ const initializeApp = () => {
           `[bootstrap.tsx]:[${keycloak.init.name}]: Authentication initialization timed out, continuing without SSO`,
         )
 
-        renderAppOnce({ authenticated: false })
+        completeAuthInitialization()
+        resolveAuth(UNAUTHENTICATED)
       }, AUTH_INIT_TIMEOUT_MS)
 
   const keycloakInitOptions = isLocalDevHost
@@ -135,32 +108,36 @@ const initializeApp = () => {
   keycloak
     .init(keycloakInitOptions)
     .then(async (authenticated) => {
-      let isEmailUnverified = true
-      let userName = ''
-      let userEmail = ''
-
-      updateLoadingMessage('Loading configuration...')
-
-      updateLoadingMessage('Initializing authentication...')
-
-      if (authenticated) {
-        updateLoadingMessage('Verifying user credentials...')
-        const verificationStatus = await checkUserVerification()
-        isEmailUnverified = !verificationStatus.isVerified
-        userName = verificationStatus.userName ?? ''
-        userEmail = verificationStatus.userEmail ?? ''
+      const simulatedAuthDelayMs = getSimulatedAuthDelayMs()
+      if (simulatedAuthDelayMs > 0) {
+        logStartup.info(
+          `[bootstrap.tsx]:[${initializeApp.name}]: Simulating ${simulatedAuthDelayMs}ms auth delay (authDelay URL parameter)`,
+        )
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, simulatedAuthDelayMs),
+        )
       }
 
       if (keycloakInitTimeout !== undefined) {
         window.clearTimeout(keycloakInitTimeout)
       }
 
-      renderAppOnce({
-        authenticated,
-        isEmailUnverified,
-        userName,
-        userEmail,
-      })
+      // Release token waiters as soon as the SSO check settles — the email
+      // verification lookup below needs the network and must not gate them.
+      completeAuthInitialization()
+
+      let isEmailUnverified = false
+      let userName = ''
+      let userEmail = ''
+
+      if (authenticated) {
+        const verificationStatus = await checkUserVerification()
+        isEmailUnverified = !verificationStatus.isVerified
+        userName = verificationStatus.userName ?? ''
+        userEmail = verificationStatus.userEmail ?? ''
+      }
+
+      resolveAuth({ authenticated, isEmailUnverified, userName, userEmail })
     })
     .catch((e) => {
       if (keycloakInitTimeout !== undefined) {
@@ -172,8 +149,25 @@ const initializeApp = () => {
         e,
       )
 
-      renderAppOnce({ authenticated: false })
+      completeAuthInitialization()
+      resolveAuth(UNAUTHENTICATED)
     })
+
+  root.render(
+    <AppConfigContext.Provider value={appConfig}>
+      <React.StrictMode>
+        <KeycloakContext.Provider value={keycloak}>
+          <ErrorBoundary>
+            <AppBootstrap
+              authResolution={authResolution}
+              onVerify={handleVerify}
+              onCancel={handleCancel}
+            />
+          </ErrorBoundary>
+        </KeycloakContext.Provider>
+      </React.StrictMode>
+    </AppConfigContext.Provider>,
+  )
 }
 
 initializeApp()

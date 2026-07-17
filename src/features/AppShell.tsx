@@ -275,10 +275,11 @@ const AppShell = (): ReactElement => {
      * 4. Navigating to the appropriate workspace/network route
      */
     const initializeAppShell = async () => {
-      // Load workspace, summaries, and authentication token
+      // Load workspace and summaries. Cached summaries resolve immediately;
+      // the loader only waits for the auth token if it has to fetch missing
+      // ones from NDEx.
       const workspace = await getWorkspaceFromDb()
-      const token = await getToken()
-      const summaries = await loadNetworkSummaries(workspace.networkIds, token)
+      const summaries = await loadNetworkSummaries(workspace.networkIds)
 
       // Process UI state parameters from search params
       // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
@@ -313,9 +314,10 @@ const AppShell = (): ReactElement => {
       const importErrorMessages: string[] = []
 
       if (isNetworkIdNotInWorkspace) {
-        // Check if the network exists in NDEx
+        // Check if the network exists in NDEx. Deep-linked networks can be
+        // private, so this waits for the SSO check via the gated getToken.
         const newNetworkSummary = (
-          await fetchNdexSummaries(networkId, token)
+          await fetchNdexSummaries(networkId, await getToken())
         )?.[0]
 
         if (newNetworkSummary !== undefined) {
