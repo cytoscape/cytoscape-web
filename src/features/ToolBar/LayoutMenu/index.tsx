@@ -1,3 +1,4 @@
+import BuildIcon from '@mui/icons-material/Build'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { useEffect, useState } from 'react'
@@ -17,11 +18,11 @@ import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPanelStore'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
 import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
-
 
 export const LayoutMenu = (): JSX.Element => {
   const [open, setOpen] = useState(false)
@@ -58,6 +59,7 @@ export const LayoutMenu = (): JSX.Element => {
   const preferredLayout: LayoutAlgorithm = useLayoutStore(
     (state) => state.preferredLayout,
   )
+  const toggleLayoutTools = useLayoutToolsPanelStore((state) => state.toggle)
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView = getViewModel(targetNetworkId)
@@ -258,7 +260,7 @@ export const LayoutMenu = (): JSX.Element => {
                 />
               ),
             }
-        })
+          })
         : sortedMenuItemsWithDividers.map((menuItem: any) => {
             // Render divider
             if (menuItem.isDivider) {
@@ -284,6 +286,19 @@ export const LayoutMenu = (): JSX.Element => {
           })),
       {
         separator: true,
+      },
+      {
+        template: (
+          <DropdownMenuItem
+            label="Layout Tools"
+            icon={<BuildIcon />}
+            tooltip="Show the layout tools panel in the lower-left corner"
+            onClick={() => {
+              handleClose()
+              toggleLayoutTools()
+            }}
+          />
+        ),
       },
       {
         template: (
