@@ -103,7 +103,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
 
 interface DropdownMenuItemProps {
   label: string
-  tooltip?: string
+  tooltip?: React.ReactNode
   icon?: React.ReactNode
   disabled?: boolean
   onClick?: () => void
