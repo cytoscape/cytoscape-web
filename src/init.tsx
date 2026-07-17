@@ -14,6 +14,7 @@ import { AppBootstrap, AuthResolution } from './init/AppBootstrap'
 import { initializeGoogleAnalytics } from './init/googleAnalytics'
 import { initializeKeycloak, KeycloakContext } from './init/keycloak'
 import { initializeTabManager } from './init/tabManager'
+import { ensureTrailingSlash } from './utils/baseUrl'
 
 // Assign CyWebApi to window for external consumers (browser extensions, LLM
 // agents). Loaded asynchronously — it pulls in the store/data layer, which
@@ -102,7 +103,9 @@ const initializeApp = () => {
         onLoad: 'check-sso' as const,
         checkLoginIframe: false,
         silentCheckSsoRedirectUri:
-          window.location.origin + urlBaseName + 'silent-check-sso.html',
+          window.location.origin +
+          ensureTrailingSlash(urlBaseName) +
+          'silent-check-sso.html',
       }
 
   keycloak

@@ -10,6 +10,7 @@ import type { ServerResponse } from 'node:http'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
+import { ensureTrailingSlash } from './src/utils/baseUrl'
 import {
   FEDERATION_EXPOSES,
   FEDERATION_FILENAME,
@@ -92,7 +93,8 @@ function bootSplashPlugin(): Plugin {
       if (!fs.existsSync(htmlPath)) return
 
       let html = fs.readFileSync(htmlPath, 'utf8')
-      const base = config.urlBaseName !== '' ? config.urlBaseName : '/'
+      // Tolerate both "/cytoscape" and "/cytoscape/" style config values
+      const base = ensureTrailingSlash(config.urlBaseName)
 
       const findChunk = (facadeSuffix: string) => {
         const chunk = Object.values(bundle).find(
@@ -174,7 +176,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   }
 
   const resolved: UserConfig = {
-    base: config.urlBaseName !== '' ? config.urlBaseName : '/',
+    base: ensureTrailingSlash(config.urlBaseName),
     plugins,
     resolve: {
       alias: {
