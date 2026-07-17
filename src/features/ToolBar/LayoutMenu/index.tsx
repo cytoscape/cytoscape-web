@@ -1,3 +1,4 @@
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { useEffect, useState } from 'react'
 
@@ -18,6 +19,7 @@ import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultR
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
+import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
 
 
@@ -52,6 +54,9 @@ export const LayoutMenu = (): JSX.Element => {
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
+  )
+  const preferredLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredLayout,
   )
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
@@ -202,6 +207,35 @@ export const LayoutMenu = (): JSX.Element => {
 
     // Use the new array with dividers in the return value
     return [
+      {
+        template: (
+          <DropdownMenuItem
+            label="Apply Default Layout"
+            icon={<PlayArrowIcon />}
+            tooltip={
+              allDisabled
+                ? targetNetworkId === ''
+                  ? 'Layouts are disabled since the network view is empty'
+                  : 'Layouts cannot be applied to the current network view'
+                : `Apply default layout - ${preferredLayout.displayName}`
+            }
+            disabled={allDisabled}
+            onClick={() => {
+              handleClose()
+              applyDefaultLayout({
+                layoutEngines,
+                preferredLayout,
+                network: target,
+                afterLayout,
+                setIsRunning,
+              })
+            }}
+          />
+        ),
+      },
+      {
+        separator: true,
+      },
       ...(allDisabled
         ? sortedMenuItemsWithDividers.map((menuItem: any) => {
             // Render divider
