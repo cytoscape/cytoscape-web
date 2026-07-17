@@ -65,6 +65,7 @@ import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualSt
 import { isValidUrl } from '../../utils/urlUtil'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 import { DuplicateIcon, EditIcon, SortAscIcon, SortDescIcon } from './Icon'
+import { getElementId, ID_COLUMN_ID, ID_COLUMN_TITLE } from './idColumn'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import {
   CreateTableColumnForm,
@@ -551,11 +552,31 @@ export default function TableBrowser(props: {
     ]
   }, [currentTable, edgeTable, nodeTable, network])
 
-  // Combine regular columns with virtual columns for edge table
+  // Read-only virtual column exposing the element id, so users can discover the
+  // ids consumed by the selectednodes / selectededges URL parameters (CW-537).
+  const idColumn = React.useMemo(
+    () => ({
+      id: ID_COLUMN_ID,
+      title: ID_COLUMN_TITLE,
+      icon: GridColumnIcon.ProtectedColumnOverlay,
+      style: 'highlight',
+      type: ValueTypeName.String,
+      index: 0,
+      width: undefined,
+      isVirtual: true,
+      getValue: (dataRow: any) => getElementId(dataRow),
+    }),
+    [],
+  )
+
+  // Combine the id column, regular columns, and (for edges) the source/target
+  // virtual columns. The id column leads both tables.
   const allColumns = React.useMemo(
     () =>
-      currentTable === edgeTable ? [...virtualColumns, ...columns] : columns,
-    [currentTable, edgeTable, virtualColumns, columns],
+      currentTable === edgeTable
+        ? [idColumn, ...virtualColumns, ...columns]
+        : [idColumn, ...columns],
+    [currentTable, edgeTable, idColumn, virtualColumns, columns],
   )
 
   const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
@@ -615,6 +636,9 @@ export default function TableBrowser(props: {
           },
           sort.direction,
         )
+      } else if (sort.column === ID_COLUMN_ID) {
+        // The id lives on the row as `id`, not under the virtual column key.
+        result = orderBy(result, (o) => getElementId(o), sort.direction)
       } else {
         // Regular column sorting
         result = orderBy(
@@ -2088,6 +2112,25 @@ export default function TableBrowser(props: {
             <ContentCopy fontSize="small" />
           </ListItemIcon>
           <ListItemText>Copy Selected</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            if (contextMenu === null) return
+            const [, rowIndex] = contextMenu.cell
+            const elementId = getElementId(rows?.[rowIndex])
+            if (elementId !== '') {
+              navigator.clipboard.writeText(elementId)
+            }
+            handleContextMenuClose()
+          }}
+        >
+          <ListItemIcon>
+            <ContentCopy fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>
+            {`Copy ${currentTable === nodeTable ? 'Node' : 'Edge'} ID`}
+          </ListItemText>
         </MenuItem>
 
         <Divider />
