@@ -45,6 +45,8 @@ export const LayoutMenu = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const activeNetworkViewTabIndex =
     useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
@@ -322,6 +324,8 @@ export const LayoutMenu = (): JSX.Element => {
         label="Layout"
         menuItems={getMenuItems()}
         open={open}
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
         onOpenChange={setOpen}
       />
       <LayoutOptionDialog

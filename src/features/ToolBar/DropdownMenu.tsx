@@ -16,6 +16,8 @@ interface DropdownMenuProps {
   menuItems: any[]
   open?: boolean
   minWidth?: number
+  disabled?: boolean
+  disabledTooltip?: React.ReactNode
   onOpenChange?: (open: boolean) => void
 }
 
@@ -25,18 +27,23 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   menuItems,
   open = false,
   minWidth,
+  disabled = false,
+  disabledTooltip = '',
   onOpenChange,
 }) => {
   const overlayPanelRef = useRef<OverlayPanel>(null)
   const theme = useTheme()
 
   useEffect(() => {
-    if (!open) {
+    if (!open || disabled) {
       overlayPanelRef.current?.hide()
     }
-  }, [open])
+  }, [open, disabled])
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    if (disabled) {
+      return
+    }
     overlayPanelRef.current?.toggle(event)
   }
 
@@ -48,7 +55,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
 
   return (
     <>
-    {open && (
+    {open && !disabled && (
       // Invisible "click outside" overlay to capture clicks outside the menu
       <Box
         sx={{
@@ -66,20 +73,28 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
       />
     )}
       <PrimeReactProvider>
-        <Button
-          data-testid={`toolbar-${id}-menu-button`}
-          sx={{
-            color: darkPalette.text.primary,
-            textTransform: 'none',
-          }}
-          id={`${id}-dropdown`}
-          aria-controls={open ? 'basic-menu' : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? 'true' : undefined}
-          onClick={handleClick}
-        >
-          {label}
-        </Button>
+        <Tooltip title={disabled ? disabledTooltip : ''}>
+          <span>
+            <Button
+              data-testid={`toolbar-${id}-menu-button`}
+              disabled={disabled}
+              sx={{
+                color: darkPalette.text.primary,
+                textTransform: 'none',
+                '&.Mui-disabled': {
+                  color: darkPalette.text.disabled,
+                },
+              }}
+              id={`${id}-dropdown`}
+              aria-controls={open ? 'basic-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={open ? 'true' : undefined}
+              onClick={handleClick}
+            >
+              {label}
+            </Button>
+          </span>
+        </Tooltip>
         <OverlayPanel
           ref={overlayPanelRef}
           onShow={() => onOpenChange?.(true)}

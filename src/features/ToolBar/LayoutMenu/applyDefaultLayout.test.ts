@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 
 import { LayoutAlgorithm } from '../../../models'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
@@ -34,12 +34,12 @@ const makeNetwork = (): Network =>
   }) as unknown as Network
 
 describe('applyDefaultLayout (CW-539)', () => {
-  let setIsRunning: ReturnType<typeof vi.fn>
-  let afterLayout: ReturnType<typeof vi.fn>
+  let setIsRunning: Mock<(isRunning: boolean) => void>
+  let afterLayout: Mock<(positionMap: Map<string, [number, number]>) => void>
 
   beforeEach(() => {
-    setIsRunning = vi.fn()
-    afterLayout = vi.fn()
+    setIsRunning = vi.fn<(isRunning: boolean) => void>()
+    afterLayout = vi.fn<(positionMap: Map<string, [number, number]>) => void>()
   })
 
   it('applies the preferred layout using its owning engine', () => {
