@@ -21,6 +21,7 @@ import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { MessagePanel } from './features/Messages'
+import { OnboardingHost } from './features/Onboarding'
 import { RedirectPanel } from './features/RedirectPanel'
 import { KeycloakContext } from './init/keycloak'
 import { theme } from './theme'
@@ -112,6 +113,7 @@ export const App = (): React.ReactElement => {
         </div>
       </ErrorBoundary>
       <CookieConsentWidget />
+      <OnboardingHost />
     </CssVarsProvider>
   )
 }

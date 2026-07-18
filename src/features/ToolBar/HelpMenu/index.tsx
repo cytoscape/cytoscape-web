@@ -11,6 +11,7 @@ import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
 import { ImportDatabaseMenuItem } from './ImportDatabaseMenuItem'
 import { LicenseDialog } from './LicenseDialog'
 import { LicenseMenuItem } from './LicenseMenuItem'
+import { TakeATourMenuItem } from './TakeATourMenuItem'
 import { TutorialMenuItem } from './TutorialMenuItem'
 
 
@@ -37,6 +38,9 @@ export const HelpMenu = () => {
     },
     {
       separator: true,
+    },
+    {
+      template: <TakeATourMenuItem onClick={handleClose} />,
     },
     {
       template: <TutorialMenuItem onClick={handleClose} />,
