@@ -5,6 +5,15 @@ import { ParameterUiType } from '../ParameterUiType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
 import { InputColumn } from '../ServiceInputDefinition'
 
+export {
+  DEFAULT_ROOT_MENU,
+  SUPPORTED_ROOT_MENUS,
+  filterServiceAppsByRoot,
+  parseRootMenu,
+  resolveRootMenu,
+} from './menuRouting'
+export type { RootMenuResolution } from './menuRouting'
+
 export const isList = (vtn: ValueTypeName): boolean => {
   return vtn.includes('list_of')
 }
