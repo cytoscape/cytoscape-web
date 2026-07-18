@@ -12,6 +12,7 @@ import { useDebugEnabled } from '../data/hooks/useDebugEnabled'
 import { useAppStore } from '../data/hooks/stores/AppStore'
 import { logUi } from '../debug'
 import { ServiceStatus } from '../models/AppModel/ServiceStatus'
+import { shouldReloadOnRefocus } from './syncTabsUtils'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())
@@ -20,7 +21,6 @@ const markForPageReload = debounce(() => {
 export const SyncTabsAction = (): ReactElement => {
   const params = useParams<{ workspaceId?: string; networkId?: string }>()
   const workspaceId = params.workspaceId ?? ''
-  const networkId = params.networkId ?? ''
   const [localTimestamp, setLocalTimestamp] = useState(0)
   const debug = useDebugEnabled()
 
@@ -47,15 +47,13 @@ export const SyncTabsAction = (): ReactElement => {
 
         void getTimestampFromDb().then(async (timestamp) => {
           const workspace = await getWorkspaceFromDb(workspaceId)
+          const hasData = workspace.networkIds.length > 0
 
-          if ((timestamp ?? Date.now()) > localTimestamp) {
-            // if the network at the current url was deleted, navigate to /networks/ and reload the page
-            if (!workspace.networkIds.includes(networkId)) {
-              // navigate('..', { relative: 'path' })
-              window.location.reload()
-            } else {
-              window.location.reload()
-            }
+          // Only reload when another tab actually wrote newer data to the shared
+          // DB after this tab was hidden. An absent timestamp (never-written /
+          // empty tab) or an empty workspace must not force a reload (CW-652).
+          if (shouldReloadOnRefocus(timestamp, localTimestamp, hasData)) {
+            window.location.reload()
           }
         })
       }
@@ -65,7 +63,7 @@ export const SyncTabsAction = (): ReactElement => {
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
-  }, [workspaceId, networkId, localTimestamp, debug])
+  }, [workspaceId, localTimestamp, debug])
 
   const initDbListener = async (): Promise<void> => {
     const db = await getDb()
