@@ -85,6 +85,55 @@ describe('ListValueEditorDialog (CW-563)', () => {
     expect(onSave).not.toHaveBeenCalled()
   })
 
+  it('pastes items (replace) and saves them as the list value', () => {
+    const { onSave } = setup({ value: ['alice'] })
+    fireEvent.change(screen.getByTestId('list-paste-textarea'), {
+      target: { value: 'x\ny\nz' },
+    })
+    fireEvent.click(screen.getByTestId('list-paste-replace'))
+    fireEvent.click(screen.getByTestId('list-value-editor-save'))
+    expect(onSave).toHaveBeenCalledWith(['x', 'y', 'z'])
+  })
+
+  it('pastes items (append) onto existing rows', () => {
+    const { onSave } = setup({ value: ['alice'] })
+    fireEvent.change(screen.getByTestId('list-paste-textarea'), {
+      target: { value: 'bob\ncarol' },
+    })
+    fireEvent.click(screen.getByTestId('list-paste-append'))
+    fireEvent.click(screen.getByTestId('list-value-editor-save'))
+    expect(onSave).toHaveBeenCalledWith(['alice', 'bob', 'carol'])
+  })
+
+  it('opens on the Manual tab when the cell already has items', () => {
+    setup({ value: ['alice', 'bob'] })
+    expect(
+      screen.getByRole('tab', { name: 'Manual' }).getAttribute('aria-selected'),
+    ).toBe('true')
+  })
+
+  it('opens on the Paste tab when the cell is empty', () => {
+    setup({ value: [] })
+    expect(
+      screen.getByRole('tab', { name: 'Paste' }).getAttribute('aria-selected'),
+    ).toBe('true')
+  })
+
+  it('switches to the Manual tab after a paste replace', () => {
+    setup({ value: [] })
+    // Starts on Paste tab (empty cell)
+    expect(
+      screen.getByRole('tab', { name: 'Paste' }).getAttribute('aria-selected'),
+    ).toBe('true')
+    fireEvent.change(screen.getByTestId('list-paste-textarea'), {
+      target: { value: 'x\ny\nz' },
+    })
+    fireEvent.click(screen.getByTestId('list-paste-replace'))
+    expect(
+      screen.getByRole('tab', { name: 'Manual' }).getAttribute('aria-selected'),
+    ).toBe('true')
+  })
+
   it('calls onCancel without saving', () => {
     const { onSave, onCancel } = setup()
     fireEvent.click(screen.getByText('Cancel'))

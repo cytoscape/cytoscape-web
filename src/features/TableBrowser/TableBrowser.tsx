@@ -2248,6 +2248,7 @@ export default function TableBrowser(props: {
       </Menu>
       {listEditor !== null ? (
         <ListValueEditorDialog
+          key={`${listEditor.cxId}:${listEditor.columnKey}`}
           open={true}
           columnName={listEditor.columnName}
           listType={listEditor.type}

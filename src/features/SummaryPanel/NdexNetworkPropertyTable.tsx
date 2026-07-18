@@ -1,10 +1,12 @@
 import AddIcon from '@mui/icons-material/Add'
 import Delete from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import {
   Box,
   Button,
   IconButton,
   Input,
+  InputAdornment,
   MenuItem,
   Paper,
   Select,
@@ -24,7 +26,13 @@ import {
   dataTypeLabel,
   orderedDataTypes,
 } from '../../models/TableModel/impl/dataTypeDisplay'
-import { serializedStringIsValid } from '../../models/TableModel/impl/valueTypeImpl'
+import {
+  deserializeValue,
+  isListType,
+  serializedStringIsValid,
+  serializeValue,
+} from '../../models/TableModel/impl/valueTypeImpl'
+import { ListValueEditorDialog } from '../TableBrowser/ListValueEditorDialog'
 
 interface NetworkPropertyState extends NetworkProperty {
   valueIsValid: boolean
@@ -39,6 +47,12 @@ const NetworkPropertyTable = (props: {
   const [localNetworkProperties, setLocalNetworkProperties] = React.useState<
     NetworkPropertyState[]
   >(networkProperties.map((p) => ({ ...p, valueIsValid: true })))
+
+  // Index of the row whose list value is being edited in the shared dialog
+  // (CW-563); null when the dialog is closed.
+  const [listEditorIndex, setListEditorIndex] = React.useState<number | null>(
+    null,
+  )
 
   React.useEffect(() => {
     setLocalNetworkProperties(
@@ -230,17 +244,42 @@ const NetworkPropertyTable = (props: {
                   </TableCell>
                   <TableCell>
                     <Box>
-                      <Input
-                        data-testid={`ndex-network-property-value-input-${index}`}
-                        type="text"
-                        sx={{ fontSize: 14 }}
-                        error={!row.valueIsValid}
-                        size="small"
-                        onChange={(e) => {
-                          updateNetworkPropertyValue(index, e.target.value)
-                        }}
-                        value={`${row.value as string}`}
-                      />
+                      {isListType(row.dataType) ? (
+                        <Input
+                          data-testid={`ndex-network-property-value-input-${index}`}
+                          type="text"
+                          readOnly
+                          sx={{ fontSize: 14, cursor: 'pointer' }}
+                          error={!row.valueIsValid}
+                          size="small"
+                          placeholder="Click to edit list…"
+                          onClick={() => setListEditorIndex(index)}
+                          value={`${row.value as string}`}
+                          endAdornment={
+                            <InputAdornment position="end">
+                              <IconButton
+                                size="small"
+                                aria-label={`edit list ${row.predicateString}`}
+                                onClick={() => setListEditorIndex(index)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </InputAdornment>
+                          }
+                        />
+                      ) : (
+                        <Input
+                          data-testid={`ndex-network-property-value-input-${index}`}
+                          type="text"
+                          sx={{ fontSize: 14 }}
+                          error={!row.valueIsValid}
+                          size="small"
+                          onChange={(e) => {
+                            updateNetworkPropertyValue(index, e.target.value)
+                          }}
+                          value={`${row.value as string}`}
+                        />
+                      )}
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -266,6 +305,31 @@ const NetworkPropertyTable = (props: {
       >
         Add new property
       </Button>
+      {listEditorIndex !== null ? (
+        <ListValueEditorDialog
+          open
+          columnName={
+            localNetworkProperties[listEditorIndex].predicateString || 'value'
+          }
+          listType={localNetworkProperties[listEditorIndex].dataType}
+          value={
+            `${localNetworkProperties[listEditorIndex].value as string}`.length >
+            0
+              ? deserializeValue(
+                  localNetworkProperties[listEditorIndex].dataType,
+                  `${localNetworkProperties[listEditorIndex].value as string}`,
+                )
+              : []
+          }
+          onCancel={() => setListEditorIndex(null)}
+          onSave={(v) => {
+            // NDEx stores property values as serialized strings, so we
+            // re-serialize the edited list before committing (CW-563).
+            updateNetworkPropertyValue(listEditorIndex, serializeValue(v))
+            setListEditorIndex(null)
+          }}
+        />
+      ) : null}
     </Paper>
   )
 }

@@ -9,6 +9,8 @@ import {
   DialogTitle,
   IconButton,
   MenuItem,
+  Tab,
+  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -18,6 +20,7 @@ import { useEffect, useState } from 'react'
 import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { dataTypeLabel } from '../../models/TableModel/impl/dataTypeDisplay'
+import { ListPastePanel } from './ListPastePanel'
 import {
   addItem,
   elementType,
@@ -54,12 +57,17 @@ export const ListValueEditorDialog = ({
 }: ListValueEditorDialogProps): JSX.Element => {
   const [items, setItems] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<number, string>>({})
+  // 0 = Paste, 1 = Manual. Paste-first for an empty cell; Manual-first when
+  // there are already items to edit (so existing values are visible on open).
+  const [tab, setTab] = useState(0)
 
   // Reset the editable rows whenever a new cell/value is opened.
   useEffect(() => {
     if (open) {
-      setItems(toEditableItems(value))
+      const initial = toEditableItems(value)
+      setItems(initial)
       setErrors({})
+      setTab(initial.length === 0 ? 0 : 1)
     }
   }, [open, value])
 
@@ -91,73 +99,140 @@ export const ListValueEditorDialog = ({
     onSave(result.value)
   }
 
+  const handlePasteAppend = (pasted: string[]): void => {
+    setItems((prev) => [...prev, ...pasted])
+    setErrors({})
+    setTab(1) // jump to Manual so the appended rows are visible
+  }
+
+  const handlePasteReplace = (pasted: string[]): void => {
+    setItems(pasted)
+    setErrors({})
+    setTab(1) // jump to Manual so the replaced rows are visible
+  }
+
   return (
     <Dialog
       open={open}
       onClose={onCancel}
-      maxWidth="xs"
+      maxWidth="sm"
       fullWidth
       data-testid="list-value-editor-dialog"
     >
       <DialogTitle>Edit list: {columnName}</DialogTitle>
       <DialogContent dividers>
-        <Typography variant="caption" color="text.secondary">
-          {dataTypeLabel(listType)}
-        </Typography>
-        {items.length === 0 ? (
-          <Typography sx={{ mt: 1 }} color="text.secondary">
-            No items. Use “Add item” to create one.
-          </Typography>
-        ) : null}
-        {items.map((item, index) => (
-          <Box
-            // eslint-disable-next-line react/no-array-index-key -- rows are positional and reorder on remove; index is the stable identity here
-            key={index}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}
-          >
-            {isBooleanList ? (
-              <TextField
-                select
-                size="small"
-                fullWidth
-                value={item === 'true' ? 'true' : 'false'}
-                onChange={(e) => handleItemChange(index, e.target.value)}
-                inputProps={{ 'data-testid': `list-item-input-${index}` }}
-              >
-                <MenuItem value="true">true</MenuItem>
-                <MenuItem value="false">false</MenuItem>
-              </TextField>
-            ) : (
-              <TextField
-                size="small"
-                fullWidth
-                type={isNumericList ? 'number' : 'text'}
-                value={item}
-                error={errors[index] !== undefined}
-                helperText={errors[index]}
-                onChange={(e) => handleItemChange(index, e.target.value)}
-                inputProps={{ 'data-testid': `list-item-input-${index}` }}
-              />
-            )}
-            <Tooltip title="Remove item">
-              <IconButton
-                size="small"
-                aria-label={`remove item ${index}`}
-                onClick={() => handleRemove(index)}
-              >
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ))}
-        <Button
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-          sx={{ mt: 2 }}
-          data-testid="list-value-editor-add"
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+          }}
         >
-          Add item
-        </Button>
+          <Typography variant="caption" color="text.secondary">
+            {dataTypeLabel(listType)}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            data-testid="list-value-editor-count"
+          >
+            {items.length} item{items.length === 1 ? '' : 's'}
+          </Typography>
+        </Box>
+        <Tabs
+          value={tab}
+          onChange={(_e, next) => setTab(next as number)}
+          sx={{ mt: 1, mb: 1, minHeight: 36 }}
+        >
+          <Tab
+            label="Paste"
+            sx={{ minHeight: 36 }}
+            data-testid="list-editor-tab-paste"
+          />
+          <Tab
+            label="Manual"
+            sx={{ minHeight: 36 }}
+            data-testid="list-editor-tab-manual"
+          />
+        </Tabs>
+
+        {/* Paste tab — kept mounted so paste-in-progress state survives tab
+            switches; hidden rather than unmounted. */}
+        <Box
+          role="tabpanel"
+          hidden={tab !== 0}
+          sx={{ display: tab === 0 ? 'block' : 'none' }}
+        >
+          <ListPastePanel
+            listType={listType}
+            currentCount={items.length}
+            onAppend={handlePasteAppend}
+            onReplace={handlePasteReplace}
+          />
+        </Box>
+
+        {/* Manual tab — one editable row per element. */}
+        <Box
+          role="tabpanel"
+          hidden={tab !== 1}
+          sx={{ display: tab === 1 ? 'block' : 'none' }}
+        >
+          {items.length === 0 ? (
+            <Typography sx={{ mt: 1 }} color="text.secondary">
+              No items yet. Use “Add item”, or switch to the Paste tab to add
+              several at once.
+            </Typography>
+          ) : null}
+          {items.map((item, index) => (
+            <Box
+              // eslint-disable-next-line react/no-array-index-key -- rows are positional and reorder on remove; index is the stable identity here
+              key={index}
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}
+            >
+              {isBooleanList ? (
+                <TextField
+                  select
+                  size="small"
+                  fullWidth
+                  value={item === 'true' ? 'true' : 'false'}
+                  onChange={(e) => handleItemChange(index, e.target.value)}
+                  inputProps={{ 'data-testid': `list-item-input-${index}` }}
+                >
+                  <MenuItem value="true">true</MenuItem>
+                  <MenuItem value="false">false</MenuItem>
+                </TextField>
+              ) : (
+                <TextField
+                  size="small"
+                  fullWidth
+                  type={isNumericList ? 'number' : 'text'}
+                  value={item}
+                  error={errors[index] !== undefined}
+                  helperText={errors[index]}
+                  onChange={(e) => handleItemChange(index, e.target.value)}
+                  inputProps={{ 'data-testid': `list-item-input-${index}` }}
+                />
+              )}
+              <Tooltip title="Remove item">
+                <IconButton
+                  size="small"
+                  aria-label={`remove item ${index}`}
+                  onClick={() => handleRemove(index)}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ))}
+          <Button
+            startIcon={<AddIcon />}
+            onClick={handleAdd}
+            sx={{ mt: 2 }}
+            data-testid="list-value-editor-add"
+          >
+            Add item
+          </Button>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>Cancel</Button>
