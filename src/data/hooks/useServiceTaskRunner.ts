@@ -23,6 +23,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useAppStore } from './stores/AppStore'
+import { useCredentialStore } from './stores/CredentialStore'
 import { useMessageStore } from './stores/MessageStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
@@ -52,6 +53,8 @@ export const useServiceTaskRunner = (): ((
   const runTask = useRunTask()
 
   const { ndexBaseUrl } = useContext(AppConfigContext)
+
+  const getToken = useCredentialStore((state) => state.getToken)
 
   // Data to be used for the service task
   const currentNetworkId: string = useWorkspaceStore(
@@ -152,8 +155,13 @@ export const useServiceTaskRunner = (): ((
           ? ndexNetworkUrl(ndexBaseUrl, currentSummary.externalId)
           : ''
 
+      // The user's NDEx access token for auto-filled accessToken params;
+      // empty when the user is not signed in (CW-619).
+      const accessToken = (await getToken()) ?? ''
+
       const customParameters = buildCustomParameters(serviceApp.parameters, {
         ndexNetworkUrl: currentNdexNetworkUrl,
+        accessToken,
       })
       // Run the task here..
       const result = await runTask({
@@ -213,7 +221,7 @@ export const useServiceTaskRunner = (): ((
         message: result.message,
       } as RunTaskResult
     },
-    [serviceApps, runTask, getHandler, addMessage, ndexBaseUrl],
+    [serviceApps, runTask, getHandler, addMessage, ndexBaseUrl, getToken],
   )
 
   return run

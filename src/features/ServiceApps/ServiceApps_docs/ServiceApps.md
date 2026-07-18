@@ -120,6 +120,8 @@ user and their value is injected into the task's `parameters` map on submit:
 - **`ndexUUID`** — the full NDEx URL of the current network
   (`<ndexBaseUrl>/v3/networks/<uuid>`). Empty string when the current network
   is not an NDEx network (CW-620).
+- **`accessToken`** — the user's NDEx access/credential token. Empty string
+  when the user is not signed in (CW-619).
 
 Resolution is implemented by pure helpers in
 `src/models/AppModel/impl/index.ts` (`buildCustomParameters`,

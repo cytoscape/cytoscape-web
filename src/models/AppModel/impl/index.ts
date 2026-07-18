@@ -33,6 +33,8 @@ export const ndexNetworkUrl = (
 export interface AutoParameterContext {
   // Full NDEx URL of the current network, or '' when it is not an NDEx network.
   ndexNetworkUrl?: string
+  // The user's NDEx access/credential token, or '' when not signed in.
+  accessToken?: string
 }
 
 /**
@@ -40,13 +42,15 @@ export interface AutoParameterContext {
  * at run time) and therefore should be hidden from the input dialog.
  */
 export const isAutoFilledParameter = (type: ParameterUiType): boolean => {
-  return type === ParameterUiType.NdexUuid
+  return (
+    type === ParameterUiType.NdexUuid || type === ParameterUiType.AccessToken
+  )
 }
 
 /**
  * Resolve the value that should be sent for a service-app parameter. Auto-filled
- * parameter types (e.g. ndexUUID) draw from the provided context; all other
- * types use the user-selected value, falling back to the default.
+ * parameter types (e.g. ndexUUID, accessToken) draw from the provided context;
+ * all other types use the user-selected value, falling back to the default.
  */
 export const resolveParameterValue = (
   parameter: ServiceAppParameter,
@@ -55,6 +59,8 @@ export const resolveParameterValue = (
   switch (parameter.type) {
     case ParameterUiType.NdexUuid:
       return ctx.ndexNetworkUrl ?? ''
+    case ParameterUiType.AccessToken:
+      return ctx.accessToken ?? ''
     default:
       return parameter.value ?? parameter.defaultValue
   }

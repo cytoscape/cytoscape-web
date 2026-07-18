@@ -42,8 +42,9 @@ describe('AppModel impl', () => {
   })
 
   describe('isAutoFilledParameter', () => {
-    it('marks ndexUUID as auto-filled', () => {
+    it('marks ndexUUID and accessToken as auto-filled', () => {
       expect(isAutoFilledParameter(ParameterUiType.NdexUuid)).toBe(true)
+      expect(isAutoFilledParameter(ParameterUiType.AccessToken)).toBe(true)
     })
 
     it('does not mark ordinary parameter types as auto-filled', () => {
@@ -62,6 +63,18 @@ describe('AppModel impl', () => {
 
     it('resolves ndexUUID params to empty string when no url in context', () => {
       const param = makeParam('net', ParameterUiType.NdexUuid)
+      expect(resolveParameterValue(param, {})).toBe('')
+    })
+
+    it('resolves accessToken params from the context token', () => {
+      const param = makeParam('token', ParameterUiType.AccessToken)
+      expect(resolveParameterValue(param, { accessToken: 'secret' })).toBe(
+        'secret',
+      )
+    })
+
+    it('resolves accessToken params to empty string when no token in context', () => {
+      const param = makeParam('token', ParameterUiType.AccessToken)
       expect(resolveParameterValue(param, {})).toBe('')
     })
 
