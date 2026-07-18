@@ -10,8 +10,13 @@ import { ServiceApp } from '../ServiceApp'
  * top-level menu.
  */
 export const SUPPORTED_ROOT_MENUS: RootMenu[] = [
+  RootMenu.Data,
+  RootMenu.Edit,
+  RootMenu.Layout,
+  RootMenu.Analysis,
   RootMenu.Tools,
   RootMenu.Apps,
+  RootMenu.Help,
 ]
 
 /**
@@ -63,6 +68,25 @@ export const resolveRootMenu = (
     requested: root ?? undefined,
     valid: false,
   }
+}
+
+/**
+ * Human-readable warning describing that a service app's requested menu root
+ * was not recognized and the app was placed under the default (Apps) menu.
+ * Lists the valid roots so developers know which values are accepted.
+ */
+export const invalidRootMessage = (
+  requested: string | undefined | null,
+): string => {
+  const requestedText =
+    requested !== undefined && requested !== null && requested.trim() !== ''
+      ? `"${requested}"`
+      : '(none)'
+  return (
+    `This service requested the menu root ${requestedText}, which is not a ` +
+    `recognized top-level menu. It was added under the "${DEFAULT_ROOT_MENU}" ` +
+    `menu instead. Valid menu roots are: ${SUPPORTED_ROOT_MENUS.join(', ')}.`
+  )
 }
 
 /**

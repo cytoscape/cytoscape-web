@@ -6,14 +6,16 @@ import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
 import { debounce } from 'lodash'
 import { MenuItem } from 'primereact/menuitem'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { logUi } from '../../../debug'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 import { FileUpload } from '../FileUpload'
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
@@ -46,6 +48,16 @@ export const DataMenu = () => {
   const handleClose = (): void => {
     setOpen(false)
   }
+
+  const onBeforeRun = useCallback((): void => {
+    setOpen(false)
+  }, [])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Data menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Data,
+    onBeforeRun,
+  )
 
   // NDEx loading handlers
   const handleOpenNdexDialog = (): void => {
@@ -204,6 +216,9 @@ export const DataMenu = () => {
     {
       template: <ResetLocalWorkspaceMenuItem onClick={handleOpenResetLocalWorkspaceDialog} />,
     },
+    ...(serviceMenuItems.length > 0
+      ? [{ separator: true }, ...serviceMenuItems]
+      : []),
   ]
 
   return (
@@ -245,6 +260,7 @@ export const DataMenu = () => {
         buttonTitle="Reset Workspace (cannot be undone)"
         isAlert
       />
+      {dialogs}
     </>
   )
 }

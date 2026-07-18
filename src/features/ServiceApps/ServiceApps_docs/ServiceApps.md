@@ -92,6 +92,25 @@ The ServiceApps feature is primarily a hook-based system that manages:
 - **Graph Model**: Simplified graph structure
 - **Table**: Column-based data extraction
 
+### Menu Placement (`cyWebMenuItem`)
+
+A service's metadata places its menu item via `cyWebMenuItem`:
+
+- **`root`** — the top-level menu the item is added under. Valid roots are:
+  `Data`, `Edit`, `Layout`, `Analysis`, `Tools`, `Apps`, `Help`. Matching is
+  case-insensitive. A missing or unrecognized `root` falls back to the `Apps`
+  menu, and the user is shown a warning listing the valid roots when the app is
+  added (see `invalidRootMessage`).
+- **`path`** — the nested sub-menu path under the root, each entry with a
+  `name` and a `gravity` (lower gravity sorts earlier).
+
+Routing is implemented by pure helpers in
+`src/models/AppModel/impl/menuRouting.ts` (`resolveRootMenu`,
+`filterServiceAppsByRoot`). Each top-level menu component hosts the service
+apps routed to it via the shared `useServiceAppMenu(root)` hook. To support a
+new root, add it to `RootMenu` and `SUPPORTED_ROOT_MENUS`, and wire the
+corresponding menu component to call `useServiceAppMenu`.
+
 ## Integration Points
 
 - **AppStore**: Manages current task state and progress

@@ -4,7 +4,9 @@ import { RootMenu } from '../RootMenu'
 import { ServiceApp } from '../ServiceApp'
 import {
   DEFAULT_ROOT_MENU,
+  SUPPORTED_ROOT_MENUS,
   filterServiceAppsByRoot,
+  invalidRootMessage,
   parseRootMenu,
   resolveRootMenu,
 } from './menuRouting'
@@ -38,12 +40,36 @@ describe('menuRouting', () => {
     })
   })
 
+  describe('SUPPORTED_ROOT_MENUS', () => {
+    it('covers every top-level menu', () => {
+      expect(SUPPORTED_ROOT_MENUS).toEqual([
+        RootMenu.Data,
+        RootMenu.Edit,
+        RootMenu.Layout,
+        RootMenu.Analysis,
+        RootMenu.Tools,
+        RootMenu.Apps,
+        RootMenu.Help,
+      ])
+    })
+  })
+
   describe('resolveRootMenu', () => {
     it('resolves a supported root as valid', () => {
       expect(resolveRootMenu('Tools')).toEqual({
         root: RootMenu.Tools,
         requested: 'Tools',
         valid: true,
+      })
+    })
+
+    it('resolves every supported root as valid with the default supported list', () => {
+      SUPPORTED_ROOT_MENUS.forEach((root) => {
+        expect(resolveRootMenu(root)).toEqual({
+          root,
+          requested: root,
+          valid: true,
+        })
       })
     })
 
@@ -89,6 +115,20 @@ describe('menuRouting', () => {
         'c',
         'd',
       ])
+    })
+  })
+
+  describe('invalidRootMessage', () => {
+    it('quotes the requested root and lists the valid roots', () => {
+      const msg = invalidRootMessage('Nonsense')
+      expect(msg).toContain('"Nonsense"')
+      expect(msg).toContain(DEFAULT_ROOT_MENU)
+      expect(msg).toContain(SUPPORTED_ROOT_MENUS.join(', '))
+    })
+
+    it('renders (none) when no root was requested', () => {
+      expect(invalidRootMessage(undefined)).toContain('(none)')
+      expect(invalidRootMessage('')).toContain('(none)')
     })
   })
 })

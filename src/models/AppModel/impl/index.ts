@@ -9,6 +9,7 @@ export {
   DEFAULT_ROOT_MENU,
   SUPPORTED_ROOT_MENUS,
   filterServiceAppsByRoot,
+  invalidRootMessage,
   parseRootMenu,
   resolveRootMenu,
 } from './menuRouting'

@@ -3,6 +3,10 @@ import { Box, Button, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import {
+  invalidRootMessage,
+  resolveRootMenu,
+} from '../../models/AppModel/impl'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ExampleServicePanel } from './ExampleServicePanel'
 import { ServiceList } from './ServiceList'
@@ -39,7 +43,15 @@ export const ServiceListPanel = () => {
       }
       try {
         await addService(trimmedUrl)
-        setWarningMessage('')
+        // Warn the developer/user when the service requested a menu root that
+        // is not recognized: it is placed under the default (Apps) menu.
+        const added = useAppStore.getState().serviceApps[trimmedUrl]
+        const resolution = resolveRootMenu(added?.cyWebMenuItem?.root)
+        setWarningMessage(
+          added !== undefined && !resolution.valid
+            ? invalidRootMessage(resolution.requested)
+            : '',
+        )
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
         setWarningMessage(
