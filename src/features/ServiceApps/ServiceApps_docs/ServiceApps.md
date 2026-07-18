@@ -111,6 +111,22 @@ apps routed to it via the shared `useServiceAppMenu(root)` hook. To support a
 new root, add it to `RootMenu` and `SUPPORTED_ROOT_MENUS`, and wire the
 corresponding menu component to call `useServiceAppMenu`.
 
+### Auto-filled Parameters
+
+Some parameter `type` values are resolved automatically by the webapp at run
+time instead of being shown as inputs in the dialog. They are hidden from the
+user and their value is injected into the task's `parameters` map on submit:
+
+- **`ndexUUID`** — the full NDEx URL of the current network
+  (`<ndexBaseUrl>/v3/networks/<uuid>`). Empty string when the current network
+  is not an NDEx network (CW-620).
+
+Resolution is implemented by pure helpers in
+`src/models/AppModel/impl/index.ts` (`buildCustomParameters`,
+`resolveParameterValue`, `isAutoFilledParameter`). To add a new auto-filled
+type, add it to `ParameterUiType`, mark it in `isAutoFilledParameter`, and
+resolve it in `resolveParameterValue`.
+
 ## Integration Points
 
 - **AppStore**: Manages current task state and progress

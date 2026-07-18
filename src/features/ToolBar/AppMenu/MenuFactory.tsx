@@ -23,6 +23,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../../debug'
 import {
   inputColumnFilterFn,
+  isAutoFilledParameter,
   shouldShowServiceDescription,
   validateParameter,
 } from '../../../models/AppModel/impl'
@@ -416,16 +417,24 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     </Box>
   ) : null
 
-  const parametersSection = app.parameters ? (
-    <Box sx={{ p: 3 }}>
-      <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
-      {app.parameters?.map((parameter: ServiceAppParameter) => (
-        <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
-          {renderParameter(parameter)}
-        </Box>
-      ))}
-    </Box>
-  ) : null
+  // Auto-filled parameters (ndexUUID, accessToken, ...) are resolved at run
+  // time and never shown to the user.
+  const visibleParameters =
+    app.parameters?.filter(
+      (parameter) => !isAutoFilledParameter(parameter.type),
+    ) ?? []
+
+  const parametersSection =
+    visibleParameters.length > 0 ? (
+      <Box sx={{ p: 3 }}>
+        <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
+        {visibleParameters.map((parameter: ServiceAppParameter) => (
+          <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
+            {renderParameter(parameter)}
+          </Box>
+        ))}
+      </Box>
+    ) : null
 
   const showDescription = shouldShowServiceDescription(
     app.description,

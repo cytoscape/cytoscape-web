@@ -5,12 +5,101 @@ import { SelectedDataType } from '../SelectedDataType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
 import { ServiceInputDefinition } from '../ServiceInputDefinition'
 import {
+  buildCustomParameters,
+  isAutoFilledParameter,
+  ndexNetworkUrl,
+  resolveParameterValue,
   sendsNoData,
   shouldShowServiceDescription,
   validateParameter,
 } from './index'
 
+const makeParam = (
+  displayName: string,
+  type: ParameterUiType,
+  overrides: Partial<ServiceAppParameter> = {},
+): ServiceAppParameter =>
+  ({
+    displayName,
+    type,
+    defaultValue: '',
+    ...overrides,
+  }) as ServiceAppParameter
+
 describe('AppModel impl', () => {
+  describe('ndexNetworkUrl', () => {
+    it('builds the v3 network URL', () => {
+      expect(ndexNetworkUrl('https://ndexbio.org', 'abc-123')).toBe(
+        'https://ndexbio.org/v3/networks/abc-123',
+      )
+    })
+
+    it('strips a trailing slash from the base url', () => {
+      expect(ndexNetworkUrl('https://ndexbio.org/', 'abc-123')).toBe(
+        'https://ndexbio.org/v3/networks/abc-123',
+      )
+    })
+  })
+
+  describe('isAutoFilledParameter', () => {
+    it('marks ndexUUID as auto-filled', () => {
+      expect(isAutoFilledParameter(ParameterUiType.NdexUuid)).toBe(true)
+    })
+
+    it('does not mark ordinary parameter types as auto-filled', () => {
+      expect(isAutoFilledParameter(ParameterUiType.Text)).toBe(false)
+      expect(isAutoFilledParameter(ParameterUiType.DropDown)).toBe(false)
+    })
+  })
+
+  describe('resolveParameterValue', () => {
+    it('resolves ndexUUID params from the context url', () => {
+      const param = makeParam('net', ParameterUiType.NdexUuid)
+      expect(
+        resolveParameterValue(param, { ndexNetworkUrl: 'https://x/v3/networks/1' }),
+      ).toBe('https://x/v3/networks/1')
+    })
+
+    it('resolves ndexUUID params to empty string when no url in context', () => {
+      const param = makeParam('net', ParameterUiType.NdexUuid)
+      expect(resolveParameterValue(param, {})).toBe('')
+    })
+
+    it('uses value then defaultValue for ordinary params', () => {
+      expect(
+        resolveParameterValue(
+          makeParam('t', ParameterUiType.Text, { value: 'v' }),
+          {},
+        ),
+      ).toBe('v')
+      expect(
+        resolveParameterValue(
+          makeParam('t', ParameterUiType.Text, { defaultValue: 'd' }),
+          {},
+        ),
+      ).toBe('d')
+    })
+  })
+
+  describe('buildCustomParameters', () => {
+    it('keys resolved values by displayName and injects auto-filled params', () => {
+      const params = [
+        makeParam('updatedBy', ParameterUiType.Text, { defaultValue: 'demo' }),
+        makeParam('networkUrl', ParameterUiType.NdexUuid),
+      ]
+      expect(
+        buildCustomParameters(params, { ndexNetworkUrl: 'https://x/v3/networks/1' }),
+      ).toEqual({
+        updatedBy: 'demo',
+        networkUrl: 'https://x/v3/networks/1',
+      })
+    })
+
+    it('returns an empty object for undefined parameters', () => {
+      expect(buildCustomParameters(undefined, {})).toEqual({})
+    })
+  })
+
   describe('sendsNoData', () => {
     it('returns true when the input type is none', () => {
       expect(

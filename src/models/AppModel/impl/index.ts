@@ -17,6 +17,67 @@ export {
 export type { RootMenuResolution } from './menuRouting'
 
 /**
+ * Build the full NDEx REST URL for a network from the configured NDEx host and
+ * the network's external (NDEx) id.
+ */
+export const ndexNetworkUrl = (
+  ndexBaseUrl: string,
+  externalId: string,
+): string => {
+  return `${ndexBaseUrl.replace(/\/+$/, '')}/v3/networks/${externalId}`
+}
+
+/**
+ * Context used to resolve the values of auto-filled service-app parameters.
+ */
+export interface AutoParameterContext {
+  // Full NDEx URL of the current network, or '' when it is not an NDEx network.
+  ndexNetworkUrl?: string
+}
+
+/**
+ * Whether a parameter type is auto-filled by the webapp (its value is resolved
+ * at run time) and therefore should be hidden from the input dialog.
+ */
+export const isAutoFilledParameter = (type: ParameterUiType): boolean => {
+  return type === ParameterUiType.NdexUuid
+}
+
+/**
+ * Resolve the value that should be sent for a service-app parameter. Auto-filled
+ * parameter types (e.g. ndexUUID) draw from the provided context; all other
+ * types use the user-selected value, falling back to the default.
+ */
+export const resolveParameterValue = (
+  parameter: ServiceAppParameter,
+  ctx: AutoParameterContext,
+): string => {
+  switch (parameter.type) {
+    case ParameterUiType.NdexUuid:
+      return ctx.ndexNetworkUrl ?? ''
+    default:
+      return parameter.value ?? parameter.defaultValue
+  }
+}
+
+/**
+ * Build the `parameters` map posted to a service app, keyed by displayName.
+ * Auto-filled parameters (ndexUUID, ...) are resolved from the context.
+ */
+export const buildCustomParameters = (
+  parameters: ServiceAppParameter[] | undefined,
+  ctx: AutoParameterContext,
+): Record<string, string> => {
+  return (parameters ?? []).reduce(
+    (acc, parameter) => {
+      acc[parameter.displayName] = resolveParameterValue(parameter, ctx)
+      return acc
+    },
+    {} as Record<string, string>,
+  )
+}
+
+/**
  * Whether a service app declines to receive any data (nodes, edges, or the
  * network). Such apps only send their parameter options; no data payload is
  * built. Corresponds to serviceInputDefinition.type === 'none' (CW-468).
