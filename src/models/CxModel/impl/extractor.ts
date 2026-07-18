@@ -147,7 +147,11 @@ const getAttributes = (
 
   objs.forEach((obj: Node | Edge) => {
     const attr: Attribute | undefined = obj.v
-    if (attr !== undefined && attr !== null) {
+    // Skip missing/null attribute bags, and also skip empty objects (v: {}).
+    // An empty v carries no attributes; treating it as present would force the
+    // element into the attribute map and later require attribute declarations
+    // that may not exist (see CW-650).
+    if (attr !== undefined && attr !== null && Object.keys(attr).length > 0) {
       attrs.set(obj.id.toString(), attr)
     }
   })

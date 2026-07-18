@@ -384,6 +384,82 @@ describe('tableConverter', () => {
       ])
     })
 
+    // Regression: CW-650. A CX2 network from NDEx may contain an edge whose
+    // `v` is an empty object ({}), while the attributeDeclarations aspect is
+    // present but omits the `edges` key entirely. Previously this threw
+    // "Cannot convert undefined or null to object" via Object.entries(undefined)
+    // inside the edge row-building loop.
+    it('should not throw when an edge has an empty v:{} and edges decl is absent', () => {
+      const networkId = 'test-network-cw650'
+      const cx2: Cx2 = [
+        { CXVersion: '2.0' },
+        {
+          attributeDeclarations: [
+            {
+              // Note: no `edges` key at all (matches NDEx output for CW-650)
+              nodes: {},
+              networkAttributes: {},
+            } as any,
+          ],
+        },
+        {
+          nodes: [{ id: 0 }, { id: 1 }],
+        },
+        {
+          edges: [{ id: 0, s: 0, t: 1, v: {} }],
+        },
+        {
+          status: [{ success: true }],
+        },
+      ]
+
+      let result: ReturnType<typeof createTablesFromCx> | undefined
+      expect(() => {
+        result = createTablesFromCx(networkId, cx2)
+      }).not.toThrow()
+
+      const [, edgeTable] = result!
+      // The empty v:{} edge should produce an empty row, not a crash
+      expect(edgeTable.rows.size).toBe(1)
+      expect(edgeTable.rows.get('e0')).toEqual({})
+      expect(edgeTable.columns).toEqual([])
+    })
+
+    it('should not throw when a node has an empty v:{} and nodes decl is absent', () => {
+      const networkId = 'test-network-cw650-node'
+      const cx2: Cx2 = [
+        { CXVersion: '2.0' },
+        {
+          attributeDeclarations: [
+            {
+              // No `nodes` key
+              edges: {},
+              networkAttributes: {},
+            } as any,
+          ],
+        },
+        {
+          nodes: [{ id: 0, v: {} }, { id: 1 }],
+        },
+        {
+          edges: [],
+        },
+        {
+          status: [{ success: true }],
+        },
+      ]
+
+      let result: ReturnType<typeof createTablesFromCx> | undefined
+      expect(() => {
+        result = createTablesFromCx(networkId, cx2)
+      }).not.toThrow()
+
+      const [nodeTable] = result!
+      expect(nodeTable.rows.size).toBe(2)
+      expect(nodeTable.rows.get('0')).toEqual({})
+      expect(nodeTable.rows.get('1')).toEqual({})
+    })
+
     it('should handle nodes and edges with no attribute declarations', () => {
       const networkId = 'test-network-10'
       const cx2: Cx2 = [
