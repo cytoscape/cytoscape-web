@@ -49,7 +49,13 @@ const enumValueNormalizationFn = (
  */
 export const createDiscreteMapper = (dm: DiscreteMappingFunction): Mapper => {
   return (value: ValueType): VisualPropertyValueType => {
-    const vpValue = dm.vpValueMap.get(value)
+    // Discrete mappings look up a single scalar key. When the attribute is a
+    // list (e.g. list_of_string), the whole array can never match a Map key,
+    // which is why every element falls back to the default value. Cytoscape
+    // Desktop keys off the first element of the list, so mirror that behavior.
+    const lookupKey: ValueType =
+      Array.isArray(value) && value.length > 0 ? value[0] : value
+    const vpValue = dm.vpValueMap.get(lookupKey)
     return vpValue === undefined ? dm.defaultValue : vpValue
   }
 }

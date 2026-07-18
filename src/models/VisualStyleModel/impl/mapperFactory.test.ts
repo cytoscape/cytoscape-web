@@ -101,6 +101,33 @@ describe('MapperFactory', () => {
       expect(mapper(true)).toBe('#FF0000')
       expect(mapper(false)).toBe('#00FF00')
     })
+
+    // CW-659: a discrete mapping keyed on a list attribute (e.g. list_of_string)
+    // must key off the first element of the list, matching Cytoscape Desktop.
+    it('should use the first element of a list attribute value', () => {
+      const vpValueMap = new Map<string, string>([
+        ['pp', 'diamond'],
+        ['pd', 'ellipse'],
+      ])
+
+      const mapping: DiscreteMappingFunction = {
+        type: MappingFunctionType.Discrete,
+        attribute: 'Interactor Type',
+        vpValueMap,
+        visualPropertyType: VisualPropertyValueTypeName.NodeShape,
+        defaultValue: 'rectangle',
+        attributeType: ValueTypeName.ListString,
+      }
+
+      const mapper = createDiscreteMapper(mapping)
+
+      expect(mapper(['pp', 'pd'])).toBe('diamond')
+      expect(mapper(['pd'])).toBe('ellipse')
+      // Unmapped first element falls back to the default
+      expect(mapper(['unknown', 'pp'])).toBe('rectangle')
+      // Empty list falls back to the default
+      expect(mapper([])).toBe('rectangle')
+    })
   })
 
   describe('createPassthroughMapper', () => {
