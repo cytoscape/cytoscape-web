@@ -94,7 +94,7 @@ export const typesCanBeMapped = (
 }
 
 export type MappingColumnChange =
-  | { kind: 'create'; attributeType: ValueTypeName }
+  | { kind: 'create'; attributeType: ValueTypeName; mappingType: MappingFunctionType }
   | { kind: 'remove' }
   | { kind: 'clear' }
 
@@ -128,7 +128,7 @@ export const resolveMappingColumnChange = (
   }
 
   if (typesCanBeMapped(mappingType, nextAttributeType, vpValueTypeName)) {
-    return { kind: 'create', attributeType: nextAttributeType }
+    return { kind: 'create', attributeType: nextAttributeType, mappingType }
   }
 
   return { kind: 'remove' }

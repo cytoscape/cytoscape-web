@@ -254,6 +254,7 @@ describe('MappingFunctionImpl', () => {
       expect(change).toEqual({
         kind: 'create',
         attributeType: ValueTypeName.String,
+        mappingType: MappingFunctionType.Passthrough,
       })
     })
 
@@ -267,6 +268,7 @@ describe('MappingFunctionImpl', () => {
       expect(change).toEqual({
         kind: 'create',
         attributeType: ValueTypeName.Double,
+        mappingType: MappingFunctionType.Continuous,
       })
     })
 

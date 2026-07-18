@@ -204,6 +204,7 @@ function MappingFormContent(props: {
 
     if (change.kind === 'create') {
       const attributeDataType = change.attributeType
+      const nextMappingType = change.mappingType
       const attributeValues = Array.from(
         columnValues(
           props.currentNetworkId,
@@ -225,7 +226,7 @@ function MappingFormContent(props: {
             props.currentNetworkId,
             props.visualProperty.name,
             props.visualProperty.type,
-            mappingType,
+            nextMappingType,
             nextAttribute,
             attributeDataType,
             attributeValues,
@@ -240,7 +241,7 @@ function MappingFormContent(props: {
             props.currentNetworkId,
             props.visualProperty.name,
             props.visualProperty.type,
-            mappingType,
+            nextMappingType,
             nextAttribute,
             attributeDataType,
             attributeValues,
@@ -251,7 +252,7 @@ function MappingFormContent(props: {
         props.currentNetworkId,
         props.visualProperty.name,
         props.visualProperty.type,
-        mappingType,
+        nextMappingType,
         nextAttribute,
         attributeDataType,
         attributeValues,
