@@ -12,6 +12,7 @@ import { PassthroughMappingFunction } from '../VisualMappingFunction/Passthrough
 import { ColorType, VisualPropertyValueType } from '../VisualPropertyValue'
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { normalizeEnumValue } from './enumValueNormalization'
 
 const enumTypes: Set<VisualPropertyValueTypeName> = new Set([
   VisualPropertyValueTypeName.NodeShape,
@@ -42,7 +43,10 @@ const enumValueNormalizationFn = (
       return value === true ? VisibilityType.Element : VisibilityType.None
     }
   }
-  return value
+  // CW-517: reconcile Desktop-authored shape / line-type values (e.g.
+  // "Diamond", "DASHED") with Cytoscape Web's canonical enum values so that
+  // passthrough mappings created in Desktop actually take effect.
+  return normalizeEnumValue(pm.visualPropertyType, value)
 }
 /**
  * Derive the mapping function from given VMF object

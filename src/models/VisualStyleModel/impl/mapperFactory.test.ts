@@ -195,6 +195,40 @@ describe('MapperFactory', () => {
       expect(mapper('true')).toBe('element')
       expect(mapper('false')).toBe('none')
     })
+
+    // CW-517: passthrough mappings on node shape / edge line type authored in
+    // Desktop use non-canonical value casing; the mapper should reconcile them.
+    it('should normalize node shape passthrough values', () => {
+      const mapping: PassthroughMappingFunction = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'shape',
+        visualPropertyType: VisualPropertyValueTypeName.NodeShape,
+        defaultValue: 'rectangle',
+        attributeType: ValueTypeName.String,
+      }
+
+      const mapper = createPassthroughMapper(mapping)
+
+      expect(mapper('Diamond')).toBe('diamond')
+      expect(mapper('Round Rectangle')).toBe('round-rectangle')
+      expect(mapper('ellipse')).toBe('ellipse')
+    })
+
+    it('should normalize edge line type passthrough values', () => {
+      const mapping: PassthroughMappingFunction = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'lineStyle',
+        visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+        defaultValue: 'solid',
+        attributeType: ValueTypeName.String,
+      }
+
+      const mapper = createPassthroughMapper(mapping)
+
+      expect(mapper('Dashed')).toBe('dashed')
+      expect(mapper('DOTTED')).toBe('dotted')
+      expect(mapper('EQUAL_DASH')).toBe('dashed')
+    })
   })
 
   describe('createContinuousMapper', () => {
