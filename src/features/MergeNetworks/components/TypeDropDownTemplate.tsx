@@ -2,6 +2,7 @@ import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
 import React from 'react'
 
 import { ValueTypeName } from '../../../models/TableModel'
+import { dataTypeLabel } from '../../../models/TableModel/impl/dataTypeDisplay'
 import { TableView } from '../models/DataInterfaceForMerge'
 import { MatchingTableRow } from '../models/MatchingTable'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
@@ -26,7 +27,8 @@ export const TypeDropDownTemplate = React.memo(
         .map((pair) => rowData.typeRecord[pair[1]]),
     )
     const typeOptions = getAllConvertiableTypes(typeLst).map((type) => ({
-      label: type,
+      label:
+        type === 'None' ? 'None' : dataTypeLabel(type as ValueTypeName),
       value: type,
     }))
     // Call every store hook unconditionally (Rules of Hooks), then pick the

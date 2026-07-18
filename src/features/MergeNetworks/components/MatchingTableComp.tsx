@@ -14,6 +14,7 @@ import React, { useEffect, useMemo } from 'react'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
+import { dataTypeLabel } from '../../../models/TableModel/impl/dataTypeDisplay'
 import {
   MergeType,
   NetworkRecord,
@@ -187,7 +188,11 @@ export const MatchingTableComp = React.memo(
             !typeSet.has(row.typeRecord[netId])
           ) {
             conflictDescription.push(
-              `${row.nameRecord[netId]}(${row.typeRecord[netId]})`,
+              `${row.nameRecord[netId]}(${
+                row.typeRecord[netId] === 'None'
+                  ? 'None'
+                  : dataTypeLabel(row.typeRecord[netId] as ValueTypeName)
+              })`,
             )
             typeSet.add(row.typeRecord[netId])
           }

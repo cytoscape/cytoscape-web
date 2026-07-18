@@ -49,6 +49,7 @@ import { IdType } from '../../models/IdType'
 import { CellEdit } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
+import { dataTypeAbbreviation } from '../../models/TableModel/impl/dataTypeDisplay'
 import {
   deserializeValue,
   deserializeValueList,
@@ -486,10 +487,17 @@ export default function TableBrowser(props: {
           (c) => c?.name === col?.attributeName,
         )?.type
 
+        const attributeName = col?.attributeName ?? ''
+        const resolvedType = columnType ?? ValueTypeName.String
+
         return {
-          id: col?.attributeName ?? '',
-          title: col?.attributeName ?? '',
-          type: columnType ?? ValueTypeName.String,
+          id: attributeName,
+          // Show the data type inline in the header so it is always visible
+          // (CW-562). id stays the raw attribute name for all lookups.
+          title: attributeName
+            ? `${attributeName}  ·  ${dataTypeAbbreviation(resolvedType)}`
+            : attributeName,
+          type: resolvedType,
           index,
           width: col?.columnWidth,
         }
@@ -1060,7 +1068,9 @@ export default function TableBrowser(props: {
       setListEditor({
         cxId,
         columnKey: column.id,
-        columnName: column.title,
+        // Use the raw attribute name, not the header title (which now carries
+        // the data-type abbreviation, CW-562).
+        columnName: column.id,
         type: column.type,
         value: (rowData as any)?.[column.id] ?? null,
       })

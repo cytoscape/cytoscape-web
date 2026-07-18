@@ -20,6 +20,10 @@ import * as React from 'react'
 
 import { ValueTypeName } from '../../models/TableModel'
 import {
+  dataTypeLabel,
+  orderedDataTypes,
+} from '../../models/TableModel/impl/dataTypeDisplay'
+import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../models/VisualStyleModel'
@@ -305,10 +309,10 @@ export function CreateTableColumnForm(
             value={valueTypeName}
             onChange={(e) => setValueTypeName(e.target.value as ValueTypeName)}
           >
-            {Object.values(ValueTypeName).map((v) => {
+            {orderedDataTypes.map((v) => {
               return (
                 <MenuItem key={v} value={v}>
-                  {v}
+                  {dataTypeLabel(v)}
                 </MenuItem>
               )
             })}

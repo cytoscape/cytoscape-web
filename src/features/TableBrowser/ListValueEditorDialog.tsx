@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react'
 
 import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+import { dataTypeLabel } from '../../models/TableModel/impl/dataTypeDisplay'
 import {
   addItem,
   elementType,
@@ -101,7 +102,7 @@ export const ListValueEditorDialog = ({
       <DialogTitle>Edit list: {columnName}</DialogTitle>
       <DialogContent dividers>
         <Typography variant="caption" color="text.secondary">
-          {listType}
+          {dataTypeLabel(listType)}
         </Typography>
         {items.length === 0 ? (
           <Typography sx={{ mt: 1 }} color="text.secondary">

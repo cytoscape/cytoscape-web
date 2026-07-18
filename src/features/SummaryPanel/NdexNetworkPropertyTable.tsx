@@ -20,6 +20,10 @@ import React from 'react'
 
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType,ValueTypeName } from '../../models/TableModel'
+import {
+  dataTypeLabel,
+  orderedDataTypes,
+} from '../../models/TableModel/impl/dataTypeDisplay'
 import { serializedStringIsValid } from '../../models/TableModel/impl/valueTypeImpl'
 
 interface NetworkPropertyState extends NetworkProperty {
@@ -204,10 +208,10 @@ const NetworkPropertyTable = (props: {
                         )
                       }}
                     >
-                      {Object.values(ValueTypeName).map((vtn) => {
+                      {orderedDataTypes.map((vtn) => {
                         return (
                           <MenuItem key={vtn} value={vtn}>
-                            {vtn}
+                            {dataTypeLabel(vtn)}
                           </MenuItem>
                         )
                       })}

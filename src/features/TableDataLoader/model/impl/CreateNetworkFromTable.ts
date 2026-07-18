@@ -6,6 +6,7 @@ import { Network } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
+import { dataTypeLabel } from '../../../../models/TableModel/impl/dataTypeDisplay'
 import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
 import {
   MappingFunctionType,
@@ -32,18 +33,17 @@ export const columnAssingmentType2Label = {
   [ColumnAssignmentType.InteractionType]: 'Interaction type',
 }
 
-export const valueTypeName2Label = {
-  [ValueTypeName.String]: 'String',
-  [ValueTypeName.Long]: 'Long integer',
-  [ValueTypeName.Integer]: 'Integer',
-  [ValueTypeName.Double]: 'Double',
-  [ValueTypeName.Boolean]: 'Boolean',
-  [ValueTypeName.ListString]: 'List of strings',
-  [ValueTypeName.ListLong]: 'List of long integers',
-  [ValueTypeName.ListInteger]: 'List of integers',
-  [ValueTypeName.ListDouble]: 'List of floating point numbers',
-  [ValueTypeName.ListBoolean]: 'List of booleans',
-}
+// Sourced from the shared data-type display module (CW-562) so labels stay
+// consistent with the rest of the app. Kept as an object map for existing
+// `valueTypeName2Label[type]` call sites.
+export const valueTypeName2Label: Record<ValueTypeName, string> =
+  Object.values(ValueTypeName).reduce(
+    (acc, t) => {
+      acc[t] = dataTypeLabel(t)
+      return acc
+    },
+    {} as Record<ValueTypeName, string>,
+  )
 
 export const validValueTypes = (cat: ColumnAssignmentType): ValueTypeName[] => {
   switch (cat) {
