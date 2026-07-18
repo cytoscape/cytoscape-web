@@ -51,6 +51,7 @@ import { parseSingleEntryManifest } from './AppManager/install/installGate'
 import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
 import { SyncTabsAction } from './SyncTabs'
+import { getTabNetworkId, resolveDisplayNetworkId } from './tabNetwork'
 import { ToolBar } from './ToolBar'
 
 // Search param carrying an App Store install intent: a URL pointing to a
@@ -379,6 +380,19 @@ const AppShell = (): ReactElement => {
           severity: MessageSeverity.ERROR,
         })
       }
+
+      // Determine which network THIS tab should display. The URL is the per-tab
+      // source of truth (each browser tab has its own address bar, which survives
+      // reload); fall back to a per-tab sessionStorage backstop, then to the shared
+      // currentNetworkId. This prevents a tab from adopting another tab's network
+      // after a cross-tab reload (CW-722).
+      workspace.currentNetworkId =
+        resolveDisplayNetworkId(
+          networkId,
+          getTabNetworkId(),
+          workspace.currentNetworkId,
+          workspace.networkIds,
+        ) ?? ''
 
       addSummaries(summaries)
       setWorkspace(workspace)

@@ -32,6 +32,7 @@ import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchy
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
+import { setTabNetworkId } from '../tabNetwork'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
@@ -362,6 +363,9 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           // Handle the case where the back/forward button is pressed
           setCurrentNetworkId(networkIdFromParams)
+          // Remember this tab's active network so a cross-tab reload restores it
+          // even if the URL loses its network segment (CW-722).
+          setTabNetworkId(networkIdFromParams)
           // Synchronize activeNetworkView with currentNetworkId
           if (networkIdFromParams === '') {
             setActiveNetworkView('')
