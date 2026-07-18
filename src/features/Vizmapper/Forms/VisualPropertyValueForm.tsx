@@ -285,6 +285,20 @@ interface VisualPropertyRenderProps {
   vpName: VisualPropertyName
 }
 
+// Opacity visual properties are stored as 0-1 but shown to the user as 0-100%
+// (see vpName2RenderMap above). CW-591 keeps the continuous-mapping editor
+// consistent with the main style editor by using this set.
+export const OPACITY_VISUAL_PROPERTIES: ReadonlySet<string> = new Set([
+  'nodeOpacity',
+  'nodeBorderOpacity',
+  'nodeLabelOpacity',
+  'edgeOpacity',
+  'edgeLabelOpacity',
+])
+
+export const isOpacityVisualProperty = (vpName: string): boolean =>
+  OPACITY_VISUAL_PROPERTIES.has(vpName)
+
 /**
  * CW-436: whether a visual-property value should be displayed as readable text
  * (a compact text field) instead of the fixed-size swatch. String and numeric

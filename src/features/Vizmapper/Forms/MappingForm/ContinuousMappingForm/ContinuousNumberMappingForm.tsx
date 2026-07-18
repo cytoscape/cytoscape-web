@@ -30,7 +30,10 @@ import {
 } from '../../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
+import {
+  isOpacityVisualProperty,
+  VisualPropertyValueForm,
+} from '../../VisualPropertyValueForm'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
 import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
 import { LineChart } from './LineChart'
@@ -42,6 +45,12 @@ export function ContinuousNumberMappingForm(props: {
   const theme = useTheme()
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
+
+  // CW-591: show/edit opacity mapping values as 0-100% (they are stored as 0-1),
+  // matching the main opacity slider in the style editor.
+  const vpValueDisplayProps = isOpacityVisualProperty(props.visualProperty.name)
+    ? { displayMultiplier: 100, suffix: '%', displayDecimals: 0 }
+    : {}
 
   const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
   const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(0)
@@ -592,6 +601,7 @@ export function ContinuousNumberMappingForm(props: {
                               onConfirm={(newVal) => {
                                 setHandle(h.id, h.value as number, newVal)
                               }}
+                              {...vpValueDisplayProps}
                             ></ExpandableNumberInput>
                           </Box>
                           <Box
@@ -846,6 +856,7 @@ export function ContinuousNumberMappingForm(props: {
                   onConfirm={(newVal) => {
                     setAddHandleFormVpValue(newVal)
                   }}
+                  {...vpValueDisplayProps}
                 />
               </Box>
             </Box>
