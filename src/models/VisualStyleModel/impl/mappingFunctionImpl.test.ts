@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { ValueTypeName } from '../../TableModel'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { Column } from '../../TableModel'
 import {
+  resolveMappingColumnChange,
   typesCanBeMapped,
   validMappingsForVP,
 } from './mappingFunctionImpl'
@@ -175,6 +177,82 @@ describe('MappingFunctionImpl', () => {
           VisualPropertyValueTypeName.String,
         ),
       ).toBe(true)
+    })
+  })
+
+  // CW-616 / CW-651: choosing an attribute for a mapping must resolve the type
+  // from the newly selected attribute (not the previously selected one), or a
+  // mapping created from a blank state silently reverts.
+  describe('resolveMappingColumnChange', () => {
+    const columns: Column[] = [
+      { name: 'name', type: ValueTypeName.String },
+      { name: 'score', type: ValueTypeName.Double },
+    ]
+
+    it('creates a passthrough mapping from a blank state', () => {
+      const change = resolveMappingColumnChange(
+        columns,
+        'name',
+        MappingFunctionType.Passthrough,
+        VisualPropertyValueTypeName.String,
+      )
+      expect(change).toEqual({
+        kind: 'create',
+        attributeType: ValueTypeName.String,
+      })
+    })
+
+    it('creates a continuous mapping for a compatible numeric attribute', () => {
+      const change = resolveMappingColumnChange(
+        columns,
+        'score',
+        MappingFunctionType.Continuous,
+        VisualPropertyValueTypeName.Number,
+      )
+      expect(change).toEqual({
+        kind: 'create',
+        attributeType: ValueTypeName.Double,
+      })
+    })
+
+    it('removes the mapping when the attribute type is incompatible', () => {
+      const change = resolveMappingColumnChange(
+        columns,
+        'name',
+        MappingFunctionType.Continuous,
+        VisualPropertyValueTypeName.Number,
+      )
+      expect(change).toEqual({ kind: 'remove' })
+    })
+
+    it('clears when there is no mapping type or no attribute', () => {
+      expect(
+        resolveMappingColumnChange(
+          columns,
+          'name',
+          '',
+          VisualPropertyValueTypeName.String,
+        ),
+      ).toEqual({ kind: 'clear' })
+      expect(
+        resolveMappingColumnChange(
+          columns,
+          '',
+          MappingFunctionType.Passthrough,
+          VisualPropertyValueTypeName.String,
+        ),
+      ).toEqual({ kind: 'clear' })
+    })
+
+    it('clears when the attribute is not in the table', () => {
+      expect(
+        resolveMappingColumnChange(
+          columns,
+          'missing',
+          MappingFunctionType.Passthrough,
+          VisualPropertyValueTypeName.String,
+        ),
+      ).toEqual({ kind: 'clear' })
     })
   })
 })

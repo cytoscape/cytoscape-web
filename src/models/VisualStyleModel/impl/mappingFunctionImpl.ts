@@ -1,4 +1,4 @@
-import { ValueTypeName } from '../../TableModel'
+import { AttributeName, Column, ValueTypeName } from '../../TableModel'
 import { SingleValueType } from '../../TableModel/ValueType'
 import { MappingFunctionType, VisualPropertyValueTypeName } from '..'
 
@@ -80,4 +80,45 @@ export const typesCanBeMapped = (
   }
 
   return true
+}
+
+export type MappingColumnChange =
+  | { kind: 'create'; attributeType: ValueTypeName }
+  | { kind: 'remove' }
+  | { kind: 'clear' }
+
+/**
+ * Decide what should happen when the user picks a new mapping attribute
+ * (column) in the Vizmapper.
+ *
+ * CW-616 / CW-651: the attribute type MUST be looked up from the newly selected
+ * attribute, not the previously selected one. When a mapping is created from a
+ * blank state (no attribute yet selected), looking up the old (empty) attribute
+ * yielded `undefined`, so the mapping was never created and the selection
+ * reverted to blank.
+ *
+ * - `create`: create/update the mapping on `nextAttribute` (type is compatible)
+ * - `remove`: the type is incompatible with the mapping type; drop the mapping
+ * - `clear`:  nothing to map yet (no mapping type or no attribute); just record
+ *             the selected column
+ */
+export const resolveMappingColumnChange = (
+  columns: Column[],
+  nextAttribute: AttributeName,
+  mappingType: MappingFunctionType | '',
+  vpValueTypeName: VisualPropertyValueTypeName,
+): MappingColumnChange => {
+  const nextAttributeType = columns.find(
+    (c) => c.name === nextAttribute,
+  )?.type
+
+  if (mappingType === '' || nextAttribute === '' || nextAttributeType == null) {
+    return { kind: 'clear' }
+  }
+
+  if (typesCanBeMapped(mappingType, nextAttributeType, vpValueTypeName)) {
+    return { kind: 'create', attributeType: nextAttributeType }
+  }
+
+  return { kind: 'remove' }
 }
