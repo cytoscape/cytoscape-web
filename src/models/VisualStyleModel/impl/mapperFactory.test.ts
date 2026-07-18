@@ -328,6 +328,38 @@ describe('MapperFactory', () => {
       // Test with value above max
       expect(mapper(150)).toBe(50)
     })
+
+    // CW-569: continuous mappings on discrete-valued VPs (e.g. edge line type)
+    // must apply a step function instead of returning the default value.
+    it('applies a step function for discrete-valued visual properties', () => {
+      const mapping: ContinuousMappingFunction = {
+        type: MappingFunctionType.Continuous,
+        attribute: 'weight',
+        visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+        defaultValue: 'solid',
+        attributeType: ValueTypeName.Double,
+        min: { value: 0, vpValue: 'solid', inclusive: false },
+        max: { value: 100, vpValue: 'dashed', inclusive: false },
+        controlPoints: [
+          { value: 0, vpValue: 'solid' },
+          { value: 50, vpValue: 'dotted' },
+          { value: 100, vpValue: 'dashed' },
+        ],
+        ltMinVpValue: 'solid',
+        gtMaxVpValue: 'dashed',
+      }
+
+      const mapper = createContinuousMapper(mapping)
+
+      expect(mapper(0)).toBe('solid')
+      expect(mapper(25)).toBe('solid') // below the 50 threshold
+      expect(mapper(50)).toBe('dotted') // reaches the 50 threshold
+      expect(mapper(75)).toBe('dotted') // between 50 and 100
+      expect(mapper(100)).toBe('dashed')
+      // out of range uses lt/gt values
+      expect(mapper(-5)).toBe('solid')
+      expect(mapper(200)).toBe('dashed')
+    })
   })
 })
 

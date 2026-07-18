@@ -65,7 +65,7 @@ export function ContinuousMappingForm(props: {
     ) {
       return <ContinuousNumberMappingForm {...props} />
     } else {
-      return <ContinuousDiscreteMappingForm />
+      return <ContinuousDiscreteMappingForm {...props} />
     }
   }
 }

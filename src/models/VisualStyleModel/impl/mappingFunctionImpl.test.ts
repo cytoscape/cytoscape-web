@@ -6,6 +6,7 @@ import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { Column } from '../../TableModel'
 import {
   resolveMappingColumnChange,
+  supportsContinuousMapping,
   typesCanBeMapped,
   validMappingsForVP,
 } from './mappingFunctionImpl'
@@ -41,17 +42,25 @@ describe('MappingFunctionImpl', () => {
       expect(result.length).toBe(2)
     })
 
-    it('should return discrete and passthrough for node shape visual properties', () => {
+    // CW-569: node shape and edge line type now support continuous mappings.
+    it('should return all mapping types for node shape visual properties', () => {
       const result = validMappingsForVP(VisualPropertyValueTypeName.NodeShape)
 
       expect(result).toContain(MappingFunctionType.Discrete)
       expect(result).toContain(MappingFunctionType.Passthrough)
-      expect(result).not.toContain(MappingFunctionType.Continuous)
-      expect(result.length).toBe(2)
+      expect(result).toContain(MappingFunctionType.Continuous)
     })
 
-    it('should return discrete and passthrough for edge line visual properties', () => {
+    it('should return all mapping types for edge line visual properties', () => {
       const result = validMappingsForVP(VisualPropertyValueTypeName.EdgeLine)
+
+      expect(result).toContain(MappingFunctionType.Discrete)
+      expect(result).toContain(MappingFunctionType.Passthrough)
+      expect(result).toContain(MappingFunctionType.Continuous)
+    })
+
+    it('should return only discrete and passthrough for string visual properties', () => {
+      const result = validMappingsForVP(VisualPropertyValueTypeName.String)
 
       expect(result).toContain(MappingFunctionType.Discrete)
       expect(result).toContain(MappingFunctionType.Passthrough)
@@ -177,6 +186,52 @@ describe('MappingFunctionImpl', () => {
           VisualPropertyValueTypeName.String,
         ),
       ).toBe(true)
+    })
+  })
+
+  // CW-569: continuous mappings are allowed on discrete-valued VPs (edge line
+  // type, node shape, etc.) as long as the attribute is numeric.
+  describe('continuous mapping on discrete visual properties', () => {
+    it('supportsContinuousMapping includes discrete-valued VP types', () => {
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.Number),
+      ).toBe(true)
+      expect(supportsContinuousMapping(VisualPropertyValueTypeName.Color)).toBe(
+        true,
+      )
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.EdgeLine),
+      ).toBe(true)
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.NodeShape),
+      ).toBe(true)
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.String),
+      ).toBe(false)
+    })
+
+    it('validMappingsForVP offers continuous for edge line type', () => {
+      expect(validMappingsForVP(VisualPropertyValueTypeName.EdgeLine)).toContain(
+        MappingFunctionType.Continuous,
+      )
+    })
+
+    it('typesCanBeMapped allows continuous edge line on a numeric attribute', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Continuous,
+          ValueTypeName.Double,
+          VisualPropertyValueTypeName.EdgeLine,
+        ),
+      ).toBe(true)
+      // still requires a numeric attribute
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Continuous,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.EdgeLine,
+        ),
+      ).toBe(false)
     })
   })
 

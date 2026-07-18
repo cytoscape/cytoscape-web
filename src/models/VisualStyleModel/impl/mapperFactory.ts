@@ -79,14 +79,57 @@ export const createPassthroughMapper = (
 export const createContinuousMapper = (
   cm: ContinuousMappingFunction,
 ): Mapper => {
+  if (cm.visualPropertyType === VisualPropertyValueTypeName.Color) {
+    return (value: ValueType) => getMapper<ColorType>(cm)(value)
+  }
+  if (cm.visualPropertyType === VisualPropertyValueTypeName.Number) {
+    return (value: ValueType) => getMapper<number>(cm)(value)
+  }
+  // CW-569: discrete-valued visual properties (e.g. edge line type, node shape)
+  // cannot be interpolated, so map the numeric attribute value through a step
+  // function over the control points instead of returning the default value.
+  return createSteppedMapper(cm)
+}
+
+/**
+ * Build a step-function mapper for a continuous mapping whose visual-property
+ * value is discrete (not numeric or color). The numeric attribute value selects
+ * the value of the last control point whose threshold it has reached; values
+ * below the minimum / above the maximum use the mapping's lt/gt values.
+ */
+export const createSteppedMapper = (cm: ContinuousMappingFunction): Mapper => {
+  const points = [
+    { value: cm.min?.value, vpValue: cm.min?.vpValue },
+    ...cm.controlPoints,
+    { value: cm.max?.value, vpValue: cm.max?.vpValue },
+  ]
+    .filter((p) => typeof p.value === 'number')
+    .sort((a, b) => (a.value as number) - (b.value as number))
+
   return (value: ValueType): VisualPropertyValueType => {
-    // TODO: Implement this
-    if (cm.visualPropertyType === VisualPropertyValueTypeName.Color) {
-      return getMapper<ColorType>(cm)(value)
-    } else if (cm.visualPropertyType === VisualPropertyValueTypeName.Number) {
-      return getMapper<number>(cm)(value)
+    if (points.length === 0 || typeof value !== 'number') {
+      return cm.defaultValue
     }
-    return cm.defaultValue
+
+    const first = points[0]
+    const last = points[points.length - 1]
+
+    if (value < (first.value as number)) {
+      return (cm.ltMinVpValue ?? first.vpValue) as VisualPropertyValueType
+    }
+    if (value > (last.value as number)) {
+      return (cm.gtMaxVpValue ?? last.vpValue) as VisualPropertyValueType
+    }
+
+    let result = first.vpValue
+    for (const p of points) {
+      if (value >= (p.value as number)) {
+        result = p.vpValue
+      } else {
+        break
+      }
+    }
+    return result as VisualPropertyValueType
   }
 }
 

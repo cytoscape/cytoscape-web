@@ -29,16 +29,27 @@ const valueType2BaseType: Record<
   [VisualPropertyValueTypeName.String]: 'string',
 }
 
-// This function will be redundant once continuous discrete mapping ui is available
-// Until then, only return valid mappings for a given visual property
-// Continuous mappings cannot be applied to vps that are not numbers or colors
+// CW-569: continuous mappings are supported on numeric and color VPs
+// (interpolated) as well as discrete-valued VPs such as edge line type and node
+// shape (applied as a step function over the control points).
+const CONTINUOUS_DISCRETE_VP_TYPES: Set<VisualPropertyValueTypeName> = new Set([
+  VisualPropertyValueTypeName.NodeShape,
+  VisualPropertyValueTypeName.EdgeLine,
+  VisualPropertyValueTypeName.NodeBorderLine,
+  VisualPropertyValueTypeName.EdgeArrowShape,
+])
+
+export const supportsContinuousMapping = (
+  vpType: VisualPropertyValueTypeName,
+): boolean =>
+  vpType === VisualPropertyValueTypeName.Number ||
+  vpType === VisualPropertyValueTypeName.Color ||
+  CONTINUOUS_DISCRETE_VP_TYPES.has(vpType)
+
 export const validMappingsForVP = (
   vpType: VisualPropertyValueTypeName,
 ): MappingFunctionType[] => {
-  if (
-    vpType === VisualPropertyValueTypeName.Number ||
-    vpType === VisualPropertyValueTypeName.Color
-  ) {
+  if (supportsContinuousMapping(vpType)) {
     return [
       MappingFunctionType.Continuous,
       MappingFunctionType.Discrete,
@@ -68,15 +79,15 @@ export const typesCanBeMapped = (
   }
 
   if (mappingType === MappingFunctionType.Continuous) {
+    // A continuous mapping always requires a numeric attribute; the visual
+    // property may be numeric, color, or a supported discrete-valued type
+    // (CW-569).
     const vtIsNumber =
       valueTypeName === ValueTypeName.Integer ||
       valueTypeName === ValueTypeName.Double ||
       valueTypeName === ValueTypeName.Long
-    const vpIsNumberOrColor =
-      vpValueTypeName === VisualPropertyValueTypeName.Number ||
-      vpValueTypeName === VisualPropertyValueTypeName.Color
 
-    return vtIsNumber && vpIsNumberOrColor
+    return vtIsNumber && supportsContinuousMapping(vpValueTypeName)
   }
 
   return true
