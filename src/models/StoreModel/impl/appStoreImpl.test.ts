@@ -9,6 +9,7 @@ import {
   add,
   addService,
   AppState,
+  refreshService,
   clearCurrentTask,
   removeService,
   restore,
@@ -199,6 +200,32 @@ describe('AppStoreImpl', () => {
 
       expect(result.serviceApps['https://example.com/service']).toBeUndefined()
       expect(result).not.toBe(state) // Immutability check
+    })
+  })
+
+  describe('refreshService', () => {
+    it('should overwrite an existing service app with new metadata', () => {
+      const url = 'https://example.com/service'
+      const state = createDefaultState()
+      const original = createTestServiceApp(url)
+      const added = addService(state, original)
+
+      const updated = { ...createTestServiceApp(url), name: 'Renamed Service' }
+      const result = refreshService(added, updated)
+
+      expect(result.serviceApps[url].name).toBe('Renamed Service')
+      expect(Object.keys(result.serviceApps)).toHaveLength(1)
+      expect(result).not.toBe(added) // Immutability check
+    })
+
+    it('should add the service app when it is not already present', () => {
+      const url = 'https://example.com/service'
+      const state = createDefaultState()
+      const serviceApp = createTestServiceApp(url)
+
+      const result = refreshService(state, serviceApp)
+
+      expect(result.serviceApps[url]).toEqual(serviceApp)
     })
   })
 

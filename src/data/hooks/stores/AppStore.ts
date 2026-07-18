@@ -113,6 +113,45 @@ export const useAppStore = create(
       })
     },
 
+    refreshService: async (url: string) => {
+      if (get().serviceApps[url] === undefined) {
+        logStore.warn(
+          `[${useAppStore.name}]: Cannot refresh unregistered service app: ${url}`,
+        )
+        return
+      }
+      const serviceApp = await serviceFetcher(url)
+      await putServiceAppToDb(serviceApp)
+
+      set((state) => {
+        const newState = AppStoreImpl.refreshService(state, serviceApp)
+        state.serviceApps = newState.serviceApps
+        return state
+      })
+    },
+
+    refreshAllServices: async () => {
+      const urls = Object.keys(get().serviceApps)
+      await Promise.all(
+        urls.map(async (url) => {
+          try {
+            const serviceApp = await serviceFetcher(url)
+            await putServiceAppToDb(serviceApp)
+            set((state) => {
+              const newState = AppStoreImpl.refreshService(state, serviceApp)
+              state.serviceApps = newState.serviceApps
+              return state
+            })
+          } catch (error) {
+            logStore.error(
+              `[${useAppStore.name}]: Failed to refresh service app: ${url}`,
+              error,
+            )
+          }
+        }),
+      )
+    },
+
     setStatus: (id: string, status: AppStatus) => {
       // Session-only: the durable status lives in workspace.installedApps and
       // is reconciled by useAppManager (§8.4). No write to the global apps DB.

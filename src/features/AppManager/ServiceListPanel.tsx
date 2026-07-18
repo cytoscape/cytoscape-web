@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { Box, Button, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 
@@ -24,6 +25,20 @@ export const ServiceListPanel = () => {
   )
 
   const addService = useAppStore((state) => state.addService)
+  const refreshAllServices = useAppStore((state) => state.refreshAllServices)
+
+  const [isRefreshingAll, setIsRefreshingAll] = useState<boolean>(false)
+
+  const hasServiceApps = Object.keys(serviceApps).length > 0
+
+  const handleRefreshAll = async () => {
+    setIsRefreshingAll(true)
+    try {
+      await refreshAllServices()
+    } finally {
+      setIsRefreshingAll(false)
+    }
+  }
 
   const handleClearUrl = () => {
     setNewUrl('')
@@ -65,14 +80,27 @@ export const ServiceListPanel = () => {
 
   return (
     <Box>
-      <Typography
-        sx={{ display: 'inline' }}
-        component="span"
-        variant="h6"
-        color="text.primary"
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
-        Service Apps Manager
-      </Typography>
+        <Typography component="span" variant="h6" color="text.primary">
+          Service Apps Manager
+        </Typography>
+        {hasServiceApps && (
+          <Button
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefreshAll}
+            disabled={isRefreshingAll}
+          >
+            {isRefreshingAll ? 'Refreshing...' : 'Refresh all'}
+          </Button>
+        )}
+      </Box>
       {warningMessage && (
         <Typography color="error" variant="body2">
           {warningMessage}

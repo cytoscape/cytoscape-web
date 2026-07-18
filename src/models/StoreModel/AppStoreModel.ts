@@ -61,6 +61,21 @@ export interface AppAction {
   removeService: (url: string) => void
 
   /**
+   * Re-fetch the metadata for an already-registered service app and replace it
+   * in the store, so UI/parameter changes made on the service are picked up
+   * without removing and re-adding the app.
+   *
+   * @param url - ServiceApp endpoint to refresh
+   */
+  refreshService: (url: string) => Promise<void>
+
+  /**
+   * Re-fetch the metadata for every registered service app. Individual
+   * failures are logged and do not abort the others.
+   */
+  refreshAllServices: () => Promise<void>
+
+  /**
    * Set current status of the app
    *
    * @param id
