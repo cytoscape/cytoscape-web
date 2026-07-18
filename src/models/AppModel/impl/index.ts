@@ -2,8 +2,9 @@ import safeRegex from 'safe-regex'
 
 import { Column, ValueTypeName } from '../../TableModel'
 import { ParameterUiType } from '../ParameterUiType'
+import { SelectedDataType } from '../SelectedDataType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
-import { InputColumn } from '../ServiceInputDefinition'
+import { InputColumn, ServiceInputDefinition } from '../ServiceInputDefinition'
 
 export {
   DEFAULT_ROOT_MENU,
@@ -14,6 +15,17 @@ export {
   resolveRootMenu,
 } from './menuRouting'
 export type { RootMenuResolution } from './menuRouting'
+
+/**
+ * Whether a service app declines to receive any data (nodes, edges, or the
+ * network). Such apps only send their parameter options; no data payload is
+ * built. Corresponds to serviceInputDefinition.type === 'none' (CW-468).
+ */
+export const sendsNoData = (
+  serviceInputDefinition: ServiceInputDefinition | undefined,
+): boolean => {
+  return serviceInputDefinition?.type === SelectedDataType.None
+}
 
 /**
  * Whether a service app's description should be rendered at the top of its

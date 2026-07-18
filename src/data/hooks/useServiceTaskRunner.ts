@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 
 import { logApp } from '../../debug'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
+import { sendsNoData } from '../../models/AppModel/impl'
 // TODO: Move these from features to other folders
 import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
@@ -119,18 +120,21 @@ export const useServiceTaskRunner = (): ((
         throw new Error(`Service not found for URL: ${url}`)
       }
 
-      if (
-        serviceApp.serviceInputDefinition?.inputNetwork &&
-        networkRef.current === undefined
-      ) {
-        throw new Error('Network not found')
-      }
+      // Apps that request no data (type 'none') skip the network/table guards.
+      if (!sendsNoData(serviceApp.serviceInputDefinition)) {
+        if (
+          serviceApp.serviceInputDefinition?.inputNetwork &&
+          networkRef.current === undefined
+        ) {
+          throw new Error('Network not found')
+        }
 
-      if (
-        serviceApp.serviceInputDefinition?.inputColumns &&
-        tableRef.current === undefined
-      ) {
-        throw new Error('Table not found')
+        if (
+          serviceApp.serviceInputDefinition?.inputColumns &&
+          tableRef.current === undefined
+        ) {
+          throw new Error('Table not found')
+        }
       }
 
       const customParameters =

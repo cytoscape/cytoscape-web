@@ -1,10 +1,39 @@
 import { describe, expect, it } from 'vitest'
 
 import { ParameterUiType } from '../ParameterUiType'
+import { SelectedDataType } from '../SelectedDataType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
-import { shouldShowServiceDescription, validateParameter } from './index'
+import { ServiceInputDefinition } from '../ServiceInputDefinition'
+import {
+  sendsNoData,
+  shouldShowServiceDescription,
+  validateParameter,
+} from './index'
 
 describe('AppModel impl', () => {
+  describe('sendsNoData', () => {
+    it('returns true when the input type is none', () => {
+      expect(
+        sendsNoData({ type: SelectedDataType.None } as ServiceInputDefinition),
+      ).toBe(true)
+    })
+
+    it('returns false for node/edge/network input types', () => {
+      expect(
+        sendsNoData({ type: SelectedDataType.Node } as ServiceInputDefinition),
+      ).toBe(false)
+      expect(
+        sendsNoData({
+          type: SelectedDataType.Networks,
+        } as ServiceInputDefinition),
+      ).toBe(false)
+    })
+
+    it('returns false when there is no input definition', () => {
+      expect(sendsNoData(undefined)).toBe(false)
+    })
+  })
+
   describe('shouldShowServiceDescription', () => {
     it('shows a non-empty description by default', () => {
       expect(shouldShowServiceDescription('Does a thing', undefined)).toBe(true)
