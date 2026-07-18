@@ -61,6 +61,7 @@ import {
 } from '../VisualPropertyRender/Visibility'
 import {
   EmptyVisualPropertyViewBox,
+  VisualPropertyTextViewBox,
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
 
@@ -284,6 +285,17 @@ interface VisualPropertyRenderProps {
   vpName: VisualPropertyName
 }
 
+/**
+ * CW-436: whether a visual-property value should be displayed as readable text
+ * (a compact text field) instead of the fixed-size swatch. String and numeric
+ * values (e.g. node label text, font size) get clipped in the 30x30 swatch.
+ */
+export const shouldRenderValueAsText = (
+  vpValueType: VisualPropertyValueTypeName,
+): boolean =>
+  vpValueType === VisualPropertyValueTypeName.String ||
+  vpValueType === VisualPropertyValueTypeName.Number
+
 export function VisualPropertyValueRender(
   props: VisualPropertyRenderProps,
 ): React.ReactElement {
@@ -310,6 +322,18 @@ export function VisualPropertyValueRender(
           value: props.value,
         })}
       </VisualPropertyViewBox>
+    )
+  }
+
+  // CW-436: string and numeric values are shown in a readable text box rather
+  // than a fixed-size swatch, which clips longer strings/numbers.
+  if (shouldRenderValueAsText(props.vpValueType)) {
+    return (
+      <VisualPropertyTextViewBox title={String(props.value)}>
+        {vpType2RenderMap[props.vpValueType].valueRender({
+          value: props.value,
+        })}
+      </VisualPropertyTextViewBox>
     )
   }
 
