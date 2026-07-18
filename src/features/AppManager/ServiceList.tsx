@@ -50,7 +50,7 @@ export const ServiceList = () => {
   }
 
   return (
-    <List>
+    <List sx={{ maxHeight: 300, overflowY: 'auto' }}>
       {Object.values(serviceApps).map((serviceApp: ServiceApp) => {
         const isRefreshing = refreshingUrls.has(serviceApp.url)
         return (
