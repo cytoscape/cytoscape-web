@@ -15,11 +15,13 @@ import {
 import React from 'react'
 
 import {
-  getColorBrewerPaletteColors,
+  getPaletteGradientColors,
   PALETTES,
 } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { PalettePreview } from './PalettePreview'
+
+type PaletteCategory = 'sequential' | 'diverging'
 
 interface ColorPalettePickerProps {
   currentPaletteName: string
@@ -29,13 +31,21 @@ interface ColorPalettePickerProps {
     maxColor: ColorType,
     paletteName: string,
   ) => void
+  /**
+   * Category to preselect (CW-460). Defaults to diverging, but callers can pass
+   * a data-driven recommendation (sequential for single-sided data).
+   */
+  recommendedCategory?: PaletteCategory
 }
 
 export function ColorPalettePicker({
   currentPaletteName,
   onPaletteSelect,
+  recommendedCategory = 'diverging',
 }: ColorPalettePickerProps): React.ReactElement {
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
+  const [category, setCategory] =
+    React.useState<PaletteCategory>(recommendedCategory)
   const [isColorBlindChecked, setIsColorBlindChecked] = React.useState(false)
   const [isReverseColorChecked, setIsReverseColorChecked] =
     React.useState(false)
@@ -45,10 +55,24 @@ export function ColorPalettePicker({
   const [maxPalette, setMaxPalette] = React.useState<ColorType>('#000000')
   const [textPalette, setTextPalette] = React.useState('None')
 
+  // Follow the data-driven recommendation whenever it changes (CW-460).
+  React.useEffect(() => {
+    setCategory(recommendedCategory)
+  }, [recommendedCategory])
+
   const showColorPickerMenu = (
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
     setAnchorEl(event.currentTarget)
+  }
+
+  const handleCategoryChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newCategory: PaletteCategory | null,
+  ): void => {
+    if (newCategory !== null) {
+      setCategory(newCategory)
+    }
   }
 
   const hideColorPickerMenu = (): void => {
@@ -121,6 +145,21 @@ export function ColorPalettePicker({
         <Typography align={'center'} sx={{ p: 1 }}>
           Set Palette
         </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', pb: 1 }}>
+          <ToggleButtonGroup
+            value={category}
+            onChange={handleCategoryChange}
+            exclusive
+            size="small"
+          >
+            <ToggleButton value="sequential" aria-label="sequential palettes">
+              Sequential
+            </ToggleButton>
+            <ToggleButton value="diverging" aria-label="diverging palettes">
+              Diverging
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
         <ToggleButtonGroup
           value={colorPalette}
           onChange={handleColorPalette}
@@ -130,13 +169,8 @@ export function ColorPalettePicker({
         >
           {Object.entries(PALETTES)
             .filter(([, palette]) => {
-              // Only show ColorBrewer diverging palettes (those with min/middle/max)
-              return (
-                palette.metadata.category === 'diverging' &&
-                palette.min &&
-                palette.middle &&
-                palette.max
-              )
+              // Show palettes matching the selected category (CW-460).
+              return palette.metadata.category === category
             })
             .map(([paletteId, palette]) => {
               const isColorBlindUnsafe =
@@ -144,7 +178,7 @@ export function ColorPalettePicker({
               if (isColorBlindUnsafe && isColorBlindChecked) {
                 return null
               }
-              const colors = getColorBrewerPaletteColors(paletteId)
+              const colors = getPaletteGradientColors(paletteId)
               if (!colors) return null
 
               return (
