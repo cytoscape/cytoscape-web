@@ -27,8 +27,7 @@ export const TypeDropDownTemplate = React.memo(
         .map((pair) => rowData.typeRecord[pair[1]]),
     )
     const typeOptions = getAllConvertiableTypes(typeLst).map((type) => ({
-      label:
-        type === 'None' ? 'None' : dataTypeLabel(type as ValueTypeName),
+      label: dataTypeLabel(type),
       value: type,
     }))
     // Call every store hook unconditionally (Rules of Hooks), then pick the
