@@ -313,19 +313,38 @@ const AppShell = (): ReactElement => {
 
       const importErrorMessages: string[] = []
 
+      let networkImportFailed = false
       if (isNetworkIdNotInWorkspace) {
-        // Check if the network exists in NDEx
-        const newNetworkSummary = (
-          await fetchNdexSummaries(networkId, token)
-        )?.[0]
+        try {
+          // Check if the network exists in NDEx
+          const newNetworkSummary = (
+            await fetchNdexSummaries(networkId, token)
+          )?.[0]
 
-        if (newNetworkSummary !== undefined) {
-          summaries[networkId] = newNetworkSummary
-          workspace.currentNetworkId = networkId
-          workspace.networkIds.push(networkId)
-        } else {
+          if (newNetworkSummary !== undefined) {
+            summaries[networkId] = newNetworkSummary
+            workspace.currentNetworkId = networkId
+            workspace.networkIds.push(networkId)
+          } else {
+            networkImportFailed = true
+            importErrorMessages.push(
+              `Unable to import network ${networkId} from ${location.pathname}. ${networkId} does not exist in NDEx`,
+            )
+          }
+        } catch (error) {
+          // A thrown error (network hiccup, CORS, private/deleted network, NDEx
+          // outage) must not abort init and silently strand the user on an
+          // unrelated local workspace/network (CW-514). Mirror the try/catch of
+          // the ?import= loop below.
+          networkImportFailed = true
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error'
           importErrorMessages.push(
-            `Unable to import network ${networkId} from ${location.pathname}. ${networkId} does not exist in NDEx`,
+            `Unable to import network ${networkId} from ${location.pathname}. ${errorMessage}`,
+          )
+          logStartup.warn(
+            `[AppShell]: failed to fetch NDEx summary for ${networkId}`,
+            error,
           )
         }
       }
@@ -386,13 +405,22 @@ const AppShell = (): ReactElement => {
       // reload); fall back to a per-tab sessionStorage backstop, then to the shared
       // currentNetworkId. This prevents a tab from adopting another tab's network
       // after a cross-tab reload (CW-722).
-      workspace.currentNetworkId =
+      const resolvedNetworkId =
         resolveDisplayNetworkId(
           networkId,
           getTabNetworkId(),
           workspace.currentNetworkId,
           workspace.networkIds,
         ) ?? ''
+
+      // If the user explicitly requested a network via the URL but it could not
+      // be imported, keep that requested id in the URL (the error banner above
+      // explains why) rather than silently redirecting to an unrelated local
+      // network (CW-514).
+      workspace.currentNetworkId =
+        isNetworkIdInUrl && networkImportFailed
+          ? (networkId ?? '')
+          : resolvedNetworkId
 
       addSummaries(summaries)
       setWorkspace(workspace)

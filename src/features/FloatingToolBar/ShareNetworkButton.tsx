@@ -15,6 +15,7 @@ import { MessageSeverity } from '../../models/MessageModel'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
 import { isSubnetwork } from '../HierarchyViewer/utils/hierarchyUtil'
+import { buildShareUrl } from './shareUrl'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -157,7 +158,6 @@ export const ShareNetworkButton = ({
   const handleClick = (): void => {
     const { location } = window
     // Get base query parameters
-    const baseUrl = (location.origin + urlBaseName).replace(/\/+$/, '')
     const baseQuery = getQueryString()
     const allParams = new URLSearchParams(baseQuery)
 
@@ -169,8 +169,30 @@ export const ShareNetworkButton = ({
 
     const finalQuery = allParams.toString()
 
-    // Here, "0" means dummy workspace ID only for the purpose of generating sharable URL
-    const newUrl = `${baseUrl}/0/networks/${currentNetworkId}?${finalQuery}`
+    // Build through the URL API so a bad origin / urlBaseName can't silently
+    // produce a malformed link (CW-514). Report an error rather than copying
+    // garbage to the clipboard.
+    let newUrl: string
+    try {
+      newUrl = buildShareUrl(
+        location.origin,
+        urlBaseName,
+        currentNetworkId,
+        finalQuery,
+      )
+    } catch (error) {
+      logUi.error(
+        `[${ShareNetworkButton.name}]:[${handleClick.name}]: Failed to build sharable URL`,
+        error,
+      )
+      addMessage({
+        message: 'Unable to generate a shareable URL for this network.',
+        duration: 5000,
+        severity: MessageSeverity.ERROR,
+      })
+      return
+    }
+
     logUi.info(
       `[${ShareNetworkButton.name}]:[${handleClick.name}]: Copied Sharable URL: ${newUrl}`,
     )
