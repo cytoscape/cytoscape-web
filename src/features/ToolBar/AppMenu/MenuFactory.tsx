@@ -23,6 +23,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../../debug'
 import {
   inputColumnFilterFn,
+  shouldShowServiceDescription,
   validateParameter,
 } from '../../../models/AppModel/impl'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
@@ -426,6 +427,11 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     </Box>
   ) : null
 
+  const showDescription = shouldShowServiceDescription(
+    app.description,
+    app.showDescriptionInDialog,
+  )
+
   const shouldAddMarginTop = !inputDefinition && !parametersSection
 
   const submitButton = !serviceCanBeRun ? (
@@ -469,6 +475,15 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     >
       <Box sx={{ p: 3.5 }}>
         <Typography variant="h5">{app.name}</Typography>
+        {showDescription ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1, whiteSpace: 'pre-line' }}
+          >
+            {app.description}
+          </Typography>
+        ) : null}
         {inputDefinition}
         {parametersSection}
         {submitButton}

@@ -384,6 +384,7 @@ const ServiceAppSchema = z.object({
   url: z.string(),
   name: z.string(),
   description: z.string().optional(),
+  showDescriptionInDialog: z.boolean().optional(),
   version: z.string(),
   serviceInputDefinition: ServiceInputDefinitionSchema.optional(),
   cyWebAction: z.array(ServiceAppActionSchema),

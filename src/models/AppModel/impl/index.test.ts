@@ -2,9 +2,29 @@ import { describe, expect, it } from 'vitest'
 
 import { ParameterUiType } from '../ParameterUiType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
-import { validateParameter } from './index'
+import { shouldShowServiceDescription, validateParameter } from './index'
 
 describe('AppModel impl', () => {
+  describe('shouldShowServiceDescription', () => {
+    it('shows a non-empty description by default', () => {
+      expect(shouldShowServiceDescription('Does a thing', undefined)).toBe(true)
+    })
+
+    it('shows a non-empty description when the flag is true', () => {
+      expect(shouldShowServiceDescription('Does a thing', true)).toBe(true)
+    })
+
+    it('hides the description when the flag is explicitly false', () => {
+      expect(shouldShowServiceDescription('Does a thing', false)).toBe(false)
+    })
+
+    it('hides when the description is missing or blank', () => {
+      expect(shouldShowServiceDescription(undefined, undefined)).toBe(false)
+      expect(shouldShowServiceDescription(null, undefined)).toBe(false)
+      expect(shouldShowServiceDescription('   ', undefined)).toBe(false)
+    })
+  })
+
   describe('validateParameter', () => {
     it('should return true if no regex is provided', () => {
       const parameter: ServiceAppParameter = {

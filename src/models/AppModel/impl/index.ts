@@ -15,6 +15,25 @@ export {
 } from './menuRouting'
 export type { RootMenuResolution } from './menuRouting'
 
+/**
+ * Whether a service app's description should be rendered at the top of its
+ * input dialog. The description is shown when it is non-empty and the app has
+ * not explicitly opted out via `showDescriptionInDialog: false`.
+ */
+export const shouldShowServiceDescription = (
+  description: string | undefined | null,
+  showDescriptionInDialog: boolean | undefined,
+): boolean => {
+  if (showDescriptionInDialog === false) {
+    return false
+  }
+  return (
+    description !== undefined &&
+    description !== null &&
+    description.trim() !== ''
+  )
+}
+
 export const isList = (vtn: ValueTypeName): boolean => {
   return vtn.includes('list_of')
 }
