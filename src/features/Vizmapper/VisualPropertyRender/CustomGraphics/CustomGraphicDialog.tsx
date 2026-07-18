@@ -36,7 +36,6 @@ import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/Visu
 import {
   PieChartPropertiesType,
   RingChartPropertiesType,
-  ImagePropertiesType,
 } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { AttributesForm } from './Forms/AttributesForm'
 import { ColorsForm } from './Forms/ColorsForm'
@@ -108,6 +107,12 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   // Initialize colors to gray when entering step 3 (Colors) if needed
   // This is a backup in case user navigates directly or goes back/forward
   const prevStepRef = React.useRef<number>(0)
+  const chartDataColumnCount = !isImageProperties(currentProps)
+    ? chartProps.cy_dataColumns.length
+    : 0
+  const chartColorScheme = !isImageProperties(currentProps)
+    ? chartProps.cy_colorScheme
+    : ''
   React.useEffect(() => {
     // Only initialize when first entering step 3 (Colors step)
     if (
@@ -132,11 +137,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     }
     prevStepRef.current = activeStep
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only on entering step 2; prevStepRef guards re-runs
-  }, [
-    activeStep,
-    !isImageProperties(currentProps) ? chartProps.cy_dataColumns.length : 0,
-    !isImageProperties(currentProps) ? chartProps.cy_colorScheme : '',
-  ])
+  }, [activeStep, chartDataColumnCount, chartColorScheme])
 
   // Handler to remove graphics and reset to defaults
   const handleRemoveChartsClick = () => {

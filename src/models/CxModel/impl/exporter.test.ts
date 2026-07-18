@@ -767,9 +767,12 @@ describe('exporter', () => {
             visualPropertiesAspect.visualProperties[0].nodeMapping
           // Custom graphics with mapping should be in mappings
           expect(nodeMappings).toHaveProperty('NODE_CUSTOMGRAPHICS_1')
-          // Size and position should also be included
-          expect(nodeMappings).toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
-          expect(nodeMappings).toHaveProperty('NODE_CUSTOMGRAPHICS_POSITION_1')
+          // Size and position are exported as defaults (stringified for
+          // Cytoscape Desktop compatibility), not as mappings
+          const nodeDefaults =
+            visualPropertiesAspect.visualProperties[0].default.node
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_SIZE_1')
+          expect(nodeDefaults).toHaveProperty('NODE_CUSTOMGRAPHICS_POSITION_1')
         }
       })
 

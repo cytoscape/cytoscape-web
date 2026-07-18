@@ -9,7 +9,6 @@ import {
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { PieChartRender as PieChartRenderComponent } from '../PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from '../RingChartRender'
-import { CHART_CONSTANTS, COLORS } from '../utils/constants'
 import {
   isImageProperties,
   isPieChartProperties,
@@ -38,10 +37,12 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
 }) => {
   const [imageError, setImageError] = React.useState(false)
 
+  const imageUrl = isImageProperties(properties) ? properties.url : null
+
   // Reset error state when URL changes
   React.useEffect(() => {
     setImageError(false)
-  }, [isImageProperties(properties) ? properties.url : null])
+  }, [imageUrl])
 
   const hasData = isImageProperties(properties)
     ? properties.url.trim().length > 0
