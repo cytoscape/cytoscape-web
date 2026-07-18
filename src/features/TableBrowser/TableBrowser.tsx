@@ -65,6 +65,7 @@ import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualSt
 import { isValidUrl } from '../../utils/urlUtil'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 import { DuplicateIcon, EditIcon, SortAscIcon, SortDescIcon } from './Icon'
+import { ListValueEditorDialog } from './ListValueEditorDialog'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import {
   CreateTableColumnForm,
@@ -292,6 +293,15 @@ export default function TableBrowser(props: {
     direction: undefined,
     valueType: undefined,
   })
+
+  // State for the dedicated list-value editor dialog (CW-563)
+  const [listEditor, setListEditor] = React.useState<{
+    cxId: IdType
+    columnKey: string
+    columnName: string
+    type: ValueTypeName
+    value: ValueType | null
+  } | null>(null)
 
   const networkId = props.currentNetworkId
   const visualStyle = useVisualStyleStore(
@@ -700,6 +710,20 @@ export default function TableBrowser(props: {
       const cellType = getCellKind(column.type)
       const processedCellValue = valueDisplay(cellValue, column.type)
 
+      // List-typed cells (CW-563) are not edited inline: typing into a text
+      // overlay collapsed multi-item lists into a single element. They are
+      // shown read-only here and edited through the dedicated list editor
+      // dialog, opened via onCellActivated.
+      if (isListType(column.type)) {
+        return {
+          kind: GridCellKind.Text,
+          allowOverlay: false,
+          readonly: true,
+          displayData: String(processedCellValue),
+          data: String(processedCellValue),
+        }
+      }
+
       // These cells generally prevent users from inputting mismatched data types
       // e.g. a user can't but a boolean in a number, a string in a number, etc.
       // The exception is that users can still input floats into integer columns
@@ -1019,6 +1043,63 @@ export default function TableBrowser(props: {
       setNetworkModified,
       nodeTable,
       setCellValue,
+    ],
+  )
+
+  // Open the dedicated list editor when a list-typed cell is activated
+  // (double-click / Enter). CW-563.
+  const onCellActivated = React.useCallback(
+    (cell: Item): void => {
+      const [columnIndex, rowIndex] = cell
+      const column = allColumns?.[columnIndex]
+      const rowData = rows?.[rowIndex]
+      if (column == null || rowData == null || (column as any).isVirtual) return
+      if (!isListType(column.type)) return
+      const cxId = rowData.id
+      if (cxId == null) return
+      setListEditor({
+        cxId,
+        columnKey: column.id,
+        columnName: column.title,
+        type: column.type,
+        value: (rowData as any)?.[column.id] ?? null,
+      })
+    },
+    [allColumns, rows],
+  )
+
+  // Commit a value chosen in the list editor dialog, mirroring onCellEdited's
+  // undo bookkeeping and store update.
+  const handleListEditorSave = React.useCallback(
+    (newValue: ValueType): void => {
+      if (listEditor == null) return
+      const { cxId, columnKey } = listEditor
+      const elementType = currentTable === nodeTable ? 'node' : 'edge'
+      postEdit(
+        UndoCommandType.SET_CELL_VALUE,
+        'Set cell value',
+        [props.currentNetworkId, elementType, cxId, columnKey, listEditor.value],
+        [props.currentNetworkId, elementType, cxId, columnKey, newValue],
+      )
+      setCellValue(
+        props.currentNetworkId,
+        elementType,
+        `${cxId}`,
+        columnKey,
+        newValue,
+      )
+      setNetworkModified(networkId, true)
+      setListEditor(null)
+    },
+    [
+      listEditor,
+      currentTable,
+      nodeTable,
+      postEdit,
+      props.currentNetworkId,
+      setCellValue,
+      setNetworkModified,
+      networkId,
     ],
   )
 
@@ -1854,6 +1935,7 @@ export default function TableBrowser(props: {
           rowMarkerWidth={35}
           rowMarkerStartIndex={minNodeId}
           onCellContextMenu={onCellContextMenu}
+          onCellActivated={onCellActivated}
           onPaste={onPaste}
           getCellsForSelection={true}
           onColumnMoved={onColMoved}
@@ -1886,6 +1968,7 @@ export default function TableBrowser(props: {
           rowMarkerWidth={35}
           rowMarkerStartIndex={minEdgeId}
           onCellContextMenu={onCellContextMenu}
+          onCellActivated={onCellActivated}
           onPaste={onPaste}
           getCellsForSelection={true}
           onColumnMoved={onColMoved}
@@ -2153,6 +2236,16 @@ export default function TableBrowser(props: {
           </ListItemText>
         </MenuItem>
       </Menu>
+      {listEditor !== null ? (
+        <ListValueEditorDialog
+          open={true}
+          columnName={listEditor.columnName}
+          listType={listEditor.type}
+          value={listEditor.value}
+          onCancel={() => setListEditor(null)}
+          onSave={handleListEditorSave}
+        />
+      ) : null}
     </Box>
   )
 }
