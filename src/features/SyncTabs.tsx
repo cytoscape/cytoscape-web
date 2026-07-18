@@ -10,8 +10,14 @@ import {
 } from '../data/db'
 import { useDebugEnabled } from '../data/hooks/useDebugEnabled'
 import { useAppStore } from '../data/hooks/stores/AppStore'
+import { useMessageStore } from '../data/hooks/stores/MessageStore'
 import { logUi } from '../debug'
 import { ServiceStatus } from '../models/AppModel/ServiceStatus'
+import { MessageSeverity } from '../models/MessageModel'
+import {
+  consumeCrossTabReloadFlag,
+  flagCrossTabReload,
+} from './MultiTabNotice/multiTabAwareness'
 import { shouldReloadOnRefocus } from './syncTabsUtils'
 
 const markForPageReload = debounce(() => {
@@ -53,6 +59,9 @@ export const SyncTabsAction = (): ReactElement => {
           // DB after this tab was hidden. An absent timestamp (never-written /
           // empty tab) or an empty workspace must not force a reload (CW-652).
           if (shouldReloadOnRefocus(timestamp, localTimestamp, hasData)) {
+            // Leave a breadcrumb so the next load can tell the user why this tab
+            // reloaded (CW-658).
+            flagCrossTabReload()
             window.location.reload()
           }
         })
@@ -97,6 +106,18 @@ export const SyncTabsAction = (): ReactElement => {
           e,
         ),
       )
+  }, [])
+
+  // If this load was triggered by a cross-tab reload, tell the user why (CW-658).
+  useEffect(() => {
+    if (consumeCrossTabReloadFlag()) {
+      useMessageStore.getState().addMessage({
+        message:
+          'This tab was reloaded to reflect changes made in another Cytoscape Web tab.',
+        duration: 6000,
+        severity: MessageSeverity.INFO,
+      })
+    }
   }, [])
 
   return <></>

@@ -18,6 +18,7 @@ import {
 import appConfig from './assets/config.json'
 import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
+import { MultiTabNotice } from './features/MultiTabNotice/MultiTabNotice'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { MessagePanel } from './features/Messages'
@@ -112,6 +113,7 @@ export const App = (): React.ReactElement => {
         </div>
       </ErrorBoundary>
       <CookieConsentWidget />
+      <MultiTabNotice />
     </CssVarsProvider>
   )
 }
