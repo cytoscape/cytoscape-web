@@ -49,4 +49,61 @@ describe('collectVisualStyleWarnings', () => {
 
     expect(collectVisualStyleWarnings(vs)).toEqual([])
   })
+
+  // CW-505
+  it('warns for an unsupported edge line type default value', () => {
+    const vs = getDefaultVisualStyle()
+    vs.edgeLineType.defaultValue = 'EQUAL_DASH' as never
+
+    const warnings = collectVisualStyleWarnings(vs)
+    const lineWarning = warnings.find((w) => w.code === 'unsupported-line-type')
+    expect(lineWarning).toBeDefined()
+    expect(lineWarning?.message).toContain('EQUAL_DASH')
+  })
+
+  it('warns for unsupported line types inside a discrete mapping', () => {
+    const vs = getDefaultVisualStyle()
+    vs.edgeLineType.mapping = {
+      type: MappingFunctionType.Discrete,
+      attribute: 'interaction',
+      vpValueMap: new Map([
+        ['a', 'solid'],
+        ['b', 'zigzag'],
+      ]),
+      visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+      defaultValue: 'solid',
+      attributeType: ValueTypeName.String,
+    } as DiscreteMappingFunction
+
+    const warnings = collectVisualStyleWarnings(vs)
+    const lineWarning = warnings.find((w) => w.code === 'unsupported-line-type')
+    expect(lineWarning).toBeDefined()
+    // Only the unsupported value should appear in the list, not 'solid'.
+    expect(lineWarning?.message).toContain('Unsupported line type(s): zigzag.')
+  })
+
+  it('warns for an unsupported line type in a bypass', () => {
+    const vs = getDefaultVisualStyle()
+    vs.edgeLineType.bypassMap.set('e1', 'sinewave' as never)
+
+    const warnings = collectVisualStyleWarnings(vs)
+    expect(
+      warnings.some(
+        (w) =>
+          w.code === 'unsupported-line-type' && w.message.includes('sinewave'),
+      ),
+    ).toBe(true)
+  })
+
+  it('does not warn for supported line types', () => {
+    const vs = getDefaultVisualStyle()
+    vs.edgeLineType.defaultValue = 'dashed' as never
+    vs.nodeBorderLineType.defaultValue = 'double' as never
+
+    expect(
+      collectVisualStyleWarnings(vs).some(
+        (w) => w.code === 'unsupported-line-type',
+      ),
+    ).toBe(false)
+  })
 })
