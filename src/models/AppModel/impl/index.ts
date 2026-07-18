@@ -129,30 +129,48 @@ export const isNumberList = (vtn: ValueTypeName): boolean => {
   )
 }
 
+/**
+ * Whether a column's datatype satisfies a service-app column type filter.
+ *
+ * The filter may be a concrete CX2 datatype (e.g. 'string', 'list_of_string'),
+ * or one of the convenience aliases 'number' (any numeric), 'wholenumber'
+ * (integer), 'list' (any list), 'list_of_number', 'list_of_wholenumber'. An
+ * empty/absent filter matches every column.
+ */
+export const columnTypeMatchesFilter = (
+  columnType: ValueTypeName,
+  filter: string | undefined | null,
+): boolean => {
+  if (filter === undefined || filter === null || filter === '') {
+    return true
+  }
+  switch (filter) {
+    case 'list': {
+      return isList(columnType)
+    }
+    case 'number': {
+      return isNumber(columnType)
+    }
+    case 'wholenumber': {
+      return columnType === 'integer'
+    }
+    case 'list_of_number': {
+      return isNumberList(columnType)
+    }
+    case 'list_of_wholenumber': {
+      return columnType === 'list_of_integer'
+    }
+    default: {
+      return columnType === filter
+    }
+  }
+}
+
 export const inputColumnFilterFn = (
   column: Column,
   inputColumn: InputColumn,
 ): boolean => {
-  switch (inputColumn.dataType) {
-    case 'list': {
-      return isList(column.type)
-    }
-    case 'number': {
-      return isNumber(column.type)
-    }
-    case 'wholenumber': {
-      return column.type === 'integer'
-    }
-    case 'list_of_number': {
-      return isNumberList(column.type)
-    }
-    case 'list_of_wholenumber': {
-      return column.type === 'list_of_integer'
-    }
-    default: {
-      return column.type === inputColumn.dataType
-    }
-  }
+  return columnTypeMatchesFilter(column.type, inputColumn.dataType)
 }
 
 const regexCache = new Map<string, RegExp>()

@@ -4,8 +4,10 @@ import { ParameterUiType } from '../ParameterUiType'
 import { SelectedDataType } from '../SelectedDataType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
 import { ServiceInputDefinition } from '../ServiceInputDefinition'
+import { ValueTypeName } from '../../TableModel'
 import {
   buildCustomParameters,
+  columnTypeMatchesFilter,
   isAutoFilledParameter,
   ndexNetworkUrl,
   resolveParameterValue,
@@ -27,6 +29,46 @@ const makeParam = (
   }) as ServiceAppParameter
 
 describe('AppModel impl', () => {
+  describe('columnTypeMatchesFilter', () => {
+    it('matches every column when the filter is absent or empty', () => {
+      expect(columnTypeMatchesFilter(ValueTypeName.String, undefined)).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.String, null)).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.Long, '')).toBe(true)
+    })
+
+    it('matches a concrete cx2 datatype exactly', () => {
+      expect(columnTypeMatchesFilter(ValueTypeName.String, 'string')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.Long, 'string')).toBe(false)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.ListString, 'list_of_string'),
+      ).toBe(true)
+    })
+
+    it('matches the number alias for any numeric type', () => {
+      expect(columnTypeMatchesFilter(ValueTypeName.Long, 'number')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.Double, 'number')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.Integer, 'number')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.String, 'number')).toBe(false)
+    })
+
+    it('matches the list alias for any list type', () => {
+      expect(columnTypeMatchesFilter(ValueTypeName.ListString, 'list')).toBe(
+        true,
+      )
+      expect(columnTypeMatchesFilter(ValueTypeName.ListLong, 'list')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.String, 'list')).toBe(false)
+    })
+
+    it('matches wholenumber only for integer columns', () => {
+      expect(columnTypeMatchesFilter(ValueTypeName.Integer, 'wholenumber')).toBe(
+        true,
+      )
+      expect(columnTypeMatchesFilter(ValueTypeName.Long, 'wholenumber')).toBe(
+        false,
+      )
+    })
+  })
+
   describe('ndexNetworkUrl', () => {
     it('builds the v3 network URL', () => {
       expect(ndexNetworkUrl('https://ndexbio.org', 'abc-123')).toBe(

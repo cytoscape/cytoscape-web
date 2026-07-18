@@ -22,6 +22,7 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../../debug'
 import {
+  columnTypeMatchesFilter,
   inputColumnFilterFn,
   isAutoFilledParameter,
   shouldShowServiceDescription,
@@ -317,20 +318,27 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
                 label={parameter.displayName}
                 value={parameter.value || ''}
               >
-                {nodeColumns.map((column, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        column.name,
-                      )
-                    }
-                  >
-                    {column.name}
-                  </MenuItem>
-                ))}
+                {nodeColumns
+                  .filter((column) =>
+                    columnTypeMatchesFilter(
+                      column.type,
+                      parameter.columnTypeFilter,
+                    ),
+                  )
+                  .map((column, i) => (
+                    <MenuItem
+                      key={i}
+                      onClick={() =>
+                        updateServiceParameter(
+                          app.url,
+                          parameter.displayName,
+                          column.name,
+                        )
+                      }
+                    >
+                      {column.name}
+                    </MenuItem>
+                  ))}
               </Select>
             </Box>
           </Tooltip>
@@ -351,20 +359,27 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
                 label={parameter.displayName}
                 value={parameter.value || ''}
               >
-                {edgeColumns.map((column, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        column.name,
-                      )
-                    }
-                  >
-                    {column.name}
-                  </MenuItem>
-                ))}
+                {edgeColumns
+                  .filter((column) =>
+                    columnTypeMatchesFilter(
+                      column.type,
+                      parameter.columnTypeFilter,
+                    ),
+                  )
+                  .map((column, i) => (
+                    <MenuItem
+                      key={i}
+                      onClick={() =>
+                        updateServiceParameter(
+                          app.url,
+                          parameter.displayName,
+                          column.name,
+                        )
+                      }
+                    >
+                      {column.name}
+                    </MenuItem>
+                  ))}
               </Select>
             </Box>
           </Tooltip>
