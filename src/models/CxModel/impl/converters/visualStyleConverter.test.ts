@@ -36,6 +36,19 @@ describe('visualStyleConverter', () => {
       expect(visualStyle.edgeWidth).toBeDefined()
     })
 
+    // CW-651: a network without a visualProperties aspect must still get the
+    // default node-label passthrough mapping (on the "name" attribute) so a
+    // label renders; the mapping must not be dropped or left undefined.
+    it('keeps the default node label passthrough when visualProperties is absent', () => {
+      const cx2 = createMinimalValidCx()
+
+      const visualStyle = createVisualStyleFromCx(cx2)
+
+      expect(visualStyle.nodeLabel.mapping).toBeDefined()
+      expect(visualStyle.nodeLabel.mapping?.type).toBe('passthrough')
+      expect(visualStyle.nodeLabel.mapping?.attribute).toBe('name')
+    })
+
     it('should create a visual style with default node properties', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
