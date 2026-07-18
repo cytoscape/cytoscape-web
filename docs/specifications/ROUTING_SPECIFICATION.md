@@ -188,6 +188,13 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 - `import`: Network import URL
 
+**App install intents**:
+
+- `installApp`: URL of a single-entry app manifest to install (App Store intent)
+- `addserviceapp`: URL(s) of external service-app endpoint(s) to register. May
+  be repeated to add multiple. Because the URL comes from an arbitrary link,
+  the app prompts the user to confirm before adding (CW-521).
+
 **Behavior**:
 
 - Search query params are consumed on initial load

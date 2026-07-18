@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import {
   invalidRootMessage,
+  normalizeServiceAppUrl,
   resolveRootMenu,
 } from '../../models/AppModel/impl'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -30,10 +31,7 @@ export const ServiceListPanel = () => {
   }
 
   const handleAddServiceApp = async () => {
-    let trimmedUrl: string = newUrl.trim()
-    if (trimmedUrl.endsWith('/')) {
-      trimmedUrl = trimmedUrl.slice(0, -1) // Remove the last character if it is '/'
-    }
+    const trimmedUrl: string = normalizeServiceAppUrl(newUrl)
 
     if (trimmedUrl !== '') {
       const serviceApp = serviceApps[trimmedUrl]

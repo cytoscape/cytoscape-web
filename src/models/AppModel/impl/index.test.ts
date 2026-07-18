@@ -10,8 +10,10 @@ import {
   columnTypeMatchesFilter,
   isAutoFilledParameter,
   ndexNetworkUrl,
+  normalizeServiceAppUrl,
   resolveParameterValue,
   sendsNoData,
+  serviceAppUrlsToAdd,
   shouldShowServiceDescription,
   validateParameter,
 } from './index'
@@ -29,6 +31,33 @@ const makeParam = (
   }) as ServiceAppParameter
 
 describe('AppModel impl', () => {
+  describe('normalizeServiceAppUrl', () => {
+    it('trims whitespace and a trailing slash', () => {
+      expect(normalizeServiceAppUrl('  https://x/svc/  ')).toBe('https://x/svc')
+      expect(normalizeServiceAppUrl('https://x/svc')).toBe('https://x/svc')
+    })
+  })
+
+  describe('serviceAppUrlsToAdd', () => {
+    it('returns normalized, new, de-duplicated urls', () => {
+      const existing = { 'https://x/a': {} }
+      const requested = [
+        'https://x/a/', // already installed (after normalization)
+        ' https://x/b ', // new, needs normalization
+        'https://x/b', // duplicate of the above
+        '   ', // empty
+      ]
+      expect(serviceAppUrlsToAdd(requested, existing)).toEqual(['https://x/b'])
+    })
+
+    it('returns an empty array when nothing is new', () => {
+      expect(serviceAppUrlsToAdd([], {})).toEqual([])
+      expect(
+        serviceAppUrlsToAdd(['https://x/a'], { 'https://x/a': {} }),
+      ).toEqual([])
+    })
+  })
+
   describe('columnTypeMatchesFilter', () => {
     it('matches every column when the filter is absent or empty', () => {
       expect(columnTypeMatchesFilter(ValueTypeName.String, undefined)).toBe(true)

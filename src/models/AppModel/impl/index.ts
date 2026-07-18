@@ -17,6 +17,38 @@ export {
 export type { RootMenuResolution } from './menuRouting'
 
 /**
+ * Normalize a service-app endpoint URL for comparison and storage: trims
+ * surrounding whitespace and removes a single trailing slash.
+ */
+export const normalizeServiceAppUrl = (url: string): string => {
+  const trimmed = url.trim()
+  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed
+}
+
+/**
+ * Given a list of requested service-app URLs (e.g. from an addserviceapp query
+ * param) and the currently installed service apps, return the normalized,
+ * de-duplicated URLs that are new and worth installing. Empty and
+ * already-installed URLs are dropped.
+ */
+export const serviceAppUrlsToAdd = (
+  requestedUrls: string[],
+  existing: Record<string, unknown>,
+): string[] => {
+  const seen = new Set<string>()
+  const result: string[] = []
+  requestedUrls.forEach((raw) => {
+    const url = normalizeServiceAppUrl(raw)
+    if (url === '' || existing[url] !== undefined || seen.has(url)) {
+      return
+    }
+    seen.add(url)
+    result.push(url)
+  })
+  return result
+}
+
+/**
  * Build the full NDEx REST URL for a network from the configured NDEx host and
  * the network's external (NDEx) id.
  */
