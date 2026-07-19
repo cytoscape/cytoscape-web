@@ -84,7 +84,7 @@ Add to the `CustomGraphicsType.properties` union.
 | `BackgroundWidth` | `${size}px` | Slot-specific `nodeImageChartSizeX` VP |
 | `BackgroundHeight` | `${size}px` | Same as width (square bounding box) |
 | `BackgroundFit` | `contain` | Hardcoded (preserves aspect ratio) |
-| `BackgroundImageCrossorigin` | `anonymous` | Hardcoded (enables CORS) |
+| `BackgroundImageCrossorigin` | `null` | Hardcoded (see CORS Default below) |
 
 `computeCustomGraphicsProperties` gains `firstValidCustomGraphicVp` and `customGraphicVps` parameters so it can find the slot-specific size VP via `getSizePropertyForCustomGraphic` for the Image branch.
 
@@ -126,11 +126,31 @@ Images use `background-fit: contain` with dimensions from the slot-specific `nod
 
 ### CORS Default
 
-`background-image-crossorigin: anonymous` is set by default to allow cross-origin images from CORS-enabled servers, with no negative effect on same-origin images.
+`background-image-crossorigin: null` is set (a valid Cytoscape.js enum value meaning "do not set the `crossOrigin` attribute"). This maximizes reach — images load even from servers without CORS headers — at the cost of tainting the canvas, so those images are excluded from PNG/JPEG export. Switch to `anonymous` if export fidelity matters more than loading non-CORS images.
 
 ### CX Round-Trip
 
-No special CX export/import handling is needed. `convertPassthroughMappingToCX` exports the attribute reference; on re-import, `createPassthroughMapper` reconstructs the `CustomGraphicsType` from string values at render time.
+For the **passthrough** path, `convertPassthroughMappingToCX` exports the attribute reference; on re-import, `createPassthroughMapper` reconstructs the `CustomGraphicsType` from string values at render time.
+
+Round-tripping to **Cytoscape Desktop**, however, needs several compatibility adaptations — see the next section.
+
+## Cytoscape Desktop Compatibility
+
+Image custom graphics authored in Cytoscape Web must survive export to Cytoscape Desktop (via "Open Network in Cytoscape Desktop" or a downloaded `.cx2`). Empirically verified against Desktop **3.10.3** using `scripts/desktop-roundtrip/`.
+
+| Concern | Desktop behavior | Handling in Cytoscape Web |
+|---------|------------------|---------------------------|
+| **Raster vs. vector class** | Desktop uses two custom-graphics factories: `...bitmap.URLImageCustomGraphics` (tag `"bitmap image"`) for raster and `...image.SVGCustomGraphics` (tag `"vector image"`) for SVG. Labeling SVG as the bitmap class makes Desktop raster-decode it → "?" placeholder. | `CustomGraphicsNameType.SVGImage`; the mapper and `vpToCX` pick the class from URL content via `isSvgImageUrl()`. `isImageCustomGraphicsName()` gates all image branches so imported Desktop SVG renders too. |
+| **Image bytes are not carried by CX2** | Desktop loads custom-graphic image bytes from its session/app-data `CustomGraphicsManager` pool, **not** from the CX2. On import into a fresh session it keeps only the reference (`class, id, name, tag`); the `properties.url` is reduced to a filename and **never fetched — for any scheme (http, https, data, file)**. Empirically confirmed by rendering imported views: hosted URLs, data URIs, and existing local files all show "?". Desktop's framework log shows no fetch attempt. (This is why STRING images require the stringApp installed — that app pools the images via Java, not via CX2.) | Image custom graphics render in Cytoscape Web but **cannot** be made to display in Desktop through CX2 export alone. `hasDataUriCustomGraphics()` + the `useOpenInCytoscapeDesktop` warning flag the (worst) data-URI case; a broader "image custom graphics may not display in Desktop" warning is the honest UX. True parity would require CW to populate Desktop's pool via CyREST commands, or a Desktop-side reader change. |
+| **Custom-graphic sizes** | `NODE_CUSTOMGRAPHICS_SIZE_*` is cast to `Double`; a JSON integer (`50`) throws `ClassCastException`. | `vpToCX` exports the size as a formatted string (`"50.0"`), which Desktop parses as a Double. `VPNumberConverter`/`VPCustomGraphicsSizeConverter` `parseFloat` it back on import. |
+| **Missing `tag`/`id`** | An image custom graphic missing `tag` or `id` throws `NullPointerException` during view creation. | `vpToCX` injects `tag` (per class) and a deterministic URL-hash `id`. |
+
+**Known limitations / follow-ups:**
+
+- **`NODE_CUSTOMGRAPHICS_POSITION_*` is not applied when rendering images** — only size is used (`computeImageProperties`). Desktop honors position. Mapping the Desktop anchor/margin model onto Cytoscape.js `background-position-*` / `background-offset-*` is a pending feature.
+- Only the **first valid custom-graphics slot** is honored (single-slot). No multi-slot layering.
+- Image custom graphics support **passthrough, default, and bypass**, but not discrete mappings.
+- The passthrough mapping definition drops the `type` field on round-trip when the attribute type is not captured; verified non-breaking on Desktop 3.10.3 import, but non-conformant with Desktop's own output.
 
 ### No Table Browser UI Changes
 
@@ -140,12 +160,16 @@ Standard string columns hold image URLs. No special input widget or preview is n
 
 | File | Change |
 |------|--------|
-| `src/models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts` | Uncomment `ImagePropertiesType`, add to union |
-| `src/models/VisualStyleModel/impl/mapperFactory.ts` | URL→CustomGraphicsType wrapping in passthrough mapper |
-| `src/models/VisualStyleModel/impl/customGraphicsImpl.ts` | VP selection update, `computeImageProperties`, dispatch update, property keys |
+| `src/models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType.ts` | Uncomment `ImagePropertiesType`, add to union; add `SVGImage` class + `isImageCustomGraphicsName()` / `isSvgImageUrl()` |
+| `src/models/VisualStyleModel/impl/mapperFactory.ts` | URL→CustomGraphicsType wrapping in passthrough mapper; SVG-vs-raster class selection |
+| `src/models/VisualStyleModel/impl/customGraphicsImpl.ts` | VP selection update, `computeImageProperties`, dispatch update, property keys; image branches gated on `isImageCustomGraphicsName()` |
+| `src/models/VisualStyleModel/impl/cxVisualPropertyConverter.ts` | Desktop-compat in `vpToCX`: SVG-vs-raster class + tag, size stringification, `tag`/`id` injection |
 | `src/models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/directMappingSelector.ts` | Image `SpecialPropertyName` constants |
 | `src/models/VisualStyleModel/impl/computeViewUtil.ts` | Pass custom graphic VPs to `computeCustomGraphicsProperties` |
+| `src/models/CxModel/impl/customGraphicsCompat.ts` | `hasDataUriCustomGraphics()` — detect Desktop-incompatible inline images |
+| `src/data/hooks/useOpenInCytoscapeDesktop.ts` | Warn on data-URI custom graphics before sending to Desktop |
 | `src/features/NetworkPanel/CyjsRenderer/cyjsRenderUtil.ts` | Implement `addCyjsImageProperties()` |
+| `scripts/desktop-roundtrip/` | Standalone CyREST round-trip harness for Desktop verification |
 
 ## Verification Plan
 
