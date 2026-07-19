@@ -1050,6 +1050,31 @@ describe('elementApi', () => {
       )
     })
 
+    it('does not write source/target into the edge row (derived from topology)', () => {
+      mockNetworks.set(
+        'net1',
+        makeNetwork(
+          'net1',
+          [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map([['e1', {}]]), columns: [] },
+      }
+      mockNetworkActions.moveEdge.mockReturnValue({
+        oldSourceId: 'n1',
+        oldTargetId: 'n2',
+      })
+
+      elementApi.moveEdge('net1', 'e1', 'n1', 'n3')
+
+      // No row write — source/target come from the network model, and an
+      // unreverted row write would go stale after undo
+      expect(mockTableActions.editRows).not.toHaveBeenCalled()
+    })
+
     it('records undo with correct params', () => {
       mockNetworks.set(
         'net1',

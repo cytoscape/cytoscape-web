@@ -19,7 +19,6 @@ import {
 } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { getInternalNetworkDataStore } from '../../models/NetworkModel/impl/networkImpl'
-import { TableType } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { ValueType } from '../../models/TableModel'
 import { AttributeName } from '../../models/TableModel/AttributeName'
@@ -875,23 +874,11 @@ export const elementApi: ElementApi = {
         .getState()
         .moveEdge(networkId, edgeId, newSourceId, newTargetId)
 
-      // Update source/target columns in edge table if they exist
-      const tables = useTableStore.getState().tables[networkId]
-      if (tables !== undefined) {
-        const edgeTable = tables.edgeTable
-        const row = edgeTable?.rows?.get(edgeId)
-        if (row !== undefined) {
-          const updatedRow = new Map<IdType, Record<AttributeName, ValueType>>()
-          updatedRow.set(edgeId, {
-            ...row,
-            source: newSourceId,
-            target: newTargetId,
-          })
-          useTableStore
-            .getState()
-            .editRows(networkId, TableType.EDGE, updatedRow)
-        }
-      }
+      // source/target are derived from the network model everywhere they
+      // are read (getTable/getColumns/getValue/exporter), so they must NOT
+      // be written into the edge row here: that write is never read back
+      // and the MOVE_EDGES undo handler does not revert it, which would
+      // leave the row holding stale endpoints after an undo.
 
       corePostEdit(
         networkId,
