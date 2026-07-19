@@ -1292,15 +1292,32 @@ describe('elementApi', () => {
     })
 
     describe('getEdges', () => {
-      it('returns all edges with source and target IDs in one call', () => {
+      it('returns all edges with source, target, and attributes in one call', () => {
+        mockTables['net1'] = {
+          nodeTable: { rows: new Map(), columns: [] },
+          edgeTable: {
+            rows: new Map([['e1', { interaction: 'pp' }]]),
+            columns: [],
+          },
+        }
         const result = elementApi.getEdges('net1')
         expect(result.success).toBe(true)
         if (result.success) {
+          expect(result.data.missing).toEqual([])
           expect(result.data.edges).toEqual([
-            { id: 'e1', sourceId: 'A', targetId: 'B' },
-            { id: 'e2', sourceId: 'B', targetId: 'C' },
-            { id: 'e3', sourceId: 'A', targetId: 'D' },
+            { id: 'e1', sourceId: 'A', targetId: 'B', attributes: { interaction: 'pp' } },
+            { id: 'e2', sourceId: 'B', targetId: 'C', attributes: {} },
+            { id: 'e3', sourceId: 'A', targetId: 'D', attributes: {} },
           ])
+        }
+      })
+
+      it('returns only requested edges and reports missing ones', () => {
+        const result = elementApi.getEdges('net1', ['e2', 'ghost'])
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges.map((e) => e.id)).toEqual(['e2'])
+          expect(result.data.missing).toEqual(['ghost'])
         }
       })
 

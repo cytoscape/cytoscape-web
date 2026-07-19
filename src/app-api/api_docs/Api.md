@@ -324,12 +324,13 @@ Returns all node IDs in the network.
 
 Returns all edge IDs in the network.
 
-#### `getEdges(networkId): ApiResult<{ edges: Array<{ id, sourceId, targetId }> }>`
+#### `getEdges(networkId, edgeIds?): ApiResult<{ edges: Array<{ id, sourceId, targetId, attributes }>; missing: IdType[] }>`
 
-Returns all edges with their source and target node IDs in a single call.
-Use this instead of `getEdgeIds` + per-edge `getEdge()` when building the
-network topology — it avoids one API round-trip per edge, which matters on
-networks with thousands of edges.
+Batch-reads edges with source/target and attributes in a single call. When
+`edgeIds` is omitted, every edge is returned; requested ids that don't exist
+are reported in `missing` (symmetric with `getNodes`). Use this instead of
+`getEdgeIds` + per-edge `getEdge()` when building topology — it avoids one API
+round-trip per edge, which matters on networks with thousands of edges.
 
 #### `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: Array<{ id, sourceId, targetId, attributes }> }>`
 

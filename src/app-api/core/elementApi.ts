@@ -186,12 +186,17 @@ export interface ElementApi {
   getEdgeIds(networkId: IdType): ApiResult<{ edgeIds: IdType[] }>
 
   /**
-   * Return all edges with their source and target node IDs in a single
-   * call, so apps can build the network topology without one getEdge()
-   * round-trip per edge.
+   * Batch-read edges with source/target and attributes in a single call,
+   * so apps can build topology without one getEdge() round-trip per edge.
+   * When `edgeIds` is omitted, every edge is returned; unknown ids are
+   * reported in `missing` (symmetric with getNodes).
    */
-  getEdges(networkId: IdType): ApiResult<{
-    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  getEdges(
+    networkId: IdType,
+    edgeIds?: IdType[],
+  ): ApiResult<{
+    edges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }>
 
   /**
@@ -1213,21 +1218,45 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getEdges(networkId): ApiResult<{
-    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  getEdges(
+    networkId,
+    edgeIds,
+  ): ApiResult<{
+    edges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      return ok({
-        edges: network.edges.map((e) => ({
-          id: e.id,
-          sourceId: e.s,
-          targetId: e.t,
-        })),
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const readEdge = (e: {
+        id: IdType
+        s: IdType
+        t: IdType
+      }): { id: IdType } & EdgeData => ({
+        id: e.id,
+        sourceId: e.s,
+        targetId: e.t,
+        attributes: (tableRecord?.edgeTable?.rows?.get(e.id) ?? {}) as Record<
+          AttributeName,
+          ValueType
+        >,
       })
+
+      if (edgeIds === undefined) {
+        return ok({ edges: network.edges.map(readEdge), missing: [] })
+      }
+      const byId = new Map(network.edges.map((e) => [e.id, e]))
+      const edges: Array<{ id: IdType } & EdgeData> = []
+      const missing: IdType[] = []
+      for (const id of edgeIds) {
+        const edge = byId.get(id)
+        if (edge !== undefined) edges.push(readEdge(edge))
+        else missing.push(id)
+      }
+      return ok({ edges, missing })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
