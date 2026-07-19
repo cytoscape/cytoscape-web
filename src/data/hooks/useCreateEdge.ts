@@ -229,6 +229,7 @@ export const useCreateEdge = () => {
           [networkId, [newEdgeId]],
           // Redo: recreate the edge
           [networkId, [newEdgeId], sourceNodeId, targetNodeId, attributes],
+          networkId,
         )
       }
 

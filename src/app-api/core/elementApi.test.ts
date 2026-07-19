@@ -517,6 +517,24 @@ describe('elementApi', () => {
       expect(mockUndoActions.setUndoStack).toHaveBeenCalled()
     })
 
+    it('records undo on the stack of the mutated network, not the current one', () => {
+      // WorkspaceStore mock reports currentNetworkId 'net1'; mutate 'net2'.
+      // Regression: the undo entry must land on net2's stack, otherwise a
+      // later undo on net1 would replay net2's inverse operation.
+      mockNetworks.set('net2', makeNetwork('net2', [], []))
+      mockTables['net2'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNode('net2', [0, 0])
+      expect(mockUndoActions.setUndoStack).toHaveBeenCalledWith(
+        'net2',
+        expect.any(Array),
+      )
+      expect(mockUndoActions.setRedoStack).toHaveBeenCalledWith('net2', [])
+    })
+
     it('never passes skipUndo: true to internal stores', () => {
       // createNodesCore is called without any skipUndo parameter
       mockNetworks.set('net1', makeNetwork('net1', [], []))

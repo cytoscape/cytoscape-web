@@ -5,11 +5,8 @@
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
-import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import {
   createEdgesCore,
   type CreateEdgesParams,
@@ -35,6 +32,7 @@ import {
   fail,
   ok,
 } from '../types/ApiResult'
+import { corePostEdit } from './undo'
 import { validateNoIdAttribute } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -176,38 +174,6 @@ export interface ElementApi {
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
-
-const DEFAULT_UNDO_STACK_SIZE = 20
-
-/**
- * Framework-agnostic postEdit — replicates useUndoStack's postEdit
- * using store .getState() calls instead of React context.
- */
-function corePostEdit(
-  undoCommand: UndoCommandType,
-  description: string,
-  undoParams: any[],
-  redoParams: any[],
-): void {
-  const uiState = useUiStateStore.getState()
-  const workspaceState = useWorkspaceStore.getState()
-  const activeNetworkViewId = uiState.ui.activeNetworkView
-  const currentNetworkId = workspaceState.workspace.currentNetworkId
-  const targetNetworkId =
-    activeNetworkViewId === '' ? currentNetworkId : activeNetworkViewId
-
-  const undoState = useUndoStore.getState()
-  const stack = undoState.undoRedoStacks[targetNetworkId] ?? {
-    undoStack: [],
-    redoStack: [],
-  }
-  const newEdit = { undoCommand, description, undoParams, redoParams }
-  const nextUndoStack = [...stack.undoStack, newEdit].slice(
-    -DEFAULT_UNDO_STACK_SIZE,
-  )
-  undoState.setUndoStack(targetNetworkId, nextUndoStack)
-  undoState.setRedoStack(targetNetworkId, [])
-}
 
 /**
  * Build NodeOperationStoreActions from current store state.
@@ -385,6 +351,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.CREATE_NODES,
         `Create Node ${newNodeId}`,
         [networkId, [newNodeId]],
@@ -477,6 +444,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.CREATE_EDGES,
         `Create Edge ${newEdgeId}`,
         [networkId, [newEdgeId]],
@@ -541,6 +509,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.MOVE_EDGES,
         `Move edge ${edgeId}`,
         [networkId, edgeId, oldSourceId, oldTargetId],
@@ -647,6 +616,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.DELETE_NODES,
         `Delete ${existingNodeIds.length} Node${existingNodeIds.length === 1 ? '' : 's'}`,
         [
@@ -780,6 +750,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.DELETE_EDGES,
         `Delete ${result.deletedEdgeIds.length} Edge${result.deletedEdgeIds.length === 1 ? '' : 's'}`,
         [

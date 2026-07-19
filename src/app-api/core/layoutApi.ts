@@ -2,19 +2,18 @@
 // Framework-agnostic Layout API core — zero React imports.
 // All store access via .getState(); no React hook subscriptions.
 
+import { logApi } from '../../debug'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
-import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
-import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
+import { corePostEdit } from './undo'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -42,34 +41,6 @@ export interface LayoutApi {
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
-
-const DEFAULT_UNDO_STACK_SIZE = 20
-
-function corePostEdit(
-  undoCommand: UndoCommandType,
-  description: string,
-  undoParams: any[],
-  redoParams: any[],
-): void {
-  const uiState = useUiStateStore.getState()
-  const workspaceState = useWorkspaceStore.getState()
-  const activeNetworkViewId = uiState.ui.activeNetworkView
-  const currentNetworkId = workspaceState.workspace.currentNetworkId
-  const targetNetworkId =
-    activeNetworkViewId === '' ? currentNetworkId : activeNetworkViewId
-
-  const undoState = useUndoStore.getState()
-  const stack = undoState.undoRedoStacks[targetNetworkId] ?? {
-    undoStack: [],
-    redoStack: [],
-  }
-  const newEdit = { undoCommand, description, undoParams, redoParams }
-  const nextUndoStack = [...stack.undoStack, newEdit].slice(
-    -DEFAULT_UNDO_STACK_SIZE,
-  )
-  undoState.setUndoStack(targetNetworkId, nextUndoStack)
-  undoState.setRedoStack(targetNetworkId, [])
-}
 
 function findEngineAndAlgorithm(
   algorithmName?: string,
@@ -143,61 +114,74 @@ export const layoutApi: LayoutApi = {
 
       // 7. Apply layout — callback-based; wrap in Promise
       return new Promise<ApiResult>((resolve) => {
-        engine.apply(
-          network.nodes,
-          network.edges,
-          (positionMap: Map<IdType, [number, number]>) => {
-            try {
-              // 8a. Update node positions
-              useViewModelStore
-                .getState()
-                .updateNodePositions(networkId, positionMap)
-
-              // 8b. Record undo
-              corePostEdit(
-                UndoCommandType.APPLY_LAYOUT,
-                `Apply layout: ${resolvedAlgorithmName}`,
-                [networkId, prevPositions],
-                [networkId, positionMap],
-              )
-
-              // 8c. Fit if requested
-              if (fitAfterLayout) {
-                const fn = useRendererFunctionStore
+        try {
+          engine.apply(
+            network.nodes,
+            network.edges,
+            (positionMap: Map<IdType, [number, number]>) => {
+              try {
+                // 8a. Update node positions
+                useViewModelStore
                   .getState()
-                  .getFunction('cyjs', 'fit', networkId)
-                if (fn !== undefined) {
-                  fn()
-                } else {
-                  console.warn(
-                    `[layoutApi] Fit function not registered for network ${networkId}; layout succeeded without fit`,
-                  )
+                  .updateNodePositions(networkId, positionMap)
+
+                // 8b. Record undo
+                corePostEdit(
+                  networkId,
+                  UndoCommandType.APPLY_LAYOUT,
+                  `Apply layout: ${resolvedAlgorithmName}`,
+                  [networkId, prevPositions],
+                  [networkId, positionMap],
+                )
+
+                // 8c. Fit if requested
+                if (fitAfterLayout) {
+                  const fn = useRendererFunctionStore
+                    .getState()
+                    .getFunction('cyjs', 'fit', networkId)
+                  if (fn !== undefined) {
+                    fn()
+                  } else {
+                    logApi.warn(
+                      `Fit function not registered for network ${networkId}; layout succeeded without fit`,
+                    )
+                  }
                 }
+
+                // 8d. setIsRunning(false)
+                useLayoutStore.getState().setIsRunning(false)
+
+                // 8e. Dispatch layout:completed
+                dispatchCyWebEvent('layout:completed', {
+                  networkId,
+                  algorithm: resolvedAlgorithmName,
+                })
+
+                // 8f. Resolve
+                resolve(ok())
+              } catch (callbackError) {
+                useLayoutStore.getState().setIsRunning(false)
+                resolve(
+                  fail(
+                    AppCodes.OPERATION_FAILED,
+                    `Layout callback error: ${String(callbackError)}`,
+                  ),
+                )
               }
-
-              // 8d. setIsRunning(false)
-              useLayoutStore.getState().setIsRunning(false)
-
-              // 8e. Dispatch layout:completed
-              dispatchCyWebEvent('layout:completed', {
-                networkId,
-                algorithm: resolvedAlgorithmName,
-              })
-
-              // 8f. Resolve
-              resolve(ok())
-            } catch (callbackError) {
-              useLayoutStore.getState().setIsRunning(false)
-              resolve(
-                fail(
-                  AppCodes.OPERATION_FAILED,
-                  `Layout callback error: ${String(callbackError)}`,
-                ),
-              )
-            }
-          },
-          algorithm,
-        )
+            },
+            algorithm,
+          )
+        } catch (engineError) {
+          // engine.apply threw synchronously — the promise executor's throw
+          // would otherwise reject and cross the API boundary as an exception
+          useLayoutStore.getState().setIsRunning(false)
+          resolve(
+            fail(
+              AppCodes.OPERATION_FAILED,
+              `Layout engine error: ${String(engineError)}`,
+            ),
+          )
+        }
       })
     } catch (e) {
       useLayoutStore.getState().setIsRunning(false)

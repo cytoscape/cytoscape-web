@@ -107,6 +107,7 @@ export const useUndoStack = () => {
       description: string,
       undoParams: any[],
       redoParams: any[],
+      networkId?: IdType,
     ) => {
       // Get the LATEST targetNetworkId at the moment of execution
       // This is necessary to avoid "stale closure" issues
@@ -115,10 +116,14 @@ export const useUndoStack = () => {
       const latestActiveNetworkViewId = latestUiState.ui.activeNetworkView
       const latestCurrentNetworkId =
         latestWorkspaceState.workspace.currentNetworkId
+      // Undo stacks are per-network. Callers that know which network they
+      // mutated pass it explicitly; otherwise fall back to the focused
+      // network (correct for UI call sites, which only edit that network).
       const currentTargetNetworkId =
-        latestActiveNetworkViewId === ''
+        networkId ??
+        (latestActiveNetworkViewId === ''
           ? latestCurrentNetworkId
-          : latestActiveNetworkViewId
+          : latestActiveNetworkViewId)
 
       // Get the latest undo stack for the current network
       const currentState = useUndoStore.getState()
