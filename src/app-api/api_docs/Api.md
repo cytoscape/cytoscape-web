@@ -559,10 +559,11 @@ function. This is async because it delegates to the renderer.
 | `APP1`     | `networkId` does not exist                          |
 | `APP5`     | Fit function not yet registered for this view       |
 
-#### `getNodePositions(networkId, nodeIds): ApiResult<{ positions: PositionRecord }>`
+#### `getNodePositions(networkId, nodeIds?): ApiResult<{ positions: PositionRecord; missing: IdType[] }>`
 
-Returns current `[x, y, z?]` positions for the specified nodes. Nodes without
-a view model entry are silently omitted from the result.
+Returns current `[x, y, z?]` positions. When `nodeIds` is omitted, every node's
+position is returned. Requested ids with no view model entry are reported in
+`missing` rather than silently dropped (symmetric with `elementApi.getNodes`).
 
 | Error Code | Condition                  |
 | ---------- | --------------------------- |
@@ -1031,7 +1032,7 @@ escape.
 | `APP4`     | No engine registered for `algorithmName`             |
 | `APP3`     | The layout engine or its callback threw            |
 
-#### `getAvailableLayouts(): ApiResult<LayoutAlgorithmInfo[]>`
+#### `getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>`
 
 Returns all registered layout algorithms across all engines. Never fails.
 
@@ -1109,7 +1110,7 @@ Returns top-level metadata. Always succeeds.
 Returns the ordered list of network IDs (tab order). Always succeeds (empty array
 when no networks are open).
 
-#### `getNetworkList(): ApiResult<WorkspaceNetworkInfo[]>`
+#### `getNetworks(): ApiResult<{ networks: WorkspaceNetworkInfo[] }>`
 
 Returns summary metadata for all networks. Networks whose summary is not found in
 NetworkSummaryStore are **silently omitted**.
@@ -1546,8 +1547,8 @@ function NetworkList() {
   const [networks, setNetworks] = useState<WorkspaceNetworkInfo[]>([])
 
   const refresh = useCallback(() => {
-    const result = workspaceApi.getNetworkList()
-    if (result.success) setNetworks(result.data)
+    const result = workspaceApi.getNetworks()
+    if (result.success) setNetworks(result.data.networks)
   }, [workspaceApi])
 
   useEffect(refresh, [refresh])

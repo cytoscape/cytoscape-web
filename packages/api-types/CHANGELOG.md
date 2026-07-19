@@ -42,8 +42,18 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   default `addToWorkspace` to `true` (matching `createNetworkFromCx2`).
 - `ResourceApi.getSupportedSlots` / `getRegisteredResources` /
   `getResourceVisibility` now return `ApiResult` instead of raw values.
+- `WorkspaceApi.getNetworkList` is renamed `getNetworks` and returns
+  `{ networks }`; `LayoutApi.getAvailableLayouts` returns `{ layouts }` —
+  collection getters now uniformly wrap their result in a named object.
+- `ViewportApi.getNodePositions` takes an optional `nodeIds` (all nodes when
+  omitted) and returns `{ positions, missing }`.
 
 ### Fixed
+
+- Context menu removal is now scoped to the owning app — one app can no
+  longer remove another app's item by guessing its id.
+- `useCyWebEvent` no longer re-registers its window listener when a fresh
+  inline handler is passed each render (handler held in a ref).
 
 - Create-time `options.bypass` on `createNode` / `createEdge` is now
   validated (property existence, node/edge scope, value type) before the
