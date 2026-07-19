@@ -235,6 +235,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
         visualStyleOptions,
         otherAspects,
@@ -243,7 +244,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       setVisualStyleOptions(networkId, visualStyleOptions)
       addNewNetwork(network)
-      addVisualStyle(networkId, visualStyle)
+      addVisualStyle(networkId, visualStyle, visualStyleSet)
       addTable(networkId, nodeTable, edgeTable)
       addViewModel(networkId, networkViews[0])
       if (otherAspects !== undefined) {

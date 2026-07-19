@@ -69,10 +69,24 @@ The database uses version-based migrations. The current version is defined in `c
 
 ### Visual Style Operations
 
-- `putVisualStyleToDb(id, visualStyle)`: Persist visual style
-- `getVisualStyleFromDb(id)`: Retrieve visual style
-- `deleteVisualStyleFromDb(id)`: Delete visual style
+Since DB v10 a `cyVisualStyles` row holds a network's complete named-style
+set (`{ id, activeStyleId, styles }`). Legacy single-style rows
+(`{ id, visualStyle }`) are normalized on read. See
+`docs/specifications/MULTIPLE_VISUAL_STYLES.md`.
+
+- `putVisualStyleSetToDb(id, styleSet)`: Persist a network's complete style set
+- `getVisualStyleSetFromDb(id)`: Retrieve the style set (wraps legacy rows)
+- `putVisualStyleToDb(id, visualStyle)`: Update the ACTIVE style only (preserves inactive styles)
+- `getVisualStyleFromDb(id)`: Retrieve the ACTIVE style only
+- `deleteVisualStyleFromDb(id)`: Delete a network's style row
 - `clearVisualStyleFromDb()`: Clear all visual styles
+
+### Style Library Operations (from v10)
+
+- `putStyleTemplateToDb(template)`: Add or update a workspace-level style template
+- `getAllStyleTemplatesFromDb()`: List all templates
+- `deleteStyleTemplateFromDb(id)`: Delete a template
+- `clearStyleLibraryFromDb()`: Clear the library
 
 ### Network View Operations
 

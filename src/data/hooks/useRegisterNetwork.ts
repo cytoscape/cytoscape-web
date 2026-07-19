@@ -64,6 +64,7 @@ export const useRegisterNetwork = () => {
       nodeTable,
       edgeTable,
       visualStyle,
+      visualStyleSet,
       networkViews,
       visualStyleOptions,
       otherAspects,
@@ -72,7 +73,7 @@ export const useRegisterNetwork = () => {
 
     setVisualStyleOptions(networkId, visualStyleOptions)
     addNewNetwork(network)
-    addVisualStyle(networkId, visualStyle)
+    addVisualStyle(networkId, visualStyle, visualStyleSet)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
     addSummary(networkId, summary)

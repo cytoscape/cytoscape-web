@@ -31,7 +31,9 @@ import TableFn, {
   ValueTypeName,
 } from '../../models/TableModel'
 import { createViewModel } from '../../models/ViewModel/impl/viewModelImpl'
-import VisualStyleFn, { VisualPropertyName } from '../../models/VisualStyleModel'
+import VisualStyleFn, {
+  VisualPropertyName,
+} from '../../models/VisualStyleModel'
 import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -78,7 +80,9 @@ export interface NetworkApi {
 function buildNodeIdMap(
   edgeList: Array<[IdType, IdType, string?]>,
 ): Map<IdType, IdType> {
-  const nodeSet = new Set<IdType>(edgeList.flatMap((edge) => [edge[0], edge[1]]))
+  const nodeSet = new Set<IdType>(
+    edgeList.flatMap((edge) => [edge[0], edge[1]]),
+  )
   const nodeIdMap = new Map<IdType, IdType>()
   let nodeCount = 0
   nodeSet.forEach((id) => {
@@ -161,7 +165,11 @@ export const networkApi: NetworkApi = {
         return fail(ApiErrorCode.InvalidInput, 'edgeList must be non-empty')
       }
 
-      const cyNetwork = assembleCyNetworkFromEdgeList(name, description, edgeList)
+      const cyNetwork = assembleCyNetworkFromEdgeList(
+        name,
+        description,
+        edgeList,
+      )
       const { network, nodeTable, edgeTable, visualStyle, networkViews } =
         cyNetwork
       const networkId = network.id
@@ -182,12 +190,14 @@ export const networkApi: NetworkApi = {
       useNetworkSummaryStore.getState().add(networkId, summary)
 
       // Create passthrough mapping for node labels (mirrors useCreateNetwork)
-      useVisualStyleStore.getState().createPassthroughMapping(
-        networkId,
-        VisualPropertyName.NodeLabel,
-        'name',
-        ValueTypeName.String,
-      )
+      useVisualStyleStore
+        .getState()
+        .createPassthroughMapping(
+          networkId,
+          VisualPropertyName.NodeLabel,
+          'name',
+          ValueTypeName.String,
+        )
 
       if (addToWorkspace) {
         useWorkspaceStore.getState().addNetworkIds(networkId)
@@ -217,6 +227,7 @@ export const networkApi: NetworkApi = {
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
       } = cyNetwork
 
@@ -246,7 +257,9 @@ export const networkApi: NetworkApi = {
 
       // Add to 5 core stores
       useNetworkStore.getState().add(network)
-      useVisualStyleStore.getState().add(network.id, visualStyle)
+      useVisualStyleStore
+        .getState()
+        .add(network.id, visualStyle, visualStyleSet)
       useTableStore.getState().add(network.id, nodeTable, edgeTable)
       useViewModelStore.getState().add(network.id, networkViews[0])
       useNetworkSummaryStore.getState().add(network.id, summary)

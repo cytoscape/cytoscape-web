@@ -240,14 +240,14 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 ### Important Files & Configuration
 
-| File                      | Purpose                                                                                                                                                                                             |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File                      | Purpose                                                                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics |
-| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                                          |
-| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                           |
-| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                         |
-| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                                 |
-| `src/init.tsx`            | App initialization (calls `enableMapSet()`, sets up logging)                                                                                                                                        |
+| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                              |
+| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                               |
+| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                             |
+| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                     |
+| `src/init.tsx`            | App initialization (calls `enableMapSet()`, sets up logging)                                                                                                                            |
 
 **Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
 
@@ -269,6 +269,7 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 Read these before working in related areas:
 
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
+- `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, style library
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules

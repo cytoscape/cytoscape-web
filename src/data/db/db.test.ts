@@ -10,7 +10,7 @@ import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
 import { SelectionType } from '../../models/FilterModel/SelectionType'
 import { IdType } from '../../models/IdType'
-import type { Edge,Network, Node } from '../../models/NetworkModel'
+import type { Edge, Network, Node } from '../../models/NetworkModel'
 import { GraphObjectType } from '../../models/NetworkModel/GraphObjectType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import type { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
@@ -21,7 +21,10 @@ import type { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { NetworkView } from '../../models/ViewModel'
-import type { VisualStyle } from '../../models/VisualStyleModel'
+import type {
+  VisualStyle,
+  VisualStyleSet,
+} from '../../models/VisualStyleModel'
 import type { DiscreteMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
@@ -37,6 +40,7 @@ import {
   clearNetworksFromDb,
   clearNetworkSummaryFromDb,
   clearNetworkViewsFromDb,
+  clearStyleLibraryFromDb,
   clearOpaqueAspectsFromDb,
   clearTablesFromDb,
   clearUndoRedoStackFromDb,
@@ -50,12 +54,14 @@ import {
   deleteNetworkViewsFromDb,
   deleteOpaqueAspectsFromDb,
   deleteServiceAppFromDb,
+  deleteStyleTemplateFromDb,
   deleteTablesFromDb,
   deleteUiStateFromDb,
   deleteUndoRedoStackFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
+  getAllStyleTemplatesFromDb,
   getAppFromDb,
   getCyNetworkFromDb,
   getDatabaseVersion,
@@ -71,6 +77,7 @@ import {
   getUiStateFromDb,
   getUndoRedoStackFromDb,
   getVisualStyleFromDb,
+  getVisualStyleSetFromDb,
   getWorkspaceFromDb,
   initializeDb,
   putAppToDb,
@@ -81,15 +88,21 @@ import {
   putNetworkViewToDb,
   putOpaqueAspectsToDb,
   putServiceAppToDb,
+  putStyleTemplateToDb,
   putTablesToDb,
   putTimestampToDb,
   putUiStateToDb,
   putUndoRedoStackToDb,
+  putVisualStyleSetToDb,
   putVisualStyleToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
 } from './index'
-import { deserializeNetworkView, serializeNetworkView } from './serialization/mapSerialization'
+import {
+  deserializeNetworkView,
+  serializeNetworkView,
+  serializeVisualStyle,
+} from './serialization/mapSerialization'
 
 const ensureDebugNamespace = () => {
   ;(window as any).debug = {}
@@ -849,5 +862,148 @@ describe('CyDB helper coverage', () => {
     await putUndoRedoStackToDb('undo-network', undoRedoStack)
     await clearUndoRedoStackFromDb()
     expect(await getUndoRedoStackFromDb('undo-network')).toBeUndefined()
+  })
+})
+
+describe('Visual style sets (multiple styles per network)', () => {
+  afterEach(async () => {
+    await closeDb()
+  })
+
+  const createTwoStyleSet = (): VisualStyleSet => {
+    const styleA = createVisualStyleModel()
+    const styleB = createVisualStyleModel()
+    return {
+      activeStyleId: 'style-a',
+      styles: {
+        'style-a': { id: 'style-a', name: 'Main', visualStyle: styleA },
+        'style-b': { id: 'style-b', name: 'Publication', visualStyle: styleB },
+      },
+    }
+  }
+
+  it('round-trips a complete style set with Maps restored', async () => {
+    await setupFreshDb()
+    const styleSet = createTwoStyleSet()
+    await putVisualStyleSetToDb('multi-style-network', styleSet)
+
+    const stored = await getVisualStyleSetFromDb('multi-style-network')
+    expect(stored).toBeDefined()
+    expect(stored?.activeStyleId).toBe('style-a')
+    expect(Object.keys(stored?.styles ?? {}).sort()).toEqual([
+      'style-a',
+      'style-b',
+    ])
+    expect(stored?.styles['style-b'].name).toBe('Publication')
+    expect(
+      stored?.styles['style-b'].visualStyle[
+        NetworkVisualPropertyName.NetworkBackgroundColor
+      ].bypassMap,
+    ).toBeInstanceOf(Map)
+  })
+
+  it('normalizes legacy single-style rows on read', async () => {
+    await setupFreshDb()
+    const visualStyle = createVisualStyleModel()
+
+    // Write a pre-v10 row shape directly
+    const db = await getDb()
+    await db.cyVisualStyles.put({
+      id: 'legacy-network',
+      visualStyle: serializeVisualStyle(visualStyle),
+    })
+
+    const styleSet = await getVisualStyleSetFromDb('legacy-network')
+    expect(styleSet).toBeDefined()
+    const entries = Object.values(styleSet?.styles ?? {})
+    expect(entries).toHaveLength(1)
+    expect(entries[0].name).toBe('Default')
+    expect(styleSet?.activeStyleId).toBe(entries[0].id)
+
+    // The active-style compatibility reader works on legacy rows too
+    const active = await getVisualStyleFromDb('legacy-network')
+    expect(
+      active?.[NetworkVisualPropertyName.NetworkBackgroundColor].bypassMap,
+    ).toBeInstanceOf(Map)
+  })
+
+  it('returns undefined for corrupted rows instead of throwing', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    // Row with styles but no activeStyleId and no legacy visualStyle
+    await db.cyVisualStyles.put({ id: 'corrupt-1', styles: {} })
+    expect(await getVisualStyleSetFromDb('corrupt-1')).toBeUndefined()
+
+    // Row with neither shape's required fields
+    await db.cyVisualStyles.put({ id: 'corrupt-2' })
+    expect(await getVisualStyleSetFromDb('corrupt-2')).toBeUndefined()
+
+    // Set row whose active pointer dangles
+    await db.cyVisualStyles.put({
+      id: 'corrupt-3',
+      activeStyleId: 'missing',
+      styles: {},
+    })
+    expect(await getVisualStyleSetFromDb('corrupt-3')).toBeUndefined()
+  })
+
+  it('putVisualStyleToDb preserves inactive styles in an existing set', async () => {
+    await setupFreshDb()
+    await putVisualStyleSetToDb('preserve-network', createTwoStyleSet())
+
+    const replacement = createVisualStyleModel()
+    await putVisualStyleToDb('preserve-network', replacement)
+
+    const stored = await getVisualStyleSetFromDb('preserve-network')
+    expect(Object.keys(stored?.styles ?? {}).sort()).toEqual([
+      'style-a',
+      'style-b',
+    ])
+    expect(stored?.activeStyleId).toBe('style-a')
+    expect(stored?.styles['style-b'].name).toBe('Publication')
+  })
+
+  it('putVisualStyleToDb creates a fresh single-style set when no row exists', async () => {
+    await setupFreshDb()
+    await putVisualStyleToDb('fresh-network', createVisualStyleModel())
+
+    const stored = await getVisualStyleSetFromDb('fresh-network')
+    const entries = Object.values(stored?.styles ?? {})
+    expect(entries).toHaveLength(1)
+    expect(entries[0].name).toBe('Default')
+  })
+})
+
+describe('Style library persistence', () => {
+  afterEach(async () => {
+    await closeDb()
+  })
+
+  it('supports full CRUD on style templates', async () => {
+    await setupFreshDb()
+
+    const template = {
+      id: 'template-1',
+      name: 'Publication',
+      visualStyle: createVisualStyleModel(),
+    }
+    await putStyleTemplateToDb(template)
+
+    let templates = await getAllStyleTemplatesFromDb()
+    expect(templates).toHaveLength(1)
+    expect(templates[0].name).toBe('Publication')
+    expect(
+      templates[0].visualStyle[NetworkVisualPropertyName.NetworkBackgroundColor]
+        .bypassMap,
+    ).toBeInstanceOf(Map)
+
+    await deleteStyleTemplateFromDb('template-1')
+    templates = await getAllStyleTemplatesFromDb()
+    expect(templates).toHaveLength(0)
+
+    await putStyleTemplateToDb(template)
+    await clearStyleLibraryFromDb()
+    expect(await getAllStyleTemplatesFromDb()).toHaveLength(0)
   })
 })

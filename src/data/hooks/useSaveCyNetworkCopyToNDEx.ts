@@ -18,6 +18,7 @@ import {
 } from '../external-api/ndex'
 import { useUrlNavigation } from './navigation/useUrlNavigation'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { getVisualStyleSetSnapshot } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useDeleteCyNetwork } from './useDeleteCyNetwork'
 
@@ -59,6 +60,7 @@ export const useSaveCyNetworkCopyToNDEx = () => {
       nodeTable,
       edgeTable,
       visualStyle,
+      visualStyleSet: getVisualStyleSetSnapshot(network.id),
       networkViews: [viewModel],
       visualStyleOptions,
       otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,

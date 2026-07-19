@@ -15,7 +15,15 @@ import { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
 import { Table } from '../../models/TableModel'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
-import { VisualStyle } from '../../models/VisualStyleModel'
+import {
+  StyleTemplate,
+  VisualStyle,
+  VisualStyleSet,
+} from '../../models/VisualStyleModel'
+import {
+  createStyleSet,
+  isValidStyleSet,
+} from '../../models/VisualStyleModel/impl/visualStyleSetImpl'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../../models/WorkspaceModel'
 import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
@@ -38,7 +46,7 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 9
+const currentVersion: number = 10
 
 /**
  * Predefined object store names.
@@ -69,6 +77,9 @@ export const ObjectStoreNames = {
 
   // From v9
   AppSettings: 'appSettings',
+
+  // From v10: workspace-level visual style template library
+  StyleLibrary: 'cyStyleLibrary',
 } as const
 
 // The type derived from the names of object stores
@@ -100,6 +111,8 @@ const Keys = {
   [ObjectStoreNames.UndoStacks]: 'id',
 
   [ObjectStoreNames.AppSettings]: 'key',
+
+  [ObjectStoreNames.StyleLibrary]: 'id',
 } as const
 
 /**
@@ -126,7 +139,10 @@ class CyDB extends Dexie {
   [ObjectStoreNames.UndoStacks]!: DxTable<any>;
 
   // From v9
-  [ObjectStoreNames.AppSettings]!: DxTable<any>
+  [ObjectStoreNames.AppSettings]!: DxTable<any>;
+
+  // From v10
+  [ObjectStoreNames.StyleLibrary]!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
@@ -446,37 +462,170 @@ export const clearNetworkSummaryFromDb = async (): Promise<void> => {
   })
 }
 
-// Visual Sytles
+// Visual Styles
+//
+// Since DB v10 a row holds the complete named-style set of a network:
+//   { id: <networkId>, activeStyleId, styles: { [styleId]: {id, name, visualStyle} } }
+// Rows written before v10 have the legacy single-style shape
+//   { id: <networkId>, visualStyle }
+// and are normalized on read (no Dexie data migration needed — the row is
+// rewritten in the new shape on its next write).
+
+/** Legacy (pre-v10) row shape. */
 interface VisualStyleWithId {
   id: IdType
   visualStyle: VisualStyle
 }
 
-export const getVisualStyleFromDb = async (
+interface NamedVisualStyleRow {
+  id: IdType
+  name: string
+  visualStyle: ReturnType<typeof serializeVisualStyle>
+}
+
+/** Current (v10+) row shape. */
+interface VisualStyleSetRow {
+  id: IdType
+  activeStyleId: IdType
+  styles: Record<IdType, NamedVisualStyleRow>
+}
+
+const isLegacyVisualStyleRow = (
+  row: VisualStyleWithId | VisualStyleSetRow,
+): row is VisualStyleWithId =>
+  (row as VisualStyleSetRow).styles === undefined ||
+  (row as VisualStyleSetRow).activeStyleId === undefined
+
+/** Normalize any row shape into a deserialized VisualStyleSet. */
+const rowToVisualStyleSet = (
+  row: VisualStyleWithId | VisualStyleSetRow,
+): VisualStyleSet => {
+  if (isLegacyVisualStyleRow(row)) {
+    return createStyleSet(deserializeVisualStyle(row.visualStyle as any))
+  }
+  return {
+    activeStyleId: row.activeStyleId,
+    styles: Object.fromEntries(
+      Object.entries(row.styles).map(([styleId, namedStyle]) => [
+        styleId,
+        {
+          id: namedStyle.id,
+          name: namedStyle.name,
+          visualStyle: deserializeVisualStyle(namedStyle.visualStyle as any),
+        },
+      ]),
+    ),
+  }
+}
+
+/**
+ * Get the complete visual style set of a network.
+ * Legacy single-style rows are transparently wrapped as a one-entry set.
+ * Corrupted rows return undefined instead of throwing so callers can fall
+ * back (e.g. re-fetch the network from NDEx).
+ */
+export const getVisualStyleSetFromDb = async (
   id: IdType,
-): Promise<VisualStyle | undefined> => {
-  const vsId: VisualStyleWithId | undefined = await db.cyVisualStyles.get({
-    id,
-  })
-  if (vsId !== undefined) {
-    return deserializeVisualStyle(vsId.visualStyle as any)
-  } else {
+): Promise<VisualStyleSet | undefined> => {
+  const row: VisualStyleWithId | VisualStyleSetRow | undefined =
+    await db.cyVisualStyles.get({ id })
+  if (row === undefined) {
+    return undefined
+  }
+  if (isLegacyVisualStyleRow(row) && row.visualStyle === undefined) {
+    logDb.error(
+      `[getVisualStyleSetFromDb] Corrupted style row for network ${id}`,
+    )
+    return undefined
+  }
+  try {
+    const styleSet = rowToVisualStyleSet(row)
+    if (!isValidStyleSet(styleSet)) {
+      logDb.error(
+        `[getVisualStyleSetFromDb] Invalid style set row for network ${id}`,
+      )
+      return undefined
+    }
+    return styleSet
+  } catch (e) {
+    logDb.error(
+      `[getVisualStyleSetFromDb] Failed to deserialize style row for network ${id}: ${e}`,
+    )
     return undefined
   }
 }
 
+/**
+ * Store the complete visual style set of a network.
+ */
+export const putVisualStyleSetToDb = async (
+  id: IdType,
+  styleSet: VisualStyleSet,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.cyVisualStyles, async () => {
+      const row: VisualStyleSetRow = {
+        id,
+        activeStyleId: styleSet.activeStyleId,
+        styles: Object.fromEntries(
+          Object.entries(styleSet.styles).map(([styleId, namedStyle]) => [
+            styleId,
+            {
+              id: namedStyle.id,
+              name: namedStyle.name,
+              visualStyle: serializeVisualStyle(namedStyle.visualStyle),
+            },
+          ]),
+        ),
+      }
+      return await db.cyVisualStyles.put(row)
+    })
+  } catch (e) {
+    logDb.error('[putVisualStyleSetToDb] error:', e, id, styleSet)
+    throw e
+  }
+}
+
+/**
+ * Get the ACTIVE visual style of a network.
+ *
+ * @deprecated Prefer getVisualStyleSetFromDb — kept for callers that only
+ * care about the currently active style.
+ */
+export const getVisualStyleFromDb = async (
+  id: IdType,
+): Promise<VisualStyle | undefined> => {
+  const styleSet = await getVisualStyleSetFromDb(id)
+  return styleSet?.styles[styleSet.activeStyleId]?.visualStyle
+}
+
+/**
+ * Update the ACTIVE visual style of a network, preserving the other named
+ * styles in the row. Creates a fresh single-style set when no row exists.
+ *
+ * @deprecated Prefer putVisualStyleSetToDb — kept for callers that only
+ * mutate the currently active style.
+ */
 export const putVisualStyleToDb = async (
   id: IdType,
   visualStyle: VisualStyle,
 ): Promise<void> => {
   try {
-    await db.transaction('rw', db.cyVisualStyles, async () => {
-      // Need to add ID because it does not have one
-      return await db.cyVisualStyles.put({
-        id,
-        visualStyle: serializeVisualStyle(visualStyle),
-      })
-    })
+    const existing = await getVisualStyleSetFromDb(id)
+    const styleSet: VisualStyleSet =
+      existing === undefined
+        ? createStyleSet(visualStyle)
+        : {
+            ...existing,
+            styles: {
+              ...existing.styles,
+              [existing.activeStyleId]: {
+                ...existing.styles[existing.activeStyleId],
+                visualStyle,
+              },
+            },
+          }
+    await putVisualStyleSetToDb(id, styleSet)
   } catch (e) {
     logDb.error('[putVisualStyleToDb] error:', e, id, visualStyle)
     throw e
@@ -490,6 +639,55 @@ export const deleteVisualStyleFromDb = async (id: IdType): Promise<void> => {
 export const clearVisualStyleFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyVisualStyles, async () => {
     await db.cyVisualStyles.clear()
+  })
+}
+
+//
+// Style Library (workspace-level visual style templates, from DB v10)
+//
+
+interface StyleTemplateRow {
+  id: IdType
+  name: string
+  visualStyle: ReturnType<typeof serializeVisualStyle>
+}
+
+export const getAllStyleTemplatesFromDb = async (): Promise<
+  StyleTemplate[]
+> => {
+  const rows: StyleTemplateRow[] = await db.cyStyleLibrary.toArray()
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    visualStyle: deserializeVisualStyle(row.visualStyle as any),
+  }))
+}
+
+export const putStyleTemplateToDb = async (
+  template: StyleTemplate,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.cyStyleLibrary, async () => {
+      const row: StyleTemplateRow = {
+        id: template.id,
+        name: template.name,
+        visualStyle: serializeVisualStyle(template.visualStyle),
+      }
+      return await db.cyStyleLibrary.put(row)
+    })
+  } catch (e) {
+    logDb.error('[putStyleTemplateToDb] error:', e, template.id)
+    throw e
+  }
+}
+
+export const deleteStyleTemplateFromDb = async (id: IdType): Promise<void> => {
+  await db.cyStyleLibrary.delete(id)
+}
+
+export const clearStyleLibraryFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.cyStyleLibrary, async () => {
+    await db.cyStyleLibrary.clear()
   })
 }
 
@@ -881,6 +1079,7 @@ export interface CachedNetworkData {
   nodeTable?: Table
   edgeTable?: Table
   visualStyle?: VisualStyle
+  visualStyleSet?: VisualStyleSet
   networkViews?: NetworkView[]
   visualStyleOptions?: VisualStyleOptions
   otherAspects?: OpaqueAspects[]
@@ -943,7 +1142,9 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
     const networkViews: NetworkView[] | undefined = networkViewsEntry
       ? networkViewsEntry.views.map((v: any) => deserializeNetworkView(v))
       : undefined
-    const visualStyle = await getVisualStyleFromDb(id)
+    const visualStyleSet = await getVisualStyleSetFromDb(id)
+    const visualStyle =
+      visualStyleSet?.styles[visualStyleSet.activeStyleId]?.visualStyle
     const uiState: Ui | undefined = await getUiStateFromDb()
     const vsOptions: Record<IdType, VisualStyleOptions> =
       uiState?.visualStyleOptions ?? {}
@@ -983,6 +1184,7 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
       nodeTable: tables.nodeTable,
       edgeTable: tables.edgeTable,
       visualStyle,
+      visualStyleSet,
       networkViews: networkViews,
       visualStyleOptions: visualStyleOptions,
       otherAspects: otherAspects,

@@ -11,7 +11,13 @@ import {
   PassthroughMappingFunction,
 } from '../../../models/VisualStyleModel/VisualMappingFunction'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
-import { useVisualStyleStore } from './VisualStyleStore'
+import { DEFAULT_STYLE_NAME } from '../../../models/VisualStyleModel'
+import { createStyleSet } from '../../../models/VisualStyleModel/impl/visualStyleSetImpl'
+import { useUndoStore } from './UndoStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from './VisualStyleStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
 vi.mock('../../db', async (importOriginal) => {
@@ -632,6 +638,431 @@ describe('useVisualStyleStore', () => {
       })
 
       expect(result.current.visualStyles).toEqual({})
+    })
+  })
+
+  describe('style sets (multiple visual styles)', () => {
+    const networkId: IdType = 'network-1'
+
+    it('add should initialize a single-entry style set named Default', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+      })
+
+      const setState = result.current.styleSets[networkId]
+      expect(setState).toBeDefined()
+      const entries = Object.values(setState.styles)
+      expect(entries).toHaveLength(1)
+      expect(entries[0].name).toBe(DEFAULT_STYLE_NAME)
+      expect(setState.activeStyleId).toBe(entries[0].id)
+      // Active entry content lives in the working copy, not in the set
+      expect(entries[0].visualStyle).toBeUndefined()
+    })
+
+    it('add should preserve an existing style set (renderer re-add scenario)', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.createStyle(networkId, 'Publication')
+      })
+      expect(
+        Object.keys(result.current.styleSets[networkId].styles),
+      ).toHaveLength(2)
+
+      // The renderer calls add() again with the current style — the set
+      // must survive
+      const replacement = createVisualStyle()
+      act(() => {
+        result.current.add(networkId, replacement)
+      })
+      expect(
+        Object.keys(result.current.styleSets[networkId].styles),
+      ).toHaveLength(2)
+      expect(result.current.visualStyles[networkId]).toEqual(replacement)
+    })
+
+    it('add should adopt a provided style set (CX2 import scenario)', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      const activeStyle = createVisualStyle()
+      const inactiveStyle = createVisualStyle()
+      const styleSet = {
+        activeStyleId: 'style-a',
+        styles: {
+          'style-a': { id: 'style-a', name: 'Main', visualStyle: activeStyle },
+          'style-b': {
+            id: 'style-b',
+            name: 'Publication',
+            visualStyle: inactiveStyle,
+          },
+        },
+      }
+      act(() => {
+        result.current.add(networkId, activeStyle, styleSet)
+      })
+
+      const setState = result.current.styleSets[networkId]
+      expect(setState.activeStyleId).toBe('style-a')
+      expect(setState.styles['style-a'].visualStyle).toBeUndefined()
+      expect(setState.styles['style-b'].visualStyle).toEqual(inactiveStyle)
+      expect(setState.styles['style-b'].name).toBe('Publication')
+    })
+
+    it('add should ignore an invalid provided style set', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle(), {
+          activeStyleId: 'dangling',
+          styles: {},
+        })
+      })
+      const setState = result.current.styleSets[networkId]
+      expect(Object.values(setState.styles)).toHaveLength(1)
+      expect(setState.styles[setState.activeStyleId]).toBeDefined()
+    })
+
+    it('switchStyle should swap the working copy and keep edits per style', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        publicationId = result.current.createStyle(networkId, 'Publication')
+      })
+      const defaultId = Object.keys(
+        result.current.styleSets[networkId].styles,
+      ).find((id) => id !== publicationId) as IdType
+
+      act(() => {
+        result.current.setDefault(networkId, 'nodeShape', 'ellipse')
+        result.current.switchStyle(networkId, publicationId as IdType)
+      })
+
+      // Publication was cloned before the ellipse edit
+      expect(result.current.styleSets[networkId].activeStyleId).toBe(
+        publicationId,
+      )
+      expect(
+        result.current.visualStyles[networkId].nodeShape.defaultValue,
+      ).not.toBe('ellipse')
+
+      act(() => {
+        result.current.setDefault(networkId, 'nodeShape', 'diamond')
+        result.current.switchStyle(networkId, defaultId)
+      })
+      expect(
+        result.current.visualStyles[networkId].nodeShape.defaultValue,
+      ).toBe('ellipse')
+
+      act(() => {
+        result.current.switchStyle(networkId, publicationId as IdType)
+      })
+      expect(
+        result.current.visualStyles[networkId].nodeShape.defaultValue,
+      ).toBe('diamond')
+    })
+
+    it('switchStyle should clear the undo/redo history of the network', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      const { result: undoResult } = renderHook(() => useUndoStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        publicationId = result.current.createStyle(networkId, 'Publication')
+        undoResult.current.addStack(networkId, {
+          undoStack: [
+            {
+              undoCommand: 'SET_DEFAULT_VP_VALUE' as any,
+              description: 'test',
+              undoParams: [],
+              redoParams: [],
+            },
+          ],
+          redoStack: [],
+        })
+      })
+      expect(
+        undoResult.current.undoRedoStacks[networkId].undoStack,
+      ).toHaveLength(1)
+
+      act(() => {
+        result.current.switchStyle(networkId, publicationId as IdType)
+      })
+      expect(
+        undoResult.current.undoRedoStacks[networkId].undoStack,
+      ).toHaveLength(0)
+    })
+
+    it('switchStyle should ignore unknown styles and unknown networks', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.switchStyle(networkId, 'nonexistent-style')
+        result.current.switchStyle('nonexistent-network', 'x')
+      })
+      expect(result.current.styleSets[networkId]).toBeDefined()
+      expect(result.current.visualStyles[networkId]).toBeDefined()
+    })
+
+    it('createStyle should de-duplicate names', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.createStyle(networkId)
+        result.current.createStyle(networkId)
+      })
+      const names = Object.values(
+        result.current.styleSets[networkId].styles,
+      ).map((entry) => entry.name)
+      expect(names).toContain('New Style')
+      expect(names).toContain('New Style 2')
+    })
+
+    it('createStyle should return undefined for an unknown network', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      let newId: IdType | undefined = 'sentinel'
+      act(() => {
+        newId = result.current.createStyle('nonexistent-network')
+      })
+      expect(newId).toBeUndefined()
+    })
+
+    it('duplicateStyle should copy the active style content', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.setDefault(networkId, 'nodeShape', 'ellipse')
+      })
+      const activeId = result.current.styleSets[networkId].activeStyleId
+      let copyId: IdType | undefined
+      act(() => {
+        copyId = result.current.duplicateStyle(networkId, activeId)
+      })
+      const copy = result.current.styleSets[networkId].styles[copyId as IdType]
+      expect(copy.name).toBe(`Copy of ${DEFAULT_STYLE_NAME}`)
+      expect(copy.visualStyle?.nodeShape.defaultValue).toBe('ellipse')
+
+      // The copy must be independent of the active working copy
+      act(() => {
+        result.current.setDefault(networkId, 'nodeShape', 'diamond')
+      })
+      expect(
+        result.current.styleSets[networkId].styles[copyId as IdType].visualStyle
+          ?.nodeShape.defaultValue,
+      ).toBe('ellipse')
+    })
+
+    it('duplicateStyle should copy an INACTIVE style content', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.setDefault(networkId, 'nodeShape', 'ellipse')
+        // snapshot of the ellipse style becomes the inactive 'Publication'
+        publicationId = result.current.createStyle(networkId, 'Publication')
+        result.current.setDefault(networkId, 'nodeShape', 'diamond')
+      })
+      let copyId: IdType | undefined
+      act(() => {
+        copyId = result.current.duplicateStyle(
+          networkId,
+          publicationId as IdType,
+        )
+      })
+      expect(copyId).toBeDefined()
+      const copy =
+        result.current.styleSets[networkId].styles[copyId as IdType]
+      expect(copy.name).toBe('Copy of Publication')
+      expect(copy.visualStyle?.nodeShape.defaultValue).toBe('ellipse')
+    })
+
+    it('createStyle/duplicateStyle/importStyle should refuse beyond the style cap', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      const activeStyle = createVisualStyle()
+      // Build a set already at the cap (importer rejects larger sets, so
+      // the store must refuse to grow past it)
+      const styles: Record<string, any> = {}
+      for (let i = 0; i < 50; i++) {
+        styles[`style-${i}`] = {
+          id: `style-${i}`,
+          name: `Style ${i}`,
+          visualStyle: createVisualStyle(),
+        }
+      }
+      styles['style-0'].visualStyle = activeStyle
+      act(() => {
+        result.current.add(networkId, activeStyle, {
+          activeStyleId: 'style-0',
+          styles,
+        })
+      })
+
+      let created: IdType | undefined = 'sentinel'
+      let duplicated: IdType | undefined = 'sentinel'
+      let imported: IdType | undefined = 'sentinel'
+      act(() => {
+        created = result.current.createStyle(networkId, 'Too Many')
+        duplicated = result.current.duplicateStyle(networkId, 'style-1')
+        imported = result.current.importStyle(
+          networkId,
+          'Too Many',
+          createVisualStyle(),
+        )
+      })
+      expect(created).toBeUndefined()
+      expect(duplicated).toBeUndefined()
+      expect(imported).toBeUndefined()
+      expect(
+        Object.keys(result.current.styleSets[networkId].styles),
+      ).toHaveLength(50)
+    })
+
+    it('renameStyle should de-duplicate against sibling names', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      let otherId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        otherId = result.current.createStyle(networkId, 'Publication')
+        result.current.renameStyle(
+          networkId,
+          otherId as IdType,
+          DEFAULT_STYLE_NAME,
+        )
+      })
+      expect(
+        result.current.styleSets[networkId].styles[otherId as IdType].name,
+      ).toBe(`${DEFAULT_STYLE_NAME} 2`)
+    })
+
+    it('deleteStyle should refuse to delete the last style', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+      })
+      const onlyId = result.current.styleSets[networkId].activeStyleId
+      act(() => {
+        result.current.deleteStyle(networkId, onlyId)
+      })
+      expect(result.current.styleSets[networkId].styles[onlyId]).toBeDefined()
+      expect(result.current.visualStyles[networkId]).toBeDefined()
+    })
+
+    it('deleteStyle should promote another style when deleting the active one', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.setDefault(networkId, 'nodeShape', 'ellipse')
+        publicationId = result.current.createStyle(networkId, 'Publication')
+        result.current.switchStyle(networkId, publicationId as IdType)
+        result.current.setDefault(networkId, 'nodeShape', 'diamond')
+      })
+      act(() => {
+        result.current.deleteStyle(networkId, publicationId as IdType)
+      })
+      const setState = result.current.styleSets[networkId]
+      expect(setState.styles[publicationId as IdType]).toBeUndefined()
+      expect(Object.values(setState.styles)).toHaveLength(1)
+      // The remaining (previously inactive) style is active again with its
+      // own content restored in the working copy
+      expect(
+        result.current.visualStyles[networkId].nodeShape.defaultValue,
+      ).toBe('ellipse')
+    })
+
+    it('deleteStyle should remove an inactive style without touching the working copy', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.setDefault(networkId, 'nodeShape', 'ellipse')
+        publicationId = result.current.createStyle(networkId, 'Publication')
+      })
+      act(() => {
+        result.current.deleteStyle(networkId, publicationId as IdType)
+      })
+      expect(
+        result.current.styleSets[networkId].styles[publicationId as IdType],
+      ).toBeUndefined()
+      expect(
+        result.current.visualStyles[networkId].nodeShape.defaultValue,
+      ).toBe('ellipse')
+    })
+
+    it('importStyle should deep-copy the provided style', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      const template = createVisualStyle()
+      template.nodeShape.defaultValue = 'ellipse'
+      let importedId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        importedId = result.current.importStyle(
+          networkId,
+          'From Library',
+          template,
+        )
+      })
+      // Mutating the source after import must not affect the stored copy
+      template.nodeShape.defaultValue = 'diamond'
+      const entry =
+        result.current.styleSets[networkId].styles[importedId as IdType]
+      expect(entry.name).toBe('From Library')
+      expect(entry.visualStyle?.nodeShape.defaultValue).toBe('ellipse')
+    })
+
+    it('getVisualStyleSetSnapshot should assemble the full set', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.setDefault(networkId, 'nodeShape', 'ellipse')
+        result.current.createStyle(networkId, 'Publication')
+      })
+      const snapshot = getVisualStyleSetSnapshot(networkId)
+      expect(snapshot).toBeDefined()
+      if (snapshot === undefined) return
+      const entries = Object.values(snapshot.styles)
+      expect(entries).toHaveLength(2)
+      // Every entry of the snapshot carries full content
+      entries.forEach((entry) => {
+        expect(entry.visualStyle).toBeDefined()
+      })
+      expect(
+        snapshot.styles[snapshot.activeStyleId].visualStyle.nodeShape
+          .defaultValue,
+      ).toBe('ellipse')
+    })
+
+    it('getVisualStyleSetSnapshot should return undefined for unknown networks', () => {
+      expect(getVisualStyleSetSnapshot('nonexistent-network')).toBeUndefined()
+    })
+
+    it('delete should remove the style set as well', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.delete(networkId)
+      })
+      expect(result.current.styleSets[networkId]).toBeUndefined()
+    })
+
+    it('deleteAll should remove all style sets', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        result.current.add('network-2', createVisualStyle())
+        result.current.deleteAll()
+      })
+      expect(result.current.styleSets).toEqual({})
+    })
+
+    it('createStyleSet helper output should be accepted by add', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+      const visualStyle = createVisualStyle()
+      const styleSet = createStyleSet(visualStyle, 'Imported')
+      act(() => {
+        result.current.add(networkId, visualStyle, styleSet)
+      })
+      const setState = result.current.styleSets[networkId]
+      expect(setState.styles[setState.activeStyleId].name).toBe('Imported')
     })
   })
 

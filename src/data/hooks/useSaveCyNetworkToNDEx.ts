@@ -15,6 +15,7 @@ import {
   updateNdexNetwork,
 } from '../external-api/ndex'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { getVisualStyleSetSnapshot } from './stores/VisualStyleStore'
 
 /**
  * Hook that returns a function to save a CyNetwork to NDEx.
@@ -45,6 +46,7 @@ export const useSaveCyNetworkToNDEx = () => {
       nodeTable,
       edgeTable,
       visualStyle,
+      visualStyleSet: getVisualStyleSetSnapshot(networkId),
       networkViews: [viewModel],
       visualStyleOptions,
       otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,

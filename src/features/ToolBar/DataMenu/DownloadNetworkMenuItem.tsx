@@ -8,7 +8,10 @@ import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectSto
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
 import { exportCyNetworkToCx2 } from '../../../models/CxModel/impl'
@@ -20,8 +23,9 @@ import { VisualStyleOptions } from '../../../models/VisualStyleModel/VisualStyle
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
-export const DownloadNetworkMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const DownloadNetworkMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -59,6 +63,7 @@ export const DownloadNetworkMenuItem = (props: BaseMenuItemProps): ReactElement 
       nodeTable: table.nodeTable,
       edgeTable: table.edgeTable,
       visualStyle,
+      visualStyleSet: getVisualStyleSetSnapshot(currentNetworkId),
       networkViews: [viewModel],
       visualStyleOptions,
       otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,

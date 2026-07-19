@@ -22,6 +22,7 @@ import {
   ServiceInputDefinition,
 } from '../../models/AppModel/ServiceInputDefinition'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { getVisualStyleSetSnapshot } from '../../data/hooks/stores/VisualStyleStore'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
@@ -106,6 +107,7 @@ export const createNetworkDataObj = (
         nodeTable: table.nodeTable,
         edgeTable: table.edgeTable,
         visualStyle,
+        visualStyleSet: getVisualStyleSetSnapshot(network.id),
         networkViews: viewModel ? [viewModel] : [],
         visualStyleOptions,
         otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
