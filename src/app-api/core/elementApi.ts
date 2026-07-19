@@ -91,7 +91,10 @@ export interface BatchCreateOptions {
 
 export interface ElementApi {
   // --- Read ---
+  /** Read one node's attributes and position; fails if it does not exist. */
   getNode(networkId: IdType, nodeId: IdType): ApiResult<NodeData>
+
+  /** Read one edge's endpoints and attributes; fails if it does not exist. */
   getEdge(networkId: IdType, edgeId: IdType): ApiResult<EdgeData>
 
   /**
@@ -108,12 +111,22 @@ export interface ElementApi {
   }>
 
   // --- Create ---
+  /**
+   * Create a single node at `position`. `options.attributes` seed its row,
+   * `options.bypass` applies validated visual-property bypasses, and
+   * `options.autoSelect` (default true) selects it. Records one undo entry.
+   */
   createNode(
     networkId: IdType,
     position: [number, number, number?],
     options?: CreateNodeOptions,
   ): ApiResult<{ nodeId: IdType; node: NodeData }>
 
+  /**
+   * Create a single edge between two existing nodes. Fails if either
+   * endpoint does not exist. Same options as createNode. Records one undo
+   * entry.
+   */
   createEdge(
     networkId: IdType,
     sourceNodeId: IdType,
@@ -145,6 +158,10 @@ export interface ElementApi {
   ): ApiResult<{ edges: Array<{ edgeId: IdType; edge: EdgeData }> }>
 
   // --- Update ---
+  /**
+   * Re-point an existing edge to new source/target nodes (both must
+   * exist). Records one undo entry.
+   */
   moveEdge(
     networkId: IdType,
     edgeId: IdType,
