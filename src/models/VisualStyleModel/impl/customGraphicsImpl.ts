@@ -14,6 +14,7 @@ import {
   CustomGraphicsNameType,
   CustomGraphicsType,
   ImagePropertiesType,
+  isImageCustomGraphicsName,
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
@@ -149,7 +150,7 @@ export const getFirstValidCustomGraphicVp = (
   const isSupportedGraphicsType = (value: CustomGraphicsType) =>
     value.name === CustomGraphicsNameType.PieChart ||
     value.name === CustomGraphicsNameType.RingChart ||
-    value.name === CustomGraphicsNameType.Image
+    isImageCustomGraphicsName(value.name)
 
   const fullyValid = customGraphicNodeVps.find((vp) => {
     const defaultValue = vp.defaultValue as CustomGraphicsType
@@ -392,6 +393,10 @@ export const computeImageProperties = (
   const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
   const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
 
+  // For SVG data URIs we wrap the source SVG in an outer SVG sized to the slot's
+  // width/height and centered inside it. This pins the rendered aspect ratio and
+  // works around a Cytoscape.js bug where data-URI background images pick up a zoom
+  // offset. See docs/design/custom-graphics-image/zoom-bug-demo.html for a repro.
   let finalUrl = imageProps.url
   if (finalUrl.startsWith('data:image/svg+xml')) {
     try {
@@ -422,6 +427,10 @@ export const computeImageProperties = (
 
   pairs.push([SpecialPropertyName.BackgroundImage, finalUrl])
   pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
+  // 'null' is a valid Cytoscape.js background-image-crossorigin value meaning "do not
+  // set the crossOrigin attribute". This lets images load from servers without CORS
+  // headers; the tradeoff is that such images taint the canvas and are excluded from
+  // PNG/JPEG export. Use 'anonymous' instead if export fidelity matters more than reach.
   pairs.push([SpecialPropertyName.BackgroundImageCrossorigin, 'null'])
 
   return pairs
@@ -447,7 +456,7 @@ export const computeCustomGraphicsProperties = (
       heightVp,
       mappers,
     )
-  } else if (value.name === CustomGraphicsNameType.Image) {
+  } else if (isImageCustomGraphicsName(value.name)) {
     return computeImageProperties(id, value, row, widthVp, heightVp, mappers)
   }
 

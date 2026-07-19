@@ -6,7 +6,10 @@ import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { CustomGraphicsType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  CustomGraphicsNameType,
+  isImageCustomGraphicsName,
+} from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   ImagePropertiesType,
   PieChartPropertiesType,
@@ -77,7 +80,7 @@ export const useCustomGraphicState = ({
     const initialKind: CustomGraphicKind =
       initialValue?.name === CustomGraphicsNameType.RingChart
         ? CustomGraphicsNameType.RingChart
-        : initialValue?.name === CustomGraphicsNameType.Image
+        : initialValue && isImageCustomGraphicsName(initialValue.name)
           ? CustomGraphicsNameType.Image
           : CustomGraphicsNameType.PieChart
     setKind(initialKind)
@@ -105,7 +108,7 @@ export const useCustomGraphicState = ({
     }
 
     // Initialize imageProps
-    if (initialValue?.name === CustomGraphicsNameType.Image) {
+    if (initialValue && isImageCustomGraphicsName(initialValue.name)) {
       const imageInit = initialValue.properties as ImagePropertiesType
       setImageProps({
         ...defaultImageProps,
