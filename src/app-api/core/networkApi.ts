@@ -44,7 +44,7 @@ export interface CreateNetworkFromEdgeListProps {
   name: string
   description?: string
   edgeList: Array<[IdType, IdType, string?]>
-  /** Whether to add the network to the workspace. @default false */
+  /** Whether to add the network to the workspace. @default true */
   addToWorkspace?: boolean
 }
 
@@ -65,7 +65,7 @@ export interface CreateNetworkFromNodeListOptions {
   /** Name for the new network. @default "Subnetwork of <source name>" */
   name?: string
   description?: string
-  /** Whether to add the network to the workspace. @default false */
+  /** Whether to add the network to the workspace. @default true */
   addToWorkspace?: boolean
 }
 
@@ -176,7 +176,7 @@ export const networkApi: NetworkApi = {
     name,
     description,
     edgeList,
-    addToWorkspace = false,
+    addToWorkspace = true,
   }) {
     try {
       if (!name || name.trim() === '') {
@@ -367,7 +367,7 @@ export const networkApi: NetworkApi = {
         )
       }
 
-      if (options?.addToWorkspace) {
+      if (options?.addToWorkspace ?? true) {
         useWorkspaceStore.getState().addNetworkIds(newNetworkId)
         useWorkspaceStore.getState().setCurrentNetworkId(newNetworkId)
       }

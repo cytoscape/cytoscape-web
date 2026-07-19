@@ -8,6 +8,7 @@ import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
+import { Cx2 } from '../../models/CxModel/Cx2'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 import { CyNetwork } from '../../models/CyNetworkModel/CyNetwork'
 import { IdType } from '../../models/IdType'
@@ -15,8 +16,9 @@ import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
-/** CX2 format — an array of aspect objects */
-export type Cx2 = any[]
+// Re-export the canonical Cx2 model type so ExportApi consumers see the
+// same Cx2 they get from cyweb/ApiTypes (previously a loose any[] alias).
+export type { Cx2 }
 
 export interface ExportOptions {
   /** Optional override for the network name in the exported CX2 */
@@ -78,7 +80,7 @@ export const exportApi: ExportApi = {
         cyNetwork,
         summary,
         options.networkName,
-      )
+      ) as Cx2
       return ok(cx2)
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

@@ -61,7 +61,7 @@ export type {
   VisualPropertyInfo,
   VisualStyleApi,
 } from '../core/visualStyleApi'
-// Note: Cx2 from exportApi is a loose alias (any[]); the canonical Cx2 is exported below via ElementTypes
+// ExportApi's Cx2 is the canonical CxModel Cx2 (also exported via ElementTypes)
 export type { ExportApi, ExportOptions } from '../core/exportApi'
 
 // ── Workspace API types (Phase 1f) ───────────────────────────────

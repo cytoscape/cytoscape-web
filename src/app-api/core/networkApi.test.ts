@@ -288,22 +288,22 @@ describe('networkApi', () => {
       )
     })
 
-    it('does NOT add to workspace by default (addToWorkspace=false)', () => {
+    it('adds to workspace by default (addToWorkspace defaults to true)', () => {
       networkApi.createNetworkFromEdgeList({ name: 'Net', edgeList })
-      expect(mockWorkspaceActions.addNetworkIds).not.toHaveBeenCalled()
-      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
-    })
-
-    it('adds to workspace when addToWorkspace=true', () => {
-      networkApi.createNetworkFromEdgeList({
-        name: 'Net',
-        edgeList,
-        addToWorkspace: true,
-      })
       expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith('test-uuid')
       expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
         'test-uuid',
       )
+    })
+
+    it('skips the workspace when addToWorkspace=false', () => {
+      networkApi.createNetworkFromEdgeList({
+        name: 'Net',
+        edgeList,
+        addToWorkspace: false,
+      })
+      expect(mockWorkspaceActions.addNetworkIds).not.toHaveBeenCalled()
+      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
     it('returns fail(InvalidInput) when name is empty', () => {
@@ -605,12 +605,10 @@ describe('networkApi', () => {
       }
     })
 
-    it('adds to workspace when requested', () => {
+    it('adds to workspace by default', () => {
       setupSourceNetwork()
 
-      networkApi.createNetworkFromNodeList('src', ['n1'], undefined, {
-        addToWorkspace: true,
-      })
+      networkApi.createNetworkFromNodeList('src', ['n1'])
 
       expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith(
         'test-uuid',
@@ -618,6 +616,16 @@ describe('networkApi', () => {
       expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
         'test-uuid',
       )
+    })
+
+    it('skips the workspace when addToWorkspace=false', () => {
+      setupSourceNetwork()
+
+      networkApi.createNetworkFromNodeList('src', ['n1'], undefined, {
+        addToWorkspace: false,
+      })
+
+      expect(mockWorkspaceActions.addNetworkIds).not.toHaveBeenCalled()
     })
   })
 
