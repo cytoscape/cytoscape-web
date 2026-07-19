@@ -38,7 +38,7 @@ export interface WorkspaceApi {
    * Returns summary metadata for all networks in the workspace.
    * Networks whose summary is not found in NetworkSummaryStore are silently omitted.
    */
-  getNetworkList(): ApiResult<WorkspaceNetworkInfo[]>
+  getNetworks(): ApiResult<{ networks: WorkspaceNetworkInfo[] }>
 
   /**
    * Returns summary metadata for a single network.
@@ -92,17 +92,17 @@ export const workspaceApi: WorkspaceApi = {
     }
   },
 
-  getNetworkList() {
+  getNetworks() {
     try {
       const { workspace } = useWorkspaceStore.getState()
       const { summaries } = useNetworkSummaryStore.getState()
 
-      const list: WorkspaceNetworkInfo[] = []
+      const networks: WorkspaceNetworkInfo[] = []
       for (const networkId of workspace.networkIds) {
         const summary = summaries[networkId]
         if (summary === undefined) continue // silently omit missing entries
 
-        list.push({
+        networks.push({
           networkId,
           name: summary.name,
           description: summary.description ?? '',
@@ -112,7 +112,7 @@ export const workspaceApi: WorkspaceApi = {
         })
       }
 
-      return ok(list)
+      return ok({ networks })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }

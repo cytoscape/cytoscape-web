@@ -118,9 +118,9 @@ describe('getNetworkIds', () => {
   })
 })
 
-// ── Tests: getNetworkList ─────────────────────────────────────────────────────
+// ── Tests: getNetworks ────────────────────────────────────────────────────────
 
-describe('getNetworkList', () => {
+describe('getNetworks', () => {
   beforeEach(() => {
     mockWorkspace.networkIds = ['net-1', 'net-2', 'net-3']
     mockWorkspace.networkModified = { 'net-1': true }
@@ -132,34 +132,34 @@ describe('getNetworkList', () => {
   })
 
   it('joins networkIds with summaries and returns ordered list', () => {
-    const result = workspaceApi.getNetworkList()
+    const result = workspaceApi.getNetworks()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(2)
-      expect(result.data[0].networkId).toBe('net-1')
-      expect(result.data[0].name).toBe('Alpha')
-      expect(result.data[0].description).toBe('First')
-      expect(result.data[1].networkId).toBe('net-2')
-      expect(result.data[1].name).toBe('Beta')
-      expect(result.data[1].nodeCount).toBe(10)
+      expect(result.data.networks).toHaveLength(2)
+      expect(result.data.networks[0].networkId).toBe('net-1')
+      expect(result.data.networks[0].name).toBe('Alpha')
+      expect(result.data.networks[0].description).toBe('First')
+      expect(result.data.networks[1].networkId).toBe('net-2')
+      expect(result.data.networks[1].name).toBe('Beta')
+      expect(result.data.networks[1].nodeCount).toBe(10)
     }
   })
 
   it('silently omits networks with missing summary', () => {
-    const result = workspaceApi.getNetworkList()
+    const result = workspaceApi.getNetworks()
     expect(result.success).toBe(true)
     if (result.success) {
-      const ids = result.data.map((n) => n.networkId)
+      const ids = result.data.networks.map((n) => n.networkId)
       expect(ids).not.toContain('net-3')
     }
   })
 
   it('reflects isModified from workspace.networkModified', () => {
-    const result = workspaceApi.getNetworkList()
+    const result = workspaceApi.getNetworks()
     expect(result.success).toBe(true)
     if (result.success) {
-      const net1 = result.data.find((n) => n.networkId === 'net-1')
-      const net2 = result.data.find((n) => n.networkId === 'net-2')
+      const net1 = result.data.networks.find((n) => n.networkId === 'net-1')
+      const net2 = result.data.networks.find((n) => n.networkId === 'net-2')
       expect(net1?.isModified).toBe(true)
       expect(net2?.isModified).toBe(false)
     }
@@ -167,10 +167,10 @@ describe('getNetworkList', () => {
 
   it('returns empty array when workspace has no networks', () => {
     mockWorkspace.networkIds = []
-    const result = workspaceApi.getNetworkList()
+    const result = workspaceApi.getNetworks()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toEqual([])
+      expect(result.data.networks).toEqual([])
     }
   })
 })

@@ -37,7 +37,7 @@ export interface LayoutApi {
     networkId: IdType,
     options?: ApplyLayoutOptions,
   ): Promise<ApiResult>
-  getAvailableLayouts(): ApiResult<LayoutAlgorithmInfo[]>
+  getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -189,15 +189,15 @@ export const layoutApi: LayoutApi = {
     }
   },
 
-  getAvailableLayouts(): ApiResult<LayoutAlgorithmInfo[]> {
+  getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }> {
     try {
       const { layoutEngines } = useLayoutStore.getState()
-      const infos: LayoutAlgorithmInfo[] = []
+      const layouts: LayoutAlgorithmInfo[] = []
       for (const engine of layoutEngines) {
         for (const [algorithmName, algorithm] of Object.entries(
           engine.algorithms,
         )) {
-          infos.push({
+          layouts.push({
             engineName: engine.name,
             algorithmName,
             displayName: algorithm.displayName,
@@ -206,7 +206,7 @@ export const layoutApi: LayoutApi = {
           })
         }
       }
-      return ok(infos)
+      return ok({ layouts })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }

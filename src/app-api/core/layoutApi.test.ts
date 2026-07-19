@@ -133,8 +133,8 @@ describe('getAvailableLayouts', () => {
     const result = layoutApi.getAvailableLayouts()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0]).toMatchObject({
+      expect(result.data.layouts).toHaveLength(1)
+      expect(result.data.layouts[0]).toMatchObject({
         engineName: 'testEngine',
         algorithmName: 'circle',
         displayName: 'Circle Layout',
@@ -148,7 +148,7 @@ describe('getAvailableLayouts', () => {
     const result = layoutApi.getAvailableLayouts()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(0)
+      expect(result.data.layouts).toHaveLength(0)
     }
   })
 
@@ -172,7 +172,7 @@ describe('getAvailableLayouts', () => {
     const result = layoutApi.getAvailableLayouts()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(2)
+      expect(result.data.layouts).toHaveLength(2)
     }
   })
 })
