@@ -2,7 +2,10 @@ import { Box } from '@mui/material'
 import * as React from 'react'
 
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
-import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  CustomGraphicsNameType,
+  isImageCustomGraphicsName,
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { PieChartRender as PieChartRenderComponent } from './PieChartRender'
 import { RingChartRender as RingChartRenderComponent } from './RingChartRender'
 import { CHART_CONSTANTS } from './utils/constants'
@@ -120,8 +123,8 @@ export function CustomGraphicRender(props: {
     }
   }
 
-  // Render image
-  if (value.name === CustomGraphicsNameType.Image) {
+  // Render image (raster or SVG)
+  if (isImageCustomGraphicsName(value.name)) {
     if (isImageProperties(value.properties)) {
       const imageProperties = value.properties
       if (imageProperties.url && imageProperties.url.trim().length > 0) {

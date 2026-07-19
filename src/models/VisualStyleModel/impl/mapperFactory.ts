@@ -16,6 +16,7 @@ import {
   CustomGraphicsNameType,
   CustomGraphicsType,
   CustomGraphicsTypeType,
+  isSvgImageUrl,
 } from '../VisualPropertyValue/CustomGraphicsType'
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
@@ -56,6 +57,16 @@ const enumValueNormalizationFn = (
   return normalizeEnumValue(pm.visualPropertyType, value)
 }
 
+// Build an image custom graphic, picking the raster vs. vector (SVG) factory class
+// by URL content so it round-trips to Cytoscape Desktop with the right renderer.
+const makeImageGraphics = (url: string): CustomGraphicsType => ({
+  type: CustomGraphicsTypeType.Image,
+  name: isSvgImageUrl(url)
+    ? CustomGraphicsNameType.SVGImage
+    : CustomGraphicsNameType.Image,
+  properties: { url },
+})
+
 const customGraphicPassthroughFn = (
   pm: PassthroughMappingFunction,
   value: VisualPropertyValueType,
@@ -82,27 +93,19 @@ const customGraphicPassthroughFn = (
     return pm.defaultValue
   }
 
-  // 2. Raw SVG detection
+  // 2. Raw SVG detection → inline data URI
   if (str.startsWith('<svg')) {
     const dataUri = 'data:image/svg+xml,' + encodeURIComponent(str)
-    return {
-      type: CustomGraphicsTypeType.Image,
-      name: CustomGraphicsNameType.Image,
-      properties: { url: dataUri },
-    } as CustomGraphicsType
+    return makeImageGraphics(dataUri)
   }
 
-  // 3. HTTP/HTTPS URL or data: URI → image
+  // 3. HTTP/HTTPS URL or data: URI → image (raster or vector, chosen by content)
   if (
     str.startsWith('http://') ||
     str.startsWith('https://') ||
     str.startsWith('data:')
   ) {
-    return {
-      type: CustomGraphicsTypeType.Image,
-      name: CustomGraphicsNameType.Image,
-      properties: { url: str },
-    } as CustomGraphicsType
+    return makeImageGraphics(str)
   }
 
   // 4. JSON chart object

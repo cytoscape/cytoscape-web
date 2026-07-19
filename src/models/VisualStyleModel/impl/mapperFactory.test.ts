@@ -276,6 +276,30 @@ describe('MapperFactory', () => {
       it('should return default for unrecognized strings', () => {
         expect(mapper('not-a-url')).toEqual(mapping.defaultValue)
       })
+
+      // Cytoscape Desktop uses a different custom-graphics factory for vector (SVG)
+      // vs. raster images. The mapper must pick the right class from the content so
+      // the graphic round-trips to Desktop instead of rendering as a "?" placeholder.
+      it('should label raster URLs as the bitmap image class', () => {
+        expect(mapper('https://example.com/img.png')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        })
+        expect(mapper('data:image/png;base64,iVBOR...')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        })
+      })
+
+      it('should label SVG content as the SVG image class', () => {
+        expect(mapper('<svg><rect/></svg>')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+        expect(mapper('https://example.com/icon.svg')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+        expect(mapper('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+      })
     })
 
     // CW-517: passthrough mappings on node shape / edge line type authored in

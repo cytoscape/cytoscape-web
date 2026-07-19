@@ -21,8 +21,10 @@ import {
   VisualPropertyValueType,
 } from '../VisualPropertyValue'
 import {
+  CustomGraphicsNameType,
   CustomGraphicsPositionType,
   ImagePropertiesType,
+  isSvgImageUrl,
 } from '../VisualPropertyValue/CustomGraphicsType'
 import {
   DEFAULT_CUSTOM_GRAPHICS,
@@ -100,6 +102,13 @@ export type CXVisualMappingFunction<T> =
 
 export type CXId = number
 
+// A node custom-graphics *value* slot (NODE_CUSTOMGRAPHICS_1..9), as opposed to its
+// paired size (NODE_CUSTOMGRAPHICS_SIZE_n) or position (NODE_CUSTOMGRAPHICS_POSITION_n).
+const isCustomGraphicVpName = (vpName: string): boolean =>
+  vpName.startsWith('nodeImageChart') &&
+  !vpName.startsWith('nodeImageChartSize') &&
+  !vpName.startsWith('nodeImageChartPosition')
+
 export const vpToCX = (
   vpName: VisualPropertyName,
   vpValue: VisualPropertyValueType,
@@ -125,15 +134,19 @@ export const vpToCX = (
 
   // Cytoscape Desktop throws a NullPointerException during view creation if an image Custom Graphic
   // is missing the 'tag' or 'id' properties. We inject them here to ensure compatibility.
-  if (vpName.startsWith('nodeImageChart') && !vpName.includes('Size') && !vpName.includes('Position')) {
+  if (isCustomGraphicVpName(vpName)) {
     const cg = vpValue as CustomGraphicsType
     if (cg.type === 'image') {
       const imgProps = cg.properties as ImagePropertiesType
-      
+      const url = imgProps.url || ''
+      // Desktop uses different custom-graphics factories for vector vs. raster images;
+      // labeling SVG content as the bitmap class makes Desktop raster-decode it and draw
+      // a "?" placeholder. Pick the class (and its conventional tag) from the URL content.
+      const isSvg = isSvgImageUrl(url)
+
       // Generate a deterministic unique ID based on the URL to prevent collisions
       // if multiple different images are exported. Cytoscape Desktop requires unique IDs.
       let urlHash = 0
-      const url = imgProps.url || ''
       for (let i = 0; i < url.length; i++) {
         urlHash = (urlHash << 5) - urlHash + url.charCodeAt(i)
         urlHash |= 0
@@ -142,9 +155,12 @@ export const vpToCX = (
 
       return {
         ...cg,
+        name: isSvg
+          ? CustomGraphicsNameType.SVGImage
+          : CustomGraphicsNameType.Image,
         properties: {
           ...cg.properties,
-          tag: imgProps.tag ?? 'bitmap image',
+          tag: imgProps.tag ?? (isSvg ? 'vector image' : 'bitmap image'),
           id: imgProps.id ?? uniqueId,
         },
       } as any
