@@ -33,6 +33,28 @@ import {
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
+/**
+ * Parameters for createContinuousMapping. Bundled into an options object
+ * because a continuous mapping needs many correlated values; passing them
+ * positionally (nine arguments, three optional) is error-prone.
+ */
+export interface CreateContinuousMappingOptions {
+  /** The visual property's value type (e.g. 'color', 'number'). */
+  vpType: VisualPropertyValueTypeName
+  /** Source attribute (table column) the mapping reads. */
+  attribute: AttributeName
+  /** Numeric attribute values that anchor the mapping (min…max). */
+  attributeValues: ValueType[]
+  /** Declared type of the source attribute. */
+  attributeType: ValueTypeName
+  /** Explicit control points; defaults are computed when omitted. */
+  controlPoints?: ContinuousFunctionControlPoint[]
+  /** Value applied below the minimum anchor. */
+  ltMinVpValue?: VisualPropertyValueType
+  /** Value applied above the maximum anchor. */
+  gtMaxVpValue?: VisualPropertyValueType
+}
+
 /** One visual property's identity and scope, from getVisualProperties(). */
 export interface VisualPropertyInfo {
   name: VisualPropertyName
@@ -119,15 +141,8 @@ export interface VisualStyleApi {
   createContinuousMapping(
     networkId: IdType,
     vpName: VisualPropertyName,
-    vpType: VisualPropertyValueTypeName,
-    attribute: AttributeName,
-    attributeValues: ValueType[],
-    attributeType: ValueTypeName,
-    controlPoints?: ContinuousFunctionControlPoint[],
-    ltMinVpValue?: VisualPropertyValueType,
-    gtMaxVpValue?: VisualPropertyValueType,
+    options: CreateContinuousMappingOptions,
   ): ApiResult
-
   createPassthroughMapping(
     networkId: IdType,
     vpName: VisualPropertyName,
@@ -407,18 +422,17 @@ export const visualStyleApi: VisualStyleApi = {
     }
   },
 
-  createContinuousMapping(
-    networkId,
-    vpName,
-    vpType,
-    attribute,
-    attributeValues,
-    attributeType,
-    controlPoints,
-    ltMinVpValue,
-    gtMaxVpValue,
-  ): ApiResult {
+  createContinuousMapping(networkId, vpName, options): ApiResult {
     try {
+      const {
+        vpType,
+        attribute,
+        attributeValues,
+        attributeType,
+        controlPoints,
+        ltMinVpValue,
+        gtMaxVpValue,
+      } = options
       const store = useVisualStyleStore.getState()
       if (store.visualStyles[networkId] === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)

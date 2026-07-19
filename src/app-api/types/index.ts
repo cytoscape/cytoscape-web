@@ -56,7 +56,11 @@ export type {
   TableApi,
 } from '../core/tableApi'
 export type { PositionRecord, ViewportApi } from '../core/viewportApi'
-export type { VisualPropertyInfo, VisualStyleApi } from '../core/visualStyleApi'
+export type {
+  CreateContinuousMappingOptions,
+  VisualPropertyInfo,
+  VisualStyleApi,
+} from '../core/visualStyleApi'
 // Note: Cx2 from exportApi is a loose alias (any[]); the canonical Cx2 is exported below via ElementTypes
 export type { ExportApi, ExportOptions } from '../core/exportApi'
 

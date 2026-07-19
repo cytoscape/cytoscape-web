@@ -851,10 +851,12 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
-      'score',
-      [0, 50, 100],
-      'double',
+      {
+        vpType: 'double',
+        attribute: 'score',
+        attributeValues: [0, 50, 100],
+        attributeType: 'double',
+      },
     )
 
     expect(result.success).toBe(true)
@@ -872,10 +874,12 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'missing',
       VPN.NodeHeight,
-      'double',
-      'score',
-      [],
-      'double',
+      {
+        vpType: 'double',
+        attribute: 'score',
+        attributeValues: [],
+        attributeType: 'double',
+      },
     )
 
     expect(result.success).toBe(false)
@@ -891,14 +895,12 @@ describe('createContinuousMapping', () => {
     }
     declareColumns([{ name: 'score', type: 'double' }])
 
-    visualStyleApi.createContinuousMapping(
-      'net1',
-      VPN.NodeHeight,
-      'double',
-      'score',
-      [0, 50, 100],
-      'double',
-    )
+    visualStyleApi.createContinuousMapping('net1', VPN.NodeHeight, {
+      vpType: 'double',
+      attribute: 'score',
+      attributeValues: [0, 50, 100],
+      attributeType: 'double',
+    })
 
     expect(mockSetContinuousMappingValues).toHaveBeenCalledWith(
       'net1',
@@ -927,15 +929,13 @@ describe('createContinuousMapping', () => {
       { value: 90, vpValue: 60 },
     ]
 
-    visualStyleApi.createContinuousMapping(
-      'net1',
-      VPN.NodeHeight,
-      'double',
-      'score',
-      [0, 50, 100],
-      'double',
+    visualStyleApi.createContinuousMapping('net1', VPN.NodeHeight, {
+      vpType: 'double',
+      attribute: 'score',
+      attributeValues: [0, 50, 100],
+      attributeType: 'double',
       controlPoints,
-    )
+    })
 
     expect(mockSetContinuousMappingValues).toHaveBeenCalledWith(
       'net1',
@@ -959,17 +959,15 @@ describe('createContinuousMapping', () => {
       { value: 100, vpValue: '#ff0000' },
     ]
 
-    visualStyleApi.createContinuousMapping(
-      'net1',
-      VPN.NodeBackgroundColor,
-      'color',
-      'score',
-      [0, 100],
-      'double',
+    visualStyleApi.createContinuousMapping('net1', VPN.NodeBackgroundColor, {
+      vpType: 'color',
+      attribute: 'score',
+      attributeValues: [0, 100],
+      attributeType: 'double',
       controlPoints,
-      '#ffffff',
-      '#ff0000',
-    )
+      ltMinVpValue: '#ffffff',
+      gtMaxVpValue: '#ff0000',
+    })
 
     expect(mockSetContinuousMappingValues).toHaveBeenCalledWith(
       'net1',
@@ -988,17 +986,14 @@ describe('createContinuousMapping', () => {
     }
     declareColumns([{ name: 'score', type: 'double' }])
 
-    visualStyleApi.createContinuousMapping(
-      'net1',
-      VPN.NodeHeight,
-      'double',
-      'score',
-      [0, 50, 100],
-      'double',
-      undefined,
-      'customLtMin',
-      'customGtMax',
-    )
+    visualStyleApi.createContinuousMapping('net1', VPN.NodeHeight, {
+      vpType: 'double',
+      attribute: 'score',
+      attributeValues: [0, 50, 100],
+      attributeType: 'double',
+      ltMinVpValue: 'customLtMin',
+      gtMaxVpValue: 'customGtMax',
+    })
 
     expect(mockSetContinuousMappingValues).toHaveBeenCalledWith(
       'net1',
@@ -1024,10 +1019,12 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
-      'score',
-      ['low', 'high'] as any,
-      'double',
+      {
+        vpType: 'double',
+        attribute: 'score',
+        attributeValues: ['low', 'high'] as any,
+        attributeType: 'double',
+      },
     )
 
     expect(result.success).toBe(false)
@@ -1046,10 +1043,12 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
-      'score',
-      [0, NaN, Infinity],
-      'double',
+      {
+        vpType: 'double',
+        attribute: 'score',
+        attributeValues: [0, NaN, Infinity],
+        attributeType: 'double',
+      },
     )
 
     expect(result.success).toBe(false)
@@ -1067,10 +1066,12 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
-      'score',
-      [],
-      'double',
+      {
+        vpType: 'double',
+        attribute: 'score',
+        attributeValues: [],
+        attributeType: 'double',
+      },
     )
 
     expect(result.success).toBe(false)
@@ -1088,14 +1089,16 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
-      'score',
-      [0, 100],
-      'double',
-      [
-        { value: 'zero' as any, vpValue: 20 },
-        { value: 100, vpValue: 60 },
-      ],
+      {
+        vpType: 'double',
+        attribute: 'score',
+        attributeValues: [0, 100],
+        attributeType: 'double',
+        controlPoints: [
+          { value: 'zero' as any, vpValue: 20 },
+          { value: 100, vpValue: 60 },
+        ],
+      },
     )
 
     expect(result.success).toBe(false)
@@ -1114,10 +1117,12 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
-      'label',
-      ['a', 'b'],
-      'string',
+      {
+        vpType: 'double',
+        attribute: 'label',
+        attributeValues: ['a', 'b'],
+        attributeType: 'string',
+      },
     )
 
     expect(result.success).toBe(false)
