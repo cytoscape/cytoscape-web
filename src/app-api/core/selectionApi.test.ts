@@ -85,19 +85,19 @@ describe('exclusiveSelect', () => {
 // --- additiveSelect ----------------------------------------------------------
 
 describe('additiveSelect', () => {
-  it('returns ok() when network exists', () => {
+  it('merges node and edge ids for the store', () => {
     mockGetViewModel.mockReturnValue(makeNetworkView())
 
-    const result = selectionApi.additiveSelect('net1', ['n1', 'n2'])
+    const result = selectionApi.additiveSelect('net1', ['n1', 'n2'], ['e1'])
 
     expect(result.success).toBe(true)
-    expect(mockAdditiveSelect).toHaveBeenCalledWith('net1', ['n1', 'n2'])
+    expect(mockAdditiveSelect).toHaveBeenCalledWith('net1', ['n1', 'n2', 'e1'])
   })
 
   it('returns NetworkNotFound when network does not exist', () => {
     mockGetViewModel.mockReturnValue(undefined)
 
-    const result = selectionApi.additiveSelect('missing', ['n1'])
+    const result = selectionApi.additiveSelect('missing', ['n1'], [])
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -107,22 +107,22 @@ describe('additiveSelect', () => {
   })
 })
 
-// --- additiveUnselect --------------------------------------------------------
+// --- additiveDeselect --------------------------------------------------------
 
-describe('additiveUnselect', () => {
-  it('returns ok() when network exists', () => {
+describe('additiveDeselect', () => {
+  it('merges node and edge ids for the store', () => {
     mockGetViewModel.mockReturnValue(makeNetworkView())
 
-    const result = selectionApi.additiveUnselect('net1', ['n1'])
+    const result = selectionApi.additiveDeselect('net1', ['n1'], ['e1'])
 
     expect(result.success).toBe(true)
-    expect(mockAdditiveUnselect).toHaveBeenCalledWith('net1', ['n1'])
+    expect(mockAdditiveUnselect).toHaveBeenCalledWith('net1', ['n1', 'e1'])
   })
 
   it('returns NetworkNotFound when network does not exist', () => {
     mockGetViewModel.mockReturnValue(undefined)
 
-    const result = selectionApi.additiveUnselect('missing', ['n1'])
+    const result = selectionApi.additiveDeselect('missing', ['n1'], [])
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -135,10 +135,10 @@ describe('additiveUnselect', () => {
 // --- toggleSelected ----------------------------------------------------------
 
 describe('toggleSelected', () => {
-  it('returns ok() when network exists', () => {
+  it('merges node and edge ids for the store', () => {
     mockGetViewModel.mockReturnValue(makeNetworkView())
 
-    const result = selectionApi.toggleSelected('net1', ['n1', 'e1'])
+    const result = selectionApi.toggleSelected('net1', ['n1'], ['e1'])
 
     expect(result.success).toBe(true)
     expect(mockToggleSelected).toHaveBeenCalledWith('net1', ['n1', 'e1'])
@@ -147,13 +147,39 @@ describe('toggleSelected', () => {
   it('returns NetworkNotFound when network does not exist', () => {
     mockGetViewModel.mockReturnValue(undefined)
 
-    const result = selectionApi.toggleSelected('missing', ['n1'])
+    const result = selectionApi.toggleSelected('missing', ['n1'], [])
 
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockToggleSelected).not.toHaveBeenCalled()
+  })
+})
+
+// --- clearSelection ----------------------------------------------------------
+
+describe('clearSelection', () => {
+  it('clears the selection via an empty exclusiveSelect', () => {
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+    mockExclusiveSelect.mockImplementation(() => {})
+
+    const result = selectionApi.clearSelection('net1')
+
+    expect(result.success).toBe(true)
+    expect(mockExclusiveSelect).toHaveBeenCalledWith('net1', [], [])
+  })
+
+  it('returns NetworkNotFound when network does not exist', () => {
+    mockGetViewModel.mockReturnValue(undefined)
+
+    const result = selectionApi.clearSelection('missing')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+    expect(mockExclusiveSelect).not.toHaveBeenCalled()
   })
 })
 
