@@ -10,6 +10,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
+import { markReady } from '../app-api/core/ready'
 import { initEventBus } from '../app-api/event-bus/initEventBus'
 import {
   getUiStateFromDb,
@@ -388,6 +389,8 @@ const AppShell = (): ReactElement => {
       // cywebapi:ready signals external consumers that the API and event bus are ready.
       initEventBus()
       window.dispatchEvent(new CustomEvent('cywebapi:ready'))
+      // Resolve any CyWebApi.whenReady() promises (idempotent).
+      markReady()
 
       // Process an App Store install intent (?installApp=<manifestUrl>). The
       // workspace is hydrated by now (setWorkspace above), so installApp's

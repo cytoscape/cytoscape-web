@@ -6,6 +6,9 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Added
 
+- **Readiness promise.** `CyWebApi.whenReady()` resolves with the API once
+  startup completes (immediately if already ready); `CyWebApi.isReady()`
+  returns the current boolean. Wraps the one-shot `cywebapi:ready` event.
 - **Scoped current-network API.** `CyWebApi.forNetwork(networkId?)` returns
   the network-scoped domains (`element`, `table`, `selection`, `viewport`,
   `visualStyle`, `export`) with `networkId` pre-bound, so it need not be

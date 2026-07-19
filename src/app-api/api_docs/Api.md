@@ -102,6 +102,22 @@ Domains whose methods are not uniformly network-scoped — `network`, `workspace
 The scoped view is purely additive: it delegates to the same underlying domain
 objects.
 
+### Readiness — `CyWebApi.whenReady()` / `CyWebApi.isReady()`
+
+`window.CyWebApi` is assigned before the app finishes hydrating, so its
+stateful methods only work after startup completes. Rather than listen for the
+one-shot `cywebapi:ready` event and track whether it already fired, await the
+promise:
+
+```javascript
+const api = await window.CyWebApi.whenReady() // resolves immediately if ready
+api.forNetwork().element.createNode([0, 0])
+```
+
+`whenReady()` resolves with the `CyWebApi` object; `isReady()` returns the
+current boolean. The `cywebapi:ready` window event still fires for consumers
+that prefer events.
+
 > **Context Menu API:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
 > Context menu access is now via `AppContext.apis.contextMenu` (per-app factory in `mount()`) or
 > `window.CyWebApi.contextMenu` (anonymous singleton for non-React consumers).
