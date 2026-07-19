@@ -2,6 +2,60 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
+## 1.0.0-beta.4 (2026-07-19)
+
+### Added
+
+- **Visual Style read API.** `VisualStyleApi` was previously write-only; it
+  now exposes `getVisualProperties`, `getDefault`, `getBypass`,
+  `getBypasses`, and `getMapping` (all returning `ApiResult`).
+- **Batch element creation.** `ElementApi.createNodes(networkId, specs)` and
+  `createEdges(networkId, specs)` create many elements in one operation that
+  records a single undo entry. New types `NodeSpec`, `EdgeSpec`,
+  `BatchCreateOptions`.
+- **`ElementApi.getNodes(networkId, nodeIds?)`** — batch node read; unknown
+  ids are reported in `missing` instead of failing the call.
+- **`SelectionApi.clearSelection(networkId)`** convenience.
+- **`TableApi` id round-tripping.** `getTable` and `exportTableToTsv` include
+  the element id by default (new `includeId` option); an exported node TSV
+  now round-trips through `importTableFromTsv` with no manual id handling.
+  `importTableFromTsv` gained a `skippedCells` result field.
+- **`AppCodes.COLUMN_NOT_FOUND` (`APP10`).**
+
+### Changed — BREAKING
+
+- `SelectionApi.additiveSelect` / `additiveDeselect` / `toggleSelected` now
+  take `(networkId, nodeIds, edgeIds)` — separate arrays — instead of a
+  single merged `ids` array. `additiveUnselect` is renamed
+  `additiveDeselect`.
+- `VisualStyleApi.removeMapping` is renamed `deleteMapping`.
+- `VisualStyleApi.createContinuousMapping(networkId, vpName, options)`
+  replaces the nine-argument positional form
+  (`CreateContinuousMappingOptions`).
+- `TableApi.setColumnName` is renamed `renameColumn`.
+- `ExportApi.exportToCx2` now returns the canonical `Cx2` model type instead
+  of a loose `any[]` alias.
+- `ElementApi.generateNextNodeId` / `generateNextEdgeId` now return
+  `ApiResult<{ nodeId }>` / `ApiResult<{ edgeId }>` instead of a bare string.
+- `ElementApi.getConnectedEdges` results now include each edge's `id`.
+- `NetworkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` now
+  default `addToWorkspace` to `true` (matching `createNetworkFromCx2`).
+- `ResourceApi.getSupportedSlots` / `getRegisteredResources` /
+  `getResourceVisibility` now return `ApiResult` instead of raw values.
+
+### Fixed
+
+- Create-time `options.bypass` on `createNode` / `createEdge` is now
+  validated (property existence, node/edge scope, value type) before the
+  element is created.
+- `tableApi.deleteColumn` / `renameColumn` / `getValue` now report
+  `COLUMN_NOT_FOUND` for a missing column instead of silently succeeding.
+- `createColumn` validates its default value against the declared type.
+- `importTableFromTsv` no longer coerces unparseable numeric/boolean cells
+  to `0` / `false` — they are skipped and reported.
+- The "always returns `ApiResult`, never throws" contract now holds across
+  the whole surface.
+
 ## 1.0.0-beta.3 (2026-07-16)
 
 ### Changed — BREAKING

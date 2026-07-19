@@ -30,7 +30,7 @@ src/app-api/
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   └── index.ts                 ← Assembles CyWebApi object; assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
-│   ├── CyWebEvents.ts           ← CyWebEvents interface (8 event types + detail shapes)
+│   ├── CyWebEvents.ts           ← CyWebEvents interface (9 event types + detail shapes)
 │   ├── dispatchCyWebEvent.ts    ← Generic dispatch helper — sole place new CustomEvent() is called
 │   └── initEventBus.ts          ← Zustand subscribeWithSelector → window.dispatchEvent
 ├── useElementApi.ts             ← React Hook: returns elementApi (thin wrapper)
@@ -151,13 +151,21 @@ All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/d
 
 ## Event Bus Pattern
 
-### `CyWebEvents` interface (8 types)
+### `CyWebEvents` interface (9 types)
 
 ```typescript
 // src/app-api/event-bus/CyWebEvents.ts
 export interface CyWebEvents {
   'network:created': { networkId: IdType }
   'network:deleted': { networkId: IdType }
+  // Fired when nodes/edges are added to or removed from an existing network
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
   'network:switched': { networkId: IdType; previousId: IdType }
   'selection:changed': {
     networkId: IdType
@@ -171,6 +179,8 @@ export interface CyWebEvents {
     networkId: IdType
     tableType: 'node' | 'edge'
     rowIds: IdType[]
+    addedColumns: string[]
+    removedColumns: string[]
   }
 }
 ```
