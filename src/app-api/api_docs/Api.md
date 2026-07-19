@@ -58,6 +58,7 @@ guards that narrow an `ApiResult<T>` to its success or failure branch (handy in
 | `cyweb/LayoutApi`      | `useLayoutApi()`        | `.layout`                | 1e    |
 | `cyweb/ExportApi`      | `useExportApi()`        | `.export`                | 1e    |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`     | `.workspace`             | 1f    |
+| `cyweb/ScopedApi`      | `useScopedApi(id?)`     | `.forNetwork(id?)`       | 1g    |
 | `cyweb/EventBus`       | `useCyWebEvent()`       | _(window events)_        | 1g    |
 
 All hooks are thin React wrappers around framework-agnostic core objects.
@@ -81,6 +82,16 @@ net.table.getTable('node')
 // Bind a specific network
 const other = window.CyWebApi.forNetwork('net-42')
 other.export.exportToCx2()
+```
+
+React apps get the same view from the `cyweb/ScopedApi` hook, memoized per
+networkId (stable across renders, safe in effect/callback deps):
+
+```typescript
+import { useScopedApi } from 'cyweb/ScopedApi'
+
+const net = useScopedApi()        // current network
+const other = useScopedApi(id)    // a specific network
 ```
 
 Domains whose methods are not uniformly network-scoped — `network`, `workspace`,
