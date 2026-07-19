@@ -15,6 +15,7 @@ import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { elementApi, type ElementApi } from './elementApi'
 import { exportApi, type ExportApi } from './exportApi'
+import { layoutApi, type LayoutApi } from './layoutApi'
 import { selectionApi, type SelectionApi } from './selectionApi'
 import { tableApi, type TableApi } from './tableApi'
 import { viewportApi, type ViewportApi } from './viewportApi'
@@ -47,6 +48,11 @@ export interface ScopedCyWebApi {
   viewport: Scoped<ViewportApi>
   visualStyle: Scoped<VisualStyleApi>
   export: Scoped<ExportApi>
+  /**
+   * Only `applyLayout` is network-scoped and therefore bound here. Read
+   * the available algorithms from the top-level `layout.getAvailableLayouts()`.
+   */
+  layout: { applyLayout: OmitFirstArg<LayoutApi['applyLayout']> }
 }
 
 // ── Implementation ─────────────────────────────────────────────────────────
@@ -98,5 +104,10 @@ export function forNetwork(networkId?: IdType): ScopedCyWebApi {
     viewport: scopeDomain(viewportApi, getNetworkId),
     visualStyle: scopeDomain(visualStyleApi, getNetworkId),
     export: scopeDomain(exportApi, getNetworkId),
+    // Only applyLayout is network-scoped; bind it alone rather than the
+    // whole layout domain (getAvailableLayouts takes no networkId).
+    layout: {
+      applyLayout: (options) => layoutApi.applyLayout(getNetworkId(), options),
+    },
   }
 }

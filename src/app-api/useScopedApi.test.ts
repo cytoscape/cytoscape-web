@@ -10,6 +10,7 @@ describe('useScopedApi', () => {
     expect(Object.keys(result.current).sort()).toEqual([
       'element',
       'export',
+      'layout',
       'selection',
       'table',
       'viewport',

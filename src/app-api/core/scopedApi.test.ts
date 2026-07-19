@@ -35,6 +35,10 @@ vi.mock('./exportApi', () => {
   const echo = (name: string) => (...args: any[]) => ({ name, args })
   return { exportApi: { exportToCx2: echo('exportToCx2') } }
 })
+vi.mock('./layoutApi', () => {
+  const echo = (name: string) => (...args: any[]) => ({ name, args })
+  return { layoutApi: { applyLayout: echo('applyLayout'), getAvailableLayouts: echo('getAvailableLayouts') } }
+})
 
 // ── Mock WorkspaceStore for current-network resolution ───────────────────────
 
@@ -77,6 +81,10 @@ describe('forNetwork', () => {
       name: 'exportToCx2',
       args: ['net-42'],
     })
+    expect(net.layout.applyLayout({ algorithmName: 'circle' } as any)).toEqual({
+      name: 'applyLayout',
+      args: ['net-42', { algorithmName: 'circle' }],
+    })
   })
 
   it('resolves the current network at call time when unbound', () => {
@@ -100,11 +108,14 @@ describe('forNetwork', () => {
     expect(Object.keys(net).sort()).toEqual([
       'element',
       'export',
+      'layout',
       'selection',
       'table',
       'viewport',
       'visualStyle',
     ])
+    // Only applyLayout is bound on the scoped layout domain
+    expect(Object.keys(net.layout)).toEqual(['applyLayout'])
   })
 
   it('scoped method types drop the networkId parameter (compile-time)', () => {
