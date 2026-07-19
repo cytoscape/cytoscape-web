@@ -850,6 +850,138 @@ describe('elementApi', () => {
     })
   })
 
+  // ── createNodes (batch) ─────────────────────────────────────────────────────
+
+  describe('createNodes', () => {
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.createNodes('missing', [{ position: [0, 0] }])
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
+    })
+
+    it('creates several nodes with sequential ids and distinct positions', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: '4' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createNodes('net1', [
+        { position: [10, 20] },
+        { position: [30, 40] },
+      ])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.nodes.map((n) => n.nodeId)).toEqual(['5', '6'])
+        expect(result.data.nodes[0].node.position).toEqual([10, 20])
+        expect(result.data.nodes[1].node.position).toEqual([30, 40])
+      }
+    })
+
+    it('records a single batch undo entry covering all created nodes', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNodes('net1', [
+        { position: [0, 0] },
+        { position: [1, 1] },
+        { position: [2, 2] },
+      ])
+
+      expect(mockUndoActions.setUndoStack).toHaveBeenCalledTimes(1)
+      const stack = mockUndoActions.setUndoStack.mock.calls[0][1]
+      expect(stack[0].undoCommand).toBe('CREATE_NODES_BATCH')
+      expect(stack[0].undoParams).toEqual(['net1', ['0', '1', '2']])
+    })
+
+    it('creates nothing when any spec has an invalid bypass', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNodes('net1', [
+        { position: [0, 0] },
+        { position: [1, 1], bypass: { EDGE_LINE_COLOR: '#fff' } as any },
+      ])
+
+      expect(result.success).toBe(false)
+      expect(createNodesCore).not.toHaveBeenCalled()
+      expect(mockUndoActions.setUndoStack).not.toHaveBeenCalled()
+    })
+
+    it('selects all created nodes by default', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNodes('net1', [{ position: [0, 0] }, { position: [1, 1] }])
+
+      expect(mockViewModelActions.exclusiveSelect).toHaveBeenCalledWith(
+        'net1',
+        ['0', '1'],
+        [],
+      )
+    })
+  })
+
+  // ── createEdges (batch) ─────────────────────────────────────────────────────
+
+  describe('createEdges', () => {
+    it('creates several edges with a single batch undo entry', () => {
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }], []),
+      )
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createEdges('net1', [
+        { sourceNodeId: 'n1', targetNodeId: 'n2' },
+        { sourceNodeId: 'n2', targetNodeId: 'n3' },
+      ])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.edges.map((e) => e.edgeId)).toEqual(['e0', 'e1'])
+      }
+      expect(mockUndoActions.setUndoStack).toHaveBeenCalledTimes(1)
+      const stack = mockUndoActions.setUndoStack.mock.calls[0][1]
+      expect(stack[0].undoCommand).toBe('CREATE_EDGES_BATCH')
+    })
+
+    it('creates nothing when any endpoint is missing', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createEdges('net1', [
+        { sourceNodeId: 'n1', targetNodeId: 'ghost' },
+      ])
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
+      }
+      expect(createEdgesCore).not.toHaveBeenCalled()
+      expect(mockUndoActions.setUndoStack).not.toHaveBeenCalled()
+    })
+  })
+
   // ── moveEdge ──────────────────────────────────────────────────────────────
 
   describe('moveEdge', () => {

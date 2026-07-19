@@ -26,6 +26,11 @@ export const UndoCommandType = {
   DELETE_EDGES: 'DELETE_EDGES',
   CREATE_NODES: 'CREATE_NODES',
   CREATE_EDGES: 'CREATE_EDGES',
+  // Batch variants created via the app API: one undo entry covers many
+  // elements, and redo faithfully recreates each with its own
+  // position/attributes (unlike CREATE_NODES, which shares one position).
+  CREATE_NODES_BATCH: 'CREATE_NODES_BATCH',
+  CREATE_EDGES_BATCH: 'CREATE_EDGES_BATCH',
   MOVE_EDGES: 'MOVE_EDGES',
   SET_CONTINUOUS_MAPPING: 'SET_CONTINUOUS_MAPPING',
 } as const

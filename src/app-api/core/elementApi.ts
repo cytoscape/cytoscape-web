@@ -69,6 +69,27 @@ export interface CreateEdgeOptions {
   autoSelect?: boolean
 }
 
+/** One node to create in a createNodes() batch. */
+export interface NodeSpec {
+  position: [number, number, number?]
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** One edge to create in a createEdges() batch. */
+export interface EdgeSpec {
+  sourceNodeId: IdType
+  targetNodeId: IdType
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** Options for the batch create operations. */
+export interface BatchCreateOptions {
+  /** Select the created elements after creation. @default true */
+  autoSelect?: boolean
+}
+
 export interface ElementApi {
   // --- Read ---
   getNode(networkId: IdType, nodeId: IdType): ApiResult<NodeData>
@@ -100,6 +121,29 @@ export interface ElementApi {
     targetNodeId: IdType,
     options?: CreateEdgeOptions,
   ): ApiResult<{ edgeId: IdType; edge: EdgeData }>
+
+  /**
+   * Create many nodes in one operation that records a single undo entry
+   * (undoing removes them all at once). Each spec carries its own
+   * position, attributes, and bypasses. Validation is all-or-nothing:
+   * if any spec is invalid, no node is created.
+   */
+  createNodes(
+    networkId: IdType,
+    nodes: NodeSpec[],
+    options?: BatchCreateOptions,
+  ): ApiResult<{ nodes: Array<{ nodeId: IdType; node: NodeData }> }>
+
+  /**
+   * Create many edges in one operation that records a single undo entry.
+   * Validation is all-or-nothing: if any endpoint is missing or any
+   * bypass invalid, no edge is created.
+   */
+  createEdges(
+    networkId: IdType,
+    edges: EdgeSpec[],
+    options?: BatchCreateOptions,
+  ): ApiResult<{ edges: Array<{ edgeId: IdType; edge: EdgeData }> }>
 
   // --- Update ---
   moveEdge(
@@ -244,6 +288,22 @@ function validateCreateTimeBypass(
     if (invalidValue) return invalidValue
   }
   return undefined
+}
+
+/** Highest numeric node id currently in the network (-1 when none). */
+function maxNumericNodeId(network: { nodes: Array<{ id: IdType }> }): number {
+  const ids = network.nodes
+    .map((n) => parseInt(n.id))
+    .filter((id) => !isNaN(id))
+  return ids.length > 0 ? Math.max(...ids) : -1
+}
+
+/** Highest numeric edge id (edges are 'e'-prefixed; -1 when none). */
+function maxNumericEdgeId(network: { edges: Array<{ id: IdType }> }): number {
+  const ids = network.edges
+    .map((e) => parseInt(e.id.startsWith('e') ? e.id.slice(1) : e.id))
+    .filter((id) => !isNaN(id))
+  return ids.length > 0 ? Math.max(...ids) : -1
 }
 
 /**
@@ -592,6 +652,198 @@ export const elementApi: ElementApi = {
           attributes,
         },
       })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  createNodes(
+    networkId,
+    nodes,
+    options,
+  ): ApiResult<{ nodes: Array<{ nodeId: IdType; node: NodeData }> }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      if (nodes.length === 0) return ok({ nodes: [] })
+
+      // Validate everything up front — batch creation is all-or-nothing
+      for (const spec of nodes) {
+        const invalidAttributes = validateNoIdAttribute(
+          spec.attributes,
+          'node',
+        )
+        if (invalidAttributes) return invalidAttributes
+        const invalidBypass = validateCreateTimeBypass(
+          networkId,
+          'node',
+          spec.bypass,
+        )
+        if (invalidBypass) return invalidBypass
+      }
+
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const hasNameColumn =
+        tableRecord?.nodeTable?.columns.some((col) => col.name === 'name') ??
+        false
+      const setBypass = useVisualStyleStore.getState().setBypass
+
+      let nextId = maxNumericNodeId(network) + 1
+      const created: Array<{ nodeId: IdType; node: NodeData }> = []
+      const redoSpecs: Array<{
+        nodeId: IdType
+        position: [number, number, number?]
+        attributes: Record<AttributeName, ValueType>
+      }> = []
+
+      for (const spec of nodes) {
+        const nodeId = `${nextId++}`
+        const attributes: Record<AttributeName, ValueType> = {
+          ...spec.attributes,
+        }
+        if (hasNameColumn && !attributes.name) {
+          attributes.name = `Node ${nodeId}`
+        }
+        // Rebuild actions each iteration so createNodesCore's summary
+        // count reads the network state after prior additions.
+        createNodesCore(
+          { networkId, nodeIds: [nodeId], position: spec.position, attributes },
+          buildNodeStoreActions(),
+        )
+        if (spec.bypass) {
+          for (const [vpName, vpValue] of Object.entries(spec.bypass) as Array<
+            [VisualPropertyName, VisualPropertyValueType]
+          >) {
+            setBypass(networkId, vpName, [nodeId], vpValue)
+          }
+        }
+        created.push({ nodeId, node: { attributes, position: spec.position } })
+        redoSpecs.push({ nodeId, position: spec.position, attributes })
+      }
+
+      const newNodeIds = created.map((c) => c.nodeId)
+      if (options?.autoSelect !== false) {
+        useViewModelStore.getState().exclusiveSelect(networkId, newNodeIds, [])
+      }
+
+      corePostEdit(
+        networkId,
+        UndoCommandType.CREATE_NODES_BATCH,
+        `Create ${newNodeIds.length} Node${newNodeIds.length === 1 ? '' : 's'}`,
+        [networkId, newNodeIds],
+        [networkId, redoSpecs],
+      )
+
+      return ok({ nodes: created })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  createEdges(
+    networkId,
+    edges,
+    options,
+  ): ApiResult<{ edges: Array<{ edgeId: IdType; edge: EdgeData }> }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      if (edges.length === 0) return ok({ edges: [] })
+
+      // Validate every spec up front — batch creation is all-or-nothing
+      const nodeIdSet = new Set(network.nodes.map((n) => n.id))
+      for (const spec of edges) {
+        const invalidAttributes = validateNoIdAttribute(spec.attributes, 'edge')
+        if (invalidAttributes) return invalidAttributes
+        if (!nodeIdSet.has(spec.sourceNodeId)) {
+          return fail(ElementCodes.NODE_NOT_FOUND, spec.sourceNodeId)
+        }
+        if (!nodeIdSet.has(spec.targetNodeId)) {
+          return fail(ElementCodes.NODE_NOT_FOUND, spec.targetNodeId)
+        }
+        const invalidBypass = validateCreateTimeBypass(
+          networkId,
+          'edge',
+          spec.bypass,
+        )
+        if (invalidBypass) return invalidBypass
+      }
+
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const hasNameColumn =
+        tableRecord?.edgeTable?.columns.some((col) => col.name === 'name') ??
+        false
+      const setBypass = useVisualStyleStore.getState().setBypass
+
+      let nextId = maxNumericEdgeId(network) + 1
+      const created: Array<{ edgeId: IdType; edge: EdgeData }> = []
+      const redoSpecs: Array<{
+        edgeId: IdType
+        sourceId: IdType
+        targetId: IdType
+        attributes: Record<AttributeName, ValueType>
+      }> = []
+
+      for (const spec of edges) {
+        const edgeId = `e${nextId++}`
+        const attributes: Record<AttributeName, ValueType> = {
+          ...spec.attributes,
+        }
+        if (hasNameColumn && !attributes.name) {
+          attributes.name = `${spec.sourceNodeId} (interacts with) ${spec.targetNodeId}`
+        }
+        // Rebuild actions each iteration so the summary count is fresh.
+        createEdgesCore(
+          {
+            networkId,
+            edgeIds: [edgeId],
+            sourceId: spec.sourceNodeId,
+            targetId: spec.targetNodeId,
+            attributes,
+          },
+          buildEdgeStoreActions(),
+        )
+        if (spec.bypass) {
+          for (const [vpName, vpValue] of Object.entries(spec.bypass) as Array<
+            [VisualPropertyName, VisualPropertyValueType]
+          >) {
+            setBypass(networkId, vpName, [edgeId], vpValue)
+          }
+        }
+        created.push({
+          edgeId,
+          edge: {
+            sourceId: spec.sourceNodeId,
+            targetId: spec.targetNodeId,
+            attributes,
+          },
+        })
+        redoSpecs.push({
+          edgeId,
+          sourceId: spec.sourceNodeId,
+          targetId: spec.targetNodeId,
+          attributes,
+        })
+      }
+
+      const newEdgeIds = created.map((c) => c.edgeId)
+      if (options?.autoSelect !== false) {
+        useViewModelStore.getState().exclusiveSelect(networkId, [], newEdgeIds)
+      }
+
+      corePostEdit(
+        networkId,
+        UndoCommandType.CREATE_EDGES_BATCH,
+        `Create ${newEdgeIds.length} Edge${newEdgeIds.length === 1 ? '' : 's'}`,
+        [networkId, newEdgeIds],
+        [networkId, redoSpecs],
+      )
+
+      return ok({ edges: created })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }

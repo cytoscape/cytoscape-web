@@ -25,11 +25,14 @@ export type { AppContext, AppContextApis, CyAppWithLifecycle } from './AppContex
 
 // ── Domain API types (Phase 1a–1g) ──────────────────────────────
 export type {
+  BatchCreateOptions,
   CreateEdgeOptions,
   CreateNodeOptions,
   EdgeData,
+  EdgeSpec,
   ElementApi,
   NodeData,
+  NodeSpec,
 } from '../core/elementApi'
 export type {
   ApplyLayoutOptions,

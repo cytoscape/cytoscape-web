@@ -331,6 +331,52 @@ export const useUndoStack = () => {
         // Use the pure function to delete edges
         deleteEdgesCore(networkId, edgeIds, network, storeActions)
       },
+      [UndoCommandType.CREATE_NODES_BATCH]: (params: any[]) => {
+        // Undo batch node creation by deleting the created nodes
+        const networkId: IdType = params[0]
+        const nodeIds: IdType[] = params[1]
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+        const storeActions: NodeOperationStoreActions = {
+          deleteNodesFromNetwork,
+          addNode,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addNodeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        deleteNodesCore(networkId, nodeIds, network, storeActions)
+      },
+      [UndoCommandType.CREATE_EDGES_BATCH]: (params: any[]) => {
+        // Undo batch edge creation by deleting the created edges
+        const networkId: IdType = params[0]
+        const edgeIds: IdType[] = params[1]
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+        const storeActions: EdgeOperationStoreActions = {
+          deleteEdgesFromNetwork,
+          addEdge,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addEdgeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        deleteEdgesCore(networkId, edgeIds, network, storeActions)
+      },
 
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
         const networkId: IdType = params[0]
@@ -580,6 +626,75 @@ export const useUndoStack = () => {
 
         // Use the pure function to create edges
         createEdgesCore(paramsObj, storeActions)
+      },
+      [UndoCommandType.CREATE_NODES_BATCH]: (params: any[]) => {
+        // Redo batch node creation — recreate each node with its own
+        // position and attributes (fidelity CREATE_NODES cannot provide)
+        const networkId: IdType = params[0]
+        const specs: Array<{
+          nodeId: IdType
+          position: [number, number, number?]
+          attributes: Record<string, ValueType>
+        }> = params[1]
+        const storeActions: NodeOperationStoreActions = {
+          deleteNodesFromNetwork,
+          addNode,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addNodeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        for (const spec of specs) {
+          createNodesCore(
+            {
+              networkId,
+              nodeIds: [spec.nodeId],
+              position: spec.position,
+              attributes: spec.attributes,
+            },
+            storeActions,
+          )
+        }
+      },
+      [UndoCommandType.CREATE_EDGES_BATCH]: (params: any[]) => {
+        // Redo batch edge creation — recreate each edge individually
+        const networkId: IdType = params[0]
+        const specs: Array<{
+          edgeId: IdType
+          sourceId: IdType
+          targetId: IdType
+          attributes: Record<string, ValueType>
+        }> = params[1]
+        const storeActions: EdgeOperationStoreActions = {
+          deleteEdgesFromNetwork,
+          addEdge,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addEdgeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        for (const spec of specs) {
+          createEdgesCore(
+            {
+              networkId,
+              edgeIds: [spec.edgeId],
+              sourceId: spec.sourceId,
+              targetId: spec.targetId,
+              attributes: spec.attributes,
+            },
+            storeActions,
+          )
+        }
       },
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
         const networkId: IdType = params[0]
