@@ -52,6 +52,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   collection getters now uniformly wrap their result in a named object.
 - `ViewportApi.getNodePositions` takes an optional `nodeIds` (all nodes when
   omitted) and returns `{ positions, missing }`.
+- `ElementApi.getEdges` carries attributes, accepts an optional `edgeIds`
+  filter, and returns `{ edges, missing }`.
+- `ElementApi.deleteNodes` / `deleteEdges` results gained a `missing` field
+  listing requested ids that did not exist.
 
 ### Fixed
 

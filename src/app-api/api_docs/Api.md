@@ -300,7 +300,7 @@ columns in the edge table if they exist. Adds an undo entry.
 | `GL2`      | `edgeId` does not exist                     |
 | `GL1`      | `newSourceId` or `newTargetId` not found     |
 
-#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges }>`
+#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges, missing }>`
 
 Deletes the specified nodes and any incident edges. Visual style bypasses for the
 deleted elements are cleaned up. Adds an undo entry.
@@ -310,6 +310,8 @@ Returns:
 - `deletedNodes: Array<{ id, attributes, position }>` — full `NodeData` for each deleted node
 - `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each
   incidentally-deleted edge (edges connected to the deleted nodes)
+- `missing: IdType[]` — requested node ids that did not exist (partial requests
+  still succeed; the op fails only when none of the ids exist)
 
 | Error Code | Condition                          |
 | ---------- | ------------------------------------ |
@@ -317,13 +319,14 @@ Returns:
 | `APP9`     | `nodeIds` is empty                   |
 | `GL1`      | None of the specified nodes exist    |
 
-#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges }>`
+#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges, missing }>`
 
 Deletes the specified edges. Visual style bypasses are cleaned up. Adds an undo entry.
 
 Returns:
 - `deletedEdgeCount` — number of removed edges
 - `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each deleted edge
+- `missing: IdType[]` — requested edge ids that did not exist
 
 | Error Code | Condition                          |
 | ---------- | ------------------------------------ |

@@ -1127,6 +1127,24 @@ describe('elementApi', () => {
       }
     })
 
+    it('deletes existing nodes and reports non-existent ids in missing', () => {
+      vi.mocked(deleteNodesCore).mockReturnValue({
+        deletedNodeIds: ['n1'],
+        deletedEdges: [],
+        deletedNodeViews: [],
+        deletedEdgeViews: [],
+        deletedNodeRows: new Map(),
+        deletedEdgeRows: new Map(),
+      })
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }], []))
+
+      const result = elementApi.deleteNodes('net1', ['n1', 'ghost'])
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.missing).toEqual(['ghost'])
+      }
+    })
+
     it('returns ok with deletion counts and element data on success', () => {
       vi.mocked(deleteNodesCore).mockReturnValue({
         deletedNodeIds: ['n1'],
@@ -1219,6 +1237,24 @@ describe('elementApi', () => {
             attributes: { weight: 0.5 },
           },
         ])
+      }
+    })
+
+    it('deletes existing edges and reports non-existent ids in missing', () => {
+      vi.mocked(deleteEdgesCore).mockReturnValue({
+        deletedEdgeIds: ['e1'],
+        deletedEdgeViews: [],
+        deletedEdgeRows: new Map(),
+      })
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e1', s: 'n1', t: 'n2' }]),
+      )
+
+      const result = elementApi.deleteEdges('net1', ['e1', 'ghost'])
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.missing).toEqual(['ghost'])
       }
     })
   })

@@ -153,6 +153,11 @@ export interface ElementApi {
   ): ApiResult
 
   // --- Delete ---
+  /**
+   * Delete nodes (and their incident edges). Ids that don't exist are
+   * reported in `missing` rather than failing the call; the operation
+   * fails only when none of the ids exist.
+   */
   deleteNodes(
     networkId: IdType,
     nodeIds: IdType[],
@@ -161,14 +166,22 @@ export interface ElementApi {
     deletedEdgeCount: number
     deletedNodes: Array<{ id: IdType } & NodeData>
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    /** Requested node ids that did not exist. */
+    missing: IdType[]
   }>
 
+  /**
+   * Delete edges. Ids that don't exist are reported in `missing` rather
+   * than failing the call; the operation fails only when none exist.
+   */
   deleteEdges(
     networkId: IdType,
     edgeIds: IdType[],
   ): ApiResult<{
     deletedEdgeCount: number
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    /** Requested edge ids that did not exist. */
+    missing: IdType[]
   }>
 
   /** Return the id the next created node in this network will receive. */
@@ -907,6 +920,7 @@ export const elementApi: ElementApi = {
     deletedEdgeCount: number
     deletedNodes: Array<{ id: IdType } & NodeData>
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
@@ -926,6 +940,8 @@ export const elementApi: ElementApi = {
       }
 
       const existingNodeIds = nodesToDelete.map((node) => node.id)
+      const existingSet = new Set(existingNodeIds)
+      const missing = nodeIds.filter((id) => !existingSet.has(id))
 
       // Capture visual style bypasses before deletion
       const visualStyles = useVisualStyleStore.getState().visualStyles
@@ -1042,6 +1058,7 @@ export const elementApi: ElementApi = {
         deletedEdgeCount: result.deletedEdges.length,
         deletedNodes,
         deletedEdges: deletedEdgesData,
+        missing,
       })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -1054,6 +1071,7 @@ export const elementApi: ElementApi = {
   ): ApiResult<{
     deletedEdgeCount: number
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
@@ -1073,6 +1091,8 @@ export const elementApi: ElementApi = {
       }
 
       const existingEdgeIds = edgesToDelete.map((edge) => edge.id)
+      const existingEdgeSet = new Set(existingEdgeIds)
+      const missing = edgeIds.filter((id) => !existingEdgeSet.has(id))
 
       // Capture visual style bypasses before deletion
       const visualStyles = useVisualStyleStore.getState().visualStyles
@@ -1155,6 +1175,7 @@ export const elementApi: ElementApi = {
       return ok({
         deletedEdgeCount: result.deletedEdgeIds.length,
         deletedEdges: deletedEdgesData,
+        missing,
       })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
