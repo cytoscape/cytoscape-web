@@ -96,6 +96,9 @@ export type { ResourceSlot } from './AppResourceTypes'
 // ── CyWebApiType: assembles all 10 domain APIs (Phase 1g+1h) ─────
 export type { CyWebApiType } from '../core'
 
+// ── Scoped (current-network) API ─────────────────────────────────
+export type { ScopedCyWebApi } from '../core/scopedApi'
+
 // ── Re-exported model types ─────────────────────────────────────
 export type {
   AttributeName,

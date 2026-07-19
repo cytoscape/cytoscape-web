@@ -63,6 +63,31 @@ guards that narrow an `ApiResult<T>` to its success or failure branch (handy in
 All hooks are thin React wrappers around framework-agnostic core objects.
 The same objects are exposed on `window.CyWebApi` for Vanilla JS consumers.
 
+### Scoped (current-network) API — `CyWebApi.forNetwork(networkId?)`
+
+Every method on the network-scoped domains takes `networkId` as its first
+argument. `forNetwork(networkId?)` returns a view of those domains — `element`,
+`table`, `selection`, `viewport`, `visualStyle`, `export` — with the id
+pre-bound, so it never has to be passed on individual calls. Omit the argument
+to target the workspace's **current** network, resolved at call time.
+
+```typescript
+// Bind the current network (resolved per call)
+const net = window.CyWebApi.forNetwork()
+net.element.createNode([100, 200])
+net.selection.exclusiveSelect(['n1'], [])
+net.table.getTable('node')
+
+// Bind a specific network
+const other = window.CyWebApi.forNetwork('net-42')
+other.export.exportToCx2()
+```
+
+Domains whose methods are not uniformly network-scoped — `network`, `workspace`,
+`layout`, `contextMenu` — are intentionally excluded from the scoped view; call
+those on the top-level `CyWebApi`. The scoped view is purely additive: it
+delegates to the same underlying domain objects.
+
 > **Context Menu API:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
 > Context menu access is now via `AppContext.apis.contextMenu` (per-app factory in `mount()`) or
 > `window.CyWebApi.contextMenu` (anonymous singleton for non-React consumers).
