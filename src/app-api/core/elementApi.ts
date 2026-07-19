@@ -27,13 +27,18 @@ import { VisualPropertyName } from '../../models/VisualStyleModel/VisualProperty
 import { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
 import {
   AppCodes,
+  ApiFailure,
   ApiResult,
   ElementCodes,
   fail,
   ok,
+  StyleCodes,
 } from '../types/ApiResult'
 import { corePostEdit } from './undo'
-import { validateNoIdAttribute } from './validation'
+import {
+  validateNoIdAttribute,
+  validateVisualPropertyValue,
+} from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -179,6 +184,53 @@ export interface ElementApi {
 // ── Private helpers ──────────────────────────────────────────────────────────
 
 /**
+ * Validate create-time bypass options with the same rules setBypass
+ * enforces: the visual property must exist, must match the scope of the
+ * element being created, and the value must match the property's type.
+ * Runs BEFORE the element is created so a bad bypass never leaves a
+ * half-created element behind.
+ */
+function validateCreateTimeBypass(
+  networkId: IdType,
+  group: 'node' | 'edge',
+  bypass:
+    | Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+    | undefined,
+): ApiFailure | undefined {
+  if (bypass === undefined) return undefined
+  const style = useVisualStyleStore.getState().visualStyles[networkId]
+  if (style === undefined) {
+    return fail(
+      AppCodes.INVALID_INPUT,
+      `Network ${networkId} has no visual style to apply bypasses to`,
+    )
+  }
+  const bypassEntries = Object.entries(bypass) as Array<
+    [VisualPropertyName, VisualPropertyValueType]
+  >
+  for (const [vpName, vpValue] of bypassEntries) {
+    const visualProperty = style[vpName]
+    if (visualProperty === undefined) {
+      return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
+    }
+    if (visualProperty.group !== group) {
+      return fail(
+        StyleCodes.BYPASS_SCOPE_MISMATCH,
+        visualProperty.group,
+        `the newly created ${group}`,
+      )
+    }
+    const invalidValue = validateVisualPropertyValue(
+      vpName,
+      visualProperty.type,
+      vpValue,
+    )
+    if (invalidValue) return invalidValue
+  }
+  return undefined
+}
+
+/**
  * Build NodeOperationStoreActions from current store state.
  * Called at execution time, not at module load, so state is always fresh.
  */
@@ -307,6 +359,13 @@ export const elementApi: ElementApi = {
       )
       if (invalidAttributes) return invalidAttributes
 
+      const invalidBypass = validateCreateTimeBypass(
+        networkId,
+        'node',
+        options?.bypass,
+      )
+      if (invalidBypass) return invalidBypass
+
       // Generate unique ID (replicate useCreateNode.generateNextNodeId)
       const existingIds = network.nodes
         .map((n) => parseInt(n.id))
@@ -385,6 +444,13 @@ export const elementApi: ElementApi = {
         'edge',
       )
       if (invalidAttributes) return invalidAttributes
+
+      const invalidBypass = validateCreateTimeBypass(
+        networkId,
+        'edge',
+        options?.bypass,
+      )
+      if (invalidBypass) return invalidBypass
 
       const sourceNode = network.nodes.find((n) => n.id === sourceNodeId)
       if (!sourceNode) {

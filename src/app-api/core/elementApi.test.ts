@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // src/app-api/core/elementApi.test.ts
 // Plain Jest tests for elementApi core — no renderHook, no React context.
 import {
+  createEdgesCore,
   createNodesCore,
   deleteEdgesCore,
   deleteNodesCore,
 } from '../../models/CyNetworkModel'
-import { AppCodes, ElementCodes } from '../types/ApiResult'
+import { AppCodes, ElementCodes, StyleCodes } from '../types/ApiResult'
 import { elementApi } from './elementApi'
 
 // ── Mock stores ──────────────────────────────────────────────────────────────
@@ -292,6 +293,15 @@ function resetMocks() {
   vi.clearAllMocks()
 }
 
+/** Visual style with one node- and one edge-scoped property, for bypass tests */
+function setMockStyle(networkId: string) {
+  mockVisualStyles[networkId] = {
+    NODE_FILL_COLOR: { group: 'node', type: 'color', defaultValue: '#ffffff' },
+    NODE_LABEL: { group: 'node', type: 'string', defaultValue: '' },
+    EDGE_LINE_COLOR: { group: 'edge', type: 'color', defaultValue: '#000000' },
+  }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('elementApi', () => {
@@ -566,6 +576,7 @@ describe('elementApi', () => {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
       }
+      setMockStyle('net1')
 
       elementApi.createNode('net1', [0, 0], {
         bypass: { NODE_FILL_COLOR: '#ff0000' } as any,
@@ -577,6 +588,64 @@ describe('elementApi', () => {
         ['0'],
         '#ff0000',
       )
+    })
+
+    it('rejects a bypass for an unknown visual property without creating the node', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { NOT_A_REAL_VP: '#ff0000' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
+      expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
+    })
+
+    it('rejects an edge-scoped bypass on node creation (CX2 BV2)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { EDGE_LINE_COLOR: '#00ff00' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
+    })
+
+    it('rejects a bypass value that fails type validation without creating the node', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { NODE_FILL_COLOR: 'not-a-color' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(StyleCodes.INVALID_COLOR.code)
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
     })
 
     it('does not call setBypass when no bypass option', () => {
@@ -596,6 +665,7 @@ describe('elementApi', () => {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
       }
+      setMockStyle('net1')
 
       elementApi.createNode('net1', [0, 0], {
         bypass: {
@@ -679,6 +749,7 @@ describe('elementApi', () => {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
       }
+      setMockStyle('net1')
 
       elementApi.createEdge('net1', 'n1', 'n2', {
         bypass: { EDGE_LINE_COLOR: '#00ff00' } as any,
@@ -690,6 +761,26 @@ describe('elementApi', () => {
         ['e0'],
         '#00ff00',
       )
+    })
+
+    it('rejects a node-scoped bypass on edge creation (CX2 BV2)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createEdge('net1', 'n1', 'n2', {
+        bypass: { NODE_FILL_COLOR: '#ff0000' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
+      }
+      expect(createEdgesCore).not.toHaveBeenCalled()
+      expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
     })
 
     it('does not call setBypass when no bypass option', () => {
