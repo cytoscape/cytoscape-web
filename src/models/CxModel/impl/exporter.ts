@@ -222,11 +222,15 @@ export const exportCyNetworkToCx2 = (
     )
     .concat(
       Object.entries(opaqueAspects ?? {})
-        // The style-set aspect is always regenerated from the current styles
-        // above; a copy carried through opaque aspects would be stale.
+        // When a fresh style-set aspect is emitted above, an opaque copy
+        // would be stale — drop it. When NOT emitting (single default style,
+        // or an aspect this version could not consume), pass the copy
+        // through untouched so the data is never destroyed by a save.
         .filter(
           ([key, aspect]) =>
-            aspect != null && key !== CY_WEB_VISUAL_STYLES_ASPECT_TAG,
+            aspect != null &&
+            (cyWebVisualStyles === undefined ||
+              key !== CY_WEB_VISUAL_STYLES_ASPECT_TAG),
         )
         .map(([key, aspect]) => {
           return { key, aspect }

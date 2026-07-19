@@ -54,6 +54,15 @@ Key actions (`StyleSetAction` in
 the set to produce the full model-layer `VisualStyleSet` for persistence and
 export.
 
+Persistence note: the store's persist middleware only writes the CURRENT
+network's row, but the Vizmapper can target a non-current network
+(`ui.activeNetworkView`, e.g. a HierarchyViewer subnetwork) — so every
+style-set action explicitly persists the network it mutated, and undo-stack
+clears are persisted for that network too. (Plain visual-property edits on
+non-current networks remain covered only by the current-network middleware —
+pre-existing behavior, unchanged; HierarchyViewer subnetworks are ephemeral
+query results with no NDEx save path.)
+
 The style library lives in `useStyleLibraryStore`
 (`src/data/hooks/stores/StyleLibraryStore.ts`): write-through persistence per
 mutation, `hydrate()` loads once on first use (called when the library dialog
@@ -116,12 +125,19 @@ Rules:
   "Default" (the standard aspects already express that) — the common case
   stays clean CX2.
 - On import the aspect is validated with zod. Any structural problem
-  (malformed shape, dangling `activeStyleId`, duplicate ids, more than
-  `MAX_STYLES_PER_NETWORK` = 50 styles) logs a warning and falls back to a
-  single-style set built from the standard aspects — a bad aspect can never
-  break network loading. The same cap is enforced by the store's
-  `createStyle` / `duplicateStyle` / `importStyle` actions, so any set that
-  can be created locally can always round-trip through NDEx.
+  (malformed shape, dangling `activeStyleId`, duplicate ids, an unsupported
+  major `version`, more than `MAX_STYLES_PER_NETWORK` = 50 styles) logs a
+  warning and falls back to a single-style set built from the standard
+  aspects — a bad aspect can never break network loading. The same cap is
+  enforced by the store's `createStyle` / `duplicateStyle` / `importStyle`
+  actions, so any set that can be created locally can always round-trip
+  through NDEx.
+- **Unusable aspects are preserved, never destroyed**: when the importer
+  falls back, the RAW aspect stays in `otherAspects` (opaque passthrough),
+  and the exporter only drops an opaque copy when it emits a freshly
+  regenerated aspect. A document written by a newer format version — or one
+  this version cannot parse — therefore survives an open-and-save cycle
+  untouched instead of losing its named styles.
 - The **standard aspects win for the active style's content**: tools that
   don't know this aspect edit only `visualProperties`, and their edits must
   not be reverted by a stale set entry on re-import.

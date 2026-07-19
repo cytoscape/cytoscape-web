@@ -39,6 +39,7 @@ import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/Vi
 import {
   clearVisualStyleFromDb,
   deleteVisualStyleFromDb,
+  putUndoRedoStackToDb,
   putVisualStyleSetToDb,
 } from '../../db'
 import { useUndoStore } from './UndoStore'
@@ -108,6 +109,43 @@ export const getVisualStyleSetSnapshot = (
  */
 const isStyleSetAtCap = (styles: Record<IdType, unknown>): boolean =>
   Object.keys(styles).length >= MAX_STYLES_PER_NETWORK
+
+/**
+ * Persist the (finalized) style set of a specific network.
+ *
+ * The persist middleware below only writes the CURRENT network's row, but
+ * the Vizmapper can target a non-current network (ui.activeNetworkView,
+ * e.g. a HierarchyViewer subnetwork) — so every style-set action calls this
+ * for the network it actually mutated.
+ */
+const persistStyleSetOf = (networkId: IdType): void => {
+  const assembled = assembleStyleSet(useVisualStyleStore.getState(), networkId)
+  if (assembled !== undefined) {
+    void putVisualStyleSetToDb(networkId, assembled).catch((e) => {
+      logStore.error(
+        `[VisualStyleStore]: Failed to persist style set of network ${networkId}: ${e}`,
+      )
+    })
+  }
+}
+
+/**
+ * Clear a network's undo/redo history in memory AND in the DB.
+ * UndoStore's own persist middleware also only covers the current network,
+ * and a cleared-in-memory-but-stale-on-disk stack would corrupt the newly
+ * activated style after a reload.
+ */
+const clearUndoHistoryOf = (networkId: IdType): void => {
+  useUndoStore.getState().addStack(networkId, { undoStack: [], redoStack: [] })
+  void putUndoRedoStackToDb(networkId, {
+    undoStack: [],
+    redoStack: [],
+  }).catch((e) => {
+    logStore.error(
+      `[VisualStyleStore]: Failed to persist cleared undo stack of network ${networkId}: ${e}`,
+    )
+  })
+}
 
 /**
  * Visual Style State manager based on zustand
@@ -235,11 +273,10 @@ export const useVisualStyleStore = create(
           return state
         })
         if (switched) {
+          persistStyleSetOf(networkId)
           // Undo entries recorded so far reference the previous style; keeping
           // them would corrupt the newly activated style when undone.
-          useUndoStore
-            .getState()
-            .addStack(networkId, { undoStack: [], redoStack: [] })
+          clearUndoHistoryOf(networkId)
         }
       },
 
@@ -271,6 +308,9 @@ export const useVisualStyleStore = create(
           }
           return state
         })
+        if (newId !== undefined) {
+          persistStyleSetOf(networkId)
+        }
         return newId
       },
 
@@ -320,10 +360,14 @@ export const useVisualStyleStore = create(
           }
           return state
         })
+        if (newId !== undefined) {
+          persistStyleSetOf(networkId)
+        }
         return newId
       },
 
       renameStyle: (networkId: IdType, styleId: IdType, name: string) => {
+        let renamed = false
         set((state) => {
           const entry = state.styleSets[networkId]?.styles[styleId]
           if (entry === undefined) {
@@ -336,11 +380,16 @@ export const useVisualStyleStore = create(
             .filter((sibling) => sibling.id !== styleId)
             .map((sibling) => sibling.name)
           entry.name = uniqueStyleName(name, siblingNames)
+          renamed = true
           return state
         })
+        if (renamed) {
+          persistStyleSetOf(networkId)
+        }
       },
 
       deleteStyle: (networkId: IdType, styleId: IdType) => {
+        let deleted = false
         let deletedActive = false
         set((state) => {
           const setState = state.styleSets[networkId]
@@ -375,12 +424,14 @@ export const useVisualStyleStore = create(
             deletedActive = true
           }
           delete setState.styles[styleId]
+          deleted = true
           return state
         })
+        if (deleted) {
+          persistStyleSetOf(networkId)
+        }
         if (deletedActive) {
-          useUndoStore
-            .getState()
-            .addStack(networkId, { undoStack: [], redoStack: [] })
+          clearUndoHistoryOf(networkId)
         }
       },
 
@@ -415,6 +466,9 @@ export const useVisualStyleStore = create(
           }
           return state
         })
+        if (newId !== undefined) {
+          persistStyleSetOf(networkId)
+        }
         return newId
       },
 

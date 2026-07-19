@@ -155,11 +155,10 @@ describe('export', () => {
     expect(getCyWebVisualStylesAspect(cx2 as Cx2)).toBeUndefined()
   })
 
-  it('should drop a stale copy of the aspect carried in otherAspects', () => {
+  it('should drop a stale opaque copy when emitting a fresh aspect', () => {
     const { cyNetwork } = buildMultiStyleCyNetwork()
     const cx2 = exportCyNetworkToCx2({
       ...cyNetwork,
-      visualStyleSet: undefined,
       otherAspects: [
         {
           [CY_WEB_VISUAL_STYLES_ASPECT_TAG]: [
@@ -167,8 +166,28 @@ describe('export', () => {
           ],
         },
       ],
+    }) as any[]
+    // Exactly one cyWebVisualStyles entry: the regenerated one
+    const entries = cx2.filter(
+      (e) => Object.keys(e)[0] === CY_WEB_VISUAL_STYLES_ASPECT_TAG,
+    )
+    expect(entries).toHaveLength(1)
+    expect(entries[0][CY_WEB_VISUAL_STYLES_ASPECT_TAG][0].activeStyleId).toBe(
+      'style-main',
+    )
+  })
+
+  it('should pass an opaque copy through when NOT emitting a fresh aspect', () => {
+    // A copy this version could not consume (e.g. from a newer version)
+    // must survive the save untouched instead of being destroyed
+    const staleAspect = { activeStyleId: 'stale', styles: [], version: '2.0' }
+    const { cyNetwork } = buildMultiStyleCyNetwork()
+    const cx2 = exportCyNetworkToCx2({
+      ...cyNetwork,
+      visualStyleSet: undefined,
+      otherAspects: [{ [CY_WEB_VISUAL_STYLES_ASPECT_TAG]: [staleAspect] }],
     })
-    expect(getCyWebVisualStylesAspect(cx2 as Cx2)).toBeUndefined()
+    expect(getCyWebVisualStylesAspect(cx2 as Cx2)).toEqual(staleAspect)
   })
 })
 
@@ -288,6 +307,58 @@ describe('createVisualStyleSetFromCx fallbacks (malformed external data)', () =>
       activeStyleId: 'a',
       styles: [{ id: 'a' }],
     })
+  })
+
+  it('should fall back on an unsupported major version', () => {
+    expectFallback({
+      version: '2.0',
+      activeStyleId: 'a',
+      styles: [{ id: 'a', name: 'A', visualProperties: {} }],
+    })
+  })
+
+  it('should accept 1.x versions and a missing version', () => {
+    const okAspect = {
+      version: '1.4',
+      activeStyleId: 'a',
+      styles: [{ id: 'a', name: 'A', visualProperties: {} }],
+    }
+    const cx = [
+      { [CY_WEB_VISUAL_STYLES_ASPECT_TAG]: [okAspect] },
+    ] as unknown as Cx2
+    expect(
+      Object.keys(createVisualStyleSetFromCx(cx, activeStyle).styles),
+    ).toEqual(['a'])
+  })
+
+  it('should preserve an unusable aspect in otherAspects for round-trip', () => {
+    // Full user scenario: a document whose aspect this version cannot
+    // consume is imported and saved again — the aspect must survive.
+    const { cyNetwork } = buildMultiStyleCyNetwork()
+    const unusableAspect = {
+      version: '2.0',
+      activeStyleId: 'future',
+      styles: [{ id: 'future', name: 'Future', visualProperties: {} }],
+    }
+    const cx2 = exportCyNetworkToCx2({
+      ...cyNetwork,
+      visualStyleSet: undefined,
+      otherAspects: [{ [CY_WEB_VISUAL_STYLES_ASPECT_TAG]: [unusableAspect] }],
+    }) as Cx2
+
+    const imported = createCyNetworkFromCx2(NETWORK_ID, cx2)
+    // Fallback single-style set in the app…
+    expect(Object.values(imported.visualStyleSet?.styles ?? {})).toHaveLength(1)
+    // …but the raw aspect is retained for opaque passthrough
+    expect(
+      (imported.otherAspects ?? []).some(
+        (aspect) => Object.keys(aspect)[0] === CY_WEB_VISUAL_STYLES_ASPECT_TAG,
+      ),
+    ).toBe(true)
+
+    // Re-export: the untouched aspect survives the save
+    const reExported = exportCyNetworkToCx2(imported) as Cx2
+    expect(getCyWebVisualStylesAspect(reExported)).toEqual(unusableAspect)
   })
 
   it('should use the default name for blank style names', () => {

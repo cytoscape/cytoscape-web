@@ -13,6 +13,7 @@ import {
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
 import { DEFAULT_STYLE_NAME } from '../../../models/VisualStyleModel'
 import { createStyleSet } from '../../../models/VisualStyleModel/impl/visualStyleSetImpl'
+import { putUndoRedoStackToDb, putVisualStyleSetToDb } from '../../db'
 import { useUndoStore } from './UndoStore'
 import {
   getVisualStyleSetSnapshot,
@@ -41,6 +42,8 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    putVisualStyleSetToDb: vi.fn().mockResolvedValue(undefined),
+    putUndoRedoStackToDb: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -869,8 +872,7 @@ describe('useVisualStyleStore', () => {
         )
       })
       expect(copyId).toBeDefined()
-      const copy =
-        result.current.styleSets[networkId].styles[copyId as IdType]
+      const copy = result.current.styleSets[networkId].styles[copyId as IdType]
       expect(copy.name).toBe('Copy of Publication')
       expect(copy.visualStyle?.nodeShape.defaultValue).toBe('ellipse')
     })
@@ -1052,6 +1054,54 @@ describe('useVisualStyleStore', () => {
         result.current.deleteAll()
       })
       expect(result.current.styleSets).toEqual({})
+    })
+
+    it('style-set actions should persist the mutated network even when it is not current', () => {
+      // The workspace mock's currentNetworkId is 'test-network-1', so
+      // 'network-1' here is a NON-current network (like a HierarchyViewer
+      // subnetwork targeted via ui.activeNetworkView). The persist
+      // middleware only covers the current network; the actions must
+      // persist their own target explicitly.
+      const { result } = renderHook(() => useVisualStyleStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+      })
+      vi.mocked(putVisualStyleSetToDb).mockClear()
+
+      act(() => {
+        publicationId = result.current.createStyle(networkId, 'Publication')
+      })
+      expect(
+        vi
+          .mocked(putVisualStyleSetToDb)
+          .mock.calls.some(([id]) => id === networkId),
+      ).toBe(true)
+
+      vi.mocked(putVisualStyleSetToDb).mockClear()
+      vi.mocked(putUndoRedoStackToDb).mockClear()
+      act(() => {
+        result.current.switchStyle(networkId, publicationId as IdType)
+      })
+      expect(
+        vi
+          .mocked(putVisualStyleSetToDb)
+          .mock.calls.some(([id]) => id === networkId),
+      ).toBe(true)
+      // The cleared undo history is persisted for the same network too —
+      // a stale on-disk stack would corrupt the new style after a reload
+      expect(
+        vi
+          .mocked(putUndoRedoStackToDb)
+          .mock.calls.some(
+            ([id, stack]) => id === networkId && stack.undoStack.length === 0,
+          ),
+      ).toBe(true)
+
+      const persistedSet = vi
+        .mocked(putVisualStyleSetToDb)
+        .mock.calls.find(([id]) => id === networkId)?.[1]
+      expect(persistedSet?.activeStyleId).toBe(publicationId)
     })
 
     it('createStyleSet helper output should be accepted by add', () => {

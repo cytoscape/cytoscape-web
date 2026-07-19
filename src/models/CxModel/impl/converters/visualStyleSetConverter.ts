@@ -95,25 +95,27 @@ export const getCyWebVisualStylesAspect = (cx: Cx2): unknown => {
 }
 
 /**
- * Build a VisualStyleSet from a CX2 document.
+ * Try to parse the `cyWebVisualStyles` aspect of a CX2 document into a
+ * VisualStyleSet.
+ *
+ * Returns undefined when the aspect is absent OR cannot be faithfully
+ * consumed (malformed, oversized, or written by an incompatible major
+ * version). Callers must then keep the RAW aspect in the opaque-aspect
+ * passthrough so the data survives the next export instead of being
+ * silently destroyed — see createCyNetworkFromCx2.
  *
  * @param cx - Full CX2 document (external data — the aspect is validated here)
  * @param activeVisualStyle - The style already converted from the standard
- *   `visualProperties` / bypass aspects. It is used as the content of the
- *   active entry (external tools edit the standard aspects, so they must win)
- *   and as the fallback single style when the custom aspect is absent or
- *   malformed.
- * @returns A structurally valid VisualStyleSet — never throws.
+ *   `visualProperties` / bypass aspects, used as the content of the active
+ *   entry (external tools edit the standard aspects, so they must win).
  */
-export const createVisualStyleSetFromCx = (
+export const parseCyWebVisualStylesAspect = (
   cx: Cx2,
   activeVisualStyle: VisualStyle,
-): VisualStyleSet => {
-  const fallback = (): VisualStyleSet => createStyleSet(activeVisualStyle)
-
+): VisualStyleSet | undefined => {
   const rawAspect = getCyWebVisualStylesAspect(cx)
   if (rawAspect === undefined) {
-    return fallback()
+    return undefined
   }
 
   const parsed = cyWebVisualStylesSchema.safeParse(rawAspect)
@@ -121,15 +123,23 @@ export const createVisualStyleSetFromCx = (
     logModel.warn(
       `[visualStyleSetConverter]: Malformed ${CY_WEB_VISUAL_STYLES_ASPECT_TAG} aspect, falling back to single style: ${parsed.error.message}`,
     )
-    return fallback()
+    return undefined
   }
 
   const aspect = parsed.data
+  // Only major version 1 is understood; anything else is preserved opaquely
+  // rather than interpreted (a future format may not be a superset)
+  if (aspect.version !== undefined && !/^1(\.|$)/.test(aspect.version)) {
+    logModel.warn(
+      `[visualStyleSetConverter]: Unsupported ${CY_WEB_VISUAL_STYLES_ASPECT_TAG} aspect version "${aspect.version}", falling back to single style`,
+    )
+    return undefined
+  }
   if (aspect.styles.length > MAX_STYLES_PER_NETWORK) {
     logModel.warn(
       `[visualStyleSetConverter]: ${CY_WEB_VISUAL_STYLES_ASPECT_TAG} aspect contains ${aspect.styles.length} styles (max ${MAX_STYLES_PER_NETWORK}), falling back to single style`,
     )
-    return fallback()
+    return undefined
   }
 
   const ids = aspect.styles.map((s) => s.id)
@@ -137,13 +147,13 @@ export const createVisualStyleSetFromCx = (
     logModel.warn(
       `[visualStyleSetConverter]: Duplicate style ids in ${CY_WEB_VISUAL_STYLES_ASPECT_TAG} aspect, falling back to single style`,
     )
-    return fallback()
+    return undefined
   }
   if (!ids.includes(aspect.activeStyleId)) {
     logModel.warn(
       `[visualStyleSetConverter]: activeStyleId "${aspect.activeStyleId}" not found in ${CY_WEB_VISUAL_STYLES_ASPECT_TAG} aspect, falling back to single style`,
     )
-    return fallback()
+    return undefined
   }
 
   const styles: Record<string, NamedVisualStyle> = {}
@@ -177,7 +187,7 @@ export const createVisualStyleSetFromCx = (
       logModel.warn(
         `[visualStyleSetConverter]: Failed to convert style "${name}" (${styleCx.id}), falling back to single style: ${e}`,
       )
-      return fallback()
+      return undefined
     }
   }
 
@@ -186,6 +196,18 @@ export const createVisualStyleSetFromCx = (
     styles,
   }
 }
+
+/**
+ * Build a VisualStyleSet from a CX2 document, falling back to a single-style
+ * set around `activeVisualStyle` when the custom aspect is absent or
+ * unusable. Never throws.
+ */
+export const createVisualStyleSetFromCx = (
+  cx: Cx2,
+  activeVisualStyle: VisualStyle,
+): VisualStyleSet =>
+  parseCyWebVisualStylesAspect(cx, activeVisualStyle) ??
+  createStyleSet(activeVisualStyle)
 
 /**
  * Whether a style set needs the custom aspect at all. A set holding a single
