@@ -478,6 +478,64 @@ describe('setDefault', () => {
   })
 })
 
+// --- setDefaults (batch) -----------------------------------------------------
+
+describe('setDefaults', () => {
+  const setup = (): void => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { type: 'color', group: 'node' },
+      [VPN.NodeHeight]: { type: 'number', group: 'node' },
+    }
+  }
+
+  it('applies every default when all are valid', () => {
+    setup()
+    const result = visualStyleApi.setDefaults('net1', {
+      [VPN.NodeBackgroundColor]: '#ff0000',
+      [VPN.NodeHeight]: 42,
+    })
+    expect(result.success).toBe(true)
+    expect(mockSetDefault).toHaveBeenCalledWith('net1', VPN.NodeBackgroundColor, '#ff0000')
+    expect(mockSetDefault).toHaveBeenCalledWith('net1', VPN.NodeHeight, 42)
+    expect(mockSetDefault).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns NetworkNotFound when the style does not exist', () => {
+    const result = visualStyleApi.setDefaults('missing', {
+      [VPN.NodeHeight]: 1,
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+
+  it('applies nothing when any entry is invalid (all-or-nothing)', () => {
+    setup()
+    const result = visualStyleApi.setDefaults('net1', {
+      [VPN.NodeBackgroundColor]: '#ff0000',
+      [VPN.NodeHeight]: 'not-a-number' as any,
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(StyleCodes.INVALID_NUMBER.code)
+    }
+    expect(mockSetDefault).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unknown visual property without applying anything', () => {
+    setup()
+    const result = visualStyleApi.setDefaults('net1', {
+      NOT_A_VP: 'x',
+    } as any)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+    }
+    expect(mockSetDefault).not.toHaveBeenCalled()
+  })
+})
+
 // --- setBypass ---------------------------------------------------------------
 
 describe('setBypass', () => {

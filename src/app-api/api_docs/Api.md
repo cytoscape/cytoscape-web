@@ -954,6 +954,14 @@ type before being written.
 | `APP9`                                  | `vpName` is not a known visual property        |
 | `VP1`/`VP2`/`VP3`/`VP4`/`VP5`/`VP6`/`VP7`/`VP9`/`VP10` | `vpValue` invalid for the property's value type (see [ErrorCodes.md](./ErrorCodes.md)) |
 
+#### `setDefaults(networkId, defaults): ApiResult`
+
+Sets several visual-property defaults in one call, where `defaults` is a
+`Partial<Record<VisualPropertyName, value>>`. Every entry is validated first
+(property existence and value type); if any is invalid, **nothing** is applied,
+so a bad value can't leave a half-updated style. Same error codes as
+`setDefault`.
+
 #### `setBypass(networkId, vpName, elementIds, vpValue): ApiResult`
 
 Sets a per-element override. `elementIds` must be non-empty and must match the

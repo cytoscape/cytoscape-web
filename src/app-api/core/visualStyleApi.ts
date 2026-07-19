@@ -117,6 +117,17 @@ export interface VisualStyleApi {
     vpValue: VisualPropertyValueType,
   ): ApiResult
 
+  /**
+   * Set several visual-property defaults in one call. Every entry is
+   * validated first (property existence and value type); if any is
+   * invalid, nothing is applied (all-or-nothing), so a bad value can't
+   * leave a half-updated style.
+   */
+  setDefaults(
+    networkId: IdType,
+    defaults: Partial<Record<VisualPropertyName, VisualPropertyValueType>>,
+  ): ApiResult
+
   setBypass(
     networkId: IdType,
     vpName: VisualPropertyName,
@@ -314,6 +325,38 @@ export const visualStyleApi: VisualStyleApi = {
       if (invalidValue) return invalidValue
 
       useVisualStyleStore.getState().setDefault(networkId, vpName, vpValue)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  setDefaults(networkId, defaults): ApiResult {
+    try {
+      const style = useVisualStyleStore.getState().visualStyles[networkId]
+      if (style === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      const entries = Object.entries(defaults) as Array<
+        [VisualPropertyName, VisualPropertyValueType]
+      >
+      // Validate every entry before applying any (all-or-nothing)
+      for (const [vpName, vpValue] of entries) {
+        const visualProperty = style[vpName]
+        if (visualProperty === undefined) {
+          return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
+        }
+        const invalidValue = validateVisualPropertyValue(
+          vpName,
+          visualProperty.type,
+          vpValue,
+        )
+        if (invalidValue) return invalidValue
+      }
+      const setDefault = useVisualStyleStore.getState().setDefault
+      for (const [vpName, vpValue] of entries) {
+        setDefault(networkId, vpName, vpValue)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

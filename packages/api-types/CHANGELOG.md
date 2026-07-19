@@ -17,6 +17,8 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 - **Visual Style read API.** `VisualStyleApi` was previously write-only; it
   now exposes `getVisualProperties`, `getDefault`, `getBypass`,
   `getBypasses`, and `getMapping` (all returning `ApiResult`).
+- **`VisualStyleApi.setDefaults(networkId, defaults)`** applies many
+  visual-property defaults in one all-or-nothing validated call.
 - **Batch element creation.** `ElementApi.createNodes(networkId, specs)` and
   `createEdges(networkId, specs)` create many elements in one operation that
   records a single undo entry. New types `NodeSpec`, `EdgeSpec`,
