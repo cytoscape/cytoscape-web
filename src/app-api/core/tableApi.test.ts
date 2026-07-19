@@ -574,15 +574,15 @@ describe('deleteColumn', () => {
   })
 })
 
-// --- setColumnName -----------------------------------------------------------
+// --- renameColumn ------------------------------------------------------------
 
-describe('setColumnName', () => {
-  it('calls setColumnName and returns ok() when network exists', () => {
+describe('renameColumn', () => {
+  it('calls the store setColumnName and returns ok() when network exists', () => {
     mockTables['net1'] = makeTableRecord(undefined, undefined, [
       { name: 'oldName', type: 'string' },
     ])
 
-    const result = tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
+    const result = tableApi.renameColumn('net1', 'node', 'oldName', 'newName')
 
     expect(result.success).toBe(true)
     expect(mockSetColumnName).toHaveBeenCalledWith(
@@ -594,7 +594,7 @@ describe('setColumnName', () => {
   })
 
   it('returns NetworkNotFound when network does not exist', () => {
-    const result = tableApi.setColumnName('missing', 'node', 'a', 'b')
+    const result = tableApi.renameColumn('missing', 'node', 'a', 'b')
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -605,7 +605,7 @@ describe('setColumnName', () => {
   it('returns ColumnNotFound when the source column does not exist', () => {
     mockTables['net1'] = makeTableRecord()
 
-    const result = tableApi.setColumnName('net1', 'node', 'missing_col', 'b')
+    const result = tableApi.renameColumn('net1', 'node', 'missing_col', 'b')
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -629,7 +629,7 @@ describe('setColumnName', () => {
       },
     }
 
-    tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
+    tableApi.renameColumn('net1', 'node', 'oldName', 'newName')
 
     expect(mockSetMapping).toHaveBeenCalledWith('net1', 'nodeFillColor', {
       type: 'DISCRETE',
@@ -644,7 +644,7 @@ describe('setColumnName', () => {
       { name: 'weight', type: 'double' },
     ])
 
-    const result = tableApi.setColumnName('net1', 'node', 'score', 'weight')
+    const result = tableApi.renameColumn('net1', 'node', 'score', 'weight')
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -658,7 +658,7 @@ describe('setColumnName', () => {
       { name: 'score', type: 'double' },
     ])
 
-    const result = tableApi.setColumnName('net1', 'node', 'score', 'score')
+    const result = tableApi.renameColumn('net1', 'node', 'score', 'score')
 
     expect(result.success).toBe(true)
   })
@@ -666,7 +666,7 @@ describe('setColumnName', () => {
   it('rejects renaming a column to the forbidden name "id" (CX2 FK1)', () => {
     mockTables['net1'] = makeTableRecord()
 
-    const result = tableApi.setColumnName('net1', 'node', 'oldName', 'id')
+    const result = tableApi.renameColumn('net1', 'node', 'oldName', 'id')
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -681,7 +681,7 @@ describe('setColumnName', () => {
     ])
     mockUiStoreState = makeUiStateWithColumns('net1', ['name', 'oldName'])
 
-    tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
+    tableApi.renameColumn('net1', 'node', 'oldName', 'newName')
     await flushTimers()
 
     expect(displayConfigColumns('net1', 'nodeTable')).toEqual([

@@ -150,7 +150,7 @@ export interface TableApi {
     columnName: string,
   ): ApiResult
 
-  setColumnName(
+  renameColumn(
     networkId: IdType,
     tableType: AppTableType,
     currentName: string,
@@ -421,7 +421,7 @@ export const tableApi: TableApi = {
     }
   },
 
-  setColumnName(networkId, tableType, currentName, newName): ApiResult {
+  renameColumn(networkId, tableType, currentName, newName): ApiResult {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {

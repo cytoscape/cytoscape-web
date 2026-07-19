@@ -150,7 +150,8 @@ export interface VisualStyleApi {
     attributeType: ValueTypeName,
   ): ApiResult
 
-  removeMapping(networkId: IdType, vpName: VisualPropertyName): ApiResult
+  /** Remove any mapping from a visual property. */
+  deleteMapping(networkId: IdType, vpName: VisualPropertyName): ApiResult
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -514,7 +515,7 @@ export const visualStyleApi: VisualStyleApi = {
     }
   },
 
-  removeMapping(networkId, vpName): ApiResult {
+  deleteMapping(networkId, vpName): ApiResult {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {

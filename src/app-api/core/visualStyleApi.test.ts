@@ -1193,20 +1193,20 @@ describe('createPassthroughMapping', () => {
   })
 })
 
-// --- removeMapping -----------------------------------------------------------
+// --- deleteMapping -----------------------------------------------------------
 
-describe('removeMapping', () => {
+describe('deleteMapping', () => {
   it('calls removeMapping and returns ok() when network exists', () => {
     mockVisualStyles['net1'] = {}
 
-    const result = visualStyleApi.removeMapping('net1', VPN.NodeBackgroundColor)
+    const result = visualStyleApi.deleteMapping('net1', VPN.NodeBackgroundColor)
 
     expect(result.success).toBe(true)
     expect(mockRemoveMapping).toHaveBeenCalledWith('net1', VPN.NodeBackgroundColor)
   })
 
   it('returns NetworkNotFound when visual style does not exist', () => {
-    const result = visualStyleApi.removeMapping('missing', VPN.NodeBackgroundColor)
+    const result = visualStyleApi.deleteMapping('missing', VPN.NodeBackgroundColor)
 
     expect(result.success).toBe(false)
     if (!result.success) {
