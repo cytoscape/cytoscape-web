@@ -53,12 +53,23 @@ export interface ColumnInfo {
 /** Options for getTable() */
 export interface GetTableOptions {
   columns?: string[]
+  /**
+   * Include the element id on each row (and as a leading `id` column) so
+   * rows can be mapped back to nodes/edges. Defaults to true.
+   */
+  includeId?: boolean
 }
 
 /** Options for exportTableToTsv() */
 export interface ExportTableToTsvOptions {
   columns?: string[]
   includeTypeHeader?: boolean
+  /**
+   * Emit a leading `id` column holding each element's id. Defaults to
+   * true so the export round-trips through importTableFromTsv (whose
+   * default keyColumn is `id`). Set false for a data-only export.
+   */
+  includeId?: boolean
 }
 
 /** Options for importTableFromTsv() */
@@ -626,6 +637,7 @@ export const tableApi: TableApi = {
       const filteredColumns = requestedCols
         ? allColumns.filter((c) => requestedCols.includes(c.name))
         : allColumns
+      const includeId = options?.includeId ?? true
 
       // For edge tables, prepend source/target from the network model
       const edgeLookup =
@@ -637,6 +649,7 @@ export const tableApi: TableApi = {
         tableRows.forEach(
           (rowData: Record<AttributeName, ValueType>, elementId: IdType) => {
             const row: Record<string, ValueType> = {}
+            if (includeId) row['id'] = elementId
             if (edgeLookup) {
               const edge = edgeLookup.get(elementId)
               if (edge) {
@@ -652,8 +665,11 @@ export const tableApi: TableApi = {
         )
       }
 
-      // Build column info (with source/target prepended for edge table)
+      // Build column info (id first, then source/target for edge table)
       const columnInfos: ColumnInfo[] = []
+      if (includeId) {
+        columnInfos.push({ name: 'id', type: ValueTypeName.String })
+      }
       if (edgeLookup) {
         columnInfos.push(
           { name: 'source', type: ValueTypeName.String },
@@ -675,6 +691,7 @@ export const tableApi: TableApi = {
   exportTableToTsv(networkId, tableType, options) {
     const result = tableApi.getTable(networkId, tableType, {
       columns: options?.columns,
+      includeId: options?.includeId ?? true,
     })
     if (!result.success) return result
 

@@ -1065,16 +1065,36 @@ describe('getTable', () => {
 
     expect(result.success).toBe(true)
     if (result.success) {
+      // id is prepended by default so rows map back to nodes
       expect(result.data.columns).toEqual([
+        { name: 'id', type: 'string' },
         { name: 'name', type: 'string' },
         { name: 'score', type: 'double' },
       ])
       expect(result.data.rows).toHaveLength(2)
-      expect(result.data.rows[0]).toEqual({ name: 'Alice', score: 0.9 })
+      expect(result.data.rows[0]).toEqual({
+        id: 'n1',
+        name: 'Alice',
+        score: 0.9,
+      })
     }
   })
 
-  it('filters columns when options.columns is provided', () => {
+  it('omits the id column when includeId is false', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const result = tableApi.getTable('net1', 'node', { includeId: false })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.columns).toEqual([{ name: 'name', type: 'string' }])
+      expect(result.data.rows[0]).toEqual({ name: 'Alice' })
+    }
+  })
+
+  it('filters columns when options.columns is provided (id still included)', () => {
     const nodeRows = new Map([
       ['n1', { name: 'Alice', score: 0.9, age: 30 }],
     ])
@@ -1089,12 +1109,15 @@ describe('getTable', () => {
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.columns).toEqual([{ name: 'name', type: 'string' }])
-      expect(result.data.rows[0]).toEqual({ name: 'Alice' })
+      expect(result.data.columns).toEqual([
+        { name: 'id', type: 'string' },
+        { name: 'name', type: 'string' },
+      ])
+      expect(result.data.rows[0]).toEqual({ id: 'n1', name: 'Alice' })
     }
   })
 
-  it('includes source/target for edge tables', () => {
+  it('includes id, source, and target for edge tables', () => {
     const edgeRows = new Map([
       ['e1', { interaction: 'pp', weight: 0.8 }],
     ])
@@ -1111,8 +1134,10 @@ describe('getTable', () => {
 
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.columns[0]).toEqual({ name: 'source', type: 'string' })
-      expect(result.data.columns[1]).toEqual({ name: 'target', type: 'string' })
+      expect(result.data.columns[0]).toEqual({ name: 'id', type: 'string' })
+      expect(result.data.columns[1]).toEqual({ name: 'source', type: 'string' })
+      expect(result.data.columns[2]).toEqual({ name: 'target', type: 'string' })
+      expect(result.data.rows[0].id).toBe('e1')
       expect(result.data.rows[0].source).toBe('n1')
       expect(result.data.rows[0].target).toBe('n2')
       expect(result.data.rows[0].interaction).toBe('pp')
@@ -1147,9 +1172,30 @@ describe('exportTableToTsv', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       const lines = result.data.tsvText.split('\n')
+      // id is emitted by default so the export round-trips
+      expect(lines[0]).toBe('id\tname\tscore')
+      expect(lines[1]).toBe('n1\tAlice\t0.9')
+      expect(lines[2]).toBe('n2\tBob\t0.5')
+    }
+  })
+
+  it('omits the id column when includeId is false', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice', score: 0.9 }]])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+
+    const result = tableApi.exportTableToTsv('net1', 'node', {
+      includeId: false,
+    })
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      const lines = result.data.tsvText.split('\n')
       expect(lines[0]).toBe('name\tscore')
       expect(lines[1]).toBe('Alice\t0.9')
-      expect(lines[2]).toBe('Bob\t0.5')
     }
   })
 
@@ -1165,11 +1211,11 @@ describe('exportTableToTsv', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       const lines = result.data.tsvText.split('\n')
-      expect(lines[0]).toBe('name:string')
+      expect(lines[0]).toBe('id:string\tname:string')
     }
   })
 
-  it('edge table TSV always includes source and target', () => {
+  it('edge table TSV includes id, source, and target', () => {
     const edgeRows = new Map([['e1', { weight: 0.8 }]])
     const edgeColumns = [{ name: 'weight', type: 'double' }]
     mockTables['net1'] = makeTableRecord(undefined, edgeRows, [], edgeColumns)
@@ -1182,8 +1228,8 @@ describe('exportTableToTsv', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       const lines = result.data.tsvText.split('\n')
-      expect(lines[0]).toBe('source\ttarget\tweight')
-      expect(lines[1]).toBe('n1\tn2\t0.8')
+      expect(lines[0]).toBe('id\tsource\ttarget\tweight')
+      expect(lines[1]).toBe('e1\tn1\tn2\t0.8')
     }
   })
 
@@ -1408,7 +1454,7 @@ describe('importTableFromTsv', () => {
 // --- Round-trip: exportTableToTsv → importTableFromTsv -----------------------
 
 describe('TSV round-trip', () => {
-  it('export → import preserves data', () => {
+  it('default export → import preserves data (no manual id wrangling)', () => {
     const nodeRows = new Map([
       ['n1', { name: 'Alice', score: 42 }],
       ['n2', { name: 'Bob', score: 18 }],
@@ -1420,26 +1466,31 @@ describe('TSV round-trip', () => {
     mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
     registerNet1(['n1', 'n2'])
 
-    // Export
+    // Export with defaults — the id column is emitted automatically
     const exportResult = tableApi.exportTableToTsv('net1', 'node', {
       includeTypeHeader: true,
     })
     expect(exportResult.success).toBe(true)
     if (!exportResult.success) return
+    expect(exportResult.data.tsvText.split('\n')[0]).toContain('id')
 
-    // Prepare for re-import (add id column for matching)
-    const lines = exportResult.data.tsvText.split('\n')
-    const withId = [
-      'id\t' + lines[0],
-      ...lines.slice(1).map((line, i) => `n${i + 1}\t${line}`),
-    ].join('\n')
-
-    // Import into same network
-    const importResult = tableApi.importTableFromTsv('net1', 'node', withId)
+    // Import the exported text directly — default keyColumn 'id' matches
+    const importResult = tableApi.importTableFromTsv(
+      'net1',
+      'node',
+      exportResult.data.tsvText,
+    )
     expect(importResult.success).toBe(true)
     if (importResult.success) {
       expect(importResult.data.rowCount).toBe(2)
+      expect(importResult.data.skippedRows).toEqual([])
+      expect(importResult.data.skippedCells).toEqual([])
     }
-    expect(mockSetValues).toHaveBeenCalled()
+
+    // Values written back match the originals (round-trip fidelity)
+    const edits = mockSetValues.mock.calls[0][2]
+    expect(edits).toContainEqual({ row: 'n1', column: 'name', value: 'Alice' })
+    expect(edits).toContainEqual({ row: 'n1', column: 'score', value: 42 })
+    expect(edits).toContainEqual({ row: 'n2', column: 'score', value: 18 })
   })
 })

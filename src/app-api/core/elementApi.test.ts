@@ -416,6 +416,61 @@ describe('elementApi', () => {
     })
   })
 
+  // ── getNodes ──────────────────────────────────────────────────────────────
+
+  describe('getNodes', () => {
+    const setupNodes = (): void => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }]))
+      mockTables['net1'] = {
+        nodeTable: {
+          rows: new Map([
+            ['n1', { name: 'Alice' }],
+            ['n2', { name: 'Bob' }],
+          ]),
+          columns: [],
+        },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      mockViewModelActions.getViewModel.mockReturnValue({
+        nodeViews: {
+          n1: { id: 'n1', x: 1, y: 2 },
+          n2: { id: 'n2', x: 3, y: 4 },
+        },
+      })
+    }
+
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.getNodes('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
+    })
+
+    it('returns every node with id, attributes, and position when ids omitted', () => {
+      setupNodes()
+      const result = elementApi.getNodes('net1')
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.missing).toEqual([])
+        expect(result.data.nodes).toEqual([
+          { id: 'n1', attributes: { name: 'Alice' }, position: [1, 2] },
+          { id: 'n2', attributes: { name: 'Bob' }, position: [3, 4] },
+        ])
+      }
+    })
+
+    it('returns only requested ids and reports missing ones', () => {
+      setupNodes()
+      const result = elementApi.getNodes('net1', ['n2', 'ghost'])
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.nodes.map((n) => n.id)).toEqual(['n2'])
+        expect(result.data.missing).toEqual(['ghost'])
+      }
+    })
+  })
+
   // ── getEdge ───────────────────────────────────────────────────────────────
 
   describe('getEdge', () => {
@@ -1122,6 +1177,15 @@ describe('elementApi', () => {
           ])
           expect(edgeSourceTargets).toContainEqual(['A', 'B'])
           expect(edgeSourceTargets).toContainEqual(['A', 'D'])
+        }
+      })
+
+      it('includes the edge id so results can be selected or deleted', () => {
+        const result = elementApi.getConnectedEdges('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          const ids = result.data.edges.map((e) => e.id).sort()
+          expect(ids).toEqual(['e1', 'e3'])
         }
       })
 

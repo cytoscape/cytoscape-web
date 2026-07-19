@@ -74,6 +74,19 @@ export interface ElementApi {
   getNode(networkId: IdType, nodeId: IdType): ApiResult<NodeData>
   getEdge(networkId: IdType, edgeId: IdType): ApiResult<EdgeData>
 
+  /**
+   * Batch-read nodes with their attributes and positions. When `nodeIds`
+   * is omitted, every node in the network is returned. Ids that do not
+   * exist are reported in `missing` rather than failing the whole call.
+   */
+  getNodes(
+    networkId: IdType,
+    nodeIds?: IdType[],
+  ): ApiResult<{
+    nodes: Array<{ id: IdType } & NodeData>
+    missing: IdType[]
+  }>
+
   // --- Create ---
   createNode(
     networkId: IdType,
@@ -138,11 +151,14 @@ export interface ElementApi {
     edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
   }>
 
-  /** Return all edges connected to a node (both incoming and outgoing). */
+  /**
+   * Return all edges connected to a node (both incoming and outgoing).
+   * Each edge carries its `id` so results can be selected or deleted.
+   */
   getConnectedEdges(
     networkId: IdType,
     nodeId: IdType,
-  ): ApiResult<{ edges: EdgeData[] }>
+  ): ApiResult<{ edges: Array<{ id: IdType } & EdgeData> }>
 
   /** Return all nodes directly connected to a node (undirected neighborhood). */
   getConnectedNodes(
@@ -312,6 +328,54 @@ export const elementApi: ElementApi = {
         attributes: row as Record<AttributeName, ValueType>,
         position,
       })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getNodes(
+    networkId,
+    nodeIds,
+  ): ApiResult<{
+    nodes: Array<{ id: IdType } & NodeData>
+    missing: IdType[]
+  }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const viewModel = useViewModelStore.getState().getViewModel(networkId)
+      const readNode = (id: IdType): ({ id: IdType } & NodeData) => {
+        const row = tableRecord?.nodeTable?.rows?.get(id) ?? {}
+        const nodeView = viewModel?.nodeViews?.[id]
+        const position: [number, number, number?] = nodeView
+          ? nodeView.z !== undefined
+            ? [nodeView.x, nodeView.y, nodeView.z]
+            : [nodeView.x, nodeView.y]
+          : [0, 0]
+        return {
+          id,
+          attributes: row as Record<AttributeName, ValueType>,
+          position,
+        }
+      }
+
+      if (nodeIds === undefined) {
+        return ok({
+          nodes: network.nodes.map((n) => readNode(n.id)),
+          missing: [],
+        })
+      }
+      const present = new Set(network.nodes.map((n) => n.id))
+      const nodes: Array<{ id: IdType } & NodeData> = []
+      const missing: IdType[] = []
+      for (const id of nodeIds) {
+        if (present.has(id)) nodes.push(readNode(id))
+        else missing.push(id)
+      }
+      return ok({ nodes, missing })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -933,7 +997,7 @@ export const elementApi: ElementApi = {
   getConnectedEdges(
     networkId,
     nodeId,
-  ): ApiResult<{ edges: EdgeData[] }> {
+  ): ApiResult<{ edges: Array<{ id: IdType } & EdgeData> }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -945,15 +1009,18 @@ export const elementApi: ElementApi = {
         return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const tableRecord = useTableStore.getState().tables[networkId]
-      const edges: EdgeData[] = cyNode.connectedEdges().map((cyEdge: any) => {
-        const edgeId = cyEdge.id()
-        const row = tableRecord?.edgeTable?.rows?.get(edgeId) ?? {}
-        return {
-          sourceId: cyEdge.source().id() as IdType,
-          targetId: cyEdge.target().id() as IdType,
-          attributes: row as Record<AttributeName, ValueType>,
-        }
-      })
+      const edges: Array<{ id: IdType } & EdgeData> = cyNode
+        .connectedEdges()
+        .map((cyEdge: any) => {
+          const edgeId = cyEdge.id() as IdType
+          const row = tableRecord?.edgeTable?.rows?.get(edgeId) ?? {}
+          return {
+            id: edgeId,
+            sourceId: cyEdge.source().id() as IdType,
+            targetId: cyEdge.target().id() as IdType,
+            attributes: row as Record<AttributeName, ValueType>,
+          }
+        })
       return ok({ edges })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
