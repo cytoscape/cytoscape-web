@@ -75,8 +75,9 @@ Handles Keycloak authentication setup and user verification.
 **Design Decisions:**
 
 1. **Silent SSO Check**: Uses `check-sso` mode to check authentication without redirect
-2. **Error Message Parsing**: Extracts user info from NDEx error messages to populate verification modal
-3. **Verification Check**: Only checks verification for authenticated users to avoid unnecessary API calls
+2. **No Full-Page Fallback (CW-663)**: `silentCheckSsoFallback` is disabled. When third-party cookies are blocked (e.g. incognito), keycloak-js would otherwise fall back to a full-page redirect whose `redirect_uri` is `location.href` — including user-supplied query params such as `?import=<url>` — which NDEx Keycloak can reject with "Invalid parameter: redirect_uri". With the fallback off, the silent iframe check simply resolves unauthenticated.
+3. **Error Message Parsing**: Extracts user info from NDEx error messages to populate verification modal
+4. **Verification Check**: Only checks verification for authenticated users to avoid unnecessary API calls
 
 ### loadingScreen.ts
 

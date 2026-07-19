@@ -14,7 +14,11 @@ import { EmailVerificationModal } from './features/EmailVerification'
 import ErrorBoundary from './features/ErrorBoundary'
 import { FeatureAvailabilityProvider } from './features/FeatureAvailability'
 import { initializeGoogleAnalytics } from './init/googleAnalytics'
-import { initializeKeycloak, KeycloakContext } from './init/keycloak'
+import {
+  buildKeycloakInitOptions,
+  initializeKeycloak,
+  KeycloakContext,
+} from './init/keycloak'
 import { BootScreen } from './init/BootScreen'
 import { initializeTabManager } from './init/tabManager'
 
@@ -121,16 +125,10 @@ const initializeApp = () => {
         renderAppOnce({ authenticated: false })
       }, AUTH_INIT_TIMEOUT_MS)
 
-  const keycloakInitOptions = isLocalDevHost
-    ? {
-        checkLoginIframe: false,
-      }
-    : {
-        onLoad: 'check-sso' as const,
-        checkLoginIframe: false,
-        silentCheckSsoRedirectUri:
-          window.location.origin + urlBaseName + 'silent-check-sso.html',
-      }
+  const keycloakInitOptions = buildKeycloakInitOptions(
+    isLocalDevHost,
+    urlBaseName,
+  )
 
   keycloak
     .init(keycloakInitOptions)

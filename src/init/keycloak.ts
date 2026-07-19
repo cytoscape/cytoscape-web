@@ -1,11 +1,33 @@
 import { NDExAuthError, NDExClient } from '@js4cytoscape/ndex-client'
-import Keycloak from 'keycloak-js'
+import Keycloak, { KeycloakInitOptions } from 'keycloak-js'
 import { createContext } from 'react'
 
 import appConfig from '../assets/config.json'
 import { getNDExBaseUrl } from '../data/external-api/ndex/config'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
+
+export const buildKeycloakInitOptions = (
+  isLocalDevHost: boolean,
+  urlBaseName: string,
+): KeycloakInitOptions => {
+  if (isLocalDevHost) {
+    return { checkLoginIframe: false }
+  }
+  return {
+    onLoad: 'check-sso',
+    checkLoginIframe: false,
+    // CW-663: with third-party cookies blocked (e.g. incognito), keycloak-js
+    // would otherwise fall back to a full-page redirect check-sso whose
+    // redirect_uri is location.href — including user-supplied params such as
+    // ?import=<url> — which NDEx Keycloak can reject with
+    // "Invalid parameter: redirect_uri". With the fallback disabled, the
+    // silent iframe check still runs and simply resolves unauthenticated.
+    silentCheckSsoFallback: false,
+    silentCheckSsoRedirectUri:
+      window.location.origin + urlBaseName + 'silent-check-sso.html',
+  }
+}
 
 export const initializeKeycloak = () => {
   const { keycloakConfig, urlBaseName } = appConfig
