@@ -110,8 +110,11 @@ export interface ElementApi {
     deletedEdges: Array<{ id: IdType } & EdgeData>
   }>
 
-  generateNextNodeId(networkId: IdType): IdType
-  generateNextEdgeId(networkId: IdType): IdType
+  /** Return the id the next created node in this network will receive. */
+  generateNextNodeId(networkId: IdType): ApiResult<{ nodeId: IdType }>
+
+  /** Return the id the next created edge in this network will receive. */
+  generateNextEdgeId(networkId: IdType): ApiResult<{ edgeId: IdType }>
 
   // --- Graph Traversal (read-only, cytoscape.js core wrappers) ---
 
@@ -784,27 +787,35 @@ export const elementApi: ElementApi = {
     }
   },
 
-  generateNextNodeId(networkId): IdType {
-    const network = useNetworkStore.getState().networks.get(networkId)
-    if (!network) return '0'
-    const existingIds = network.nodes
-      .map((n) => parseInt(n.id))
-      .filter((id) => !isNaN(id))
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-    return `${maxId + 1}`
+  generateNextNodeId(networkId): ApiResult<{ nodeId: IdType }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      const existingIds = network.nodes
+        .map((n) => parseInt(n.id))
+        .filter((id) => !isNaN(id))
+      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
+      return ok({ nodeId: `${maxId + 1}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
   },
 
-  generateNextEdgeId(networkId): IdType {
-    const network = useNetworkStore.getState().networks.get(networkId)
-    if (!network) return 'e0'
-    const existingIds = network.edges
-      .map((e) => {
-        const id = e.id.startsWith('e') ? e.id.slice(1) : e.id
-        return parseInt(id)
-      })
-      .filter((id) => !isNaN(id))
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-    return `e${maxId + 1}`
+  generateNextEdgeId(networkId): ApiResult<{ edgeId: IdType }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      const existingIds = network.edges
+        .map((e) => {
+          const id = e.id.startsWith('e') ? e.id.slice(1) : e.id
+          return parseInt(id)
+        })
+        .filter((id) => !isNaN(id))
+      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
+      return ok({ edgeId: `e${maxId + 1}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
   },
 
   // ── Graph Traversal ──────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { createResourceApi } from './resourceApi'
@@ -25,6 +26,10 @@ vi.mock('../../data/hooks/stores/AppStore', () => ({
 
 vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: { getState: vi.fn() },
+}))
+
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
+  useViewModelStore: { getState: vi.fn() },
 }))
 
 vi.mock('../../debug', () => ({
@@ -65,6 +70,12 @@ describe('createResourceApi', () => {
     vi.mocked(useWorkspaceStore.getState).mockReturnValue({
       workspace: { currentNetworkId: 'net1' },
     } as any)
+    vi.mocked(useViewModelStore.getState).mockReturnValue({
+      getViewModel: vi.fn(() => ({
+        selectedNodes: [],
+        selectedEdges: [],
+      })),
+    } as any)
     vi.clearAllMocks()
   })
 
@@ -73,14 +84,20 @@ describe('createResourceApi', () => {
   describe('getSupportedSlots', () => {
     it('returns right-panel and apps-menu', () => {
       const api = createResourceApi('app1')
-      expect(api.getSupportedSlots()).toEqual(['right-panel', 'apps-menu'])
+      const result = api.getSupportedSlots()
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.slots).toEqual(['right-panel', 'apps-menu'])
+      }
     })
 
     it('returns a copy (not mutable reference)', () => {
       const api = createResourceApi('app1')
       const a = api.getSupportedSlots()
       const b = api.getSupportedSlots()
-      expect(a).not.toBe(b)
+      if (a.success && b.success) {
+        expect(a.data.slots).not.toBe(b.data.slots)
+      }
     })
   })
 
@@ -431,26 +448,47 @@ describe('createResourceApi', () => {
         .mockReturnValue(mockStore as any)
 
       const api = createResourceApi('app1')
-      const resources = api.getRegisteredResources()
+      const result = api.getRegisteredResources()
 
-      expect(resources).toHaveLength(1)
-      expect(resources[0].resourceId).toBe('app1::right-panel::P1')
-      expect(resources[0].title).toBe('Mine')
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.resources).toHaveLength(1)
+        expect(result.data.resources[0].resourceId).toBe(
+          'app1::right-panel::P1',
+        )
+        expect(result.data.resources[0].title).toBe('Mine')
+      }
     })
 
     it('returns empty array when no resources are registered', () => {
       const api = createResourceApi('app1')
-      expect(api.getRegisteredResources()).toEqual([])
+      const result = api.getRegisteredResources()
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.resources).toEqual([])
+      }
     })
   })
 
   // ── getResourceVisibility ───────────────────────────────────────
 
   describe('getResourceVisibility', () => {
+    const expectVisibility = (
+      result: ReturnType<
+        ReturnType<typeof createResourceApi>['getResourceVisibility']
+      >,
+      expected: object,
+    ) => {
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data).toEqual(expected)
+      }
+    }
+
     it('returns { registered: false } when resource is not found', () => {
       const api = createResourceApi('app1')
-      const vis = api.getResourceVisibility('nonexistent')
-      expect(vis).toEqual({ registered: false, visible: false })
+      const result = api.getResourceVisibility('nonexistent')
+      expectVisibility(result, { registered: false, visible: false })
     })
 
     it('returns hiddenReason: app-inactive when app is not active', () => {
@@ -464,8 +502,8 @@ describe('createResourceApi', () => {
       } as any)
 
       const api = createResourceApi('app1')
-      const vis = api.getResourceVisibility('P1')
-      expect(vis).toEqual({
+      const result = api.getResourceVisibility('P1')
+      expectVisibility(result, {
         registered: true,
         visible: false,
         hiddenReason: 'app-inactive',
@@ -489,15 +527,15 @@ describe('createResourceApi', () => {
       } as any)
 
       const api = createResourceApi('app1')
-      const vis = api.getResourceVisibility('P1')
-      expect(vis).toEqual({
+      const result = api.getResourceVisibility('P1')
+      expectVisibility(result, {
         registered: true,
         visible: false,
         hiddenReason: 'requires-network',
       })
     })
 
-    it('returns hiddenReason: requires-selection when selection required', () => {
+    it('returns hiddenReason: requires-selection when nothing is selected', () => {
       mockStore.resources = [
         {
           id: 'P1',
@@ -509,14 +547,44 @@ describe('createResourceApi', () => {
       ]
       vi.mocked(useAppResourceStore.getState)
         .mockReturnValue(mockStore as any)
+      vi.mocked(useViewModelStore.getState).mockReturnValue({
+        getViewModel: vi.fn(() => ({
+          selectedNodes: [],
+          selectedEdges: [],
+        })),
+      } as any)
 
       const api = createResourceApi('app1')
-      const vis = api.getResourceVisibility('P1')
-      expect(vis).toEqual({
+      const result = api.getResourceVisibility('P1')
+      expectVisibility(result, {
         registered: true,
         visible: false,
         hiddenReason: 'requires-selection',
       })
+    })
+
+    it('returns visible: true when selection is required and present', () => {
+      mockStore.resources = [
+        {
+          id: 'P1',
+          appId: 'app1',
+          slot: 'right-panel',
+          requires: { selection: true },
+          component: {},
+        },
+      ]
+      vi.mocked(useAppResourceStore.getState)
+        .mockReturnValue(mockStore as any)
+      vi.mocked(useViewModelStore.getState).mockReturnValue({
+        getViewModel: vi.fn(() => ({
+          selectedNodes: ['n1'],
+          selectedEdges: [],
+        })),
+      } as any)
+
+      const api = createResourceApi('app1')
+      const result = api.getResourceVisibility('P1')
+      expectVisibility(result, { registered: true, visible: true })
     })
 
     it('returns visible: true when all conditions are met', () => {
@@ -534,8 +602,8 @@ describe('createResourceApi', () => {
       // AppStore: active, WorkspaceStore: has network (default mocks)
 
       const api = createResourceApi('app1')
-      const vis = api.getResourceVisibility('P1')
-      expect(vis).toEqual({ registered: true, visible: true })
+      const result = api.getResourceVisibility('P1')
+      expectVisibility(result, { registered: true, visible: true })
     })
   })
 

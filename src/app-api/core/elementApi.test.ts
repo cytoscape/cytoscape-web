@@ -302,36 +302,48 @@ describe('elementApi', () => {
   // ── generateNextNodeId ────────────────────────────────────────────────────
 
   describe('generateNextNodeId', () => {
-    it('returns "0" when network does not exist', () => {
-      expect(elementApi.generateNextNodeId('missing')).toBe('0')
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.generateNextNodeId('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
     })
 
     it('returns "0" when network has no nodes', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
-      expect(elementApi.generateNextNodeId('net1')).toBe('0')
+      const result = elementApi.generateNextNodeId('net1')
+      expect(result.success && result.data.nodeId).toBe('0')
     })
 
     it('returns max+1 when nodes exist', () => {
       mockNetworks.set('net1', makeNetwork('net1', [{ id: '3' }, { id: '7' }]))
-      expect(elementApi.generateNextNodeId('net1')).toBe('8')
+      const result = elementApi.generateNextNodeId('net1')
+      expect(result.success && result.data.nodeId).toBe('8')
     })
   })
 
   // ── generateNextEdgeId ────────────────────────────────────────────────────
 
   describe('generateNextEdgeId', () => {
-    it('returns "e0" when network does not exist', () => {
-      expect(elementApi.generateNextEdgeId('missing')).toBe('e0')
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.generateNextEdgeId('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
     })
 
     it('returns "e0" when network has no edges', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
-      expect(elementApi.generateNextEdgeId('net1')).toBe('e0')
+      const result = elementApi.generateNextEdgeId('net1')
+      expect(result.success && result.data.edgeId).toBe('e0')
     })
 
     it('returns e(max+1) when edges exist', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e2' }, { id: 'e5' }]))
-      expect(elementApi.generateNextEdgeId('net1')).toBe('e6')
+      const result = elementApi.generateNextEdgeId('net1')
+      expect(result.success && result.data.edgeId).toBe('e6')
     })
   })
 
