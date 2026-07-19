@@ -697,6 +697,87 @@ describe('setBypass', () => {
   })
 })
 
+// --- setBypasses (batch) -----------------------------------------------------
+
+describe('setBypasses', () => {
+  const setup = (): void => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: { group: 'node', type: 'color' },
+      [VPN.NodeHeight]: { group: 'node', type: 'number' },
+      [VPN.EdgeLineColor]: { group: 'edge', type: 'color' },
+    }
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      edges: [{ id: 'e0', s: 'n1', t: 'n2' }],
+    })
+  }
+
+  it('applies every bypass to the elements when all are valid', () => {
+    setup()
+    const result = visualStyleApi.setBypasses('net1', ['n1', 'n2'], {
+      [VPN.NodeBackgroundColor]: '#ff0000',
+      [VPN.NodeHeight]: 40,
+    })
+    expect(result.success).toBe(true)
+    expect(mockSetBypass).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeBackgroundColor,
+      ['n1', 'n2'],
+      '#ff0000',
+    )
+    expect(mockSetBypass).toHaveBeenCalledWith('net1', VPN.NodeHeight, ['n1', 'n2'], 40)
+    expect(mockSetBypass).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns NetworkNotFound when the style does not exist', () => {
+    const result = visualStyleApi.setBypasses('missing', ['n1'], {
+      [VPN.NodeBackgroundColor]: '#fff',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+
+  it('rejects empty elementIds', () => {
+    setup()
+    const result = visualStyleApi.setBypasses('net1', [], {
+      [VPN.NodeBackgroundColor]: '#fff',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
+  })
+
+  it('applies nothing when any value is invalid (all-or-nothing)', () => {
+    setup()
+    const result = visualStyleApi.setBypasses('net1', ['n1'], {
+      [VPN.NodeBackgroundColor]: '#ff0000',
+      [VPN.NodeHeight]: 'tall' as any,
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(StyleCodes.INVALID_NUMBER.code)
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
+  })
+
+  it('rejects a scope mismatch (edge property on nodes) without applying', () => {
+    setup()
+    const result = visualStyleApi.setBypasses('net1', ['n1'], {
+      [VPN.EdgeLineColor]: '#00ff00',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
+    }
+    expect(mockSetBypass).not.toHaveBeenCalled()
+  })
+})
+
 // --- deleteBypass ------------------------------------------------------------
 
 describe('deleteBypass', () => {

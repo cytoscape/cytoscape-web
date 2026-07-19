@@ -976,6 +976,14 @@ property's node/edge scope; network-scoped properties cannot be bypassed.
 | `BV2`      | An `elementIds` entry doesn't match the property's node/edge scope |
 | `VP1`–`VP10` | `vpValue` invalid for the property's value type (same codes as `setDefault`) |
 
+#### `setBypasses(networkId, elementIds, bypasses): ApiResult`
+
+Sets several visual-property bypasses on the same `elementIds` in one call —
+e.g. highlighting nodes with color + border + size at once. `bypasses` is a
+`Partial<Record<VisualPropertyName, value>>`. Every property is validated first
+(existence, node/edge scope, value type, and element existence); if any is
+invalid, **nothing** is applied. Same error codes as `setBypass`.
+
 #### `deleteBypass(networkId, vpName, elementIds): ApiResult`
 
 Removes per-element overrides. Intentionally unguarded against non-existent

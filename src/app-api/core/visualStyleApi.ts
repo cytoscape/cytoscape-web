@@ -135,6 +135,19 @@ export interface VisualStyleApi {
     vpValue: VisualPropertyValueType,
   ): ApiResult
 
+  /**
+   * Set several visual-property bypasses on the same set of elements in
+   * one call — e.g. highlighting nodes with color + border + size at once.
+   * Every entry is validated first (property existence, node/edge scope,
+   * value type, and element existence); if any is invalid, nothing is
+   * applied (all-or-nothing).
+   */
+  setBypasses(
+    networkId: IdType,
+    elementIds: IdType[],
+    bypasses: Partial<Record<VisualPropertyName, VisualPropertyValueType>>,
+  ): ApiResult
+
   deleteBypass(
     networkId: IdType,
     vpName: VisualPropertyName,
@@ -401,6 +414,56 @@ export const visualStyleApi: VisualStyleApi = {
       useVisualStyleStore
         .getState()
         .setBypass(networkId, vpName, elementIds, vpValue)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  setBypasses(networkId, elementIds, bypasses): ApiResult {
+    try {
+      const style = useVisualStyleStore.getState().visualStyles[networkId]
+      if (style === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      if (elementIds.length === 0) {
+        return fail(AppCodes.INVALID_INPUT, 'elementIds must not be empty')
+      }
+      const entries = Object.entries(bypasses) as Array<
+        [VisualPropertyName, VisualPropertyValueType]
+      >
+
+      // Elements must exist (checked once for the shared target set)
+      const missingElements = validateElementsExist(networkId, elementIds)
+      if (missingElements) return missingElements
+
+      // Validate every property before applying any (all-or-nothing)
+      for (const [vpName, vpValue] of entries) {
+        const visualProperty = style[vpName]
+        if (visualProperty === undefined) {
+          return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
+        }
+        if (visualProperty.group === 'network') {
+          return fail(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN, vpName)
+        }
+        const invalidValue = validateVisualPropertyValue(
+          vpName,
+          visualProperty.type,
+          vpValue,
+        )
+        if (invalidValue) return invalidValue
+        const scopeMismatch = validateBypassTargetScope(
+          networkId,
+          elementIds,
+          visualProperty.group,
+        )
+        if (scopeMismatch) return scopeMismatch
+      }
+
+      const setBypass = useVisualStyleStore.getState().setBypass
+      for (const [vpName, vpValue] of entries) {
+        setBypass(networkId, vpName, elementIds, vpValue)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

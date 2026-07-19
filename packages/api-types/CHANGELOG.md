@@ -19,6 +19,9 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   `getBypasses`, and `getMapping` (all returning `ApiResult`).
 - **`VisualStyleApi.setDefaults(networkId, defaults)`** applies many
   visual-property defaults in one all-or-nothing validated call.
+- **`VisualStyleApi.setBypasses(networkId, elementIds, bypasses)`** applies
+  many visual-property bypasses to a set of elements in one all-or-nothing
+  validated call.
 - **Batch element creation.** `ElementApi.createNodes(networkId, specs)` and
   `createEdges(networkId, specs)` create many elements in one operation that
   records a single undo entry. New types `NodeSpec`, `EdgeSpec`,
