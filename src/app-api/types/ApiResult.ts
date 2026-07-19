@@ -322,6 +322,13 @@ export const AppCodes = {
     severity: 'error',
     message: (detail: string) => `Invalid input: ${detail}`,
   },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app10 */
+  COLUMN_NOT_FOUND: {
+    code: 'APP10',
+    severity: 'error',
+    message: (name: string, tableType: string) =>
+      `Column "${name}" does not exist in the ${tableType} table`,
+  },
 } as const satisfies Record<string, ApiErrorCodeDef>
 
 /**

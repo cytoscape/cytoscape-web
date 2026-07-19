@@ -210,6 +210,44 @@ describe('getValue', () => {
       expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
     }
   })
+
+  it('returns ColumnNotFound when column is neither declared nor present', () => {
+    const rows = new Map([['n1', { name: 'Alice' }]])
+    mockTables['net1'] = makeTableRecord(rows)
+
+    const result = tableApi.getValue('net1', 'node', 'n1', 'missing_col')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.COLUMN_NOT_FOUND.code)
+    }
+  })
+
+  it('returns undefined for a declared column with no value in the row', () => {
+    const rows = new Map([['n1', {}]])
+    mockTables['net1'] = makeTableRecord(rows, undefined, [
+      { name: 'score', type: 'double' },
+    ])
+
+    const result = tableApi.getValue('net1', 'node', 'n1', 'score')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.value).toBeUndefined()
+    }
+  })
+
+  it('resolves the source/target pseudo-columns for edge tables', () => {
+    const edgeRows = new Map([['e1', { weight: 1 }]])
+    mockTables['net1'] = makeTableRecord(new Map(), edgeRows)
+    registerNet1(['n1'], ['e1'])
+
+    const source = tableApi.getValue('net1', 'edge', 'e1', 'source')
+    const target = tableApi.getValue('net1', 'edge', 'e1', 'target')
+
+    expect(source.success && source.data.value).toBe('n1')
+    expect(target.success && target.data.value).toBe('n1')
+  })
 })
 
 // --- getRow ------------------------------------------------------------------
@@ -379,6 +417,24 @@ describe('createColumn', () => {
     expect(mockCreateColumn).not.toHaveBeenCalled()
   })
 
+  it('rejects a default value that does not match the declared type (CX2 A1)', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.createColumn(
+      'net1',
+      'node',
+      'score',
+      'double' as any,
+      'hello',
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(TableCodes.VALUE_TYPE_MISMATCH.code)
+    }
+    expect(mockCreateColumn).not.toHaveBeenCalled()
+  })
+
   it('rejects a null default value (CX2 A6)', () => {
     mockTables['net1'] = makeTableRecord()
 
@@ -436,7 +492,9 @@ describe('createColumn', () => {
 
 describe('deleteColumn', () => {
   it('calls deleteColumn and returns ok() when network exists', () => {
-    mockTables['net1'] = makeTableRecord()
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+    ])
 
     const result = tableApi.deleteColumn('net1', 'node', 'score')
 
@@ -453,8 +511,22 @@ describe('deleteColumn', () => {
     }
   })
 
-  it('deletes visual style mappings that reference the column', () => {
+  it('returns ColumnNotFound when the column does not exist', () => {
     mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.deleteColumn('net1', 'node', 'missing_col')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.COLUMN_NOT_FOUND.code)
+    }
+    expect(mockDeleteColumn).not.toHaveBeenCalled()
+  })
+
+  it('deletes visual style mappings that reference the column', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+    ])
     mockVisualStyles['net1'] = {
       nodeFillColor: {
         group: 'node',
@@ -473,7 +545,9 @@ describe('deleteColumn', () => {
   })
 
   it('does not touch mappings of the other element group', () => {
-    mockTables['net1'] = makeTableRecord()
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+    ])
     mockVisualStyles['net1'] = {
       edgeWidth: {
         group: 'edge',
@@ -487,7 +561,9 @@ describe('deleteColumn', () => {
   })
 
   it('removes the column from the tableDisplayConfiguration', async () => {
-    mockTables['net1'] = makeTableRecord()
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'score', type: 'double' },
+    ])
     mockUiStoreState = makeUiStateWithColumns('net1', ['name', 'score'], ['weight'])
 
     tableApi.deleteColumn('net1', 'node', 'score')
@@ -502,7 +578,9 @@ describe('deleteColumn', () => {
 
 describe('setColumnName', () => {
   it('calls setColumnName and returns ok() when network exists', () => {
-    mockTables['net1'] = makeTableRecord()
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'oldName', type: 'string' },
+    ])
 
     const result = tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
 
@@ -524,8 +602,22 @@ describe('setColumnName', () => {
     }
   })
 
-  it('retargets visual style mappings to the new column name', () => {
+  it('returns ColumnNotFound when the source column does not exist', () => {
     mockTables['net1'] = makeTableRecord()
+
+    const result = tableApi.setColumnName('net1', 'node', 'missing_col', 'b')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.COLUMN_NOT_FOUND.code)
+    }
+    expect(mockSetColumnName).not.toHaveBeenCalled()
+  })
+
+  it('retargets visual style mappings to the new column name', () => {
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'oldName', type: 'string' },
+    ])
     mockVisualStyles['net1'] = {
       nodeFillColor: {
         group: 'node',
@@ -584,7 +676,9 @@ describe('setColumnName', () => {
   })
 
   it('renames the column in the tableDisplayConfiguration', async () => {
-    mockTables['net1'] = makeTableRecord()
+    mockTables['net1'] = makeTableRecord(undefined, undefined, [
+      { name: 'oldName', type: 'string' },
+    ])
     mockUiStoreState = makeUiStateWithColumns('net1', ['name', 'oldName'])
 
     tableApi.setColumnName('net1', 'node', 'oldName', 'newName')
@@ -1124,8 +1218,8 @@ describe('importTableFromTsv', () => {
       'net1',
       'node',
       'score',
-      expect.any(String),
-      '',
+      'double',
+      0,
     )
     expect(mockSetValues).toHaveBeenCalled()
   })
@@ -1145,7 +1239,7 @@ describe('importTableFromTsv', () => {
       'node',
       'score',
       'double',
-      '',
+      0,
     )
   })
 
@@ -1241,6 +1335,73 @@ describe('importTableFromTsv', () => {
     if (!result.success) {
       expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
+  })
+
+  it('skips and reports unparseable numeric cells instead of coercing to 0', () => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice' }],
+      ['n2', { name: 'Bob' }],
+    ])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1', 'n2'])
+
+    const tsv = 'id\tscore\nn1\tnot-a-number\nn2\t0.5'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv)
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.skippedCells).toEqual([
+        { key: 'n1', column: 'score', value: 'not-a-number' },
+      ])
+    }
+    // Only the parseable cell was written — never a coerced 0
+    const edits = mockSetValues.mock.calls[0][2]
+    expect(edits).toEqual([{ row: 'n2', column: 'score', value: 0.5 }])
+  })
+
+  it('treats empty non-string cells as absent instead of writing defaults', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [
+      { name: 'name', type: 'string' },
+      { name: 'score', type: 'double' },
+    ]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1'])
+
+    const tsv = 'id\tscore\nn1\t'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv)
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.skippedCells).toEqual([])
+    }
+    const edits = mockSetValues.mock.calls[0][2]
+    expect(edits).toEqual([])
+  })
+
+  it('rejects a forbidden new column name (CX2 FK1) before creating any columns', () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1'])
+
+    // keyColumn is 'name', so the 'id' column is treated as data and
+    // would previously have been created without validation
+    const tsv = 'name\tid\nAlice\t99'
+    const result = tableApi.importTableFromTsv('net1', 'node', tsv, {
+      keyColumn: 'name',
+    })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(TableCodes.NODE_ID_COLUMN_FORBIDDEN.code)
+    }
+    expect(mockCreateColumn).not.toHaveBeenCalled()
+    expect(mockSetValues).not.toHaveBeenCalled()
   })
 })
 
