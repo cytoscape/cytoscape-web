@@ -99,6 +99,138 @@ beforeEach(() => {
   Object.keys(mockTables).forEach((k) => delete mockTables[k])
 })
 
+// --- Read API ----------------------------------------------------------------
+
+describe('read API', () => {
+  const setupReadFixtures = (): void => {
+    mockVisualStyles['net1'] = {
+      [VPN.NodeBackgroundColor]: {
+        group: 'node',
+        type: 'color',
+        defaultValue: '#ffffff',
+        bypassMap: new Map([
+          ['n1', '#ff0000'],
+          ['n2', '#00ff00'],
+        ]),
+      },
+      [VPN.NodeLabel]: {
+        group: 'node',
+        type: 'string',
+        defaultValue: '',
+        bypassMap: new Map(),
+        mapping: { type: 'passthrough', attribute: 'name' },
+      },
+    }
+  }
+
+  describe('getVisualProperties', () => {
+    it('lists properties with group, type, and hasMapping', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getVisualProperties('net1')
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.properties).toContainEqual({
+          name: VPN.NodeBackgroundColor,
+          group: 'node',
+          type: 'color',
+          hasMapping: false,
+        })
+        expect(result.data.properties).toContainEqual({
+          name: VPN.NodeLabel,
+          group: 'node',
+          type: 'string',
+          hasMapping: true,
+        })
+      }
+    })
+
+    it('returns NetworkNotFound when the style does not exist', () => {
+      const result = visualStyleApi.getVisualProperties('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
+    })
+  })
+
+  describe('getDefault', () => {
+    it('returns the default value', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getDefault('net1', VPN.NodeBackgroundColor)
+      expect(result.success && result.data.value).toBe('#ffffff')
+    })
+
+    it('returns InvalidInput for an unknown property', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getDefault('net1', 'NOT_A_VP' as any)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+      }
+    })
+  })
+
+  describe('getBypass / getBypasses', () => {
+    it('reads a single element bypass', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getBypass(
+        'net1',
+        VPN.NodeBackgroundColor,
+        'n1',
+      )
+      expect(result.success && result.data.value).toBe('#ff0000')
+    })
+
+    it('returns undefined for an element with no bypass', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getBypass(
+        'net1',
+        VPN.NodeBackgroundColor,
+        'n99',
+      )
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.value).toBeUndefined()
+      }
+    })
+
+    it('reads all bypasses keyed by element id', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getBypasses('net1', VPN.NodeBackgroundColor)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.bypasses).toEqual({
+          n1: '#ff0000',
+          n2: '#00ff00',
+        })
+      }
+    })
+  })
+
+  describe('getMapping', () => {
+    it('returns the installed mapping', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getMapping('net1', VPN.NodeLabel)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.mapping).toEqual({
+          type: 'passthrough',
+          attribute: 'name',
+        })
+      }
+    })
+
+    it('returns undefined when the property has no mapping', () => {
+      setupReadFixtures()
+      const result = visualStyleApi.getMapping('net1', VPN.NodeBackgroundColor)
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.mapping).toBeUndefined()
+      }
+    })
+  })
+})
+
 // --- setDefault --------------------------------------------------------------
 
 describe('setDefault', () => {

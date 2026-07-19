@@ -9,6 +9,8 @@ import {
   ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
   MappingFunctionType,
+  VisualMappingFunction,
+  VisualPropertyGroup,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualPropertyValueTypeName,
@@ -31,7 +33,62 @@ import {
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
+/** One visual property's identity and scope, from getVisualProperties(). */
+export interface VisualPropertyInfo {
+  name: VisualPropertyName
+  group: VisualPropertyGroup
+  type: VisualPropertyValueTypeName
+  /** True when this property currently has a mapping. */
+  hasMapping: boolean
+}
+
 export interface VisualStyleApi {
+  // --- Read ---
+
+  /**
+   * List every visual property in the network's style, with its scope
+   * (node/edge/network), value type, and whether it has a mapping.
+   */
+  getVisualProperties(
+    networkId: IdType,
+  ): ApiResult<{ properties: VisualPropertyInfo[] }>
+
+  /** Read the default value of a visual property. */
+  getDefault(
+    networkId: IdType,
+    vpName: VisualPropertyName,
+  ): ApiResult<{ value: VisualPropertyValueType }>
+
+  /**
+   * Read a single element's bypass for a property. `value` is undefined
+   * when the element has no bypass for it.
+   */
+  getBypass(
+    networkId: IdType,
+    vpName: VisualPropertyName,
+    elementId: IdType,
+  ): ApiResult<{ value: VisualPropertyValueType | undefined }>
+
+  /**
+   * Read every bypass set for a property, keyed by element id. Empty
+   * object when the property has no bypasses.
+   */
+  getBypasses(
+    networkId: IdType,
+    vpName: VisualPropertyName,
+  ): ApiResult<{ bypasses: Record<IdType, VisualPropertyValueType> }>
+
+  /**
+   * Read the mapping installed on a property. `mapping` is undefined when
+   * the property has no mapping.
+   */
+  getMapping(
+    networkId: IdType,
+    vpName: VisualPropertyName,
+  ): ApiResult<{ mapping: VisualMappingFunction | undefined }>
+
+  // --- Write ---
+
   setDefault(
     networkId: IdType,
     vpName: VisualPropertyName,
@@ -115,7 +172,114 @@ function checkMappingPreconditions(
 
 // ── Core implementation ──────────────────────────────────────────────────────
 
+/**
+ * Look up one visual property, returning a typed failure when the
+ * network's style or the property itself is missing — shared by every
+ * read method so they report the same codes as their write siblings.
+ */
+function resolveVisualProperty(
+  networkId: IdType,
+  vpName: VisualPropertyName,
+):
+  | { property: any }
+  | { failure: ApiFailure } {
+  const style = useVisualStyleStore.getState().visualStyles[networkId]
+  if (style === undefined) {
+    return { failure: fail(AppCodes.NETWORK_NOT_FOUND, networkId) }
+  }
+  const property = style[vpName]
+  if (property === undefined) {
+    return {
+      failure: fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`),
+    }
+  }
+  return { property }
+}
+
 export const visualStyleApi: VisualStyleApi = {
+  getVisualProperties(networkId): ApiResult<{ properties: VisualPropertyInfo[] }> {
+    try {
+      const style = useVisualStyleStore.getState().visualStyles[networkId]
+      if (style === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      const properties: VisualPropertyInfo[] = []
+      for (const [name, vp] of Object.entries(style) as Array<
+        [VisualPropertyName, any]
+      >) {
+        // Skip non-property fields the style object may carry
+        if (vp === undefined || vp.group === undefined) continue
+        properties.push({
+          name,
+          group: vp.group,
+          type: vp.type,
+          hasMapping: vp.mapping !== undefined,
+        })
+      }
+      return ok({ properties })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getDefault(networkId, vpName): ApiResult<{ value: VisualPropertyValueType }> {
+    try {
+      const resolved = resolveVisualProperty(networkId, vpName)
+      if ('failure' in resolved) return resolved.failure
+      return ok({ value: resolved.property.defaultValue })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getBypass(
+    networkId,
+    vpName,
+    elementId,
+  ): ApiResult<{ value: VisualPropertyValueType | undefined }> {
+    try {
+      const resolved = resolveVisualProperty(networkId, vpName)
+      if ('failure' in resolved) return resolved.failure
+      const bypassMap: Map<IdType, VisualPropertyValueType> | undefined =
+        resolved.property.bypassMap
+      return ok({ value: bypassMap?.get(elementId) })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getBypasses(
+    networkId,
+    vpName,
+  ): ApiResult<{ bypasses: Record<IdType, VisualPropertyValueType> }> {
+    try {
+      const resolved = resolveVisualProperty(networkId, vpName)
+      if ('failure' in resolved) return resolved.failure
+      const bypassMap: Map<IdType, VisualPropertyValueType> | undefined =
+        resolved.property.bypassMap
+      const bypasses: Record<IdType, VisualPropertyValueType> = {}
+      bypassMap?.forEach((value, id) => {
+        bypasses[id] = value
+      })
+      return ok({ bypasses })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getMapping(
+    networkId,
+    vpName,
+  ): ApiResult<{ mapping: VisualMappingFunction | undefined }> {
+    try {
+      const resolved = resolveVisualProperty(networkId, vpName)
+      if ('failure' in resolved) return resolved.failure
+      return ok({ mapping: resolved.property.mapping })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
   setDefault(networkId, vpName, vpValue): ApiResult {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
