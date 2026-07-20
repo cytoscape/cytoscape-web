@@ -160,6 +160,30 @@ function main(): void {
   }
   const args = parseArgs(process.argv.slice(2))
 
+  const argErrors: string[] = []
+  if (!Number.isFinite(args.maxLoc) || args.maxLoc < 0) {
+    argErrors.push('--max-loc must be a non-negative number')
+  }
+  if (
+    args.maxAgeDays !== null &&
+    (!Number.isFinite(args.maxAgeDays) || args.maxAgeDays <= 0)
+  ) {
+    argErrors.push('--max-age-days must be a positive number')
+  }
+  if (
+    !Number.isFinite(args.overlapThreshold) ||
+    args.overlapThreshold < 0 ||
+    args.overlapThreshold > 1
+  ) {
+    argErrors.push('--overlap-threshold must be between 0 and 1')
+  }
+  if (argErrors.length) {
+    console.error('\nInvalid arguments:')
+    for (const e of argErrors) console.error(`  - ${e}`)
+    console.error('\nRun with --help for usage.')
+    process.exit(1)
+  }
+
   if (!refExists(args.base)) {
     console.error(
       `\nBase branch "${args.base}" does not exist in this repo. ` +
