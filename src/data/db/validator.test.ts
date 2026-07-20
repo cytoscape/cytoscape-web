@@ -155,6 +155,25 @@ const validStoredUiState = () => ({
   networkViewUi: { activeTabIndex: 0 },
 })
 
+// REVIEW.md round-1 P0 follow-up: these schemas were stricter than live
+// data — an empty currentNetworkId (workspace with no networks) and an
+// empty activeNetworkView (no sub-network view active) are legitimate
+// persisted states and must validate, or wiring the validators would
+// flag every fresh workspace.
+describe('over-strict schema reconciliation (round 7)', () => {
+  it('accepts an empty currentNetworkId (empty-workspace state)', () => {
+    expect(() =>
+      validateWorkspace({ ...validWorkspace(), currentNetworkId: '' }),
+    ).not.toThrow()
+  })
+
+  it('accepts an empty activeNetworkView (no active sub-network view)', () => {
+    expect(() =>
+      validateStoredUiState({ ...validStoredUiState(), activeNetworkView: '' }),
+    ).not.toThrow()
+  })
+})
+
 describe('db validator - Workspace', () => {
   it('accepts a well-formed workspace', () => {
     const ws = validWorkspace()

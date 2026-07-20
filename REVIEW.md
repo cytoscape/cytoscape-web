@@ -14,7 +14,7 @@ Coverage numbers (data layer ~57% statements / ~48% branches; models 86.8% / 70.
 2. **The store persistence middleware persists the wrong network's data** — every persist wrapper keys the DB write off `workspace.currentNetworkId`, not the network the action actually mutated. Edits to non-current networks (hierarchy sub-networks, App API calls, async layout completion) are silently never persisted. **[verified]** (P0)
 3. **Snapshot import destroys user workspaces before validating the file** — `db.workspace.clear()` runs before the file is read; a corrupt file leaves an orphaned-empty workspace. **[verified]** (P0)
 4. **"Delete all networks" clears the wrong database** — `OpaqueAspectStore.deleteAll` calls idb-keyval's `clear()` (a different IndexedDB database entirely); the correct `clearOpaqueAspectsFromDb` has zero callers. **[verified]** (P0)
-5. Round 1's structural finding stands: `db/validator.ts` is a complete, now-tested, 22-function zod validation layer that is **called from nowhere** — DB reads remain unvalidated `any`.
+5. Round 1's structural finding: `db/validator.ts` was a complete, tested, 22-function zod validation layer **called from nowhere** — DB reads returned unvalidated `any`. **Status: wired in OBSERVE mode (round 7)** — every major read path (workspace, network, tables, visual style, network views, summaries, UI state, apps, service apps, opaque aspects, undo stacks) now validates and logs a warning on mismatch while always returning the data unaltered. Zero bricking risk; enforcement can be escalated once field warnings are quiet. The two known over-strict schemas (empty `currentNetworkId` / `activeNetworkView` are legitimate states) were reconciled first, pinned by tests.
 
 > **Round-3/4 status:** items 1–4 above plus the auth-token leak (R2-11) are now **FIXED**, each proven by a regression test that was written first and shown to fail against the old code. R2-2 is fully closed: the four Immer-managed stores share the `persistNetworkSlices` middleware, and NetworkStore (whose in-place cy mutation defeats identity diffing) got per-action persistence in round 4. Round 4 also fixed R2-22 (`as const` + `valueType2BaseType`), which surfaced three further latent inconsistencies — and corrected a round-2 error: `npm test` **does** already run `tsc --noEmit` via `lint:tsc`. Details in [What was done](#round-3-test-driven-fixes-for-the-p0s).
 
@@ -264,6 +264,16 @@ Same test-first discipline; 14 new tests, 13 of which failed pre-fix.
 
 **Verification:** full unit suite **149 files / 2233 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 7: db/validator.ts wired into the read path (observe mode)
+
+Decision taken: **wire, don't delete — in observe mode.** Every major `get*FromDb` read now runs its model-shape validator via an `observeValidation` helper that logs a `Read-path validation failed for <label>` warning on mismatch and always returns the data unaltered. This connects round 1's orphaned safety net with zero risk of rejecting legitimate persisted state; enforcement (fail-soft fallbacks or rejection) can be layered on once warnings are quiet in the field.
+
+- Wired reads: workspace (all three found-paths), network, tables (post-deserialization), visual style, network views (each), summaries (single + bulk), UI state, app, service apps (each), opaque aspects, undo stack.
+- Schema reconciliation (round-1 P0 precondition): `currentNetworkId` and `activeNetworkView` now accept `''` (legitimate empty-workspace / no-active-view states) via `IdTypeOrEmptySchema`.
+- Tests: +2 schema-reconciliation pins in `validator.test.ts`, +3 observe-mode tests in `db.test.ts` (malformed row → warn + data returned; well-formed row → no warn) — all 5 failed pre-fix.
+
+**Verification:** full unit suite **149 files / 2238 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -276,7 +286,7 @@ Same test-first discipline; 14 new tests, 13 of which failed pre-fix.
 | ~~P0~~ ✅ | ~~`OpaqueAspectStore.deleteAll` → `clearOpaqueAspectsFromDb` (R2-4)~~ **Done (round 3);** dropping `idb-keyval` from package.json remains. | — |
 | ~~P0~~ ✅ | ~~Redact credentials from `exportApplicationState` (R2-11)~~ **Done (round 3).** | — |
 | ~~P0~~ ✅ | ~~NetworkStore persistence keying (R2-2 residual)~~ **Done (round 4)** — per-action persistence. | — |
-| **P1** | Wire or delete `db/validator.ts` (round 1 P0; reconcile over-strict schemas first). | M |
+| ~~P1~~ ✅ | ~~Wire or delete `db/validator.ts`~~ **Done (round 7)** — wired in observe mode with schemas reconciled. Future: escalate to enforcement once warnings are quiet. | — |
 | ~~P1~~ ✅ | ~~Snapshot fidelity (R2-6/7/8)~~ **Done (round 5)** via tagged JSON, store filtering, and true replace semantics. R2-14 residual: route imported records through schema migrations once the first real migration ships. | S (residual) |
 | ~~P1~~ ✅ | ~~Validate CX2 in `useCreateNetworkFromCx2` (R2-21); `validateCX2` throw-vs-return (R2-18); converter hardening (R2-19)~~ **Done (round 6).** | — |
 | **P1** | Network-lifecycle orchestrator owning the delete cascade + `currentNetworkId` invariant (A4, R2-13); add `useDeleteCyNetwork` tests. | M–L |

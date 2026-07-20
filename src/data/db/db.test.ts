@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { logDb } from '../../debug'
 
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { ComponentType } from '../../models/AppModel/ComponentType'
@@ -894,5 +896,62 @@ describe('CyDB helper coverage', () => {
     await putUndoRedoStackToDb('undo-network', undoRedoStack)
     await clearUndoRedoStackFromDb()
     expect(await getUndoRedoStackFromDb('undo-network')).toBeUndefined()
+  })
+})
+
+// REVIEW.md round-1 P0: db/validator.ts was a complete validation layer
+// with zero callers — DB reads returned raw `any`. It is now wired into
+// the read path in OBSERVE mode: shape mismatches are logged as warnings
+// but the data is always returned unaltered, so corrupt or old-shape rows
+// can never brick a workspace. Enforcement can be escalated once field
+// warnings are quiet.
+describe('read-path validation (observe mode)', () => {
+  const validationWarnings = (spy: {
+    mock: { calls: unknown[][] }
+  }): string[] =>
+    spy.mock.calls
+      .map((call: unknown[]) => String(call[0]))
+      .filter((message: string) => message.includes('validation'))
+
+  it('warns when a workspace read from the DB fails shape validation', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    // Malformed row: missing name/networkIds/timestamps
+    await db.workspace.put({ id: 'malformed-ws' })
+    const warnSpy = vi.spyOn(logDb, 'warn')
+
+    const ws = await getWorkspaceFromDb('malformed-ws')
+
+    // Observe mode: data is returned unaltered…
+    expect(ws).toBeDefined()
+    expect(ws.id).toBe('malformed-ws')
+    // …but the mismatch is reported
+    expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn for a well-formed workspace', async () => {
+    await setupFreshDb()
+    const workspace = createWorkspaceModel('well-formed-ws')
+    await putWorkspaceToDb(workspace)
+    const warnSpy = vi.spyOn(logDb, 'warn')
+
+    await getWorkspaceFromDb('well-formed-ws')
+
+    expect(validationWarnings(warnSpy)).toEqual([])
+    warnSpy.mockRestore()
+  })
+
+  it('warns when an undo stack row fails shape validation but still returns it', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await db.undoStacks.put({ id: 'bad-stack', undoRedoStack: 'not a stack' })
+    const warnSpy = vi.spyOn(logDb, 'warn')
+
+    const row = await getUndoRedoStackFromDb('bad-stack')
+
+    expect(row).toBeDefined()
+    expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
+    warnSpy.mockRestore()
   })
 })

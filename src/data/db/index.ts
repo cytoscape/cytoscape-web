@@ -23,6 +23,19 @@ import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import { registerMigrations } from './migrations'
 import { toPlainObject } from './serialization'
 import {
+  validateCyApp,
+  validateNetwork,
+  validateNetworkSummary,
+  validateNetworkView,
+  validateOpaqueAspectsDb,
+  validateServiceApp,
+  validateStoredUiState,
+  validateTable,
+  validateUndoRedoStackDb,
+  validateVisualStyle,
+  validateWorkspace,
+} from './validator'
+import {
   deserializeFilterConfig,
   deserializeNetworkView,
   deserializeTable,
@@ -142,6 +155,29 @@ class CyDB extends Dexie {
   }
 }
 
+/**
+ * Observe-mode validation for IndexedDB reads (REVIEW.md round-1 P0,
+ * wired in round 7). Runs the model-shape validator against data read
+ * from the DB and logs a warning on mismatch — it NEVER alters or
+ * rejects the data, so corrupt or old-shape rows cannot brick a
+ * workspace. Escalate to enforcement only once field warnings are quiet.
+ */
+const observeValidation = <T>(
+  label: string,
+  value: T,
+  validate: (value: unknown) => unknown,
+): T => {
+  if (value === undefined || value === null) {
+    return value
+  }
+  try {
+    validate(value)
+  } catch (e) {
+    logDb.warn(`[db] Read-path validation failed for ${label}:`, e)
+  }
+  return value
+}
+
 // Initialize the DB
 let db: CyDB
 try {
@@ -249,6 +285,7 @@ export const getNetworkFromDb = async (
 ): Promise<Network | undefined> => {
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
+    observeValidation(`network ${id}`, network, validateNetwork)
     return NetworkFn.networkModelToImplNetwork(network)
   }
 }
@@ -281,8 +318,16 @@ export const getTablesFromDb = async (id: IdType): Promise<any> => {
 
   return {
     ...cached,
-    nodeTable: deserializeTable(cached.nodeTable),
-    edgeTable: deserializeTable(cached.edgeTable),
+    nodeTable: observeValidation(
+      `node table ${id}`,
+      deserializeTable(cached.nodeTable),
+      validateTable,
+    ),
+    edgeTable: observeValidation(
+      `edge table ${id}`,
+      deserializeTable(cached.edgeTable),
+      validateTable,
+    ),
   }
 }
 /**
@@ -373,7 +418,7 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       // TODO: pick the newest one in production
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
-      return lastWs
+      return observeValidation(`workspace ${lastWs.id}`, lastWs, validateWorkspace)
     }
   }
 
@@ -386,7 +431,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       id,
       cachedWorkspace,
     )
-    return cachedWorkspace
+    return observeValidation(
+      `workspace ${id}`,
+      cachedWorkspace,
+      validateWorkspace,
+    )
   } else {
     logDb.info('[getWorkspaceFromDb] No workspace found with ID:', id)
 
@@ -405,7 +454,7 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       const allWS: Workspace[] = await db.workspace.toArray()
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning workspace:', lastWs)
-      return lastWs
+      return observeValidation(`workspace ${lastWs.id}`, lastWs, validateWorkspace)
     }
   }
 }
@@ -415,13 +464,26 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
 export const getNetworkSummaryFromDb = async (
   externalId: IdType,
 ): Promise<NetworkSummary | undefined> => {
-  return await db.summaries.get({ externalId })
+  const summary = await db.summaries.get({ externalId })
+  return observeValidation(
+    `network summary ${externalId}`,
+    summary,
+    validateNetworkSummary,
+  )
 }
 
 export const getNetworkSummariesFromDb = async (
   externalIds: IdType[],
 ): Promise<(NetworkSummary | undefined)[]> => {
-  return await db.summaries.bulkGet(externalIds)
+  const summaries = await db.summaries.bulkGet(externalIds)
+  summaries.forEach((summary) =>
+    observeValidation(
+      `network summary ${summary?.externalId}`,
+      summary,
+      validateNetworkSummary,
+    ),
+  )
+  return summaries
 }
 
 export const putNetworkSummaryToDb = async (
@@ -461,7 +523,11 @@ export const getVisualStyleFromDb = async (
     id,
   })
   if (vsId !== undefined) {
-    return deserializeVisualStyle(vsId.visualStyle as any)
+    return observeValidation(
+      `visual style ${id}`,
+      deserializeVisualStyle(vsId.visualStyle as any),
+      validateVisualStyle,
+    )
   } else {
     return undefined
   }
@@ -512,7 +578,11 @@ export const getNetworkViewsFromDb = async (
 ): Promise<NetworkView[] | undefined> => {
   const entry = await db.cyNetworkViews.get({ id })
   return entry?.views.map((v: any) =>
-    deserializeNetworkView(v),
+    observeValidation(
+      `network view ${id}`,
+      deserializeNetworkView(v),
+      validateNetworkView,
+    ),
   ) as NetworkView[]
 }
 /**
@@ -625,7 +695,7 @@ export const DEFAULT_UI_STATE_ID = 'uistate'
 export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
   const uiState = await db.uiState.get({ id: DEFAULT_UI_STATE_ID })
   if (uiState !== undefined) {
-    return uiState
+    return observeValidation('ui state', uiState, validateStoredUiState)
   } else {
     return undefined
   }
@@ -730,7 +800,8 @@ export const putAppToDb = async (app: CyApp): Promise<void> => {
 export const getAppFromDb = async (
   appId: string,
 ): Promise<CyApp | undefined> => {
-  return await db.apps.get({ id: appId })
+  const app = await db.apps.get({ id: appId })
+  return observeValidation(`app ${appId}`, app, validateCyApp)
 }
 
 export const getAllAppsFromDb = async (): Promise<CyApp[]> => {
@@ -811,6 +882,13 @@ export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
   try {
     // Fetch all entries as an array
     const serviceList: ServiceApp[] = await db.serviceApps.toArray()
+    serviceList.forEach((serviceApp) =>
+      observeValidation(
+        `service app ${serviceApp?.url}`,
+        serviceApp,
+        validateServiceApp,
+      ),
+    )
     return serviceList
   } catch (err) {
     logDb.warn(
@@ -852,7 +930,12 @@ export const putOpaqueAspectsToDb = async (
 export const getOpaqueAspectsFromDb = async (
   networkId: IdType,
 ): Promise<OpaqueAspectsDB | undefined> => {
-  return await db.opaqueAspects.get({ id: networkId })
+  const aspects = await db.opaqueAspects.get({ id: networkId })
+  return observeValidation(
+    `opaque aspects ${networkId}`,
+    aspects,
+    validateOpaqueAspectsDb,
+  )
 }
 
 export const deleteOpaqueAspectsFromDb = async (
@@ -907,7 +990,11 @@ export const getUndoRedoStackFromDb = async (
   networkId: IdType,
 ): Promise<UndoRedoStackDB | undefined> => {
   const result = await db.undoStacks.get({ id: networkId })
-  return result
+  return observeValidation(
+    `undo stack ${networkId}`,
+    result,
+    validateUndoRedoStackDb,
+  )
 }
 
 export const deleteUndoRedoStackFromDb = async (
