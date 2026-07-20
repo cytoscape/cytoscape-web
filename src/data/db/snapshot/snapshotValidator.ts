@@ -307,6 +307,26 @@ export const sanitizeRecord = (record: any): any => {
     return record
   }
 
+  // Preserve rich values restored by the snapshot reviver (REVIEW.md R2-6).
+  // They carry no enumerable own properties, so the generic copy below
+  // would silently turn them into {}. Map/Set contents are sanitized
+  // recursively; none of these can carry __proto__ own-property pollution
+  // into Dexie.
+  if (record instanceof Date) {
+    return new Date(record.getTime())
+  }
+  if (record instanceof Map) {
+    return new Map(
+      Array.from(record.entries(), ([key, value]) => [
+        sanitizeRecord(key),
+        sanitizeRecord(value),
+      ]),
+    )
+  }
+  if (record instanceof Set) {
+    return new Set(Array.from(record.values(), (value) => sanitizeRecord(value)))
+  }
+
   // Create a new object to avoid prototype pollution
   const sanitized: any = Array.isArray(record) ? [] : {}
 

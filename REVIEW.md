@@ -94,11 +94,14 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 **R2-5. Persistence failures are unhandled promise rejections.** The `put*ToDb` functions log and rethrow; the async persist wrappers await them inside an intercepted `set` whose promise no caller awaits; `WorkspaceStore`/`ViewModelStore` use `void put…().then()` with no `.catch`. A `QuotaExceededError` (config allows 500MB files) means every subsequent edit fails to persist with no UI surfacing — the workspace looks fine until reload.
 **Status: partially fixed (round 3).** The four stores on `persistNetworkSlices` now catch and log persistence failures. Still open: surfacing failures to the user (MessageStore), and the fire-and-forget `void put…()` calls inside other store actions (WorkspaceStore, NetworkStore, OpaqueAspectStore, NetworkSummaryStore, UiStateStore).
 
-**R2-6. Snapshot export is lossy for Maps and Dates.** `exportDatabaseSnapshot` uses raw `JSON.stringify` on `table.toArray()`. The entries-array serializers cover only cyTables/cyVisualStyles/cyNetworkViews/filters. But `undoStacks` records legitimately contain live `Map`s (SET_BYPASS_MAP, MOVE_NODES position maps, DELETE_COLUMN embedding a whole `Table`) → exported as `{}`; `summaries` `creationTime`/`modificationTime` are `Date` → exported as ISO strings and imported back as strings (the commented example migration in `migrations.ts` is direct evidence this mismatch bites). `NaN`/`Infinity` → `null`. Export→import round-trip silently corrupts undo stacks and date fields.
+**R2-6. Snapshot export is lossy for Maps and Dates.** `exportDatabaseSnapshot` used raw `JSON.stringify` on `table.toArray()`. `undoStacks` records legitimately contain live `Map`s (SET_BYPASS_MAP, MOVE_NODES position maps, DELETE_COLUMN embedding a whole `Table`) → exported as `{}`; `summaries` `creationTime`/`modificationTime` are `Date` → exported as ISO strings and imported back as strings. Export→import round-trip silently corrupted undo stacks and date fields.
+**Status: FIXED (round 5).** Export tags rich values (`{ __cywebType: 'Map' | 'Set' | 'Date', … }`) via a stringify replacer; import revives them via a parse reviver; `sanitizeRecord` preserves (and recursively sanitizes) revived Map/Set/Date instances instead of flattening them to `{}`. The reviver is self-describing, so legacy untagged snapshots (including all five backward-compat fixtures) still import unchanged. Regression test: full Map + Date round-trip through export→clear→import, failed pre-fix. Remaining edge (documented, not fixed): `NaN`/`Infinity` in numeric fields still become `null`.
 
-**R2-7. dexie-observable internal tables are exported and re-imported.** Export iterates `db.tables` (includes `_changes`, `_syncNodes`, `_intercomm`, `_uncommittedChanges` — the shipped fixtures confirm `_changes`/`_syncNodes` records). Import does **not** filter to `ObjectStoreNames` (the validator *warns* unknown stores "will be ignored", but the importer imports them): foreign change-log rows and another browser's sync-node records are `put()` into local change-tracking tables, with `rev` collisions and cross-tab replay as plausible consequences. Validator text and importer behavior directly contradict each other.
+**R2-7. dexie-observable internal tables are exported and re-imported.** Export iterated `db.tables` (includes `_changes`, `_syncNodes`, `_intercomm`, `_uncommittedChanges`); import did **not** filter to `ObjectStoreNames` (the validator *warned* unknown stores "will be ignored", but the importer imported them): foreign change-log rows and another browser's sync-node records were `put()` into local change-tracking tables, with `rev` collisions and cross-tab replay as plausible consequences.
+**Status: FIXED (round 5).** Export skips every table not in `ObjectStoreNames`; import filters `storesToImport` the same way, so the validator's "will be ignored" warning is finally true. Regression tests (export contains no `_`-prefixed keys; a crafted snapshot with `_changes`/`_syncNodes` records imports without touching those tables) failed pre-fix.
 
-**R2-8. "Replace" import only replaces `workspace`.** With `merge: false`, only `db.workspace` is cleared; all other stores are merged-by-key. The UI dialog says "This will replace all existing data" — it doesn't; networks absent from the snapshot remain as permanently orphaned rows. The string-based `importDatabaseSnapshot` entry point doesn't clear workspace at all, so the two entry points have different semantics for identical options.
+**R2-8. "Replace" import only replaces `workspace`.** With `merge: false`, only `db.workspace` was cleared; all other stores were merged-by-key. The UI dialog says "This will replace all existing data" — it didn't; networks absent from the snapshot remained as permanently orphaned rows.
+**Status: FIXED (round 5).** The round-3 `clearWorkspace` option became `clearExisting`: after validation succeeds, **all** app object stores are cleared (dexie-observable internals untouched), so the file-import path's "replace all existing data" wording is now accurate. Regression test (network created after the snapshot is gone post-import; snapshot networks present) failed pre-fix.
 
 **R2-9. `toPlainObject` fallback silently destroys data.** [immerSerialization.ts:60-96](src/data/db/serialization/immerSerialization.ts:60): when `structuredClone` throws (any function anywhere in the graph), `manualDeepCopy` turns Maps/Sets/Dates into `{}`, drops **all** `_`-prefixed keys, and blanks shared (diamond) references because the visited-set is never unwound. Since `toPlainObject` guards every store persistence path, one stray callback in a persisted object degrades the *entire* object silently. *Pinned by round-2 tests in `immerSerialization.test.ts`.*
 
@@ -112,15 +115,19 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 **R2-13. `currentNetworkId` can dangle after delete; the invariant is owned by nobody.** `WorkspaceImpl.deleteNetwork` clears it only when the workspace empties. `useDeleteCyNetwork(id, {navigate:false})` leaves it pointing at the deleted network; some UI callers repair it manually, the App API's `networkApi.deleteNetwork` does not. While dangling, workspace persists a broken pointer to DB *and* (per R2-2) all per-network store persistence silently no-ops.
 
-**R2-14. No snapshot format versioning.** `metadata.version` is written on two historically incompatible scales (Dexie `verno` now; native IDB version in older exports/fixtures), never validated, never used to transform records. Once the first real migration ships, snapshot import becomes a migration-bypass channel: old-shape records enter a current-version DB and (per R2-1, even when fixed) upgrade functions will never touch them.
+**R2-14. No snapshot format versioning.** `metadata.version` is written on two historically incompatible scales (Dexie `verno` now; native IDB version in older exports/fixtures), never validated, never used to transform records.
+**Status: partially fixed (round 5).** Exports now stamp `metadata.formatVersion` (2 = tagged rich values; absent = legacy 1), and the tagged format is self-describing so no version branching is needed on read. Still open: the migration-bypass concern — imported records are not routed through Dexie upgrade functions, so once the first real schema migration ships, snapshot import needs a transform step keyed on the stored DB version.
 
 ### P1 — model layer & CX pipeline **[runtime-verified where marked]**
 
-**R2-15. Empty/whitespace strings coerce to numbers.** [valueTypeImpl.ts:27-32](src/models/TableModel/impl/valueTypeImpl.ts:27): `!isNaN(+'')` passes (`+'' === 0`). Clearing a numeric cell in TableBrowser writes `0`; clearing a ListInteger cell writes `[0]`; `deserializeValueList(ListString,'')` → `['']` not `[]`. **[verified at runtime]**
+**R2-15. Empty/whitespace strings coerce to numbers.** `!isNaN(+'')` passed (`+'' === 0`). Clearing a numeric cell in TableBrowser wrote `0`; clearing a ListInteger cell wrote `[0]`; `deserializeValueList(ListString,'')` → `['']` not `[]`. **[verified at runtime]**
+**Status: FIXED (round 5).** Blank input is invalid for numeric types (clearing a numeric cell is now rejected instead of silently writing 0) and deserializes to `[]` for all list types. Whitespace-padded real numbers still accepted. 8 regression tests failed pre-fix.
 
-**R2-16. `list_of_string` round-trip corruption.** Serialize joins with `', '`, deserialize splits on `', '`: `['a, b','c']` → `'a, b, c'` → `['a','b','c']`. Any element containing `', '` is corrupted the first time the cell is opened. **[verified at runtime]**
+**R2-16. `list_of_string` round-trip corruption.** Serialize joins with `', '`, deserialize splits on `', '`: `['a, b','c']` → `'a, b, c'` → `['a','b','c']`. Any element containing `', '` is corrupted the first time the cell is opened. Symmetric quirk: `'1,2,3'` (no spaces) was rejected as ListInteger input. **[verified at runtime]**
+**Status: partially fixed (round 5).** Validation and deserialization now share one `splitSerializedList` helper. Non-string lists (numbers/booleans can't contain commas) tolerate whitespace variation — `'1,2,3'` now parses. String lists keep the strict `', '` delimiter so elements containing a bare comma survive. **Open product decision:** elements containing `', '` itself still cannot round-trip losslessly — that needs an escaping scheme (user-visible format change); the lossy behavior is pinned by a `KNOWN LIMITATION` test.
 
-**R2-17. `compareNumbers` violates comparator antisymmetry for missing values.** `(a ?? Infinity) - (b ?? -Infinity)` → both orderings of `(5, undefined)` return +∞; sorting numeric columns with missing values is engine-dependent and unstable; NaN cells return NaN. **[verified at runtime]**
+**R2-17. `compareNumbers` violates comparator antisymmetry for missing values.** `(a ?? Infinity) - (b ?? -Infinity)` → both orderings of `(5, undefined)` returned +∞; sorting numeric columns with missing values was engine-dependent and unstable; NaN cells returned NaN. **[verified at runtime]**
+**Status: FIXED (round 5).** Rewritten as a proper comparator: missing values (undefined/null/NaN) sort to the bottom for both directions, two missing values compare equal, and NaN never leaks out. 5 regression tests, 4 failed pre-fix.
 
 **R2-18. `validateCX2` can throw a non-Error.** [validator.ts:327](src/models/CxModel/impl/validator.ts:327): `default: throw z.string()` — `throw` instead of `return`, throwing a ZodString instance. Any CX2 with an unknown attribute-declaration `d` type breaks the "returns ValidationResult" contract; callers reading `error.message` get `undefined`.
 
@@ -219,6 +226,24 @@ Same test-first discipline; 6 new tests, 5 of which failed pre-fix.
 
 **Verification:** full unit suite **148 files / 2198 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 5: snapshot fidelity + model coercion trio
+
+Same test-first discipline; 21 new tests, 16 of which failed pre-fix.
+
+**Production changes:**
+
+- **R2-6 (closed)** — snapshot export/import round-trips Maps, Sets and Dates via tagged JSON (`__cywebType` replacer/reviver, `sanitizeRecord` preserves revived instances). Self-describing: all five legacy backward-compat fixtures still import.
+- **R2-7 (closed)** — dexie-observable internal tables (`_changes`, `_syncNodes`, …) excluded from export and ignored on import.
+- **R2-8 (closed)** — `clearWorkspace` → `clearExisting`: replace-mode file import clears **all** app stores after validation, matching the UI dialog's "replace all existing data".
+- **R2-14 (partial)** — `metadata.formatVersion` stamped (2 = tagged); migration-bypass transform still open.
+- **R2-15 (closed)** — blank strings no longer coerce to `0`/`[0]`/`['']`; blank list input → `[]`.
+- **R2-16 (partial)** — shared `splitSerializedList`; numeric/boolean lists tolerate `'1,2,3'`; string-list escaping remains an open product decision (lossy case pinned by test).
+- **R2-17 (closed)** — `compareNumbers` is a valid comparator; missing values and NaN sort to the bottom in both directions.
+
+**Tests:** `valueTypeImpl.test.ts` +16 (11 failed pre-fix), `snapshot.test.ts` +5 (all failed pre-fix).
+
+**Verification:** full unit suite **148 files / 2219 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -232,10 +257,10 @@ Same test-first discipline; 6 new tests, 5 of which failed pre-fix.
 | ~~P0~~ ✅ | ~~Redact credentials from `exportApplicationState` (R2-11)~~ **Done (round 3).** | — |
 | ~~P0~~ ✅ | ~~NetworkStore persistence keying (R2-2 residual)~~ **Done (round 4)** — per-action persistence. | — |
 | **P1** | Wire or delete `db/validator.ts` (round 1 P0; reconcile over-strict schemas first). | M |
-| **P1** | Snapshot fidelity: route export through domain serializers (Maps/Dates, R2-6), filter dexie-observable tables on import (R2-7), honor "replace" semantics (R2-8), stamp + check a real format version (R2-14). | M |
+| ~~P1~~ ✅ | ~~Snapshot fidelity (R2-6/7/8)~~ **Done (round 5)** via tagged JSON, store filtering, and true replace semantics. R2-14 residual: route imported records through schema migrations once the first real migration ships. | S (residual) |
 | **P1** | Validate CX2 in `useCreateNetworkFromCx2` (R2-21); fix `validateCX2` throw-vs-return (R2-18); harden converters against validated-but-hostile shapes (R2-19). | M |
 | **P1** | Network-lifecycle orchestrator owning the delete cascade + `currentNetworkId` invariant (A4, R2-13); add `useDeleteCyNetwork` tests. | M–L |
-| **P1** | valueTypeImpl coercion fixes (R2-15/16/17) with the failing-first tests listed in round-2 notes. | S–M |
+| ~~P1~~ ✅ | ~~valueTypeImpl coercion fixes (R2-15/17)~~ **Done (round 5).** R2-16 residual: decide whether list_of_string needs an escaping scheme for elements containing `', '`. | S (decision) |
 | **P1** | Undo persistence: serialize Maps for Safari (R2-10 residual), call `deleteStack` from network-deletion flows, guard unknown commands, fix stale-closure undo/redo. Then test `useUndoStack` round-trips. | M |
 | ~~P2~~ ✅ | ~~`as const` on `VisualPropertyValueTypeName` + fix `valueType2BaseType`~~ **Done (round 4).** (The tsc gate already existed — A8 correction.) Open product question: should string→color passthrough be allowed? | — |
 | **P2** | Debounce/coalesce persistence; stop persisting selection; Dexie transaction per network save (A2, A3). | M–L |

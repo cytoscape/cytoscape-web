@@ -26,14 +26,61 @@ import {
 } from './snapshotValidator'
 
 /**
+ * Snapshot format version (REVIEW.md R2-14).
+ * - (absent / 1): legacy format — raw JSON, Maps exported as {} and Dates
+ *   as bare ISO strings.
+ * - 2: rich values are tagged ({ __cywebType: 'Map' | 'Set' | 'Date', ... })
+ *   so they survive the export → import round-trip. The reviver is
+ *   self-describing, so version-2 importers read legacy snapshots too.
+ */
+export const SNAPSHOT_FORMAT_VERSION = 2
+
+/**
  * Metadata included in database exports for version tracking and validation.
  */
 export interface DatabaseExportMetadata {
   version: number // Database schema version
+  formatVersion?: number // Snapshot format version (absent = legacy 1)
   exportDate: string // ISO timestamp
   exportVersion: string // App version (from package.json)
   buildId?: string // Build ID (git commit hash + commit date)
   buildDate?: string // Build timestamp (ISO string)
+}
+
+const TYPE_TAG = '__cywebType'
+
+// JSON.stringify replacer: tag Maps, Sets and Dates so they survive the
+// round-trip (REVIEW.md R2-6 — raw stringify turned undo-stack Maps into {}
+// and summary Dates into bare strings). Must be a `function`: Date.toJSON
+// runs before the replacer sees the value, so the original is `this[key]`.
+function snapshotReplacer(this: any, key: string, value: any): any {
+  const original = this[key]
+  if (original instanceof Date) {
+    return { [TYPE_TAG]: 'Date', iso: original.toISOString() }
+  }
+  if (original instanceof Map) {
+    return { [TYPE_TAG]: 'Map', entries: Array.from(original.entries()) }
+  }
+  if (original instanceof Set) {
+    return { [TYPE_TAG]: 'Set', values: Array.from(original.values()) }
+  }
+  return value
+}
+
+// JSON.parse reviver for snapshotReplacer's tags. Self-describing: legacy
+// (untagged) snapshots pass through unchanged.
+const snapshotReviver = (key: string, value: any): any => {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    switch (value[TYPE_TAG]) {
+      case 'Date':
+        return new Date(value.iso)
+      case 'Map':
+        return new Map(value.entries)
+      case 'Set':
+        return new Set(value.values)
+    }
+  }
+  return value
 }
 
 /**
@@ -93,12 +140,15 @@ export interface ImportOptions {
   objectStores?: ObjectStoreNamesType[]
 
   /**
-   * If true, clear all existing workspaces before importing — but only
-   * AFTER the snapshot has been parsed and validated, so a corrupt file
-   * never destroys existing data.
+   * If true, clear ALL existing app object stores before importing —
+   * true "replace" semantics (previously only the workspace store was
+   * cleared, leaving networks absent from the snapshot orphaned forever;
+   * REVIEW.md R2-8). The clear only happens AFTER the snapshot has been
+   * parsed and validated, so a corrupt file never destroys existing data
+   * (REVIEW.md R2-3).
    * Default: false
    */
-  clearWorkspace?: boolean
+  clearExisting?: boolean
 }
 
 /**
@@ -141,15 +191,27 @@ export const exportDatabaseSnapshot = async (): Promise<string> => {
 
     const metadata: DatabaseExportMetadata = {
       version: currentVersion,
+      formatVersion: SNAPSHOT_FORMAT_VERSION,
       exportDate: new Date().toISOString(),
       exportVersion: appVersion,
       ...(buildId && { buildId }),
       ...(buildTime && { buildDate: buildTime }),
     }
 
-    // Dynamically export all object stores
+    // Export all app object stores. dexie-observable's internal tables
+    // (_changes, _syncNodes, _intercomm, _uncommittedChanges) are
+    // deliberately excluded — they are per-browser change-tracking state,
+    // and importing them into another profile corrupts cross-tab sync
+    // (REVIEW.md R2-7).
+    const appStoreNames = new Set<string>(Object.values(ObjectStoreNames))
     const data: Record<string, any[]> = {}
     for (const table of db.tables) {
+      if (!appStoreNames.has(table.name)) {
+        logDb.info(
+          `[exportDatabaseSnapshot] Skipping internal table: ${table.name}`,
+        )
+        continue
+      }
       try {
         data[table.name] = await table.toArray()
         logDb.info(
@@ -169,7 +231,7 @@ export const exportDatabaseSnapshot = async (): Promise<string> => {
       data: data as DatabaseSnapshot['data'],
     }
 
-    return JSON.stringify(snapshot, null, 2)
+    return JSON.stringify(snapshot, snapshotReplacer, 2)
   } catch (e) {
     logDb.error('[exportDatabaseSnapshot] error:', e)
     throw e
@@ -229,7 +291,7 @@ export const importDatabaseSnapshot = async (
     merge = false,
     skipConflicts = false,
     objectStores = undefined,
-    clearWorkspace = false,
+    clearExisting = false,
   } = options
 
   try {
@@ -244,7 +306,7 @@ export const importDatabaseSnapshot = async (
 
     let snapshot: DatabaseSnapshot
     try {
-      snapshot = JSON.parse(snapshotJson)
+      snapshot = JSON.parse(snapshotJson, snapshotReviver)
     } catch (parseError) {
       throw new Error(
         `Invalid JSON format: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`,
@@ -270,11 +332,22 @@ export const importDatabaseSnapshot = async (
       )
     }
 
-    // Only clear existing workspaces once the snapshot is known to be
-    // valid — never before (a corrupt file must not destroy user data)
-    if (clearWorkspace) {
-      await db.workspace.clear()
-      logDb.info('[importDatabaseSnapshot] Existing workspaces cleared')
+    // Only clear existing data once the snapshot is known to be valid —
+    // never before (a corrupt file must not destroy user data). All app
+    // stores are cleared, not just workspace, so "replace" really replaces
+    // (R2-8); dexie-observable internals are left alone.
+    if (clearExisting) {
+      for (const storeName of Object.values(ObjectStoreNames)) {
+        try {
+          await (db as any)[storeName].clear()
+        } catch (clearError) {
+          logDb.warn(
+            `[importDatabaseSnapshot] Failed to clear ${storeName}:`,
+            clearError,
+          )
+        }
+      }
+      logDb.info('[importDatabaseSnapshot] Existing app stores cleared')
     }
 
     const importedCounts: Record<string, number> = {}
@@ -320,13 +393,26 @@ export const importDatabaseSnapshot = async (
       return null
     }
 
-    // Determine which stores to import
-    // If objectStores is specified, use those; otherwise import all stores found in snapshot
-    const storesToImport =
+    // Determine which stores to import.
+    // Only known app object stores are ever imported — legacy snapshots
+    // contain dexie-observable's internal tables (_changes, _syncNodes, …),
+    // and putting another profile's change-log into the local tables
+    // corrupts cross-tab sync (REVIEW.md R2-7).
+    const knownStoreNames = new Set<string>(Object.values(ObjectStoreNames))
+    const requestedStores =
       objectStores ||
       Object.keys(snapshot.data).filter(
         (key) => (snapshot.data as Record<string, any>)[key] !== undefined,
       )
+    const storesToImport = requestedStores.filter((storeName) => {
+      if (knownStoreNames.has(storeName)) {
+        return true
+      }
+      logDb.info(
+        `[importDatabaseSnapshot] Ignoring unknown/internal store: ${storeName}`,
+      )
+      return false
+    })
 
     // Import each object store
     for (const storeName of storesToImport) {
@@ -463,11 +549,12 @@ export const importDatabaseSnapshotFromFile = async (
         reader.readAsText(file)
       })
     }
-    // Replace-the-workspace semantics: the clear happens inside
-    // importDatabaseSnapshot, only after the snapshot validates
+    // Replace semantics ("This will replace all existing data" in the UI):
+    // the clear happens inside importDatabaseSnapshot, only after the
+    // snapshot validates
     return await importDatabaseSnapshot(text, {
       ...options,
-      clearWorkspace: true,
+      clearExisting: true,
     })
   } catch (e) {
     logDb.error('[importDatabaseSnapshotFromFile] error:', e)
