@@ -2,6 +2,10 @@ import { ValueTypeName } from '../../TableModel'
 import { SingleValueType } from '../../TableModel/ValueType'
 import { MappingFunctionType, VisualPropertyValueTypeName } from '..'
 
+// NOTE: ValueTypeName.Boolean and VisualPropertyValueTypeName.Boolean are
+// the same key ('boolean') — likewise String and Number. Each key may
+// appear only once; with `as const` on both enums the compiler enforces
+// completeness of this Record (REVIEW.md R2-22).
 const valueType2BaseType: Record<
   ValueTypeName | VisualPropertyValueTypeName,
   SingleValueType | null
@@ -25,8 +29,14 @@ const valueType2BaseType: Record<
   [VisualPropertyValueTypeName.NodeBorderLine]: 'string',
   [VisualPropertyValueTypeName.Visibility]: 'string',
   [VisualPropertyValueTypeName.Number]: 'number',
-  [VisualPropertyValueTypeName.Boolean]: 'string',
-  [VisualPropertyValueTypeName.String]: 'string',
+  // null (not 'string') keeps current behavior: no generic
+  // single-value → color/customGraphic passthrough. Whether a string
+  // column should be passthrough-mappable to a color VP is an open
+  // product question (see REVIEW.md R2-22 status).
+  [VisualPropertyValueTypeName.Color]: null,
+  [VisualPropertyValueTypeName.CustomGraphic]: null,
+  [VisualPropertyValueTypeName.CustomGraphicPosition]: null,
+  [VisualPropertyValueTypeName.NodeLabelPosition]: null,
 }
 
 // This function will be redundant once continuous discrete mapping ui is available

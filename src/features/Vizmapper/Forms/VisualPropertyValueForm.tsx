@@ -95,7 +95,7 @@ const vpType2RenderMap: Record<
     pickerRender: FontPicker,
     valueRender: Font,
   },
-  horizontalAlign: {
+  [VisualPropertyValueTypeName.HorizontalAlign]: {
     pickerRender: HorizontalAlignPicker,
     valueRender: HorizontalAlign,
   },
@@ -134,119 +134,6 @@ const vpType2RenderMap: Record<
   customGraphicPosition: {
     pickerRender: () => <></>,
     valueRender: () => <></>,
-  },
-  nodeImageChart1: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart2: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart3: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart4: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart5: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-
-  nodeImageChart6: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-
-  nodeImageChart7: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart8: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart9: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  // image chart position and size properties will currently be hidden in the vizmapper and uneditable
-  // in the future if these properties are supported in the cy.js renderer we can add them here
-  // and implement the picker and value render functions
-  nodeImageChartPosition1: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition2: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition3: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition4: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition5: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition6: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition7: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition8: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition9: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartSize1: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize2: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize3: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize4: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize5: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize6: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize7: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize8: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize9: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
   },
 }
 
