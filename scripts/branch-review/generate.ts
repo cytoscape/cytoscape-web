@@ -65,6 +65,23 @@ function parseArgs(argv: string[]): Args {
   }
 }
 
+const USAGE = `branch-review — merge-planning dashboard
+
+Usage:
+  npm run generate:branch-review -- [flags]
+
+Flags:
+  --base <branch>            Integration branch to compare against (default: development)
+  --out <path>              Output HTML path (default: scratch/branch-review/index.html;
+                            gitignored. Point at docs-site/ only to publish publicly.)
+  --include-stale           Keep branches with no unique commits (ahead === 0)
+  --max-age-days <n>        Exclude branches whose tip commit is older than n days
+  --max-loc <n>            Churn above which a branch is flagged oversized (default: 400)
+  --overlap-threshold <0..1> Jaccard at/above which a pair is reported as overlapping (default: 0.15)
+  -h, --help               Show this help
+
+All git operations are read-only; no merges are performed.`
+
 const CAVEATS = [
   'Conflict is a symmetric relation, not a dependency — there is no DAG and no true topological sort. The merge order is a greedy heuristic (minimizing total conflict cost is NP-hard), not a guaranteed-optimal schedule.',
   'merge-tree performs a textual/tree 3-way merge against the current branch tips — a snapshot in time. Once you land a branch, the base changes, so a pair that reads "clean" now can conflict later. Re-run after each merge.',
@@ -118,6 +135,10 @@ function printHighlights(
 }
 
 function main(): void {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    console.log(USAGE)
+    return
+  }
   const args = parseArgs(process.argv.slice(2))
 
   console.log('Branch review & merge-planning dashboard')
