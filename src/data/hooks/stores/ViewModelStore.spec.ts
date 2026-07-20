@@ -201,7 +201,11 @@ describe('useViewModelStore', () => {
       expect(viewModel).toBeUndefined()
     })
 
-    it('should return view model by viewModelId', () => {
+    // REVIEW.md round-2 P2: getViewModel used to match on `view.id` — the
+    // NETWORK id, identical for every view of the network — so a specific
+    // secondary view could never be addressed. It must match on `viewId`.
+    // (This spec previously ASSERTED the broken behavior.)
+    it('should return the specific view matching the given viewId', () => {
       const { result } = renderHook(() => useViewModelStore())
       const networkId: IdType = 'network-1'
       const networkView1 = createTestNetworkView('network-1', 'network-1-nodeLink-1')
@@ -212,11 +216,12 @@ describe('useViewModelStore', () => {
         result.current.add(networkId, networkView2)
       })
 
-      // getViewModel uses 'id' not 'viewId' for matching
-      const viewModel = result.current.getViewModel(networkId, 'network-1')
+      const viewModel = result.current.getViewModel(
+        networkId,
+        'network-1-nodeLink-2',
+      )
       expect(viewModel).toBeDefined()
-      // Both views have the same id ('network-1'), so it returns the first one
-      expect(viewModel?.id).toBe('network-1')
+      expect(viewModel?.viewId).toBe('network-1-nodeLink-2')
     })
 
     it('should return undefined if viewModelId not found', () => {

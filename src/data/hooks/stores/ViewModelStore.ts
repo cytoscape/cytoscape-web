@@ -108,7 +108,10 @@ export const useViewModelStore = create(
             // return the first view model if no ID is given
             return viewList[0]
           }
-          return viewList.find((view) => view.id === viewModelId)
+          // Match on viewId: view.id is the NETWORK id, identical for every
+          // view of the network, so matching on it could never address a
+          // specific secondary view (REVIEW.md round-2 P2)
+          return viewList.find((view) => view.viewId === viewModelId)
         },
 
         exclusiveSelect: (

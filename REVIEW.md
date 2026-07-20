@@ -148,7 +148,7 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 ### P2 — notable (abbreviated)
 
-- `ViewModelStore.getViewModel(networkId, viewModelId)` matches on `view.id` (the network id) instead of `viewId` — a specific secondary view can never be addressed; **the spec codifies the bug** (`ViewModelStore.spec.ts:204-220`). Contract drift: `ViewModelStoreModel`'s `targetViewId` params are unimplemented; `delete` removes all views.
+- `ViewModelStore.getViewModel(networkId, viewModelId)` matches on `view.id` (the network id) instead of `viewId` — a specific secondary view can never be addressed; **the spec codified the bug**. **FIXED (round 10):** matches on `viewId`; the spec assertion was rewritten to the intended behavior (all callers used the one-arg form, so no behavior change for existing code). Contract drift remains: `ViewModelStoreModel`'s `targetViewId` params are unimplemented; `delete` removes all views.
 - circlePacking views are excluded from DB in `add` but re-persisted by the wrapper on the next set (any selection click) — the stated intent is defeated. **FIXED (round 3):** the ViewModelStore `putSlice` filters circlePacking views on every write, pinned by "never writes circlePacking views to the DB" in the spec.
 - `ViewModelStore.add` mutates its input argument; `TableStore.addRows` is a silent no-op; several TableStore actions crash on missing table while sibling actions null-check; `NetworkStore.moveEdge` emits `UpdateEventType.ADD` and has zero tests; stray `lastModified` in NetworkStore initial state.
 - Network deletion leaks per-network `UiStateStore` entries (`visualStyleOptions`, `columnUiState` — both persisted) and `FilterStore` search indexes (in-memory) — in both `useDeleteCyNetwork` *and* its app-api mirror. **FIXED (round 8):** new `deleteNetworkUiState`/`deleteAllNetworkUiState` (UiStateStore) and `deleteNetworkIndex`/`deleteAllNetworkIndexes` (FilterStore) actions, called from the orchestrator; pinned by failing-first tests.
@@ -159,7 +159,7 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 - `snapshotValidator` `MAX_OBJECT_DEPTH=10` can plausibly reject the app's own undo-stack exports (compounds R2-3); snapshot `Keys` map duplicated from db/index.ts and already missing `AppSettings`.
 - Validator misreports missing-target-node errors as "Source id not found"; duplicate node ids: warn-only in validator, silently deduped by cytoscape, kept-last-writer in tables → CX counts and app counts diverge.
 - `networkImpl.addNodesWithRows` is a guaranteed no-op (dead branch logic); `createNetworkFromCyjs`/`createFromSif` are stubs returning empty networks; `translateCXEdgeId` duplicated in two files; `translateEdgeIdToCX` blindly `slice(1)`s → non-`e`-prefixed edge id exports as a silently wrong CX id.
-- `fetchUrlCx` size limit relies solely on a HEAD `Content-Length` (absent header → unlimited), and does `fetch()` I/O inside the models layer.
+- `fetchUrlCx` size limit relies solely on a HEAD `Content-Length` (absent header → unlimited), and does `fetch()` I/O inside the models layer. **PARTIALLY FIXED (round 10):** the limit is now enforced on the actual GET body before parsing (the HEAD check remains as a fast-fail), pinned by the module's first tests (`fetchUrlCxUtil.test.ts`, 0% → covered). The file still lives in models (I/O placement) — cosmetic move left open.
 - `useSaveCyNetworkCopyToNDEx` deleteOriginal branch navigates using a stale pre-copy workspace snapshot → single-network workspaces end on the empty route instead of the new copy; back-to-back navigations are silently dropped by urlManager's 300ms throttle.
 
 ### Architecture red flags & prospective changes
@@ -177,7 +177,8 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 **A6. Import/export performance.** Import makes ~4 full main-thread passes over up to 100MB (parse → re-stringify just to re-check size/scan for `__proto__` → depth traversal → per-record sanitize deep-copy), then per-record `await put()` instead of `bulkPut`. Export pretty-prints (`JSON.stringify(…, null, 2)`) and `exportApplicationState` parses/re-stringifies the same payload up to three more times. **Prospective change:** single-pass validation, `bulkPut`, no pretty-print, and consider a worker for >10MB payloads.
 
-**A7. Layering violations in models.** `RendererModel/Renderer.ts:5` imports `ReactElement` from react (not even `import type`) — violates "Models must NOT import from React". `LayoutModel/impl/layoutSelection.ts` imports from `features/HierarchyViewer` (models → features inversion). `fetchUrlCxUtil.ts` does network I/O, mints uuids, and builds summaries inside models. Four `console.*` calls in model impls (stripped in prod builds → silent). Mutable shared exports in `defaultVisualStyle.ts` are shared by reference across every style.
+**A7. Layering violations in models.** `RendererModel/Renderer.ts` imported `ReactElement` from react at runtime; `LayoutModel/impl/layoutSelection.ts` imported from `features/HierarchyViewer` (models → features inversion); `fetchUrlCxUtil.ts` does network I/O inside models; four `console.*` calls in model impls (stripped in prod builds → silent); mutable shared exports in `defaultVisualStyle.ts`.
+**Status: mostly fixed (rounds 6/10).** Renderer's React import is now `import type` (erased at compile time — zero runtime dependency); `getDefaultLayout` takes an `isHierarchical` boolean so models no longer import `isHCX` from features (both callers pass `isHCX(summary)`; the test file's features-mock is gone and a hierarchy case was added); all four `console.*` calls in model impls replaced with `logModel` (visualStyleConverter in round 6, customGraphicsImpl + cyJsVisualPropertyConverter in round 10) — `src/models` is now console-free. Remaining (accepted for now): `fetchUrlCxUtil.ts` file placement, mutable `defaultVisualStyle` shared exports (safe while all touchpoints go through Immer).
 
 **A8. CI blind spots.** ~~No `tsc --noEmit` anywhere in `npm test`~~ **Corrected (round 4): `npm test` → `lint` → `lint:tsc` already runs `tsc --noEmit`; the round-2 claim was wrong.** The genuine gaps: the widened enum type made the gate blind to a whole class of bugs (fixed in round 4, R2-22); coverage is not gated; and a test file that fails to *load* reports zero tests rather than failing loudly (observed in round 1). **Prospective change:** add a coverage floor for `src/data/db/**`.
 
@@ -300,6 +301,17 @@ Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` �
 
 **Verification:** full unit suite **151 files / 2252 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 10: P2 cluster — getViewModel fix, urlManager tests, fetchUrlCx limit, layering cleanups
+
+14 new tests across two new test files and updated suites.
+
+- **`getViewModel` viewId fix** — matches on `viewId` instead of the network id; the spec assertion that codified the bug was rewritten to intended behavior.
+- **`urlManager` first tests** (16.6% → covered): path building, 300ms throttle (documented as deliberate lossy behavior), same-path skip, forced-replace on same-network re-navigation, `updateSearchParams`, singleton reset.
+- **`fetchUrlCx` size limit enforced on the GET body** (B15) + first tests for the module, including the no-Content-Length case that previously meant no limit at all.
+- **A7 layering**: type-only React import in RendererModel; `getDefaultLayout(numElements, threshold, isHierarchical)` removes the models→features import (callers pass `isHCX(summary)`); `src/models` is now `console.*`-free.
+
+**Verification:** full unit suite **153 files / 2266 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -321,7 +333,7 @@ Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` �
 | ~~P2~~ ✅ | ~~`as const` on `VisualPropertyValueTypeName` + fix `valueType2BaseType`~~ **Done (round 4).** (The tsc gate already existed — A8 correction.) Open product question: should string→color passthrough be allowed? | — |
 | **P2** | Debounce/coalesce persistence; stop persisting selection; Dexie transaction per network save (A2, A3). | M–L |
 | ~~P2~~ ✅ | ~~2-entry continuous mappings + mapper null/NaN handling (R2-20)~~ **Done (round 6)**, incl. the newly found domain-anchors bug. | — |
-| **P2** | `urlManager` tests; `getViewModel` viewId fix (un-codify the spec'd bug); layering cleanups (A7). | M |
+| ~~P2~~ ✅ | ~~`urlManager` tests; `getViewModel` viewId fix; layering cleanups (A7)~~ **Done (round 10)**; `fetchUrlCxUtil` file placement left as cosmetic. | — |
 | **P3** | Import/export performance (single-pass validation, bulkPut, worker) (A6); coverage gate for `src/data/db/**`. | M |
 
 ---
