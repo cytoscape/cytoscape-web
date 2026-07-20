@@ -268,5 +268,46 @@ describe('MapperFactory', () => {
       expect(mapper(150)).toBe(50)
     })
   })
+
+  // REVIEW.md R2-20 (mapper half): `attrValue !== undefined` let null
+  // through — `null < min` coerces null to 0, returning ltMinVpValue
+  // instead of the default; NaN fell through every comparison into the d3
+  // scale, which returned undefined as a "visual property value".
+  describe('continuous mapper missing-value handling (regression: R2-20)', () => {
+    const mapping: ContinuousMappingFunction = {
+      type: MappingFunctionType.Continuous,
+      attribute: 'score',
+      visualPropertyType: VisualPropertyValueTypeName.Number,
+      defaultValue: 99,
+      attributeType: ValueTypeName.Double,
+      min: { value: 10, vpValue: 1, inclusive: true },
+      max: { value: 100, vpValue: 50, inclusive: true },
+      controlPoints: [{ value: 50, vpValue: 25 }],
+      ltMinVpValue: 1,
+      gtMaxVpValue: 50,
+    }
+
+    it('maps null to the default value, not ltMinVpValue', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper(null as any)).toBe(99)
+    })
+
+    it('maps NaN to the default value, never undefined', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper(NaN)).toBe(99)
+    })
+
+    it('maps a non-numeric string to the default value', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper('not a number')).toBe(99)
+    })
+
+    it('still maps in-range and out-of-range numbers normally', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper(50)).toBe(25)
+      expect(mapper(0)).toBe(1)
+      expect(mapper(200)).toBe(50)
+    })
+  })
 })
 

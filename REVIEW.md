@@ -129,13 +129,17 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 **R2-17. `compareNumbers` violates comparator antisymmetry for missing values.** `(a ?? Infinity) - (b ?? -Infinity)` → both orderings of `(5, undefined)` returned +∞; sorting numeric columns with missing values was engine-dependent and unstable; NaN cells returned NaN. **[verified at runtime]**
 **Status: FIXED (round 5).** Rewritten as a proper comparator: missing values (undefined/null/NaN) sort to the bottom for both directions, two missing values compare equal, and NaN never leaks out. 5 regression tests, 4 failed pre-fix.
 
-**R2-18. `validateCX2` can throw a non-Error.** [validator.ts:327](src/models/CxModel/impl/validator.ts:327): `default: throw z.string()` — `throw` instead of `return`, throwing a ZodString instance. Any CX2 with an unknown attribute-declaration `d` type breaks the "returns ValidationResult" contract; callers reading `error.message` get `undefined`.
+**R2-18. `validateCX2` can throw a non-Error.** `default: throw z.string()` — `throw` instead of `return`, throwing a ZodString instance. Any CX2 with an unknown attribute-declaration `d` type broke the "returns ValidationResult" contract; callers reading `error.message` got `undefined`.
+**Status: FIXED (round 6).** `cx2TypeToZod` returns `undefined` for unknown types; `createAttributeSchema` reports a proper `Unknown attribute type '<d>' declared for attribute '<name>'` validation error. 2 regression tests failed pre-fix.
 
-**R2-19. CX2 that *passes* validation crashes conversion.** `tableConverter.ts` throws TypeError on `attributeDeclarations: []` or `[{}]` with attributed nodes; `visualStyleConverter.ts` throws on `PASSTHROUGH` without `definition`, malformed bypass `v`. `validateCX2` never inspects `visualProperties`, bypasses, or mapping definitions — "validated" is weaker than what converters assume. Also: `metaData` is required by the validator while converters handle its absence fine.
+**R2-19. CX2 that *passes* validation crashes conversion.** `tableConverter.ts` threw TypeError on `attributeDeclarations: []` or `[{}]` with attributed nodes; `visualStyleConverter.ts` threw on mappings without `definition` and malformed bypass `v` payloads. `validateCX2` never inspects `visualProperties`, bypasses, or mapping definitions — "validated" is weaker than what converters assume.
+**Status: FIXED (round 6).** tableConverter defaults missing declaration objects to `{}` (columns and rows both guarded); visualStyleConverter skips-and-logs mappings without a definition and malformed bypass entries (well-formed sibling entries still apply). 4 regression tests failed pre-fix. Remaining note: `metaData` is required by the validator while converters handle its absence — unchanged, documented.
 
-**R2-20. Valid 2-entry continuous mappings silently discarded on CX import.** `visualStyleConverter.ts:233-298`: the control-point loop iterates only middle entries; with exactly 2 map entries the mapping is dropped with zero diagnostics. Related: gt/lt out-of-range values are double-converted (`:307-312` re-converts already-converted values — latent, breaks for any non-idempotent converter), and the continuous mapper maps `null` → `ltMinVpValue` (should be defaultValue) and `NaN` → `undefined` as a visual property value. **[mapper behavior verified at runtime]**
+**R2-20. Valid 2-entry continuous mappings silently discarded on CX import.** The control-point loop iterates only middle entries; with exactly 2 map entries the mapping was dropped with zero diagnostics. Related: gt/lt out-of-range values were double-converted, and the continuous mapper mapped `null` → `ltMinVpValue` and `NaN` → `undefined`. **[mapper behavior verified at runtime]**
+**Status: FIXED (round 6), plus a new latent bug found and fixed while testing:** the d3 interpolation domain was built from middle control points ONLY — a mapping with fewer than two middle points had a degenerate domain and returned `undefined` for every in-range value, and the segment between a boundary and the first control point was flat-clamped instead of interpolated. The min/max boundaries are now interpolation anchors (deduped, sorted); 2-entry mappings import as valid mappings with `controlPoints: []`; gt/lt use the already-converted boundary values; the mapper returns the default for `null`/`NaN`/non-numeric input and handles the degenerate equal-min/max case. 5 regression tests failed pre-fix (including in-range interpolation, broken even for the old "working" case).
 
-**R2-21. Validation-policy hole: Module Federation task hook converts unvalidated external CX2.** [useCreateNetworkFromCx2.tsx:75](src/data/task/useCreateNetworkFromCx2.tsx:75) calls the explicitly non-validating `createCyNetworkFromCx2` on external-app-supplied data (exposed as `'./CreateNetworkFromCx2'`). All other entry points (FileUpload, ServiceApps, app-api, NDEx load/query, URL import) were audited and do validate. This is the one real hole vs `EXTERNAL_INPUT_VALIDATION_POLICY.md`. (The policy doc also references two nonexistent paths.)
+**R2-21. Validation-policy hole: Module Federation task hook converts unvalidated external CX2.** `useCreateNetworkFromCx2` called the explicitly non-validating `createCyNetworkFromCx2` on external-app-supplied data (exposed as `'./CreateNetworkFromCx2'`). All other entry points (FileUpload, ServiceApps, app-api, NDEx load/query, URL import) were audited and do validate. This was the one real hole vs `EXTERNAL_INPUT_VALIDATION_POLICY.md`. (The policy doc also references two nonexistent paths.)
+**Status: FIXED (round 6).** The hook validates with `validateCX2` and throws a formatted `CX2 validation failed: …` error (via `formatValidationErrors`, which gains its first production caller) before any conversion. New test file `useCreateNetworkFromCx2.test.tsx` — first coverage of this hook; the invalid-CX2 test failed pre-fix (previously crashed deep inside cytoscape.js instead).
 
 **R2-22. Type-level exhaustiveness silently disabled.** `VisualPropertyValueTypeName.ts` lacked `as const` → its type widened to `string` → `Record<…>` completeness wasn't checked. Concrete casualty: `valueType2BaseType` had `'boolean'` written twice (`ValueTypeName.Boolean` and `VisualPropertyValueTypeName.Boolean` are the same key; the second write set it to `'string'`, letting any single-value column passthrough-map onto boolean visual properties) and was missing the `'color'`/`'customGraphic'`/`'customGraphicPosition'` keys. **[verified with tsc]**
 **Correction to the round-2 claim:** `npm test` **does** typecheck — `test` → `lint` → `lint:tsc` (`tsc --noEmit`) is already wired in `package.json`. The round-2 "CI blind spot" claim was wrong; the gate exists. The real gap was only the widened enum making the gate blind to this class of bug.
@@ -244,6 +248,22 @@ Same test-first discipline; 21 new tests, 16 of which failed pre-fix.
 
 **Verification:** full unit suite **148 files / 2219 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 6: CX validation & conversion hardening
+
+Same test-first discipline; 14 new tests, 13 of which failed pre-fix.
+
+**Production changes:**
+
+- **R2-18 (closed)** — `validateCX2` reports unknown attribute types as validation errors instead of throwing a Zod schema object.
+- **R2-19 (closed)** — tableConverter tolerates empty/keyless `attributeDeclarations`; visualStyleConverter skips-and-logs mappings without definitions and malformed bypass entries.
+- **R2-20 (closed)** — 2-entry continuous mappings import correctly; gt/lt no longer double-converted; the mapper returns defaults for `null`/`NaN`/non-numeric input. **New bug found by the tests:** the d3 domain excluded the min/max boundary anchors, so mappings with <2 middle control points returned `undefined` for every in-range value — boundaries are now anchors.
+- **R2-21 (closed)** — `useCreateNetworkFromCx2` validates external CX2 before conversion; the validation-policy audit now has zero holes.
+- A7 partial: `console.debug` in visualStyleConverter → `logModel`.
+
+**Tests:** `validator.test.ts` +2, `tableConverter.test.ts` +2, `visualStyleConverter.test.ts` +4, `mapperFactory.test.ts` +4, `useCreateNetworkFromCx2.test.tsx` (new file, 2).
+
+**Verification:** full unit suite **149 files / 2233 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -258,13 +278,13 @@ Same test-first discipline; 21 new tests, 16 of which failed pre-fix.
 | ~~P0~~ ✅ | ~~NetworkStore persistence keying (R2-2 residual)~~ **Done (round 4)** — per-action persistence. | — |
 | **P1** | Wire or delete `db/validator.ts` (round 1 P0; reconcile over-strict schemas first). | M |
 | ~~P1~~ ✅ | ~~Snapshot fidelity (R2-6/7/8)~~ **Done (round 5)** via tagged JSON, store filtering, and true replace semantics. R2-14 residual: route imported records through schema migrations once the first real migration ships. | S (residual) |
-| **P1** | Validate CX2 in `useCreateNetworkFromCx2` (R2-21); fix `validateCX2` throw-vs-return (R2-18); harden converters against validated-but-hostile shapes (R2-19). | M |
+| ~~P1~~ ✅ | ~~Validate CX2 in `useCreateNetworkFromCx2` (R2-21); `validateCX2` throw-vs-return (R2-18); converter hardening (R2-19)~~ **Done (round 6).** | — |
 | **P1** | Network-lifecycle orchestrator owning the delete cascade + `currentNetworkId` invariant (A4, R2-13); add `useDeleteCyNetwork` tests. | M–L |
 | ~~P1~~ ✅ | ~~valueTypeImpl coercion fixes (R2-15/17)~~ **Done (round 5).** R2-16 residual: decide whether list_of_string needs an escaping scheme for elements containing `', '`. | S (decision) |
 | **P1** | Undo persistence: serialize Maps for Safari (R2-10 residual), call `deleteStack` from network-deletion flows, guard unknown commands, fix stale-closure undo/redo. Then test `useUndoStack` round-trips. | M |
 | ~~P2~~ ✅ | ~~`as const` on `VisualPropertyValueTypeName` + fix `valueType2BaseType`~~ **Done (round 4).** (The tsc gate already existed — A8 correction.) Open product question: should string→color passthrough be allowed? | — |
 | **P2** | Debounce/coalesce persistence; stop persisting selection; Dexie transaction per network save (A2, A3). | M–L |
-| **P2** | 2-entry continuous mappings + mapper null/NaN handling (R2-20). | S–M |
+| ~~P2~~ ✅ | ~~2-entry continuous mappings + mapper null/NaN handling (R2-20)~~ **Done (round 6)**, incl. the newly found domain-anchors bug. | — |
 | **P2** | `urlManager` tests; `getViewModel` viewId fix (un-codify the spec'd bug); layering cleanups (A7). | M |
 | **P3** | Import/export performance (single-pass validation, bulkPut, worker) (A6); coverage gate for `src/data/db/**`. | M |
 

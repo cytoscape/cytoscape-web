@@ -3,6 +3,46 @@ import { describe, expect, it } from 'vitest'
 import { Cx2 } from '../../Cx2'
 import { createTablesFromCx } from './tableConverter'
 
+// REVIEW.md R2-19: CX2 that PASSES validateCX2 used to crash the table
+// converter — an empty attributeDeclarations aspect array made attrDefs
+// undefined, and a declaration object without nodes/edges keys crashed the
+// row loops (the guards only protected the column loops).
+describe('malformed attributeDeclarations (regression: R2-19)', () => {
+  it('handles an empty attributeDeclarations aspect array', () => {
+    const cx2: Cx2 = [
+      { CXVersion: '2.0' },
+      { attributeDeclarations: [] },
+      { nodes: [{ id: 1, v: { name: 'node a' } }] },
+      { status: [{ success: true }] },
+    ] as Cx2
+
+    let tables: any
+    expect(() => {
+      tables = createTablesFromCx('net-1', cx2)
+    }).not.toThrow()
+    const [nodeTable] = tables
+    expect(nodeTable.rows.size).toBe(1)
+  })
+
+  it('handles a declaration object with no nodes/edges keys when elements carry attributes', () => {
+    const cx2: Cx2 = [
+      { CXVersion: '2.0' },
+      { attributeDeclarations: [{}] },
+      { nodes: [{ id: 1, v: { name: 'node a' } }] },
+      { edges: [{ id: 1, s: 1, t: 1, v: { weight: 2 } }] },
+      { status: [{ success: true }] },
+    ] as Cx2
+
+    let tables: any
+    expect(() => {
+      tables = createTablesFromCx('net-1', cx2)
+    }).not.toThrow()
+    const [nodeTable, edgeTable] = tables
+    expect(nodeTable.rows.size).toBe(1)
+    expect(edgeTable.rows.size).toBe(1)
+  })
+})
+
 // to run these: npx jest src/models/CxModel/impl/converters/tableConverter.test.ts
 
 describe('tableConverter', () => {

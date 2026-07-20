@@ -101,29 +101,63 @@ export const getMapper = <T extends VisualPropertyValueType>(
     cm
   const minValue = min.value as number
   const maxValue = max.value as number
-  const [domain, range] = toRangeAndDomain<T>(controlPoints)
+
+  // The min/max boundary points are interpolation anchors too. Without
+  // them, a mapping with fewer than two middle control points had a
+  // degenerate d3 domain and returned undefined for every in-range value,
+  // and the segment between a boundary and the first control point was
+  // flat-clamped instead of interpolated (REVIEW.md R2-20).
+  const anchorValues = new Set<number>()
+  const anchors: ContinuousFunctionControlPoint[] = [
+    { value: minValue, vpValue: min.vpValue },
+    ...controlPoints,
+    { value: maxValue, vpValue: max.vpValue },
+  ]
+    .filter((cp) => {
+      const value = cp.value as number
+      if (anchorValues.has(value)) {
+        return false
+      }
+      anchorValues.add(value)
+      return true
+    })
+    .sort((a, b) => (a.value as number) - (b.value as number))
+
+  const [domain, range] = toRangeAndDomain<T>(anchors)
   const d3Mapper = d3Scale.scaleLinear<T>().domain(domain).range(range)
   d3Mapper.clamp(true)
   const mapper = (attrValue: ValueType): VisualPropertyValueType => {
-    if (attrValue !== undefined) {
-      const numericAttrValue = attrValue as number
-      const isLessThanMin =
-        (min.inclusive ?? false)
-          ? numericAttrValue <= minValue
-          : numericAttrValue < minValue
-      const isGreaterThanMax =
-        (max.inclusive ?? false)
-          ? numericAttrValue >= maxValue
-          : numericAttrValue > maxValue
-      if (isGreaterThanMax) {
-        return gtMaxVpValue ?? max.vpValue
-      } else if (isLessThanMin) {
-        return ltMinVpValue ?? min.vpValue
-      } else {
-        return d3Mapper(numericAttrValue)
-      }
+    // Missing values map to the default: null used to coerce to 0 (hitting
+    // ltMinVpValue) and NaN fell through d3 into an undefined VP value
+    // (REVIEW.md R2-20)
+    if (attrValue == null || typeof attrValue === 'boolean') {
+      return defaultValue
     }
-    return defaultValue
+    const numericAttrValue =
+      typeof attrValue === 'number' ? attrValue : Number(attrValue)
+    if (Number.isNaN(numericAttrValue)) {
+      return defaultValue
+    }
+
+    const isLessThanMin =
+      (min.inclusive ?? false)
+        ? numericAttrValue <= minValue
+        : numericAttrValue < minValue
+    const isGreaterThanMax =
+      (max.inclusive ?? false)
+        ? numericAttrValue >= maxValue
+        : numericAttrValue > maxValue
+    if (isGreaterThanMax) {
+      return gtMaxVpValue ?? max.vpValue
+    } else if (isLessThanMin) {
+      return ltMinVpValue ?? min.vpValue
+    } else if (domain.length < 2) {
+      // Degenerate mapping (equal min/max): d3 cannot interpolate a
+      // single-point domain
+      return range[0] ?? defaultValue
+    } else {
+      return d3Mapper(numericAttrValue)
+    }
   }
 
   return mapper
