@@ -31,6 +31,7 @@ npm run generate:branch-review -- [flags]
 | `--base <branch>` | `development` | Integration branch to compare every branch against. |
 | `--out <path>` | `scratch/branch-review/index.html` | Output file (relative to repo root). |
 | `--include-stale` | off | Keep branches with no unique commits (`ahead === 0`). |
+| `--max-age-days <n>` | off | Exclude branches whose tip commit is older than `n` days — drops likely-abandoned branches so they don't skew the merge order. |
 | `--max-loc <n>` | `400` | Churn above which a branch is flagged **oversized** (SmartBear/Cisco review-quality inflection). |
 | `--overlap-threshold <0..1>` | `0.15` | Jaccard at/above which two branches are reported as overlapping in the plan. |
 

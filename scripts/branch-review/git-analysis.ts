@@ -20,6 +20,8 @@ export interface AnalyzeOptions {
   base: string
   sizeThreshold: number
   includeStale: boolean
+  /** Exclude branches whose tip commit is older than this many days (null = no age filter). */
+  maxAgeDays: number | null
   /** Max shared-file paths retained per overlap cell (for tooltips). */
   sharedFilesCap: number
 }
@@ -28,6 +30,8 @@ export interface AnalyzeResult {
   branches: BranchMeta[]
   conflictMatrix: ConflictCell[]
   overlapMatrix: OverlapCell[]
+  /** Count of branches skipped by the --max-age-days filter. */
+  excludedByAge: number
 }
 
 interface PairResult {
@@ -224,11 +228,20 @@ export function analyze(
   opts: AnalyzeOptions,
   onProgress?: (done: number, total: number) => void,
 ): AnalyzeResult {
-  const { base, sizeThreshold, includeStale, sharedFilesCap } = opts
+  const { base, sizeThreshold, includeStale, maxAgeDays, sharedFilesCap } = opts
 
+  const now = Date.now()
   const raw = listBranches(base)
   const candidates: BranchMeta[] = []
+  let excludedByAge = 0
   for (const b of raw) {
+    if (maxAgeDays !== null) {
+      const ageDays = (now - Date.parse(b.committerDateISO)) / 86_400_000
+      if (Number.isFinite(ageDays) && ageDays > maxAgeDays) {
+        excludedByAge++
+        continue
+      }
+    }
     const { behind, ahead } = aheadBehind(base, b.name)
     const alreadyIntegrated = ahead === 0
     if (alreadyIntegrated && !includeStale) continue
@@ -288,5 +301,5 @@ export function analyze(
     }
   }
 
-  return { branches: candidates, conflictMatrix, overlapMatrix }
+  return { branches: candidates, conflictMatrix, overlapMatrix, excludedByAge }
 }

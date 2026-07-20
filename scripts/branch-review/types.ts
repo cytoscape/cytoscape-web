@@ -104,6 +104,10 @@ export interface BranchReviewMeta {
   sizeThreshold: number
   /** Whether already-integrated (ahead === 0) branches were kept. */
   includeStale: boolean
+  /** Age cutoff applied to branch tips, in days (null = no age filter). */
+  maxAgeDays: number | null
+  /** Count of branches excluded by the age filter. */
+  excludedByAge: number
   gitVersion: string
 }
 

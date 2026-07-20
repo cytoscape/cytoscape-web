@@ -293,6 +293,10 @@
     '&nbsp;·&nbsp; generated <b>' + esc(m.generatedAt.replace('T', ' ').slice(0, 16)) + '</b>' +
     '&nbsp;·&nbsp; <b>' + m.branchCount + '</b> branches, <b>' + m.pairCount + '</b> pairs' +
     '&nbsp;·&nbsp; threshold <b>' + m.sizeThreshold + '</b> LOC' +
+    (m.maxAgeDays != null
+      ? '&nbsp;·&nbsp; max age <b>' + m.maxAgeDays + 'd</b>' +
+        (m.excludedByAge ? ' (−' + m.excludedByAge + ')' : '')
+      : '') +
     '&nbsp;·&nbsp; git <b>' + esc(m.gitVersion) + '</b>'
 
   // ---- KPI tiles ---------------------------------------------------------

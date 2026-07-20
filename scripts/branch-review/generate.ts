@@ -35,6 +35,7 @@ interface Args {
   out: string
   includeStale: boolean
   maxLoc: number
+  maxAgeDays: number | null
   overlapThreshold: number
 }
 
@@ -57,6 +58,7 @@ function parseArgs(argv: string[]): Args {
     out: raw.out || 'scratch/branch-review/index.html',
     includeStale: raw['include-stale'] === 'true',
     maxLoc: raw['max-loc'] ? parseInt(raw['max-loc'], 10) : 400,
+    maxAgeDays: raw['max-age-days'] ? parseInt(raw['max-age-days'], 10) : null,
     overlapThreshold: raw['overlap-threshold']
       ? parseFloat(raw['overlap-threshold'])
       : 0.15,
@@ -121,13 +123,15 @@ function main(): void {
   console.log(`  base branch    : ${args.base}`)
   console.log(`  size threshold : ${args.maxLoc} LOC`)
   console.log(`  include stale  : ${args.includeStale}`)
+  console.log(`  max age (days) : ${args.maxAgeDays ?? 'none'}`)
   process.stdout.write('  analyzing branches… ')
 
-  const { branches, conflictMatrix, overlapMatrix } = analyze(
+  const { branches, conflictMatrix, overlapMatrix, excludedByAge } = analyze(
     {
       base: args.base,
       sizeThreshold: args.maxLoc,
       includeStale: args.includeStale,
+      maxAgeDays: args.maxAgeDays,
       sharedFilesCap: 40,
     },
     (done, total) => {
@@ -168,6 +172,8 @@ function main(): void {
       pairCount: conflictMatrix.length,
       sizeThreshold: args.maxLoc,
       includeStale: args.includeStale,
+      maxAgeDays: args.maxAgeDays,
+      excludedByAge,
       gitVersion: gitVersion(),
     },
     branches,
@@ -185,6 +191,11 @@ function main(): void {
   console.log(`  independent    : ${independent}`)
   console.log(`  oversized      : ${oversized}`)
   console.log(`  clusters       : ${clusters.length}`)
+  if (excludedByAge > 0) {
+    console.log(
+      `  excluded (age) : ${excludedByAge} branch(es) older than ${args.maxAgeDays} days`,
+    )
+  }
 
   printHighlights(conflictMatrix, overlapMatrix, mergePlan)
 
