@@ -38,6 +38,7 @@
     "build:test-remote": "vite build --config test/fixtures/remote-app/vite.config.ts",
     "verify:federation": "ts-node --transpileOnly --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/verify-federation-build.ts",
     "generate:branch-review": "ts-node --transpileOnly --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/branch-review/generate.ts",
+    "typecheck:branch-review": "tsc --noEmit -p scripts/branch-review/tsconfig.json",
     "build": "vite build",
     "build:netlify": "npm run build",
     "dev": "vite --host --open",

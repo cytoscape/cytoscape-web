@@ -74,6 +74,13 @@ generated page for the exact commands):
   conflicts, test failures, or logic that breaks across disjoint files.
 - Local `refs/heads` only.
 
+## Development
+
+- **Type-check:** `npm run typecheck:branch-review` (`ts-node --transpileOnly`
+  does not type-check, so run this before committing changes to the tool).
+- **Unit tests:** `npx vitest run scripts/branch-review/` — covers the pure
+  merge-plan logic and the git-output parsers.
+
 ## Files
 
 | File | Role |
