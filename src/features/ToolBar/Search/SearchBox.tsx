@@ -20,6 +20,7 @@ import { SearchControls } from './SearchControls'
 import { SearchExamplesTooltip } from './SearchExamplesTooltip'
 import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
 import { StyledInputBase } from './StyledInputBase'
+import { Settings } from './Settings'
 
 export const SearchBox = (): JSX.Element => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -266,46 +267,52 @@ export const SearchBox = (): JSX.Element => {
   }
 
   return (
-    <Tooltip
-      title={<SearchExamplesTooltip />}
-      placement="left"
-      arrow
-      enterDelay={500}
-      leaveDelay={200}
-      componentsProps={{
-        tooltip: {
-          sx: {
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            maxWidth: 'none',
+    <>
+      <Tooltip
+        title={<SearchExamplesTooltip />}
+        placement="left"
+        arrow
+        enterDelay={500}
+        leaveDelay={200}
+        componentsProps={{
+          tooltip: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              maxWidth: 'none',
+            },
           },
-        },
-        arrow: {
-          sx: {
-            color: 'rgba(0, 0, 0, 0.9)',
+          arrow: {
+            sx: {
+              color: 'rgba(0, 0, 0, 0.9)',
+            },
           },
-        },
-      }}
-    >
-      <Search ref={baseRef}>
-        <StyledInputBase
-          data-testid="search-box-input"
-          placeholder="Search current network"
-          inputProps={{ 'aria-label': 'search' }}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <SearchControls
-          searchTerm={query}
-          startSearch={startSearch}
-          clearSearch={clearSearch}
-          anchorEl={anchorEl}
-          setAnchorEl={setAnchorEl}
-          handleOpenSettings={handleOpenSettings}
-          setSearchTargets={setSearchTargets}
-          searchTargets={searchTargets}
-        />
-      </Search>
-    </Tooltip>
+        }}
+      >
+        <Search ref={baseRef}>
+          <StyledInputBase
+            data-testid="search-box-input"
+            placeholder="Search current network"
+            inputProps={{ 'aria-label': 'search' }}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <SearchControls
+            searchTerm={query}
+            startSearch={startSearch}
+            clearSearch={clearSearch}
+            handleOpenSettings={handleOpenSettings}
+          />
+        </Search>
+      </Tooltip>
+      <Settings
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        setAnchorEl={setAnchorEl}
+        startSearch={startSearch}
+        searchTargets={searchTargets}
+        setSearchTargets={setSearchTargets}
+      />
+    </>
   )
 }
