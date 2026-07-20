@@ -22,6 +22,7 @@ import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import { registerMigrations } from './migrations'
 import { toPlainObject } from './serialization'
+import { decodeRichValues, encodeRichValues } from './serialization/richValues'
 import {
   validateCyApp,
   validateNetwork,
@@ -978,7 +979,13 @@ export const putUndoRedoStackToDb = async (
 ): Promise<void> => {
   try {
     await db.transaction('rw', db.undoStacks, async () => {
-      await db.undoStacks.put({ id: networkId, undoRedoStack })
+      // Undo params carry arbitrarily nested Maps; encode them to plain
+      // objects so the row is storable on Safari IndexedDB, which cannot
+      // structured-clone Maps (REVIEW.md R2-10)
+      await db.undoStacks.put({
+        id: networkId,
+        undoRedoStack: encodeRichValues(undoRedoStack),
+      })
     })
   } catch (e) {
     logDb.error('[putUndoRedoStackToDb] error:', e, networkId, undoRedoStack)
@@ -990,9 +997,13 @@ export const getUndoRedoStackFromDb = async (
   networkId: IdType,
 ): Promise<UndoRedoStackDB | undefined> => {
   const result = await db.undoStacks.get({ id: networkId })
+  const decoded =
+    result === undefined
+      ? undefined
+      : { ...result, undoRedoStack: decodeRichValues(result.undoRedoStack) }
   return observeValidation(
     `undo stack ${networkId}`,
-    result,
+    decoded,
     validateUndoRedoStackDb,
   )
 }

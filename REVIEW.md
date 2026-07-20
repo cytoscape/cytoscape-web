@@ -106,7 +106,7 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 **R2-9. `toPlainObject` fallback silently destroys data.** [immerSerialization.ts:60-96](src/data/db/serialization/immerSerialization.ts:60): when `structuredClone` throws (any function anywhere in the graph), `manualDeepCopy` turns Maps/Sets/Dates into `{}`, drops **all** `_`-prefixed keys, and blanks shared (diamond) references because the visited-set is never unwound. Since `toPlainObject` guards every store persistence path, one stray callback in a persisted object degrades the *entire* object silently. *Pinned by round-2 tests in `immerSerialization.test.ts`.*
 
 **R2-10. Undo stacks orphaned in IndexedDB; Safari hazard.** `UndoStore.deleteStack` only mutated memory — `deleteUndoRedoStackFromDb`/`clearUndoRedoStackFromDb` had zero app callers, so deleted networks' stacks persisted and could rehydrate onto a re-added NDEx network with the same UUID (undo then "restores" a previous session's state). Separately, `putUndoRedoStackToDb` stores Maps raw, violating the repo's own Map-serialization policy (`mapSerialization.ts` documents Safari IDB can't structured-clone Maps) → `DataCloneError` → unhandled rejection (R2-5) on affected Safari versions.
-**Status: partially fixed (round 3).** `persistNetworkSlices`'s `removeSlice` hook now deletes the IndexedDB row when a stack is removed from the store (`deleteStack`/`deleteAllStacks`), pinned by the UndoStore spec. Still open: the raw-Map Safari hazard (undo params should go through the entries-array serializers), and network-deletion flows that never call `deleteStack` in the first place.
+**Status: FIXED (rounds 3/8/9).** Round 3: `removeSlice` deletes the IndexedDB row when a stack is removed from the store. Round 8: every deletion path goes through the orchestrator, which calls `deleteStack` (and the round-2 claim that deletion flows never called it was corrected — the hook already did). Round 9: undo stacks are encoded to tagged plain objects on write (`serialization/richValues.ts`) and decoded on read, so rows are Safari-safe (no raw Map instances in IndexedDB); legacy raw-Map rows still decode. Regression test pins that the raw stored row contains no Map instances while the read path returns real Maps.
 
 **R2-11. Debug app-state export leaks auth tokens.** `exportApplicationState.ts` serialized `useCredentialStore.getState()` — including the Keycloak client whose enumerable props contain `token`/`refreshToken`/`idToken` after login — into a JSON file explicitly intended to be shared for debugging. No redaction. *(Security.)*
 **Status: FIXED (round 3).** The credential store is no longer serialized at all; the export writes a `[REDACTED: credentials are never exported]` placeholder. Regression test `exportApplicationState.test.ts` seeds the store with sentinel token strings and asserts none appear anywhere in the exported JSON; before the fix the test's failure diff showed the tokens inline in the export. (First test coverage for `exportApplicationState.ts` at all — previously 4.5%.)
@@ -153,7 +153,7 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 - `ViewModelStore.add` mutates its input argument; `TableStore.addRows` is a silent no-op; several TableStore actions crash on missing table while sibling actions null-check; `NetworkStore.moveEdge` emits `UpdateEventType.ADD` and has zero tests; stray `lastModified` in NetworkStore initial state.
 - Network deletion leaks per-network `UiStateStore` entries (`visualStyleOptions`, `columnUiState` — both persisted) and `FilterStore` search indexes (in-memory) — in both `useDeleteCyNetwork` *and* its app-api mirror. **FIXED (round 8):** new `deleteNetworkUiState`/`deleteAllNetworkUiState` (UiStateStore) and `deleteNetworkIndex`/`deleteAllNetworkIndexes` (FilterStore) actions, called from the orchestrator; pinned by failing-first tests.
 - `UiStateStore` persists in six actions and not in others (panel state survives only by luck); `NetworkSummaryStore.update` computes the DB merge independently of the store merge; `useLoadNetworkSummaries` `forEach(async …)` returns before cache writes land.
-- `undoLastEdit` uses render-captured stacks (stale-closure race `postEdit` was already fixed for), has no guard on unknown commands (a stack persisted by a different app version → TypeError, and the stack never pops), and `clearStack` is literally `() => {}`. `undoStackSize: 0` disables the cap, not the feature (`slice(-0)`).
+- `undoLastEdit` uses render-captured stacks (stale-closure race `postEdit` was already fixed for), has no guard on unknown commands (a stack persisted by a different app version → TypeError, and the stack never pops), and `clearStack` is literally `() => {}`. `undoStackSize: 0` disables the cap, not the feature (`slice(-0)`). **FIXED (round 9):** both dispatchers read latest state via `getState()` (double-undo in one tick works), unknown commands and throwing commands are discarded with a `logHistory` warning instead of wedging the stack, `clearStack` delegates to `deleteStack`, and size 0 disables undo. 6 failing-first tests in the new `useUndoStack.test.tsx` (first direct coverage of the largest previously untested unit).
 - Undoing DELETE_COLUMN doesn't restore visual mappings deleted alongside the column (no composite-edit support).
 - `deserializeTable`'s "try anyway" fallback yields an *empty* Map for plain-object rows — silent full-table loss for any legacy shape; the `serializeTable` docstring contradicts the implementation.
 - `snapshotValidator` `MAX_OBJECT_DEPTH=10` can plausibly reject the app's own undo-stack exports (compounds R2-3); snapshot `Keys` map duplicated from db/index.ts and already missing `AppSettings`.
@@ -289,6 +289,17 @@ Same test-first discipline; 8 new tests (6 in the new `useDeleteCyNetwork.test.t
 
 **Verification:** full unit suite **150 files / 2245 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 9: undo hardening (B4/B5/B6/B10, R2-10 Safari half)
+
+Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` — first direct coverage of the largest previously-untested unit — plus a Safari-safety storage test in `db.test.ts`), 6 of which failed pre-fix.
+
+**Production changes:**
+
+- `useUndoStack`: `undoLastEdit`/`redoLastEdit` now read the latest stacks/target network via `getState()` at execution time (B4 — double-undo in one tick no longer duplicates); unknown persisted commands and commands that throw are discarded with a `logHistory` warning instead of throwing into the click handler and wedging the stack (B5, with the failed edit deliberately not moved to redo); `clearStack` actually clears via `deleteStack` (B6); `undoStackSize: 0` disables undo instead of unbounding it (B10). Stale `exhaustive-deps` entries removed.
+- New `serialization/richValues.ts` (`encodeRichValues`/`decodeRichValues`): undo stacks are stored as tagged plain objects (Safari IndexedDB cannot structured-clone Maps) and decoded on read; legacy raw-Map rows decode unchanged, so no migration is needed.
+
+**Verification:** full unit suite **151 files / 2252 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -306,7 +317,7 @@ Same test-first discipline; 8 new tests (6 in the new `useDeleteCyNetwork.test.t
 | ~~P1~~ ✅ | ~~Validate CX2 in `useCreateNetworkFromCx2` (R2-21); `validateCX2` throw-vs-return (R2-18); converter hardening (R2-19)~~ **Done (round 6).** | — |
 | ~~P1~~ ✅ | ~~Network-lifecycle orchestrator (A4, R2-13) + `useDeleteCyNetwork` tests~~ **Done (round 8).** | — |
 | ~~P1~~ ✅ | ~~valueTypeImpl coercion fixes (R2-15/17)~~ **Done (round 5).** R2-16 residual: decide whether list_of_string needs an escaping scheme for elements containing `', '`. | S (decision) |
-| **P1** | Undo persistence: serialize Maps for Safari (R2-10 residual), call `deleteStack` from network-deletion flows, guard unknown commands, fix stale-closure undo/redo. Then test `useUndoStack` round-trips. | M |
+| ~~P1~~ ✅ | ~~Undo hardening: Safari-safe Maps, deletion-flow deleteStack, unknown-command guards, stale-closure fix, useUndoStack tests~~ **Done (rounds 8–9).** | — |
 | ~~P2~~ ✅ | ~~`as const` on `VisualPropertyValueTypeName` + fix `valueType2BaseType`~~ **Done (round 4).** (The tsc gate already existed — A8 correction.) Open product question: should string→color passthrough be allowed? | — |
 | **P2** | Debounce/coalesce persistence; stop persisting selection; Dexie transaction per network save (A2, A3). | M–L |
 | ~~P2~~ ✅ | ~~2-entry continuous mappings + mapper null/NaN handling (R2-20)~~ **Done (round 6)**, incl. the newly found domain-anchors bug. | — |

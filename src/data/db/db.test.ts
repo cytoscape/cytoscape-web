@@ -942,6 +942,45 @@ describe('read-path validation (observe mode)', () => {
     warnSpy.mockRestore()
   })
 
+  // REVIEW.md R2-10 (Safari half): mapSerialization.ts documents that
+  // Safari IndexedDB cannot structured-clone Maps, which is why the
+  // table/view serializers exist — but undo stacks were stored with raw
+  // Maps in their params. They are now encoded to tagged plain objects on
+  // write and decoded on read.
+  it('stores undo stacks without raw Map instances and decodes them on read (regression: R2-10)', async () => {
+    await setupFreshDb()
+    await putUndoRedoStackToDb('safari-net', {
+      undoStack: [
+        {
+          undoCommand: 'MOVE_NODES' as any,
+          description: 'move',
+          undoParams: [new Map([['n1', { x: 1, y: 2 }]])],
+          redoParams: [new Map([['n1', { x: 3, y: 4 }]])],
+        },
+      ],
+      redoStack: [],
+    })
+
+    // The RAW stored row must be Safari-safe: no Map instances anywhere
+    const db = await getDb()
+    const rawRow = await db.undoStacks.get({ id: 'safari-net' })
+    const containsMap = (value: any): boolean => {
+      if (value instanceof Map) return true
+      if (Array.isArray(value)) return value.some(containsMap)
+      if (value !== null && typeof value === 'object') {
+        return Object.values(value).some(containsMap)
+      }
+      return false
+    }
+    expect(containsMap(rawRow)).toBe(false)
+
+    // The public read path decodes back to real Maps
+    const row = await getUndoRedoStackFromDb('safari-net')
+    const param = row?.undoRedoStack?.undoStack[0].undoParams[0]
+    expect(param).toBeInstanceOf(Map)
+    expect((param as Map<string, any>).get('n1')).toEqual({ x: 1, y: 2 })
+  })
+
   it('warns when an undo stack row fails shape validation but still returns it', async () => {
     await setupFreshDb()
     const db = await getDb()
