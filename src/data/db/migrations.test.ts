@@ -1,25 +1,20 @@
 import { Dexie } from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { applyMigrations, migrations } from './migrations'
+import { migrations, registerMigrations } from './migrations'
 
 /**
- * Regression tests for the Dexie migration mechanism.
+ * Regression tests for the Dexie migration mechanism (REVIEW.md R2-1).
  *
- * REVIEW.md (P0): in production, the CyDB constructor calls
- * `this.version(currentVersion).stores(Keys)` BEFORE `applyMigrations(this,
- * currentVersion)`. Dexie's `version()` sets `verno` synchronously, so by the
- * time applyMigrations reads `db.verno` it already equals the target version
- * and the `currentDbVersion >= versionNumber` guard ALWAYS early-returns.
- * Net effect: migrations registered in the `migrations` array can never run.
- *
- * The tests below pin both halves of that story:
- *  1. applyMigrations is a no-op once a version >= target has been declared
- *     (the production ordering) — even with a migration registered.
- *  2. applyMigrations DOES register versions when verno is below the target
- *     (proving the guard, not the registration logic, is what blocks it).
+ * The original implementation (`applyMigrations`) gated registration on
+ * `db.verno >= targetVersion`. Because the production CyDB constructor
+ * declares `version(currentVersion).stores(Keys)` first — and Dexie's
+ * `version()` sets `verno` synchronously — the guard was always true and
+ * migrations could never register. The fix (`registerMigrations`) registers
+ * unconditionally and lets Dexie decide at open() which upgrade functions
+ * the on-disk version actually needs.
  */
-describe('applyMigrations', () => {
+describe('registerMigrations', () => {
   const testDbs: Dexie[] = []
 
   afterEach(async () => {
@@ -31,43 +26,77 @@ describe('applyMigrations', () => {
     testDbs.length = 0
   })
 
-  it('is a no-op when the schema version was already declared (production constructor ordering)', async () => {
-    const db = new Dexie('migrations-test-noop')
+  // The R2-1 regression test: this exact flow silently skipped the
+  // migration before the fix.
+  it('a registered migration runs under the production constructor ordering', async () => {
+    // A user's existing on-disk DB at the previous schema version,
+    // holding a record in the old shape (string count)
+    const seed = new Dexie('migrations-test-prod-flow')
+    seed.version(8).stores({ items: 'id' })
+    await seed.open()
+    await seed.table('items').put({ id: 'a', count: '5' })
+    seed.close()
+
+    // The app ships a migration for the new version
+    migrations.push({
+      version: 9,
+      upgradeFn: async (tx) => {
+        return await tx
+          .table('items')
+          .toCollection()
+          .modify((item) => {
+            item.count = Number(item.count)
+          })
+      },
+    })
+
+    // Mimic the CyDB constructor exactly: declare current version first,
+    // then register migrations
+    const db = new Dexie('migrations-test-prod-flow')
+    testDbs.push(db)
+    db.version(9).stores({ items: 'id' })
+    registerMigrations(db)
+    await db.open()
+
+    const migrated = await db.table('items').get('a')
+    expect(migrated.count).toBe(5)
+  })
+
+  it('registers migrations even when their version is already declared', () => {
+    const db = new Dexie('migrations-test-same-version')
     testDbs.push(db)
 
     const upgradeFn = vi.fn(async () => 0)
     migrations.push({ version: 9, upgradeFn })
 
-    // Mimic the CyDB constructor: declare current version first...
     db.version(9).stores({ items: 'id' })
     expect(db.verno).toBe(9)
 
-    const versionSpy = vi.spyOn(db, 'version')
+    // Must attach the upgrade to the existing version declaration rather
+    // than early-returning (Dexie's version() returns the existing
+    // Version instance for an already-declared number)
+    registerMigrations(db)
 
-    // ...then applyMigrations with the same target, as db/index.ts does.
-    await applyMigrations(db, 9)
-
-    // Early return: no version registration at all, migration never attached.
-    expect(versionSpy).not.toHaveBeenCalled()
-    expect(upgradeFn).not.toHaveBeenCalled()
+    const registered = (db as any)._versions.find(
+      (v: any) => v._cfg.version === 9,
+    )
+    expect(registered._cfg.contentUpgrade).toBeDefined()
   })
 
-  it('registers target version and migrations when verno is below the target', async () => {
-    const db = new Dexie('migrations-test-registers')
-    testDbs.push(db)
-
+  it('a migration below the declared version does not skip an already-current database', async () => {
+    // Fresh install: no on-disk data, DB opens directly at the current
+    // version — the migration must simply not run
     const upgradeFn = vi.fn(async () => 0)
-    migrations.push({ version: 2, upgradeFn })
+    migrations.push({ version: 8, upgradeFn })
 
-    expect(db.verno).toBe(0)
-    const versionSpy = vi.spyOn(db, 'version')
+    const db = new Dexie('migrations-test-fresh-install')
+    testDbs.push(db)
+    db.version(9).stores({ items: 'id' })
+    registerMigrations(db)
+    await db.open()
 
-    await applyMigrations(db, 3)
-
-    // Both the target version and the migration's version were declared
-    expect(versionSpy).toHaveBeenCalledWith(3)
-    expect(versionSpy).toHaveBeenCalledWith(2)
-    expect(db.verno).toBe(3)
+    expect(upgradeFn).not.toHaveBeenCalled()
+    expect(db.verno).toBe(9)
   })
 
   it('migration upgrade functions run on open when registration happens before a version bump', async () => {
@@ -79,7 +108,7 @@ describe('applyMigrations', () => {
     seed.close()
 
     // Reopen at v2 with a data-transforming migration, registered the way
-    // applyMigrations would register it if it were reachable
+    // registerMigrations registers it
     const db = new Dexie('migrations-test-upgrade')
     testDbs.push(db)
     db.version(1).stores({ items: 'id' })

@@ -743,5 +743,68 @@ describe('useTableStore', () => {
       expect(updatedTable.rows.get('n2')?.newCol).toBe(200)
     })
   })
+
+  // REVIEW.md R2-2: the persist wrapper used to key the DB write off
+  // workspace.currentNetworkId (mocked here as 'test-network-1') instead of
+  // the network the action actually mutated. Mutations to any other network
+  // (hierarchy sub-networks, App API calls, merges) were silently never
+  // persisted, and the current network's unchanged tables were rewritten.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network tables even when it is not the current network', async () => {
+      const { putTablesToDb } = await import('../../db')
+      const { result } = renderHook(() => useTableStore())
+      const { nodeTable, edgeTable } = createTestTableRecord('other-network')
+
+      act(() => {
+        result.current.add('other-network', nodeTable, edgeTable)
+      })
+      vi.mocked(putTablesToDb).mockClear()
+
+      act(() => {
+        result.current.setValue(
+          'other-network',
+          TableType.NODE,
+          'n1',
+          'name',
+          'Renamed',
+        )
+      })
+
+      expect(putTablesToDb).toHaveBeenCalledTimes(1)
+      const [persistedId, persistedNodeTable] =
+        vi.mocked(putTablesToDb).mock.calls[0]
+      expect(persistedId).toBe('other-network')
+      expect(persistedNodeTable.rows.get('n1')?.name).toBe('Renamed')
+    })
+
+    it('does not rewrite unrelated networks when another network is mutated', async () => {
+      const { putTablesToDb } = await import('../../db')
+      const { result } = renderHook(() => useTableStore())
+      const current = createTestTableRecord('test-network-1')
+      const other = createTestTableRecord('other-network')
+
+      act(() => {
+        result.current.add('test-network-1', current.nodeTable, current.edgeTable)
+        result.current.add('other-network', other.nodeTable, other.edgeTable)
+      })
+      vi.mocked(putTablesToDb).mockClear()
+
+      act(() => {
+        result.current.setValue(
+          'other-network',
+          TableType.NODE,
+          'n1',
+          'name',
+          'Renamed',
+        )
+      })
+
+      const persistedIds = vi
+        .mocked(putTablesToDb)
+        .mock.calls.map((call) => call[0])
+      expect(persistedIds).toContain('other-network')
+      expect(persistedIds).not.toContain('test-network-1')
+    })
+  })
 })
 

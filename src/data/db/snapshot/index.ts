@@ -91,6 +91,14 @@ export interface ImportOptions {
    * Default: undefined (import all)
    */
   objectStores?: ObjectStoreNamesType[]
+
+  /**
+   * If true, clear all existing workspaces before importing — but only
+   * AFTER the snapshot has been parsed and validated, so a corrupt file
+   * never destroys existing data.
+   * Default: false
+   */
+  clearWorkspace?: boolean
 }
 
 /**
@@ -221,6 +229,7 @@ export const importDatabaseSnapshot = async (
     merge = false,
     skipConflicts = false,
     objectStores = undefined,
+    clearWorkspace = false,
   } = options
 
   try {
@@ -259,6 +268,13 @@ export const importDatabaseSnapshot = async (
         '[importDatabaseSnapshot] Snapshot validation warnings:',
         validation.warnings,
       )
+    }
+
+    // Only clear existing workspaces once the snapshot is known to be
+    // valid — never before (a corrupt file must not destroy user data)
+    if (clearWorkspace) {
+      await db.workspace.clear()
+      logDb.info('[importDatabaseSnapshot] Existing workspaces cleared')
     }
 
     const importedCounts: Record<string, number> = {}
@@ -434,13 +450,6 @@ export const importDatabaseSnapshotFromFile = async (
       )
     }
 
-    // Delete all workspaces in IndexedDB before importing
-    const db = await getDb()
-    await db.workspace.clear()
-    logDb.info(
-      '[importDatabaseSnapshotFromFile] All workspaces cleared from IndexedDB',
-    )
-
     // Use file.text() if available, otherwise fall back to FileReader for test compatibility
     let text: string
     if (typeof file.text === 'function') {
@@ -454,7 +463,12 @@ export const importDatabaseSnapshotFromFile = async (
         reader.readAsText(file)
       })
     }
-    return await importDatabaseSnapshot(text, options)
+    // Replace-the-workspace semantics: the clear happens inside
+    // importDatabaseSnapshot, only after the snapshot validates
+    return await importDatabaseSnapshot(text, {
+      ...options,
+      clearWorkspace: true,
+    })
   } catch (e) {
     logDb.error('[importDatabaseSnapshotFromFile] error:', e)
     throw e

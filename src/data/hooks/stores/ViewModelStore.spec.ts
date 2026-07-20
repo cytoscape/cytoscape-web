@@ -830,5 +830,62 @@ describe('useViewModelStore', () => {
       expect(result.current.viewModels[networkId][0].nodeViews['n3']).toBeUndefined()
     })
   })
+
+  // REVIEW.md R2-2: the persist wrapper used to key the DB write off
+  // workspace.currentNetworkId (mocked here as 'test-network-1') instead of
+  // the network the action actually mutated — e.g. positions computed for a
+  // network the user had already switched away from were never persisted.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network views even when it is not the current network', async () => {
+      const { putNetworkViewsToDb } = await import('../../db')
+      const { result } = renderHook(() => useViewModelStore())
+      const networkView = createTestNetworkView('other-network')
+
+      act(() => {
+        result.current.add('other-network', networkView)
+      })
+      vi.mocked(putNetworkViewsToDb).mockClear()
+
+      act(() => {
+        result.current.exclusiveSelect('other-network', ['n1'], [])
+      })
+
+      expect(putNetworkViewsToDb).toHaveBeenCalled()
+      const lastCall = vi.mocked(putNetworkViewsToDb).mock.calls.at(-1)
+      expect(lastCall?.[0]).toBe('other-network')
+      expect(lastCall?.[1][0].selectedNodes).toEqual(['n1'])
+    })
+
+    it('never writes circlePacking views to the DB (stated storage policy)', async () => {
+      const { putNetworkViewsToDb } = await import('../../db')
+      const { result } = renderHook(() => useViewModelStore())
+      const primary = createTestNetworkView('net-cp', 'net-cp-nodeLink-1')
+      const circlePacking = createTestNetworkView(
+        'net-cp',
+        'net-cp-circlePacking-1',
+      )
+      ;(circlePacking as any).type = 'circlePacking'
+
+      act(() => {
+        result.current.add('net-cp', primary)
+        result.current.add('net-cp', circlePacking)
+      })
+      vi.mocked(putNetworkViewsToDb).mockClear()
+
+      act(() => {
+        result.current.exclusiveSelect('net-cp', ['n1'], [])
+      })
+
+      const persistedLists = vi
+        .mocked(putNetworkViewsToDb)
+        .mock.calls.map((call) => call[1])
+      expect(persistedLists.length).toBeGreaterThan(0)
+      for (const views of persistedLists) {
+        expect(
+          views.every((view: any) => view.type !== 'circlePacking'),
+        ).toBe(true)
+      }
+    })
+  })
 })
 

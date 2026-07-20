@@ -234,9 +234,6 @@ export const exportApplicationState = async (): Promise<string> => {
       const { useMessageStore } = await import(
         '../../hooks/stores/MessageStore'
       )
-      const { useCredentialStore } = await import(
-        '../../hooks/stores/CredentialStore'
-      )
 
       // Get store states
       stores.workspace = serializeStoreState(useWorkspaceStore.getState())
@@ -258,7 +255,11 @@ export const exportApplicationState = async (): Promise<string> => {
       stores.opaqueAspect = serializeStoreState(useOpaqueAspectStore.getState())
       stores.undo = serializeStoreState(useUndoStore.getState())
       stores.message = serializeStoreState(useMessageStore.getState())
-      stores.credential = serializeStoreState(useCredentialStore.getState())
+      // SECURITY: the credential store holds the Keycloak client, whose
+      // enumerable properties include token/refreshToken/idToken after
+      // login. This export is meant to be shared for debugging, so
+      // credentials must never be serialized into it.
+      stores.credential = '[REDACTED: credentials are never exported]'
     } catch (storeError) {
       logDb.warn(
         '[exportApplicationState] Failed to export some store states:',

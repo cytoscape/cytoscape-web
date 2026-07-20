@@ -20,7 +20,7 @@ import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOpt
 import { Workspace } from '../../models/WorkspaceModel'
 import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
-import { applyMigrations } from './migrations'
+import { registerMigrations } from './migrations'
 import { toPlainObject } from './serialization'
 import {
   deserializeFilterConfig,
@@ -132,11 +132,13 @@ class CyDB extends Dexie {
     super(dbName)
     this.version(currentVersion).stores(Keys)
 
-    // This will be applied only when the DB is created and should not be
-    // called multiple times
-    applyMigrations(this, currentVersion).catch((err) =>
-      logDb.error('[applyMigrations] Failed to apply migrations', err),
-    )
+    // Register upgrade functions before open(); Dexie decides at open time
+    // which ones the on-disk version needs
+    try {
+      registerMigrations(this)
+    } catch (err) {
+      logDb.error('[registerMigrations] Failed to register migrations', err)
+    }
   }
 }
 

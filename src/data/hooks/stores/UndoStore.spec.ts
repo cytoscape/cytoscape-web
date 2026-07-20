@@ -15,6 +15,8 @@ vi.mock('../../db', async (importOriginal) => {
   return {
     ...actual,
     putUndoRedoStackToDb: vi.fn().mockResolvedValue(undefined),
+    deleteUndoRedoStackFromDb: vi.fn().mockResolvedValue(undefined),
+    clearUndoRedoStackFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -150,7 +152,10 @@ describe('useUndoStore', () => {
     })
   })
 
-  describe('persistence (pins current behavior — see REVIEW.md)', () => {
+  // REVIEW.md R2-2 / R2-10: the persist wrapper used to key the DB write
+  // off workspace.currentNetworkId instead of the mutated network, and
+  // deleted stacks were never removed from IndexedDB.
+  describe('persistence (regression: R2-2 / R2-10)', () => {
     it('persists the current network stack when the mutated network IS current', async () => {
       const { result } = renderHook(() => useUndoStore())
       const edits = [createEdit('edit-1')]
@@ -166,11 +171,7 @@ describe('useUndoStore', () => {
       )
     })
 
-    // REVIEW.md: the persist wrapper keys the DB write off
-    // workspace.currentNetworkId, NOT off the network the action mutated.
-    // These two tests pin that behavior so a fix is observable; when the
-    // wrapper is fixed to persist the mutated slice, they should be updated.
-    it('mutating a NON-current network persists the current network slice instead (known defect)', async () => {
+    it('persists the mutated network stack even when it is not the current network', async () => {
       const { result } = renderHook(() => useUndoStore())
 
       act(() => {
@@ -179,35 +180,41 @@ describe('useUndoStore', () => {
       await flushPersist()
       vi.mocked(putUndoRedoStackToDb).mockClear()
 
+      const edits = [createEdit('other-edit')]
       act(() => {
-        result.current.setUndoStack('net-other', [createEdit('other-edit')])
+        result.current.setUndoStack('net-other', edits)
       })
       await flushPersist()
 
-      // The write is keyed to net-current; net-other's stack never reaches DB
       expect(putUndoRedoStackToDb).toHaveBeenCalledWith(
-        'net-current',
-        expect.objectContaining({ undoStack: [] }),
-      )
-      expect(putUndoRedoStackToDb).not.toHaveBeenCalledWith(
         'net-other',
+        expect.objectContaining({ undoStack: edits }),
+      )
+      // The unchanged current network must not be rewritten
+      expect(putUndoRedoStackToDb).not.toHaveBeenCalledWith(
+        'net-current',
         expect.anything(),
       )
     })
 
-    it('skips persistence entirely when the current network has no stack (known defect)', async () => {
+    it('persists a mutated network even when the current network has no stack', async () => {
       const { result } = renderHook(() => useUndoStore())
       workspaceMock.currentNetworkId = 'net-without-stack'
 
+      const edits = [createEdit('other-edit')]
       act(() => {
-        result.current.setUndoStack('net-other', [createEdit('other-edit')])
+        result.current.setUndoStack('net-other', edits)
       })
       await flushPersist()
 
-      expect(putUndoRedoStackToDb).not.toHaveBeenCalled()
+      expect(putUndoRedoStackToDb).toHaveBeenCalledWith(
+        'net-other',
+        expect.objectContaining({ undoStack: edits }),
+      )
     })
 
-    it('deleteStack of the current network does not write to DB (stale row remains — known defect)', async () => {
+    it('deleteStack removes the stack row from IndexedDB', async () => {
+      const { deleteUndoRedoStackFromDb } = await import('../../db')
       const { result } = renderHook(() => useUndoStore())
 
       act(() => {
@@ -221,9 +228,8 @@ describe('useUndoStore', () => {
       })
       await flushPersist()
 
-      // No put (slice is gone) and no delete call exists in the store at all:
-      // the row for net-current stays in IndexedDB until overwritten.
       expect(putUndoRedoStackToDb).not.toHaveBeenCalled()
+      expect(deleteUndoRedoStackFromDb).toHaveBeenCalledWith('net-current')
     })
 
     it('persists a plain object, not an Immer proxy', async () => {
@@ -235,7 +241,9 @@ describe('useUndoStore', () => {
       await flushPersist()
 
       const persisted = vi.mocked(putUndoRedoStackToDb).mock.calls.at(-1)?.[1]
-      expect(persisted).toBeDefined()
+      if (persisted === undefined) {
+        throw new Error('expected a persisted stack')
+      }
       // structuredClone output: mutating it must not affect store state
       persisted.undoStack.push(createEdit('mutation'))
       expect(

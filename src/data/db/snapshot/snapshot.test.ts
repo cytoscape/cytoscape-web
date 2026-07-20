@@ -418,6 +418,47 @@ describe('Database Snapshot Import/Export', () => {
       const imported = await getNetworkFromDb('import-file-test-1')
       expect(imported).toBeDefined()
     })
+
+    // REVIEW.md R2-3: workspaces used to be cleared BEFORE the file content
+    // was read or validated, so a corrupt file destroyed the user's
+    // workspace. The clear must only happen after the snapshot has been
+    // parsed and validated.
+    describe('workspace preservation on failed import (regression: R2-3)', () => {
+      it('preserves existing workspaces when the file contains invalid JSON', async () => {
+        const testWorkspace = createWorkspace()
+        testWorkspace.id = 'precious-workspace'
+        await putWorkspaceToDb(testWorkspace)
+
+        const file = new File(['{ this is not valid JSON'], 'corrupt.json', {
+          type: 'application/json',
+        })
+
+        await expect(importDatabaseSnapshotFromFile(file)).rejects.toThrow()
+
+        const db = await getDb()
+        const workspaces = await db.workspace.toArray()
+        expect(workspaces.map((w: any) => w.id)).toContain('precious-workspace')
+      })
+
+      it('preserves existing workspaces when the snapshot fails structure validation', async () => {
+        const testWorkspace = createWorkspace()
+        testWorkspace.id = 'precious-workspace-2'
+        await putWorkspaceToDb(testWorkspace)
+
+        const notASnapshot = JSON.stringify({ foo: 'bar' })
+        const file = new File([notASnapshot], 'not-a-snapshot.json', {
+          type: 'application/json',
+        })
+
+        await expect(importDatabaseSnapshotFromFile(file)).rejects.toThrow()
+
+        const db = await getDb()
+        const workspaces = await db.workspace.toArray()
+        expect(workspaces.map((w: any) => w.id)).toContain(
+          'precious-workspace-2',
+        )
+      })
+    })
   })
 
   describe('sanitizeRecord', () => {
