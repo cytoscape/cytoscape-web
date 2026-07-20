@@ -43,6 +43,7 @@ import {
   clearVisualStyleFromDb,
   closeDb,
   deleteAppFromDb,
+  deleteAppSettingFromDb,
   deleteDb,
   deleteFilterFromDb,
   deleteNetworkFromDb,
@@ -57,6 +58,7 @@ import {
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
   getAppFromDb,
+  getAppSettingFromDb,
   getCyNetworkFromDb,
   getDatabaseVersion,
   getDb,
@@ -73,6 +75,7 @@ import {
   getVisualStyleFromDb,
   getWorkspaceFromDb,
   initializeDb,
+  putAppSettingToDb,
   putAppToDb,
   putFilterToDb,
   putNetworkSummaryToDb,
@@ -690,6 +693,48 @@ describe('CyDB helper coverage', () => {
 
     const updated = await getWorkspaceFromDb(workspace.id)
     expect(updated.name).toBe('Updated Workspace')
+  })
+
+  it('returns the first stored workspace when no id is given and several exist', async () => {
+    // Documents the current (index-0) selection behavior of getWorkspaceFromDb.
+    // See AMBIGUOUS_DB_CODE.md #5: there is a TODO to pick the newest workspace,
+    // but today it returns db.workspace.toArray()[0] (first by primary key).
+    await setupFreshDb()
+
+    await putWorkspaceToDb(createWorkspaceModel('ws-a'))
+    await putWorkspaceToDb(createWorkspaceModel('ws-b'))
+
+    const selected = await getWorkspaceFromDb()
+    expect(selected.id).toBe('ws-a')
+  })
+
+  it('falls back to the first workspace when the requested id is unknown', async () => {
+    // Documents that an unknown id does not create a new workspace nor return
+    // undefined when other workspaces exist - it returns the first one.
+    await setupFreshDb()
+
+    await putWorkspaceToDb(createWorkspaceModel('ws-a'))
+    await putWorkspaceToDb(createWorkspaceModel('ws-b'))
+
+    const selected = await getWorkspaceFromDb('does-not-exist')
+    expect(selected.id).toBe('ws-a')
+  })
+
+  it('supports app setting CRUD and returns undefined for missing keys', async () => {
+    await setupFreshDb()
+
+    await putAppSettingToDb('theme', { mode: 'dark' })
+    expect(await getAppSettingFromDb('theme')).toEqual({ mode: 'dark' })
+
+    // put on an existing key overwrites the stored value
+    await putAppSettingToDb('theme', { mode: 'light' })
+    expect(await getAppSettingFromDb('theme')).toEqual({ mode: 'light' })
+
+    // reading a key that was never written resolves to undefined
+    expect(await getAppSettingFromDb('missing-key')).toBeUndefined()
+
+    await deleteAppSettingFromDb('theme')
+    expect(await getAppSettingFromDb('theme')).toBeUndefined()
   })
 
   it('handles network summary storage and cleanup', async () => {
