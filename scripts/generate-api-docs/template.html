@@ -1,0 +1,1523 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CyWeb App API — Docs &amp; Patch Notes</title>
+<style>
+  /* ============================================================
+     CyWeb App API — Docs & Patch Notes
+     Aesthetic: terminal schematic / lab notebook.
+     Mono-forward chrome, signal palette, network-node motifs.
+     Fully self-contained: system font stacks, no external assets.
+     ============================================================ */
+
+  :root {
+    --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code',
+      'Fira Code', Menlo, Consolas, monospace;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+    /* signal palette (semantic, shared across themes via role tokens below) */
+    --sig-add: #3fb97a;
+    --sig-change: #d99a2b;
+    --sig-break: #e5675c;
+    --sig-fix: #4b9fe6;
+    --sig-remove: #e5675c;
+
+    --radius: 9px;
+    --maxw: 1240px;
+  }
+
+  :root[data-theme='dark'] {
+    --bg: #0b0d12;
+    --bg-grid: #12151d;
+    --panel: #141821;
+    --panel-2: #1a1f2b;
+    --panel-hi: #202634;
+    --border: #262d3b;
+    --border-hi: #333c4e;
+    --text: #d9dde6;
+    --text-strong: #f2f4f8;
+    --muted: #838d9e;
+    --faint: #5c6576;
+    --accent: #45d6c6;
+    --accent-dim: #2b8a80;
+    --accent-glow: rgba(69, 214, 198, 0.14);
+    --code-bg: #0e1620;
+    --code-border: #1e2836;
+    --shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.7);
+    --add: #4fcf8a;
+    --change: #e6ac47;
+    --break: #f0817a;
+    --fix: #66b1ee;
+    --remove: #f0817a;
+    color-scheme: dark;
+  }
+
+  :root[data-theme='light'] {
+    --bg: #f4f1e9;
+    --bg-grid: #ebe6da;
+    --panel: #fffefb;
+    --panel-2: #f7f4ec;
+    --panel-hi: #efeadd;
+    --border: #ddd6c6;
+    --border-hi: #ccc3ad;
+    --text: #2a2c31;
+    --text-strong: #14161a;
+    --muted: #6d6a60;
+    --faint: #9a968a;
+    --accent: #0f8c82;
+    --accent-dim: #0f8c82;
+    --accent-glow: rgba(15, 140, 130, 0.1);
+    --code-bg: #f2efe6;
+    --code-border: #e0dacb;
+    --shadow: 0 16px 40px -22px rgba(60, 50, 20, 0.32);
+    --add: #1f9d57;
+    --change: #b07714;
+    --break: #cf4a3f;
+    --fix: #2f6fc4;
+    --remove: #cf4a3f;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+    background-size: 46px 46px;
+    background-position: -1px -1px;
+  }
+
+  /* subtle grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code, pre, .mono { font-family: var(--font-mono); }
+
+  ::selection { background: var(--accent-glow); color: var(--text-strong); }
+
+  /* ---------- scrollbars ---------- */
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-hi);
+    border-radius: 20px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--faint); background-clip: padding-box; }
+
+  /* ============================================================
+     HEADER
+     ============================================================ */
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid var(--border);
+  }
+  .top-inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 0 22px;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .brand-mark { width: 30px; height: 30px; display: block; }
+  .brand-mark .node { fill: var(--accent); }
+  .brand-mark .edge { stroke: var(--accent-dim); stroke-width: 1.4; }
+  .brand-mark .pulse { animation: pulse 3.2s ease-in-out infinite; transform-origin: center; }
+  @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
+  .brand-txt { display: flex; flex-direction: column; line-height: 1.1; }
+  .brand-txt b {
+    font-family: var(--font-mono);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-strong);
+  }
+  .brand-txt span { font-size: 10.5px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  nav.tabs { display: flex; gap: 2px; margin-left: 8px; }
+  nav.tabs button {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 7px 13px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  nav.tabs button .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); transition: background 0.15s; }
+  nav.tabs button:hover { color: var(--text-strong); background: var(--panel); }
+  nav.tabs button.active {
+    color: var(--text-strong);
+    background: var(--panel);
+    border-color: var(--border-hi);
+  }
+  nav.tabs button.active .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .search-trigger {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    min-width: 190px;
+    transition: border-color 0.15s;
+  }
+  .search-trigger:hover { border-color: var(--border-hi); }
+  .search-trigger kbd {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--panel-hi);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .icon-btn {
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .icon-btn:hover { color: var(--text-strong); border-color: var(--border-hi); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  main { max-width: var(--maxw); margin: 0 auto; padding: 0 22px 120px; position: relative; z-index: 2; }
+  .view { display: none; animation: fadein 0.4s ease both; }
+  .view.active { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .page-head { padding: 42px 0 26px; border-bottom: 1px dashed var(--border); margin-bottom: 30px; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ''; width: 22px; height: 1px; background: var(--accent-dim); }
+  .page-head h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--text-strong);
+    margin: 14px 0 10px;
+    line-height: 1.05;
+  }
+  .page-head p { color: var(--muted); max-width: 62ch; margin: 0; font-size: 15px; }
+
+  /* ============================================================
+     BADGES / CHIPS
+     ============================================================ */
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 5px;
+    border: 1px solid;
+    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge.add { color: var(--add); border-color: color-mix(in srgb, var(--add) 40%, transparent); background: color-mix(in srgb, var(--add) 11%, transparent); }
+  .badge.change { color: var(--change); border-color: color-mix(in srgb, var(--change) 40%, transparent); background: color-mix(in srgb, var(--change) 11%, transparent); }
+  .badge.break, .badge.removed { color: var(--break); border-color: color-mix(in srgb, var(--break) 40%, transparent); background: color-mix(in srgb, var(--break) 11%, transparent); }
+  .badge.fix { color: var(--fix); border-color: color-mix(in srgb, var(--fix) 40%, transparent); background: color-mix(in srgb, var(--fix) 11%, transparent); }
+  .badge.neutral { color: var(--muted); border-color: var(--border-hi); background: var(--panel-2); }
+  .badge.accent { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-glow); }
+  .badge.plain::before { display: none; }
+
+  /* ============================================================
+     CHANGELOG / TIMELINE
+     ============================================================ */
+  .timeline { position: relative; padding-left: 42px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px; top: 8px; bottom: 40px;
+    width: 1px;
+    background: linear-gradient(var(--border-hi), var(--border) 60%, transparent);
+  }
+  .release { position: relative; margin-bottom: 46px; scroll-margin-top: 90px; }
+  .release-node {
+    position: absolute;
+    left: -37px; top: 4px;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+  }
+  .release-node .ring {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--border-hi);
+    background: var(--bg);
+    display: grid; place-items: center;
+  }
+  .release-node .core {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  .release.is-latest .release-node .core { animation: pulse 2.6s ease-in-out infinite; }
+  .release-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+  .release-head .ver {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+  }
+  .release-head .date { font-family: var(--font-mono); font-size: 12px; color: var(--faint); }
+  .release-body {
+    margin-top: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .change-block { border-top: 1px solid var(--border); }
+  .change-block:first-child { border-top: none; }
+  .change-block > .cb-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px;
+    background: var(--panel-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .change-block.k-break > .cb-head { color: var(--break); background: color-mix(in srgb, var(--break) 8%, var(--panel-2)); }
+  .cb-accent { width: 3px; align-self: stretch; border-radius: 3px; }
+  .k-add .cb-accent { background: var(--add); }
+  .k-change .cb-accent { background: var(--change); }
+  .k-break .cb-accent { background: var(--break); }
+  .k-fix .cb-accent { background: var(--fix); }
+  .k-removed .cb-accent { background: var(--remove); }
+  .cb-body { padding: 4px 20px 8px; }
+  .cb-inner { display: flex; }
+  .cb-inner > .cb-accent { margin: 12px 0; }
+
+  /* prose (rendered markdown) */
+  .prose { font-size: 14.5px; }
+  .prose ul { padding-left: 20px; margin: 10px 0; }
+  .prose li { margin: 7px 0; }
+  .prose li::marker { color: var(--accent-dim); }
+  .prose p { margin: 10px 0; }
+  .prose strong { color: var(--text-strong); font-weight: 600; }
+  .prose code {
+    font-size: 0.86em;
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--text-strong);
+  }
+  .prose a code { color: var(--accent); }
+  .prose pre {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: var(--radius);
+    padding: 15px 17px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .prose pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .prose table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13px; }
+  .prose th, .prose td { border: 1px solid var(--border); padding: 7px 11px; text-align: left; }
+  .prose th { background: var(--panel-2); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+  .prose h2, .prose h3, .prose h4 { font-family: var(--font-mono); color: var(--text-strong); letter-spacing: -0.01em; margin: 22px 0 8px; }
+  .prose blockquote { border-left: 3px solid var(--accent-dim); margin: 12px 0; padding: 2px 16px; color: var(--muted); background: var(--panel-2); border-radius: 0 6px 6px 0; }
+
+  /* ============================================================
+     REFERENCE (two-pane)
+     ============================================================ */
+  .ref-layout { display: grid; grid-template-columns: 244px 1fr; gap: 34px; align-items: start; }
+  .ref-nav {
+    position: sticky; top: 78px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding-right: 6px;
+    font-family: var(--font-mono);
+  }
+  .ref-nav .ns-group { margin-bottom: 6px; }
+  .ref-nav .ns-head {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%;
+    padding: 7px 9px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-strong);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.14s;
+  }
+  .ref-nav .ns-head:hover { background: var(--panel); }
+  .ref-nav .ns-head .caret { color: var(--faint); transition: transform 0.18s; font-size: 10px; }
+  .ref-nav .ns-group.collapsed .caret { transform: rotate(-90deg); }
+  .ref-nav .ns-head .count { margin-left: auto; font-size: 10.5px; color: var(--faint); }
+  .ref-nav .ns-methods { padding: 2px 0 6px 18px; display: flex; flex-direction: column; }
+  .ref-nav .ns-group.collapsed .ns-methods { display: none; }
+  .ref-nav .ns-methods a {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 9px;
+    border-radius: 5px;
+    border-left: 1px solid var(--border);
+    margin-left: 2px;
+    transition: color 0.14s, border-color 0.14s, background 0.14s;
+  }
+  .ref-nav .ns-methods a:hover { color: var(--text-strong); text-decoration: none; background: var(--panel); }
+  .ref-nav .ns-methods a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-glow); }
+
+  .ref-main { min-width: 0; }
+  .ns-section { margin-bottom: 54px; scroll-margin-top: 82px; }
+  .ns-title { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .ns-title h2 { font-family: var(--font-mono); font-size: 24px; font-weight: 600; color: var(--text-strong); margin: 0; letter-spacing: -0.02em; }
+  .ns-title .mod { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+  .ns-desc { color: var(--muted); margin-bottom: 20px; }
+  .group-label {
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--faint);
+    margin: 28px 0 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .group-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .method {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+    scroll-margin-top: 82px;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .method:target, .method.flash { border-color: var(--accent-dim); box-shadow: 0 0 0 1px var(--accent-dim), var(--shadow); }
+  .method-sig {
+    padding: 14px 18px;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .method-sig .anchor {
+    color: var(--faint);
+    opacity: 0; transition: opacity 0.15s;
+    text-decoration: none; flex-shrink: 0;
+  }
+  .method:hover .method-sig .anchor { opacity: 1; }
+  .sig-code { white-space: pre; }
+  .tok-name { color: var(--text-strong); font-weight: 600; }
+  .tok-type { color: var(--accent); }
+  .tok-punct { color: var(--faint); }
+  .tok-param { color: var(--text); }
+  .tok-opt { color: var(--change); }
+  .method-body { padding: 15px 18px 17px; }
+  .method-body .prose:first-child > :first-child { margin-top: 0; }
+  .errbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; padding-top: 13px; border-top: 1px dashed var(--border); align-items: center; }
+  .errbar .lbl { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+  .err-chip {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 2px 9px;
+    border-radius: 5px;
+    background: var(--panel-2);
+    border: 1px solid var(--border-hi);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.14s, color 0.14s;
+  }
+  .err-chip:hover { border-color: var(--break); color: var(--break); text-decoration: none; }
+
+  details.types { margin: 4px 0 20px; }
+  details.types summary {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); cursor: pointer; padding: 8px 0; list-style: none; display: flex; align-items: center; gap: 8px;
+  }
+  details.types summary::-webkit-details-marker { display: none; }
+  details.types summary::before { content: '›'; color: var(--accent); transition: transform 0.18s; display: inline-block; }
+  details.types[open] summary::before { transform: rotate(90deg); }
+
+  /* ============================================================
+     DIFF
+     ============================================================ */
+  .diff-controls {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 26px;
+  }
+  .diff-controls .field { display: flex; flex-direction: column; gap: 5px; }
+  .diff-controls label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
+  select {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--code-bg);
+    color: var(--text-strong);
+    border: 1px solid var(--border-hi);
+    border-radius: 7px;
+    padding: 8px 12px;
+    cursor: pointer;
+    min-width: 168px;
+  }
+  select:focus { outline: none; border-color: var(--accent-dim); }
+  .diff-arrow { color: var(--faint); font-size: 20px; align-self: flex-end; padding-bottom: 6px; }
+  .diff-summary { margin-left: auto; display: flex; gap: 8px; align-self: flex-end; }
+  .diff-stat { font-family: var(--font-mono); font-size: 12px; padding: 5px 11px; border-radius: 6px; border: 1px solid; }
+  .diff-stat.add { color: var(--add); border-color: color-mix(in srgb, var(--add) 35%, transparent); }
+  .diff-stat.change { color: var(--change); border-color: color-mix(in srgb, var(--change) 35%, transparent); }
+  .diff-stat.remove { color: var(--remove); border-color: color-mix(in srgb, var(--remove) 35%, transparent); }
+
+  .diff-ns { margin-bottom: 26px; }
+  .diff-ns > h3 { font-family: var(--font-mono); font-size: 15px; color: var(--text-strong); margin: 0 0 10px; display: flex; align-items: center; gap: 10px; }
+  .diff-ns > h3 .key { color: var(--accent); }
+  .diff-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 11px 15px;
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: 7px;
+    margin-bottom: 7px;
+    background: var(--panel);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    overflow-x: auto;
+  }
+  .diff-row.add { border-left-color: var(--add); }
+  .diff-row.remove { border-left-color: var(--remove); }
+  .diff-row.change { border-left-color: var(--change); }
+  .diff-row.rename { border-left-color: var(--fix); }
+  .diff-row .op { flex-shrink: 0; width: 62px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 2px; }
+  .diff-row.add .op { color: var(--add); }
+  .diff-row.remove .op { color: var(--remove); }
+  .diff-row.change .op { color: var(--change); }
+  .diff-row.rename .op { color: var(--fix); }
+  .diff-row .sigs { min-width: 0; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .diff-line { display: flex; align-items: baseline; gap: 9px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+  .diff-line .gutter { flex-shrink: 0; width: 11px; text-align: center; font-weight: 700; user-select: none; }
+  .diff-line.old .gutter { color: var(--remove); }
+  .diff-line.new .gutter { color: var(--add); }
+  .diff-line.uni .gutter { color: var(--faint); }
+  .diff-line .body { min-width: 0; }
+  /* token-level diff: unchanged tokens stay quiet, changes glow */
+  .d-same { color: var(--muted); }
+  .d-del {
+    color: var(--remove);
+    background: color-mix(in srgb, var(--remove) 18%, transparent);
+    border-radius: 3px; padding: 0 1px;
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in srgb, var(--remove) 55%, transparent);
+  }
+  .d-add {
+    color: var(--add);
+    background: color-mix(in srgb, var(--add) 18%, transparent);
+    border-radius: 3px; padding: 0 1px;
+    font-weight: 600;
+  }
+  .diff-line.old .d-same, .diff-line.new .d-same { color: var(--muted); }
+  .diff-empty { text-align: center; color: var(--muted); padding: 60px 0; font-family: var(--font-mono); font-size: 13px; }
+
+  /* split/unified view toggle */
+  .diff-mode { display: flex; gap: 3px; align-self: flex-end; }
+  .diff-mode button {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--muted); padding: 7px 12px; border-radius: 7px; cursor: pointer;
+    transition: all 0.14s;
+  }
+  .diff-mode button.active { color: var(--text-strong); border-color: var(--border-hi); background: var(--panel-hi); }
+  .diff-mode button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .diff-mode button:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
+
+  /* ============================================================
+     ERRORS
+     ============================================================ */
+  .err-toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+  .err-filter {
+    font-family: var(--font-mono); font-size: 13px;
+    background: var(--code-bg); color: var(--text-strong);
+    border: 1px solid var(--border-hi); border-radius: 7px;
+    padding: 9px 13px; flex: 1; min-width: 200px;
+  }
+  .err-filter:focus { outline: none; border-color: var(--accent-dim); }
+  .sev-toggle { display: flex; gap: 4px; }
+  .sev-toggle button {
+    font-family: var(--font-mono); font-size: 11.5px;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--muted); padding: 8px 13px; border-radius: 7px; cursor: pointer;
+    transition: all 0.14s;
+  }
+  .sev-toggle button.active { color: var(--text-strong); border-color: var(--border-hi); background: var(--panel-hi); }
+
+  .err-catalog { margin-bottom: 34px; }
+  .err-catalog > .cat-head { margin-bottom: 4px; }
+  .err-catalog > .cat-head h3 { font-family: var(--font-mono); font-size: 15px; color: var(--text-strong); margin: 0; }
+  .err-catalog > .cat-head p { color: var(--muted); font-size: 13px; margin: 3px 0 16px; }
+  .err-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .err-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 15px 17px;
+    scroll-margin-top: 82px;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .err-card:target, .err-card.flash { border-color: var(--break); box-shadow: 0 0 0 1px color-mix(in srgb, var(--break) 60%, transparent); }
+  .err-card .ec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .err-card .ec-code {
+    font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: var(--text-strong);
+  }
+  .err-card .ec-name { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
+  .err-card .ec-sev { margin-left: auto; }
+  .sev-error { color: var(--break); border-color: color-mix(in srgb, var(--break) 40%, transparent); background: color-mix(in srgb, var(--break) 10%, transparent); }
+  .sev-warning { color: var(--change); border-color: color-mix(in srgb, var(--change) 40%, transparent); background: color-mix(in srgb, var(--change) 10%, transparent); }
+  .err-card .ec-body { font-size: 13.5px; }
+  .err-card .ec-cx2 {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--muted);
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+  }
+  .err-card .ec-cx2 b { color: var(--accent); font-weight: 500; }
+  .err-card .ec-ret { margin-top: 11px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .err-card .ec-ret .lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); width: 100%; margin-bottom: 2px; }
+  .ret-chip {
+    font-family: var(--font-mono); font-size: 11px;
+    padding: 1px 7px; border-radius: 4px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+  }
+  .ret-chip:hover { color: var(--accent); border-color: var(--accent-dim); text-decoration: none; }
+
+  /* ============================================================
+     SEARCH PALETTE
+     ============================================================ */
+  .palette-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    background: color-mix(in srgb, var(--bg) 55%, rgba(0,0,0,0.5));
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: flex-start; justify-content: center;
+    padding-top: 12vh;
+  }
+  .palette-backdrop.open { display: flex; animation: fadein 0.16s ease; }
+  .palette {
+    width: min(640px, 92vw);
+    background: var(--panel);
+    border: 1px solid var(--border-hi);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .palette input {
+    width: 100%;
+    font-family: var(--font-mono); font-size: 15px;
+    background: transparent; border: none;
+    color: var(--text-strong);
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .palette input:focus { outline: none; }
+  .palette-results { max-height: 52vh; overflow-y: auto; padding: 8px; }
+  .presult {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  }
+  .presult.sel { background: var(--panel-hi); }
+  .presult .pr-kind {
+    font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 4px; flex-shrink: 0; width: 62px; text-align: center;
+  }
+  .pr-kind.method { color: var(--accent); background: var(--accent-glow); }
+  .pr-kind.error { color: var(--break); background: color-mix(in srgb, var(--break) 12%, transparent); }
+  .pr-kind.release { color: var(--change); background: color-mix(in srgb, var(--change) 12%, transparent); }
+  .presult .pr-title { font-family: var(--font-mono); font-size: 13.5px; color: var(--text-strong); }
+  .presult .pr-sub { font-size: 12px; color: var(--muted); margin-left: auto; font-family: var(--font-mono); }
+  .palette-foot {
+    display: flex; gap: 16px; padding: 9px 16px; border-top: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--faint);
+  }
+  .palette-foot kbd { background: var(--panel-hi); border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; color: var(--muted); }
+  .palette-empty { padding: 40px; text-align: center; color: var(--muted); font-family: var(--font-mono); font-size: 13px; }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+    padding: 26px 22px 60px;
+    position: relative; z-index: 2;
+  }
+  .foot-inner { max-width: var(--maxw); margin: 0 auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--font-mono); font-size: 11.5px; color: var(--faint); }
+  .foot-inner .sep { color: var(--border-hi); }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 900px) {
+    .ref-layout { grid-template-columns: 1fr; }
+    .ref-nav { position: static; max-height: none; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; }
+    nav.tabs button span.lbl { display: none; }
+    .search-trigger { min-width: 44px; }
+    .search-trigger .q, .search-trigger kbd { display: none; }
+  }
+  @media (max-width: 620px) {
+    .top-inner { gap: 10px; }
+    .brand-txt span { display: none; }
+    .diff-summary { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <line class="edge" x1="16" y1="7" x2="7" y2="22" />
+        <line class="edge" x1="16" y1="7" x2="25" y2="22" />
+        <line class="edge" x1="7" y1="22" x2="25" y2="22" />
+        <circle class="node pulse" cx="16" cy="7" r="3.4" />
+        <circle class="node" cx="7" cy="22" r="3" />
+        <circle class="node" cx="25" cy="22" r="3" />
+      </svg>
+      <div class="brand-txt">
+        <b>CyWeb App API</b>
+        <span id="brand-sub">docs &amp; patch notes</span>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="changelog"><span class="dot"></span><span class="lbl">Changelog</span></button>
+      <button data-tab="reference"><span class="dot"></span><span class="lbl">Reference</span></button>
+      <button data-tab="diff"><span class="dot"></span><span class="lbl">Diff</span></button>
+      <button data-tab="errors"><span class="dot"></span><span class="lbl">Errors</span></button>
+    </nav>
+    <div class="top-right">
+      <button class="search-trigger" id="search-trigger">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3"/></svg>
+        <span class="q">Search…</span>
+        <kbd>/</kbd>
+      </button>
+      <button class="icon-btn" id="theme-btn" title="Toggle theme" aria-label="Toggle theme"></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="view" id="view-changelog"></section>
+  <section class="view" id="view-reference"></section>
+  <section class="view" id="view-diff"></section>
+  <section class="view" id="view-errors"></section>
+</main>
+
+<footer>
+  <div class="foot-inner" id="footer"></div>
+</footer>
+
+<div class="palette-backdrop" id="palette">
+  <div class="palette" role="dialog" aria-label="Search">
+    <input id="palette-input" type="text" placeholder="Search methods, error codes, releases…" autocomplete="off" spellcheck="false" />
+    <div class="palette-results" id="palette-results"></div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd> <kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<script id="docs-data" type="application/json">__DATA__</script>
+<script>
+/* eslint-disable */
+(function () {
+  'use strict'
+  var DATA = JSON.parse(document.getElementById('docs-data').textContent)
+  var $ = function (s, r) { return (r || document).querySelector(s) }
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)) }
+  var el = function (tag, cls, html) {
+    var n = document.createElement(tag)
+    if (cls) n.className = cls
+    if (html != null) n.innerHTML = html
+    return n
+  }
+  var esc = function (s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+    })
+  }
+
+  /* ---------- signature syntax highlight ---------- */
+  var KEYWORDS = /^(void|string|number|boolean|any|null|undefined|Promise|Array|Record|Partial|Readonly)$/
+  function highlightSig(sig) {
+    // Split into name( ... ) : return
+    var m = sig.match(/^([A-Za-z_]\w*)\(([\s\S]*)\)\s*:\s*([\s\S]+)$/)
+    if (!m) return esc(sig)
+    var name = m[1], params = m[2], ret = m[3]
+    var out = '<span class="tok-name">' + esc(name) + '</span><span class="tok-punct">(</span>'
+    out += highlightParams(params)
+    out += '<span class="tok-punct">): </span>' + highlightType(ret)
+    return out
+  }
+  function splitTop(s, sep) {
+    var parts = [], depth = 0, cur = ''
+    for (var i = 0; i < s.length; i++) {
+      var c = s[i]
+      if (c === '<' || c === '(' || c === '{' || c === '[') depth++
+      else if (c === '>' || c === ')' || c === '}' || c === ']') depth--
+      if (c === sep && depth === 0) { parts.push(cur); cur = '' }
+      else cur += c
+    }
+    if (cur.trim() !== '') parts.push(cur)
+    return parts
+  }
+  function highlightParams(params) {
+    if (!params.trim()) return ''
+    return splitTop(params, ',').map(function (p) {
+      var mm = p.match(/^\s*([A-Za-z_]\w*)(\??)\s*:\s*([\s\S]+?)\s*$/)
+      if (!mm) return '<span class="tok-param">' + esc(p.trim()) + '</span>'
+      var q = mm[2] ? '<span class="tok-opt">?</span>' : ''
+      return '<span class="tok-param">' + esc(mm[1]) + '</span>' + q +
+        '<span class="tok-punct">: </span>' + highlightType(mm[3])
+    }).join('<span class="tok-punct">, </span>')
+  }
+  function highlightType(t) {
+    // Tokenize into identifier / non-identifier runs and escape each fragment
+    // separately, so inserted markup is never re-processed.
+    var out = '', re = /([A-Za-z_]\w*)|([^A-Za-z_]+)/g, m
+    while ((m = re.exec(t)) !== null) {
+      if (m[1]) out += '<span class="tok-type">' + esc(m[1]) + '</span>'
+      else out += '<span class="tok-punct">' + esc(m[2]) + '</span>'
+    }
+    return out
+  }
+
+  /* ---------- theme ---------- */
+  var THEME_KEY = 'cyweb-docs-theme'
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t)
+    $('#theme-btn').innerHTML = t === 'dark'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>'
+  }
+  function initTheme() {
+    var saved = null
+    try { saved = localStorage.getItem(THEME_KEY) } catch (e) {}
+    var t = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+    applyTheme(t)
+    $('#theme-btn').addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+      applyTheme(next)
+      try { localStorage.setItem(THEME_KEY, next) } catch (e) {}
+    })
+  }
+
+  /* ---------- flatten helpers ---------- */
+  function allMethods() {
+    var out = []
+    DATA.namespaces.forEach(function (ns) {
+      ns.groups.forEach(function (g) {
+        g.methods.forEach(function (mth) { out.push({ ns: ns, method: mth }) })
+      })
+    })
+    return out
+  }
+  function findError(code) {
+    for (var i = 0; i < DATA.errorCodes.length; i++) if (DATA.errorCodes[i].code === code) return DATA.errorCodes[i]
+    return null
+  }
+  function methodAnchorExists(anchor) {
+    return allMethods().some(function (x) { return x.method.anchor === anchor })
+  }
+
+  /* ============================================================
+     CHANGELOG
+     ============================================================ */
+  var KIND_CLASS = { added: 'k-add', changed: 'k-change', fixed: 'k-fix', removed: 'k-removed' }
+  var KIND_BADGE = { added: 'add', changed: 'change', fixed: 'fix', removed: 'removed' }
+  function renderChangelog() {
+    var v = $('#view-changelog')
+    v.innerHTML = ''
+    var head = el('div', 'page-head')
+    head.innerHTML =
+      '<div class="eyebrow">Release history</div>' +
+      '<h1>Patch Notes</h1>' +
+      '<p>Every documented change to <code>@cytoscape-web/api-types</code>, newest first. ' +
+      'Breaking changes are flagged — this surface is experimental and evolving.</p>'
+    v.appendChild(head)
+
+    var tl = el('div', 'timeline')
+    DATA.versions.forEach(function (ver, idx) {
+      var rel = el('div', 'release' + (idx === 0 ? ' is-latest' : ''))
+      rel.id = 'v-' + ver.version
+      rel.innerHTML =
+        '<div class="release-node"><div class="ring"><div class="core"></div></div></div>' +
+        '<div class="release-head">' +
+          '<span class="ver">' + esc(ver.version) + '</span>' +
+          (idx === 0 ? '<span class="badge accent plain">latest</span>' : '') +
+          (ver.sections.some(function (s) { return s.breaking }) ? '<span class="badge break">breaking</span>' : '') +
+          (ver.date ? '<span class="date">' + esc(ver.date) + '</span>' : '') +
+        '</div>'
+      var body = el('div', 'release-body')
+      ver.sections.forEach(function (sec) {
+        var kc = KIND_CLASS[sec.kind] || 'k-change'
+        if (sec.breaking) kc = 'k-break'
+        var block = el('div', 'change-block ' + kc)
+        block.innerHTML =
+          '<div class="cb-head"><div class="cb-accent"></div>' + esc(sec.label) + '</div>' +
+          '<div class="cb-body"><div class="prose">' + sec.html + '</div></div>'
+        body.appendChild(block)
+      })
+      rel.appendChild(body)
+      tl.appendChild(rel)
+    })
+    v.appendChild(tl)
+    rewireInternalLinks(v)
+  }
+
+  /* ============================================================
+     REFERENCE
+     ============================================================ */
+  function renderReference() {
+    var v = $('#view-reference')
+    v.innerHTML = ''
+    var head = el('div', 'page-head')
+    head.innerHTML =
+      '<div class="eyebrow">API surface · ' + DATA.meta.methodCount + ' methods · ' + DATA.meta.namespaceCount + ' namespaces</div>' +
+      '<h1>Reference</h1>' +
+      '<p>Every public method on <code>window.CyWebApi</code> and the <code>cyweb/*</code> ' +
+      'Module Federation hooks. Signatures are extracted from the TypeScript surface; ' +
+      'behaviour and error codes from the spec.</p>'
+    v.appendChild(head)
+
+    var layout = el('div', 'ref-layout')
+    var navEl = el('div', 'ref-nav')
+    var mainEl = el('div', 'ref-main')
+
+    DATA.namespaces.forEach(function (ns) {
+      var count = ns.groups.reduce(function (n, g) { return n + g.methods.length }, 0)
+      // nav group
+      var ng = el('div', 'ns-group')
+      ng.setAttribute('data-key', ns.key)
+      var nh = el('button', 'ns-head')
+      nh.innerHTML = '<span class="caret">▾</span>' + esc(ns.name) + '<span class="count">' + count + '</span>'
+      nh.addEventListener('click', function () { ng.classList.toggle('collapsed') })
+      var nm = el('div', 'ns-methods')
+      ns.groups.forEach(function (g) {
+        g.methods.forEach(function (mth) {
+          var a = el('a')
+          a.href = '#reference/' + mth.anchor
+          a.textContent = mth.name
+          a.setAttribute('data-anchor', mth.anchor)
+          nm.appendChild(a)
+        })
+      })
+      ng.appendChild(nh); ng.appendChild(nm); navEl.appendChild(ng)
+
+      // main section
+      var sec = el('section', 'ns-section')
+      sec.id = 'ns-' + ns.key
+      var title = '<div class="ns-title"><h2>' + esc(ns.name) + '</h2>' +
+        (ns.moduleId ? '<span class="mod">' + esc(ns.moduleId) + '</span>' : '') +
+        '<span class="badge neutral plain">' + count + ' methods</span></div>'
+      sec.innerHTML = title + (ns.descriptionHtml ? '<div class="ns-desc prose">' + ns.descriptionHtml + '</div>' : '')
+
+      ns.groups.forEach(function (g) {
+        if (g.typesHtml) {
+          var d = el('details', 'types')
+          d.innerHTML = '<summary>Types</summary><div class="prose">' + g.typesHtml + '</div>'
+          sec.appendChild(d)
+          return
+        }
+        if (!g.methods.length) return
+        if (g.title && g.title.toLowerCase() !== 'methods') {
+          sec.appendChild(el('div', 'group-label', esc(g.title)))
+        }
+        if (g.intHtml) sec.appendChild(el('div', 'prose', g.intHtml))
+        g.methods.forEach(function (mth) {
+          sec.appendChild(renderMethod(mth))
+        })
+      })
+      mainEl.appendChild(sec)
+    })
+
+    layout.appendChild(navEl); layout.appendChild(mainEl); v.appendChild(layout)
+    rewireInternalLinks(v)
+    setupRefScrollSpy()
+  }
+
+  function renderMethod(mth) {
+    var m = el('div', 'method')
+    m.id = 'm-' + mth.anchor
+    var sig = mth.tsSignature || mth.docSignature
+    var errbar = ''
+    if (mth.errorRefs && mth.errorRefs.length) {
+      errbar = '<div class="errbar"><span class="lbl">Errors</span>' +
+        mth.errorRefs.map(function (er) {
+          return '<a class="err-chip" href="#errors/' + esc(er.code) + '" title="' + esc(er.condition.replace(/<[^>]+>/g, '')) + '">' + esc(er.code) + '</a>'
+        }).join('') + '</div>'
+    }
+    m.innerHTML =
+      '<div class="method-sig"><a class="anchor" href="#reference/' + mth.anchor + '" title="Link to ' + esc(mth.name) + '">#</a>' +
+        '<span class="sig-code">' + highlightSig(sig) + '</span></div>' +
+      '<div class="method-body"><div class="prose">' + (mth.descriptionHtml || '') + '</div>' + errbar + '</div>'
+    return m
+  }
+
+  function setupRefScrollSpy() {
+    var links = $$('.ref-nav a[data-anchor]')
+    if (!links.length) return
+    var byAnchor = {}
+    links.forEach(function (l) { byAnchor[l.getAttribute('data-anchor')] = l })
+    var targets = $$('.method')
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return
+        var anchor = e.target.id.replace(/^m-/, '')
+        links.forEach(function (l) { l.classList.remove('active') })
+        if (byAnchor[anchor]) {
+          byAnchor[anchor].classList.add('active')
+          var grp = byAnchor[anchor].closest('.ns-group')
+          if (grp) grp.classList.remove('collapsed')
+        }
+      })
+    }, { rootMargin: '-70px 0px -75% 0px' })
+    targets.forEach(function (t) { obs.observe(t) })
+  }
+
+  /* ============================================================
+     DIFF
+     ============================================================ */
+  function computeDiff(fromV, toV) {
+    var a = DATA.surfaces[fromV], b = DATA.surfaces[toV]
+    if (!a || !b) return { namespaces: [], added: 0, removed: 0, changed: 0 }
+    var result = [], tot = { added: 0, removed: 0, changed: 0 }
+    var keys = {}
+    Object.keys(a.namespaces).forEach(function (k) { keys[k] = 1 })
+    Object.keys(b.namespaces).forEach(function (k) { keys[k] = 1 })
+    Object.keys(keys).forEach(function (key) {
+      var am = (a.namespaces[key] && a.namespaces[key].methods) || {}
+      var bm = (b.namespaces[key] && b.namespaces[key].methods) || {}
+      var addedNames = Object.keys(bm).filter(function (n) { return !am[n] })
+      var removedNames = Object.keys(am).filter(function (n) { return !bm[n] })
+      var changed = Object.keys(bm).filter(function (n) { return am[n] && am[n].signature !== bm[n].signature })
+
+      // rename detection: removed + added with identical params/return
+      var renames = []
+      var usedAdd = {}, usedRem = {}
+      removedNames.forEach(function (rn) {
+        addedNames.forEach(function (an) {
+          if (usedAdd[an] || usedRem[rn]) return
+          var rs = am[rn], as = bm[an]
+          if (sameShape(rs, as)) { renames.push({ from: rn, to: an, oldSig: rs.signature, newSig: as.signature }); usedAdd[an] = 1; usedRem[rn] = 1 }
+        })
+      })
+      var rows = []
+      renames.forEach(function (r) { rows.push({ op: 'renamed', cls: 'rename', oldSig: r.oldSig, newSig: r.newSig }) })
+      addedNames.filter(function (n) { return !usedAdd[n] }).forEach(function (n) { rows.push({ op: 'added', cls: 'add', newSig: bm[n].signature }); tot.added++ })
+      removedNames.filter(function (n) { return !usedRem[n] }).forEach(function (n) { rows.push({ op: 'removed', cls: 'remove', oldSig: am[n].signature }); tot.removed++ })
+      changed.forEach(function (n) { rows.push({ op: 'changed', cls: 'change', oldSig: am[n].signature, newSig: bm[n].signature }); tot.changed++ })
+      tot.changed += renames.length
+      if (rows.length) result.push({ key: key, interfaceName: (b.namespaces[key] || a.namespaces[key]).interfaceName, rows: rows })
+    })
+    return { namespaces: result, added: tot.added, removed: tot.removed, changed: tot.changed }
+  }
+  function sameShape(x, y) {
+    if (x.returnType !== y.returnType) return false
+    if (x.params.length !== y.params.length) return false
+    for (var i = 0; i < x.params.length; i++) {
+      if (x.params[i].type !== y.params[i].type || x.params[i].optional !== y.params[i].optional) return false
+    }
+    return true
+  }
+
+  var diffState = { from: null, to: null, mode: 'split' }
+
+  /* ---------- token-level signature diff ---------- */
+  function tokenizeSig(s) {
+    // identifiers, whitespace runs, and single punctuation chars
+    return s.match(/[A-Za-z_$][\w$]*|\s+|[^\s]/g) || []
+  }
+  // Longest-common-subsequence diff → ordered ops: {t:'same'|'del'|'add', v}
+  function diffTokens(oldS, newS) {
+    var a = tokenizeSig(oldS), b = tokenizeSig(newS)
+    var n = a.length, m = b.length
+    var dp = []
+    for (var i = 0; i <= n; i++) { dp[i] = []; for (var j = 0; j <= m; j++) dp[i][j] = 0 }
+    for (i = n - 1; i >= 0; i--) {
+      for (j = m - 1; j >= 0; j--) {
+        dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])
+      }
+    }
+    var ops = []
+    i = 0; j = 0
+    while (i < n && j < m) {
+      if (a[i] === b[j]) { ops.push({ t: 'same', v: a[i] }); i++; j++ }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { ops.push({ t: 'del', v: a[i] }); i++ }
+      else { ops.push({ t: 'add', v: b[j] }); j++ }
+    }
+    while (i < n) { ops.push({ t: 'del', v: a[i] }); i++ }
+    while (j < m) { ops.push({ t: 'add', v: b[j] }); j++ }
+    return ops
+  }
+  function renderDiffBody(ops, keep) {
+    // keep: 'old' emits same+del, 'new' emits same+add, 'uni' emits all
+    return ops.map(function (o) {
+      if (o.t === 'del' && keep === 'new') return ''
+      if (o.t === 'add' && keep === 'old') return ''
+      var cls = o.t === 'same' ? 'd-same' : o.t === 'del' ? 'd-del' : 'd-add'
+      return '<span class="' + cls + '">' + esc(o.v) + '</span>'
+    }).join('')
+  }
+  function diffLine(kind, gutter, html) {
+    return '<div class="diff-line ' + kind + '"><span class="gutter">' + gutter + '</span><span class="body">' + html + '</span></div>'
+  }
+  function renderDiff() {
+    var v = $('#view-diff')
+    var versions = DATA.meta.surfaceVersions
+    if (diffState.to == null) {
+      diffState.to = versions[0]
+      diffState.from = versions[1] || versions[0]
+    }
+    v.innerHTML = ''
+    var head = el('div', 'page-head')
+    head.innerHTML =
+      '<div class="eyebrow">Surface comparison</div>' +
+      '<h1>Version Diff</h1>' +
+      '<p>What changed in the public method surface between two releases — extracted ' +
+      'directly from the TypeScript interfaces at each version’s commit.</p>'
+    v.appendChild(head)
+
+    var controls = el('div', 'diff-controls')
+    function opts(sel) {
+      return versions.map(function (ver) {
+        return '<option value="' + esc(ver) + '"' + (ver === sel ? ' selected' : '') + '>' + esc(ver) + '</option>'
+      }).join('')
+    }
+    controls.innerHTML =
+      '<div class="field"><label>From</label><select id="diff-from">' + opts(diffState.from) + '</select></div>' +
+      '<div class="diff-arrow">→</div>' +
+      '<div class="field"><label>To</label><select id="diff-to">' + opts(diffState.to) + '</select></div>' +
+      '<div class="diff-mode" id="diff-mode">' +
+        '<button data-mode="split"' + (diffState.mode === 'split' ? ' class="active"' : '') + '>Split</button>' +
+        '<button data-mode="unified"' + (diffState.mode === 'unified' ? ' class="active"' : '') + '>Unified</button>' +
+      '</div>' +
+      '<div class="diff-summary" id="diff-summary"></div>'
+    v.appendChild(controls)
+    var out = el('div', 'diff-out')
+    v.appendChild(out)
+
+    function draw() {
+      var d = computeDiff(diffState.from, diffState.to)
+      $('#diff-summary').innerHTML =
+        '<span class="diff-stat add">+' + d.added + ' added</span>' +
+        '<span class="diff-stat change">~' + d.changed + ' changed</span>' +
+        '<span class="diff-stat remove">−' + d.removed + ' removed</span>'
+      out.innerHTML = ''
+      if (!d.namespaces.length) {
+        out.appendChild(el('div', 'diff-empty', diffState.from === diffState.to
+          ? 'Select two different versions to compare.'
+          : 'No surface changes between these versions.'))
+        return
+      }
+      d.namespaces.forEach(function (ns) {
+        var block = el('div', 'diff-ns')
+        block.appendChild(el('h3', null, '<span class="key">' + esc(ns.key) + '</span> <span style="color:var(--faint);font-size:12px">' + esc(ns.interfaceName) + '</span>'))
+        ns.rows.forEach(function (r) {
+          var row = el('div', 'diff-row ' + r.cls)
+          var sigs = ''
+          if (r.oldSig && r.newSig) {
+            // changed / renamed: token-level diff
+            var ops = diffTokens(r.oldSig, r.newSig)
+            if (diffState.mode === 'unified') {
+              sigs = diffLine('uni', '~', renderDiffBody(ops, 'uni'))
+            } else {
+              sigs = diffLine('old', '−', renderDiffBody(ops, 'old')) +
+                     diffLine('new', '+', renderDiffBody(ops, 'new'))
+            }
+          } else if (r.newSig) {
+            // purely added: whole signature reads as new
+            sigs = diffLine('new', '+', '<span class="d-add">' + esc(r.newSig) + '</span>')
+          } else if (r.oldSig) {
+            // purely removed
+            sigs = diffLine('old', '−', '<span class="d-del">' + esc(r.oldSig) + '</span>')
+          }
+          row.innerHTML = '<div class="op">' + r.op + '</div><div class="sigs">' + sigs + '</div>'
+          block.appendChild(row)
+        })
+        out.appendChild(block)
+      })
+    }
+    $('#diff-from').addEventListener('change', function (e) { diffState.from = e.target.value; draw() })
+    $('#diff-to').addEventListener('change', function (e) { diffState.to = e.target.value; draw() })
+    $$('#diff-mode button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        diffState.mode = btn.getAttribute('data-mode')
+        $$('#diff-mode button').forEach(function (x) { x.classList.remove('active') })
+        btn.classList.add('active')
+        draw()
+      })
+    })
+    draw()
+  }
+
+  /* ============================================================
+     ERRORS
+     ============================================================ */
+  var errState = { q: '', sev: 'all' }
+  function renderErrors() {
+    var v = $('#view-errors')
+    v.innerHTML = ''
+    var head = el('div', 'page-head')
+    head.innerHTML =
+      '<div class="eyebrow">Failure contract · ' + DATA.meta.errorCodeCount + ' codes</div>' +
+      '<h1>Error Codes</h1>' +
+      '<p>Every <code>ApiFailure</code> carries a <code>{ code, severity, message }</code>. ' +
+      'CX2-derived codes reuse the spec code directly; runtime concepts use the <code>APP*</code> namespace.</p>'
+    v.appendChild(head)
+
+    var toolbar = el('div', 'err-toolbar')
+    toolbar.innerHTML =
+      '<input class="err-filter" id="err-filter" placeholder="Filter by code, name, method…" value="' + esc(errState.q) + '" />' +
+      '<div class="sev-toggle" id="sev-toggle">' +
+        ['all', 'error', 'warning'].map(function (s) {
+          return '<button data-sev="' + s + '"' + (errState.sev === s ? ' class="active"' : '') + '>' + s + '</button>'
+        }).join('') +
+      '</div>'
+    v.appendChild(toolbar)
+    var out = el('div', 'err-out')
+    v.appendChild(out)
+
+    function draw() {
+      out.innerHTML = ''
+      var q = errState.q.trim().toLowerCase()
+      var catalogs = {}
+      var order = []
+      DATA.errorCodes.forEach(function (c) {
+        if (errState.sev !== 'all' && c.severity !== errState.sev) return
+        if (q && c.text.toLowerCase().indexOf(q) === -1) return
+        if (!catalogs[c.catalog]) { catalogs[c.catalog] = { subtitle: c.catalogSubtitle, codes: [] }; order.push(c.catalog) }
+        catalogs[c.catalog].codes.push(c)
+      })
+      if (!order.length) { out.appendChild(el('div', 'diff-empty', 'No error codes match.')); return }
+      order.forEach(function (cat) {
+        var group = catalogs[cat]
+        var block = el('div', 'err-catalog')
+        block.innerHTML = '<div class="cat-head"><h3>' + esc(cat) + '</h3>' +
+          (group.subtitle ? '<p>' + esc(group.subtitle) + '</p>' : '') + '</div>'
+        var grid = el('div', 'err-grid')
+        group.codes.forEach(function (c) { grid.appendChild(renderErrCard(c)) })
+        block.appendChild(grid)
+        out.appendChild(block)
+      })
+      rewireInternalLinks(out)
+    }
+
+    $('#err-filter').addEventListener('input', function (e) { errState.q = e.target.value; draw() })
+    $$('#sev-toggle button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        errState.sev = b.getAttribute('data-sev')
+        $$('#sev-toggle button').forEach(function (x) { x.classList.remove('active') })
+        b.classList.add('active')
+        draw()
+      })
+    })
+    draw()
+  }
+
+  function renderErrCard(c) {
+    var card = el('div', 'err-card')
+    card.id = 'e-' + c.code
+    var ret = ''
+    if (c.returnedBy && c.returnedBy.length) {
+      ret = '<div class="ec-ret"><span class="lbl">Returned by</span>' +
+        c.returnedBy.map(function (name) {
+          var anchor = guessAnchor(name)
+          if (anchor) return '<a class="ret-chip" href="#reference/' + anchor + '">' + esc(name) + '</a>'
+          return '<span class="ret-chip">' + esc(name) + '</span>'
+        }).join('') + '</div>'
+    }
+    card.innerHTML =
+      '<div class="ec-head">' +
+        '<span class="ec-code">' + esc(c.code) + '</span>' +
+        (c.name ? '<span class="ec-name">' + esc(c.name) + '</span>' : '') +
+        (c.severity ? '<span class="badge ec-sev sev-' + esc(c.severity) + '">' + esc(c.severity) + '</span>' : '') +
+      '</div>' +
+      '<div class="ec-body prose">' + (c.descriptionHtml || '') + '</div>' +
+      (c.cx2Spec ? '<div class="ec-cx2"><b>CX2</b> ' + esc(stripCx2(c.cx2Spec)) + '</div>' : '') +
+      ret
+    return card
+  }
+  function stripCx2(s) { return s.replace(/`/g, '').replace(/^\s+|\s+$/g, '') }
+  var ANCHOR_INDEX = null
+  function guessAnchor(name) {
+    if (!ANCHOR_INDEX) {
+      ANCHOR_INDEX = {}
+      allMethods().forEach(function (x) { if (!ANCHOR_INDEX[x.method.name]) ANCHOR_INDEX[x.method.name] = x.method.anchor })
+    }
+    return ANCHOR_INDEX[name] || null
+  }
+
+  /* ============================================================
+     ROUTER / TABS
+     ============================================================ */
+  var TABS = ['changelog', 'reference', 'diff', 'errors']
+  var rendered = {}
+  function ensureRendered(tab) {
+    if (rendered[tab]) return
+    rendered[tab] = true
+    if (tab === 'changelog') renderChangelog()
+    else if (tab === 'reference') renderReference()
+    else if (tab === 'diff') renderDiff()
+    else if (tab === 'errors') renderErrors()
+  }
+  function showTab(tab) {
+    if (TABS.indexOf(tab) === -1) tab = 'changelog'
+    ensureRendered(tab)
+    TABS.forEach(function (t) {
+      $('#view-' + t).classList.toggle('active', t === tab)
+    })
+    $$('#tabs button').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-tab') === tab)
+    })
+  }
+
+  function route() {
+    var hash = location.hash.replace(/^#/, '')
+    var parts = hash.split('/')
+    var tab = parts[0] || 'changelog'
+    var sub = parts.slice(1).join('/')
+    if (TABS.indexOf(tab) === -1) {
+      // maybe a legacy anchor; default
+      tab = 'changelog'
+    }
+    showTab(tab)
+    if (sub) scrollToTarget(tab, sub)
+    else window.scrollTo({ top: 0 })
+  }
+  function scrollToTarget(tab, sub) {
+    var id = null
+    if (tab === 'reference') id = 'm-' + sub
+    else if (tab === 'errors') id = 'e-' + sub
+    else if (tab === 'changelog') id = 'v-' + sub
+    if (!id) return
+    requestAnimationFrame(function () {
+      var node = document.getElementById(id)
+      if (!node) return
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      node.classList.add('flash')
+      setTimeout(function () { node.classList.remove('flash') }, 1400)
+    })
+  }
+
+  // Intercept internal hash links so cross-tab jumps re-route cleanly.
+  function rewireInternalLinks(root) {
+    $$('a[href^="#"]', root).forEach(function (a) {
+      if (a.__wired) return
+      a.__wired = true
+      a.addEventListener('click', function (e) {
+        var href = a.getAttribute('href')
+        if (location.hash === href) { e.preventDefault(); route() }
+      })
+    })
+  }
+
+  /* ============================================================
+     SEARCH PALETTE
+     ============================================================ */
+  var SEARCH_INDEX = null
+  function buildSearchIndex() {
+    if (SEARCH_INDEX) return SEARCH_INDEX
+    var idx = []
+    allMethods().forEach(function (x) {
+      idx.push({
+        kind: 'method',
+        title: x.method.name,
+        sub: x.ns.name,
+        hash: '#reference/' + x.method.anchor,
+        text: (x.method.name + ' ' + x.ns.name + ' ' + x.method.text).toLowerCase()
+      })
+    })
+    DATA.errorCodes.forEach(function (c) {
+      idx.push({
+        kind: 'error',
+        title: c.code,
+        sub: c.name || c.catalog,
+        hash: '#errors/' + c.code,
+        text: c.text.toLowerCase()
+      })
+    })
+    DATA.versions.forEach(function (ver) {
+      idx.push({
+        kind: 'release',
+        title: ver.version,
+        sub: ver.date || '',
+        hash: '#changelog/' + ver.version,
+        text: (ver.version + ' ' + ver.sections.map(function (s) { return s.text }).join(' ')).toLowerCase()
+      })
+    })
+    SEARCH_INDEX = idx
+    return idx
+  }
+  function searchQuery(q) {
+    q = q.trim().toLowerCase()
+    var idx = buildSearchIndex()
+    if (!q) return idx.filter(function (r) { return r.kind === 'method' }).slice(0, 8)
+    var terms = q.split(/\s+/)
+    var scored = []
+    idx.forEach(function (r) {
+      var score = 0, ok = true
+      terms.forEach(function (t) {
+        var ti = r.title.toLowerCase().indexOf(t)
+        var xi = r.text.indexOf(t)
+        if (ti === 0) score += 100
+        else if (ti > -1) score += 40
+        else if (xi > -1) score += 10
+        else ok = false
+      })
+      if (ok) { if (r.kind === 'method') score += 5; scored.push({ r: r, score: score }) }
+    })
+    scored.sort(function (a, b) { return b.score - a.score })
+    return scored.slice(0, 30).map(function (s) { return s.r })
+  }
+  var paletteSel = 0, paletteRows = []
+  function openPalette() {
+    $('#palette').classList.add('open')
+    var inp = $('#palette-input')
+    inp.value = ''; inp.focus()
+    drawPalette('')
+  }
+  function closePalette() { $('#palette').classList.remove('open') }
+  function drawPalette(q) {
+    var res = searchQuery(q)
+    paletteRows = res; paletteSel = 0
+    var box = $('#palette-results')
+    if (!res.length) { box.innerHTML = '<div class="palette-empty">No matches for “' + esc(q) + '”</div>'; return }
+    box.innerHTML = res.map(function (r, i) {
+      return '<div class="presult' + (i === 0 ? ' sel' : '') + '" data-hash="' + esc(r.hash) + '" data-i="' + i + '">' +
+        '<span class="pr-kind ' + r.kind + '">' + r.kind + '</span>' +
+        '<span class="pr-title">' + esc(r.title) + '</span>' +
+        '<span class="pr-sub">' + esc(r.sub) + '</span></div>'
+    }).join('')
+    $$('#palette-results .presult').forEach(function (n) {
+      n.addEventListener('click', function () { go(n.getAttribute('data-hash')) })
+      n.addEventListener('mousemove', function () { setSel(parseInt(n.getAttribute('data-i'), 10)) })
+    })
+  }
+  function setSel(i) {
+    paletteSel = i
+    $$('#palette-results .presult').forEach(function (n, j) { n.classList.toggle('sel', j === i) })
+    var sel = $$('#palette-results .presult')[i]
+    if (sel) sel.scrollIntoView({ block: 'nearest' })
+  }
+  function go(hash) { closePalette(); if (location.hash === hash) route(); else location.hash = hash }
+
+  /* ============================================================
+     FOOTER + INIT
+     ============================================================ */
+  function renderFooter() {
+    var m = DATA.meta
+    $('#footer').innerHTML =
+      '<span>CyWeb App API</span><span class="sep">/</span>' +
+      '<span>' + esc(m.apiTypesVersion) + '</span><span class="sep">/</span>' +
+      '<span>' + m.methodCount + ' methods · ' + m.errorCodeCount + ' error codes</span>' +
+      '<span class="sep">/</span><span>branch ' + esc(m.branch) + ' @ ' + esc(m.commit) + '</span>' +
+      '<span class="sep">/</span><span>generated ' + esc((m.generatedAt || '').slice(0, 10)) + '</span>'
+    $('#brand-sub').textContent = m.apiTypesVersion
+  }
+
+  function init() {
+    initTheme()
+    renderFooter()
+    $$('#tabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var tab = b.getAttribute('data-tab')
+        if (location.hash.replace(/^#/, '').split('/')[0] === tab) route()
+        else location.hash = tab
+      })
+    })
+    window.addEventListener('hashchange', route)
+    if (!location.hash) location.hash = 'changelog'
+    else route()
+
+    // search palette wiring
+    $('#search-trigger').addEventListener('click', openPalette)
+    $('#palette').addEventListener('click', function (e) { if (e.target === $('#palette')) closePalette() })
+    $('#palette-input').addEventListener('input', function (e) { drawPalette(e.target.value) })
+    document.addEventListener('keydown', function (e) {
+      var open = $('#palette').classList.contains('open')
+      if (!open && (e.key === '/' || (e.key === 'k' && (e.metaKey || e.ctrlKey)))) {
+        if (document.activeElement && /input|textarea|select/i.test(document.activeElement.tagName)) return
+        e.preventDefault(); openPalette()
+      } else if (open) {
+        if (e.key === 'Escape') closePalette()
+        else if (e.key === 'ArrowDown') { e.preventDefault(); setSel(Math.min(paletteSel + 1, paletteRows.length - 1)) }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(Math.max(paletteSel - 1, 0)) }
+        else if (e.key === 'Enter') { e.preventDefault(); var r = paletteRows[paletteSel]; if (r) go(r.hash) }
+      }
+    })
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init)
+  else init()
+})()
+</script>
+</body>
+</html>

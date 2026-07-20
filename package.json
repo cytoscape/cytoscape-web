@@ -37,6 +37,8 @@
     "test:e2e:chromium": "npm run build:test-remote && playwright test --project=chromium",
     "build:test-remote": "vite build --config test/fixtures/remote-app/vite.config.ts",
     "verify:federation": "ts-node --transpileOnly --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/verify-federation-build.ts",
+    "generate:api-docs": "ts-node --transpileOnly --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/generate-api-docs/generate.ts",
+    "generate:api-docs:snapshots": "ts-node --transpileOnly --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/generate-api-docs/bootstrap-surfaces.ts",
     "build": "vite build",
     "build:netlify": "npm run build",
     "dev": "vite --host --open",
