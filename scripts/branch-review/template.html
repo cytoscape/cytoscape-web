@@ -478,7 +478,8 @@
   var degree = {}
   names.forEach(function (n) { degree[n] = 0 })
   DATA.conflictMatrix.forEach(function (c) {
-    if (c.status === 'conflict') { degree[c.a]++; degree[c.b]++ }
+    // Count substantive conflicts only, consistent with the merge plan.
+    if (c.status === 'conflict' && !c.trivialOnly) { degree[c.a]++; degree[c.b]++ }
   })
   var rows = DATA.branches.map(function (b) {
     return Object.assign({}, b, { conflictDeg: degree[b.name] || 0 })

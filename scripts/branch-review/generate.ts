@@ -17,7 +17,7 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
-import { analyze, gitVersion, shortSha } from './git-analysis'
+import { analyze, gitVersion, isNoiseFile, shortSha } from './git-analysis'
 import { buildPlan } from './merge-plan'
 import type {
   BranchReviewData,
@@ -125,11 +125,15 @@ function printHighlights(
   const counts = new Map<string, number>()
   for (const c of conflictMatrix) {
     if (c.status !== 'conflict') continue
-    for (const f of c.conflictFiles) counts.set(f, (counts.get(f) ?? 0) + 1)
+    // Skip low-signal files — mechanical churn, not real hotspots.
+    for (const f of c.conflictFiles) {
+      if (isNoiseFile(f)) continue
+      counts.set(f, (counts.get(f) ?? 0) + 1)
+    }
   }
   const hot = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
   if (hot.length) {
-    console.log('\n  top conflict-hotspot files (pairs affected):')
+    console.log('\n  top substantive conflict-hotspot files (pairs affected):')
     for (const [f, n] of hot) console.log(`    ${String(n).padStart(3)}  ${f}`)
   }
 }
