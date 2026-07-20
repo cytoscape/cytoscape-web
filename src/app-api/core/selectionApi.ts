@@ -4,7 +4,7 @@
 
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -33,15 +33,12 @@ export const selectionApi: SelectionApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useViewModelStore.getState().exclusiveSelect(networkId, nodeIds, edgeIds)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -49,15 +46,12 @@ export const selectionApi: SelectionApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useViewModelStore.getState().additiveSelect(networkId, ids)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -65,15 +59,12 @@ export const selectionApi: SelectionApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useViewModelStore.getState().additiveUnselect(networkId, ids)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -81,15 +72,12 @@ export const selectionApi: SelectionApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useViewModelStore.getState().toggleSelected(networkId, ids)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -97,17 +85,14 @@ export const selectionApi: SelectionApi = {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       return ok({
         selectedNodes: viewModel.selectedNodes,
         selectedEdges: viewModel.selectedEdges,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

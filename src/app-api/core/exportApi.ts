@@ -11,7 +11,7 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 import { CyNetwork } from '../../models/CyNetworkModel/CyNetwork'
 import { IdType } from '../../models/IdType'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -35,37 +35,25 @@ export const exportApi: ExportApi = {
       // 1. NetworkStore
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       // 2. TableStore
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Tables not found for network ${networkId}`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       // 3. VisualStyleStore
       const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
       if (visualStyle === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Visual style not found for network ${networkId}`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       // 4. ViewModelStore
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `View model not found for network ${networkId}`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       // 5. OpaqueAspectStore (optional)
@@ -93,7 +81,7 @@ export const exportApi: ExportApi = {
       )
       return ok(cx2)
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }
