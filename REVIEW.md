@@ -175,7 +175,8 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 **A5. Three divergent Map-serialization stacks, one correct.** `mapSerialization.ts` (entries arrays — correct), `exportApplicationState.serializeStoreState` (Maps → objects with `String(key)` — lossy for numeric/boolean keys, and mislabels shared refs as `[Circular Reference]`), raw `JSON.stringify` in snapshot export (Maps → `{}` — R2-6). **Prospective change:** snapshot export should route through the existing domain serializers; delete the other ad-hoc paths.
 
-**A6. Import/export performance.** Import makes ~4 full main-thread passes over up to 100MB (parse → re-stringify just to re-check size/scan for `__proto__` → depth traversal → per-record sanitize deep-copy), then per-record `await put()` instead of `bulkPut`. Export pretty-prints (`JSON.stringify(…, null, 2)`) and `exportApplicationState` parses/re-stringifies the same payload up to three more times. **Prospective change:** single-pass validation, `bulkPut`, no pretty-print, and consider a worker for >10MB payloads.
+**A6. Import/export performance.** Import made ~4 full main-thread passes over up to 100MB (parse → re-stringify just to re-check size/scan for `__proto__` → depth traversal → per-record sanitize deep-copy), then per-record `await put()` instead of `bulkPut`. Export pretty-printed and `exportApplicationState` parsed/re-stringified the same payload multiple times.
+**Status: mostly fixed (round 11).** `validateSnapshotStructure` takes the original serialized length instead of re-stringifying (the `__proto__` string scan is gone — `sanitizeRecord` provides the actual per-record protection); import uses `bulkGet` + `bulkPut` instead of a per-record `await get()/put()` loop (Dexie `BulkError` failures are counted and reported); export is compact (no pretty-printing); `exportApplicationState` consumes the new `buildDatabaseSnapshot()` object directly with `encodeRichValues` instead of stringify→parse. Remaining (accepted): a worker for very large payloads.
 
 **A7. Layering violations in models.** `RendererModel/Renderer.ts` imported `ReactElement` from react at runtime; `LayoutModel/impl/layoutSelection.ts` imported from `features/HierarchyViewer` (models → features inversion); `fetchUrlCxUtil.ts` does network I/O inside models; four `console.*` calls in model impls (stripped in prod builds → silent); mutable shared exports in `defaultVisualStyle.ts`.
 **Status: mostly fixed (rounds 6/10).** Renderer's React import is now `import type` (erased at compile time — zero runtime dependency); `getDefaultLayout` takes an `isHierarchical` boolean so models no longer import `isHCX` from features (both callers pass `isHCX(summary)`; the test file's features-mock is gone and a hierarchy case was added); all four `console.*` calls in model impls replaced with `logModel` (visualStyleConverter in round 6, customGraphicsImpl + cyJsVisualPropertyConverter in round 10) — `src/models` is now console-free. Remaining (accepted for now): `fetchUrlCxUtil.ts` file placement, mutable `defaultVisualStyle` shared exports (safe while all touchpoints go through Immer).
@@ -312,6 +313,16 @@ Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` �
 
 **Verification:** full unit suite **153 files / 2266 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 11: import/export performance (A6) + coverage gate (A8)
+
+- **Single-pass validation:** `validateSnapshotStructure(snapshot, rawLength)` uses the caller-supplied original length instead of re-stringifying the whole parsed snapshot (previously a full extra pass that doubled peak memory). The `__proto__` string scan is removed — `sanitizeRecord` strips dangerous keys per record, which is the real protection.
+- **Bulk import:** per-record `await get()/put()` replaced with `bulkGet` (conflict check) + `bulkPut`; Dexie `BulkError` failures are counted and surfaced in `ImportResult.errors`.
+- **Export:** compact JSON (pretty-printing roughly doubled size/time); new `buildDatabaseSnapshot()` object API lets `exportApplicationState` embed the snapshot without a stringify→parse round-trip (rich values structurally encoded via `encodeRichValues`).
+- **Coverage gate:** `vitest.config.ts` now enforces per-glob thresholds for `src/data/db/**` (statements 72 / branches 68 / functions 90 / lines 72 — slightly below the measured 76/73/94) whenever coverage is collected (`npm run test:coverage`). The db layer moved from 67%/59%/89% (round 2) to 76%/73%/94%.
+- All 165 db-layer tests (including the backward-compat fixture imports and round-trip fidelity suites) pass unchanged — the behavior contract survived the perf refactor.
+
+**Verification:** full unit suite **153 files / 2266 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors; coverage gate green.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -334,7 +345,7 @@ Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` �
 | **P2** | Debounce/coalesce persistence; stop persisting selection; Dexie transaction per network save (A2, A3). | M–L |
 | ~~P2~~ ✅ | ~~2-entry continuous mappings + mapper null/NaN handling (R2-20)~~ **Done (round 6)**, incl. the newly found domain-anchors bug. | — |
 | ~~P2~~ ✅ | ~~`urlManager` tests; `getViewModel` viewId fix; layering cleanups (A7)~~ **Done (round 10)**; `fetchUrlCxUtil` file placement left as cosmetic. | — |
-| **P3** | Import/export performance (single-pass validation, bulkPut, worker) (A6); coverage gate for `src/data/db/**`. | M |
+| ~~P3~~ ✅ | ~~Import/export performance (A6); coverage gate for `src/data/db/**`~~ **Done (round 11)**; worker offloading for very large payloads left as future work. | — |
 
 ---
 

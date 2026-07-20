@@ -152,15 +152,18 @@ export interface ImportOptions {
 }
 
 /**
- * Exports the entire database as a JSON string (snapshot).
+ * Builds the database snapshot as an in-memory object.
  *
  * All object stores are exported in their current serialized format.
- * The export includes metadata for version tracking.
+ * The result includes metadata for version tracking. Callers that need a
+ * JSON string should use exportDatabaseSnapshot; consumers embedding the
+ * snapshot in a larger structure (e.g. the app-state debug export) can
+ * use this directly to avoid a stringify → parse round-trip (REVIEW.md A6).
  *
- * @returns Promise resolving to JSON string of the database snapshot
+ * @returns Promise resolving to the DatabaseSnapshot object
  * @throws Error if export fails
  */
-export const exportDatabaseSnapshot = async (): Promise<string> => {
+export const buildDatabaseSnapshot = async (): Promise<DatabaseSnapshot> => {
   try {
     const db = await getDb()
     const currentVersion = getDatabaseVersion()
@@ -231,11 +234,22 @@ export const exportDatabaseSnapshot = async (): Promise<string> => {
       data: data as DatabaseSnapshot['data'],
     }
 
-    return JSON.stringify(snapshot, snapshotReplacer, 2)
+    return snapshot
   } catch (e) {
     logDb.error('[exportDatabaseSnapshot] error:', e)
     throw e
   }
+}
+
+/**
+ * Exports the entire database as a JSON string (snapshot).
+ *
+ * Output is compact (no pretty-printing): indentation roughly doubled the
+ * size and serialization time of large payloads (REVIEW.md A6).
+ */
+export const exportDatabaseSnapshot = async (): Promise<string> => {
+  const snapshot = await buildDatabaseSnapshot()
+  return JSON.stringify(snapshot, snapshotReplacer)
 }
 
 /**
@@ -314,7 +328,7 @@ export const importDatabaseSnapshot = async (
     }
 
     // Comprehensive validation
-    const validation = validateSnapshotStructure(snapshot)
+    const validation = validateSnapshotStructure(snapshot, snapshotJson.length)
 
     if (!validation.isValid) {
       logDb.error(
@@ -432,53 +446,60 @@ export const importDatabaseSnapshot = async (
         }
 
         await db.transaction('rw', (db as any)[storeName], async () => {
-          let imported = 0
-          let skipped = 0
-
-          for (const record of records) {
-            try {
-              // Sanitize record to prevent security issues
-              const sanitizedRecord = sanitizeRecord(record)
-
-              // Get primary key for this store
-              const primaryKey = getPrimaryKey(storeName)
-              if (!primaryKey) {
-                errors.push(
-                  `Store ${storeName}: Could not determine primary key. Skipping record.`,
-                )
-                continue
-              }
-
-              // Validate required key exists
-              if (!sanitizedRecord[primaryKey]) {
-                errors.push(
-                  `Store ${storeName}: Record missing required key "${primaryKey}"`,
-                )
-                continue
-              }
-
-              if (merge && skipConflicts) {
-                // Check if record exists
-                const existing = await (db as any)[storeName].get(
-                  sanitizedRecord[primaryKey],
-                )
-                if (existing) {
-                  skipped++
-                  continue
-                }
-              }
-
-              // Put sanitized record (will overwrite if exists, unless merge+skipConflicts)
-              await (db as any)[storeName].put(sanitizedRecord)
-              imported++
-            } catch (recordError) {
-              errors.push(
-                `Store ${storeName}: Failed to import record: ${recordError instanceof Error ? recordError.message : String(recordError)}`,
-              )
-            }
+          // Get primary key for this store
+          const primaryKey = getPrimaryKey(storeName)
+          if (!primaryKey) {
+            errors.push(
+              `Store ${storeName}: Could not determine primary key. Skipping store.`,
+            )
+            importedCounts[storeName] = 0
+            return
           }
 
-          importedCounts[storeName] = imported
+          // Sanitize records (prototype-pollution protection) and drop
+          // records without a primary key
+          const sanitizedRecords: any[] = []
+          for (const record of records) {
+            const sanitizedRecord = sanitizeRecord(record)
+            if (!sanitizedRecord[primaryKey]) {
+              errors.push(
+                `Store ${storeName}: Record missing required key "${primaryKey}"`,
+              )
+              continue
+            }
+            sanitizedRecords.push(sanitizedRecord)
+          }
+
+          // Bulk existence check + bulkPut instead of a per-record
+          // await get()/put() loop (REVIEW.md A6)
+          let recordsToImport = sanitizedRecords
+          let skipped = 0
+          if (merge && skipConflicts) {
+            const keys = sanitizedRecords.map(
+              (record) => record[primaryKey],
+            )
+            const existing = await (db as any)[storeName].bulkGet(keys)
+            recordsToImport = sanitizedRecords.filter(
+              (_record, index) => existing[index] === undefined,
+            )
+            skipped = sanitizedRecords.length - recordsToImport.length
+          }
+
+          try {
+            await (db as any)[storeName].bulkPut(recordsToImport)
+            importedCounts[storeName] = recordsToImport.length
+          } catch (bulkError: any) {
+            // Dexie BulkError carries per-record failures; the rest of
+            // the batch is still written
+            const failureCount = bulkError?.failures
+              ? Object.keys(bulkError.failures).length
+              : recordsToImport.length
+            importedCounts[storeName] = recordsToImport.length - failureCount
+            errors.push(
+              `Store ${storeName}: Failed to import ${failureCount} record(s): ${bulkError instanceof Error ? bulkError.message : String(bulkError)}`,
+            )
+          }
+
           if (merge && skipConflicts) {
             skippedCounts[storeName] = skipped
           }
