@@ -28,7 +28,6 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
   ListSubheader,
   Paper,
@@ -83,7 +82,6 @@ import {
 import { DifferenceIcon, IntersectionIcon, UnionIcon } from './Icon'
 import { MatchingColumnTable } from './MatchingColumnTable'
 import { MatchingTableComp } from './MatchingTableComp'
-import { theme } from '@/theme'
 
 
 const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
