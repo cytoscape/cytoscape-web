@@ -261,6 +261,7 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 | `scripts/download-ndex-networks.ts`          | Download networks from NDEx for testing         |
 | `scripts/manual-database-snapshot-export.js` | Export IndexedDB snapshots                      |
 | `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv       |
+| `scripts/branch-review/`                     | Merge-planning dashboard: branch conflict matrix, overlap heatmap, merge order (`npm run generate:branch-review`) |
 
 ---
 
