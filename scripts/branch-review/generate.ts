@@ -19,7 +19,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { analyze, gitVersion, shortSha } from './git-analysis'
 import { buildPlan } from './merge-plan'
-import type { BranchReviewData } from './types'
+import type {
+  BranchReviewData,
+  ConflictCell,
+  MergeStep,
+  OverlapCell,
+} from './types'
 
 const REPO_ROOT = path.resolve(__dirname, '../..')
 const HERE = __dirname
@@ -65,6 +70,49 @@ const CAVEATS = [
   'File overlap (Jaccard) only means two branches touch some of the same files — same file is not the same as a conflict, and disjoint files can still interact. Treat overlap as a prompt to look, corroborated by the conflict matrix.',
   'Local branches only (refs/heads), as of generation time. Unpushed or stale state is included; remote-only branches are not.',
 ]
+
+/** Print the headline findings to the terminal so the tool is useful without
+ *  opening the HTML: the recommended order, near-duplicate branches, and the
+ *  files that cause the most conflicts. */
+function printHighlights(
+  conflictMatrix: ConflictCell[],
+  overlapMatrix: OverlapCell[],
+  mergePlan: MergeStep[],
+): void {
+  console.log('\n  recommended merge order:')
+  const preview = mergePlan.slice(0, 8)
+  for (const s of preview) {
+    const tag = s.tier === 'independent' ? 'land now' : 'sequence'
+    console.log(`    ${String(s.order).padStart(2)}. [${tag}] ${s.branch}`)
+  }
+  if (mergePlan.length > preview.length) {
+    console.log(
+      `    … +${mergePlan.length - preview.length} more (see dashboard)`,
+    )
+  }
+
+  const dupes = overlapMatrix
+    .filter((o) => o.jaccard >= 0.8)
+    .sort((a, b) => b.jaccard - a.jaccard)
+    .slice(0, 5)
+  if (dupes.length) {
+    console.log('\n  near-duplicate branches (≥80% file overlap):')
+    for (const o of dupes) {
+      console.log(`    ${Math.round(o.jaccard * 100)}%  ${o.a}  ∩  ${o.b}`)
+    }
+  }
+
+  const counts = new Map<string, number>()
+  for (const c of conflictMatrix) {
+    if (c.status !== 'conflict') continue
+    for (const f of c.conflictFiles) counts.set(f, (counts.get(f) ?? 0) + 1)
+  }
+  const hot = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
+  if (hot.length) {
+    console.log('\n  top conflict-hotspot files (pairs affected):')
+    for (const [f, n] of hot) console.log(`    ${String(n).padStart(3)}  ${f}`)
+  }
+}
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
@@ -137,6 +185,8 @@ function main(): void {
   console.log(`  independent    : ${independent}`)
   console.log(`  oversized      : ${oversized}`)
   console.log(`  clusters       : ${clusters.length}`)
+
+  printHighlights(conflictMatrix, overlapMatrix, mergePlan)
 
   if (!fs.existsSync(TEMPLATE)) {
     console.error(`\nTemplate not found: ${TEMPLATE}`)
