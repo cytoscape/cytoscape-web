@@ -166,6 +166,15 @@
   .chip.ov { color: var(--muted); }
   .chip.cl { color: var(--accent); border-color: var(--accent-dim); }
 
+  .dupe {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 6px;
+  }
+  .dupe .pct { font-family: var(--font-mono); color: var(--warn); font-size: 15px; min-width: 44px; }
+  .dupe .pair { font-family: var(--font-mono); color: var(--text-strong); font-size: 13px; }
+  .dupe .files { color: var(--muted); font-size: 12px; margin-left: auto; }
+
   /* Matrices */
   .scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
   table.matrix { border-collapse: collapse; font-size: 11px; }
@@ -237,6 +246,12 @@
     <h2>Recommended merge order</h2>
     <p class="lead" id="plan-lead"></p>
     <div id="plan-body"></div>
+  </section>
+
+  <section id="dupes" hidden>
+    <h2>Near-duplicate branches <span class="n" id="dupes-n"></span></h2>
+    <p class="lead">Pairs whose changed-file sets overlap ≥ 80% — often rebase variants or forks of the same work. Consider consolidating to one before merging.</p>
+    <div id="dupes-body"></div>
   </section>
 
   <section id="conflicts">
@@ -526,6 +541,26 @@
     })
     table.addEventListener('mouseleave', clear)
   }
+  // ---- near-duplicate branches (actionable callout) ----------------------
+  var dupes = DATA.overlapMatrix
+    .filter(function (o) { return o.jaccard >= 0.8 })
+    .sort(function (a, b) { return b.jaccard - a.jaccard })
+  if (dupes.length) {
+    document.getElementById('dupes').hidden = false
+    document.getElementById('dupes-n').textContent =
+      dupes.length + ' pair' + (dupes.length === 1 ? '' : 's')
+    var db = document.getElementById('dupes-body')
+    dupes.forEach(function (o) {
+      var row = el('div', 'dupe')
+      row.innerHTML =
+        '<span class="pct">' + Math.round(o.jaccard * 100) + '%</span>' +
+        '<span class="pair">' + esc(o.a) + '  ∩  ' + esc(o.b) + '</span>' +
+        '<span class="files">' + o.intersection + '/' + o.union + ' files shared</span>'
+      db.appendChild(row)
+    })
+  }
+
+  // ---- matrices ----------------------------------------------------------
   buildMatrix('conflict-matrix', 'conflict')
   buildMatrix('overlap-matrix', 'overlap')
   document.getElementById('conflict-n').textContent = names.length + '×' + names.length
