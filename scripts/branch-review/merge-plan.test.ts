@@ -122,6 +122,22 @@ describe('buildPlan', () => {
     expect(mergePlan[3].action).toBe('Land now')
   })
 
+  it('breaks equal-degree ties in the sequenced tier by smaller churn', () => {
+    // x and y each conflict only with hub h (degree 1); h has degree 2.
+    // churns chosen so the greedy pick is deterministic: y(100) < x(500) < h(1000).
+    const branches = [
+      mk('h', { churn: 1000 }),
+      mk('x', { churn: 500 }),
+      mk('y', { churn: 100 }),
+    ]
+    const conflictMatrix = [conflict('x', 'h'), conflict('y', 'h')]
+    const { mergePlan } = buildPlan(branches, conflictMatrix, [], OPTS)
+
+    // round 1: x,y tie at degree 1 -> smaller churn y first
+    // round 2: x,h tie at degree 1 -> smaller churn x before h
+    expect(mergePlan.map((s) => s.branch)).toEqual(['y', 'x', 'h'])
+  })
+
   it('flags a branch that conflicts only with the base', () => {
     const branches = [
       mk('a', { mergesCleanIntoBase: false, baseConflictFiles: ['x.ts'] }),
