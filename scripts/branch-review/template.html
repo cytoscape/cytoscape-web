@@ -32,6 +32,7 @@
     --accent: #45d6c6;
     --accent-dim: #2b8a80;
     --accent-glow: rgba(69, 214, 198, 0.14);
+    --heat: 69, 214, 198;
     --clean: #4fcf8a;
     --clean-bg: rgba(79, 207, 138, 0.16);
     --conflict: #f0817a;
@@ -56,6 +57,7 @@
     --accent: #0f8c82;
     --accent-dim: #0f8c82;
     --accent-glow: rgba(15, 140, 130, 0.1);
+    --heat: 15, 140, 130;
     --clean: #1f9d57;
     --clean-bg: rgba(31, 157, 87, 0.14);
     --conflict: #cf4a3f;
@@ -278,6 +280,20 @@
     if (html != null) e.innerHTML = html
     return e
   }
+  // Render up to `cap` chips, collapsing the remainder into a "+N more" chip.
+  function chipList(arr, cls, prefix, cap) {
+    cap = cap || 6
+    var html = arr
+      .slice(0, cap)
+      .map(function (x) {
+        return '<span class="chip ' + cls + '">' + prefix + ' ' + esc(x) + '</span>'
+      })
+      .join('')
+    if (arr.length > cap) {
+      html += '<span class="chip">+' + (arr.length - cap) + ' more</span>'
+    }
+    return html
+  }
 
   // ---- lookups over the upper-triangle matrices --------------------------
   var names = DATA.branches.map(function (b) { return b.name })
@@ -351,8 +367,8 @@
       churnChip(b) +
       '<span class="chip">' + b.filesChanged + ' files</span>' +
       (s.clusterId != null ? '<span class="chip cl">cluster ' + s.clusterId + '</span>' : '') +
-      s.conflictsWith.map(function (c) { return '<span class="chip cf">✕ ' + esc(c) + '</span>' }).join('') +
-      s.overlapsWith.map(function (o) { return '<span class="chip ov">∩ ' + esc(o) + '</span>' }).join('')
+      chipList(s.conflictsWith, 'cf', '✕', 6) +
+      chipList(s.overlapsWith, 'ov', '∩', 6)
     body.appendChild(chips)
     row.appendChild(body)
     return row
@@ -424,7 +440,7 @@
           var jc = o ? o.jaccard : 0
           var td2 = el('td', 'cell')
           if (jc > 0) {
-            td2.style.background = 'rgba(69,214,198,' + (0.08 + jc * 0.7).toFixed(3) + ')'
+            td2.style.background = 'rgba(var(--heat),' + (0.08 + jc * 0.7).toFixed(3) + ')'
             td2.innerHTML = '<span style="font-size:9px;color:var(--muted)">' + Math.round(jc * 100) + '</span>'
           }
           td2.title = o
