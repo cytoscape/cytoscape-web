@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Branch Review &amp; Merge Planning</title>
+<style>
+  /* ============================================================
+     Branch Review & Merge-Planning dashboard.
+     Aesthetic matches the CyWeb App API docs: terminal schematic,
+     mono-forward chrome, signal palette. Fully self-contained.
+     ============================================================ */
+  :root {
+    --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code',
+      'Fira Code', Menlo, Consolas, monospace;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --radius: 9px;
+    --maxw: 1320px;
+  }
+  :root[data-theme='dark'] {
+    --bg: #0b0d12;
+    --bg-grid: #12151d;
+    --panel: #141821;
+    --panel-2: #1a1f2b;
+    --panel-hi: #202634;
+    --border: #262d3b;
+    --border-hi: #333c4e;
+    --text: #d9dde6;
+    --text-strong: #f2f4f8;
+    --muted: #838d9e;
+    --faint: #5c6576;
+    --accent: #45d6c6;
+    --accent-dim: #2b8a80;
+    --accent-glow: rgba(69, 214, 198, 0.14);
+    --clean: #4fcf8a;
+    --clean-bg: rgba(79, 207, 138, 0.16);
+    --conflict: #f0817a;
+    --conflict-bg: rgba(240, 129, 122, 0.18);
+    --warn: #e6ac47;
+    --warn-bg: rgba(230, 172, 71, 0.16);
+    --shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.7);
+    color-scheme: dark;
+  }
+  :root[data-theme='light'] {
+    --bg: #f4f1e9;
+    --bg-grid: #ebe6da;
+    --panel: #fffefb;
+    --panel-2: #f7f4ec;
+    --panel-hi: #efeadd;
+    --border: #ddd6c6;
+    --border-hi: #ccc3ad;
+    --text: #2a2c31;
+    --text-strong: #14161a;
+    --muted: #6d6a60;
+    --faint: #9a968a;
+    --accent: #0f8c82;
+    --accent-dim: #0f8c82;
+    --accent-glow: rgba(15, 140, 130, 0.1);
+    --clean: #1f9d57;
+    --clean-bg: rgba(31, 157, 87, 0.14);
+    --conflict: #cf4a3f;
+    --conflict-bg: rgba(207, 74, 63, 0.14);
+    --warn: #b07714;
+    --warn-bg: rgba(176, 119, 20, 0.14);
+    --shadow: 0 16px 40px -22px rgba(60, 50, 20, 0.32);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+    background-size: 46px 46px;
+    background-position: -1px -1px;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 28px 22px 80px; }
+  code, .mono, table { font-family: var(--font-mono); }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+  }
+  h1 {
+    font-family: var(--font-mono); font-size: 20px; letter-spacing: -0.01em;
+    color: var(--text-strong); margin: 0 0 6px;
+  }
+  h1 .dot { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .meta-bar {
+    display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+  }
+  .meta-bar b { color: var(--text); font-weight: 500; }
+
+  button.theme {
+    font-family: var(--font-mono); font-size: 12px; cursor: pointer;
+    background: var(--panel); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+  }
+  button.theme:hover { border-color: var(--border-hi); color: var(--text); }
+
+  section { margin: 30px 0; }
+  h2 {
+    font-family: var(--font-mono); font-size: 14px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--accent-dim);
+    border-bottom: 1px solid var(--border); padding-bottom: 8px; margin: 0 0 16px;
+  }
+  h2 .n { color: var(--faint); margin-left: 8px; }
+  .lead { color: var(--muted); font-size: 13px; margin: -6px 0 16px; max-width: 68ch; }
+
+  /* KPI tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tile {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .tile .v { font-family: var(--font-mono); font-size: 26px; color: var(--text-strong); }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
+  .tile.good .v { color: var(--clean); }
+  .tile.bad .v { color: var(--conflict); }
+  .tile.warn .v { color: var(--warn); }
+
+  /* Merge plan */
+  .plan-group { margin-bottom: 20px; }
+  .plan-group > h3 {
+    font-family: var(--font-mono); font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;
+  }
+  .step {
+    display: grid; grid-template-columns: 34px 1fr; gap: 12px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  }
+  .step.independent { border-left: 3px solid var(--clean); }
+  .step.sequenced { border-left: 3px solid var(--warn); }
+  .step .ord {
+    font-family: var(--font-mono); font-size: 15px; color: var(--accent);
+    text-align: center; padding-top: 1px;
+  }
+  .step .name { font-family: var(--font-mono); color: var(--text-strong); font-size: 14px; }
+  .step .action { font-size: 12.5px; color: var(--text); margin-top: 3px; }
+  .step .reason { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .chips { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: var(--font-mono); font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; border: 1px solid var(--border); color: var(--muted);
+    background: var(--panel-2);
+  }
+  .chip.churn { border-color: var(--border-hi); }
+  .chip.big { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+  .chip.cf { color: var(--conflict); border-color: var(--conflict); background: var(--conflict-bg); }
+  .chip.ov { color: var(--muted); }
+  .chip.cl { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* Matrices */
+  .scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.matrix { border-collapse: collapse; font-size: 11px; }
+  table.matrix th, table.matrix td { border: 1px solid var(--border); text-align: center; }
+  table.matrix td.cell { width: 26px; height: 26px; min-width: 26px; cursor: default; }
+  table.matrix th.rowlab {
+    text-align: left; white-space: nowrap; padding: 3px 8px;
+    color: var(--text); font-weight: 500; position: sticky; left: 0;
+    background: var(--panel); z-index: 2; max-width: 300px; overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  table.matrix th.colnum { width: 26px; color: var(--muted); font-weight: 500; padding: 3px 0; }
+  table.matrix th.corner { position: sticky; left: 0; background: var(--panel); z-index: 3; text-align: left; padding: 3px 8px; color: var(--faint); }
+  table.matrix td.base { font-family: var(--font-mono); }
+  table.matrix td.diag { background: var(--panel-hi); }
+  .cell.clean { background: var(--clean-bg); }
+  .cell.conflict { background: var(--conflict-bg); }
+  .cell.error { background: var(--warn-bg); }
+  .cell.clean::after { content: '·'; color: var(--clean); }
+  .cell.conflict::after { content: '×'; color: var(--conflict); font-weight: 700; }
+  .cell.error::after { content: '?'; color: var(--warn); }
+  .idx { color: var(--faint); margin-right: 6px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0; font-size: 12px; color: var(--muted); }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; border: 1px solid var(--border-hi); }
+
+  /* Branch table */
+  table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.data th, table.data td { border-bottom: 1px solid var(--border); padding: 7px 10px; text-align: right; white-space: nowrap; }
+  table.data th { color: var(--muted); font-weight: 500; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--bg); }
+  table.data th:first-child, table.data td:first-child { text-align: left; }
+  table.data th.sorted::after { content: ' ▾'; color: var(--accent); }
+  table.data th.sorted.asc::after { content: ' ▴'; }
+  table.data td.b-name { color: var(--text-strong); }
+  table.data tr:hover td { background: var(--panel); }
+  .yes { color: var(--clean); }
+  .no { color: var(--conflict); }
+  .flag { color: var(--warn); }
+
+  /* Methodology */
+  .caveats { list-style: none; padding: 0; margin: 0; }
+  .caveats li { position: relative; padding: 6px 0 6px 22px; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--border); }
+  .caveats li::before { content: '△'; position: absolute; left: 0; color: var(--warn); }
+  pre.cmds { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; overflow-x: auto; font-size: 12px; color: var(--text); }
+  .tt { border-bottom: 1px dotted var(--faint); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>branch<span class="dot">·</span>review <span class="dot">/</span> merge planning</h1>
+      <div class="sub">Which branches conflict, which touch the same code, and what order to merge.</div>
+      <div class="meta-bar" id="meta-bar"></div>
+    </div>
+    <button class="theme" id="theme-toggle">◐ theme</button>
+  </header>
+
+  <section id="kpis"><h2>Overview</h2><div class="tiles" id="tiles"></div></section>
+
+  <section id="plan">
+    <h2>Recommended merge order</h2>
+    <p class="lead">Land the independent tier first (clean into base, no peer conflicts — safe in any order or in parallel), then work the sequenced tiers, resolving each branch against the peers listed. This is a greedy heuristic, not a proven-optimal schedule — re-run after each merge.</p>
+    <div id="plan-body"></div>
+  </section>
+
+  <section id="conflicts">
+    <h2>Conflict matrix <span class="n" id="conflict-n"></span></h2>
+    <p class="lead">Ground truth from an in-memory <code>git merge-tree</code> of each branch pair. The leading <b>base</b> column is each branch merged into the base. Hover a cell to see conflicting files.</p>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--clean-bg)"></span>clean merge</span>
+      <span><span class="sw" style="background:var(--conflict-bg)"></span>conflict</span>
+      <span><span class="sw" style="background:var(--warn-bg)"></span>error / no merge base</span>
+    </div>
+    <div class="scroll"><table class="matrix" id="conflict-matrix"></table></div>
+  </section>
+
+  <section id="overlaps">
+    <h2>File-overlap heatmap <span class="n" id="overlap-n"></span></h2>
+    <p class="lead">Jaccard similarity of each pair's changed-file sets — a heuristic for "touch the same code". Darker = more shared files. Overlap is a prompt to look; the conflict matrix above is the ground truth.</p>
+    <div class="scroll"><table class="matrix" id="overlap-matrix"></table></div>
+  </section>
+
+  <section id="branches">
+    <h2>Branches <span class="n" id="branch-n"></span></h2>
+    <p class="lead">Per-branch review sizing. Click a column to sort. Oversized branches (churn over the threshold) are harder to review well and good candidates to split.</p>
+    <div class="scroll"><table class="data" id="branch-table"></table></div>
+  </section>
+
+  <section id="method">
+    <h2>Methodology &amp; limits</h2>
+    <ul class="caveats" id="caveats"></ul>
+    <p class="lead" style="margin-top:16px">Commands used (all read-only; no merges are performed):</p>
+    <pre class="cmds" id="cmds"></pre>
+  </section>
+</div>
+
+<script id="branch-data" type="application/json">__DATA__</script>
+<script>
+  var DATA = JSON.parse(document.getElementById('branch-data').textContent)
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+    })
+  }
+  function el(tag, cls, html) {
+    var e = document.createElement(tag)
+    if (cls) e.className = cls
+    if (html != null) e.innerHTML = html
+    return e
+  }
+
+  // ---- lookups over the upper-triangle matrices --------------------------
+  var names = DATA.branches.map(function (b) { return b.name })
+  var idxOf = {}
+  names.forEach(function (n, i) { idxOf[n] = i })
+  function key(a, b) { return a < b ? a + ' ' + b : b + ' ' + a }
+
+  var conflictBy = {}
+  DATA.conflictMatrix.forEach(function (c) { conflictBy[key(c.a, c.b)] = c })
+  var overlapBy = {}
+  DATA.overlapMatrix.forEach(function (o) { overlapBy[key(o.a, o.b)] = o })
+  var branchBy = {}
+  DATA.branches.forEach(function (b) { branchBy[b.name] = b })
+
+  // ---- meta bar ----------------------------------------------------------
+  var m = DATA.meta
+  document.getElementById('meta-bar').innerHTML =
+    'base <b>' + esc(m.baseBranch) + '</b> @ <b>' + esc(m.repoCommit) + '</b>' +
+    '&nbsp;·&nbsp; generated <b>' + esc(m.generatedAt.replace('T', ' ').slice(0, 16)) + '</b>' +
+    '&nbsp;·&nbsp; <b>' + m.branchCount + '</b> branches, <b>' + m.pairCount + '</b> pairs' +
+    '&nbsp;·&nbsp; threshold <b>' + m.sizeThreshold + '</b> LOC' +
+    '&nbsp;·&nbsp; git <b>' + esc(m.gitVersion) + '</b>'
+
+  // ---- KPI tiles ---------------------------------------------------------
+  var conflictPairs = DATA.conflictMatrix.filter(function (c) { return c.status === 'conflict' }).length
+  var errorPairs = DATA.conflictMatrix.filter(function (c) { return c.status === 'error' }).length
+  var cleanIntoBase = DATA.branches.filter(function (b) { return b.mergesCleanIntoBase }).length
+  var oversized = DATA.branches.filter(function (b) { return b.oversized }).length
+  var independent = DATA.mergePlan.filter(function (s) { return s.tier === 'independent' }).length
+  var totalChurn = DATA.branches.reduce(function (n, b) { return n + b.churn }, 0)
+  var tiles = [
+    { k: 'candidates', v: DATA.branches.length },
+    { k: 'independent (land first)', v: independent, cls: 'good' },
+    { k: 'clean into base', v: cleanIntoBase + '/' + DATA.branches.length, cls: cleanIntoBase === DATA.branches.length ? 'good' : '' },
+    { k: 'conflict pairs', v: conflictPairs, cls: conflictPairs ? 'bad' : 'good' },
+    { k: 'conflict clusters', v: DATA.clusters.length, cls: DATA.clusters.length ? 'warn' : 'good' },
+    { k: 'oversized branches', v: oversized, cls: oversized ? 'warn' : 'good' },
+    { k: 'total churn (LOC)', v: totalChurn.toLocaleString() },
+  ]
+  if (errorPairs) tiles.push({ k: 'error pairs', v: errorPairs, cls: 'warn' })
+  var tilesEl = document.getElementById('tiles')
+  tiles.forEach(function (t) {
+    var d = el('div', 'tile ' + (t.cls || ''))
+    d.appendChild(el('div', 'v', String(t.v)))
+    d.appendChild(el('div', 'k', t.k))
+    tilesEl.appendChild(d)
+  })
+
+  // ---- merge plan --------------------------------------------------------
+  function churnChip(b) {
+    return '<span class="chip churn' + (b.oversized ? ' big' : '') + '">' +
+      b.churn + ' LOC' + (b.oversized ? ' ⚠' : '') + '</span>'
+  }
+  function stepEl(s) {
+    var b = branchBy[s.branch]
+    var row = el('div', 'step ' + s.tier)
+    row.appendChild(el('div', 'ord', String(s.order)))
+    var body = el('div')
+    body.appendChild(el('div', 'name', esc(s.branch)))
+    body.appendChild(el('div', 'action', esc(s.action)))
+    body.appendChild(el('div', 'reason', esc(s.reason)))
+    var chips = el('div', 'chips')
+    chips.innerHTML =
+      churnChip(b) +
+      '<span class="chip">' + b.filesChanged + ' files</span>' +
+      (s.clusterId != null ? '<span class="chip cl">cluster ' + s.clusterId + '</span>' : '') +
+      s.conflictsWith.map(function (c) { return '<span class="chip cf">✕ ' + esc(c) + '</span>' }).join('') +
+      s.overlapsWith.map(function (o) { return '<span class="chip ov">∩ ' + esc(o) + '</span>' }).join('')
+    body.appendChild(chips)
+    row.appendChild(body)
+    return row
+  }
+  var planBody = document.getElementById('plan-body')
+  var indep = DATA.mergePlan.filter(function (s) { return s.tier === 'independent' })
+  var seq = DATA.mergePlan.filter(function (s) { return s.tier === 'sequenced' })
+  if (indep.length) {
+    var g = el('div', 'plan-group')
+    g.appendChild(el('h3', null, 'Land first — parallel-safe (' + indep.length + ')'))
+    indep.forEach(function (s) { g.appendChild(stepEl(s)) })
+    planBody.appendChild(g)
+  }
+  if (seq.length) {
+    var g2 = el('div', 'plan-group')
+    g2.appendChild(el('h3', null, 'Sequence carefully — conflicting branches (' + seq.length + ')'))
+    seq.forEach(function (s) { g2.appendChild(stepEl(s)) })
+    planBody.appendChild(g2)
+  }
+
+  // ---- matrices ----------------------------------------------------------
+  function buildMatrix(tableId, mode) {
+    var table = document.getElementById(tableId)
+    var head = el('tr')
+    var corner = el('th', 'corner', mode === 'conflict' ? '# branch \\ vs' : '# branch')
+    head.appendChild(corner)
+    if (mode === 'conflict') head.appendChild(el('th', 'colnum', 'base'))
+    names.forEach(function (n, i) {
+      var th = el('th', 'colnum', String(i + 1))
+      th.title = n
+      head.appendChild(th)
+    })
+    table.appendChild(head)
+
+    names.forEach(function (rowName, i) {
+      var tr = el('tr')
+      var lab = el('th', 'rowlab', '<span class="idx">' + (i + 1) + '</span>' + esc(rowName))
+      lab.title = rowName
+      tr.appendChild(lab)
+
+      if (mode === 'conflict') {
+        var bb = branchBy[rowName]
+        var bc = el('td', 'cell base ' + (bb.mergesCleanIntoBase ? 'clean' : 'conflict'))
+        bc.title = rowName + ' → ' + m.baseBranch + ': ' +
+          (bb.mergesCleanIntoBase ? 'clean' :
+            'conflict (' + bb.baseConflictFiles.length + ' files): ' + bb.baseConflictFiles.join(', '))
+        tr.appendChild(bc)
+      }
+
+      names.forEach(function (colName, j) {
+        if (i === j) { tr.appendChild(el('td', 'cell diag')); return }
+        if (mode === 'conflict') {
+          var c = conflictBy[key(rowName, colName)]
+          var td = el('td', 'cell ' + (c ? c.status : 'error'))
+          td.title = rowName + ' × ' + colName + ': ' + (c ? c.status : 'error') +
+            (c && c.conflictFiles.length ? ' (' + c.conflictFiles.length + '): ' + c.conflictFiles.join(', ') : '')
+          tr.appendChild(td)
+        } else {
+          var o = overlapBy[key(rowName, colName)]
+          var jc = o ? o.jaccard : 0
+          var td2 = el('td', 'cell')
+          if (jc > 0) {
+            td2.style.background = 'rgba(69,214,198,' + (0.08 + jc * 0.7).toFixed(3) + ')'
+            td2.innerHTML = '<span style="font-size:9px;color:var(--muted)">' + Math.round(jc * 100) + '</span>'
+          }
+          td2.title = o
+            ? rowName + ' ∩ ' + colName + ': ' + Math.round(jc * 100) + '% (' +
+              o.intersection + '/' + o.union + ' files)' +
+              (o.sharedFiles.length ? '\n' + o.sharedFiles.join('\n') : '')
+            : rowName + ' ∩ ' + colName + ': 0%'
+          tr.appendChild(td2)
+        }
+      })
+      table.appendChild(tr)
+    })
+  }
+  buildMatrix('conflict-matrix', 'conflict')
+  buildMatrix('overlap-matrix', 'overlap')
+  document.getElementById('conflict-n').textContent = names.length + '×' + names.length
+  document.getElementById('overlap-n').textContent = names.length + '×' + names.length
+
+  // ---- branch table (sortable) ------------------------------------------
+  var cols = [
+    { k: 'name', label: 'branch', kind: 'str' },
+    { k: 'ageRelative', label: 'age', kind: 'age' },
+    { k: 'ahead', label: 'ahead', kind: 'num' },
+    { k: 'behind', label: 'behind', kind: 'num' },
+    { k: 'filesChanged', label: 'files', kind: 'num' },
+    { k: 'added', label: '+add', kind: 'num' },
+    { k: 'deleted', label: '−del', kind: 'num' },
+    { k: 'churn', label: 'churn', kind: 'num' },
+    { k: 'binaryFiles', label: 'bin', kind: 'num' },
+    { k: 'oversized', label: 'big?', kind: 'bool' },
+    { k: 'mergesCleanIntoBase', label: 'clean→base', kind: 'bool' },
+    { k: 'conflictDeg', label: 'conflicts', kind: 'num' },
+  ]
+  // derive conflict degree per branch
+  var degree = {}
+  names.forEach(function (n) { degree[n] = 0 })
+  DATA.conflictMatrix.forEach(function (c) {
+    if (c.status === 'conflict') { degree[c.a]++; degree[c.b]++ }
+  })
+  var rows = DATA.branches.map(function (b) {
+    return Object.assign({}, b, { conflictDeg: degree[b.name] || 0 })
+  })
+  var sortState = { key: 'churn', asc: false }
+  function renderTable() {
+    var table = document.getElementById('branch-table')
+    table.innerHTML = ''
+    var head = el('tr')
+    cols.forEach(function (c) {
+      var th = el('th', null, esc(c.label))
+      if (c.k === sortState.key) th.className = 'sorted' + (sortState.asc ? ' asc' : '')
+      th.onclick = function () {
+        if (sortState.key === c.k) sortState.asc = !sortState.asc
+        else { sortState.key = c.k; sortState.asc = c.kind === 'str' }
+        renderTable()
+      }
+      head.appendChild(th)
+    })
+    table.appendChild(head)
+    var sorted = rows.slice().sort(function (x, y) {
+      var a = x[sortState.key], b = y[sortState.key]
+      if (typeof a === 'string') return sortState.asc ? a.localeCompare(b) : b.localeCompare(a)
+      return sortState.asc ? a - b : b - a
+    })
+    sorted.forEach(function (b) {
+      var tr = el('tr')
+      tr.appendChild(el('td', 'b-name', esc(b.name)))
+      tr.appendChild(el('td', null, esc(b.ageRelative)))
+      tr.appendChild(el('td', null, String(b.ahead)))
+      tr.appendChild(el('td', null, String(b.behind)))
+      tr.appendChild(el('td', null, String(b.filesChanged)))
+      tr.appendChild(el('td', null, '+' + b.added))
+      tr.appendChild(el('td', null, '−' + b.deleted))
+      tr.appendChild(el('td', b.oversized ? 'flag' : null, String(b.churn)))
+      tr.appendChild(el('td', null, String(b.binaryFiles)))
+      tr.appendChild(el('td', b.oversized ? 'flag' : null, b.oversized ? 'yes' : '—'))
+      tr.appendChild(el('td', b.mergesCleanIntoBase ? 'yes' : 'no', b.mergesCleanIntoBase ? 'yes' : 'NO'))
+      tr.appendChild(el('td', b.conflictDeg ? 'no' : null, String(b.conflictDeg)))
+      table.appendChild(tr)
+    })
+  }
+  renderTable()
+  document.getElementById('branch-n').textContent = names.length
+
+  // ---- methodology -------------------------------------------------------
+  var cav = document.getElementById('caveats')
+  DATA.caveats.forEach(function (c) { cav.appendChild(el('li', null, esc(c))) })
+  document.getElementById('cmds').textContent = [
+    '# enumerate local branches',
+    "git for-each-ref --sort=-committerdate --format='…' refs/heads/",
+    '# per branch, vs ' + m.baseBranch + ' (three-dot = merge base)',
+    'git rev-list --left-right --count ' + m.baseBranch + '...<branch>',
+    'git diff --name-only -z ' + m.baseBranch + '...<branch>',
+    'git diff --numstat  -z ' + m.baseBranch + '...<branch>',
+    '# pairwise conflict (in-memory 3-way merge; exit 0=clean, 1=conflict)',
+    'git merge-tree --write-tree --name-only <A> <B>',
+  ].join('\n')
+
+  // ---- theme toggle ------------------------------------------------------
+  var root = document.documentElement
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    root.setAttribute('data-theme', 'light')
+  }
+  document.getElementById('theme-toggle').onclick = function () {
+    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')
+  }
+</script>
+</body>
+</html>

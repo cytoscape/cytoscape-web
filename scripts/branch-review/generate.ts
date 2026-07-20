@@ -1,0 +1,167 @@
+/**
+ * Orchestrator for the Branch Review & Merge-Planning dashboard.
+ *
+ * Analyzes every local branch against an integration base (default
+ * `development`), computes the pairwise conflict matrix (ground truth via
+ * `git merge-tree`), the file-overlap heatmap (Jaccard heuristic), per-branch
+ * review sizing, and a greedy merge-order plan — then injects it all into
+ * template.html to produce a single self-contained HTML file.
+ *
+ *   ts-node generate.ts [--base <branch>] [--out <path>]
+ *                       [--include-stale] [--max-loc <n>]
+ *                       [--overlap-threshold <0..1>]
+ *
+ * Default --out is scratch/branch-review/index.html (gitignored). Point --out
+ * at docs-site/ only to PUBLISH — that directory is deployed to a public
+ * Netlify site, so branch names would become world-readable.
+ */
+import * as fs from 'fs'
+import * as path from 'path'
+import { analyze, gitVersion, shortSha } from './git-analysis'
+import { buildPlan } from './merge-plan'
+import type { BranchReviewData } from './types'
+
+const REPO_ROOT = path.resolve(__dirname, '../..')
+const HERE = __dirname
+const TEMPLATE = path.join(HERE, 'template.html')
+
+interface Args {
+  base: string
+  out: string
+  includeStale: boolean
+  maxLoc: number
+  overlapThreshold: number
+}
+
+function parseArgs(argv: string[]): Args {
+  const raw: Record<string, string> = {}
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (!a.startsWith('--')) continue
+    const key = a.slice(2)
+    const next = argv[i + 1]
+    if (next && !next.startsWith('--')) {
+      raw[key] = next
+      i++
+    } else {
+      raw[key] = 'true'
+    }
+  }
+  return {
+    base: raw.base || 'development',
+    out: raw.out || 'scratch/branch-review/index.html',
+    includeStale: raw['include-stale'] === 'true',
+    maxLoc: raw['max-loc'] ? parseInt(raw['max-loc'], 10) : 400,
+    overlapThreshold: raw['overlap-threshold']
+      ? parseFloat(raw['overlap-threshold'])
+      : 0.15,
+  }
+}
+
+const CAVEATS = [
+  'Conflict is a symmetric relation, not a dependency — there is no DAG and no true topological sort. The merge order is a greedy heuristic (minimizing total conflict cost is NP-hard), not a guaranteed-optimal schedule.',
+  'merge-tree performs a textual/tree 3-way merge against the current branch tips — a snapshot in time. Once you land a branch, the base changes, so a pair that reads "clean" now can conflict later. Re-run after each merge.',
+  'Textual-clean does not mean semantically correct: merge-tree cannot see behavioral conflicts (two branches editing different files that break each other at runtime), test failures, or logical incompatibilities.',
+  'File overlap (Jaccard) only means two branches touch some of the same files — same file is not the same as a conflict, and disjoint files can still interact. Treat overlap as a prompt to look, corroborated by the conflict matrix.',
+  'Local branches only (refs/heads), as of generation time. Unpushed or stale state is included; remote-only branches are not.',
+]
+
+function main(): void {
+  const args = parseArgs(process.argv.slice(2))
+
+  console.log('Branch review & merge-planning dashboard')
+  console.log(`  base branch    : ${args.base}`)
+  console.log(`  size threshold : ${args.maxLoc} LOC`)
+  console.log(`  include stale  : ${args.includeStale}`)
+  process.stdout.write('  analyzing branches… ')
+
+  const { branches, conflictMatrix, overlapMatrix } = analyze(
+    {
+      base: args.base,
+      sizeThreshold: args.maxLoc,
+      includeStale: args.includeStale,
+      sharedFilesCap: 40,
+    },
+    (done, total) => {
+      process.stdout.write(`\r  analyzing pairs… ${done}/${total}   `)
+    },
+  )
+  process.stdout.write('\n')
+
+  if (branches.length === 0) {
+    console.error(
+      `\nNo candidate branches found against "${args.base}". ` +
+        'Is the base branch name correct? Try --include-stale.',
+    )
+    process.exit(1)
+  }
+
+  const { clusters, mergePlan } = buildPlan(
+    branches,
+    conflictMatrix,
+    overlapMatrix,
+    { overlapThreshold: args.overlapThreshold },
+  )
+
+  const conflictPairs = conflictMatrix.filter(
+    (c) => c.status === 'conflict',
+  ).length
+  const cleanIntoBase = branches.filter((b) => b.mergesCleanIntoBase).length
+  const oversized = branches.filter((b) => b.oversized).length
+  const independent = mergePlan.filter((s) => s.tier === 'independent').length
+
+  const data: BranchReviewData = {
+    meta: {
+      generatedAt: new Date().toISOString(),
+      baseBranch: args.base,
+      repoCommit: shortSha(args.base),
+      generatorCommit: shortSha('HEAD'),
+      branchCount: branches.length,
+      pairCount: conflictMatrix.length,
+      sizeThreshold: args.maxLoc,
+      includeStale: args.includeStale,
+      gitVersion: gitVersion(),
+    },
+    branches,
+    conflictMatrix,
+    overlapMatrix,
+    clusters,
+    mergePlan,
+    caveats: CAVEATS,
+  }
+
+  console.log(`  candidates     : ${branches.length}`)
+  console.log(`  pairs compared : ${conflictMatrix.length}`)
+  console.log(`  conflict pairs : ${conflictPairs}`)
+  console.log(`  clean into base: ${cleanIntoBase}/${branches.length}`)
+  console.log(`  independent    : ${independent}`)
+  console.log(`  oversized      : ${oversized}`)
+  console.log(`  clusters       : ${clusters.length}`)
+
+  if (!fs.existsSync(TEMPLATE)) {
+    console.error(`\nTemplate not found: ${TEMPLATE}`)
+    process.exit(1)
+  }
+  const template = fs.readFileSync(TEMPLATE, 'utf8')
+  if (!template.includes('__DATA__')) {
+    console.error('\nTemplate is missing the __DATA__ placeholder')
+    process.exit(1)
+  }
+  const payload = JSON.stringify(data).replace(/</g, '\\u003c')
+  // Function replacement avoids `$&`/`$1` interpretation of `$` in the JSON.
+  const html = template.replace('__DATA__', () => payload)
+
+  const outPath = path.resolve(REPO_ROOT, args.out)
+  fs.mkdirSync(path.dirname(outPath), { recursive: true })
+  fs.writeFileSync(outPath, html)
+  console.log(
+    `\nwrote ${path.relative(REPO_ROOT, outPath)} (${(html.length / 1024).toFixed(0)} KB)`,
+  )
+  if (args.out.startsWith('docs-site/')) {
+    console.log(
+      '  ⚠ docs-site/ is deployed to a public Netlify site — branch names are now publishable.',
+    )
+  }
+}
+
+main()
