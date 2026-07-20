@@ -233,7 +233,7 @@
 
   <section id="plan">
     <h2>Recommended merge order</h2>
-    <p class="lead">Land the independent tier first (clean into base, no peer conflicts — safe in any order or in parallel), then work the sequenced tiers, resolving each branch against the peers listed. This is a greedy heuristic, not a proven-optimal schedule — re-run after each merge.</p>
+    <p class="lead" id="plan-lead"></p>
     <div id="plan-body"></div>
   </section>
 
@@ -380,6 +380,9 @@
   var planBody = document.getElementById('plan-body')
   var indep = DATA.mergePlan.filter(function (s) { return s.tier === 'independent' })
   var seq = DATA.mergePlan.filter(function (s) { return s.tier === 'sequenced' })
+  document.getElementById('plan-lead').textContent = indep.length
+    ? 'Land the independent tier first (clean into base, no peer conflicts — safe in any order or in parallel), then work the clusters below, resolving each branch against the peers listed. Greedy heuristic, not a proven-optimal schedule — re-run after each merge.'
+    : 'No branch is independently landable — every candidate has a substantive conflict with another (see the cluster(s) below). Work each cluster in the order shown, resolving each branch against the peers listed. Greedy heuristic, not a proven-optimal schedule — re-run after each merge.'
   if (indep.length) {
     var g = el('div', 'plan-group')
     g.appendChild(el('h3', null, 'Land first — parallel-safe (' + indep.length + ')'))
