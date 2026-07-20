@@ -17,7 +17,7 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
-import { analyze, gitVersion, isNoiseFile, shortSha } from './git-analysis'
+import { analyze, gitVersion, makeNoiseMatcher, shortSha } from './git-analysis'
 import { buildPlan } from './merge-plan'
 import type {
   BranchReviewData,
@@ -36,6 +36,7 @@ interface Args {
   includeStale: boolean
   maxLoc: number
   maxAgeDays: number | null
+  extraNoise: string[]
   overlapThreshold: number
 }
 
@@ -59,6 +60,12 @@ function parseArgs(argv: string[]): Args {
     includeStale: raw['include-stale'] === 'true',
     maxLoc: raw['max-loc'] ? parseInt(raw['max-loc'], 10) : 400,
     maxAgeDays: raw['max-age-days'] ? parseInt(raw['max-age-days'], 10) : null,
+    extraNoise: raw['extra-noise']
+      ? raw['extra-noise']
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [],
     overlapThreshold: raw['overlap-threshold']
       ? parseFloat(raw['overlap-threshold'])
       : 0.15,
@@ -77,6 +84,7 @@ Flags:
   --include-stale           Keep branches with no unique commits (ahead === 0)
   --max-age-days <n>        Exclude branches whose tip commit is older than n days
   --max-loc <n>            Churn above which a branch is flagged oversized (default: 400)
+  --extra-noise <a,b,c>     Extra basenames to treat as low-signal (beyond lockfiles/.gitignore/CHANGELOG)
   --overlap-threshold <0..1> Jaccard at/above which a pair is reported as overlapping (default: 0.15)
   -h, --help               Show this help
 
@@ -98,6 +106,7 @@ function printHighlights(
   conflictMatrix: ConflictCell[],
   overlapMatrix: OverlapCell[],
   mergePlan: MergeStep[],
+  isNoise: (p: string) => boolean,
 ): void {
   console.log('\n  recommended merge order:')
   const preview = mergePlan.slice(0, 8)
@@ -127,7 +136,7 @@ function printHighlights(
     if (c.status !== 'conflict') continue
     // Skip low-signal files — mechanical churn, not real hotspots.
     for (const f of c.conflictFiles) {
-      if (isNoiseFile(f)) continue
+      if (isNoise(f)) continue
       counts.set(f, (counts.get(f) ?? 0) + 1)
     }
   }
@@ -158,6 +167,7 @@ function main(): void {
       sizeThreshold: args.maxLoc,
       includeStale: args.includeStale,
       maxAgeDays: args.maxAgeDays,
+      extraNoise: args.extraNoise,
       sharedFilesCap: 40,
     },
     (done, total) => {
@@ -227,7 +237,12 @@ function main(): void {
     )
   }
 
-  printHighlights(conflictMatrix, overlapMatrix, mergePlan)
+  printHighlights(
+    conflictMatrix,
+    overlapMatrix,
+    mergePlan,
+    makeNoiseMatcher(args.extraNoise),
+  )
 
   if (!fs.existsSync(TEMPLATE)) {
     console.error(`\nTemplate not found: ${TEMPLATE}`)

@@ -26,14 +26,21 @@ const NOISE_BASENAMES = new Set([
   'CHANGELOG.md',
 ])
 
-export function isNoiseFile(p: string): boolean {
-  const base = p.slice(p.lastIndexOf('/') + 1)
-  return NOISE_BASENAMES.has(base)
+/** Build a basename matcher over the default low-signal set plus any extras. */
+export function makeNoiseMatcher(extra: string[] = []): (p: string) => boolean {
+  const set = new Set([...NOISE_BASENAMES, ...extra])
+  return (p) => set.has(p.slice(p.lastIndexOf('/') + 1))
 }
 
+/** Default matcher (no repo-specific extras). */
+export const isNoiseFile = makeNoiseMatcher()
+
 /** A conflict is "trivial-only" when every conflicting file is low-signal. */
-export function isTrivialOnly(conflictFiles: string[]): boolean {
-  return conflictFiles.length > 0 && conflictFiles.every(isNoiseFile)
+export function isTrivialOnly(
+  conflictFiles: string[],
+  isNoise: (p: string) => boolean = isNoiseFile,
+): boolean {
+  return conflictFiles.length > 0 && conflictFiles.every(isNoise)
 }
 
 export interface AnalyzeOptions {
@@ -42,6 +49,8 @@ export interface AnalyzeOptions {
   includeStale: boolean
   /** Exclude branches whose tip commit is older than this many days (null = no age filter). */
   maxAgeDays: number | null
+  /** Extra basenames to treat as low-signal, beyond the built-in defaults. */
+  extraNoise: string[]
   /** Max shared-file paths retained per overlap cell (for tooltips). */
   sharedFilesCap: number
 }
@@ -258,6 +267,7 @@ export function analyze(
   onProgress?: (done: number, total: number) => void,
 ): AnalyzeResult {
   const { base, sizeThreshold, includeStale, maxAgeDays, sharedFilesCap } = opts
+  const isNoise = makeNoiseMatcher(opts.extraNoise)
 
   const now = Date.now()
   const raw = listBranches(base)
@@ -294,7 +304,8 @@ export function analyze(
       mergesCleanIntoBase: intoBase.status === 'clean',
       baseConflictFiles: intoBase.conflictFiles,
       baseConflictTrivial:
-        intoBase.status === 'conflict' && isTrivialOnly(intoBase.conflictFiles),
+        intoBase.status === 'conflict' &&
+        isTrivialOnly(intoBase.conflictFiles, isNoise),
       files,
       alreadyIntegrated,
     })
@@ -318,7 +329,8 @@ export function analyze(
         status: merge.status,
         conflictFiles: merge.conflictFiles,
         trivialOnly:
-          merge.status === 'conflict' && isTrivialOnly(merge.conflictFiles),
+          merge.status === 'conflict' &&
+          isTrivialOnly(merge.conflictFiles, isNoise),
       })
       const ov = jaccard(A.files, B.files)
       overlapMatrix.push({

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isNoiseFile,
   isTrivialOnly,
+  makeNoiseMatcher,
   parseConflictFiles,
   parseNumstat,
 } from './git-analysis'
@@ -72,5 +73,23 @@ describe('isTrivialOnly', () => {
 
   it('is false for an empty list', () => {
     expect(isTrivialOnly([])).toBe(false)
+  })
+
+  it('honors a custom matcher from makeNoiseMatcher', () => {
+    const m = makeNoiseMatcher(['lessons.md'])
+    expect(isTrivialOnly(['.serena/memories/lessons.md'], m)).toBe(true)
+    expect(isTrivialOnly(['.serena/memories/lessons.md', 'src/a.ts'], m)).toBe(
+      false,
+    )
+  })
+})
+
+describe('makeNoiseMatcher', () => {
+  it('extends the default low-signal set with extra basenames', () => {
+    const m = makeNoiseMatcher(['lessons.md', 'notes.txt'])
+    expect(m('.serena/memories/lessons.md')).toBe(true)
+    expect(m('notes.txt')).toBe(true)
+    expect(m('.gitignore')).toBe(true) // defaults still apply
+    expect(m('src/a.ts')).toBe(false)
   })
 })

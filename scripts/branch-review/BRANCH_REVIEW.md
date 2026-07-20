@@ -33,6 +33,7 @@ npm run generate:branch-review -- [flags]
 | `--include-stale` | off | Keep branches with no unique commits (`ahead === 0`). |
 | `--max-age-days <n>` | off | Exclude branches whose tip commit is older than `n` days — drops likely-abandoned branches so they don't skew the merge order. |
 | `--max-loc <n>` | `400` | Churn above which a branch is flagged **oversized** (SmartBear/Cisco review-quality inflection). |
+| `--extra-noise <a,b,c>` | — | Extra basenames to treat as low-signal, beyond the built-in `.gitignore`/lockfiles/`CHANGELOG.md` (e.g. a repo-specific generated file). |
 | `--overlap-threshold <0..1>` | `0.15` | Jaccard at/above which two branches are reported as overlapping in the plan. |
 
 > **Publishing:** pointing `--out` at `docs-site/` deploys the dashboard to a
