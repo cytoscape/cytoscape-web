@@ -2,6 +2,10 @@ import { StateCreator, StoreApi } from 'zustand'
 
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
+import {
+  cancelWrite,
+  scheduleWrite,
+} from './persistenceScheduler'
 
 /**
  * Zustand middleware that persists per-network slices to IndexedDB.
@@ -49,28 +53,38 @@ export const persistNetworkSlices =
           return
         }
 
-        const writes: Array<Promise<unknown>> = []
         for (const networkId of Object.keys(after)) {
           if (before[networkId] !== after[networkId]) {
-            writes.push(options.putSlice(networkId, after[networkId]))
+            // Coalesced write (REVIEW.md A2): a burst of mutations to the
+            // same network produces one put of the LATEST slice, read at
+            // flush time
+            scheduleWrite(
+              `${options.label}:${networkId}`,
+              options.label,
+              () => {
+                const latest = options.selectSlices(get())[networkId]
+                if (latest === undefined) {
+                  // Slice deleted while the write was pending
+                  return Promise.resolve()
+                }
+                return options.putSlice(networkId, latest)
+              },
+            )
           }
         }
-        if (options.removeSlice !== undefined) {
-          for (const networkId of Object.keys(before)) {
-            if (!(networkId in after)) {
-              writes.push(options.removeSlice(networkId))
+        for (const networkId of Object.keys(before)) {
+          if (!(networkId in after)) {
+            // A stale pending put must never resurrect a deleted row
+            cancelWrite(`${options.label}:${networkId}`)
+            if (options.removeSlice !== undefined) {
+              void options.removeSlice(networkId).catch((e) => {
+                logStore.error(
+                  `[${options.label}] Failed to delete from IndexedDB`,
+                  e,
+                )
+              })
             }
           }
-        }
-
-        if (writes.length > 0) {
-          logStore.info(`[${options.label}] Persisting to IndexedDB`)
-          void Promise.all(writes).catch((e) => {
-            logStore.error(
-              `[${options.label}] Failed to persist to IndexedDB`,
-              e,
-            )
-          })
         }
       },
       get,

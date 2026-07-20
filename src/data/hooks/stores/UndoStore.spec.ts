@@ -7,6 +7,7 @@ import {
   UndoRedoStack,
 } from '../../../models/StoreModel/UndoStoreModel'
 import { putUndoRedoStackToDb } from '../../db'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useUndoStore } from './UndoStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -47,9 +48,10 @@ const createStack = (edits: Edit[] = []): UndoRedoStack => ({
   redoStack: [],
 })
 
-// Flush the async persist wrapper (it awaits the DB put after set())
+// Flush the coalesced persistence writes scheduled by the middleware
 const flushPersist = async (): Promise<void> => {
   await act(async () => {
+    flushPendingWrites()
     await Promise.resolve()
   })
 }

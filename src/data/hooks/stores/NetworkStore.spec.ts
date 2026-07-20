@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IdType } from '../../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../../models/NetworkModel'
 import { UpdateEventType } from '../../../models/StoreModel/NetworkStoreModel'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useNetworkStore } from './NetworkStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -383,6 +384,7 @@ describe('useNetworkStore', () => {
       act(() => {
         result.current.addNode('other-network', 'n3')
       })
+      flushPendingWrites()
 
       const persistedIds = vi
         .mocked(putNetworkToDb)
@@ -408,6 +410,7 @@ describe('useNetworkStore', () => {
       act(() => {
         result.current.addEdge('other-network', 'e2', 'n1', 'n2')
       })
+      flushPendingWrites()
 
       const persistedIds = vi
         .mocked(putNetworkToDb)
@@ -428,6 +431,7 @@ describe('useNetworkStore', () => {
       act(() => {
         result.current.deleteNodes('other-network', ['n2'])
       })
+      flushPendingWrites()
 
       const persistedIds = vi
         .mocked(putNetworkToDb)

@@ -5,6 +5,7 @@ import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useTableStore } from './TableStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -758,6 +759,7 @@ describe('useTableStore', () => {
       act(() => {
         result.current.add('other-network', nodeTable, edgeTable)
       })
+      flushPendingWrites()
       vi.mocked(putTablesToDb).mockClear()
 
       act(() => {
@@ -769,6 +771,7 @@ describe('useTableStore', () => {
           'Renamed',
         )
       })
+      flushPendingWrites()
 
       expect(putTablesToDb).toHaveBeenCalledTimes(1)
       const [persistedId, persistedNodeTable] =
@@ -787,6 +790,7 @@ describe('useTableStore', () => {
         result.current.add('test-network-1', current.nodeTable, current.edgeTable)
         result.current.add('other-network', other.nodeTable, other.edgeTable)
       })
+      flushPendingWrites()
       vi.mocked(putTablesToDb).mockClear()
 
       act(() => {
@@ -798,12 +802,47 @@ describe('useTableStore', () => {
           'Renamed',
         )
       })
+      flushPendingWrites()
 
       const persistedIds = vi
         .mocked(putTablesToDb)
         .mock.calls.map((call) => call[0])
       expect(persistedIds).toContain('other-network')
       expect(persistedIds).not.toContain('test-network-1')
+    })
+
+    // REVIEW.md A2: every mutation used to trigger an immediate
+    // full-table serialize + IndexedDB put — per-keystroke write
+    // amplification. Bursts are now coalesced into one write of the
+    // latest state.
+    it('coalesces a burst of mutations into a single write of the latest state (regression: A2)', async () => {
+      const { putTablesToDb } = await import('../../db')
+      const { flushPendingWrites } = await import('./persistenceScheduler')
+      const { result } = renderHook(() => useTableStore())
+      const { nodeTable, edgeTable } = createTestTableRecord('burst-network')
+
+      act(() => {
+        result.current.add('burst-network', nodeTable, edgeTable)
+      })
+      flushPendingWrites()
+      vi.mocked(putTablesToDb).mockClear()
+
+      act(() => {
+        for (let i = 0; i < 5; i++) {
+          result.current.setValue(
+            'burst-network',
+            TableType.NODE,
+            'n1',
+            'name',
+            `v${i}`,
+          )
+        }
+      })
+      flushPendingWrites()
+
+      expect(putTablesToDb).toHaveBeenCalledTimes(1)
+      const [, persistedNodeTable] = vi.mocked(putTablesToDb).mock.calls[0]
+      expect(persistedNodeTable.rows.get('n1')?.name).toBe('v4')
     })
   })
 })

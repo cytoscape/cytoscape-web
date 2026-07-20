@@ -21,6 +21,7 @@ import {
   deleteNetworkFromDb,
   putNetworkToDb,
 } from '../../db'
+import { cancelWrite, scheduleWrite } from './persistenceScheduler'
 
 /**
  * Persist one network to IndexedDB, keyed by the network that was actually
@@ -28,18 +29,19 @@ import {
  * a set()-level identity diff (persistNetworkSlices) cannot detect changes
  * — every mutating action must call this explicitly after its set().
  *
- * putNetworkToDb uses cyNetwork2Network, which extracts plain data
- * (id, nodes, edges), so no toPlainObject conversion is needed here.
+ * Writes are coalesced (REVIEW.md A2): the network is read from the store
+ * at flush time, so a burst of topology mutations produces one put of the
+ * latest state. putNetworkToDb uses cyNetwork2Network, which extracts
+ * plain data (id, nodes, edges), so no toPlainObject conversion is needed.
  */
-const persistNetwork = (network: Network | undefined): void => {
-  if (network === undefined) {
-    return
-  }
-  putNetworkToDb(network).catch((e) => {
-    logStore.error(
-      `[NetworkStore] Failed to persist network to IndexedDB: ${network.id}`,
-      e,
-    )
+const persistNetwork = (networkId: IdType): void => {
+  scheduleWrite(`NetworkStore:${networkId}`, 'NetworkStore', () => {
+    const network = useNetworkStore.getState().networks.get(networkId)
+    if (network === undefined) {
+      // Deleted while the write was pending
+      return Promise.resolve()
+    }
+    return putNetworkToDb(network)
   })
 }
 
@@ -59,7 +61,7 @@ export const useNetworkStore = create(
           state.networks = newState.networks
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
 
       addNode: (networkId: IdType, nodeId: IdType) => {
@@ -74,7 +76,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
       addNodes: (networkId: IdType, nodeIds: IdType[]) => {
         set((state) => {
@@ -88,7 +90,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
 
       addNodesAndEdges: (
@@ -108,7 +110,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
 
       /**
@@ -145,7 +147,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
 
         // Return the deleted edge objects and this will be used for undo / redo
         return deletedConnectingEdges
@@ -174,7 +176,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
       moveEdge: (
         networkId: IdType,
@@ -200,7 +202,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
         return result
       },
 
@@ -218,7 +220,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
       addEdges: (networkId: IdType, edges: Edge[]) => {
         set((state) => {
@@ -232,7 +234,7 @@ export const useNetworkStore = create(
           }
           return state
         })
-        persistNetwork(get().networks.get(networkId))
+        persistNetwork(networkId)
       },
 
       /**
@@ -265,6 +267,8 @@ export const useNetworkStore = create(
         set((state) => {
           const newState = NetworkStoreImpl.deleteNetwork(state, networkId)
           state.networks = newState.networks
+          // A stale pending put must never resurrect the deleted row
+          cancelWrite(`NetworkStore:${networkId}`)
           void deleteNetworkFromDb(networkId).then(() => {
             logStore.info(
               `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
@@ -274,6 +278,9 @@ export const useNetworkStore = create(
         }),
       deleteAll: () =>
         set((state) => {
+          for (const networkId of state.networks.keys()) {
+            cancelWrite(`NetworkStore:${networkId}`)
+          }
           const newState = NetworkStoreImpl.deleteAll(state)
           clearNetworksFromDb()
             .then(() => {

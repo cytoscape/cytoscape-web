@@ -5,6 +5,7 @@ import { IdType } from '../../../models/IdType'
 import NetworkFn from '../../../models/NetworkModel'
 import { EdgeView,NetworkView, NodeView } from '../../../models/ViewModel'
 import { createViewModel } from '../../../models/ViewModel/impl/viewModelImpl'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useViewModelStore } from './ViewModelStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -849,11 +850,13 @@ describe('useViewModelStore', () => {
       act(() => {
         result.current.add('other-network', networkView)
       })
+      flushPendingWrites()
       vi.mocked(putNetworkViewsToDb).mockClear()
 
       act(() => {
         result.current.exclusiveSelect('other-network', ['n1'], [])
       })
+      flushPendingWrites()
 
       expect(putNetworkViewsToDb).toHaveBeenCalled()
       const lastCall = vi.mocked(putNetworkViewsToDb).mock.calls.at(-1)
@@ -875,11 +878,13 @@ describe('useViewModelStore', () => {
         result.current.add('net-cp', primary)
         result.current.add('net-cp', circlePacking)
       })
+      flushPendingWrites()
       vi.mocked(putNetworkViewsToDb).mockClear()
 
       act(() => {
         result.current.exclusiveSelect('net-cp', ['n1'], [])
       })
+      flushPendingWrites()
 
       const persistedLists = vi
         .mocked(putNetworkViewsToDb)

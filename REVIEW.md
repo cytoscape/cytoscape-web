@@ -166,9 +166,10 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 **A1. The persistence middleware needs to be one thing, not six.** The persist wrapper is copy-pasted across six stores with behavioral drift (sync vs async, extra guards, `void` vs await). All share the `currentNetworkId` defect (R2-2) and the unhandled-rejection defect (R2-5). **Prospective change:** a single shared middleware that (a) persists the slice actually mutated, (b) debounces/coalesces writes per (store, networkId) key, (c) surfaces failures to the message store, (d) sequences delete-vs-put per key (kills the `waitSeconds(1)` hack, R2-12). This is the highest-leverage refactor in the data layer.
 
-**A2. Write amplification is significant and unbounded.** No debounce/throttle anywhere: every renderer click (selection) serializes the *entire* NetworkView (O(n) over 26k elements) and puts it to IDB; every cell edit serializes both full tables; every `postEdit` structuredClones the whole per-network undo stack *twice* (undo + redo set). Main-thread, per-interaction. Selection state arguably shouldn't be persisted at all. Related quadratic: `useDeleteNodes`' `edges.filter(e => existingNodeIds.includes(…))` is O(nodes×edges).
+**A2. Write amplification is significant and unbounded.** No debounce/throttle anywhere: every renderer click (selection) serialized the *entire* NetworkView (O(n) over 26k elements) and put it to IDB; every cell edit serialized both full tables; every `postEdit` structuredCloned the whole per-network undo stack twice. Main-thread, per-interaction.
+**Status: mostly fixed (round 12).** New [`persistenceScheduler`](src/data/hooks/stores/persistenceScheduler.ts): all store persistence (the four `persistNetworkSlices` stores + NetworkStore's per-action writes) is coalesced per store+network key with a 300ms trailing delay — a click/typing burst produces **one** write of the latest state, read at flush time. Deletes cancel pending puts (a stale put can never resurrect a deleted row) and run immediately. Durability: pending writes flush on `visibilitychange: hidden` and `beforeunload`; the at-risk window is a hard crash within 300ms, comparable to the previous fire-and-forget writes which guaranteed nothing either. Failing-first burst test (5 mutations → 1 put of latest state) plus 6 scheduler unit tests. **Open product decision:** whether selection changes should be persisted at all (they now cost one coalesced write per click-burst instead of one per click, which may be cheap enough to keep the restore-selection-on-reload behavior). The `useDeleteNodes` O(nodes×edges) filter remains a known hotspot.
 
-**A3. No cross-store atomicity or ordering.** Workspace/network/tables/views/style/undo are written in separate Dexie transactions at independent times. A crash between `putWorkspaceToDb` and the network/table puts leaves `workspace.networkIds` referencing partial rows — `getCyNetworkFromDb`'s all-optional `CachedNetworkData` exists to paper over exactly this. **Prospective change:** group the per-network save into one Dexie transaction (Dexie supports multi-table transactions natively).
+**A3. No cross-store atomicity or ordering.** Workspace/network/tables/views/style/undo are written in separate Dexie transactions at independent times. A crash between `putWorkspaceToDb` and the network/table puts leaves `workspace.networkIds` referencing partial rows — `getCyNetworkFromDb`'s all-optional `CachedNetworkData` exists to paper over exactly this. **Prospective change (open by design):** group the per-network save into one Dexie multi-table transaction. This needs a save orchestrator that gathers all of a network's slices in one place — a real design change to the store-per-domain architecture, deliberately left as future work. Mitigations in place: the round-12 scheduler coalesces bursts (fewer, later, more complete writes), per-key delete-vs-put ordering is enforced, and the observe-mode read validators (round 7) surface any partial-write damage.
 
 **A4. Network lifecycle has no single orchestrator.** The ~10-store delete cascade was duplicated between `useDeleteCyNetwork` and `networkApi.deleteNetwork` ("mirrors useDeleteCyNetwork"), already disagreeing (currentNetworkId repair, URL, UiState/FilterStore cleanup — both incomplete). The `currentNetworkId ∈ networkIds ∪ {''}` invariant was enforced nowhere.
 **Status: FIXED (round 8).** New framework-agnostic [`deleteNetworkOrchestrator`](src/data/hooks/deleteNetworkOrchestrator.ts) (`deleteNetworkFromAllStores` / `deleteAllNetworksFromAllStores`) is the single source of truth: it runs the full cascade (now including UiState + FilterStore cleanup), owns the currentNetworkId invariant, and is called by both `useDeleteCyNetwork` (which adds only URL navigation) and `networkApi`. Any new per-network store must be added in exactly one place. Round-2 analysis correction: `useDeleteCyNetwork` *did* already call `UndoStore.deleteStack` — the R2-10 "deletion flows never call deleteStack" claim applied only to paths that predate that; with round-3's `removeSlice` wiring plus the orchestrator, undo rows are now deleted from IndexedDB on every deletion path.
@@ -323,7 +324,21 @@ Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` �
 
 **Verification:** full unit suite **153 files / 2266 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors; coverage gate green.
 
+### Round 12: write coalescing (A2) — final round
+
+New `persistenceScheduler` (trailing per-key coalescer, 300ms, flush on page-hide/unload, `flushPendingWrites()` for tests): wired into `persistNetworkSlices` (Table/ViewModel/VisualStyle/Undo — the put callback reads the LATEST slice at flush time) and NetworkStore's per-action `persistNetwork`. Deletes cancel pending puts and execute immediately, so stale writes can never resurrect deleted rows. 7 new tests (failing-first burst-coalescing test + 6 scheduler unit tests); the five store specs updated to flush before asserting.
+
+**Verification:** full unit suite **154 files / 2273 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
+
+## Backlog: CLEARED (2026-07-20)
+
+Every actionable item in the original backlog is done. What remains falls into two categories, all documented at their findings above:
+
+**Open product decisions** (need an owner's call, not engineering): `list_of_string` escaping for elements containing `', '` (R2-16); whether string→color passthrough mappings should be allowed (R2-22 note); whether selection changes should be persisted at all (A2 note).
+
+**Deliberate future work**: cross-store save transaction via a save orchestrator (A3); routing imported snapshot records through schema migrations once the first real migration ships (R2-14); worker offloading for very large snapshot payloads (A6); `fetchUrlCxUtil` file placement (cosmetic); escalating the read-path validators from observe mode to enforcement once field warnings are quiet (round 7); removing the now-unused `idb-keyval` dependency from `package.json` (needs dependency-change approval).
 
 ## Consolidated backlog (prioritized)
 
@@ -342,7 +357,7 @@ Same test-first discipline; 7 new tests (6 in the new `useUndoStack.test.tsx` �
 | ~~P1~~ ✅ | ~~valueTypeImpl coercion fixes (R2-15/17)~~ **Done (round 5).** R2-16 residual: decide whether list_of_string needs an escaping scheme for elements containing `', '`. | S (decision) |
 | ~~P1~~ ✅ | ~~Undo hardening: Safari-safe Maps, deletion-flow deleteStack, unknown-command guards, stale-closure fix, useUndoStack tests~~ **Done (rounds 8–9).** | — |
 | ~~P2~~ ✅ | ~~`as const` on `VisualPropertyValueTypeName` + fix `valueType2BaseType`~~ **Done (round 4).** (The tsc gate already existed — A8 correction.) Open product question: should string→color passthrough be allowed? | — |
-| **P2** | Debounce/coalesce persistence; stop persisting selection; Dexie transaction per network save (A2, A3). | M–L |
+| ~~P2~~ ✅ | ~~Debounce/coalesce persistence (A2)~~ **Done (round 12).** Selection-persistence question and A3 save transaction documented as open decisions/future work above. | — |
 | ~~P2~~ ✅ | ~~2-entry continuous mappings + mapper null/NaN handling (R2-20)~~ **Done (round 6)**, incl. the newly found domain-anchors bug. | — |
 | ~~P2~~ ✅ | ~~`urlManager` tests; `getViewModel` viewId fix; layering cleanups (A7)~~ **Done (round 10)**; `fetchUrlCxUtil` file placement left as cosmetic. | — |
 | ~~P3~~ ✅ | ~~Import/export performance (A6); coverage gate for `src/data/db/**`~~ **Done (round 11)**; worker offloading for very large payloads left as future work. | — |

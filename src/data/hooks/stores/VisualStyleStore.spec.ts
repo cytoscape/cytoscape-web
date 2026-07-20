@@ -11,6 +11,7 @@ import {
   PassthroughMappingFunction,
 } from '../../../models/VisualStyleModel/VisualMappingFunction'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useVisualStyleStore } from './VisualStyleStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -714,6 +715,7 @@ describe('useVisualStyleStore', () => {
       act(() => {
         result.current.add('other-network', createVisualStyle())
       })
+      flushPendingWrites()
       vi.mocked(putVisualStyleToDb).mockClear()
 
       act(() => {
@@ -724,6 +726,7 @@ describe('useVisualStyleStore', () => {
           'diamond',
         )
       })
+      flushPendingWrites()
 
       expect(putVisualStyleToDb).toHaveBeenCalled()
       const lastCall = vi.mocked(putVisualStyleToDb).mock.calls.at(-1)
