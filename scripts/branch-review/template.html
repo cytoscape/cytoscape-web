@@ -192,6 +192,8 @@
   .cell.conflict::after { content: '×'; color: var(--conflict); font-weight: 700; }
   .cell.trivial::after { content: '~'; color: var(--conflict); }
   .cell.error::after { content: '?'; color: var(--warn); }
+  table.matrix .hl { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.matrix th.rowlab.hl, table.matrix th.colnum.hl { color: var(--accent); }
   .idx { color: var(--faint); margin-right: 6px; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0; font-size: 12px; color: var(--muted); }
@@ -435,6 +437,7 @@
     names.forEach(function (n, i) {
       var th = el('th', 'colnum', String(i + 1))
       th.title = n
+      th.dataset.c = i
       head.appendChild(th)
     })
     table.appendChild(head)
@@ -443,6 +446,7 @@
       var tr = el('tr')
       var lab = el('th', 'rowlab', '<span class="idx">' + (i + 1) + '</span>' + esc(rowName))
       lab.title = rowName
+      lab.dataset.r = i
       tr.appendChild(lab)
 
       if (mode === 'conflict') {
@@ -458,11 +462,18 @@
             ? 'clean'
             : (bb.baseConflictTrivial ? 'trivial conflict' : 'conflict') +
               ' (' + bb.baseConflictFiles.length + ' files): ' + bb.baseConflictFiles.join(', '))
+        bc.dataset.r = i
         tr.appendChild(bc)
       }
 
       names.forEach(function (colName, j) {
-        if (i === j) { tr.appendChild(el('td', 'cell diag')); return }
+        if (i === j) {
+          var dg = el('td', 'cell diag')
+          dg.dataset.r = i
+          dg.dataset.c = j
+          tr.appendChild(dg)
+          return
+        }
         if (mode === 'conflict') {
           var c = conflictBy[key(rowName, colName)]
           var cls = c ? (c.trivialOnly ? 'trivial' : c.status) : 'error'
@@ -470,6 +481,8 @@
           var label = c ? (c.trivialOnly ? 'trivial conflict' : c.status) : 'error'
           td.title = rowName + ' × ' + colName + ': ' + label +
             (c && c.conflictFiles.length ? ' (' + c.conflictFiles.length + '): ' + c.conflictFiles.join(', ') : '')
+          td.dataset.r = i
+          td.dataset.c = j
           tr.appendChild(td)
         } else {
           var o = overlapBy[key(rowName, colName)]
@@ -484,11 +497,34 @@
               o.intersection + '/' + o.union + ' files)' +
               (o.sharedFiles.length ? '\n' + o.sharedFiles.join('\n') : '')
             : rowName + ' ∩ ' + colName + ': 0%'
+          td2.dataset.r = i
+          td2.dataset.c = j
           tr.appendChild(td2)
         }
       })
       table.appendChild(tr)
     })
+    attachHighlight(table)
+  }
+  // Cross-highlight the hovered cell's row and column so a pair is easy to trace.
+  function attachHighlight(table) {
+    function clear() {
+      table.querySelectorAll('.hl').forEach(function (n) { n.classList.remove('hl') })
+    }
+    table.addEventListener('mouseover', function (e) {
+      var t = e.target
+      if (!t.dataset || (t.dataset.r == null && t.dataset.c == null)) return
+      clear()
+      var r = t.dataset.r
+      var c = t.dataset.c
+      if (r != null) {
+        table.querySelectorAll('[data-r="' + r + '"]').forEach(function (n) { n.classList.add('hl') })
+      }
+      if (c != null) {
+        table.querySelectorAll('[data-c="' + c + '"]').forEach(function (n) { n.classList.add('hl') })
+      }
+    })
+    table.addEventListener('mouseleave', clear)
   }
   buildMatrix('conflict-matrix', 'conflict')
   buildMatrix('overlap-matrix', 'overlap')
