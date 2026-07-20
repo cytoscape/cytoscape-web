@@ -239,7 +239,7 @@
 
   <section id="conflicts">
     <h2>Conflict matrix <span class="n" id="conflict-n"></span></h2>
-    <p class="lead">Ground truth from an in-memory <code>git merge-tree</code> of each branch pair. The leading <b>base</b> column is each branch merged into the base. Hover a cell to see conflicting files.</p>
+    <p class="lead">Ground truth from an in-memory <code>git merge-tree</code> of each branch pair. Rows/columns are ordered by the merge plan, so conflict clusters appear as contiguous blocks. The leading <b>base</b> column is each branch merged into the base. Hover a cell to see conflicting files.</p>
     <div class="legend">
       <span><span class="sw" style="background:var(--clean-bg)"></span>clean merge</span>
       <span><span class="sw" style="background:var(--conflict-bg)"></span>substantive conflict</span>
@@ -300,7 +300,26 @@
   }
 
   // ---- lookups over the upper-triangle matrices --------------------------
-  var names = DATA.branches.map(function (b) { return b.name })
+  // Order matrix rows/cols so clusters are contiguous (block-diagonal):
+  // independent branches first, then each cluster's members in plan order.
+  var names = (function () {
+    var order = []
+    DATA.mergePlan.forEach(function (s) {
+      if (s.tier === 'independent') order.push(s.branch)
+    })
+    DATA.clusters
+      .slice()
+      .sort(function (a, b) { return a.id - b.id })
+      .forEach(function (cl) {
+        DATA.mergePlan.forEach(function (s) {
+          if (s.clusterId === cl.id) order.push(s.branch)
+        })
+      })
+    DATA.branches.forEach(function (b) {
+      if (order.indexOf(b.name) === -1) order.push(b.name)
+    })
+    return order
+  })()
   var idxOf = {}
   names.forEach(function (n, i) { idxOf[n] = i })
   function key(a, b) { return a < b ? a + ' ' + b : b + ' ' + a }
