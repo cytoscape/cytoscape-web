@@ -111,6 +111,17 @@ export function shortSha(ref: string): string {
   }
 }
 
+/** True if `ref` resolves to a commit in this repo. */
+export function refExists(ref: string): boolean {
+  const { status } = tryGit([
+    'rev-parse',
+    '--verify',
+    '--quiet',
+    `${ref}^{commit}`,
+  ])
+  return status === 0
+}
+
 interface RawBranch {
   name: string
   shortSha: string

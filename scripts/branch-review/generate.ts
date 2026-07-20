@@ -17,7 +17,13 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
-import { analyze, gitVersion, makeNoiseMatcher, shortSha } from './git-analysis'
+import {
+  analyze,
+  gitVersion,
+  makeNoiseMatcher,
+  refExists,
+  shortSha,
+} from './git-analysis'
 import { buildPlan } from './merge-plan'
 import type {
   BranchReviewData,
@@ -153,6 +159,14 @@ function main(): void {
     return
   }
   const args = parseArgs(process.argv.slice(2))
+
+  if (!refExists(args.base)) {
+    console.error(
+      `\nBase branch "${args.base}" does not exist in this repo. ` +
+        'Pass an existing branch with --base <branch>.',
+    )
+    process.exit(1)
+  }
 
   console.log('Branch review & merge-planning dashboard')
   console.log(`  base branch    : ${args.base}`)
