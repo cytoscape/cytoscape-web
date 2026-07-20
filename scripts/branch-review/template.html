@@ -136,6 +136,10 @@
     font-family: var(--font-mono); font-size: 12px; color: var(--muted);
     text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;
   }
+  .cluster-head {
+    font-family: var(--font-mono); font-size: 11px; color: var(--warn);
+    margin: 12px 0 6px; padding-left: 2px;
+  }
   .step {
     display: grid; grid-template-columns: 34px 1fr; gap: 12px;
     background: var(--panel); border: 1px solid var(--border);
@@ -385,7 +389,17 @@
   if (seq.length) {
     var g2 = el('div', 'plan-group')
     g2.appendChild(el('h3', null, 'Sequence carefully — conflicting branches (' + seq.length + ')'))
-    seq.forEach(function (s) { g2.appendChild(stepEl(s)) })
+    // Group the sequenced steps by conflict cluster so distinct clusters read
+    // as distinct sub-lists (they can be worked independently of each other).
+    DATA.clusters.slice().sort(function (a, b) { return a.id - b.id }).forEach(function (cl) {
+      var steps = seq.filter(function (s) { return s.clusterId === cl.id })
+      if (!steps.length) return
+      var n = cl.internalConflictPairs
+      g2.appendChild(el('div', 'cluster-head',
+        'cluster ' + cl.id + ' — ' + cl.branches.length + ' branches, ' +
+        n + ' internal conflict' + (n === 1 ? '' : 's')))
+      steps.forEach(function (s) { g2.appendChild(stepEl(s)) })
+    })
     planBody.appendChild(g2)
   }
 
