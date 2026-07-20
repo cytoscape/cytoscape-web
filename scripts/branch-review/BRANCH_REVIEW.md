@@ -49,6 +49,11 @@ generated page for the exact commands):
   pair. Exit `0` = clean, `1` = conflict (stdout lists the conflicting files),
   other = error (e.g. no common merge base). This is a *real* 3-way merge, so it
   catches line-level and rename conflicts, not just same-file edits.
+- **Trivial vs substantive conflicts** — a conflict whose files are all
+  low-signal (`.gitignore`, lockfiles, `CHANGELOG.md`) is marked *trivial-only*
+  (striped `~` in the matrix). Trivial conflicts are mechanical, so they do
+  **not** form edges in the merge-order graph — only substantive conflicts do.
+  The matrix still shows the full ground truth.
 - **Overlap heatmap** — Jaccard similarity of each pair's changed-file sets
   (`git diff --name-only -z <base>...<branch>`).
 - **Review sizing** — `git diff --numstat -z <base>...<branch>` summed to net

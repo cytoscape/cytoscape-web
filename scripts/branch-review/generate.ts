@@ -70,6 +70,7 @@ const CAVEATS = [
   'merge-tree performs a textual/tree 3-way merge against the current branch tips — a snapshot in time. Once you land a branch, the base changes, so a pair that reads "clean" now can conflict later. Re-run after each merge.',
   'Textual-clean does not mean semantically correct: merge-tree cannot see behavioral conflicts (two branches editing different files that break each other at runtime), test failures, or logical incompatibilities.',
   'File overlap (Jaccard) only means two branches touch some of the same files — same file is not the same as a conflict, and disjoint files can still interact. Treat overlap as a prompt to look, corroborated by the conflict matrix.',
+  'The merge order is driven by SUBSTANTIVE conflicts only. Pairs that collide solely on low-signal files (lockfiles, .gitignore, CHANGELOG) are shown as "trivial" in the matrix but do not form ordering edges — such conflicts are mechanical to resolve.',
   'Local branches only (refs/heads), as of generation time. Unpushed or stale state is included; remote-only branches are not.',
 ]
 
@@ -158,6 +159,8 @@ function main(): void {
   const conflictPairs = conflictMatrix.filter(
     (c) => c.status === 'conflict',
   ).length
+  const trivialPairs = conflictMatrix.filter((c) => c.trivialOnly).length
+  const substantivePairs = conflictPairs - trivialPairs
   const cleanIntoBase = branches.filter((b) => b.mergesCleanIntoBase).length
   const oversized = branches.filter((b) => b.oversized).length
   const independent = mergePlan.filter((s) => s.tier === 'independent').length
@@ -186,7 +189,9 @@ function main(): void {
 
   console.log(`  candidates     : ${branches.length}`)
   console.log(`  pairs compared : ${conflictMatrix.length}`)
-  console.log(`  conflict pairs : ${conflictPairs}`)
+  console.log(
+    `  conflict pairs : ${conflictPairs} (${substantivePairs} substantive, ${trivialPairs} trivial)`,
+  )
   console.log(`  clean into base: ${cleanIntoBase}/${branches.length}`)
   console.log(`  independent    : ${independent}`)
   console.log(`  oversized      : ${oversized}`)

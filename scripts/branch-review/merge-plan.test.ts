@@ -18,6 +18,7 @@ function mk(name: string, over: Partial<BranchMeta> = {}): BranchMeta {
     oversized: false,
     mergesCleanIntoBase: true,
     baseConflictFiles: [],
+    baseConflictTrivial: false,
     files: [],
     alreadyIntegrated: false,
     ...over,
@@ -25,10 +26,25 @@ function mk(name: string, over: Partial<BranchMeta> = {}): BranchMeta {
 }
 
 function conflict(a: string, b: string): ConflictCell {
-  return { a, b, status: 'conflict', conflictFiles: ['f.ts'] }
+  return {
+    a,
+    b,
+    status: 'conflict',
+    conflictFiles: ['f.ts'],
+    trivialOnly: false,
+  }
+}
+function trivialConflict(a: string, b: string): ConflictCell {
+  return {
+    a,
+    b,
+    status: 'conflict',
+    conflictFiles: ['.gitignore'],
+    trivialOnly: true,
+  }
 }
 function clean(a: string, b: string): ConflictCell {
-  return { a, b, status: 'clean', conflictFiles: [] }
+  return { a, b, status: 'clean', conflictFiles: [], trivialOnly: false }
 }
 function overlap(a: string, b: string, jaccard: number): OverlapCell {
   return { a, b, intersection: 1, union: 1, jaccard, sharedFiles: ['f.ts'] }
@@ -140,6 +156,32 @@ describe('buildPlan', () => {
 
     const a = mergePlan.find((s) => s.branch === 'a')!
     expect(a.overlapsWith).toEqual(['b'])
+  })
+
+  it('treats trivial-only conflicts as non-edges (branches stay independent)', () => {
+    const branches = [mk('a'), mk('b')]
+    // they "conflict" but only on .gitignore -> not a real obstacle
+    const { clusters, mergePlan } = buildPlan(
+      branches,
+      [trivialConflict('a', 'b')],
+      [],
+      OPTS,
+    )
+    expect(clusters).toHaveLength(0)
+    expect(mergePlan.every((s) => s.tier === 'independent')).toBe(true)
+  })
+
+  it('treats a trivial-only base conflict as effectively clean into base', () => {
+    const branches = [
+      mk('a', {
+        mergesCleanIntoBase: false,
+        baseConflictTrivial: true,
+        baseConflictFiles: ['.gitignore'],
+      }),
+    ]
+    const { mergePlan } = buildPlan(branches, [], [], OPTS)
+    expect(mergePlan[0].tier).toBe('independent')
+    expect(mergePlan[0].action).toBe('Land now (parallel-safe)')
   })
 
   it('handles an empty branch set', () => {

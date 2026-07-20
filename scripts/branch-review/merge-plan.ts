@@ -48,8 +48,11 @@ function buildContext(
     conflicts.set(n, new Set())
     overlaps.set(n, new Set())
   }
+  // Only substantive conflicts form graph edges — a pair that collides only on
+  // lockfiles/.gitignore/CHANGELOG is not a real merge obstacle. The full
+  // ground truth (including trivial conflicts) still lives in the matrix.
   for (const c of conflictMatrix) {
-    if (c.status !== 'conflict') continue
+    if (c.status !== 'conflict' || c.trivialOnly) continue
     conflicts.get(c.a)?.add(c.b)
     conflicts.get(c.b)?.add(c.a)
   }
@@ -97,14 +100,20 @@ function findClusters(ctx: PlanContext, sequenced: string[]): Cluster[] {
   return clusters
 }
 
+/** A branch is effectively clean into base if it merges cleanly, or its only
+ *  base conflict is in low-signal files. */
+function effectivelyCleanBase(b: BranchMeta): boolean {
+  return b.mergesCleanIntoBase || b.baseConflictTrivial
+}
+
 /** Tie-break comparator: smaller churn, then clean-into-base, then older. */
 function preferOrder(ctx: PlanContext, a: string, b: string): number {
   const ma = ctx.byName.get(a) as BranchMeta
   const mb = ctx.byName.get(b) as BranchMeta
   if (ma.churn !== mb.churn) return ma.churn - mb.churn
-  if (ma.mergesCleanIntoBase !== mb.mergesCleanIntoBase) {
-    return ma.mergesCleanIntoBase ? -1 : 1
-  }
+  const ca = effectivelyCleanBase(ma)
+  const cb = effectivelyCleanBase(mb)
+  if (ca !== cb) return ca ? -1 : 1
   return ma.committerDateISO.localeCompare(mb.committerDateISO)
 }
 
@@ -123,11 +132,11 @@ export function buildPlan(
 
   const clusterIdOf = new Map<string, number>()
 
-  // Tier 1: independent (clean into base, zero conflict edges).
+  // Tier 1: independent (effectively clean into base, zero substantive conflicts).
   const independent = branches
     .filter(
       (b) =>
-        b.mergesCleanIntoBase && (ctx.conflicts.get(b.name)?.size ?? 0) === 0,
+        effectivelyCleanBase(b) && (ctx.conflicts.get(b.name)?.size ?? 0) === 0,
     )
     .map((b) => b.name)
   const independentSet = new Set(independent)
@@ -197,7 +206,7 @@ export function buildPlan(
     if (conflictsWith.length > 0) {
       action = `Resolve against: ${conflictsWith.join(', ')}`
       reason = `Conflicts with ${conflictsWith.length} not-yet-landed branch(es); landed after lower-conflict peers to shrink cascading resolution.`
-    } else if (!meta.mergesCleanIntoBase) {
+    } else if (!effectivelyCleanBase(meta)) {
       action = 'Resolve against base'
       reason =
         'No peer conflicts remain, but this branch conflicts with the base itself.'

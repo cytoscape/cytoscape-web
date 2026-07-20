@@ -16,6 +16,26 @@ import type { BranchMeta, ConflictCell, OverlapCell, PairStatus } from './types'
 const REPO_ROOT = path.resolve(__dirname, '../..')
 const MAX_BUFFER = 64 * 1024 * 1024
 
+/** Low-signal files whose conflicts are mechanical, not substantive — a pair
+ *  that only collides here is not a real merge problem. Matched by basename. */
+const NOISE_BASENAMES = new Set([
+  '.gitignore',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+  'CHANGELOG.md',
+])
+
+function isNoiseFile(p: string): boolean {
+  const base = p.slice(p.lastIndexOf('/') + 1)
+  return NOISE_BASENAMES.has(base)
+}
+
+/** A conflict is "trivial-only" when every conflicting file is low-signal. */
+function isTrivialOnly(conflictFiles: string[]): boolean {
+  return conflictFiles.length > 0 && conflictFiles.every(isNoiseFile)
+}
+
 export interface AnalyzeOptions {
   base: string
   sizeThreshold: number
@@ -264,6 +284,8 @@ export function analyze(
       oversized: added + deleted > sizeThreshold,
       mergesCleanIntoBase: intoBase.status === 'clean',
       baseConflictFiles: intoBase.conflictFiles,
+      baseConflictTrivial:
+        intoBase.status === 'conflict' && isTrivialOnly(intoBase.conflictFiles),
       files,
       alreadyIntegrated,
     })
@@ -286,6 +308,8 @@ export function analyze(
         b: B.name,
         status: merge.status,
         conflictFiles: merge.conflictFiles,
+        trivialOnly:
+          merge.status === 'conflict' && isTrivialOnly(merge.conflictFiles),
       })
       const ov = jaccard(A.files, B.files)
       overlapMatrix.push({

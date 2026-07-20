@@ -40,6 +40,8 @@ export interface BranchMeta {
   mergesCleanIntoBase: boolean
   /** Conflicting files vs base (empty when mergesCleanIntoBase). */
   baseConflictFiles: string[]
+  /** True when the base conflict is only in low-signal files (lockfiles etc.). */
+  baseConflictTrivial: boolean
   /** F(branch): the set of files changed vs the merge base. */
   files: string[]
   /** ahead === 0 — no unique commits; already integrated into base. */
@@ -53,6 +55,9 @@ export interface ConflictCell {
   status: PairStatus
   /** name-only conflicting files; empty unless status === 'conflict'. */
   conflictFiles: string[]
+  /** True when status is 'conflict' but every conflicting file is low-signal
+   *  (lockfiles, .gitignore, CHANGELOG) — i.e. not a substantive collision. */
+  trivialOnly: boolean
 }
 
 /** One off-diagonal cell of the pairwise file-overlap matrix (a < b). */

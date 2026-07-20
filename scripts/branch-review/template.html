@@ -178,8 +178,13 @@
   .cell.clean { background: var(--clean-bg); }
   .cell.conflict { background: var(--conflict-bg); }
   .cell.error { background: var(--warn-bg); }
+  .cell.trivial {
+    background: repeating-linear-gradient(45deg,
+      var(--conflict-bg), var(--conflict-bg) 3px, transparent 3px, transparent 6px);
+  }
   .cell.clean::after { content: '·'; color: var(--clean); }
   .cell.conflict::after { content: '×'; color: var(--conflict); font-weight: 700; }
+  .cell.trivial::after { content: '~'; color: var(--conflict); }
   .cell.error::after { content: '?'; color: var(--warn); }
   .idx { color: var(--faint); margin-right: 6px; }
 
@@ -231,7 +236,8 @@
     <p class="lead">Ground truth from an in-memory <code>git merge-tree</code> of each branch pair. The leading <b>base</b> column is each branch merged into the base. Hover a cell to see conflicting files.</p>
     <div class="legend">
       <span><span class="sw" style="background:var(--clean-bg)"></span>clean merge</span>
-      <span><span class="sw" style="background:var(--conflict-bg)"></span>conflict</span>
+      <span><span class="sw" style="background:var(--conflict-bg)"></span>substantive conflict</span>
+      <span><span class="sw" style="background:repeating-linear-gradient(45deg,var(--conflict-bg),var(--conflict-bg) 2px,transparent 2px,transparent 4px)"></span>trivial only (lockfile/.gitignore/CHANGELOG)</span>
       <span><span class="sw" style="background:var(--warn-bg)"></span>error / no merge base</span>
     </div>
     <div class="scroll"><table class="matrix" id="conflict-matrix"></table></div>
@@ -301,6 +307,8 @@
 
   // ---- KPI tiles ---------------------------------------------------------
   var conflictPairs = DATA.conflictMatrix.filter(function (c) { return c.status === 'conflict' }).length
+  var trivialPairs = DATA.conflictMatrix.filter(function (c) { return c.trivialOnly }).length
+  var substantivePairs = conflictPairs - trivialPairs
   var errorPairs = DATA.conflictMatrix.filter(function (c) { return c.status === 'error' }).length
   var cleanIntoBase = DATA.branches.filter(function (b) { return b.mergesCleanIntoBase }).length
   var oversized = DATA.branches.filter(function (b) { return b.oversized }).length
@@ -310,7 +318,8 @@
     { k: 'candidates', v: DATA.branches.length },
     { k: 'independent (land first)', v: independent, cls: 'good' },
     { k: 'clean into base', v: cleanIntoBase + '/' + DATA.branches.length, cls: cleanIntoBase === DATA.branches.length ? 'good' : '' },
-    { k: 'conflict pairs', v: conflictPairs, cls: conflictPairs ? 'bad' : 'good' },
+    { k: 'substantive conflicts', v: substantivePairs, cls: substantivePairs ? 'bad' : 'good' },
+    { k: 'trivial conflicts', v: trivialPairs, cls: trivialPairs ? 'warn' : 'good' },
     { k: 'conflict clusters', v: DATA.clusters.length, cls: DATA.clusters.length ? 'warn' : 'good' },
     { k: 'oversized branches', v: oversized, cls: oversized ? 'warn' : 'good' },
     { k: 'total churn (LOC)', v: totalChurn.toLocaleString() },
@@ -386,10 +395,17 @@
 
       if (mode === 'conflict') {
         var bb = branchBy[rowName]
-        var bc = el('td', 'cell base ' + (bb.mergesCleanIntoBase ? 'clean' : 'conflict'))
+        var bcls = bb.mergesCleanIntoBase
+          ? 'clean'
+          : bb.baseConflictTrivial
+            ? 'trivial'
+            : 'conflict'
+        var bc = el('td', 'cell base ' + bcls)
         bc.title = rowName + ' → ' + m.baseBranch + ': ' +
-          (bb.mergesCleanIntoBase ? 'clean' :
-            'conflict (' + bb.baseConflictFiles.length + ' files): ' + bb.baseConflictFiles.join(', '))
+          (bb.mergesCleanIntoBase
+            ? 'clean'
+            : (bb.baseConflictTrivial ? 'trivial conflict' : 'conflict') +
+              ' (' + bb.baseConflictFiles.length + ' files): ' + bb.baseConflictFiles.join(', '))
         tr.appendChild(bc)
       }
 
@@ -397,8 +413,10 @@
         if (i === j) { tr.appendChild(el('td', 'cell diag')); return }
         if (mode === 'conflict') {
           var c = conflictBy[key(rowName, colName)]
-          var td = el('td', 'cell ' + (c ? c.status : 'error'))
-          td.title = rowName + ' × ' + colName + ': ' + (c ? c.status : 'error') +
+          var cls = c ? (c.trivialOnly ? 'trivial' : c.status) : 'error'
+          var td = el('td', 'cell ' + cls)
+          var label = c ? (c.trivialOnly ? 'trivial conflict' : c.status) : 'error'
+          td.title = rowName + ' × ' + colName + ': ' + label +
             (c && c.conflictFiles.length ? ' (' + c.conflictFiles.length + '): ' + c.conflictFiles.join(', ') : '')
           tr.appendChild(td)
         } else {
