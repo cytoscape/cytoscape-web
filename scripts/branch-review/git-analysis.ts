@@ -26,13 +26,13 @@ const NOISE_BASENAMES = new Set([
   'CHANGELOG.md',
 ])
 
-function isNoiseFile(p: string): boolean {
+export function isNoiseFile(p: string): boolean {
   const base = p.slice(p.lastIndexOf('/') + 1)
   return NOISE_BASENAMES.has(base)
 }
 
 /** A conflict is "trivial-only" when every conflicting file is low-signal. */
-function isTrivialOnly(conflictFiles: string[]): boolean {
+export function isTrivialOnly(conflictFiles: string[]): boolean {
   return conflictFiles.length > 0 && conflictFiles.every(isNoiseFile)
 }
 
@@ -162,20 +162,17 @@ export function changedFiles(base: string, branch: string): string[] {
   }
 }
 
-/** Added/deleted line counts over the merge-base diff (three-dot). */
-export function churn(
-  base: string,
-  branch: string,
-): { added: number; deleted: number; binaryFiles: number } {
+/** Parse `git diff --numstat -z` output into summed line counts.
+ *  Each record is `added\tdeleted\tpath\0`; binary files show `-\t-`; renames
+ *  emit `added\tdeleted\t` (empty path) followed by two NUL-separated paths. */
+export function parseNumstat(out: string): {
+  added: number
+  deleted: number
+  binaryFiles: number
+} {
   let added = 0
   let deleted = 0
   let binaryFiles = 0
-  let out = ''
-  try {
-    out = git(['diff', '--numstat', '-z', `${base}...${branch}`])
-  } catch {
-    return { added, deleted, binaryFiles }
-  }
   const tokens = out.split('\0')
   for (let i = 0; i < tokens.length; i++) {
     const tok = tokens[i]
@@ -183,8 +180,8 @@ export function churn(
     const parts = tok.split('\t')
     if (parts.length < 3) continue
     const [a, d, p] = parts
-    // Rename/copy: numstat emits "added\tdeleted\t" with an empty path, then
-    // two NUL-separated path tokens (old, new) follow. Skip them.
+    // Rename/copy: the path field is empty here; the old and new paths follow
+    // as their own NUL-separated tokens, so skip the next two.
     if (p === '') i += 2
     if (a === '-' || d === '-') {
       binaryFiles++
@@ -196,9 +193,21 @@ export function churn(
   return { added, deleted, binaryFiles }
 }
 
+/** Added/deleted line counts over the merge-base diff (three-dot). */
+export function churn(
+  base: string,
+  branch: string,
+): { added: number; deleted: number; binaryFiles: number } {
+  try {
+    return parseNumstat(git(['diff', '--numstat', '-z', `${base}...${branch}`]))
+  } catch {
+    return { added: 0, deleted: 0, binaryFiles: 0 }
+  }
+}
+
 /** Parse the conflicted-file list from `merge-tree --write-tree --name-only`
  *  conflict output: line 0 is the tree OID, then filenames until a blank line. */
-function parseConflictFiles(stdout: string): string[] {
+export function parseConflictFiles(stdout: string): string[] {
   const lines = stdout.split('\n')
   const files: string[] = []
   for (let i = 1; i < lines.length; i++) {
