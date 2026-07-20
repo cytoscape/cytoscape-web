@@ -124,7 +124,20 @@ const mockUiStateActions = {
   setActiveNetworkView: vi.fn((id: string) => {
     mockActiveNetworkView = id
   }),
+  deleteNetworkUiState: vi.fn(),
+  deleteAllNetworkUiState: vi.fn(),
 }
+
+const mockFilterActions = {
+  deleteNetworkIndex: vi.fn(),
+  deleteAllNetworkIndexes: vi.fn(),
+}
+
+vi.mock('../../data/hooks/stores/FilterStore', () => ({
+  useFilterStore: {
+    getState: vi.fn(() => mockFilterActions),
+  },
+}))
 
 vi.mock('../../data/hooks/stores/UiStateStore', () => ({
   useUiStateStore: {
@@ -444,8 +457,19 @@ describe('networkApi', () => {
       )
     })
 
-    it('does not navigate when navigate=false', () => {
+    // REVIEW.md R2-13: previously navigate:false left currentNetworkId
+    // pointing at the deleted network. The orchestrator now owns the
+    // invariant and repairs the pointer regardless of navigation.
+    it('repairs currentNetworkId even when navigate=false (regression: R2-13)', () => {
       networkApi.deleteNetwork('net1', { navigate: false })
+      expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
+        'net2',
+      )
+    })
+
+    it('does not touch currentNetworkId when a non-current network is deleted', () => {
+      mockNetworks.set('net2', { id: 'net2' })
+      networkApi.deleteNetwork('net2', { navigate: false })
       expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 

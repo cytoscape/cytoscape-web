@@ -208,5 +208,44 @@ export const useUiStateStore = create(
         return state
       })
     },
+    // Remove per-network UI state when a network is deleted. Both
+    // visualStyleOptions and columnUiState are persisted via putUiStateToDb,
+    // so skipping this left orphaned rows in IndexedDB forever
+    // (REVIEW.md round-2 P2, called from the delete orchestrator).
+    deleteNetworkUiState: (networkId: IdType) => {
+      set((state) => {
+        const visualStyleOptions = { ...state.ui.visualStyleOptions }
+        delete visualStyleOptions[networkId]
+        const columnUiState = { ...state.ui.tableUi.columnUiState }
+        delete columnUiState[networkId]
+        const nextUi = {
+          ...state.ui,
+          visualStyleOptions,
+          tableUi: { ...state.ui.tableUi, columnUiState },
+        }
+
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
+
+        state.ui = nextUi
+        return state
+      })
+    },
+    deleteAllNetworkUiState: () => {
+      set((state) => {
+        const nextUi = {
+          ...state.ui,
+          visualStyleOptions: {},
+          tableUi: { ...state.ui.tableUi, columnUiState: {} },
+          activeNetworkView: '',
+        }
+
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
+
+        state.ui = nextUi
+        return state
+      })
+    },
   })),
 )

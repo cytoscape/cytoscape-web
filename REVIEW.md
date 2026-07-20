@@ -113,7 +113,8 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 **R2-12. Delete-then-re-add races; production papers over it with `waitSeconds(1)`.** Store `delete`/`add` actions fire `deleteXFromDb`/`putXToDb` without awaiting or sequencing per key; `UpdateNetworkDialog.tsx` literally sleeps 1 second between deleting and re-adding the same network id. Slow IndexedDB (large network) → the delete resolves after the re-add's put → the "updated" network vanishes from cache on reload.
 
-**R2-13. `currentNetworkId` can dangle after delete; the invariant is owned by nobody.** `WorkspaceImpl.deleteNetwork` clears it only when the workspace empties. `useDeleteCyNetwork(id, {navigate:false})` leaves it pointing at the deleted network; some UI callers repair it manually, the App API's `networkApi.deleteNetwork` does not. While dangling, workspace persists a broken pointer to DB *and* (per R2-2) all per-network store persistence silently no-ops.
+**R2-13. `currentNetworkId` can dangle after delete; the invariant is owned by nobody.** `WorkspaceImpl.deleteNetwork` clears it only when the workspace empties. `useDeleteCyNetwork(id, {navigate:false})` left it pointing at the deleted network; some UI callers repaired it manually, the App API's `networkApi.deleteNetwork` did not.
+**Status: FIXED (round 8).** The new `deleteNetworkOrchestrator` owns the invariant: after removing the network from the workspace it repairs `currentNetworkId` (first remaining network, or `''`) whenever the deleted network was current — regardless of navigation — and never switches networks otherwise (the old `navigate:true` paths switched to the first remaining network even when deleting a *non-current* one, which was surely unintended; that behavior change is deliberate and documented). Regression tests in both `useDeleteCyNetwork.test.tsx` and `networkApi.test.ts` failed pre-fix.
 
 **R2-14. No snapshot format versioning.** `metadata.version` is written on two historically incompatible scales (Dexie `verno` now; native IDB version in older exports/fixtures), never validated, never used to transform records.
 **Status: partially fixed (round 5).** Exports now stamp `metadata.formatVersion` (2 = tagged rich values; absent = legacy 1), and the tagged format is self-describing so no version branching is needed on read. Still open: the migration-bypass concern — imported records are not routed through Dexie upgrade functions, so once the first real schema migration ships, snapshot import needs a transform step keyed on the stored DB version.
@@ -150,7 +151,7 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 - `ViewModelStore.getViewModel(networkId, viewModelId)` matches on `view.id` (the network id) instead of `viewId` — a specific secondary view can never be addressed; **the spec codifies the bug** (`ViewModelStore.spec.ts:204-220`). Contract drift: `ViewModelStoreModel`'s `targetViewId` params are unimplemented; `delete` removes all views.
 - circlePacking views are excluded from DB in `add` but re-persisted by the wrapper on the next set (any selection click) — the stated intent is defeated. **FIXED (round 3):** the ViewModelStore `putSlice` filters circlePacking views on every write, pinned by "never writes circlePacking views to the DB" in the spec.
 - `ViewModelStore.add` mutates its input argument; `TableStore.addRows` is a silent no-op; several TableStore actions crash on missing table while sibling actions null-check; `NetworkStore.moveEdge` emits `UpdateEventType.ADD` and has zero tests; stray `lastModified` in NetworkStore initial state.
-- Network deletion leaks per-network `UiStateStore` entries (`visualStyleOptions`, `columnUiState` — both persisted) and `FilterStore` search indexes (in-memory) — in both `useDeleteCyNetwork` *and* its app-api mirror.
+- Network deletion leaks per-network `UiStateStore` entries (`visualStyleOptions`, `columnUiState` — both persisted) and `FilterStore` search indexes (in-memory) — in both `useDeleteCyNetwork` *and* its app-api mirror. **FIXED (round 8):** new `deleteNetworkUiState`/`deleteAllNetworkUiState` (UiStateStore) and `deleteNetworkIndex`/`deleteAllNetworkIndexes` (FilterStore) actions, called from the orchestrator; pinned by failing-first tests.
 - `UiStateStore` persists in six actions and not in others (panel state survives only by luck); `NetworkSummaryStore.update` computes the DB merge independently of the store merge; `useLoadNetworkSummaries` `forEach(async …)` returns before cache writes land.
 - `undoLastEdit` uses render-captured stacks (stale-closure race `postEdit` was already fixed for), has no guard on unknown commands (a stack persisted by a different app version → TypeError, and the stack never pops), and `clearStack` is literally `() => {}`. `undoStackSize: 0` disables the cap, not the feature (`slice(-0)`).
 - Undoing DELETE_COLUMN doesn't restore visual mappings deleted alongside the column (no composite-edit support).
@@ -169,7 +170,8 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 
 **A3. No cross-store atomicity or ordering.** Workspace/network/tables/views/style/undo are written in separate Dexie transactions at independent times. A crash between `putWorkspaceToDb` and the network/table puts leaves `workspace.networkIds` referencing partial rows — `getCyNetworkFromDb`'s all-optional `CachedNetworkData` exists to paper over exactly this. **Prospective change:** group the per-network save into one Dexie transaction (Dexie supports multi-table transactions natively).
 
-**A4. Network lifecycle has no single orchestrator.** The ~10-store delete cascade is duplicated between `useDeleteCyNetwork` and `networkApi.deleteNetwork` ("mirrors useDeleteCyNetwork"), already disagreeing (currentNetworkId repair, URL, UiState/FilterStore cleanup — both incomplete). The `currentNetworkId ∈ networkIds ∪ {''}` invariant is enforced nowhere. **Prospective change:** a network-lifecycle registry in the pattern of the existing `AppCleanupRegistry` — per-network stores register cleanup handlers; one non-React orchestrator owns the cascade and the invariant, used by both the hook and the App API.
+**A4. Network lifecycle has no single orchestrator.** The ~10-store delete cascade was duplicated between `useDeleteCyNetwork` and `networkApi.deleteNetwork` ("mirrors useDeleteCyNetwork"), already disagreeing (currentNetworkId repair, URL, UiState/FilterStore cleanup — both incomplete). The `currentNetworkId ∈ networkIds ∪ {''}` invariant was enforced nowhere.
+**Status: FIXED (round 8).** New framework-agnostic [`deleteNetworkOrchestrator`](src/data/hooks/deleteNetworkOrchestrator.ts) (`deleteNetworkFromAllStores` / `deleteAllNetworksFromAllStores`) is the single source of truth: it runs the full cascade (now including UiState + FilterStore cleanup), owns the currentNetworkId invariant, and is called by both `useDeleteCyNetwork` (which adds only URL navigation) and `networkApi`. Any new per-network store must be added in exactly one place. Round-2 analysis correction: `useDeleteCyNetwork` *did* already call `UndoStore.deleteStack` — the R2-10 "deletion flows never call deleteStack" claim applied only to paths that predate that; with round-3's `removeSlice` wiring plus the orchestrator, undo rows are now deleted from IndexedDB on every deletion path.
 
 **A5. Three divergent Map-serialization stacks, one correct.** `mapSerialization.ts` (entries arrays — correct), `exportApplicationState.serializeStoreState` (Maps → objects with `String(key)` — lossy for numeric/boolean keys, and mislabels shared refs as `[Circular Reference]`), raw `JSON.stringify` in snapshot export (Maps → `{}` — R2-6). **Prospective change:** snapshot export should route through the existing domain serializers; delete the other ad-hoc paths.
 
@@ -274,6 +276,19 @@ Decision taken: **wire, don't delete — in observe mode.** Every major `get*Fro
 
 **Verification:** full unit suite **149 files / 2238 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 8: network-lifecycle orchestrator (A4, R2-13)
+
+Same test-first discipline; 8 new tests (6 in the new `useDeleteCyNetwork.test.tsx` — first coverage of the most consequential cascade in the app — plus 2 in `networkApi.test.ts`), 5 of which failed pre-fix.
+
+**Production changes:**
+
+- New `src/data/hooks/deleteNetworkOrchestrator.ts` — the single source of truth for the deletion cascade, used by both `useDeleteCyNetwork` (now navigation-only on top) and `networkApi.deleteNetwork`/`deleteAllNetworks`.
+- Owns the `currentNetworkId ∈ networkIds ∪ {''}` invariant (R2-13): repaired regardless of navigation, untouched when a non-current network is deleted.
+- New cleanup actions close the orphan leaks: `UiStateStore.deleteNetworkUiState`/`deleteAllNetworkUiState` (persisted `visualStyleOptions` + `columnUiState`), `FilterStore.deleteNetworkIndex`/`deleteAllNetworkIndexes` (in-memory search indexes) with impl functions in `filterStoreImpl`.
+- Deliberate behavior change: deleting a non-current network no longer switches the current network (the old `navigate:true` paths switched to the first remaining network unconditionally).
+
+**Verification:** full unit suite **150 files / 2245 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
+
 ---
 
 ## Consolidated backlog (prioritized)
@@ -289,7 +304,7 @@ Decision taken: **wire, don't delete — in observe mode.** Every major `get*Fro
 | ~~P1~~ ✅ | ~~Wire or delete `db/validator.ts`~~ **Done (round 7)** — wired in observe mode with schemas reconciled. Future: escalate to enforcement once warnings are quiet. | — |
 | ~~P1~~ ✅ | ~~Snapshot fidelity (R2-6/7/8)~~ **Done (round 5)** via tagged JSON, store filtering, and true replace semantics. R2-14 residual: route imported records through schema migrations once the first real migration ships. | S (residual) |
 | ~~P1~~ ✅ | ~~Validate CX2 in `useCreateNetworkFromCx2` (R2-21); `validateCX2` throw-vs-return (R2-18); converter hardening (R2-19)~~ **Done (round 6).** | — |
-| **P1** | Network-lifecycle orchestrator owning the delete cascade + `currentNetworkId` invariant (A4, R2-13); add `useDeleteCyNetwork` tests. | M–L |
+| ~~P1~~ ✅ | ~~Network-lifecycle orchestrator (A4, R2-13) + `useDeleteCyNetwork` tests~~ **Done (round 8).** | — |
 | ~~P1~~ ✅ | ~~valueTypeImpl coercion fixes (R2-15/17)~~ **Done (round 5).** R2-16 residual: decide whether list_of_string needs an escaping scheme for elements containing `', '`. | S (decision) |
 | **P1** | Undo persistence: serialize Maps for Safari (R2-10 residual), call `deleteStack` from network-deletion flows, guard unknown commands, fix stale-closure undo/redo. Then test `useUndoStack` round-trips. | M |
 | ~~P2~~ ✅ | ~~`as const` on `VisualPropertyValueTypeName` + fix `valueType2BaseType`~~ **Done (round 4).** (The tsc gate already existed — A8 correction.) Open product question: should string→color passthrough be allowed? | — |
