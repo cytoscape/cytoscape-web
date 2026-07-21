@@ -11,6 +11,7 @@ import {
   PassthroughMappingFunction,
 } from '../../../models/VisualStyleModel/VisualMappingFunction'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useVisualStyleStore } from './VisualStyleStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -35,6 +36,9 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    putVisualStyleToDb: vi.fn().mockResolvedValue(undefined),
+    deleteVisualStyleFromDb: vi.fn().mockResolvedValue(undefined),
+    clearVisualStylesFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -697,6 +701,37 @@ describe('useVisualStyleStore', () => {
       expect(
         result.current.visualStyles[networkId].nodeBackgroundColor.mapping,
       ).toBeUndefined()
+    })
+  })
+
+  // REVIEW.md R2-2: the persist wrapper used to key the DB write off
+  // workspace.currentNetworkId (mocked here as 'test-network-1') instead of
+  // the network the action actually mutated.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network style even when it is not the current network', async () => {
+      const { putVisualStyleToDb } = await import('../../db')
+      const { result } = renderHook(() => useVisualStyleStore())
+
+      act(() => {
+        result.current.add('other-network', createVisualStyle())
+      })
+      flushPendingWrites()
+      vi.mocked(putVisualStyleToDb).mockClear()
+
+      act(() => {
+        result.current.setBypass(
+          'other-network',
+          'nodeShape',
+          ['node-1'],
+          'diamond',
+        )
+      })
+      flushPendingWrites()
+
+      expect(putVisualStyleToDb).toHaveBeenCalled()
+      const lastCall = vi.mocked(putVisualStyleToDb).mock.calls.at(-1)
+      expect(lastCall?.[0]).toBe('other-network')
+      expect(lastCall?.[1].nodeShape.bypassMap.get('node-1')).toBe('diamond')
     })
   })
 })

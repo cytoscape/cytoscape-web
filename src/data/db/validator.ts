@@ -24,6 +24,12 @@ import type {
 
 const IdTypeSchema = z.string().min(1)
 
+// An empty id is a legitimate persisted state for pointer-style fields:
+// a workspace with no networks has currentNetworkId '', and no active
+// sub-network view is activeNetworkView ''. Requiring min(1) there would
+// flag every fresh workspace (round-1 review; reconciled in round 7).
+const IdTypeOrEmptySchema = z.string()
+
 const DateSchema = z.preprocess((value) => {
   if (value instanceof Date) {
     return value
@@ -209,7 +215,7 @@ const PanelsSchema = z.object({
 
 const UiSchema = z.object({
   panels: PanelsSchema,
-  activeNetworkView: IdTypeSchema,
+  activeNetworkView: IdTypeOrEmptySchema,
   enablePopup: z.boolean(),
   showErrorDialog: z.boolean(),
   errorMessage: z.string(),
@@ -264,7 +270,7 @@ const NetworkSummarySchema = z.object({
 const WorkspaceSchema = z.object({
   name: z.string(),
   id: IdTypeSchema,
-  currentNetworkId: IdTypeSchema,
+  currentNetworkId: IdTypeOrEmptySchema,
   networkIds: z.array(IdTypeSchema),
   localModificationTime: DateSchema,
   creationTime: DateSchema,

@@ -16,7 +16,7 @@ Provides ambient TypeScript type declarations for vanilla JS consumers (browser 
 
 **What it provides:**
 
-- `ApiResult<T>`, `ApiErrorCode`, `ok()`, `fail()` — result type helpers
+- `ApiResult<T>`, error code catalogs (`ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes`), `ok()`, `fail()` — result type helpers
 - `CyWebApiType` — type of `window.CyWebApi`
 - `CyWebEvents` / `CyWebEventMap` — typed event bus events
 - Public model types (`IdType`, `Network`, `Table`, `VisualStyle`, etc.)

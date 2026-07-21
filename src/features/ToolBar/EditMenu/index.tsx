@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { DropdownMenu } from '../DropdownMenu'
 import { CreateEdgeMenuItem } from './CreateEdgeMenuItem'
 import { CreateNodeMenuItem } from './CreateNodeMenuItem'
@@ -14,6 +15,9 @@ import { UndoMenuItem } from './UndoMenuItem'
 
 export const EditMenu = () => {
   const [open, setOpen] = useState(false)
+
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const handleClose = (): void => {
     setOpen(false)
@@ -63,6 +67,9 @@ export const EditMenu = () => {
         label="Edit"
         menuItems={menuItems}
         open={open}
+              disabled={hasNoNetworks}
+      disabledTooltip="Load or create a network first"
+
         onOpenChange={setOpen}
       />
       {dialogs}

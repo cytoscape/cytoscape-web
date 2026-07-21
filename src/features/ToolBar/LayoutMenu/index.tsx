@@ -1,3 +1,5 @@
+import BuildIcon from '@mui/icons-material/Build'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -17,11 +19,12 @@ import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPanelStore'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
+import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
-
 
 export const LayoutMenu = (): JSX.Element => {
   const [open, setOpen] = useState(false)
@@ -44,6 +47,8 @@ export const LayoutMenu = (): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const activeNetworkViewTabIndex =
     useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
@@ -55,6 +60,10 @@ export const LayoutMenu = (): JSX.Element => {
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
+  const preferredLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredLayout,
+  )
+  const toggleLayoutTools = useLayoutToolsPanelStore((state) => state.toggle)
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView = getViewModel(targetNetworkId)
@@ -214,6 +223,35 @@ export const LayoutMenu = (): JSX.Element => {
 
     // Use the new array with dividers in the return value
     return [
+      {
+        template: (
+          <DropdownMenuItem
+            label="Apply Default Layout"
+            icon={<PlayArrowIcon />}
+            tooltip={
+              allDisabled
+                ? targetNetworkId === ''
+                  ? 'Layouts are disabled since the network view is empty'
+                  : 'Layouts cannot be applied to the current network view'
+                : `Apply default layout - ${preferredLayout.displayName}`
+            }
+            disabled={allDisabled}
+            onClick={() => {
+              handleClose()
+              applyDefaultLayout({
+                layoutEngines,
+                preferredLayout,
+                network: target,
+                afterLayout,
+                setIsRunning,
+              })
+            }}
+          />
+        ),
+      },
+      {
+        separator: true,
+      },
       ...(allDisabled
         ? sortedMenuItemsWithDividers.map((menuItem: any) => {
             // Render divider
@@ -236,7 +274,7 @@ export const LayoutMenu = (): JSX.Element => {
                 />
               ),
             }
-        })
+          })
         : sortedMenuItemsWithDividers.map((menuItem: any) => {
             // Render divider
             if (menuItem.isDivider) {
@@ -266,6 +304,19 @@ export const LayoutMenu = (): JSX.Element => {
       {
         template: (
           <DropdownMenuItem
+            label="Layout Tools"
+            icon={<BuildIcon />}
+            tooltip="Show the layout tools panel in the lower-left corner"
+            onClick={() => {
+              handleClose()
+              toggleLayoutTools()
+            }}
+          />
+        ),
+      },
+      {
+        template: (
+          <DropdownMenuItem
             label="Settings..."
             icon={<SettingsIcon />}
             onClick={() => {
@@ -290,6 +341,8 @@ export const LayoutMenu = (): JSX.Element => {
             : []),
         ]}
         open={open}
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
         onOpenChange={setOpen}
       />
       <LayoutOptionDialog

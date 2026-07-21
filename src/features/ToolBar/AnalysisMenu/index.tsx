@@ -2,6 +2,7 @@ import { MenuItem } from 'primereact/menuitem'
 import { useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import {
   LLMQueryOptionsDialog,
   LLMQueryOptionsMenuItem,
@@ -14,6 +15,9 @@ import { DropdownMenu } from '../DropdownMenu'
 export const AnalysisMenu = () => {
   const [open, setOpen] = useState(false)
   const [openDialog, setOpenDialog] = useState(false)
+
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const handleClose = (): void => {
     setOpen(false)
@@ -60,6 +64,8 @@ export const AnalysisMenu = () => {
         label="Analysis"
         menuItems={menuItems}
         open={open}
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
         onOpenChange={setOpen}
       />
       <LLMQueryOptionsDialog

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/workspaceApi.test.ts
 // Plain Jest tests for workspaceApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes } from '../types/ApiResult'
 import { workspaceApi } from './workspaceApi'
 
 // ── Mock: WorkspaceStore ───────────────────────────────────────────────────────
@@ -203,7 +203,7 @@ describe('getNetworkSummary', () => {
     const result = workspaceApi.getNetworkSummary('net-999')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -212,7 +212,7 @@ describe('getNetworkSummary', () => {
     const result = workspaceApi.getNetworkSummary('net-2')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -236,7 +236,7 @@ describe('getCurrentNetworkId', () => {
     const result = workspaceApi.getCurrentNetworkId()
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NoCurrentNetwork)
+      expect(result.error.code).toBe(AppCodes.NO_CURRENT_NETWORK.code)
     }
   })
 
@@ -246,7 +246,7 @@ describe('getCurrentNetworkId', () => {
     const result = workspaceApi.getCurrentNetworkId()
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NoCurrentNetwork)
+      expect(result.error.code).toBe(AppCodes.NO_CURRENT_NETWORK.code)
     }
   })
 })
@@ -270,7 +270,7 @@ describe('switchCurrentNetwork', () => {
     const result = workspaceApi.switchCurrentNetwork('')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
     expect(mockSetCurrentNetworkId).not.toHaveBeenCalled()
   })
@@ -279,7 +279,7 @@ describe('switchCurrentNetwork', () => {
     const result = workspaceApi.switchCurrentNetwork('net-999')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockSetCurrentNetworkId).not.toHaveBeenCalled()
   })
@@ -302,7 +302,7 @@ describe('setWorkspaceName', () => {
     const result = workspaceApi.setWorkspaceName('')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
     expect(mockSetName).not.toHaveBeenCalled()
   })
@@ -311,7 +311,7 @@ describe('setWorkspaceName', () => {
     const result = workspaceApi.setWorkspaceName('   ')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
     expect(mockSetName).not.toHaveBeenCalled()
   })

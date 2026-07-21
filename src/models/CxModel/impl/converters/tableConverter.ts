@@ -38,9 +38,11 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Record<string, CxValue>
   > = cxUtil.getEdgeAttributes(cx)
 
-  // Columns
+  // Columns. An empty aspect array or a declaration object without
+  // nodes/edges keys is valid CX2 — default to empty declarations instead
+  // of crashing (REVIEW.md R2-19)
   const attrDec = cxUtil.getAttributeDeclarations(cx)
-  const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0]
+  const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0] ?? {}
 
   // Map column aliases to their original names
   const nodeAttributeTranslationMap: Record<string, string> = {}
@@ -85,7 +87,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   nodeAttr.forEach((attr, nodeId) => {
     const processedAttributes: Record<AttributeName, ValueType> = {}
 
-    Object.entries(nodeAttrDefs).forEach(([key, value]) => {
+    Object.entries(nodeAttrDefs ?? {}).forEach(([key, value]) => {
       if (value.v != null) {
         processedAttributes[key] = value.v as ValueType
       }
@@ -114,7 +116,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     const processedAttributes: Record<string, ValueType> = {}
     const translatedEdgeId = translateCXEdgeId(edgeId)
 
-    Object.entries(edgeAttrDefs).forEach(([key, value]) => {
+    Object.entries(edgeAttrDefs ?? {}).forEach(([key, value]) => {
       if (value.v != null) {
         processedAttributes[key] = value.v as ValueType
       }
