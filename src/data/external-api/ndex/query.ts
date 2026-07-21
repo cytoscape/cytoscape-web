@@ -28,7 +28,7 @@ export const fetchNdexInterconnectQuery = async (
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const searchTerms = ''
   const saveResult = false
-  const outputCX2 = false
+  const outputCX2 = true
 
   const result = await ndexClient.networks.interConnectQuery(
     ndexUuid,
