@@ -43,7 +43,9 @@ describe('mapping robustness (regression: R2-19/R2-20)', () => {
     expect(mapping).toBeDefined()
     expect(mapping.type).toBe(MappingFunctionType.Continuous)
     expect(mapping.min.value).toBe(0)
+    expect(mapping.min.vpValue).toBe(10) // 2-entry maps fallback to out-of-bounds for the missing in-bounds
     expect(mapping.max.value).toBe(100)
+    expect(mapping.max.vpValue).toBe(50) // 2-entry maps fallback to out-of-bounds for the missing in-bounds
     expect(mapping.controlPoints).toEqual([])
     // gt/lt values are the already-converted boundary values, not
     // re-converted ones (the old code double-converted them)

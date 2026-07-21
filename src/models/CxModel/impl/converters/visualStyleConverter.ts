@@ -266,16 +266,20 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 
               let min = null
               let max = null
+              let ltMinVpValue: VisualPropertyValueType | null = null
+              let gtMaxVpValue: VisualPropertyValueType | null = null
 
               if (
                 cxMapping.definition.map[0].max != null &&
                 cxMapping.definition.map[0].maxVPValue != null
               ) {
+                const outOfBoundsVal = cxMapping.definition.map[0].maxVPValue
+                const inBoundsVal = numMapEntries > 2 ? cxMapping.definition.map[1].minVPValue : outOfBoundsVal
+                
+                ltMinVpValue = converter.valueConverter(outOfBoundsVal as CXVisualPropertyValue)
                 min = {
                   value: cxMapping.definition.map[0].max as ValueType,
-                  vpValue: converter.valueConverter(
-                    cxMapping.definition.map[0].maxVPValue,
-                  ),
+                  vpValue: converter.valueConverter(inBoundsVal as CXVisualPropertyValue),
                   inclusive: cxMapping.definition.map[0].includeMax,
                 }
               }
@@ -284,13 +288,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 cxMapping.definition.map[numMapEntries - 1].min != null &&
                 cxMapping.definition.map[numMapEntries - 1].minVPValue != null
               ) {
+                const outOfBoundsVal = cxMapping.definition.map[numMapEntries - 1].minVPValue
+                const inBoundsVal = numMapEntries > 2 ? cxMapping.definition.map[numMapEntries - 2].maxVPValue : outOfBoundsVal
+                
+                gtMaxVpValue = converter.valueConverter(outOfBoundsVal as CXVisualPropertyValue)
                 max = {
                   value: cxMapping.definition.map[numMapEntries - 1]
                     .min as ValueType,
-                  vpValue: converter.valueConverter(
-                    cxMapping.definition.map[numMapEntries - 1]
-                      .minVPValue as CXVisualPropertyValue,
-                  ),
+                  vpValue: converter.valueConverter(inBoundsVal as CXVisualPropertyValue),
                   inclusive:
                     cxMapping.definition.map[numMapEntries - 1].includeMin,
                 }
@@ -305,14 +310,18 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 if (mapEntry.minVPValue != null && mapEntry.min != null) {
                   controlPoints.push({
                     value: mapEntry.min as ValueType,
-                    vpValue: converter.valueConverter(mapEntry.minVPValue),
+                    vpValue: converter.valueConverter(
+                      mapEntry.minVPValue as CXVisualPropertyValue,
+                    ),
                   })
                 }
 
                 if (mapEntry.maxVPValue != null && mapEntry.max != null) {
                   controlPoints.push({
                     value: mapEntry.max as ValueType,
-                    vpValue: converter.valueConverter(mapEntry.maxVPValue),
+                    vpValue: converter.valueConverter(
+                      mapEntry.maxVPValue as CXVisualPropertyValue,
+                    ),
                   })
                 }
               }
@@ -335,11 +344,8 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   controlPoints: sortedCtrlPts,
                   visualPropertyType: vp.type,
                   defaultValue: vp.defaultValue,
-                  // min/max vpValues were already converted above — a
-                  // second valueConverter pass corrupts non-idempotent
-                  // converters (REVIEW.md R2-20)
-                  gtMaxVpValue: max.vpValue,
-                  ltMinVpValue: min.vpValue,
+                  gtMaxVpValue: gtMaxVpValue ?? max.vpValue,
+                  ltMinVpValue: ltMinVpValue ?? min.vpValue,
                   attributeType: cxMapping.definition.type,
                 }
                 visualStyle[vpName].mapping = m

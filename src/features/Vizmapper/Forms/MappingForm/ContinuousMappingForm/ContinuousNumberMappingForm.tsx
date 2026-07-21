@@ -277,16 +277,48 @@ export function ContinuousNumberMappingForm(props: {
     )
   }
 
+  //   const setHandle = (id: number, value: number, vpValue: number): void => {
+  //   setHandles((prevHandles) => {
+  //     const h = prevHandles.map((handle) => {
+  //       if (handle.id === id) {
+  //         return { ...handle, value, vpValue }
+  //       }
+  //       return handle
+  //     })
+
+  //     let nextMinState = minState
+  //     let nextMaxState = maxState
+
+  //     // Keep minState and maxState vpValue in sync when handles are updated
+  //     if (h[0] && h[0].id === id) {
+  //       nextMinState = { ...minState, vpValue }
+  //       setMinState(nextMinState)
+  //     }
+  //     if (h.length > 0 && h[h.length - 1].id === id) {
+  //       nextMaxState = { ...maxState, vpValue }
+  //       setMaxState(nextMaxState)
+  //     }
+
+  //     updateContinuousMapping(
+  //       nextMinState,
+  //       nextMaxState,
+  //       h,
+  //       m.ltMinVpValue,
+  //       m.gtMaxVpValue,
+  //     )
+  //     return h
+  //   })
+  // }
   const setHandle = (id: number, value: number, vpValue: number): void => {
     const newHandles = editHandle(handles, id, value, vpValue)
     setHandles(newHandles)
-    updateContinuousMapping(
+      updateContinuousMapping(
       minState,
       maxState,
       newHandles,
-      m.ltMinVpValue,
-      m.gtMaxVpValue,
-    )
+        m.ltMinVpValue,
+        m.gtMaxVpValue,
+      )
   }
 
   // when someone changes a handle, the new handle values may contain a new min/max value
