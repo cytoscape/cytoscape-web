@@ -1,5 +1,5 @@
 import { Theme, Unstable_Grid2 as Grid, useTheme } from '@mui/material'
-import Popover from '@mui/material/Popover'
+import { Popover } from '@mui/material'
 
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { SearchButtons } from './SearchButtons'
@@ -38,7 +38,11 @@ export const Settings = ({
       onClose={handleClose}
       anchorOrigin={{
         vertical: 'bottom',
-        horizontal: 'left',
+        horizontal: 'right',
+      }}
+      transformOrigin={{
+        vertical: 'top',
+        horizontal: 'right',
       }}
     >
       <Grid
@@ -48,24 +52,31 @@ export const Settings = ({
           display: 'flex',
           flexDirection: 'column',
           padding: theme.spacing(2),
-          width: '30vw',
         }}
       >
-        <Grid container xs={12}>
-          <Grid xs={4}>
+        <Grid
+          container
+          spacing={6}
+          justifyContent="space-between"
+          justifyItems="flex-start"
+          alignItems="flex-start"
+          alignContent="flex-start"
+          sx={{ px: 1 }}
+        >
+          <Grid>
             <SearchOperatorSelector />
           </Grid>
-          <Grid xs={4}>
+          <Grid>
             <SearchTargetSelector
               searchTargets={searchTargets}
               setSearchTargets={setSearchTargets}
             />
           </Grid>
-          <Grid xs={4}>
+          <Grid>
             <SearchModeSelector />
           </Grid>
         </Grid>
-        <Grid container xs={12}>
+        <Grid container sx={{ mt: 2 }}>
           <SearchButtons handleClose={handleClose} startSearch={startSearch} />
         </Grid>
       </Grid>

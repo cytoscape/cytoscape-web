@@ -28,7 +28,14 @@ import { ValueType } from '../../models/TableModel'
 import { AttributeName } from '../../models/TableModel/AttributeName'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import {
+  AppCodes,
+  ApiResult,
+  ElementCodes,
+  fail,
+  ok,
+} from '../types/ApiResult'
+import { validateNoIdAttribute } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -115,6 +122,15 @@ export interface ElementApi {
 
   /** Return all edge IDs in the network. */
   getEdgeIds(networkId: IdType): ApiResult<{ edgeIds: IdType[] }>
+
+  /**
+   * Return all edges with their source and target node IDs in a single
+   * call, so apps can build the network topology without one getEdge()
+   * round-trip per edge.
+   */
+  getEdges(networkId: IdType): ApiResult<{
+    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  }>
 
   /** Return all edges connected to a node (both incoming and outgoing). */
   getConnectedEdges(
@@ -251,17 +267,11 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const nodeExists = network.nodes.some((n) => n.id === nodeId)
       if (!nodeExists) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
 
       // Read attributes from table
@@ -282,7 +292,7 @@ export const elementApi: ElementApi = {
         position,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -290,17 +300,11 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const edge = network.edges.find((e) => e.id === edgeId)
       if (edge === undefined) {
-        return fail(
-          ApiErrorCode.EdgeNotFound,
-          `Edge ${edgeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.EDGE_NOT_FOUND, edgeId)
       }
 
       const tableRecord = useTableStore.getState().tables[networkId]
@@ -312,7 +316,7 @@ export const elementApi: ElementApi = {
         attributes: row as Record<AttributeName, ValueType>,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -325,11 +329,14 @@ export const elementApi: ElementApi = {
       const networkState = useNetworkStore.getState()
       const network = networkState.networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+
+      const invalidAttributes = validateNoIdAttribute(
+        options?.attributes,
+        'node',
+      )
+      if (invalidAttributes) return invalidAttributes
 
       // Generate unique ID (replicate useCreateNode.generateNextNodeId)
       const existingIds = network.nodes
@@ -386,7 +393,7 @@ export const elementApi: ElementApi = {
 
       return ok({ nodeId: newNodeId, node: { attributes, position } })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -400,26 +407,23 @@ export const elementApi: ElementApi = {
       const networkState = useNetworkStore.getState()
       const network = networkState.networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+
+      const invalidAttributes = validateNoIdAttribute(
+        options?.attributes,
+        'edge',
+      )
+      if (invalidAttributes) return invalidAttributes
 
       const sourceNode = network.nodes.find((n) => n.id === sourceNodeId)
       if (!sourceNode) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Source node ${sourceNodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, sourceNodeId)
       }
 
       const targetNode = network.nodes.find((n) => n.id === targetNodeId)
       if (!targetNode) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Target node ${targetNodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, targetNodeId)
       }
 
       // Generate unique edge ID (replicate useCreateEdge.generateNextEdgeId)
@@ -488,7 +492,7 @@ export const elementApi: ElementApi = {
         },
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -496,34 +500,22 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       const edgeExists = network.edges.some((e) => e.id === edgeId)
       if (!edgeExists) {
-        return fail(
-          ApiErrorCode.EdgeNotFound,
-          `Edge ${edgeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.EDGE_NOT_FOUND, edgeId)
       }
 
       const sourceExists = network.nodes.some((n) => n.id === newSourceId)
       if (!sourceExists) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Source node ${newSourceId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, newSourceId)
       }
 
       const targetExists = network.nodes.some((n) => n.id === newTargetId)
       if (!targetExists) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Target node ${newTargetId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, newTargetId)
       }
 
       const { oldSourceId, oldTargetId } = useNetworkStore
@@ -557,10 +549,7 @@ export const elementApi: ElementApi = {
 
       return ok()
     } catch (e) {
-      return fail(
-        ApiErrorCode.OperationFailed,
-        `Failed to move edge: ${String(e)}`,
-      )
+      return fail(AppCodes.OPERATION_FAILED, `Failed to move edge: ${String(e)}`)
     }
   },
 
@@ -576,27 +565,18 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       if (nodeIds.length === 0) {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'No nodes specified for deletion',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'No nodes specified for deletion')
       }
 
       const nodesToDelete = network.nodes.filter((node) =>
         nodeIds.includes(node.id),
       )
       if (nodesToDelete.length === 0) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          'None of the specified nodes exist',
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeIds.join(', '))
       }
 
       const existingNodeIds = nodesToDelete.map((node) => node.id)
@@ -717,7 +697,7 @@ export const elementApi: ElementApi = {
         deletedEdges: deletedEdgesData,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -731,27 +711,18 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       if (edgeIds.length === 0) {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'No edges specified for deletion',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'No edges specified for deletion')
       }
 
       const edgesToDelete = network.edges.filter((edge) =>
         edgeIds.includes(edge.id),
       )
       if (edgesToDelete.length === 0) {
-        return fail(
-          ApiErrorCode.EdgeNotFound,
-          'None of the specified edges exist',
-        )
+        return fail(ElementCodes.EDGE_NOT_FOUND, edgeIds.join(', '))
       }
 
       const existingEdgeIds = edgesToDelete.map((edge) => edge.id)
@@ -838,7 +809,7 @@ export const elementApi: ElementApi = {
         deletedEdges: deletedEdgesData,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -871,14 +842,11 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       return ok({ nodeIds: network.nodes.map((n) => n.id) })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -886,33 +854,47 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       return ok({ edgeIds: network.edges.map((e) => e.id) })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
-  getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }> {
+  getEdges(networkId): ApiResult<{
+    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      return ok({
+        edges: network.edges.map((e) => ({
+          id: e.id,
+          sourceId: e.s,
+          targetId: e.t,
+        })),
+      })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getConnectedEdges(
+    networkId,
+    nodeId,
+  ): ApiResult<{ edges: EdgeData[] }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const cyNode = cy.$id(nodeId)
       if (cyNode.empty()) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const tableRecord = useTableStore.getState().tables[networkId]
       const edges: EdgeData[] = cyNode.connectedEdges().map((cyEdge: any) => {
@@ -926,7 +908,7 @@ export const elementApi: ElementApi = {
       })
       return ok({ edges })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -934,18 +916,12 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const cyNode = cy.$id(nodeId)
       if (cyNode.empty()) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const nodeIds: IdType[] = cyNode
         .neighborhood()
@@ -953,7 +929,7 @@ export const elementApi: ElementApi = {
         .map((n: any) => n.id() as IdType)
       return ok({ nodeIds })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -964,18 +940,12 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const cyNode = cy.$id(nodeId)
       if (cyNode.empty()) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const outgoers = cyNode.outgoers()
       return ok({
@@ -983,7 +953,7 @@ export const elementApi: ElementApi = {
         edgeIds: outgoers.edges().map((e: any) => e.id() as IdType),
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -994,18 +964,12 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const cyNode = cy.$id(nodeId)
       if (cyNode.empty()) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const incomers = cyNode.incomers()
       return ok({
@@ -1013,7 +977,7 @@ export const elementApi: ElementApi = {
         edgeIds: incomers.edges().map((e: any) => e.id() as IdType),
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -1021,18 +985,12 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const cyNode = cy.$id(nodeId)
       if (cyNode.empty()) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const nodeIds: IdType[] = cyNode
         .successors()
@@ -1040,7 +998,7 @@ export const elementApi: ElementApi = {
         .map((n: any) => n.id() as IdType)
       return ok({ nodeIds })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -1048,18 +1006,12 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const cyNode = cy.$id(nodeId)
       if (cyNode.empty()) {
-        return fail(
-          ApiErrorCode.NodeNotFound,
-          `Node ${nodeId} not found in network ${networkId}`,
-        )
+        return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const nodeIds: IdType[] = cyNode
         .predecessors()
@@ -1067,7 +1019,7 @@ export const elementApi: ElementApi = {
         .map((n: any) => n.id() as IdType)
       return ok({ nodeIds })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -1075,10 +1027,7 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const nodeIds: IdType[] = cy
@@ -1087,7 +1036,7 @@ export const elementApi: ElementApi = {
         .map((n: any) => n.id() as IdType)
       return ok({ nodeIds })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -1095,10 +1044,7 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const cy = getInternalNetworkDataStore(network)
       const nodeIds: IdType[] = cy
@@ -1107,7 +1053,7 @@ export const elementApi: ElementApi = {
         .map((n: any) => n.id() as IdType)
       return ok({ nodeIds })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

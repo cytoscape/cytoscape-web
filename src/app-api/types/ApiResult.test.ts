@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest'
 
 // src/app-api/types/ApiResult.test.ts
 import type { ApiResult } from './ApiResult'
-import { ApiErrorCode, fail, isFail, isOk, ok } from './ApiResult'
+import {
+  AppCodes,
+  ElementCodes,
+  fail,
+  isFail,
+  isOk,
+  ok,
+  StyleCodes,
+  TableCodes,
+} from './ApiResult'
+
+const ALL_CATALOGS = { ElementCodes, TableCodes, StyleCodes, AppCodes }
 
 describe('ApiResult helpers', () => {
   describe('ok()', () => {
@@ -26,20 +37,35 @@ describe('ApiResult helpers', () => {
   })
 
   describe('fail()', () => {
-    it('creates a failure result with code and message', () => {
-      const result = fail(ApiErrorCode.NetworkNotFound, 'Network abc not found')
+    it('creates a failure result from a code definition with no template args', () => {
+      const result = fail(AppCodes.NO_CURRENT_NETWORK)
       expect(result.success).toBe(false)
-      expect(result.error.code).toBe('NETWORK_NOT_FOUND')
-      expect(result.error.message).toBe('Network abc not found')
+      expect(result.error.code).toBe('APP2')
+      expect(result.error.severity).toBe('error')
+      expect(result.error.message).toBe(
+        'No network is currently selected in the workspace',
+      )
     })
 
-    it('creates a failure result for each error code', () => {
-      const codes = Object.values(ApiErrorCode)
-      for (const code of codes) {
-        const result = fail(code, `Error: ${code}`)
-        expect(result.success).toBe(false)
-        expect(result.error.code).toBe(code)
-      }
+    it('resolves a template-function message with its arguments', () => {
+      const result = fail(AppCodes.NETWORK_NOT_FOUND, 'net1')
+      expect(result.success).toBe(false)
+      expect(result.error.code).toBe('APP1')
+      expect(result.error.message).toBe('Network net1 not found')
+    })
+
+    it('copies severity onto the runtime error, including warning severity', () => {
+      const result = fail(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED, 'score', 'node')
+      expect(result.success).toBe(false)
+      expect(result.error.severity).toBe('warning')
+    })
+
+    it('reuses the CX2 code string verbatim for CX2-derived codes', () => {
+      expect(fail(TableCodes.NODE_ID_COLUMN_FORBIDDEN).error.code).toBe('FK1')
+      expect(fail(ElementCodes.NODE_NOT_FOUND, 'n1').error.code).toBe('GL1')
+      expect(fail(StyleCodes.BYPASS_TARGET_NOT_FOUND, 'n1').error.code).toBe(
+        'BV1',
+      )
     })
   })
 
@@ -50,13 +76,13 @@ describe('ApiResult helpers', () => {
     })
 
     it('returns false for failure results', () => {
-      expect(isOk(fail(ApiErrorCode.InvalidInput, 'bad input'))).toBe(false)
+      expect(isOk(fail(AppCodes.INVALID_INPUT, 'bad input'))).toBe(false)
     })
   })
 
   describe('isFail()', () => {
     it('returns true for failure results', () => {
-      expect(isFail(fail(ApiErrorCode.OperationFailed, 'oops'))).toBe(true)
+      expect(isFail(fail(AppCodes.OPERATION_FAILED, 'oops'))).toBe(true)
     })
 
     it('returns false for success results', () => {
@@ -64,22 +90,49 @@ describe('ApiResult helpers', () => {
     })
   })
 
-  describe('ApiErrorCode', () => {
-    it('has the expected number of error codes', () => {
-      const codes = Object.keys(ApiErrorCode)
-      expect(codes.length).toBe(11)
+  describe('code catalogs', () => {
+    const allEntries = Object.entries(ALL_CATALOGS).flatMap(
+      ([groupName, group]) =>
+        Object.entries(group).map(([memberName, def]) => ({
+          groupName,
+          memberName,
+          def,
+        })),
+    )
+
+    it('has at least one code in each catalog group', () => {
+      for (const group of Object.values(ALL_CATALOGS)) {
+        expect(Object.keys(group).length).toBeGreaterThan(0)
+      }
     })
 
-    it('has unique string values', () => {
-      const values = Object.values(ApiErrorCode)
-      const uniqueValues = new Set(values)
-      expect(uniqueValues.size).toBe(values.length)
+    it('every code string is unique across all catalogs', () => {
+      const codes = allEntries.map((e) => e.def.code)
+      expect(new Set(codes).size).toBe(codes.length)
     })
 
-    it('all values are UPPER_SNAKE_CASE strings', () => {
-      const values = Object.values(ApiErrorCode)
-      for (const value of values) {
-        expect(value).toMatch(/^[A-Z][A-Z0-9_]+$/)
+    it('every entry has a valid severity', () => {
+      for (const { def } of allEntries) {
+        expect(['error', 'warning']).toContain(def.severity)
+      }
+    })
+
+    it('every entry has a non-empty message (string or template function)', () => {
+      for (const { def } of allEntries) {
+        expect(['string', 'function']).toContain(typeof def.message)
+        if (typeof def.message === 'string') {
+          expect(def.message.length).toBeGreaterThan(0)
+        }
+      }
+    })
+
+    it('APP* codes are distinct from every CX2-derived code prefix', () => {
+      for (const { groupName, def } of allEntries) {
+        if (groupName === 'AppCodes') {
+          expect(def.code).toMatch(/^APP\d+$/)
+        } else {
+          expect(def.code).not.toMatch(/^APP\d+$/)
+        }
       }
     })
   })
@@ -98,13 +151,13 @@ describe('ApiResult helpers', () => {
 
     it('narrows to ApiFailure when success is false', () => {
       const result: ApiResult<{ nodeId: string }> = fail(
-        ApiErrorCode.NodeNotFound,
-        'Not found',
+        ElementCodes.NODE_NOT_FOUND,
+        'n1',
       )
       if (!result.success) {
         // TypeScript should narrow to ApiFailure
         const code: string = result.error.code
-        expect(code).toBe('NODE_NOT_FOUND')
+        expect(code).toBe('GL1')
       }
     })
   })

@@ -46,7 +46,7 @@ src/app-api/
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
 ├── types/
-│   ├── ApiResult.ts             ← ApiResult<T>, ApiError, ApiErrorCode
+│   ├── ApiResult.ts             ← ApiResult<T>, ApiError, error code catalogs (ElementCodes, TableCodes, StyleCodes, AppCodes)
 │   ├── AppContext.ts            ← AppContext, CyAppWithLifecycle
 │   ├── ElementTypes.ts          ← Curated re-exports of public model types
 │   └── index.ts                 ← Barrel export
@@ -86,7 +86,7 @@ src/app-api/
 ```typescript
 // src/app-api/core/elementApi.ts
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
-import { ok, fail, ApiErrorCode } from '../types'
+import { ok, fail, AppCodes } from '../types'
 import type { ElementApi } from '../types'
 
 export const elementApi: ElementApi = {
@@ -95,16 +95,13 @@ export const elementApi: ElementApi = {
       // 1. Validate inputs using .getState() — no React context needed
       const network = useNetworkStore.getState().networks.get(networkId)
       if (!network)
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       // 2. Coordinate stores directly
       // ...
       return ok({ nodeId })
     } catch (e) {
       // 3. Catch exceptions → ApiFailure
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }
@@ -136,10 +133,21 @@ type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
 // Helpers (named functions, not arrows — see ADR 0001)
 function ok<T>(data: T): ApiSuccess<T>
 function ok(): ApiSuccess<void>
-function fail(code: ApiErrorCode, message: string): ApiFailure
+function fail(codeDef: ApiErrorCodeDef, ...args: any[]): ApiFailure
 ```
 
-All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md).
+`ApiError` is `{ code, severity, message }`. `code` and `severity` come from a
+domain-grouped code catalog (`ElementCodes`, `TableCodes`, `StyleCodes`,
+`AppCodes` in `types/ApiResult.ts`) rather than a flat enum — codes that
+enforce a CX2 validation requirement reuse the CX2 code string directly
+(`FK1`, `BV1`, …); codes with no CX2 equivalent use the `APP*` namespace. See
+[ErrorCodes.md](./api_docs/ErrorCodes.md) for the full catalog and
+[ADR 0005](../../docs/design/module-federation/adr/0005-structured-error-codes.md)
+for the design rationale.
+
+All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md)
+(discriminated-union structure) and [ADR 0005](../../docs/design/module-federation/adr/0005-structured-error-codes.md)
+(error code/severity shape).
 
 ## Event Bus Pattern
 
@@ -380,3 +388,5 @@ export const FEDERATION_EXPOSES = {
 - [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md) — `ApiResult<T>` design decisions
 - [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md) — Public type re-export strategy
 - [ADR 0003](../../docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer decision
+- [ADR 0005](../../docs/design/module-federation/adr/0005-structured-error-codes.md) — Structured, severity-tagged error codes
+- [ErrorCodes.md](./api_docs/ErrorCodes.md) — Full error code catalog

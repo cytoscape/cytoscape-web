@@ -4,6 +4,7 @@ import {
   FormLabel,
   Radio,
   RadioGroup,
+  Typography,
 } from '@mui/material'
 
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
@@ -28,9 +29,9 @@ export const SearchModeSelector = (): JSX.Element => {
         value={exact ? 'exact' : 'contains'}
         onChange={handleChange}
         sx={{
-          gap: 1,
-          minWidth: 0,
           width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'flex-start',
         }}
       >
@@ -39,14 +40,14 @@ export const SearchModeSelector = (): JSX.Element => {
           control={
             <Radio data-testid="search-mode-exact-radio" color="primary" />
           }
-          label={<span style={{ whiteSpace: 'nowrap' }}>Exact Match</span>}
+          label={<Typography component="span" sx={{ whiteSpace: 'nowrap' }}>Exact Match</Typography>}
         />
         <FormControlLabel
           value="contains"
           control={
             <Radio data-testid="search-mode-contains-radio" color="primary" />
           }
-          label={<span style={{ whiteSpace: 'nowrap' }}>Contains</span>}
+          label={<Typography component="span" sx={{ whiteSpace: 'nowrap' }}>Contains</Typography>}
         />
       </RadioGroup>
     </FormControl>

@@ -27,6 +27,18 @@ export interface CyWebEvents {
   'network:deleted': { networkId: IdType }
 
   /**
+   * Fired when nodes or edges are added to or removed from an existing
+   * network (not for network creation or deletion).
+   */
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
+
+  /**
    * Fired when the active (current) network changes.
    * `previousId` is an empty string if no network was active before.
    */
@@ -54,8 +66,17 @@ export interface CyWebEvents {
   /**
    * Fired when table data is written to a network's node or edge table.
    * `rowIds` is the set of node/edge IDs whose data changed in this write.
+   * `addedColumns`/`removedColumns` carry schema changes (a rename appears
+   * as one of each); check them first to distinguish column operations
+   * from plain row edits, since column operations may also report rowIds.
    */
-  'data:changed': { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+    addedColumns: string[]
+    removedColumns: string[]
+  }
 }
 
 /**

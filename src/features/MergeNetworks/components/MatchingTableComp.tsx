@@ -1,6 +1,5 @@
 //import the necessary libraries and components
 import {
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -11,6 +10,7 @@ import {
   Tooltip,
 } from '@mui/material'
 import React, { useEffect, useMemo } from 'react'
+import chroma from 'chroma-js'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
@@ -209,18 +209,25 @@ export const MatchingTableComp = React.memo(
     return (
       <TableContainer
         key={`${tableView}-tablecontainer`}
-        component={Paper}
-        sx={{ maxHeight: 500, overflow: 'auto' }}
+        sx={{ maxHeight: 500, overflow: 'auto', border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}
       >
         <Table sx={{ minWidth: 400 }} aria-label="simple table">
           <TableHead>
-            <TableRow>
-              {netLst.map((net) => (
-                <TableCell key={net[1]}>{net[0]}</TableCell>
-              ))}
-              <TableCell>Merged Network</TableCell>
-              <TableCell>Type</TableCell>
-            </TableRow>
+            {netLst.length > 0 ? (
+              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.subtle }}>
+                {netLst.map((net) => (
+                  <TableCell key={net[1]} sx={{ py: 1 }}>{net[0]}</TableCell>
+                ))}
+                <TableCell sx={{ py: 1 }}>Merged Network</TableCell>
+                <TableCell sx={{ py: 1 }}>Type</TableCell>
+              </TableRow>
+            ) : (
+              <TableRow>
+                <TableCell sx={{ textAlign: 'center', color: (theme) => theme.palette.text.disabled, fontWeight: 'normal' }}>
+                  -- Please select networks to merge --
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
           <TableBody>
             {tableData.map((row, rowIndex) => {
@@ -233,6 +240,7 @@ export const MatchingTableComp = React.memo(
               const tooltipPlacements = getFirstRowTooltipPlacements(
                 rowTooltipMessage !== '',
               )
+
               return (
                 <Tooltip
                   key={`${row.id}-row-tooltip`}
@@ -242,12 +250,12 @@ export const MatchingTableComp = React.memo(
                 >
                   <TableRow
                     key={`${row.id}-row`}
-                    style={{
-                      backgroundColor:
+                    sx={{
+                      backgroundColor: (theme) =>
                         row.hasConflicts ||
                         duplicatedNamesIds.has(row.id) ||
                         emptyRowIds.has(row.id)
-                          ? '#e98e8e'
+                          ? chroma(theme.palette.error.light).alpha(0.25).css()
                           : 'transparent',
                     }}
                   >
@@ -256,6 +264,7 @@ export const MatchingTableComp = React.memo(
                         key={`${row.id}-${net[1]}`}
                         component="th"
                         scope="row"
+                        sx={{ py: 0.5 }}
                       >
                         <NetAttDropDownTemplate
                           networkRecords={networkRecords}
@@ -267,7 +276,10 @@ export const MatchingTableComp = React.memo(
                         />
                       </TableCell>
                     ))}
-                    <TableCell key={`${row.id}-mergedNetwork`}>
+                    <TableCell
+                      key={`${row.id}-mergedNetwork`}
+                      sx={{ py: 0.5 }}
+                    >
                       {row.id === 0 && tableView === TableView.node ? (
                         <Tooltip
                           key={`${row.id}-mergedNetwork-tooltip`}
@@ -296,6 +308,7 @@ export const MatchingTableComp = React.memo(
                           key={`${row.id}-textField`}
                           fullWidth
                           variant="outlined"
+                          size="small"
                           value={row.mergedNetwork}
                           onChange={(e) =>
                             onMergedNetworkChange(e, rowIndex, row)
@@ -307,7 +320,10 @@ export const MatchingTableComp = React.memo(
                         />
                       )}
                     </TableCell>
-                    <TableCell key={`${row.id}-type`}>
+                    <TableCell
+                      key={`${row.id}-type`}
+                      sx={{ py: 0.5 }}
+                    >
                       <TypeDropDownTemplate
                         type={tableView}
                         rowData={row}
