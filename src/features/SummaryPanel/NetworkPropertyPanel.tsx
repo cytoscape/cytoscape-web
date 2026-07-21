@@ -1,4 +1,5 @@
-import CircleIcon from '@mui/icons-material/Circle'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import {
@@ -11,12 +12,17 @@ import {
   Typography,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { lazy, ReactElement, Suspense, useState } from 'react'
+import { lazy, ReactElement, Suspense, useContext, useState } from 'react'
 
+import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { useSaveCurrentNetworkToNDEx } from '../../data/hooks/useSaveCurrentNetworkToNDEx'
+import { KeycloakContext } from '../../init/keycloak'
 import { IdType } from '../../models/IdType'
+import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { getSaveButtonState } from './networkSaveStatus'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
@@ -78,6 +84,38 @@ export const NetworkPropertyPanel = ({
   const networkModified =
     useWorkspaceStore((state) => state.workspace.networkModified[id]) ?? false
 
+  const client = useContext(KeycloakContext)
+  const authenticated: boolean = client?.authenticated ?? false
+  const addMessage = useMessageStore((state) => state.addMessage)
+  const saveCurrentNetworkToNDEx = useSaveCurrentNetworkToNDEx()
+
+  const saveButtonState = getSaveButtonState({
+    networkModified,
+    isNdex: summary.isNdex,
+    authenticated,
+  })
+
+  const onClickSaveStatus = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    // The save action can only run on the loaded (current) network. For any
+    // other row, let the click bubble so the row navigates to/selects it first.
+    if (id !== currentNetworkId) {
+      return
+    }
+    e.stopPropagation()
+    if (saveButtonState.action === 'none') {
+      return
+    }
+    if (saveButtonState.action === 'signin') {
+      addMessage({
+        message: 'Please sign in to save this network to NDEx.',
+        duration: 4000,
+        severity: MessageSeverity.WARNING,
+      })
+      return
+    }
+    void saveCurrentNetworkToNDEx()
+  }
+
   const { deleteNetwork } = useDeleteCyNetwork()
 
   const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -90,7 +128,7 @@ export const NetworkPropertyPanel = ({
   const onConfirmDelete = () => {
     // Delete the network without automatic navigation
     deleteNetwork(id, { navigate: false })
-    
+
     // Navigate back to the previously viewed network, same logic as onCancelDelete
     if (lastOpenedNetworkId !== '') {
       if (lastOpenedNetworkId !== id) {
@@ -103,9 +141,11 @@ export const NetworkPropertyPanel = ({
         })
       } else {
         // If the previous network was the one being deleted, navigate to first available or empty
-        const remainingNetworks = workspace.networkIds.filter((networkId) => networkId !== id)
+        const remainingNetworks = workspace.networkIds.filter(
+          (networkId) => networkId !== id,
+        )
         const nextNetworkId = remainingNetworks[0] ?? ''
-        
+
         if (nextNetworkId !== '') {
           setCurrentNetworkId(nextNetworkId)
           navigateToNetwork({
@@ -126,9 +166,11 @@ export const NetworkPropertyPanel = ({
       }
     } else {
       // If no previous network was set, navigate to first available or empty
-      const remainingNetworks = workspace.networkIds.filter((networkId) => networkId !== id)
+      const remainingNetworks = workspace.networkIds.filter(
+        (networkId) => networkId !== id,
+      )
       const nextNetworkId = remainingNetworks[0] ?? ''
-      
+
       if (nextNetworkId !== '') {
         setCurrentNetworkId(nextNetworkId)
         navigateToNetwork({
@@ -171,23 +213,42 @@ export const NetworkPropertyPanel = ({
     }
   }
 
-  const networkModifiedIcon = networkModified ? (
-    <Tooltip title="Network has been modified">
-      <CircleIcon sx={{ color: theme.palette.error.main, fontSize: 10 }} />
+  const networkModifiedIcon = (
+    <Tooltip title={saveButtonState.tooltip}>
+      <IconButton
+        data-testid="network-save-status-button"
+        size="small"
+        sx={{ width: 22, height: 22 }}
+        onClick={onClickSaveStatus}
+      >
+        {saveButtonState.upToDate ? (
+          <CheckCircleIcon
+            sx={{ color: theme.palette.success.main, fontSize: 16 }}
+          />
+        ) : (
+          <CloudUploadIcon
+            sx={{ color: theme.palette.warning.main, fontSize: 16 }}
+          />
+        )}
+      </IconButton>
     </Tooltip>
-  ) : null
+  )
 
   return (
     <>
       <Box
         sx={{
-          backgroundColor: (theme) => currentNetworkId === id ? theme.palette.action.selected : theme.palette.background.paper,
+          backgroundColor: (theme) =>
+            currentNetworkId === id
+              ? theme.palette.action.selected
+              : theme.palette.background.paper,
           width: '100%',
           display: 'flex',
           alignItems: 'center',
           '&:hover': { cursor: 'pointer' },
           p: 1,
-          borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
+          borderBottom: (theme) =>
+            `2px solid ${theme.palette.background.default}`,
         }}
         onClick={() => {
           setCurrentNetworkId(id)
@@ -291,7 +352,9 @@ export const NetworkPropertyPanel = ({
                   showEditNetworkSummaryForm(e)
                 }}
               >
-                <EditIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
+                <EditIcon
+                  sx={{ fontSize: 18, color: theme.palette.text.primary }}
+                />
               </IconButton>
             </Tooltip>
             <Tooltip title="Remove the network from workspace">
@@ -303,7 +366,9 @@ export const NetworkPropertyPanel = ({
                   onClickDelete(e)
                 }}
               >
-                <DeleteIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
+                <DeleteIcon
+                  sx={{ fontSize: 18, color: theme.palette.text.primary }}
+                />
               </IconButton>
             </Tooltip>
           </Box>

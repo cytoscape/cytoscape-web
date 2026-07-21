@@ -208,5 +208,16 @@ export const useUiStateStore = create(
         return state
       })
     },
+    deleteNetworkUiState: (networkId: IdType) => {
+      set((state) => {
+        const nextUi = UiImpl.deleteNetworkUiState(state.ui, networkId)
+
+        // Convert Immer proxy to plain object before saving
+        void putUiStateToDb(toPlainObject(nextUi))
+
+        state.ui = nextUi
+        return state
+      })
+    },
   })),
 )

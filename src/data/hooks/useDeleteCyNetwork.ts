@@ -82,6 +82,9 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
   const setActiveNetworkView = useUiStateStore(
     (state) => state.setActiveNetworkView,
   )
+  const deleteNetworkUiState = useUiStateStore(
+    (state) => state.deleteNetworkUiState,
+  )
 
   const { navigateToNetwork } = useUrlNavigation()
 
@@ -104,6 +107,8 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
     if (activeNetworkView === id) {
       setActiveNetworkView('')
     }
+
+    deleteNetworkUiState(id)
 
     if (validationResults[id] !== undefined) {
       deleteValidationResult(id)

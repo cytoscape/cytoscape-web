@@ -992,6 +992,44 @@ describe('ViewModel Implementation', () => {
       expect(result.nodeViews['n1']).toBeUndefined()
       expect(result.edgeViews['e1']).toBeUndefined()
     })
+
+    it('should remove deleted nodes and edges from the selection', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [
+            { id: 'e1', s: 'n1', t: 'n2' },
+            { id: 'e2', s: 'n2', t: 'n1' },
+          ],
+        ),
+      )
+      networkView.selectedNodes = ['n1', 'n2']
+      networkView.selectedEdges = ['e1', 'e2']
+
+      const result = deleteObjects(networkView, ['n1', 'e1'])
+
+      expect(result.selectedNodes).toEqual(['n2'])
+      expect(result.selectedEdges).toEqual(['e2'])
+      expect(networkView.selectedNodes).toEqual(['n1', 'n2']) // Original unchanged
+    })
+
+    it('should leave selection untouched when deleted ids are not selected', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      networkView.selectedNodes = ['n2']
+      networkView.selectedEdges = []
+
+      const result = deleteObjects(networkView, ['n1'])
+
+      expect(result.selectedNodes).toEqual(['n2'])
+      expect(result.selectedEdges).toEqual([])
+    })
   })
 
   describe('addNodeViewDirect', () => {

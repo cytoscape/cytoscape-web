@@ -14,7 +14,9 @@ import { IdType } from '../../models'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
+import { useSubNetworkStore } from '../HierarchyViewer/store/SubNetworkStore'
 import { isSubnetwork } from '../HierarchyViewer/utils/hierarchyUtil'
+import { resolveShareTargetNetworkId } from './resolveShareTargetNetworkId'
 
 // Selection will be encoded if the selected object count is less than this number
 const MAX_SELECTED_OBJ = 300
@@ -55,12 +57,21 @@ export const ShareNetworkButton = ({
     state.getViewModel(currentNetworkId),
   )
 
-  // Determine the target network ID: use provided targetNetworkId, or activeNetworkView if it's different from currentNetworkId
+  // The subnetwork currently shown in the hierarchy viewer (if any), so the
+  // hierarchy-side toolbar can capture it even without an explicit target.
+  const shownSubNetworkId = useSubNetworkStore(
+    (state) => state.currentSubNetworkId,
+  )
+
+  // Determine the target network ID: an explicit target (subnetwork toolbar),
+  // the active network view, or the subnetwork currently shown (CW-654).
   const effectiveTargetNetworkId: IdType | undefined =
-    targetNetworkId ??
-    (activeNetworkView !== '' && activeNetworkView !== currentNetworkId
-      ? activeNetworkView
-      : undefined)
+    resolveShareTargetNetworkId({
+      targetNetworkId,
+      activeNetworkView,
+      currentNetworkId,
+      shownSubNetworkId,
+    })
 
   const targetNetworkViewModel: NetworkView | undefined = useViewModelStore(
     (state) => state.getViewModel(effectiveTargetNetworkId ?? ''),

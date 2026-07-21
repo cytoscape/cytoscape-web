@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/contextMenuApi.test.ts
 // Plain Jest tests for contextMenuApi — factory + anonymous singleton patterns.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes } from '../types/ApiResult'
 import { contextMenuApi, createContextMenuApi } from './contextMenuApi'
 
 // ── Mock store ────────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -101,7 +101,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 
@@ -142,7 +142,7 @@ describe('createContextMenuApi (per-app factory)', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.ContextMenuItemNotFound)
+      expect(result.error.code).toBe(AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND.code)
     }
   })
 })
@@ -179,7 +179,7 @@ describe('contextMenuApi (anonymous singleton)', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
   })
 })

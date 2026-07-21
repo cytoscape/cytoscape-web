@@ -10,13 +10,14 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useCytoscapeDesktopPermissionNotice } from '../../../data/hooks/useCytoscapeDesktopPermissionNotice'
 import { useOpenNetworkInCytoscape } from '../../../data/hooks/useOpenInCytoscapeDesktop'
 import { Network } from '../../../models/NetworkModel'
 import { NetworkView } from '../../../models/ViewModel'
+import { CytoscapeDesktopPermissionDialog } from '../../CytoscapeDesktopPermissionDialog'
 import { useFeatureAvailability } from '../../FeatureAvailability'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
-
 
 export const OpenNetworkInCytoscapeMenuItem = ({
   onClick: handleClose,
@@ -24,6 +25,7 @@ export const OpenNetworkInCytoscapeMenuItem = ({
   const cyndex = new CyNDEx()
   const openNetworkInCytoscape = useOpenNetworkInCytoscape()
   const featureAvailabilityState = useFeatureAvailability()
+  const desktopNotice = useCytoscapeDesktopPermissionNotice()
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -47,8 +49,8 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     (state) => state.opaqueAspects[currentNetworkId],
   )
 
-  const handleOpenNetworkInCytoscape = async (): Promise<void> => {
-    await openNetworkInCytoscape(
+  const openInCytoscape = (): void => {
+    void openNetworkInCytoscape(
       network,
       visualStyle,
       summary,
@@ -57,8 +59,16 @@ export const OpenNetworkInCytoscapeMenuItem = ({
       viewModel,
       opaqueAspects,
       cyndex,
-    )
-    handleClose()
+    ).finally(() => {
+      handleClose()
+    })
+  }
+
+  const handleOpenNetworkInCytoscape = (): void => {
+    // On first use, explain the browser's local-network permission prompt
+    // before attempting to reach Cytoscape Desktop (CW-Localhost). The menu is
+    // kept open until the notice is confirmed so the dialog is not unmounted.
+    desktopNotice.run(openInCytoscape)
   }
 
   const disabled =
@@ -66,12 +76,24 @@ export const OpenNetworkInCytoscapeMenuItem = ({
     currentNetworkId === ''
 
   return (
-    <DropdownMenuItem
-      label="Open Network in Cytoscape Desktop"
-      tooltip={currentNetworkId === '' ? '' : featureAvailabilityState.tooltip}
-      icon={<LaptopChromebookIcon />}
-      disabled={disabled}
-      onClick={handleOpenNetworkInCytoscape}
-    />
+    <>
+      <CytoscapeDesktopPermissionDialog
+        open={desktopNotice.open}
+        onConfirm={desktopNotice.onConfirm}
+        onCancel={() => {
+          desktopNotice.onCancel()
+          handleClose()
+        }}
+      />
+      <DropdownMenuItem
+        label="Open Network in Cytoscape Desktop"
+        tooltip={
+          currentNetworkId === '' ? '' : featureAvailabilityState.tooltip
+        }
+        icon={<LaptopChromebookIcon />}
+        disabled={disabled}
+        onClick={handleOpenNetworkInCytoscape}
+      />
+    </>
   )
 }
