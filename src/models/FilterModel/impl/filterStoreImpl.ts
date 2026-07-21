@@ -235,3 +235,42 @@ export const updateRange = <T>(
   }
 }
 
+
+/**
+ * Remove all per-network search state (index + indexed columns) for a
+ * deleted network. Without this, indexes leaked in memory for the rest of
+ * the session (REVIEW.md round-2 P2, cleaned via the delete orchestrator).
+ */
+export const deleteNetworkIndex = <T>(
+  state: FilterState<T>,
+  networkId: IdType,
+): FilterState<T> => {
+  const index = { ...state.search.index }
+  const indexedColumns = { ...state.search.indexedColumns }
+  delete index[networkId]
+  delete indexedColumns[networkId]
+  return {
+    ...state,
+    search: {
+      ...state.search,
+      index,
+      indexedColumns,
+    },
+  }
+}
+
+/**
+ * Remove all per-network search state for every network.
+ */
+export const deleteAllNetworkIndexes = <T>(
+  state: FilterState<T>,
+): FilterState<T> => {
+  return {
+    ...state,
+    search: {
+      ...state.search,
+      index: {},
+      indexedColumns: {},
+    },
+  }
+}

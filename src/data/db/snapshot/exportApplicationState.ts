@@ -12,8 +12,9 @@
 import packageJson from '../../../../package.json'
 import { logDb, registerDebugTool } from '../../../debug'
 import { getDatabaseVersion } from '../index'
+import { encodeRichValues } from '../serialization/richValues'
 import type { DatabaseSnapshot } from './index'
-import { exportDatabaseSnapshot } from './index'
+import { buildDatabaseSnapshot } from './index'
 
 /**
  * Application state structure combining database and store states.
@@ -188,9 +189,14 @@ export const exportApplicationState = async (): Promise<string> => {
   try {
     logDb.info('[exportApplicationState] Starting application state export...')
 
-    // Export database snapshot
-    const dbSnapshotJson = await exportDatabaseSnapshot()
-    const dbSnapshot: DatabaseSnapshot = JSON.parse(dbSnapshotJson)
+    // Build the database snapshot object directly — the old code
+    // stringified the snapshot and immediately re-parsed it, two full
+    // extra passes over the payload (REVIEW.md A6). Rich values (Dates in
+    // summaries, any legacy Maps) are structurally encoded instead.
+    const dbSnapshot: DatabaseSnapshot = await buildDatabaseSnapshot()
+    const encodedDbData: DatabaseSnapshot['data'] = encodeRichValues(
+      dbSnapshot.data,
+    )
 
     // Collect store states
     // We need to dynamically import stores to avoid circular dependencies
@@ -234,9 +240,6 @@ export const exportApplicationState = async (): Promise<string> => {
       const { useMessageStore } = await import(
         '../../hooks/stores/MessageStore'
       )
-      const { useCredentialStore } = await import(
-        '../../hooks/stores/CredentialStore'
-      )
 
       // Get store states
       stores.workspace = serializeStoreState(useWorkspaceStore.getState())
@@ -258,7 +261,11 @@ export const exportApplicationState = async (): Promise<string> => {
       stores.opaqueAspect = serializeStoreState(useOpaqueAspectStore.getState())
       stores.undo = serializeStoreState(useUndoStore.getState())
       stores.message = serializeStoreState(useMessageStore.getState())
-      stores.credential = serializeStoreState(useCredentialStore.getState())
+      // SECURITY: the credential store holds the Keycloak client, whose
+      // enumerable properties include token/refreshToken/idToken after
+      // login. This export is meant to be shared for debugging, so
+      // credentials must never be serialized into it.
+      stores.credential = '[REDACTED: credentials are never exported]'
     } catch (storeError) {
       logDb.warn(
         '[exportApplicationState] Failed to export some store states:',
@@ -282,7 +289,7 @@ export const exportApplicationState = async (): Promise<string> => {
     // Build application state
     const appState: ApplicationState = {
       metadata: dbSnapshot.metadata,
-      database: dbSnapshot.data,
+      database: encodedDbData,
       stores,
       summary: {
         networkCount,

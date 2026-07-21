@@ -1,7 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import NetworkFn from '../../NetworkModel'
-import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
 import { LayoutEngine } from '../LayoutEngine'
 import {
   defAlgorithm,
@@ -11,11 +9,6 @@ import {
   getLayout,
   LayoutEngines,
 } from './layoutSelection'
-
-// Mock the isHCX function to avoid dependency issues
-vi.mock('../../../features/HierarchyViewer/utils/hierarchyUtil', () => ({
-  isHCX: vi.fn(() => false),
-}))
 
 // Mock Cosmos layout to avoid dependency issues with @cosmograph/cosmos
 vi.mock('./Cosmos/cosmosLayout', () => ({
@@ -111,29 +104,19 @@ describe('layoutSelection', () => {
 
   describe('getDefaultLayout', () => {
     it('should return undefined for networks larger than threshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 2000
       const threshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, threshold)
+      const result = getDefaultLayout(numElements, threshold, false)
 
       expect(result).toBeUndefined()
     })
 
     it('should return layout for small networks', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 100
       const threshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, threshold)
+      const result = getDefaultLayout(numElements, threshold, false)
 
       expect(result).toBeDefined()
       if (result) {
@@ -143,15 +126,10 @@ describe('layoutSelection', () => {
     })
 
     it('should return grid layout for networks at threshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = ELE_THRESHOLD
       const threshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, threshold)
+      const result = getDefaultLayout(numElements, threshold, false)
 
       expect(result).toBeDefined()
       if (result) {
@@ -159,30 +137,29 @@ describe('layoutSelection', () => {
       }
     })
 
+    it('should return the hierarchical (dagre) layout for HCX networks', () => {
+      const result = getDefaultLayout(100, 1000, true)
+
+      expect(result).toBeDefined()
+      if (result) {
+        expect(result.algorithmName).toBe(defHierarchicalAlgorithm.name)
+      }
+    })
+
     it('should return layout for networks above threshold but below max threshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 1500
       const maxThreshold = 2000
 
-      const result = getDefaultLayout(summary, numElements, maxThreshold)
+      const result = getDefaultLayout(numElements, maxThreshold, false)
 
       expect(result).toBeDefined()
     })
 
     it('should return undefined when numElements exceeds maxNetworkElementsThreshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 1500
       const maxThreshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, maxThreshold)
+      const result = getDefaultLayout(numElements, maxThreshold, false)
 
       expect(result).toBeUndefined()
     })

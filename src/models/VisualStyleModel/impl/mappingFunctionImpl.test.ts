@@ -164,6 +164,43 @@ describe('MappingFunctionImpl', () => {
       ).toBe(false)
     })
 
+    // REVIEW.md R2-22: valueType2BaseType wrote the 'boolean' key twice
+    // (ValueTypeName.Boolean and VisualPropertyValueTypeName.Boolean are the
+    // same string), and the second write set it to 'string'. That made ANY
+    // single-value column passthrough-mappable onto boolean visual
+    // properties. The missing `as const` on VisualPropertyValueTypeName
+    // widened the enum type to string, so the Record type could not catch
+    // the duplicate or the missing keys.
+    it('allows passthrough from a boolean column to a boolean visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.Boolean,
+          VisualPropertyValueTypeName.Boolean,
+        ),
+      ).toBe(true)
+    })
+
+    it('rejects passthrough from a number column to a boolean visual property (regression: R2-22)', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.Integer,
+          VisualPropertyValueTypeName.Boolean,
+        ),
+      ).toBe(false)
+    })
+
+    it('rejects passthrough from a string column to a boolean visual property (regression: R2-22)', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.Boolean,
+        ),
+      ).toBe(false)
+    })
+
     it('should allow discrete mapping for any types', () => {
       expect(
         typesCanBeMapped(

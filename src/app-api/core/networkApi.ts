@@ -4,16 +4,16 @@
 
 import { v4 as uuidv4 } from 'uuid'
 
+import {
+  deleteAllNetworksFromAllStores,
+  deleteNetworkFromAllStores,
+} from '../../data/hooks/deleteNetworkOrchestrator'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
-import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
-import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
@@ -440,54 +440,25 @@ export const networkApi: NetworkApi = {
     }
   },
 
-  deleteNetwork(networkId, options) {
+  // The options.navigate flag is retained for API compatibility but no
+  // longer changes behavior: the orchestrator always repairs
+  // currentNetworkId when the deleted network was current, and never
+  // switches networks otherwise (the old navigate:true switched to the
+  // first remaining network even when deleting a non-current one).
+  deleteNetwork(networkId, _options) {
     try {
       const networkExists = useNetworkStore.getState().networks.has(networkId)
       if (!networkExists) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
-      const navigate = options?.navigate ?? true
-
-      // Snapshot workspace BEFORE mutation to determine next network
-      const workspace = useWorkspaceStore.getState().workspace
-      const nextNetworkId = navigate
-        ? (workspace.networkIds.filter((id) => id !== networkId)?.[0] ?? '')
-        : ''
-
-      // Delete from all stores (mirrors useDeleteCyNetwork)
-      useNetworkStore.getState().delete(networkId)
-      useNetworkSummaryStore.getState().delete(networkId)
-      useViewModelStore.getState().delete(networkId)
-      useVisualStyleStore.getState().delete(networkId)
-      useTableStore.getState().delete(networkId)
-      useWorkspaceStore.getState().deleteNetworkModifiedStatus(networkId)
-      useOpaqueAspectStore.getState().delete(networkId)
-      useUndoStore.getState().deleteStack(networkId)
-
-      // Clear active network view if this network was active
-      const activeNetworkView = useUiStateStore.getState().ui.activeNetworkView
-      if (activeNetworkView === networkId) {
-        useUiStateStore.getState().setActiveNetworkView('')
-      }
-
-      // Purge per-network UI state (visualStyleOptions, column widths)
-      useUiStateStore.getState().deleteNetworkUiState(networkId)
-
-      // Clear HCX validation result if it exists
-      const validationResults =
-        useHcxValidatorStore.getState().validationResults
-      if (validationResults[networkId] !== undefined) {
-        useHcxValidatorStore.getState().deleteValidationResult(networkId)
-      }
-
-      // Remove from workspace
-      useWorkspaceStore.getState().deleteNetwork(networkId)
-
-      // Switch to next available network
-      if (navigate) {
-        useWorkspaceStore.getState().setCurrentNetworkId(nextNetworkId)
-      }
+      // Single source of truth for the cascade, shared with
+      // useDeleteCyNetwork (REVIEW.md A4) — includes the per-network UI
+      // state purge. It also owns the currentNetworkId invariant: the
+      // pointer is repaired whenever the deleted network was current,
+      // regardless of the navigate option (R2-13 — previously
+      // navigate:false left it dangling).
+      deleteNetworkFromAllStores(networkId)
 
       return ok()
     } catch (e) {
@@ -506,23 +477,9 @@ export const networkApi: NetworkApi = {
 
   deleteAllNetworks() {
     try {
-      // Purge per-network UI state before the workspace forgets the IDs
-      const networkIds = useWorkspaceStore.getState().workspace.networkIds
-      networkIds.forEach((id) =>
-        useUiStateStore.getState().deleteNetworkUiState(id),
-      )
-
-      useNetworkStore.getState().deleteAll()
-      useNetworkSummaryStore.getState().deleteAll()
-      useViewModelStore.getState().deleteAll()
-      useVisualStyleStore.getState().deleteAll()
-      useTableStore.getState().deleteAll()
-      useOpaqueAspectStore.getState().deleteAll()
-      useUndoStore.getState().deleteAllStacks()
-      useWorkspaceStore.getState().deleteAllNetworkModifiedStatuses()
-      useHcxValidatorStore.getState().deleteAllValidationResults()
-      useUiStateStore.getState().setActiveNetworkView('')
-      useWorkspaceStore.getState().deleteAllNetworks()
+      // Single source of truth for the cascade (REVIEW.md A4) — its
+      // deleteAllNetworkUiState covers the per-network UI state purge
+      deleteAllNetworksFromAllStores()
 
       return ok()
     } catch (e) {

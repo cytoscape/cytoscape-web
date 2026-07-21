@@ -6,6 +6,8 @@
 import isEqual from 'lodash/isEqual'
 import uniqWith from 'lodash/uniqWith'
 
+import { logModel } from '../../../../debug'
+
 import { ValueType } from '../../../TableModel'
 import {
   Bypass,
@@ -71,7 +73,16 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   // group bypasses by visual property instead of by element
   nodeBypasses?.nodeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
-      const { id, v } = entry
+      const { id, v } = entry ?? {}
+      // validateCX2 does not inspect bypass payloads — a malformed entry
+      // must not crash the conversion (REVIEW.md R2-19)
+      if (id == null || v == null || typeof v !== 'object') {
+        logModel.warn(
+          '[visualStyleConverter] Skipping malformed node bypass entry:',
+          entry,
+        )
+        return
+      }
       Object.keys(v).forEach((cxVPName) => {
         const entry = Object.entries(cxVisualPropertyConverter).find(
           ([, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
@@ -111,7 +122,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
   // group bypasses by visual property instead of by element
   edgeBypasses?.edgeBypasses?.forEach(
     (entry: { id: CXId; v: Record<string, object> }) => {
-      const { id, v } = entry
+      const { id, v } = entry ?? {}
+      if (id == null || v == null || typeof v !== 'object') {
+        logModel.warn(
+          '[visualStyleConverter] Skipping malformed edge bypass entry:',
+          entry,
+        )
+        return
+      }
       Object.keys(v).forEach((cxVPName) => {
         const entry = Object.entries(cxVisualPropertyConverter).find(
           ([, cxVPConverter]) => cxVPConverter.cxVPName === cxVPName,
@@ -198,7 +216,14 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
           visualStyle[vpName].defaultValue = converter.valueConverter(cxDefault)
         }
 
-        if (cxMapping != null) {
+        // Mappings without a definition cannot be converted; validateCX2
+        // does not inspect mapping shapes, so this must not throw
+        // (REVIEW.md R2-19)
+        if (cxMapping != null && cxMapping.definition == null) {
+          logModel.warn(
+            `[visualStyleConverter] Skipping ${cxMapping.type} mapping for ${vpName}: missing definition`,
+          )
+        } else if (cxMapping != null) {
           switch (cxMapping.type) {
             case 'PASSTHROUGH': {
               const m: PassthroughMappingFunction = {
@@ -232,6 +257,9 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
             case 'CONTINUOUS': {
               const numMapEntries = cxMapping?.definition?.map?.length ?? 0
               if (numMapEntries < 2) {
+                logModel.warn(
+                  `[visualStyleConverter] Skipping continuous mapping for ${vpName}: only ${numMapEntries} map entries`,
+                )
                 visualStyle[vpName].mapping = undefined
                 break
               }
@@ -295,7 +323,10 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 (a, b) => (a.value as number) - (b.value as number),
               )
 
-              if (min != null && max != null && controlPoints.length > 0) {
+              // A 2-entry map (min + max, no middle control points) is a
+              // valid continuous mapping — do not require controlPoints
+              // (REVIEW.md R2-20)
+              if (min != null && max != null) {
                 const m: ContinuousMappingFunction = {
                   type: MappingFunctionType.Continuous,
                   attribute: cxMapping.definition.attribute,
@@ -304,15 +335,18 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                   controlPoints: sortedCtrlPts,
                   visualPropertyType: vp.type,
                   defaultValue: vp.defaultValue,
-                  gtMaxVpValue: converter.valueConverter(
-                    max.vpValue as CXVisualPropertyValue,
-                  ),
-                  ltMinVpValue: converter.valueConverter(
-                    min.vpValue as CXVisualPropertyValue,
-                  ),
+                  // min/max vpValues were already converted above — a
+                  // second valueConverter pass corrupts non-idempotent
+                  // converters (REVIEW.md R2-20)
+                  gtMaxVpValue: max.vpValue,
+                  ltMinVpValue: min.vpValue,
                   attributeType: cxMapping.definition.type,
                 }
                 visualStyle[vpName].mapping = m
+              } else {
+                logModel.warn(
+                  `[visualStyleConverter] Skipping continuous mapping for ${vpName}: boundary entries lack min/max values`,
+                )
               }
               break
             }
@@ -325,7 +359,7 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
       } else {
         // property is not found in cx, in theory all cytoscape web properties should be in
         // cx, if this happens, it is a bug
-        console.debug(
+        logModel.info(
           `[${createVisualStyleFromCx.name}]: Property ${vpName} not found in CX`,
         )
       }

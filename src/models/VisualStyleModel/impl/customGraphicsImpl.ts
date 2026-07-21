@@ -3,6 +3,7 @@
 
 export const VALID_PIE_CHART_SLICE_INDEX_RANGE = [1, 16] as const
 
+import { logModel } from '../../../debug'
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Mapper } from '../VisualMappingFunction'
@@ -38,7 +39,7 @@ export const getPieBackgroundColorViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.info(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -73,7 +74,7 @@ export const getPieBackgroundSizeViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.info(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }

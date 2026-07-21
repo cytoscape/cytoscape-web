@@ -719,7 +719,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 50, 100],
       'double',
@@ -729,7 +729,7 @@ describe('createContinuousMapping', () => {
     expect(mockCreateContinuousMapping).toHaveBeenCalledWith(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 50, 100],
       'double',
@@ -740,7 +740,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'missing',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [],
       'double',
@@ -762,7 +762,7 @@ describe('createContinuousMapping', () => {
     visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 50, 100],
       'double',
@@ -798,7 +798,7 @@ describe('createContinuousMapping', () => {
     visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 50, 100],
       'double',
@@ -859,7 +859,7 @@ describe('createContinuousMapping', () => {
     visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 50, 100],
       'double',
@@ -892,7 +892,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       ['low', 'high'] as any,
       'double',
@@ -914,7 +914,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, NaN, Infinity],
       'double',
@@ -935,7 +935,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [],
       'double',
@@ -956,7 +956,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 100],
       'double',
@@ -982,7 +982,7 @@ describe('createContinuousMapping', () => {
     const result = visualStyleApi.createContinuousMapping(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'label',
       ['a', 'b'],
       'string',
