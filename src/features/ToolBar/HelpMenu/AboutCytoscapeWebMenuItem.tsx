@@ -1,20 +1,31 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
+  Link,
   Paper,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import React from 'react'
 
+import logo from '../../../assets/cytoscape.svg'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../data/db'
 import { logUi } from '../../../debug'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+
+// Release notes live on the GitHub releases index. The generic page is used
+// (rather than a version-specific tag) so the link never 404s when the
+// package version lags the latest published tag.
+export const RELEASE_NOTES_URL =
+  'https://github.com/cytoscape/cytoscape-web/releases'
 
 
 const formatDateForHash = (dateString: string): string => {
@@ -72,10 +83,15 @@ export const AboutCytoscapeWebMenuItem = (
         onClick={handleOpenDialog}
       />
       <Dialog open={open} onClose={handleCloseDialog}>
-        <DialogContent>
-          <Typography variant="h6" sx={{ mb: 4 }}>
-            Cytoscape Web
-          </Typography>
+        <DialogContent sx={{ minWidth: 360 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+            <img
+              src={logo}
+              alt="Cytoscape Web logo"
+              style={{ width: 40, height: 40 }}
+            />
+            <Typography variant="h6">Cytoscape Web</Typography>
+          </Box>
           <Typography variant="body1">
             A web-based network visualization and analysis platform.
           </Typography>
@@ -87,8 +103,27 @@ export const AboutCytoscapeWebMenuItem = (
               color: (theme) => theme.palette.text.secondary,
             }}
           >
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              Version: {packageInfo.version}
+            <Typography
+              variant="body1"
+              sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
+            >
+              Version:&nbsp;
+              <Tooltip title="View release notes on GitHub">
+                <Link
+                  data-testid="about-version-link"
+                  href={RELEASE_NOTES_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.25,
+                  }}
+                >
+                  {packageInfo.version}
+                  <OpenInNewIcon sx={{ fontSize: 14 }} />
+                </Link>
+              </Tooltip>
             </Typography>
             <Typography variant="body2" gutterBottom>
               Build ID: {commitHash}
