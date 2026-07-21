@@ -3,7 +3,7 @@ import { ReactElement } from 'react'
 
 // Where "Learn more" points. Kept as a constant so it is easy to repoint at a
 // dedicated HCX documentation page when one exists.
-export const HCX_DOCS_URL = 'https://github.com/cytoscape/cytoscape-web/wiki'
+export const HCX_DOCS_URL = 'https://cytoscape.org/cx/cx2/hcx-specification/'
 
 /**
  * Tooltip shown when the "Run LLM Query" menu item is disabled because the

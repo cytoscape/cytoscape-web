@@ -931,7 +931,7 @@ export default function TableBrowser(props: {
       const rowData = rows?.[rowIndex]
       const cxId = rowData?.id
       const column = columns?.[columnIndex]
-      const columnKey = column.id
+      const columnKey = column?.id
       let data = newValue.data
 
       if (rowData == null || cxId == null || column == null || data == null)
@@ -1889,7 +1889,7 @@ export default function TableBrowser(props: {
           height={props.height - GRID_GAP}
           getCellContent={getContent}
           onCellEdited={onCellEdited}
-          columns={columns}
+          columns={allColumns}
           rows={maxNodeId - minNodeId + 1}
           theme={dataEditorTheme}
         />
