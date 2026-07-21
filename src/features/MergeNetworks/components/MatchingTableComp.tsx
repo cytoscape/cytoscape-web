@@ -1,6 +1,5 @@
 //import the necessary libraries and components
 import {
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -11,6 +10,7 @@ import {
   Tooltip,
 } from '@mui/material'
 import React, { useEffect, useMemo } from 'react'
+import chroma from 'chroma-js'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
@@ -25,6 +25,7 @@ import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useMergeToolTipStore from '../store/mergeToolTip'
 import useNetMatchingTableStore from '../store/netMatchingTableStore'
 import useNodeMatchingTableStore from '../store/nodeMatchingTableStore'
+import { getFirstRowTooltipPlacements } from './firstRowTooltipPlacement'
 import { NetAttDropDownTemplate } from './NetAttDropDownTemplate'
 import { TypeDropDownTemplate } from './TypeDropDownTemplate'
 
@@ -208,110 +209,132 @@ export const MatchingTableComp = React.memo(
     return (
       <TableContainer
         key={`${tableView}-tablecontainer`}
-        component={Paper}
-        sx={{ maxHeight: 500, overflow: 'auto' }}
+        sx={{ maxHeight: 500, overflow: 'auto', border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}
       >
         <Table sx={{ minWidth: 400 }} aria-label="simple table">
           <TableHead>
-            <TableRow>
-              {netLst.map((net) => (
-                <TableCell key={net[1]}>{net[0]}</TableCell>
-              ))}
-              <TableCell>Merged Network</TableCell>
-              <TableCell>Type</TableCell>
-            </TableRow>
+            {netLst.length > 0 ? (
+              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.subtle }}>
+                {netLst.map((net) => (
+                  <TableCell key={net[1]} sx={{ py: 1 }}>{net[0]}</TableCell>
+                ))}
+                <TableCell sx={{ py: 1 }}>Merged Network</TableCell>
+                <TableCell sx={{ py: 1 }}>Type</TableCell>
+              </TableRow>
+            ) : (
+              <TableRow>
+                <TableCell sx={{ textAlign: 'center', color: (theme) => theme.palette.text.disabled, fontWeight: 'normal' }}>
+                  -- Please select networks to merge --
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
           <TableBody>
-            {tableData.map((row, rowIndex) => (
-              <Tooltip
-                key={`${row.id}-row-tooltip`}
-                title={getTooltipMessage(
-                  row,
-                  duplicatedNamesIds,
-                  emptyRowIds,
-                  netLst,
-                )}
-                placement="top"
-                arrow
-              >
-                <TableRow
-                  key={`${row.id}-row`}
-                  style={{
-                    backgroundColor:
-                      row.hasConflicts ||
-                      duplicatedNamesIds.has(row.id) ||
-                      emptyRowIds.has(row.id)
-                        ? '#e98e8e'
-                        : 'transparent',
-                  }}
+            {tableData.map((row, rowIndex) => {
+              const rowTooltipMessage = getTooltipMessage(
+                row,
+                duplicatedNamesIds,
+                emptyRowIds,
+                netLst,
+              )
+              const tooltipPlacements = getFirstRowTooltipPlacements(
+                rowTooltipMessage !== '',
+              )
+
+              return (
+                <Tooltip
+                  key={`${row.id}-row-tooltip`}
+                  title={rowTooltipMessage}
+                  placement={tooltipPlacements.rowPlacement}
+                  arrow
                 >
-                  {netLst.map((net) => (
-                    <TableCell
-                      key={`${row.id}-${net[1]}`}
-                      component="th"
-                      scope="row"
-                    >
-                      <NetAttDropDownTemplate
-                        networkRecords={networkRecords}
-                        rowData={row}
-                        rowIndex={rowIndex}
-                        column={net[1]}
-                        type={tableView}
-                        netLst={netLst}
-                      />
-                    </TableCell>
-                  ))}
-                  <TableCell key={`${row.id}-mergedNetwork`}>
-                    {row.id === 0 && tableView === TableView.node ? (
-                      <Tooltip
-                        key={`${row.id}-mergedNetwork-tooltip`}
-                        title={
-                          'This attribute is used to match nodes between networks.'
-                        }
-                        placement="top"
-                        arrow
+                  <TableRow
+                    key={`${row.id}-row`}
+                    sx={{
+                      backgroundColor: (theme) =>
+                        row.hasConflicts ||
+                        duplicatedNamesIds.has(row.id) ||
+                        emptyRowIds.has(row.id)
+                          ? chroma(theme.palette.error.light).alpha(0.25).css()
+                          : 'transparent',
+                    }}
+                  >
+                    {netLst.map((net) => (
+                      <TableCell
+                        key={`${row.id}-${net[1]}`}
+                        component="th"
+                        scope="row"
+                        sx={{ py: 0.5 }}
                       >
+                        <NetAttDropDownTemplate
+                          networkRecords={networkRecords}
+                          rowData={row}
+                          rowIndex={rowIndex}
+                          column={net[1]}
+                          type={tableView}
+                          netLst={netLst}
+                        />
+                      </TableCell>
+                    ))}
+                    <TableCell
+                      key={`${row.id}-mergedNetwork`}
+                      sx={{ py: 0.5 }}
+                    >
+                      {row.id === 0 && tableView === TableView.node ? (
+                        <Tooltip
+                          key={`${row.id}-mergedNetwork-tooltip`}
+                          title={
+                            'This attribute is used to match nodes between networks.'
+                          }
+                          placement={tooltipPlacements.matchInfoPlacement}
+                          arrow
+                        >
+                          <TextField
+                            data-testid={`merge-matching-table-textfield-${row.id}`}
+                            key={`${row.id}-matchingAttribute-textField`}
+                            fullWidth
+                            variant="outlined"
+                            value={row.mergedNetwork}
+                            onChange={(e) =>
+                              onMergedNetworkChange(e, rowIndex, row)
+                            }
+                            style={{ minWidth: 100 }}
+                            InputProps={{ style: { color: 'red' } }}
+                          />
+                        </Tooltip>
+                      ) : (
                         <TextField
                           data-testid={`merge-matching-table-textfield-${row.id}`}
-                          key={`${row.id}-matchingAttribute-textField`}
+                          key={`${row.id}-textField`}
                           fullWidth
                           variant="outlined"
+                          size="small"
                           value={row.mergedNetwork}
                           onChange={(e) =>
                             onMergedNetworkChange(e, rowIndex, row)
                           }
                           style={{ minWidth: 100 }}
-                          InputProps={{ style: { color: 'red' } }}
+                          disabled={
+                            tableView === TableView.network && rowIndex < 3
+                          }
                         />
-                      </Tooltip>
-                    ) : (
-                      <TextField
-                        data-testid={`merge-matching-table-textfield-${row.id}`}
-                        key={`${row.id}-textField`}
-                        fullWidth
-                        variant="outlined"
-                        value={row.mergedNetwork}
-                        onChange={(e) =>
-                          onMergedNetworkChange(e, rowIndex, row)
-                        }
-                        style={{ minWidth: 100 }}
-                        disabled={
-                          tableView === TableView.network && rowIndex < 3
-                        }
+                      )}
+                    </TableCell>
+                    <TableCell
+                      key={`${row.id}-type`}
+                      sx={{ py: 0.5 }}
+                    >
+                      <TypeDropDownTemplate
+                        type={tableView}
+                        rowData={row}
+                        rowIndex={rowIndex}
+                        netLst={netLst}
                       />
-                    )}
-                  </TableCell>
-                  <TableCell key={`${row.id}-type`}>
-                    <TypeDropDownTemplate
-                      type={tableView}
-                      rowData={row}
-                      rowIndex={rowIndex}
-                      netLst={netLst}
-                    />
-                  </TableCell>
-                </TableRow>
-              </Tooltip>
-            ))}
+                    </TableCell>
+                  </TableRow>
+                </Tooltip>
+              )
+            })}
           </TableBody>
         </Table>
       </TableContainer>

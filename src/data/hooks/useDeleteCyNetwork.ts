@@ -28,7 +28,8 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
   const deleteNetwork = (id: IdType, options?: DeleteNetworkOptions): void => {
     const navigate = options?.navigate ?? true
 
-    // The orchestrator cleans every store and repairs currentNetworkId
+    // The orchestrator cleans every store (including per-network UI state
+    // and the active view) and repairs currentNetworkId
     const { currentNetworkId } = deleteNetworkFromAllStores(id)
 
     if (navigate) {

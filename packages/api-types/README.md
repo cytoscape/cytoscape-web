@@ -46,7 +46,8 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 | `ResourceApi` | Register panels and menu items at runtime |
 | `ResourceDeclaration` | Declarative resource entry for `CyAppWithLifecycle.resources` |
 | `ApiResult<T>` | Discriminated union returned by all API functions |
-| `ApiErrorCode` | Enum of all possible error codes |
+| `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` | Domain-grouped error code catalogs — each entry is `{ code, severity, message }` |
+| `ApiErrorCodeDef`, `ApiErrorSeverity` | Supporting types for the error code catalogs |
 | `CyWebEvents` | Typed event detail shapes for all `window` events |
 | Model types | `IdType`, `Network`, `Node`, `Edge`, `Table`, `VisualStyle`, … |
 
@@ -54,6 +55,31 @@ Ambient module declarations for all `cyweb/*` Module Federation remotes are also
 like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in TypeScript.
 
 ## Usage examples
+
+### Error handling
+
+Every failed call returns `{ success: false, error: { code, severity, message } }`.
+Codes that enforce a CX2 validation requirement reuse the CX2 code string
+directly (`FK1`, `BV1`, `MI3`, …); codes with no CX2 equivalent use a distinct
+`APP1`–`APP9` namespace. Import the catalogs to compare against known codes
+rather than hardcoding string literals:
+
+```typescript
+import { AppCodes, TableCodes } from 'cyweb/ApiTypes'
+
+const result = tableApi.createColumn(networkId, 'node', 'id', 'string', '')
+if (!result.success) {
+  if (result.error.code === TableCodes.NODE_ID_COLUMN_FORBIDDEN.code) {
+    // FK1 — "id" is a reserved column name
+  } else if (result.error.code === AppCodes.NETWORK_NOT_FOUND.code) {
+    // APP1 — networkId doesn't exist
+  }
+  console.error(result.error.severity, result.error.message)
+}
+```
+
+See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/ErrorCodes.md)
+for the full code catalog.
 
 ### Declarative resource registration (recommended)
 
@@ -175,9 +201,11 @@ window.addEventListener('cywebapi:ready', () => {
 
 - [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md) — Full API reference
 - [Event Bus Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/event-bus-specification.md) — Event types, detail shapes, and subscription patterns
-- [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0001-api-result-discriminated-union.md)
+- [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0001-api-result-discriminated-union.md) (error code/severity shape superseded by ADR 0005)
 - [ADR 0002 — Public type re-export strategy](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0002-public-type-reexport-strategy.md)
 - [ADR 0003 — Framework-agnostic core layer](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md)
+- [ADR 0005 — Structured, severity-tagged error codes](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0005-structured-error-codes.md)
+- [ErrorCodes.md — Full error code reference](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/ErrorCodes.md)
 
 ## License
 

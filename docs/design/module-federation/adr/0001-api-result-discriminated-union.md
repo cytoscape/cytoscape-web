@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted
+Accepted. Partially superseded by [ADR 0005](./0005-structured-error-codes.md) —
+the error code/severity shape only (`ApiErrorCode` → domain-grouped catalogs,
+`cx2Code` removed, `severity` added). The discriminated-union structure decided
+here (`ApiResult<T> = ApiSuccess<T> | ApiFailure`) remains in effect, unchanged.
 
 ## Context
 

@@ -5,6 +5,7 @@
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
 import {
   CellEdit as StoreCellEdit,
@@ -16,7 +17,15 @@ import {
   ValueTypeName,
 } from '../../models/TableModel'
 import { Column } from '../../models/TableModel/Column'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { VisualPropertyName } from '../../models/VisualStyleModel'
+import { AppCodes, ApiResult, ElementCodes, fail, ok } from '../types/ApiResult'
+import {
+  validateColumnDefaultValue,
+  validateColumnName,
+  validateColumnNameAvailable,
+  validateTableElementsExist,
+  validateValuesMatchColumnTypes,
+} from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -79,6 +88,16 @@ export interface TableApi {
     rows: Array<Record<string, ValueType>>
   }>
 
+  /**
+   * Return only the column definitions (the table schema) without
+   * loading any rows — cheap on large tables where getTable would
+   * materialize every row.
+   */
+  getColumns(
+    networkId: IdType,
+    tableType: AppTableType,
+  ): ApiResult<{ columns: ColumnInfo[] }>
+
   // --- TSV I/O ---
   exportTableToTsv(
     networkId: IdType,
@@ -91,7 +110,12 @@ export interface TableApi {
     tableType: AppTableType,
     tsvText: string,
     options?: ImportTableFromTsvOptions,
-  ): ApiResult<{ rowCount: number; newColumns: string[] }>
+  ): ApiResult<{
+    rowCount: number
+    newColumns: string[]
+    /** TSV key values that matched no element in the network */
+    skippedRows: string[]
+  }>
 
   // --- Write ---
   createColumn(
@@ -151,6 +175,40 @@ function tableKey(tableType: AppTableType): 'nodeTable' | 'edgeTable' {
   return tableType === 'node' ? 'nodeTable' : 'edgeTable'
 }
 
+interface DisplayColumnConfig {
+  attributeName: string
+  visible?: boolean
+  columnWidth?: number
+}
+
+/**
+ * Apply an update to one table's columnConfiguration in the
+ * tableDisplayConfiguration (UiStateStore).
+ *
+ * Directly mutates the Immer-managed state. Using
+ * setTableDisplayConfiguration triggers toPlainObject + IndexedDB write
+ * which can hang inside page.evaluate(). This minimal mutation is safe
+ * because the next DB persist cycle will pick it up.
+ */
+function updateTableDisplayConfigColumns(
+  networkId: IdType,
+  tableType: AppTableType,
+  update: (cols: DisplayColumnConfig[]) => DisplayColumnConfig[],
+): void {
+  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
+  useUiStateStore.setState((state: any) => {
+    const tdc =
+      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
+        ?.tableDisplayConfiguration
+    if (!tdc?.[configKey]?.columnConfiguration) return state
+
+    tdc[configKey].columnConfiguration = update(
+      tdc[configKey].columnConfiguration,
+    )
+    return state
+  })
+}
+
 /**
  * Add a column to the tableDisplayConfiguration in UiStateStore so the
  * Table Browser shows newly created columns. Without this, columns created
@@ -161,29 +219,44 @@ function syncColumnToTableDisplayConfig(
   tableType: AppTableType,
   columnName: string,
 ): void {
-  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
-  // Directly mutate the Immer-managed state to add the column entry.
-  // Using setTableDisplayConfiguration triggers toPlainObject + IndexedDB
-  // write which can hang inside page.evaluate(). This minimal mutation
-  // is safe because it runs inside the same synchronous call stack as
-  // createColumn, and the next DB persist cycle will pick it up.
-  useUiStateStore.setState((state: any) => {
-    const tdc =
-      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
-        ?.tableDisplayConfiguration
-    if (!tdc?.[configKey]?.columnConfiguration) return state
+  updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+    cols.some((c) => c.attributeName === columnName)
+      ? cols
+      : [
+          { attributeName: columnName, visible: true, columnWidth: undefined },
+          ...cols,
+        ],
+  )
+}
 
-    const colConfig = tdc[configKey].columnConfiguration
-    const exists = colConfig.some(
-      (c: { attributeName: string }) => c.attributeName === columnName,
+/**
+ * Retarget (newName given) or remove (newName undefined) visual style
+ * mappings that reference a column, limited to visual properties of the
+ * matching element group. Mirrors the Table Browser cascade so external
+ * column edits cannot leave mappings pointing at a non-existent
+ * attribute (CX2 MI1 / RC3).
+ */
+function cascadeColumnToMappings(
+  networkId: IdType,
+  tableType: AppTableType,
+  columnName: string,
+  newName?: string,
+): void {
+  const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
+  if (visualStyle === undefined) return
+
+  const setMapping = useVisualStyleStore.getState().setMapping
+  Object.entries(visualStyle).forEach(([vpName, vp]) => {
+    if (vp?.group !== tableType || vp?.mapping?.attribute !== columnName) {
+      return
+    }
+    setMapping(
+      networkId,
+      vpName as VisualPropertyName,
+      newName === undefined
+        ? undefined
+        : { ...vp.mapping, attribute: newName },
     )
-    if (exists) return state
-
-    tdc[configKey].columnConfiguration = [
-      { attributeName: columnName, visible: true, columnWidth: undefined },
-      ...colConfig,
-    ]
-    return state
   })
 }
 
@@ -194,20 +267,21 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const row = table?.rows?.get(elementId)
       if (row === undefined) {
-        const code =
+        return fail(
           tableType === 'node'
-            ? ApiErrorCode.NodeNotFound
-            : ApiErrorCode.EdgeNotFound
-        return fail(code, `Element ${elementId} not found in ${tableType} table`)
+            ? ElementCodes.NODE_NOT_FOUND
+            : ElementCodes.EDGE_NOT_FOUND,
+          elementId,
+        )
       }
       return ok({ value: row[column] as ValueType })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -215,20 +289,21 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const row = table?.rows?.get(elementId)
       if (row === undefined) {
-        const code =
+        return fail(
           tableType === 'node'
-            ? ApiErrorCode.NodeNotFound
-            : ApiErrorCode.EdgeNotFound
-        return fail(code, `Element ${elementId} not found in ${tableType} table`)
+            ? ElementCodes.NODE_NOT_FOUND
+            : ElementCodes.EDGE_NOT_FOUND,
+          elementId,
+        )
       }
       return ok({ row: row as Record<AttributeName, ValueType> })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -236,8 +311,20 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      const invalidName = validateColumnName(columnName, tableType)
+      if (invalidName) return invalidName
+
+      const duplicateName = validateColumnNameAvailable(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        columnName,
+      )
+      if (duplicateName) return duplicateName
+
+      const invalidDefault = validateColumnDefaultValue(defaultValue)
+      if (invalidDefault) return invalidDefault
+
       useTableStore
         .getState()
         .createColumn(networkId, tableType, columnName, dataType, defaultValue)
@@ -255,7 +342,7 @@ export const tableApi: TableApi = {
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -263,12 +350,27 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
+
+      // Cascade: mappings referencing the column are deleted (CX2 RC3)
+      cascadeColumnToMappings(networkId, tableType, columnName)
+
+      // Deferred for the same reason as createColumn (see above)
+      setTimeout(() => {
+        try {
+          updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+            cols.filter((c) => c.attributeName !== columnName),
+          )
+        } catch {
+          // Best-effort
+        }
+      }, 0)
+
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -276,14 +378,45 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      const invalidName = validateColumnName(newName, tableType)
+      if (invalidName) return invalidName
+
+      // Self-rename is a harmless no-op; anything else must not collide
+      if (newName !== currentName) {
+        const duplicateName = validateColumnNameAvailable(
+          tableRecord[tableKey(tableType)]?.columns ?? [],
+          newName,
+        )
+        if (duplicateName) return duplicateName
+      }
+
       useTableStore
         .getState()
         .setColumnName(networkId, tableType, currentName, newName)
+
+      // Cascade: mappings follow the rename so they never dangle (MI1)
+      cascadeColumnToMappings(networkId, tableType, currentName, newName)
+
+      // Deferred for the same reason as createColumn (see above)
+      setTimeout(() => {
+        try {
+          updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+            cols.map((c) =>
+              c.attributeName === currentName
+                ? { ...c, attributeName: newName }
+                : c,
+            ),
+          )
+        } catch {
+          // Best-effort
+        }
+      }, 0)
+
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -291,14 +424,25 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      const missing = validateTableElementsExist(networkId, tableType, [
+        elementId,
+      ])
+      if (missing) return missing
+
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        [{ column, value }],
+      )
+      if (typeMismatch) return typeMismatch
+
       useTableStore
         .getState()
         .setValue(networkId, tableType as TableType, elementId, column, value)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -306,8 +450,21 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      const missing = validateTableElementsExist(
+        networkId,
+        tableType,
+        cellEdits.map((edit) => edit.id),
+      )
+      if (missing) return missing
+
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        cellEdits,
+      )
+      if (typeMismatch) return typeMismatch
+
       // Convert app API CellEdit {id, column, value} → store CellEdit {row, column, value}
       const storeCellEdits: StoreCellEdit[] = cellEdits.map((edit) => ({
         row: edit.id,
@@ -319,7 +476,7 @@ export const tableApi: TableApi = {
         .setValues(networkId, tableType as TableType, storeCellEdits)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -327,8 +484,23 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      const missing = validateTableElementsExist(
+        networkId,
+        tableType,
+        Object.keys(rows),
+      )
+      if (missing) return missing
+
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        Object.values(rows).flatMap((row) =>
+          Object.entries(row).map(([column, value]) => ({ column, value })),
+        ),
+      )
+      if (typeMismatch) return typeMismatch
+
       // Convert app API Record<IdType, Record<...>> → store Map<IdType, Record<...>>
       const rowsMap = new Map<IdType, Record<AttributeName, ValueType>>(
         Object.entries(rows) as Array<
@@ -340,7 +512,7 @@ export const tableApi: TableApi = {
         .editRows(networkId, tableType as TableType, rowsMap)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -348,14 +520,54 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      if (elementIds !== undefined && elementIds.length > 0) {
+        const missing = validateTableElementsExist(
+          networkId,
+          tableType,
+          elementIds,
+        )
+        if (missing) return missing
+      }
+      const typeMismatch = validateValuesMatchColumnTypes(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        [{ column: columnName, value }],
+      )
+      if (typeMismatch) return typeMismatch
+
       useTableStore
         .getState()
         .applyValueToElements(networkId, tableType, columnName, value, elementIds)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  // --- getColumns -------------------------------------------------------------
+
+  getColumns(networkId, tableType): ApiResult<{ columns: ColumnInfo[] }> {
+    try {
+      const tableRecord = useTableStore.getState().tables[networkId]
+      if (tableRecord === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      const table = tableRecord[tableKey(tableType)]
+      const columns: ColumnInfo[] = []
+      // Match getTable: edge tables report source/target pseudo-columns
+      if (tableType === 'edge') {
+        columns.push(
+          { name: 'source', type: ValueTypeName.String },
+          { name: 'target', type: ValueTypeName.String },
+        )
+      }
+      for (const col of table?.columns ?? []) {
+        columns.push({ name: col.name, type: col.type })
+      }
+      return ok({ columns })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -365,7 +577,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const allColumns: Column[] = table?.columns ?? []
@@ -413,7 +625,7 @@ export const tableApi: TableApi = {
 
       return ok({ columns: columnInfos, rows })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -447,7 +659,7 @@ export const tableApi: TableApi = {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
-        return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
       const existingColumns = new Map(
@@ -457,7 +669,7 @@ export const tableApi: TableApi = {
       const lines = tsvText.split('\n').filter((l) => l.trim() !== '')
       if (lines.length < 2) {
         return fail(
-          ApiErrorCode.InvalidInput,
+          AppCodes.INVALID_INPUT,
           'TSV must have at least a header line and one data line',
         )
       }
@@ -484,7 +696,7 @@ export const tableApi: TableApi = {
       const keyIndex = colNames.indexOf(keyColumn)
       if (keyIndex < 0) {
         return fail(
-          ApiErrorCode.InvalidInput,
+          AppCodes.INVALID_INPUT,
           `Key column "${keyColumn}" not found in TSV header`,
         )
       }
@@ -505,6 +717,9 @@ export const tableApi: TableApi = {
             inferredType,
             '',
           )
+          // Record the type so cell values parse as the column type
+          // (previously fell back to string for inferred columns)
+          colTypes.set(colName, inferredType)
           newColumns.push(colName)
           // Sync to Table Browser display config
           setTimeout(() => {
@@ -517,6 +732,35 @@ export const tableApi: TableApi = {
         }
       }
 
+      // Resolve TSV key values to element IDs so imports can never
+      // create orphaned rows: 'id' keys must exist in the network;
+      // custom keys are looked up in the existing table rows.
+      const network = useNetworkStore.getState().networks.get(networkId)
+      const knownIds = new Set<IdType>(
+        (tableType === 'node' ? network?.nodes : network?.edges)?.map(
+          (el: { id: IdType }) => el.id,
+        ) ?? [],
+      )
+      let resolveKey: (value: string) => IdType[]
+      if (keyColumn === 'id') {
+        resolveKey = (value) => (knownIds.has(value) ? [value] : [])
+      } else {
+        const valueToIds = new Map<string, IdType[]>()
+        table?.rows?.forEach(
+          (rowData: Record<AttributeName, ValueType>, elementId: IdType) => {
+            const keyValue = rowData[keyColumn]
+            if (keyValue === undefined || !knownIds.has(elementId)) return
+            const ids = valueToIds.get(String(keyValue))
+            if (ids) {
+              ids.push(elementId)
+            } else {
+              valueToIds.set(String(keyValue), [elementId])
+            }
+          },
+        )
+        resolveKey = (value) => valueToIds.get(value) ?? []
+      }
+
       // Build cell edits — only touch the columns present in the TSV,
       // preserving all existing attributes. Uses setValues (batch cell edit)
       // instead of editRows (full row replace) for performance: avoids
@@ -526,10 +770,16 @@ export const tableApi: TableApi = {
         column: AttributeName
         value: ValueType
       }> = []
+      const skippedRows: string[] = []
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split('\t')
-        const rowId = values[keyIndex]
-        if (!rowId) continue
+        const keyValue = values[keyIndex]
+        if (!keyValue) continue
+        const targetIds = resolveKey(keyValue)
+        if (targetIds.length === 0) {
+          skippedRows.push(keyValue)
+          continue
+        }
         for (let j = 0; j < colNames.length; j++) {
           const colName = colNames[j]
           if (colName === keyColumn) continue
@@ -537,11 +787,14 @@ export const tableApi: TableApi = {
           const rawValue = values[j] ?? ''
           const colType =
             colTypes.get(colName) ?? existingColumns.get(colName) ?? 'string'
-          cellEdits.push({
-            row: rowId,
-            column: colName,
-            value: parseTsvValue(rawValue, colType as ValueTypeName),
-          })
+          const parsedValue = parseTsvValue(rawValue, colType as ValueTypeName)
+          for (const targetId of targetIds) {
+            cellEdits.push({
+              row: targetId,
+              column: colName,
+              value: parsedValue,
+            })
+          }
         }
       }
 
@@ -549,9 +802,9 @@ export const tableApi: TableApi = {
 
       // Count unique row IDs from cell edits
       const uniqueRows = new Set(cellEdits.map((e) => e.row))
-      return ok({ rowCount: uniqueRows.size, newColumns })
+      return ok({ rowCount: uniqueRows.size, newColumns, skippedRows })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, gotoAndSeedNetwork, test } from './fixtures'
 
 // Tests for the LLMQueryOptionsDialog extracted in commit 12f0f3a4.
 // Verifies dialog opens from Analysis menu with all fields present,
@@ -8,10 +8,9 @@ import { expect, test } from './fixtures'
 
 test.describe('LLM Query Options Dialog', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
-      timeout: 15000,
-    })
+    // The Analysis menu is disabled while the workspace is empty; navigate and
+    // seed a network so the menu button is enabled and can be opened.
+    await gotoAndSeedNetwork(page)
   })
 
   const openDialog = async (page: any) => {

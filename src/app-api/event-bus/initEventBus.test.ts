@@ -79,6 +79,22 @@ vi.mock('../../data/hooks/stores/TableStore', () => ({
   },
 }))
 
+// ── Mock: NetworkStore ────────────────────────────────────────────────────────
+
+const networkSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
+
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: {
+    getState: vi.fn(),
+    subscribe: vi.fn((selectorOrCb: any, cb?: any) => {
+      if (typeof cb === 'function') {
+        networkSubs.push({ selector: selectorOrCb, callback: cb })
+      }
+      return () => {}
+    }),
+  },
+}))
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function triggerWorkspaceSub(index: number, curr: any, prev: any): void {
@@ -100,6 +116,10 @@ function triggerTableSub(curr: any, prev: any): void {
   tableSubs[0].callback(curr, prev)
 }
 
+function triggerNetworkSub(curr: any, prev: any): void {
+  networkSubs[0].callback(curr, prev)
+}
+
 function dispatchedTypes(): string[] {
   const spy = vi.spyOn(window, 'dispatchEvent') as import('vitest').MockInstance
   return (spy.mock.calls as Array<[Event]>).map((args) => (args[0] as CustomEvent).type)
@@ -119,12 +139,79 @@ beforeEach(() => {
   viewModelSubs.length = 0
   visualStyleSubs.length = 0
   tableSubs.length = 0
+  networkSubs.length = 0
   dispatchSpy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
 })
 
 afterEach(() => {
   dispatchSpy.mockRestore()
+})
+
+// ── network:changed ───────────────────────────────────────────────────────────
+
+describe('network:changed', () => {
+  const net = (nodes: string[], edges: Array<[string, string, string]>) => ({
+    id: 'net1',
+    nodes: nodes.map((id) => ({ id })),
+    edges: edges.map(([id, s, t]) => ({ id, s, t })),
+  })
+
+  it('reports added nodes', () => {
+    const prev = net(['n1'], [])
+    const curr = net(['n1', 'n2'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+
+    expect(dispatchedTypes()).toContain('network:changed')
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      addedNodeIds: ['n2'],
+      removedNodeIds: [],
+      addedEdgeIds: [],
+      removedEdgeIds: [],
+    })
+  })
+
+  it('reports removed nodes and their cascaded edges', () => {
+    const prev = net(['n1', 'n2'], [['e0', 'n1', 'n2']])
+    const curr = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      addedNodeIds: [],
+      removedNodeIds: ['n2'],
+      addedEdgeIds: [],
+      removedEdgeIds: ['e0'],
+    })
+  })
+
+  it('does not dispatch for a newly created network (network:created covers it)', () => {
+    const curr = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map())
+
+    expect(dispatchedTypes()).not.toContain('network:changed')
+  })
+
+  it('does not dispatch when the reference changed but membership did not', () => {
+    const prev = net(['n1'], [])
+    const curr = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch when the network reference is unchanged', () => {
+    const same = net(['n1'], [])
+
+    triggerNetworkSub(new Map([['net1', same]]), new Map([['net1', same]]))
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
 })
 
 // ── network:created ───────────────────────────────────────────────────────────
@@ -287,17 +374,51 @@ describe('data:changed', () => {
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
     expect(dispatchedTypes()).toContain('data:changed')
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', tableType: 'node', rowIds: ['n1'] })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      tableType: 'node',
+      rowIds: ['n1'],
+      addedColumns: [],
+      removedColumns: [],
+    })
   })
 
-  it('dispatches with rowIds=[] for schema-only change (column added)', () => {
+  it('reports added columns for schema-only change', () => {
     const rows = new Map([['n1', { name: 'A' }]])
     const prevTable = { nodeTable: { id: 't1', columns: [], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
     const currTable = { nodeTable: { id: 't1', columns: [{ name: 'newCol' }], rows }, edgeTable: prevTable.edgeTable }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', tableType: 'node', rowIds: [] })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      tableType: 'node',
+      rowIds: [],
+      addedColumns: ['newCol'],
+      removedColumns: [],
+    })
+  })
+
+  it('reports removed columns when a column is deleted', () => {
+    const rows = new Map([['n1', { name: 'A' }]])
+    const prevTable = { nodeTable: { id: 't1', columns: [{ name: 'name' }, { name: 'score' }], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
+    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'name' }], rows }, edgeTable: prevTable.edgeTable }
+
+    triggerTableSub({ net1: currTable }, { net1: prevTable })
+
+    expect(dispatchedDetails()[0].addedColumns).toEqual([])
+    expect(dispatchedDetails()[0].removedColumns).toEqual(['score'])
+  })
+
+  it('reports a rename as one added and one removed column', () => {
+    const rows = new Map([['n1', { oldName: 'A' }]])
+    const prevTable = { nodeTable: { id: 't1', columns: [{ name: 'oldName' }], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
+    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'newName' }], rows }, edgeTable: prevTable.edgeTable }
+
+    triggerTableSub({ net1: currTable }, { net1: prevTable })
+
+    expect(dispatchedDetails()[0].addedColumns).toEqual(['newName'])
+    expect(dispatchedDetails()[0].removedColumns).toEqual(['oldName'])
   })
 
   it('includes all changed row IDs on bulk change', () => {

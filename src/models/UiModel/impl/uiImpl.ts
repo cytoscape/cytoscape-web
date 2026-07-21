@@ -268,6 +268,30 @@ export const setCustomNetworkTabName = (
 }
 
 /**
+ * Remove all per-network UI state for a network (used when the network
+ * is deleted, so no orphaned configuration accumulates)
+ */
+export const deleteNetworkUiState = (ui: Ui, networkId: IdType): Ui => {
+  const nextVisualStyleOptions = { ...ui.visualStyleOptions }
+  delete nextVisualStyleOptions[networkId]
+
+  const nextColumnUiState = Object.fromEntries(
+    Object.entries(ui.tableUi.columnUiState).filter(
+      ([key]) => deserializeColumnUIKey(key)[0] !== networkId,
+    ),
+  )
+
+  return {
+    ...ui,
+    visualStyleOptions: nextVisualStyleOptions,
+    tableUi: {
+      ...ui.tableUi,
+      columnUiState: nextColumnUiState,
+    },
+  }
+}
+
+/**
  * Serialize column UI key
  */
 export const serializeColumnUIKey = (

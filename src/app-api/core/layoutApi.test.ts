@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 // src/app-api/core/layoutApi.test.ts
 // Plain Jest tests for layoutApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes } from '../types/ApiResult'
 import { layoutApi } from './layoutApi'
 
 // ── Mock: dispatchCyWebEvent ──────────────────────────────────────────────────
@@ -184,7 +184,7 @@ describe('applyLayout — validation errors', () => {
     const result = await layoutApi.applyLayout('nonexistent')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 
@@ -195,7 +195,7 @@ describe('applyLayout — validation errors', () => {
     })
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.LayoutEngineNotFound)
+      expect(result.error.code).toBe(AppCodes.LAYOUT_ENGINE_NOT_FOUND.code)
     }
   })
 
@@ -212,7 +212,7 @@ describe('applyLayout — validation errors', () => {
     const result = await layoutApi.applyLayout('net1')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.LayoutEngineNotFound)
+      expect(result.error.code).toBe(AppCodes.LAYOUT_ENGINE_NOT_FOUND.code)
     }
   })
 })

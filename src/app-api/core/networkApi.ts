@@ -32,7 +32,11 @@ import TableFn, {
 } from '../../models/TableModel'
 import { createViewModel } from '../../models/ViewModel/impl/viewModelImpl'
 import VisualStyleFn, { VisualPropertyName } from '../../models/VisualStyleModel'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
+import {
+  validateNodesExist,
+  validateTableElementsExist,
+} from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -57,9 +61,33 @@ export interface DeleteNetworkOptions {
   navigate?: boolean
 }
 
+export interface CreateNetworkFromNodeListOptions {
+  /** Name for the new network. @default "Subnetwork of <source name>" */
+  name?: string
+  description?: string
+  /** Whether to add the network to the workspace. @default false */
+  addToWorkspace?: boolean
+}
+
 export interface NetworkApi {
   createNetworkFromEdgeList(
     props: CreateNetworkFromEdgeListProps,
+  ): ApiResult<{ networkId: IdType; cyNetwork: CyNetwork }>
+
+  /**
+   * Create a new network from a subset of an existing network's nodes.
+   * Unlike createNetworkFromEdgeList, isolated (unconnected) nodes are
+   * allowed. Element IDs, table columns, attribute rows, and node
+   * positions are copied from the source. When `edgeIds` is omitted or
+   * 'all', every source edge whose endpoints are both in `nodeIds` is
+   * included (induced subgraph); an explicit `edgeIds` array selects a
+   * subset, and each listed edge must connect nodes in `nodeIds`.
+   */
+  createNetworkFromNodeList(
+    networkId: IdType,
+    nodeIds: IdType[],
+    edgeIds?: IdType[] | 'all',
+    options?: CreateNetworkFromNodeListOptions,
   ): ApiResult<{ networkId: IdType; cyNetwork: CyNetwork }>
 
   createNetworkFromCx2(
@@ -152,13 +180,10 @@ export const networkApi: NetworkApi = {
   }) {
     try {
       if (!name || name.trim() === '') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'name is required and must be non-empty',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'name is required and must be non-empty')
       }
       if (!edgeList || edgeList.length === 0) {
-        return fail(ApiErrorCode.InvalidInput, 'edgeList must be non-empty')
+        return fail(AppCodes.INVALID_INPUT, 'edgeList must be non-empty')
       }
 
       const cyNetwork = assembleCyNetworkFromEdgeList(name, description, edgeList)
@@ -196,7 +221,160 @@ export const networkApi: NetworkApi = {
 
       return ok({ networkId, cyNetwork })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  createNetworkFromNodeList(networkId, nodeIds, edgeIds, options) {
+    try {
+      const source = useNetworkStore.getState().networks.get(networkId)
+      if (source === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      if (!nodeIds || nodeIds.length === 0) {
+        return fail(AppCodes.INVALID_INPUT, 'nodeIds must be non-empty')
+      }
+      const missingNodes = validateNodesExist(networkId, nodeIds)
+      if (missingNodes) return missingNodes
+
+      const nodeIdSet = new Set(nodeIds)
+      let edges: Edge[]
+      if (edgeIds === undefined || edgeIds === 'all') {
+        // Induced subgraph: every edge whose endpoints are both kept
+        edges = source.edges.filter(
+          (e) => nodeIdSet.has(e.s) && nodeIdSet.has(e.t),
+        )
+      } else {
+        const missingEdges = validateTableElementsExist(
+          networkId,
+          'edge',
+          edgeIds,
+        )
+        if (missingEdges) return missingEdges
+
+        const edgeIdSet = new Set(edgeIds)
+        edges = source.edges.filter((e) => edgeIdSet.has(e.id))
+        const dangling = edges.filter(
+          (e) => !nodeIdSet.has(e.s) || !nodeIdSet.has(e.t),
+        )
+        if (dangling.length > 0) {
+          return fail(
+            AppCodes.INVALID_INPUT,
+            `Edges reference nodes outside nodeIds: ${dangling
+              .map((e) => e.id)
+              .join(', ')}`,
+          )
+        }
+      }
+
+      // Element IDs are preserved so attributes and positions carry over
+      const newNetworkId: IdType = uuidv4()
+      const network = NetworkFn.createNetworkFromLists(
+        newNetworkId,
+        nodeIds.map((id) => ({ id })),
+        edges.map((e) => ({ id: e.id, s: e.s, t: e.t })),
+      )
+
+      // Copy column schemas and the selected rows from the source tables
+      const sourceTables = useTableStore.getState().tables[networkId]
+      const copyColumns = (cols?: Array<{ name: string; type: ValueTypeName }>) =>
+        (cols ?? []).map((c) => ({ name: c.name, type: c.type }))
+      const copyRows = (
+        rows: Map<IdType, Record<AttributeName, ValueType>> | undefined,
+        ids: IdType[],
+      ): Map<IdType, Record<AttributeName, ValueType>> => {
+        const copied = new Map<IdType, Record<AttributeName, ValueType>>()
+        ids.forEach((id) => {
+          const row = rows?.get(id)
+          if (row !== undefined) copied.set(id, { ...row })
+        })
+        return copied
+      }
+      const nodeTable = TableFn.createTable(
+        newNetworkId,
+        copyColumns(sourceTables?.nodeTable?.columns),
+        copyRows(sourceTables?.nodeTable?.rows, nodeIds),
+      )
+      const edgeTable = TableFn.createTable(
+        newNetworkId,
+        copyColumns(sourceTables?.edgeTable?.columns),
+        copyRows(
+          sourceTables?.edgeTable?.rows,
+          edges.map((e) => e.id),
+        ),
+      )
+
+      // Copy node positions from the source view when available
+      const networkView = createViewModel(network)
+      const sourceView = useViewModelStore.getState().getViewModel(networkId)
+      if (sourceView !== undefined) {
+        nodeIds.forEach((id) => {
+          const sourceNodeView = sourceView.nodeViews[id]
+          const newNodeView = networkView.nodeViews[id]
+          if (sourceNodeView !== undefined && newNodeView !== undefined) {
+            networkView.nodeViews[id] = {
+              ...newNodeView,
+              x: sourceNodeView.x,
+              y: sourceNodeView.y,
+              ...(sourceNodeView.z !== undefined
+                ? { z: sourceNodeView.z }
+                : {}),
+            }
+          }
+        })
+      }
+
+      const visualStyle = VisualStyleFn.createVisualStyle()
+      const networkAttributes: NetworkAttributes = {
+        id: newNetworkId,
+        attributes: {},
+      }
+      const cyNetwork: CyNetwork = {
+        network,
+        nodeTable,
+        edgeTable,
+        visualStyle,
+        networkViews: [networkView],
+        networkAttributes,
+        undoRedoStack: { undoStack: [], redoStack: [] },
+      }
+
+      const sourceName =
+        useNetworkSummaryStore.getState().summaries[networkId]?.name
+      const name =
+        options?.name?.trim() || `Subnetwork of ${sourceName ?? networkId}`
+      const summary = createNetworkSummary({
+        networkId: newNetworkId,
+        name,
+        description: options?.description,
+        nodeCount: network.nodes.length,
+        edgeCount: network.edges.length,
+      })
+
+      useNetworkStore.getState().add(network)
+      useVisualStyleStore.getState().add(newNetworkId, visualStyle)
+      useTableStore.getState().add(newNetworkId, nodeTable, edgeTable)
+      useViewModelStore.getState().add(newNetworkId, networkView)
+      useNetworkSummaryStore.getState().add(newNetworkId, summary)
+
+      // Passthrough label mapping when the copied schema has a name column
+      if (nodeTable.columns.some((c) => c.name === 'name')) {
+        useVisualStyleStore.getState().createPassthroughMapping(
+          newNetworkId,
+          VisualPropertyName.NodeLabel,
+          'name',
+          ValueTypeName.String,
+        )
+      }
+
+      if (options?.addToWorkspace) {
+        useWorkspaceStore.getState().addNetworkIds(newNetworkId)
+        useWorkspaceStore.getState().setCurrentNetworkId(newNetworkId)
+      }
+
+      return ok({ networkId: newNetworkId, cyNetwork })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -204,10 +382,7 @@ export const networkApi: NetworkApi = {
     try {
       const validation = validateCX2(cxData)
       if (!validation.isValid) {
-        return fail(
-          ApiErrorCode.InvalidCx2,
-          validation.errorMessage ?? 'CX2 validation failed',
-        )
+        return fail(AppCodes.INVALID_CX2, validation.errorMessage ?? 'CX2 validation failed')
       }
 
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
@@ -261,7 +436,7 @@ export const networkApi: NetworkApi = {
 
       return ok({ networkId: network.id, cyNetwork })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -274,22 +449,20 @@ export const networkApi: NetworkApi = {
     try {
       const networkExists = useNetworkStore.getState().networks.has(networkId)
       if (!networkExists) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       // Single source of truth for the cascade, shared with
-      // useDeleteCyNetwork (REVIEW.md A4). It also owns the
-      // currentNetworkId invariant: the pointer is repaired whenever the
-      // deleted network was current, regardless of the navigate option
-      // (R2-13 — previously navigate:false left it dangling).
+      // useDeleteCyNetwork (REVIEW.md A4) — includes the per-network UI
+      // state purge. It also owns the currentNetworkId invariant: the
+      // pointer is repaired whenever the deleted network was current,
+      // regardless of the navigate option (R2-13 — previously
+      // navigate:false left it dangling).
       deleteNetworkFromAllStores(networkId)
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -297,22 +470,20 @@ export const networkApi: NetworkApi = {
     const currentNetworkId =
       useWorkspaceStore.getState().workspace.currentNetworkId
     if (!currentNetworkId || currentNetworkId === '') {
-      return fail(
-        ApiErrorCode.NoCurrentNetwork,
-        'No network is currently selected',
-      )
+      return fail(AppCodes.NO_CURRENT_NETWORK)
     }
     return networkApi.deleteNetwork(currentNetworkId, options)
   },
 
   deleteAllNetworks() {
     try {
-      // Single source of truth for the cascade (REVIEW.md A4)
+      // Single source of truth for the cascade (REVIEW.md A4) — its
+      // deleteAllNetworkUiState covers the per-network UI state purge
       deleteAllNetworksFromAllStores()
 
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }
