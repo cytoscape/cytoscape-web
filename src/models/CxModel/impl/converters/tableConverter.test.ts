@@ -35,6 +35,31 @@ describe('tableConverter', () => {
       expect(edgeTable.rows.size).toBe(0)
     })
 
+    // CW-651: a network authored with node data but a partial attribute
+    // declaration (no `edges` key) must not throw when building the edge rows.
+    it('does not throw when attribute declarations omit the edges key', () => {
+      const networkId = 'test-network-partial'
+      const cx2: Cx2 = [
+        { CXVersion: '2.0' },
+        {
+          attributeDeclarations: [
+            {
+              nodes: { name: { d: 'string' } },
+            },
+          ],
+        },
+        { nodes: [{ id: 0, v: { name: 'a' } }] },
+        {
+          edges: [{ id: 0, s: 0, t: 0, v: { weight: 1 } }],
+        },
+        { status: [{ success: true }] },
+      ]
+
+      expect(() => createTablesFromCx(networkId, cx2)).not.toThrow()
+      const [nodeTable] = createTablesFromCx(networkId, cx2)
+      expect(nodeTable.rows.get('0')?.name).toBe('a')
+    })
+
     it('should create tables with columns from attribute declarations', () => {
       const networkId = 'test-network-2'
       const cx2: Cx2 = [

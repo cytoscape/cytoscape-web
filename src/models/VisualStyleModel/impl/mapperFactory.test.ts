@@ -101,6 +101,33 @@ describe('MapperFactory', () => {
       expect(mapper(true)).toBe('#FF0000')
       expect(mapper(false)).toBe('#00FF00')
     })
+
+    // CW-659: a discrete mapping keyed on a list attribute (e.g. list_of_string)
+    // must key off the first element of the list, matching Cytoscape Desktop.
+    it('should use the first element of a list attribute value', () => {
+      const vpValueMap = new Map<string, string>([
+        ['pp', 'diamond'],
+        ['pd', 'ellipse'],
+      ])
+
+      const mapping: DiscreteMappingFunction = {
+        type: MappingFunctionType.Discrete,
+        attribute: 'Interactor Type',
+        vpValueMap,
+        visualPropertyType: VisualPropertyValueTypeName.NodeShape,
+        defaultValue: 'rectangle',
+        attributeType: ValueTypeName.ListString,
+      }
+
+      const mapper = createDiscreteMapper(mapping)
+
+      expect(mapper(['pp', 'pd'])).toBe('diamond')
+      expect(mapper(['pd'])).toBe('ellipse')
+      // Unmapped first element falls back to the default
+      expect(mapper(['unknown', 'pp'])).toBe('rectangle')
+      // Empty list falls back to the default
+      expect(mapper([])).toBe('rectangle')
+    })
   })
 
   describe('createPassthroughMapper', () => {
@@ -167,6 +194,40 @@ describe('MapperFactory', () => {
       // Should normalize string boolean values
       expect(mapper('true')).toBe('element')
       expect(mapper('false')).toBe('none')
+    })
+
+    // CW-517: passthrough mappings on node shape / edge line type authored in
+    // Desktop use non-canonical value casing; the mapper should reconcile them.
+    it('should normalize node shape passthrough values', () => {
+      const mapping: PassthroughMappingFunction = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'shape',
+        visualPropertyType: VisualPropertyValueTypeName.NodeShape,
+        defaultValue: 'rectangle',
+        attributeType: ValueTypeName.String,
+      }
+
+      const mapper = createPassthroughMapper(mapping)
+
+      expect(mapper('Diamond')).toBe('diamond')
+      expect(mapper('Round Rectangle')).toBe('round-rectangle')
+      expect(mapper('ellipse')).toBe('ellipse')
+    })
+
+    it('should normalize edge line type passthrough values', () => {
+      const mapping: PassthroughMappingFunction = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'lineStyle',
+        visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+        defaultValue: 'solid',
+        attributeType: ValueTypeName.String,
+      }
+
+      const mapper = createPassthroughMapper(mapping)
+
+      expect(mapper('Dashed')).toBe('dashed')
+      expect(mapper('DOTTED')).toBe('dotted')
+      expect(mapper('EQUAL_DASH')).toBe('dashed')
     })
   })
 
@@ -266,6 +327,38 @@ describe('MapperFactory', () => {
       expect(mapper(-10)).toBe(5)
       // Test with value above max
       expect(mapper(150)).toBe(50)
+    })
+
+    // CW-569: continuous mappings on discrete-valued VPs (e.g. edge line type)
+    // must apply a step function instead of returning the default value.
+    it('applies a step function for discrete-valued visual properties', () => {
+      const mapping: ContinuousMappingFunction = {
+        type: MappingFunctionType.Continuous,
+        attribute: 'weight',
+        visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+        defaultValue: 'solid',
+        attributeType: ValueTypeName.Double,
+        min: { value: 0, vpValue: 'solid', inclusive: false },
+        max: { value: 100, vpValue: 'dashed', inclusive: false },
+        controlPoints: [
+          { value: 0, vpValue: 'solid' },
+          { value: 50, vpValue: 'dotted' },
+          { value: 100, vpValue: 'dashed' },
+        ],
+        ltMinVpValue: 'solid',
+        gtMaxVpValue: 'dashed',
+      }
+
+      const mapper = createContinuousMapper(mapping)
+
+      expect(mapper(0)).toBe('solid')
+      expect(mapper(25)).toBe('solid') // below the 50 threshold
+      expect(mapper(50)).toBe('dotted') // reaches the 50 threshold
+      expect(mapper(75)).toBe('dotted') // between 50 and 100
+      expect(mapper(100)).toBe('dashed')
+      // out of range uses lt/gt values
+      expect(mapper(-5)).toBe('solid')
+      expect(mapper(200)).toBe('dashed')
     })
   })
 })
