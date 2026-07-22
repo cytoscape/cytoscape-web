@@ -18,6 +18,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../../models/TableModel'
+import { valueTypeNameDescription } from '../../../models/TableModel/impl/valueTypeNameDisplay'
 import { serializedStringIsValid, serializeValue } from '../../../models/TableModel/impl/valueTypeImpl'
 import { ValueEditor } from '../../ToolBar/LayoutMenu/ValueEditor/ValueEditor'
 
@@ -162,21 +163,9 @@ export const EdgeCreationDialog = ({
     }
   }
 
-  const getColumnDescription = (type: ValueTypeName): string => {
-    const typeLabels: Record<ValueTypeName, string> = {
-      [ValueTypeName.String]: 'Text (string)',
-      [ValueTypeName.Integer]: 'Whole number (integer)',
-      [ValueTypeName.Long]: 'Large whole number (long)',
-      [ValueTypeName.Double]: 'Decimal number (double)',
-      [ValueTypeName.Boolean]: 'True/false (boolean)',
-      [ValueTypeName.ListString]: 'List of text (comma-separated, e.g., "apple, banana, cherry")',
-      [ValueTypeName.ListInteger]: 'List of integers (comma-separated, e.g., "1, 2, 3")',
-      [ValueTypeName.ListLong]: 'List of long integers (comma-separated, e.g., "100, 200, 300")',
-      [ValueTypeName.ListDouble]: 'List of decimals (comma-separated, e.g., "1.5, 2.7, 3.9")',
-      [ValueTypeName.ListBoolean]: 'List of booleans (comma-separated, e.g., "true, false, true")',
-    }
-    return typeLabels[type] || 'Unknown type'
-  }
+  // Delegated to the shared data-type display module (CW-562).
+  const getColumnDescription = (type: ValueTypeName): string =>
+    valueTypeNameDescription(type)
 
   const hasColumns = edgeTable && edgeTable.columns.length > 0
 

@@ -47,6 +47,7 @@ import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigatio
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
@@ -67,6 +68,10 @@ import {
 } from '../models/DataInterfaceForMerge'
 import { createMergedNetwork } from '../models/Impl/CreateMergedNetwork'
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
+import {
+  mergeOpaqueAspects,
+  toOpaqueAspectsArray,
+} from '../utils/mergeOpaqueAspects'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useMergeToolTipStore from '../store/mergeToolTip'
@@ -246,6 +251,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
     (state) => state.setVisualStyleOptions,
   )
   const addNewNetwork = useNetworkStore((state) => state.add)
+  const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const setViewModel = useViewModelStore((state) => state.add)
   const setTables = useTableStore((state) => state.add)
@@ -554,8 +560,19 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           toMergeNetworksList.some((pair) => pair[1] === id),
         ),
       )
+
+      // Merge opaque (non-core) aspects from the source networks (CW-522):
+      // concatenate + dedupe per aspect key.
+      const sourceNetworkIds = toMergeNetworksList.map((i) => i[1])
+      const allOpaqueAspects =
+        useOpaqueAspectStore.getState().opaqueAspects
+      const mergedOpaqueAspects = mergeOpaqueAspects(
+        sourceNetworkIds.map((id) => allOpaqueAspects[id]),
+      )
+      const mergedOpaqueAspectsArray = toOpaqueAspectsArray(mergedOpaqueAspects)
+
       const [newCyNetwork, networkSummary] = await createMergedNetwork(
-        toMergeNetworksList.map((i) => i[1]),
+        sourceNetworkIds,
         newNetworkId,
         mergedNetworkName,
         networkRecords,
@@ -568,6 +585,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         mergeWithinNetwork,
         mergeOnlyNodes,
         strictRemoveMode,
+        mergedOpaqueAspectsArray,
       )
 
       const newSummary = createNetworkSummary({
@@ -584,6 +602,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       setVisualStyle(newNetworkId, newCyNetwork.visualStyle)
       setTables(newNetworkId, newCyNetwork.nodeTable, newCyNetwork.edgeTable)
       setViewModel(newNetworkId, newCyNetwork.networkViews[0])
+      // Persist merged opaque aspects so they survive and are re-exported to CX2
+      // (CW-522).
+      if (mergedOpaqueAspectsArray.length > 0) {
+        addAllOpaqueAspects(newNetworkId, mergedOpaqueAspectsArray)
+      }
       await putNetworkSummaryToDb(newSummary)
       addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network

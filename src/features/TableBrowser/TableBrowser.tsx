@@ -12,6 +12,7 @@ import {
   GridColumnIcon,
   GridSelection,
   Item,
+  DrawHeaderCallback,
 } from '@glideapps/glide-data-grid'
 import {
   CheckBoxOutlined as CheckBoxOutlinedIcon,
@@ -65,6 +66,7 @@ import type { ColumnConfiguration } from '../../models/VisualStyleModel/VisualSt
 import { isValidUrl } from '../../utils/urlUtil'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 import { DuplicateIcon, EditIcon, SortAscIcon, SortDescIcon } from './Icon'
+import { ListValueEditorDialog } from './ListValueEditorDialog'
 import { getElementId, ID_COLUMN_ID, ID_COLUMN_TITLE } from './idColumn'
 import NetworkInfoPanel from './NetworkInfoPanel'
 import {
@@ -72,7 +74,7 @@ import {
   DeleteTableColumnForm,
   EditTableColumnForm,
 } from './TableColumnForm'
-
+import { getValueTypeNameSVG, getBadgeWidth } from '../../models/TableModel/impl/valueTypeNameIcons'
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
@@ -204,6 +206,10 @@ export const getCellKind = (type: ValueTypeName): GridCellKind => {
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
 }
 
+export const getHeaderIconForType = (type: ValueTypeName): GridColumnIcon | string => {
+  return type as string
+}
+
 export default function TableBrowser(props: {
   currentNetworkId: IdType
   setHeight: (height: number) => void
@@ -214,10 +220,48 @@ export default function TableBrowser(props: {
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
-  const setUi = useUiStateStore((state) => state.setUi)
-  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const headerIcons = React.useMemo(() => {
+    const icons: Record<string, () => string> = {}
+    Object.values(ValueTypeName).forEach((type) => {
+      icons[type] = () => getValueTypeNameSVG(type, isDark)
+    })
+    return icons
+  }, [isDark])
+  
+  const handleDrawHeader = React.useCallback<DrawHeaderCallback>(({ ctx, column }) => {
+    // Only apply to columns that have our custom SVG badge type
+    const colType = (column as any).type as ValueTypeName
+    if (!colType || !Object.values(ValueTypeName).includes(colType)) {
+      return false
+    }
+
+    const badgeWidth = getBadgeWidth(colType)
+    const gap = 8
+
+    // glide-data-grid advances the text by Math.ceil(headerIconSize * 1.3)
+    const defaultAdvance = Math.ceil(badgeWidth * 1.3)
+    const desiredAdvance = badgeWidth + gap
+    const shift = desiredAdvance - defaultAdvance
+
+    const originalFillText = ctx.fillText
+    ctx.fillText = function (text, x, y, maxWidth) {
+      ctx.fillText = originalFillText
+      if (text === column.title) {
+        originalFillText.call(this, text, x + shift, y, maxWidth)
+      } else {
+        originalFillText.call(this, text, x, y, maxWidth)
+      }
+    }
+
+    return false
+  }, [])
+  
+  const setUi = useUiStateStore((state) => state.setUi)
+  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const networkModified = useWorkspaceStore(
     (state) => state.workspace.networkModified,
@@ -293,6 +337,15 @@ export default function TableBrowser(props: {
     direction: undefined,
     valueType: undefined,
   })
+
+  // State for the dedicated list-value editor dialog (CW-563)
+  const [listEditor, setListEditor] = React.useState<{
+    cxId: IdType
+    columnKey: string
+    columnName: string
+    type: ValueTypeName
+    value: ValueType | null
+  } | null>(null)
 
   const networkId = props.currentNetworkId
   const visualStyle = useVisualStyleStore(
@@ -477,13 +530,26 @@ export default function TableBrowser(props: {
           (c) => c?.name === col?.attributeName,
         )?.type
 
-        return {
-          id: col?.attributeName ?? '',
-          title: col?.attributeName ?? '',
-          type: columnType ?? ValueTypeName.String,
+        const attributeName = col?.attributeName ?? ''
+        const resolvedType = columnType ?? ValueTypeName.String
+
+        const badgeWidth = getBadgeWidth(resolvedType)
+        const charWidth = 8
+        const padding = 48
+        const calculatedWidth = Math.max(100, attributeName.length * charWidth + badgeWidth + padding)
+
+        const baseColumn = {
+          id: attributeName,
+          title: attributeName,
+          icon: getHeaderIconForType(resolvedType),
+          themeOverride: { headerIconSize: badgeWidth },
+          type: resolvedType,
           index,
-          width: col?.columnWidth,
         }
+
+        return col?.columnWidth !== undefined
+          ? { ...baseColumn, width: col.columnWidth }
+          : { ...baseColumn, width: calculatedWidth }
       }),
     [modelColumns, currentTable],
   )
@@ -514,10 +580,10 @@ export default function TableBrowser(props: {
         id: '__sourceNodeName',
         title: 'Source Node',
         icon: GridColumnIcon.ProtectedColumnOverlay,
-        style: 'highlight',
+        style: 'highlight' as const,
         type: ValueTypeName.String,
         index: 0,
-        width: undefined,
+        width: 150,
         isVirtual: true,
         getValue: (edgeData: any) => {
           // Get edge id from edgeData
@@ -534,11 +600,11 @@ export default function TableBrowser(props: {
         id: '__targetNodeName',
         title: 'Target Node',
         icon: GridColumnIcon.ProtectedColumnOverlay,
-        style: 'highlight',
+        style: 'highlight' as const,
 
         type: ValueTypeName.String,
         index: 1,
-        width: undefined,
+        width: 150,
         isVirtual: true,
         getValue: (edgeData: any) => {
           const edgeId = edgeData?.id?.toString()
@@ -559,10 +625,10 @@ export default function TableBrowser(props: {
       id: ID_COLUMN_ID,
       title: ID_COLUMN_TITLE,
       icon: GridColumnIcon.ProtectedColumnOverlay,
-      style: 'highlight',
+      style: 'highlight' as const,
       type: ValueTypeName.String,
       index: 0,
-      width: undefined,
+      width: 120,
       isVirtual: true,
       getValue: (dataRow: any) => getElementId(dataRow),
     }),
@@ -723,6 +789,20 @@ export default function TableBrowser(props: {
 
       const cellType = getCellKind(column.type)
       const processedCellValue = valueDisplay(cellValue, column.type)
+
+      // List-typed cells (CW-563) are not edited inline: typing into a text
+      // overlay collapsed multi-item lists into a single element. They are
+      // shown read-only here and edited through the dedicated list editor
+      // dialog, opened via onCellActivated.
+      if (isListType(column.type)) {
+        return {
+          kind: GridCellKind.Text,
+          allowOverlay: false,
+          readonly: true,
+          displayData: String(processedCellValue),
+          data: String(processedCellValue),
+        }
+      }
 
       // These cells generally prevent users from inputting mismatched data types
       // e.g. a user can't but a boolean in a number, a string in a number, etc.
@@ -1043,6 +1123,65 @@ export default function TableBrowser(props: {
       setNetworkModified,
       nodeTable,
       setCellValue,
+    ],
+  )
+
+  // Open the dedicated list editor when a list-typed cell is activated
+  // (double-click / Enter). CW-563.
+  const onCellActivated = React.useCallback(
+    (cell: Item): void => {
+      const [columnIndex, rowIndex] = cell
+      const column = allColumns?.[columnIndex]
+      const rowData = rows?.[rowIndex]
+      if (column == null || rowData == null || (column as any).isVirtual) return
+      if (!isListType(column.type)) return
+      const cxId = rowData.id
+      if (cxId == null) return
+      setListEditor({
+        cxId,
+        columnKey: column.id,
+        // Use the raw attribute name, not the header title (which now carries
+        // the data-type abbreviation, CW-562).
+        columnName: column.id,
+        type: column.type,
+        value: (rowData as any)?.[column.id] ?? null,
+      })
+    },
+    [allColumns, rows],
+  )
+
+  // Commit a value chosen in the list editor dialog, mirroring onCellEdited's
+  // undo bookkeeping and store update.
+  const handleListEditorSave = React.useCallback(
+    (newValue: ValueType): void => {
+      if (listEditor == null) return
+      const { cxId, columnKey } = listEditor
+      const elementType = currentTable === nodeTable ? 'node' : 'edge'
+      postEdit(
+        UndoCommandType.SET_CELL_VALUE,
+        'Set cell value',
+        [props.currentNetworkId, elementType, cxId, columnKey, listEditor.value],
+        [props.currentNetworkId, elementType, cxId, columnKey, newValue],
+      )
+      setCellValue(
+        props.currentNetworkId,
+        elementType,
+        `${cxId}`,
+        columnKey,
+        newValue,
+      )
+      setNetworkModified(networkId, true)
+      setListEditor(null)
+    },
+    [
+      listEditor,
+      currentTable,
+      nodeTable,
+      postEdit,
+      props.currentNetworkId,
+      setCellValue,
+      setNetworkModified,
+      networkId,
     ],
   )
 
@@ -1878,6 +2017,7 @@ export default function TableBrowser(props: {
           rowMarkerWidth={35}
           rowMarkerStartIndex={minNodeId}
           onCellContextMenu={onCellContextMenu}
+          onCellActivated={onCellActivated}
           onPaste={onPaste}
           getCellsForSelection={true}
           onColumnMoved={onColMoved}
@@ -1892,6 +2032,8 @@ export default function TableBrowser(props: {
           columns={allColumns}
           rows={maxNodeId - minNodeId + 1}
           theme={dataEditorTheme}
+          headerIcons={headerIcons}
+          drawHeader={handleDrawHeader}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
@@ -1910,6 +2052,7 @@ export default function TableBrowser(props: {
           rowMarkerWidth={35}
           rowMarkerStartIndex={minEdgeId}
           onCellContextMenu={onCellContextMenu}
+          onCellActivated={onCellActivated}
           onPaste={onPaste}
           getCellsForSelection={true}
           onColumnMoved={onColMoved}
@@ -1924,6 +2067,8 @@ export default function TableBrowser(props: {
           columns={allColumns}
           rows={maxEdgeId - minEdgeId + 1}
           theme={dataEditorTheme}
+          headerIcons={headerIcons}
+          drawHeader={handleDrawHeader}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>
@@ -2196,6 +2341,17 @@ export default function TableBrowser(props: {
           </ListItemText>
         </MenuItem>
       </Menu>
+      {listEditor !== null ? (
+        <ListValueEditorDialog
+          key={`${listEditor.cxId}:${listEditor.columnKey}`}
+          open={true}
+          columnName={listEditor.columnName}
+          listType={listEditor.type}
+          value={listEditor.value}
+          onCancel={() => setListEditor(null)}
+          onSave={handleListEditorSave}
+        />
+      ) : null}
     </Box>
   )
 }

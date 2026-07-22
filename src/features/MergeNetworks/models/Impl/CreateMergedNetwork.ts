@@ -3,6 +3,7 @@ import cloneDeep from 'lodash/cloneDeep'
 import { putNetworkSummaryToDb } from '../../../../data/db'
 import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { IdType } from '../../../../models/IdType'
+import { OpaqueAspects } from '../../../../models/OpaqueAspectModel'
 import { NetworkAttributes } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
@@ -32,6 +33,9 @@ export const createMergedNetwork = async (
   mergeWithinNetwork: boolean = false,
   mergeOnlyNodes: boolean = false,
   strictRemoveMode: boolean = false,
+  // Opaque (non-core) aspects merged from the source networks (CW-522),
+  // already concatenated + de-duplicated. Carried onto the output network.
+  mergedOpaqueAspects: OpaqueAspects[] = [],
 ): Promise<[CyNetwork, NetworkSummary]> => {
   if (
     checkAttribute(
@@ -158,6 +162,7 @@ export const createMergedNetwork = async (
       networkAttributes,
       undoRedoStack,
       visualStyleOptions,
+      otherAspects: mergedOpaqueAspects,
     },
     networkSummary,
   ]

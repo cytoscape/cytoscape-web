@@ -1,9 +1,12 @@
 import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import {
   Alert,
   Box,
   Button,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -19,10 +22,20 @@ import Tooltip from '@mui/material/Tooltip'
 import * as React from 'react'
 
 import { ValueTypeName } from '../../models/TableModel'
+import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
+import {
+  orderedValueTypeNames,
+} from '../../models/TableModel/impl/valueTypeNameDisplay'
+import {
+  deserializeValue,
+  isListType,
+  serializeValue,
+} from '../../models/TableModel/impl/valueTypeImpl'
 import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../models/VisualStyleModel'
+import { ListValueEditorDialog } from './ListValueEditorDialog'
 import { TableColumn } from './TableBrowser'
 
 interface TableFormProps {
@@ -252,6 +265,8 @@ export function CreateTableColumnForm(
     ValueTypeName.String,
   )
   const [defaultValue, setDefaultValue] = React.useState('')
+  // Opens the shared list editor for a list-typed default value (CW-563).
+  const [listEditorOpen, setListEditorOpen] = React.useState(false)
   const disabled = columnName === ''
 
   const submitButton = disabled ? (
@@ -305,22 +320,66 @@ export function CreateTableColumnForm(
             value={valueTypeName}
             onChange={(e) => setValueTypeName(e.target.value as ValueTypeName)}
           >
-            {Object.values(ValueTypeName).map((v) => {
+            {orderedValueTypeNames.map((v) => {
               return (
                 <MenuItem key={v} value={v}>
-                  {v}
+                  <ValueTypeNameChip type={v} variant="chip-and-text" showTooltip={false} />
                 </MenuItem>
               )
             })}
           </Select>
         </FormControl>
-        <TextField
-          data-testid="create-table-column-default-value-input"
-          size="small"
-          sx={{ mt: 1, mb: 1 }}
-          onChange={(e) => setDefaultValue(e.target.value)}
-          value={defaultValue}
-          label={'Default value'}
+        {isListType(valueTypeName) ? (
+          <TextField
+            data-testid="create-table-column-default-value-input"
+            size="small"
+            sx={{ mt: 1, mb: 1 }}
+            value={defaultValue}
+            label={'Default value'}
+            placeholder="Click to edit list…"
+            onClick={() => setListEditorOpen(true)}
+            InputProps={{
+              readOnly: true,
+              sx: { cursor: 'pointer' },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    aria-label="edit list default value"
+                    onClick={() => setListEditorOpen(true)}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        ) : (
+          <TextField
+            data-testid="create-table-column-default-value-input"
+            size="small"
+            sx={{ mt: 1, mb: 1 }}
+            onChange={(e) => setDefaultValue(e.target.value)}
+            value={defaultValue}
+            label={'Default value'}
+          />
+        )}
+        <ListValueEditorDialog
+          open={listEditorOpen}
+          columnName={columnName || 'Default value'}
+          listType={valueTypeName}
+          value={
+            defaultValue.length > 0
+              ? deserializeValue(valueTypeName, defaultValue)
+              : []
+          }
+          onCancel={() => setListEditorOpen(false)}
+          onSave={(v) => {
+            // The column-creation contract carries the default as a string, so
+            // we serialize the edited list before storing it (CW-563).
+            setDefaultValue(serializeValue(v))
+            setListEditorOpen(false)
+          }}
         />
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
