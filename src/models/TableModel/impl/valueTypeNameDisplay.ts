@@ -10,7 +10,7 @@
  * "List<String>" vs "list_of_string"). This module is the single source of
  * truth so every surface renders data types consistently.
  *
- * Pure TypeScript only — no React, no MUI (see the DataTypeChip component for
+ * Pure TypeScript only — no React, no MUI (see the ValueTypeNameChip component for
  * the reusable rendering).
  */
 import { ValueTypeName } from '../ValueTypeName'
@@ -19,7 +19,7 @@ import { ValueTypeName } from '../ValueTypeName'
  * Human-readable label, e.g. `list_of_string` -> "List of strings".
  * This is the canonical, user-facing wording used everywhere.
  */
-export const dataTypeLabel = (type: ValueTypeName): string => {
+export const valueTypeNameLabel = (type: ValueTypeName): string => {
   const labels: Record<ValueTypeName, string> = {
     [ValueTypeName.String]: 'String',
     [ValueTypeName.Long]: 'Long integer',
@@ -39,7 +39,7 @@ export const dataTypeLabel = (type: ValueTypeName): string => {
  * Compact abbreviation for space-constrained surfaces such as table column
  * headers, e.g. `string` -> "str", `list_of_string` -> "[str]".
  */
-export const dataTypeAbbreviation = (type: ValueTypeName): string => {
+export const valueTypeNameAbbreviation = (type: ValueTypeName): string => {
   const abbreviations: Record<ValueTypeName, string> = {
     [ValueTypeName.String]: 'str',
     [ValueTypeName.Long]: 'long',
@@ -59,7 +59,7 @@ export const dataTypeAbbreviation = (type: ValueTypeName): string => {
  * Longer sentence description with an example, suitable for helper text in
  * data-entry forms.
  */
-export const dataTypeDescription = (type: ValueTypeName): string => {
+export const valueTypeNameDescription = (type: ValueTypeName): string => {
   const descriptions: Record<ValueTypeName, string> = {
     [ValueTypeName.String]: 'Text (string)',
     [ValueTypeName.Integer]: 'Whole number (integer)',
@@ -80,7 +80,7 @@ export const dataTypeDescription = (type: ValueTypeName): string => {
   return descriptions[type] ?? 'Unknown type'
 }
 
-export type DataTypeChipColor =
+export type ValueTypeNameChipColor =
   | 'default'
   | 'primary'
   | 'secondary'
@@ -92,7 +92,7 @@ export type DataTypeChipColor =
  * MUI Chip color family per data type. List types share one color; numeric
  * types another; strings are neutral; booleans distinct.
  */
-export const dataTypeChipColor = (type: ValueTypeName): DataTypeChipColor => {
+export const valueTypeNameChipColor = (type: ValueTypeName): ValueTypeNameChipColor => {
   if (String(type).startsWith('list_of_')) {
     return 'primary'
   }
@@ -111,7 +111,7 @@ export const dataTypeChipColor = (type: ValueTypeName): DataTypeChipColor => {
 }
 
 /** Convenience: all data types in a stable, display-friendly order. */
-export const orderedDataTypes: ValueTypeName[] = [
+export const orderedValueTypeNames: ValueTypeName[] = [
   ValueTypeName.String,
   ValueTypeName.Integer,
   ValueTypeName.Long,

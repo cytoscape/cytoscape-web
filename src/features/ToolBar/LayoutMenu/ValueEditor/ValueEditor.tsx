@@ -1,9 +1,9 @@
 import { ValueType, ValueTypeName } from '../../../../models/TableModel'
 import {
-  dataTypeChipColor,
-  dataTypeLabel,
-  DataTypeChipColor,
-} from '../../../../models/TableModel/impl/dataTypeDisplay'
+  valueTypeNameChipColor,
+  valueTypeNameLabel,
+  ValueTypeNameChipColor,
+} from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import { BooleanEditor } from './BooleanEditor'
 import { ListEditor } from './ListEditor'
 import { NumberEditor } from './NumberEditor'
@@ -22,10 +22,10 @@ interface ValueEditorProps {
 
 // Delegated to the shared data-type display module (CW-562) so labels/colors
 // are consistent with the rest of the app.
-const getTypeLabel = (type: ValueTypeName): string => dataTypeLabel(type)
+const getTypeLabel = (type: ValueTypeName): string => valueTypeNameLabel(type)
 
-const getTypeColor = (type: ValueTypeName): DataTypeChipColor =>
-  dataTypeChipColor(type)
+const getTypeColor = (type: ValueTypeName): ValueTypeNameChipColor =>
+  valueTypeNameChipColor(type)
 
 export const ValueEditor = ({
   optionName,

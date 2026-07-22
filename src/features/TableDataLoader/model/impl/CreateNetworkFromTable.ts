@@ -6,7 +6,7 @@ import { Network } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
-import { dataTypeLabel } from '../../../../models/TableModel/impl/dataTypeDisplay'
+import { valueTypeNameLabel } from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
 import {
   MappingFunctionType,
@@ -39,7 +39,7 @@ export const columnAssingmentType2Label = {
 export const valueTypeName2Label: Record<ValueTypeName, string> =
   Object.values(ValueTypeName).reduce(
     (acc, t) => {
-      acc[t] = dataTypeLabel(t)
+      acc[t] = valueTypeNameLabel(t)
       return acc
     },
     {} as Record<ValueTypeName, string>,

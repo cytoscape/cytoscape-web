@@ -14,7 +14,7 @@ import chroma from 'chroma-js'
 
 import { IdType } from '../../../models/IdType'
 import { ValueTypeName } from '../../../models/TableModel'
-import { dataTypeLabel } from '../../../models/TableModel/impl/dataTypeDisplay'
+import { valueTypeNameLabel } from '../../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   MergeType,
   NetworkRecord,
@@ -192,7 +192,7 @@ export const MatchingTableComp = React.memo(
               `${row.nameRecord[netId]}(${
                 row.typeRecord[netId] === 'None'
                   ? 'None'
-                  : dataTypeLabel(row.typeRecord[netId] as ValueTypeName)
+                  : valueTypeNameLabel(row.typeRecord[netId] as ValueTypeName)
               })`,
             )
             typeSet.add(row.typeRecord[netId])

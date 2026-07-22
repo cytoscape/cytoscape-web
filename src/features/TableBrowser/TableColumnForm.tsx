@@ -22,10 +22,10 @@ import Tooltip from '@mui/material/Tooltip'
 import * as React from 'react'
 
 import { ValueTypeName } from '../../models/TableModel'
+import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
 import {
-  dataTypeLabel,
-  orderedDataTypes,
-} from '../../models/TableModel/impl/dataTypeDisplay'
+  orderedValueTypeNames,
+} from '../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   deserializeValue,
   isListType,
@@ -320,10 +320,10 @@ export function CreateTableColumnForm(
             value={valueTypeName}
             onChange={(e) => setValueTypeName(e.target.value as ValueTypeName)}
           >
-            {orderedDataTypes.map((v) => {
+            {orderedValueTypeNames.map((v) => {
               return (
                 <MenuItem key={v} value={v}>
-                  {dataTypeLabel(v)}
+                  <ValueTypeNameChip type={v} variant="chip-and-text" showTooltip={false} />
                 </MenuItem>
               )
             })}

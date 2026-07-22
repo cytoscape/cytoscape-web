@@ -12,6 +12,7 @@ import {
   GridColumnIcon,
   GridSelection,
   Item,
+  DrawHeaderCallback,
 } from '@glideapps/glide-data-grid'
 import {
   CheckBoxOutlined as CheckBoxOutlinedIcon,
@@ -49,7 +50,6 @@ import { IdType } from '../../models/IdType'
 import { CellEdit } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { Table, ValueType, ValueTypeName } from '../../models/TableModel'
-import { dataTypeAbbreviation } from '../../models/TableModel/impl/dataTypeDisplay'
 import {
   deserializeValue,
   deserializeValueList,
@@ -74,7 +74,7 @@ import {
   DeleteTableColumnForm,
   EditTableColumnForm,
 } from './TableColumnForm'
-
+import { getValueTypeNameSVG, getBadgeWidth } from '../../models/TableModel/impl/valueTypeNameIcons'
 interface TabPanelProps {
   children?: React.ReactNode
   index: number
@@ -206,6 +206,10 @@ export const getCellKind = (type: ValueTypeName): GridCellKind => {
   return valueTypeName2CellTypeMap[type] ?? GridCellKind.Text
 }
 
+export const getHeaderIconForType = (type: ValueTypeName): GridColumnIcon | string => {
+  return type as string
+}
+
 export default function TableBrowser(props: {
   currentNetworkId: IdType
   setHeight: (height: number) => void
@@ -216,10 +220,48 @@ export default function TableBrowser(props: {
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
-  const setUi = useUiStateStore((state) => state.setUi)
-  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const headerIcons = React.useMemo(() => {
+    const icons: Record<string, () => string> = {}
+    Object.values(ValueTypeName).forEach((type) => {
+      icons[type] = () => getValueTypeNameSVG(type, isDark)
+    })
+    return icons
+  }, [isDark])
+  
+  const handleDrawHeader = React.useCallback<DrawHeaderCallback>(({ ctx, column }) => {
+    // Only apply to columns that have our custom SVG badge type
+    const colType = (column as any).type as ValueTypeName
+    if (!colType || !Object.values(ValueTypeName).includes(colType)) {
+      return false
+    }
+
+    const badgeWidth = getBadgeWidth(colType)
+    const gap = 8
+
+    // glide-data-grid advances the text by Math.ceil(headerIconSize * 1.3)
+    const defaultAdvance = Math.ceil(badgeWidth * 1.3)
+    const desiredAdvance = badgeWidth + gap
+    const shift = desiredAdvance - defaultAdvance
+
+    const originalFillText = ctx.fillText
+    ctx.fillText = function (text, x, y, maxWidth) {
+      ctx.fillText = originalFillText
+      if (text === column.title) {
+        originalFillText.call(this, text, x + shift, y, maxWidth)
+      } else {
+        originalFillText.call(this, text, x, y, maxWidth)
+      }
+    }
+
+    return false
+  }, [])
+  
+  const setUi = useUiStateStore((state) => state.setUi)
+  const currentTabIndex = ui.tableUi.activeTabIndex
 
   const networkModified = useWorkspaceStore(
     (state) => state.workspace.networkModified,
@@ -491,17 +533,23 @@ export default function TableBrowser(props: {
         const attributeName = col?.attributeName ?? ''
         const resolvedType = columnType ?? ValueTypeName.String
 
-        return {
+        const badgeWidth = getBadgeWidth(resolvedType)
+        const charWidth = 8
+        const padding = 48
+        const calculatedWidth = Math.max(100, attributeName.length * charWidth + badgeWidth + padding)
+
+        const baseColumn = {
           id: attributeName,
-          // Show the data type inline in the header so it is always visible
-          // (CW-562). id stays the raw attribute name for all lookups.
-          title: attributeName
-            ? `${attributeName}  ·  ${dataTypeAbbreviation(resolvedType)}`
-            : attributeName,
+          title: attributeName,
+          icon: getHeaderIconForType(resolvedType),
+          themeOverride: { headerIconSize: badgeWidth },
           type: resolvedType,
           index,
-          width: col?.columnWidth,
         }
+
+        return col?.columnWidth !== undefined
+          ? { ...baseColumn, width: col.columnWidth }
+          : { ...baseColumn, width: calculatedWidth }
       }),
     [modelColumns, currentTable],
   )
@@ -532,10 +580,10 @@ export default function TableBrowser(props: {
         id: '__sourceNodeName',
         title: 'Source Node',
         icon: GridColumnIcon.ProtectedColumnOverlay,
-        style: 'highlight',
+        style: 'highlight' as const,
         type: ValueTypeName.String,
         index: 0,
-        width: undefined,
+        width: 150,
         isVirtual: true,
         getValue: (edgeData: any) => {
           // Get edge id from edgeData
@@ -552,11 +600,11 @@ export default function TableBrowser(props: {
         id: '__targetNodeName',
         title: 'Target Node',
         icon: GridColumnIcon.ProtectedColumnOverlay,
-        style: 'highlight',
+        style: 'highlight' as const,
 
         type: ValueTypeName.String,
         index: 1,
-        width: undefined,
+        width: 150,
         isVirtual: true,
         getValue: (edgeData: any) => {
           const edgeId = edgeData?.id?.toString()
@@ -577,10 +625,10 @@ export default function TableBrowser(props: {
       id: ID_COLUMN_ID,
       title: ID_COLUMN_TITLE,
       icon: GridColumnIcon.ProtectedColumnOverlay,
-      style: 'highlight',
+      style: 'highlight' as const,
       type: ValueTypeName.String,
       index: 0,
-      width: undefined,
+      width: 120,
       isVirtual: true,
       getValue: (dataRow: any) => getElementId(dataRow),
     }),
@@ -1984,6 +2032,8 @@ export default function TableBrowser(props: {
           columns={allColumns}
           rows={maxNodeId - minNodeId + 1}
           theme={dataEditorTheme}
+          headerIcons={headerIcons}
+          drawHeader={handleDrawHeader}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
@@ -2017,6 +2067,8 @@ export default function TableBrowser(props: {
           columns={allColumns}
           rows={maxEdgeId - minEdgeId + 1}
           theme={dataEditorTheme}
+          headerIcons={headerIcons}
+          drawHeader={handleDrawHeader}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={2}>

@@ -18,8 +18,8 @@ import {
 import { useEffect, useState } from 'react'
 
 import { ValueType } from '../../models/TableModel/ValueType'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
-import { dataTypeLabel } from '../../models/TableModel/impl/dataTypeDisplay'
+import { ValueTypeName } from '../../models/TableModel'
+import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
 import { ListPastePanel } from './ListPastePanel'
 import {
   addItem,
@@ -142,9 +142,9 @@ export const ListValueEditorDialog = ({
             alignItems: 'baseline',
           }}
         >
-          <Typography variant="caption" color="text.secondary">
-            {dataTypeLabel(listType)}
-          </Typography>
+          <Box>
+            <ValueTypeNameChip type={listType} />
+          </Box>
           <Typography
             variant="caption"
             color="text.secondary"
@@ -179,7 +179,6 @@ export const ListValueEditorDialog = ({
         >
           <ListPastePanel
             listType={listType}
-            currentCount={items.length}
             onParsedItemsChange={setPastedItems}
           />
         </Box>

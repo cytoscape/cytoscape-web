@@ -22,10 +22,10 @@ import React from 'react'
 
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
 import { ValueType,ValueTypeName } from '../../models/TableModel'
+import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
 import {
-  dataTypeLabel,
-  orderedDataTypes,
-} from '../../models/TableModel/impl/dataTypeDisplay'
+  orderedValueTypeNames,
+} from '../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   deserializeValue,
   isListType,
@@ -222,10 +222,10 @@ const NetworkPropertyTable = (props: {
                         )
                       }}
                     >
-                      {orderedDataTypes.map((vtn) => {
+                      {orderedValueTypeNames.map((vtn) => {
                         return (
                           <MenuItem key={vtn} value={vtn}>
-                            {dataTypeLabel(vtn)}
+                            <ValueTypeNameChip type={vtn} variant="chip-and-text" showTooltip={false} />
                           </MenuItem>
                         )
                       })}

@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   MenuItem,
   TextField,
   Typography,
@@ -21,8 +20,6 @@ import {
 
 interface ListPastePanelProps {
   listType: ValueTypeName
-  /** Number of items currently in the list (for the Replace button label). */
-  currentCount?: number
   /** Called whenever the parsed items change. */
   onParsedItemsChange?: (items: string[]) => void
 }
@@ -65,7 +62,6 @@ const LegendSwatch = ({
  */
 export const ListPastePanel = ({
   listType,
-  currentCount = 0,
   onParsedItemsChange,
 }: ListPastePanelProps): JSX.Element => {
   const [pasteText, setPasteText] = useState('')

@@ -18,7 +18,7 @@ import {
   ValueType,
   ValueTypeName,
 } from '../../../models/TableModel'
-import { dataTypeDescription } from '../../../models/TableModel/impl/dataTypeDisplay'
+import { valueTypeNameDescription } from '../../../models/TableModel/impl/valueTypeNameDisplay'
 import { serializedStringIsValid, serializeValue } from '../../../models/TableModel/impl/valueTypeImpl'
 import { ValueEditor } from '../../ToolBar/LayoutMenu/ValueEditor/ValueEditor'
 
@@ -165,7 +165,7 @@ export const EdgeCreationDialog = ({
 
   // Delegated to the shared data-type display module (CW-562).
   const getColumnDescription = (type: ValueTypeName): string =>
-    dataTypeDescription(type)
+    valueTypeNameDescription(type)
 
   const hasColumns = edgeTable && edgeTable.columns.length > 0
 
