@@ -342,10 +342,9 @@ describe('extractor', () => {
       expect(edgeAttributes.size).toBe(0)
     })
 
-    // Regression: CW-650. An edge with an empty v:{} carries no attributes and
-    // must not be added to the attribute map (otherwise downstream conversion
-    // requires attribute declarations that may be absent).
-    it('should skip edges whose v is an empty object', () => {
+    // Regression: CW-650. Empty v:{} was incorrectly skipped, causing nodes/edges
+    // to lose their default attribute values. They should be included in the map.
+    it('should include edges whose v is an empty object', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
@@ -357,7 +356,8 @@ describe('extractor', () => {
       ]
 
       const edgeAttributes = getEdgeAttributes(cx2)
-      expect(edgeAttributes.size).toBe(0)
+      expect(edgeAttributes.size).toBe(1)
+      expect(edgeAttributes.get('0')).toEqual({})
     })
   })
 
