@@ -24,7 +24,7 @@ describe('ValueTypeNameChip (CW-562)', () => {
     expect(container.querySelector('svg')).toBeTruthy()
   })
 
-  it('renders plain text description in text variant', () => {
+  it('renders plain text label in text variant', () => {
     render(
       <ValueTypeNameChip
         type={ValueTypeName.Double}
@@ -32,13 +32,13 @@ describe('ValueTypeNameChip (CW-562)', () => {
         showTooltip={false}
       />,
     )
-    expect(screen.getByText('Decimal number (double)')).toBeTruthy()
+    expect(screen.getByText('Double')).toBeTruthy()
   })
 
   it('never renders the raw enum wire format', () => {
     render(<ValueTypeNameChip type={ValueTypeName.ListDouble} variant="text" showTooltip={false} />)
     expect(screen.queryByText('list_of_double')).toBeNull()
-    expect(screen.getByText('List of decimals (comma-separated, e.g., "1.5, 2.7, 3.9")')).toBeTruthy()
+    expect(screen.getByText('List of floating point numbers')).toBeTruthy()
   })
 })
 
