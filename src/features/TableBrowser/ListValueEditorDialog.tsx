@@ -106,16 +106,23 @@ export const ListValueEditorDialog = ({
     onSave(result.value)
   }
 
-  const handlePasteAppend = (pasted: string[]): void => {
-    setItems((prev) => [...prev, ...pasted])
-    setErrors({})
-    setTab(1) // jump to Manual so the appended rows are visible
+  const handlePasteAppend = (): void => {
+    const finalItems = [...items, ...pastedItems]
+    const result = validateAndBuildListValue(finalItems, listType)
+    if (result.value === null) {
+      setErrors(result.errors)
+      return
+    }
+    onSave(result.value)
   }
 
-  const handlePasteReplace = (pasted: string[]): void => {
-    setItems(pasted)
-    setErrors({})
-    setTab(1) // jump to Manual so the replaced rows are visible
+  const handlePasteReplace = (): void => {
+    const result = validateAndBuildListValue(pastedItems, listType)
+    if (result.value === null) {
+      setErrors(result.errors)
+      return
+    }
+    onSave(result.value)
   }
 
   return (
@@ -173,8 +180,6 @@ export const ListValueEditorDialog = ({
           <ListPastePanel
             listType={listType}
             currentCount={items.length}
-            onAppend={handlePasteAppend}
-            onReplace={handlePasteReplace}
             onParsedItemsChange={setPastedItems}
           />
         </Box>
@@ -244,13 +249,35 @@ export const ListValueEditorDialog = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>Cancel</Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          data-testid="list-value-editor-save"
-        >
-          Save
-        </Button>
+        {tab === 0 ? (
+          <>
+            <Button
+              onClick={handlePasteAppend}
+              variant="outlined"
+              disabled={pastedItems.length === 0}
+              data-testid="list-value-editor-append"
+            >
+              Append
+            </Button>
+            <Button
+              onClick={handlePasteReplace}
+              variant="contained"
+              color={items.length > 0 ? 'warning' : 'primary'}
+              disabled={pastedItems.length === 0}
+              data-testid="list-value-editor-replace"
+            >
+              {items.length > 0 ? `Replace all (${items.length})` : 'Replace'}
+            </Button>
+          </>
+        ) : (
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            data-testid="list-value-editor-save"
+          >
+            Save
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   )

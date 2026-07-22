@@ -87,21 +87,21 @@ describe('ListValueEditorDialog (CW-563)', () => {
 
   it('pastes items (replace) and saves them as the list value', () => {
     const { onSave } = setup({ value: ['alice'] })
+    fireEvent.click(screen.getByRole('tab', { name: 'Paste' }))
     fireEvent.change(screen.getByTestId('list-paste-textarea'), {
       target: { value: 'x\ny\nz' },
     })
-    fireEvent.click(screen.getByTestId('list-paste-replace'))
-    fireEvent.click(screen.getByTestId('list-value-editor-save'))
+    fireEvent.click(screen.getByTestId('list-value-editor-replace'))
     expect(onSave).toHaveBeenCalledWith(['x', 'y', 'z'])
   })
 
-  it('pastes items (append) onto existing rows', () => {
+  it('pastes items (append) onto existing rows and saves them as the list value', () => {
     const { onSave } = setup({ value: ['alice'] })
+    fireEvent.click(screen.getByRole('tab', { name: 'Paste' }))
     fireEvent.change(screen.getByTestId('list-paste-textarea'), {
       target: { value: 'bob\ncarol' },
     })
-    fireEvent.click(screen.getByTestId('list-paste-append'))
-    fireEvent.click(screen.getByTestId('list-value-editor-save'))
+    fireEvent.click(screen.getByTestId('list-value-editor-append'))
     expect(onSave).toHaveBeenCalledWith(['alice', 'bob', 'carol'])
   })
 
@@ -119,20 +119,7 @@ describe('ListValueEditorDialog (CW-563)', () => {
     ).toBe('true')
   })
 
-  it('switches to the Manual tab after a paste replace', () => {
-    setup({ value: [] })
-    // Starts on Paste tab (empty cell)
-    expect(
-      screen.getByRole('tab', { name: 'Paste' }).getAttribute('aria-selected'),
-    ).toBe('true')
-    fireEvent.change(screen.getByTestId('list-paste-textarea'), {
-      target: { value: 'x\ny\nz' },
-    })
-    fireEvent.click(screen.getByTestId('list-paste-replace'))
-    expect(
-      screen.getByRole('tab', { name: 'Manual' }).getAttribute('aria-selected'),
-    ).toBe('true')
-  })
+
 
   it('calls onCancel without saving', () => {
     const { onSave, onCancel } = setup()

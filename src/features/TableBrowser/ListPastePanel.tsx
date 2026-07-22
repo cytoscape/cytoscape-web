@@ -23,10 +23,6 @@ interface ListPastePanelProps {
   listType: ValueTypeName
   /** Number of items currently in the list (for the Replace button label). */
   currentCount?: number
-  /** Add the parsed items to the existing list. */
-  onAppend: (items: string[]) => void
-  /** Replace the whole list with the parsed items. */
-  onReplace: (items: string[]) => void
   /** Called whenever the parsed items change. */
   onParsedItemsChange?: (items: string[]) => void
 }
@@ -70,8 +66,6 @@ const LegendSwatch = ({
 export const ListPastePanel = ({
   listType,
   currentCount = 0,
-  onAppend,
-  onReplace,
   onParsedItemsChange,
 }: ListPastePanelProps): JSX.Element => {
   const [pasteText, setPasteText] = useState('')
@@ -126,11 +120,6 @@ export const ListPastePanel = ({
   ).length
 
   const showInvalidLegend = !isStringList
-
-  const applyAndClear = (fn: (items: string[]) => void): void => {
-    fn(items)
-    setPasteText('')
-  }
 
   return (
     <Box sx={{ mt: 1 }}>
@@ -233,27 +222,6 @@ export const ListPastePanel = ({
                 }`
               : ''}
           </Typography>
-          <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={items.length === 0}
-              onClick={() => applyAndClear(onAppend)}
-              data-testid="list-paste-append"
-            >
-              Append
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              color={currentCount > 0 ? 'warning' : 'primary'}
-              disabled={items.length === 0}
-              onClick={() => applyAndClear(onReplace)}
-              data-testid="list-paste-replace"
-            >
-              {currentCount > 0 ? `Replace all (${currentCount})` : 'Replace'}
-            </Button>
-          </Box>
         </Box>
       ) : null}
     </Box>
