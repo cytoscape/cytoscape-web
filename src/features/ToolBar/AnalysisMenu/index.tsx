@@ -1,12 +1,14 @@
 import { MenuItem } from 'primereact/menuitem'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
+import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import {
   LLMQueryOptionsDialog,
   LLMQueryOptionsMenuItem,
   RunLLMQueryMenuItem,
 } from '../../LLMQuery/components'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 
 
@@ -20,6 +22,16 @@ export const AnalysisMenu = () => {
   const handleClose = (): void => {
     setOpen(false)
   }
+
+  const onBeforeRun = useCallback((): void => {
+    setOpen(false)
+  }, [])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Analysis menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Analysis,
+    onBeforeRun,
+  )
 
   const handleOpenDialog = (): void => {
     handleClose()
@@ -40,6 +52,9 @@ export const AnalysisMenu = () => {
     {
       template: <LLMQueryOptionsMenuItem onClick={handleOpenDialog} />,
     },
+    ...(serviceMenuItems.length > 0
+      ? [{ separator: true }, ...serviceMenuItems]
+      : []),
   ]
 
   return (
@@ -57,6 +72,7 @@ export const AnalysisMenu = () => {
         open={openDialog}
         handleClose={handleCloseDialog}
       />
+      {dialogs}
     </>
   )
 }

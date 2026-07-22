@@ -382,17 +382,19 @@ const InputNetworkSchema = z.object({
 const ServiceInputDefinitionSchema = z.object({
   type: z.string(),
   scope: z.string(),
-  inputColumns: z.array(InputColumnSchema),
-  inputNetwork: InputNetworkSchema,
+  // Null when the service requests no columns / no network (e.g. type 'none').
+  inputColumns: z.array(InputColumnSchema).nullable(),
+  inputNetwork: InputNetworkSchema.nullable(),
 })
 
 const ServiceAppSchema = z.object({
   url: z.string(),
   name: z.string(),
   description: z.string().optional(),
+  showDescriptionInDialog: z.boolean().optional(),
   version: z.string(),
   serviceInputDefinition: ServiceInputDefinitionSchema.optional(),
-  cyWebAction: z.array(ServiceAppActionSchema),
+  cyWebActions: z.array(ServiceAppActionSchema),
   cyWebMenuItem: CyWebMenuItemSchema,
   author: z.string(),
   citation: z.string(),

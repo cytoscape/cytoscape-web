@@ -1,7 +1,7 @@
 import BuildIcon from '@mui/icons-material/Build'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
@@ -18,8 +18,10 @@ import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPanelStore'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
 import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
@@ -105,6 +107,16 @@ export const LayoutMenu = (): JSX.Element => {
   const handleClose = (): void => {
     setOpen(false)
   }
+
+  const onBeforeRun = useCallback((): void => {
+    setOpen(false)
+  }, [])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Layout menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Layout,
+    onBeforeRun,
+  )
 
   const handleOpenDialog = (open: boolean): void => {
     setOpen(false)
@@ -322,7 +334,12 @@ export const LayoutMenu = (): JSX.Element => {
       <DropdownMenu
         id="layout-menu"
         label="Layout"
-        menuItems={getMenuItems()}
+        menuItems={[
+          ...getMenuItems(),
+          ...(serviceMenuItems.length > 0
+            ? [{ separator: true }, ...serviceMenuItems]
+            : []),
+        ]}
         open={open}
         disabled={hasNoNetworks}
         disabledTooltip="Load or create a network first"
@@ -335,6 +352,7 @@ export const LayoutMenu = (): JSX.Element => {
         setOpen={setOpenDialog}
         allDisabled={allDisabled}
       />
+      {dialogs}
     </>
   )
 }

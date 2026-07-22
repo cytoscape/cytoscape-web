@@ -170,6 +170,23 @@ export const addService = (
 }
 
 /**
+ * Replace an existing service app's metadata (used by refresh). Unlike
+ * addService, this always overwrites the entry for the app's url.
+ */
+export const refreshService = (
+  state: AppState,
+  serviceApp: ServiceApp,
+): AppState => {
+  return {
+    ...state,
+    serviceApps: {
+      ...state.serviceApps,
+      [serviceApp.url]: serviceApp,
+    },
+  }
+}
+
+/**
  * Remove a service app
  */
 export const removeService = (state: AppState, url: string): AppState => {
