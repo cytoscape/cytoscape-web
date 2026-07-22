@@ -327,7 +327,7 @@ const createServiceAppModel = (url: string): ServiceApp => {
     url,
     name: 'Test Service',
     version: '1.0.0',
-    cyWebAction: [],
+    cyWebActions: [],
     cyWebMenuItem: {
       root: RootMenu.Apps,
       path: [{ name: 'Tools', gravity: 1 }],

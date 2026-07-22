@@ -13,6 +13,8 @@ import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
 import { ServiceMetadata } from '../../../models/AppModel/ServiceMetadata'
 import { AppStore } from '../../../models/StoreModel/AppStoreModel'
 import * as AppStoreImpl from '../../../models/StoreModel/impl/appStoreImpl'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { resolveRootMenu } from '../../../models/AppModel/impl/menuRouting'
 import {
   deleteAppFromDb,
   deleteAppSettingFromDb,
@@ -40,6 +42,14 @@ export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
   const serviceApp: ServiceApp = {
     url,
     ...metadata,
+  }
+
+  const { root } = resolveRootMenu(serviceApp.cyWebMenuItem?.root)
+  if (root === RootMenu.Layout) {
+    const actions = serviceApp.cyWebActions || []
+    if (actions.some((action) => action !== 'updateLayouts')) {
+      throw new Error(`Service apps under the Layout menu may only declare the "updateLayouts" action.`)
+    }
   }
 
   return serviceApp

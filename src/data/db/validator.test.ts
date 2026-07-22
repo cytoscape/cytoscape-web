@@ -97,7 +97,7 @@ const validServiceApp = () => ({
   url: 'https://example.org/service',
   name: 'Test Service',
   version: '1.0.0',
-  cyWebAction: [],
+  cyWebActions: [],
   cyWebMenuItem: {
     root: 'Apps',
     path: [{ name: 'Tools', gravity: 1 }],

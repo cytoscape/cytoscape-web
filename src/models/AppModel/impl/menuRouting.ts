@@ -37,6 +37,9 @@ export const parseRootMenu = (
     return undefined
   }
   const normalized = root.trim().toLowerCase()
+  if (normalized === 'layouts') {
+    return RootMenu.Layout
+  }
   return Object.values(RootMenu).find((r) => r.toLowerCase() === normalized)
 }
 

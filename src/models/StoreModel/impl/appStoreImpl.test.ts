@@ -46,7 +46,7 @@ const createTestServiceApp = (url: string): ServiceApp => {
     parameters: [],
     description: '',
     version: '',
-    cyWebAction: [],
+    cyWebActions: [],
     cyWebMenuItem: {} as any,
     author: '',
     citation: '',

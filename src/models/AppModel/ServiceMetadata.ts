@@ -17,7 +17,7 @@ export interface ServiceMetadata {
   showDescriptionInDialog?: boolean
   version: string
   serviceInputDefinition?: ServiceInputDefinition
-  cyWebAction: ServiceAppAction[]
+  cyWebActions: ServiceAppAction[]
   cyWebMenuItem: CyWebMenuItem
   author: string
   citation:string

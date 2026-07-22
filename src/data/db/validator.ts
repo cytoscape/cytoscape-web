@@ -394,7 +394,7 @@ const ServiceAppSchema = z.object({
   showDescriptionInDialog: z.boolean().optional(),
   version: z.string(),
   serviceInputDefinition: ServiceInputDefinitionSchema.optional(),
-  cyWebAction: z.array(ServiceAppActionSchema),
+  cyWebActions: z.array(ServiceAppActionSchema),
   cyWebMenuItem: CyWebMenuItemSchema,
   author: z.string(),
   citation: z.string(),
