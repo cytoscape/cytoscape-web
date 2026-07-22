@@ -57,6 +57,7 @@ export const ListValueEditorDialog = ({
 }: ListValueEditorDialogProps): JSX.Element => {
   const [items, setItems] = useState<string[]>([])
   const [errors, setErrors] = useState<Record<number, string>>({})
+  const [pastedItems, setPastedItems] = useState<string[]>([])
   // 0 = Paste, 1 = Manual. Paste-first for an empty cell; Manual-first when
   // there are already items to edit (so existing values are visible on open).
   const [tab, setTab] = useState(0)
@@ -67,6 +68,7 @@ export const ListValueEditorDialog = ({
       const initial = toEditableItems(value)
       setItems(initial)
       setErrors({})
+      setPastedItems([])
       setTab(initial.length === 0 ? 0 : 1)
     }
   }, [open, value])
@@ -91,7 +93,12 @@ export const ListValueEditorDialog = ({
   }
 
   const handleSave = (): void => {
-    const result = validateAndBuildListValue(items, listType)
+    let finalItems = items
+    if (tab === 0 && pastedItems.length > 0) {
+      finalItems = items.length === 0 ? pastedItems : [...items, ...pastedItems]
+    }
+
+    const result = validateAndBuildListValue(finalItems, listType)
     if (result.value === null) {
       setErrors(result.errors)
       return
@@ -168,6 +175,7 @@ export const ListValueEditorDialog = ({
             currentCount={items.length}
             onAppend={handlePasteAppend}
             onReplace={handlePasteReplace}
+            onParsedItemsChange={setPastedItems}
           />
         </Box>
 

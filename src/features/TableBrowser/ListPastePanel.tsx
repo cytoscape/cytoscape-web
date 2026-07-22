@@ -5,7 +5,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { serializedStringIsValid } from '../../models/TableModel/impl/valueTypeImpl'
@@ -27,6 +27,8 @@ interface ListPastePanelProps {
   onAppend: (items: string[]) => void
   /** Replace the whole list with the parsed items. */
   onReplace: (items: string[]) => void
+  /** Called whenever the parsed items change. */
+  onParsedItemsChange?: (items: string[]) => void
 }
 
 // Semi-transparent so they read well in both light and dark themes.
@@ -70,6 +72,7 @@ export const ListPastePanel = ({
   currentCount = 0,
   onAppend,
   onReplace,
+  onParsedItemsChange,
 }: ListPastePanelProps): JSX.Element => {
   const [pasteText, setPasteText] = useState('')
   const [override, setOverride] = useState<'auto' | PasteDelimiter>('auto')
@@ -106,7 +109,15 @@ export const ListPastePanel = ({
     return serializedStringIsValid(singleType, trimmed)
   }
 
-  const items = parsePastedItems(pasteText, delimiter)
+  const items = useMemo(
+    () => parsePastedItems(pasteText, delimiter),
+    [pasteText, delimiter]
+  )
+
+  useEffect(() => {
+    onParsedItemsChange?.(items)
+  }, [items, onParsedItemsChange])
+
   const invalidCount = segments.filter(
     (s) =>
       s.type === 'token' &&
