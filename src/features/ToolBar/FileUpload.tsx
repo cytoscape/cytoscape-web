@@ -35,6 +35,7 @@ import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
+import { collectVisualStyleWarnings } from '../../models/VisualStyleModel'
 import { generateUniqueName } from '../../utils/generateUniqueName'
 import { createDataFromLocalSif } from '../../utils/sifUtils'
 import { validateSif } from '../../utils/sifUtils'
@@ -131,6 +132,14 @@ export function FileUpload(props: FileUploadProps) {
           visualStyleOptions,
           otherAspects,
         } = res
+
+        collectVisualStyleWarnings(visualStyle).forEach((warning) => {
+          addMessage({
+            duration: 10000,
+            message: warning.message,
+            severity: MessageSeverity.WARNING,
+          })
+        })
 
         const nodesAspect = getNodes(json)
         const anyNodeHasPosition = nodesAspect.some(

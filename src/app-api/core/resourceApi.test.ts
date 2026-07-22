@@ -137,7 +137,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('INVALID_INPUT')
+        expect(result.error.code).toBe('APP9')
       }
     })
 
@@ -150,7 +150,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('INVALID_INPUT')
+        expect(result.error.code).toBe('APP9')
       }
     })
 
@@ -163,7 +163,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('INVALID_INPUT')
+        expect(result.error.code).toBe('APP9')
       }
     })
 
@@ -228,7 +228,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('RESOURCE_NOT_FOUND')
+        expect(result.error.code).toBe('APP7')
       }
     })
   })
@@ -278,7 +278,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('INVALID_INPUT')
+        expect(result.error.code).toBe('APP9')
       }
     })
 
@@ -291,7 +291,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('INVALID_INPUT')
+        expect(result.error.code).toBe('APP9')
       }
     })
   })
@@ -319,7 +319,7 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe('RESOURCE_NOT_FOUND')
+        expect(result.error.code).toBe('APP7')
       }
     })
   })
@@ -391,7 +391,7 @@ describe('createResourceApi', () => {
       if (result.success) {
         expect(result.data.registered).toHaveLength(0)
         expect(result.data.errors).toHaveLength(1)
-        expect(result.data.errors[0].error.code).toBe('INVALID_INPUT')
+        expect(result.data.errors[0].error.code).toBe('APP9')
         expect(result.data.errors[0].error.message).toContain(
           'Unsupported slot',
         )

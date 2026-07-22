@@ -61,7 +61,7 @@ const createServiceApp = (url: string): ServiceApp => {
     version: '1.0.0',
     author: 'Test Author',
     citation: 'Test Citation',
-    cyWebAction: [],
+    cyWebActions: [],
     cyWebMenuItem: {
       root: 'Tools' as any,
       path: [

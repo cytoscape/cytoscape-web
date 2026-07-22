@@ -38,9 +38,11 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
     Record<string, CxValue>
   > = cxUtil.getEdgeAttributes(cx)
 
-  // Columns
+  // Columns. An empty aspect array or a declaration object without
+  // nodes/edges keys is valid CX2 — default to empty declarations instead
+  // of crashing (REVIEW.md R2-19)
   const attrDec = cxUtil.getAttributeDeclarations(cx)
-  const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0]
+  const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0] ?? {}
 
   // Map column aliases to their original names
   const nodeAttributeTranslationMap: Record<string, string> = {}

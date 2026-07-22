@@ -50,7 +50,7 @@ describe('fetchNdexInterconnectQuery', () => {
       '',
       false,
       { nodeIds: [1, 2] },
-      false,
+      true,
     )
     expect(result).toEqual(mockCx2Network)
   })
@@ -79,7 +79,7 @@ describe('fetchNdexInterconnectQuery', () => {
       '',
       false,
       { nodeIds: [3] },
-      false,
+      true,
     )
     expect(result).toEqual(mockCx2Network)
   })
@@ -104,7 +104,7 @@ describe('fetchNdexInterconnectQuery', () => {
       '',
       false,
       { nodeIds: [1, 2, 3] },
-      false,
+      true,
     )
   })
 

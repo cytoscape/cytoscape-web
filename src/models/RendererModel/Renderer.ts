@@ -2,7 +2,9 @@
  * Network renderer interface
  */
 
-import { ReactElement } from 'react'
+// Type-only import: erased at compile time, so the models layer carries no
+// runtime React dependency (REVIEW.md A7)
+import type { ReactElement } from 'react'
 
 import { Network } from '../NetworkModel'
 

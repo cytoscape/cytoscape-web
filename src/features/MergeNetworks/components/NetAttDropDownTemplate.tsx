@@ -112,6 +112,7 @@ export const NetAttDropDownTemplate = React.memo(
         <Select
           data-testid={`merge-net-att-dropdown-${rowData.id}-${column}`}
           labelId={`select-label-${rowData.id}-${column}`}
+          size="small"
           value={currentValue}
           onChange={(e) => onDropdownChange(e, type, rowData, column)}
           id={`select-${rowData.id}-${column}`}

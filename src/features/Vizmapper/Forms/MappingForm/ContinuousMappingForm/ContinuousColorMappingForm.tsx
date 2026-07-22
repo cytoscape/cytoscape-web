@@ -31,6 +31,7 @@ import {
 } from '../../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
+import { recommendPaletteCategory } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
 import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
 import { ColorGradient } from './ColorGradient'
 import { ColorPalettePicker } from './ColorPalettePicker'
@@ -399,6 +400,10 @@ export function ContinuousColorMappingForm(props: {
       <ColorPalettePicker
         currentPaletteName={buttonText}
         onPaletteSelect={handlePaletteSelect}
+        recommendedCategory={recommendPaletteCategory(
+          minState.value as number,
+          maxState.value as number,
+        )}
       />
       <Box
         sx={{

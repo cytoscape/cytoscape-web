@@ -57,6 +57,7 @@ export const TypeDropDownTemplate = React.memo(
         <Select
           data-testid={`merge-type-dropdown-${rowData.id}`}
           labelId={`select-label-${rowData.id}-type`}
+          size="small"
           value={rowData.type}
           onChange={(e) => onDropDownChange(e, rowData)}
           style={{ minWidth: 100, maxWidth: 200 }}
