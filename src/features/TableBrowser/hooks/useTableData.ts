@@ -120,7 +120,7 @@ export const useTableData = ({
   }, [nodeTable])
 
   const virtualColumns = React.useMemo(() => {
-    if (currentTable !== edgeTable) {
+    if (currentTabIndex !== 1) { // 1 is Edge Table tab
       return []
     }
 
@@ -158,7 +158,7 @@ export const useTableData = ({
         },
       },
     ]
-  }, [currentTable, edgeTable, nodeNameMap, network])
+  }, [currentTabIndex, nodeNameMap, network])
 
   const idColumn = React.useMemo(
     () => ({
@@ -177,10 +177,10 @@ export const useTableData = ({
 
   const allColumns = React.useMemo(
     () =>
-      currentTable === edgeTable
+      currentTabIndex === 1
         ? [idColumn, ...virtualColumns, ...columns]
         : [idColumn, ...columns],
-    [currentTable, edgeTable, idColumn, virtualColumns, columns],
+    [currentTabIndex, idColumn, virtualColumns, columns],
   )
 
   const rowsWithIds = React.useMemo(() => {
