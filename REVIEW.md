@@ -1,7 +1,7 @@
 # Data-Layer Test Coverage & Correctness Review
 
 **Scope:** `src/data/**` (IndexedDB / Dexie, serialization, snapshot, NDEx client, store hooks) and `src/models/**` (model interfaces + `impl/` functions).
-**Date:** 2026-07-20 (round 1: coverage + validator focus; round 2: deep correctness/architecture pass; round 3: test-driven fixes for the P0s, same day)
+**Date:** 2026-07-20 (round 1: coverage + validator focus; round 2: deep correctness/architecture pass; round 3: test-driven fixes for the P0s, same day). Rounds 13–14 (2026-07-22, post-merge of PR #619): coverage tooling completion + breadth pass over the remaining #600 gaps, extending scope beyond the data layer into `src/features/**` and the boot path.
 **Method:** `@vitest/coverage-v8` measured coverage + manual source reading, plus a round-2 multi-reviewer pass over four subsystems (persistence middleware/undo, serialization/snapshot/migrations, store layer/cross-store flows, model impls/CX converters). Round-2 claims marked **[verified]** were confirmed by direct code reading or by executing the real functions; the rest were verified against source by the reviewing agent. Cross-referenced with `src/data/db/AMBIGUOUS_DB_CODE.md`.
 
 ---
@@ -31,20 +31,27 @@ Re-measured 2026-07-20 (round 2); matches round-1 baseline.
 | `src/data/`   | 56.7%      | 47.8%    | 62.7%     |
 | `src/models/` | 86.8%      | 70.7%    | 87.9%     |
 
+Re-measured 2026-07-23 after rounds 13–14 (lcov lines/branches/functions, same scoped-include method):
+
+| Layer         | Lines | Branches | Functions |
+| ------------- | ----- | -------- | --------- |
+| `src/data/`   | 71.4% | 59.4%    | 79.6%     |
+| `src/models/` | 91.7% | 80.0%    | 91.3%     |
+
 ### Lowest-coverage data-layer files (highest risk first)
 
 | File | Stmts | Notes |
 | ---- | ----- | ----- |
-| `src/data/hooks/useUndoStack.tsx` | **0%** (248 stmts) | Largest untested unit; undo/redo that persists to `UndoStacks`. |
-| `src/data/db/snapshot/exportApplicationState.ts` | **4.5%** | Full app-state debug export. Almost untested — and leaks tokens (see P1). |
-| `src/data/external-api/error-report/index.ts` | **0%** | Crash reporting. |
-| `src/data/hooks/navigation/urlManager.ts` | **16.6%** | URL-as-state parsing/serialization; drives routing. |
-| `src/data/hooks/useDeleteCyNetwork.ts` | **1%** | The most consequential multi-store cascade in the app. No test file. |
+| `src/data/hooks/useUndoStack.tsx` | **0%** (248 stmts) → covered (round 9) | Largest untested unit; undo/redo that persists to `UndoStacks`. |
+| `src/data/db/snapshot/exportApplicationState.ts` | **4.5%** → covered (round 3) | Full app-state debug export. Almost untested — and leaks tokens (see P1). |
+| `src/data/external-api/error-report/index.ts` | **0%** (still) | Crash reporting. Last remaining zero-coverage data-layer module. |
+| `src/data/hooks/navigation/urlManager.ts` | **16.6%** → covered (round 10) | URL-as-state parsing/serialization; drives routing. |
+| `src/data/hooks/useDeleteCyNetwork.ts` | **1%** → covered (round 8) | The most consequential multi-store cascade in the app. No test file. |
 | `src/data/db/snapshot/index.ts` | **50%** | Snapshot import/export orchestration. |
 | `src/data/hooks/stores/UndoStore.ts` | 15.6% → covered (round 2 spec added) | |
 | `src/data/db/validator.ts` | 0% → 99% (round 1) | Still unwired in production. |
 | `src/data/db/index.ts` | 77.8% → 83% (round 1) | Core Dexie CRUD. |
-| NDEx save/load hooks (`useSaveCyNetworkToNDEx`, `useSaveCyNetworkCopyToNDEx`, `useLoadCyNetwork`, `useRegisterNetwork`, `useServiceTaskRunner`) | 0–8% | Side-effectful hooks; currently unguarded. |
+| NDEx save/load hooks (`useSaveCyNetworkToNDEx`, `useSaveCyNetworkCopyToNDEx`, `useLoadCyNetwork`, `useRegisterNetwork`, `useServiceTaskRunner`) | 0–8% → covered (round 13, except `useSaveCyNetworkCopyToNDEx`) | Side-effectful hooks; currently unguarded. |
 
 ### Model-layer weak spots (statements strong; branches lag)
 
@@ -183,6 +190,7 @@ Full text in git history (`1fa02ec4`). Key points, still current:
 **Status: mostly fixed (rounds 6/10).** Renderer's React import is now `import type` (erased at compile time — zero runtime dependency); `getDefaultLayout` takes an `isHierarchical` boolean so models no longer import `isHCX` from features (both callers pass `isHCX(summary)`; the test file's features-mock is gone and a hierarchy case was added); all four `console.*` calls in model impls replaced with `logModel` (visualStyleConverter in round 6, customGraphicsImpl + cyJsVisualPropertyConverter in round 10) — `src/models` is now console-free. Remaining (accepted for now): `fetchUrlCxUtil.ts` file placement, mutable `defaultVisualStyle` shared exports (safe while all touchpoints go through Immer).
 
 **A8. CI blind spots.** ~~No `tsc --noEmit` anywhere in `npm test`~~ **Corrected (round 4): `npm test` → `lint` → `lint:tsc` already runs `tsc --noEmit`; the round-2 claim was wrong.** The genuine gaps: the widened enum type made the gate blind to a whole class of bugs (fixed in round 4, R2-22); coverage is not gated; and a test file that fails to *load* reports zero tests rather than failing loudly (observed in round 1). **Prospective change:** add a coverage floor for `src/data/db/**`.
+**Status: closed (rounds 11 + 13).** Round 11 added the `src/data/db/**` threshold floors. Round 13 finished the wiring: coverage `include`/`exclude` scoped to `src/**` source (unloaded files now visible at 0%), reporters configured (text-summary/html/lcov), `coverage/` gitignored, and CI's Unit Tests job switched from `test:unit` to `test:coverage` with the report uploaded as an artifact — so the db floors are enforced on every PR instead of only on local runs.
 
 ### Store spec quality (round-2 assessment)
 
@@ -330,6 +338,42 @@ New `persistenceScheduler` (trailing per-key coalescer, 300ms, flush on page-hid
 
 **Verification:** full unit suite **154 files / 2273 tests passing**; `npx oxlint src` clean; `npx tsc --noEmit` → 0 errors.
 
+### Round 13 (2026-07-22, post-#619): coverage tooling completion + remaining data-layer gaps
+
+Closed the #600 items still open after PR #619 merged. Ten isolated commits.
+
+**Tooling (A8 closure):**
+
+- `coverage/` gitignored (it was sitting untracked in working trees).
+- `vitest.config.ts` coverage config completed: `include: src/**/*.{ts,tsx}` (tests/`.d.ts`/mocks excluded) so unloaded source files count at 0%, reporters `text-summary`/`html`/`lcov`.
+- CI's Unit Tests job now runs `test:coverage` and uploads the report artifact — the round-11 db floors are enforced on every PR.
+
+**Tests (49 new), covering the last untested items from the #600 list:**
+
+- `appLifecycle.test.ts` (9) — CyApp mount/unmount helpers: mount-failure cleanup + rethrow, cleanup-before-unmount ordering, unmount error swallowing, double-unmount idempotence.
+- `ContextMenuItemStore.spec.ts` (5) — the last spec-less store; anonymous-registration protection in `removeAllByAppId`, AppCleanupRegistry wiring.
+- `CyNetworkModel` `nodeOperations`/`edgeOperations` tests (9) — the create/delete orchestration cores shared with undo/redo: pre-deletion undo-payload capture, cascade order, summary counts from pre-mutation topology. (`MessageModel` and `PropertyModel`, the other two zero-test models, turned out to be type-only — nothing to test.)
+- `useLoadCyNetwork.test.ts` (5) — cache-hit fast path, NDEx fallback + CX2 conversion, and the data-loss guard: a local-only network missing from cache throws instead of falling through to NDEx.
+- `useLoadNetworkSummaries.test.ts` (5) — cache/NDEx split, write-through, dedup, unresolvable-ID omission.
+- `useSaveCyNetworkToNDEx.test.ts` (5) — missing-view-model guard, export→upload chain, NDEx-rejection path, modification-time sync.
+- `useRegisterNetwork.test.tsx` (4) — 11-store registration fan-out, default-layout application + post-layout store sync, invalid-HCX warning path.
+- `useServiceTaskRunner.test.tsx` (7) — service guards, `none`-type guard bypass, parameter resolution + result-action dispatch, HCX updateNetwork block, unsupported-action rejection.
+
+**Verification:** full unit suite **2,622 tests passing** (2,573 at session start — the delta vs round 12's 2,273 includes other merged work); lint 0; `tsc --noEmit` 0; db coverage floors green.
+
+### Round 14 (2026-07-22): feature-module breadth pass (beyond original scope)
+
+Extended #600 coverage into the feature modules the issue flagged as ~zero-tested (Vizmapper 0/64 files, HierarchyViewer ~1/42, ToolBar 2 logic tests/79 files, NetworkPanel 1/15, Workspace 0/10, AppShell). Strategy: unit-test the logic-bearing code (utils, model impls, stores, hooks); component rendering stays e2e territory. Seven isolated commits, 117 new tests.
+
+- **Vizmapper** (36) — its four dependency-free utility modules: numeric-column detection, continuous-mapping handle ops (gap-filling id allocation, sort invariants), chart geometry (incl. `holeSize=0` ring edge), pie/ring type guards.
+- **HierarchyViewer** (46) — the HCX validator's full branch set, HCX detection, `applyCpLayout` (the circle-packing mapper the web worker runs — the worker itself is a message shell around this pure function) incl. `-Nd` duplicate-subsystem suffix matching, network/view consistency validation, member-list fallback rules, filter building, label wrap/truncate/font-size.
+- **NetworkPanel** (19) — `createCyjsDataMapper` (VisualStyle → cytoscape.js style translation: base-style ordering, selected-state mappings, edge-selection-last rule, 5-way label-position expansion, dual arrow mappings, pie-slice registration — present even for empty custom-graphics slots) and `addCyElements` via a spy `Core`.
+- **ToolBar** (10) — `createMenuItems` (gravity ordering, tree merging, duplicate-leaf tooltips, empty-path error) and `useServiceAppMenu.handleRun` (completion/failure/throw branches, clear-task guarantee, root-menu filtering).
+- **AppShell + boot** (15) — enabled by small behavior-preserving extractions, each moved verbatim and exported: `mergeUiStateWithSearchParams` + `buildFilterConfigFromSearchParams` (AppShell.tsx module scope), `parseUserInfoFromErrorMessage` (hoisted from the `initializeKeycloak` closure), `generateChannelName` (made injectable) + the cyweb tab-ID reuse rule. The `initializeAppShell` orchestration (event-bus-after-setWorkspace, import-error collection) is deliberately left to e2e.
+- **Workspace: no unit-testable logic exists.** All files are components; the only real logic (the `isEqual`/`omit` network-modified rule and `loadCurrentNetworkById` in `WorkspaceEditor.tsx`) is inline closures over ~15 stores, and the decision logic it delegates to is already covered. Extraction-then-test deferred until that code next changes.
+
+**Verification:** full unit suite **209 files / 2,739 tests passing**; lint 0; `tsc --noEmit` 0; overall `src/**` statement coverage 39.4% (round-13 start) → 43.8%.
+
 ---
 
 ## Backlog: CLEARED (2026-07-20)
@@ -338,7 +382,7 @@ Every actionable item in the original backlog is done. What remains falls into t
 
 **Open product decisions** (need an owner's call, not engineering): `list_of_string` escaping for elements containing `', '` (R2-16); whether string→color passthrough mappings should be allowed (R2-22 note); whether selection changes should be persisted at all (A2 note).
 
-**Deliberate future work**: cross-store save transaction via a save orchestrator (A3); routing imported snapshot records through schema migrations once the first real migration ships (R2-14); worker offloading for very large snapshot payloads (A6); `fetchUrlCxUtil` file placement (cosmetic); escalating the read-path validators from observe mode to enforcement once field warnings are quiet (round 7); removing the now-unused `idb-keyval` dependency from `package.json` (needs dependency-change approval).
+**Deliberate future work**: cross-store save transaction via a save orchestrator (A3); routing imported snapshot records through schema migrations once the first real migration ships (R2-14); worker offloading for very large snapshot payloads (A6); `fetchUrlCxUtil` file placement (cosmetic); escalating the read-path validators from observe mode to enforcement once field warnings are quiet (round 7); removing the now-unused `idb-keyval` dependency from `package.json` (needs dependency-change approval); the #600 e2e scenario gaps (NDEx load/save, local import/export, Vizmapper interactions, layouts, canvas editing, undo/redo, multi-tab sync, HCX navigation, login) — the unit-side gaps are closed as of round 14.
 
 ## Consolidated backlog (prioritized)
 
