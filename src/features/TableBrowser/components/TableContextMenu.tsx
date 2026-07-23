@@ -163,6 +163,7 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
   return (
     <Menu
+      data-testid="table-browser-context-menu"
       open={contextMenu !== null}
       onClose={handleContextMenuClose}
       anchorReference="anchorPosition"
@@ -179,6 +180,7 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       >
         <span>
           <MenuItem
+            data-testid="context-menu-apply-to-column"
             disabled={isContextCellVirtual}
             onClick={onApplyToEntireColumn}
           >
@@ -193,6 +195,7 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       >
         <span>
           <MenuItem
+            data-testid="context-menu-apply-to-selected"
             disabled={isContextCellVirtual}
             onClick={onApplyToSelected}
           >
@@ -203,14 +206,14 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
       <Divider />
 
-      <MenuItem onClick={onCopyValue}>
+      <MenuItem data-testid="context-menu-copy" onClick={onCopyValue}>
         <ListItemIcon>
           <ContentCopy fontSize="small" />
         </ListItemIcon>
         <ListItemText>Copy</ListItemText>
       </MenuItem>
 
-      <MenuItem onClick={onPaste}>
+      <MenuItem data-testid="context-menu-paste" onClick={onPaste}>
         <ListItemIcon>
           <ContentPaste fontSize="small" />
         </ListItemIcon>
@@ -219,14 +222,14 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
       <Divider />
 
-      <MenuItem disabled={isSelectionEmpty} onClick={onCopySelected}>
+      <MenuItem data-testid="context-menu-copy-selected" disabled={isSelectionEmpty} onClick={onCopySelected}>
         <ListItemIcon>
           <ContentCopy fontSize="small" />
         </ListItemIcon>
         <ListItemText>Copy Selected</ListItemText>
       </MenuItem>
 
-      <MenuItem onClick={onCopyId}>
+      <MenuItem data-testid="context-menu-copy-id" onClick={onCopyId}>
         <ListItemIcon>
           <ContentCopy fontSize="small" />
         </ListItemIcon>
@@ -235,11 +238,12 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
       <Divider />
 
-      <MenuItem onClick={onSelectInViewport}>
+      <MenuItem data-testid="context-menu-select-viewport" onClick={onSelectInViewport}>
         Select This {elementTypeName} in Viewport
       </MenuItem>
 
       <MenuItem
+        data-testid="context-menu-select-from-selection"
         disabled={isSelectionEmpty}
         onClick={onSelectFromSelection}
       >

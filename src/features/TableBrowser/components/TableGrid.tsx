@@ -64,37 +64,38 @@ export const TableGrid: React.FC<TableGridProps> = ({
   drawHeader,
 }) => {
   return (
-    <DataEditor
-      data-testid={testId}
-      ref={editorRef}
-      gridSelection={selection}
-      onGridSelectionChange={onGridSelectionChange}
-      rowSelectionBlending="mixed"
-      rangeSelectionBlending="mixed"
-      columnSelectionBlending="mixed"
-      rangeSelect="rect"
-      rowSelect={'multi'}
-      rowMarkers={'checkbox'}
-      rowMarkerWidth={35}
-      rowMarkerStartIndex={minId}
-      onCellContextMenu={onCellContextMenu}
-      onCellActivated={onCellActivated}
-      onPaste={onPaste}
-      getCellsForSelection={true}
-      onColumnMoved={onColumnMoved}
-      onItemHovered={(e) => onItemHovered(e.location)}
-      overscrollX={10}
-      overscrollY={10}
-      onColumnResizeEnd={onColumnResizeEnd}
-      width={width}
-      height={height}
-      getCellContent={getCellContent}
-      onCellEdited={onCellEdited}
-      columns={columns}
-      rows={maxId - minId + 1}
-      theme={theme}
-      headerIcons={headerIcons}
-      drawHeader={drawHeader}
-    />
+    <div data-testid={testId} style={{ width: width, height: height }}>
+      <DataEditor
+        ref={editorRef}
+        gridSelection={selection}
+        onGridSelectionChange={onGridSelectionChange}
+        rowSelectionBlending="mixed"
+        rangeSelectionBlending="mixed"
+        columnSelectionBlending="mixed"
+        rangeSelect="rect"
+        rowSelect={'multi'}
+        rowMarkers={'checkbox'}
+        rowMarkerWidth={35}
+        rowMarkerStartIndex={minId}
+        onCellContextMenu={onCellContextMenu}
+        onCellActivated={onCellActivated}
+        onPaste={onPaste}
+        getCellsForSelection={true}
+        onColumnMoved={onColumnMoved}
+        onItemHovered={(e) => onItemHovered(e.location)}
+        overscrollX={10}
+        overscrollY={10}
+        onColumnResizeEnd={onColumnResizeEnd}
+        width={width}
+        height={height}
+        getCellContent={getCellContent}
+        onCellEdited={onCellEdited}
+        columns={columns}
+        rows={maxId - minId + 1}
+        theme={theme}
+        headerIcons={headerIcons}
+        drawHeader={drawHeader}
+      />
+    </div>
   )
 }

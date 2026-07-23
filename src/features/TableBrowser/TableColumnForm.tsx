@@ -281,7 +281,7 @@ export function CreateTableColumnForm(
   const submitButton = disabled ? (
     <Tooltip title="Column name must not be empty">
       <Box>
-        <Button variant="contained" disabled>
+        <Button data-testid="create-table-column-confirm-button" variant="contained" disabled>
           Confirm
         </Button>
       </Box>

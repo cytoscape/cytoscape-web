@@ -43,16 +43,19 @@ const ToolbarIconButton = ({
   title,
   disabled = false,
   onClick,
+  testId,
   children,
 }: {
   title: string
   disabled?: boolean
   onClick: () => void
+  testId?: string
   children: React.ReactElement
 }) => (
   <ButtonTooltip title={title}>
     <span>
       <Button
+        data-testid={testId}
         disabled={disabled}
         onClick={onClick}
         sx={{
@@ -71,12 +74,15 @@ const ToolbarIconButton = ({
 
 const ToolbarTextButton = ({
   onClick,
+  testId,
   children,
 }: {
   onClick: () => void
+  testId?: string
   children: React.ReactNode
 }) => (
   <Button
+    data-testid={testId}
     variant="outlined"
     size="small"
     onClick={onClick}
@@ -178,7 +184,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             backgroundColor: 'transparent',
           }}
         >
-          <ToolbarTextButton onClick={() => {
+          <ToolbarTextButton testId="table-toolbar-sort-asc-button" onClick={() => {
             if (selectedColumn != null) {
               const columnKey = selectedColumn.id
               const columnType = selectedColumn.type
@@ -190,7 +196,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           }}>
             Sort Asc
           </ToolbarTextButton>
-          <ToolbarTextButton onClick={() => {
+          <ToolbarTextButton testId="table-toolbar-sort-desc-button" onClick={() => {
             if (selectedColumn != null) {
               const columnKey = selectedColumn.id
               const columnType = selectedColumn.type
@@ -202,7 +208,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           }}>
             Sort Desc
           </ToolbarTextButton>
-          <ToolbarTextButton onClick={() => {
+          <ToolbarTextButton testId="table-toolbar-duplicate-column-button" onClick={() => {
             if (selectedColumn !== null && !(selectedColumn as any)?.isVirtual) {
               const columnKey = selectedColumn.id
               duplicateColumn(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', columnKey)
@@ -239,10 +245,10 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           }}>
             Duplicate
           </ToolbarTextButton>
-          <ToolbarTextButton onClick={() => setShowEditColumnForm(true)}>
+          <ToolbarTextButton testId="table-toolbar-edit-column-button" onClick={() => setShowEditColumnForm(true)}>
             Edit Column Name
           </ToolbarTextButton>
-          <ToolbarTextButton onClick={() => setShowDeleteColumnForm(true)}>
+          <ToolbarTextButton testId="table-toolbar-delete-column-button" onClick={() => setShowDeleteColumnForm(true)}>
             Delete Column
           </ToolbarTextButton>
         </Box>
@@ -356,6 +362,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     selectedCell != null && !isSelectedCellVirtual ? (
       <Box sx={{ display: 'flex', gap: 1, ml: 2, backgroundColor: 'transparent', minWidth: '540px' }}>
         <ToolbarTextButton
+          testId="table-toolbar-apply-value-to-column-button"
           onClick={() => {
             const [columnIndex, rowIndex] = selectedCell
             const rowData = rows?.[rowIndex]
@@ -382,6 +389,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           Apply Value to Column
         </ToolbarTextButton>
         <ToolbarTextButton
+          testId="table-toolbar-apply-value-to-selected-button"
           onClick={() => {
             const [columnIndex, rowIndex] = selectedCell
             const rowData = rows?.[rowIndex]
@@ -417,6 +425,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     selection.rows.length > 0 ? (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2, backgroundColor: 'transparent' }}>
         <ToolbarTextButton
+          testId="table-toolbar-select-elements-button"
           onClick={() => {
             const rowsToSelect = selection.rows.toArray()
             const rowIds = rowsToSelect.map((r) => rows?.[r].id).filter((id) => id !== undefined)
@@ -436,6 +445,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 1, backgroundColor: 'transparent' }}>
       <ToolbarIconButton
+        testId="insert-column-button"
         title="Insert new column"
         disabled={tables[currentNetworkId] === undefined}
         onClick={() => setShowCreateColumnForm(true)}
@@ -443,6 +453,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         <span className="icon">&#8209;</span>
       </ToolbarIconButton>
       <ToolbarIconButton
+        testId="import-table-button"
         title="Import table from file..."
         disabled={tables[currentNetworkId] === undefined}
         onClick={() => showTableJoinForm(true)}
