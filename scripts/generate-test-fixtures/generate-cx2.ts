@@ -226,7 +226,9 @@ export function generateValidCx2(options: GenerateCx2Options): any[] {
 
     if (withAttributes) {
       v.type = i % 2 === 0 ? 'protein' : 'gene'
-      v.score = (i * 0.1).toFixed(2)
+      // score is declared 'double' — toFixed alone would emit a string,
+      // which validateCX2 rejects
+      v.score = Number((i * 0.1).toFixed(2))
     }
 
     node.v = v
@@ -250,7 +252,8 @@ export function generateValidCx2(options: GenerateCx2Options): any[] {
     }
 
     if (withAttributes) {
-      v.weight = (i * 0.05).toFixed(2)
+      // weight is declared 'double' — keep it numeric (see score above)
+      v.weight = Number((i * 0.05).toFixed(2))
     }
 
     edge.v = v
