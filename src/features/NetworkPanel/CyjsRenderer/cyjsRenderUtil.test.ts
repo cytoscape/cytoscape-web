@@ -37,7 +37,9 @@ describe('transformRotation', () => {
 describe('createCyjsDataMapper', () => {
   const vs = VisualStyleFn.createVisualStyle()
   const cyStyle = createCyjsDataMapper(vs)
-  const selectors = cyStyle.map((m) => m.selector)
+  // The state selectors (node:selected etc.) are outside the
+  // DirectMappingSelector template type, so compare as plain strings
+  const selectors: string[] = cyStyle.map((m) => m.selector as string)
 
   it('starts with the base edge and node styles', () => {
     expect(cyStyle[0]).toEqual({
@@ -61,7 +63,9 @@ describe('createCyjsDataMapper', () => {
   })
 
   it('maps the selected node color through the node:selected state', () => {
-    const selected = cyStyle.find((m) => m.selector === 'node:selected')
+    const selected = cyStyle.find(
+      (m) => (m.selector as string) === 'node:selected',
+    )
 
     expect(selected).toBeDefined()
     expect(Object.values(selected!.style)).toContain(
