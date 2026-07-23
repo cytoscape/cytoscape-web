@@ -45,6 +45,7 @@ import { IdType } from '../models/IdType'
 import { serviceAppUrlsToAdd } from '../models/AppModel/impl'
 import { MessageSeverity } from '../models/MessageModel'
 import { GraphObjectType } from '../models/NetworkModel'
+import { Ui } from '../models/UiModel'
 import { Panel } from '../models/UiModel/Panel'
 import { PanelState } from '../models/UiModel/PanelState'
 import { NetworkView } from '../models/ViewModel'
@@ -64,6 +65,63 @@ const INSTALL_APP_QUERY_KEY = 'installApp'
 // external service endpoints to register (CW-521). Adding requires explicit
 // user confirmation, since it comes from an arbitrary link.
 const ADD_SERVICE_APP_QUERY_KEY = 'addserviceapp'
+
+/**
+ * Builds the mount-time UI state by overlaying URL search parameters
+ * (panel states, active table browser tab) on the persisted UI state.
+ * Encodes the shareable-URL panel semantics; exported for testing.
+ */
+export const mergeUiStateWithSearchParams = (
+  dbUiState: Ui | undefined,
+  search: URLSearchParams,
+): Ui => {
+  // Create a mutable copy to avoid read-only errors when object comes from IndexedDB
+  const uiState = dbUiState
+    ? cloneDeep(dbUiState)
+    : cloneDeep({ ...DEFAULT_UI_STATE })
+  uiState.panels[Panel.LEFT] =
+    (search.get(Panel.LEFT) as PanelState) ?? uiState.panels[Panel.LEFT]
+  uiState.panels[Panel.RIGHT] =
+    (search.get(Panel.RIGHT) as PanelState) ?? uiState.panels[Panel.RIGHT]
+  uiState.panels[Panel.BOTTOM] =
+    (search.get(Panel.BOTTOM) as PanelState) ?? uiState.panels[Panel.BOTTOM]
+  uiState.tableUi.activeTabIndex =
+    search.get('activeTableBrowserTab') != null
+      ? Number(search.get('activeTableBrowserTab'))
+      : uiState.tableUi.activeTabIndex
+  return uiState
+}
+
+/**
+ * Builds a FilterConfig from URL search parameters, or undefined unless
+ * FILTER_FOR, FILTER_BY, and FILTER_RANGE are all present.
+ * Encodes the shareable-URL filter semantics; exported for testing.
+ */
+export const buildFilterConfigFromSearchParams = (
+  search: URLSearchParams,
+): FilterConfig | undefined => {
+  const filterFor = search.get(FilterUrlParams.FILTER_FOR)
+  const filterBy = search.get(FilterUrlParams.FILTER_BY)
+  const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
+
+  if (filterFor == null || filterBy == null || filterRange == null) {
+    return undefined
+  }
+
+  return {
+    name: DEFAULT_FILTER_NAME,
+    attributeName: filterBy,
+    target:
+      filterFor === GraphObjectType.NODE
+        ? GraphObjectType.NODE
+        : GraphObjectType.EDGE,
+    widgetType: FilterWidgetType.CHECKBOX,
+    description: 'Filter nodes / edges by selected values',
+    label: 'Interaction edge filter',
+    range: { values: filterRange.split(',') },
+    displayMode: DisplayMode.SELECT,
+  }
+}
 
 /**
  * Application shell component that provides the main layout structure
@@ -162,24 +220,8 @@ const AppShell = (): ReactElement => {
    * Creates a filter config if FILTER_FOR, FILTER_BY, and FILTER_RANGE are present
    */
   const restoreFilterStates = (): void => {
-    const filterFor = search.get(FilterUrlParams.FILTER_FOR)
-    const filterBy = search.get(FilterUrlParams.FILTER_BY)
-    const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
-
-    if (filterFor != null && filterBy != null && filterRange != null) {
-      const filterConfig: FilterConfig = {
-        name: DEFAULT_FILTER_NAME,
-        attributeName: filterBy,
-        target:
-          filterFor === GraphObjectType.NODE
-            ? GraphObjectType.NODE
-            : GraphObjectType.EDGE,
-        widgetType: FilterWidgetType.CHECKBOX,
-        description: 'Filter nodes / edges by selected values',
-        label: 'Interaction edge filter',
-        range: { values: filterRange.split(',') },
-        displayMode: DisplayMode.SELECT,
-      }
+    const filterConfig = buildFilterConfigFromSearchParams(search)
+    if (filterConfig !== undefined) {
       addFilterConfig(filterConfig)
     }
   }
@@ -294,21 +336,8 @@ const AppShell = (): ReactElement => {
 
       // Process UI state parameters from search params
       // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
-      // Create a mutable copy to avoid read-only errors when object comes from IndexedDB
       const dbUiState = await getUiStateFromDb()
-      const uiState = dbUiState
-        ? cloneDeep(dbUiState)
-        : cloneDeep({ ...DEFAULT_UI_STATE })
-      uiState.panels[Panel.LEFT] =
-        (search.get(Panel.LEFT) as PanelState) ?? uiState.panels[Panel.LEFT]
-      uiState.panels[Panel.RIGHT] =
-        (search.get(Panel.RIGHT) as PanelState) ?? uiState.panels[Panel.RIGHT]
-      uiState.panels[Panel.BOTTOM] =
-        (search.get(Panel.BOTTOM) as PanelState) ?? uiState.panels[Panel.BOTTOM]
-      uiState.tableUi.activeTabIndex =
-        search.get('activeTableBrowserTab') != null
-          ? Number(search.get('activeTableBrowserTab'))
-          : uiState.tableUi.activeTabIndex
+      const uiState = mergeUiStateWithSearchParams(dbUiState, search)
       setUi(uiState)
 
       // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor

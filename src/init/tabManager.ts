@@ -9,12 +9,14 @@ import { logStartup } from '../debug'
 
 /**
  * Generates a channel name based on the current hostname and port
+ * (injectable for testing).
  *
  * @returns a name for the channel based on the current hostname and port
  */
-const generateChannelName = (): string => {
-  const domain = window.location.hostname
-  const port = window.location.port
+export const generateChannelName = (
+  domain: string = window.location.hostname,
+  port: string = window.location.port,
+): string => {
   const hostWithPort = port ? `${domain}-${port}` : domain
 
   const cleanName = hostWithPort.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
