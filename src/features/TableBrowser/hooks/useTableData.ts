@@ -8,6 +8,7 @@ import { getElementId, ID_COLUMN_ID, ID_COLUMN_TITLE } from '../idColumn'
 import { SortType } from '../../../models/TableModel/impl/valueTypeImpl'
 import { getHeaderIconForType } from '../utils/tableRenderers'
 import { getBadgeWidth } from '../../../models/TableModel/impl/valueTypeNameIcons'
+import { TableBrowserTab } from '../components/TableBrowserTabs'
 
 export interface UseTableDataProps {
   currentTabIndex: number
@@ -28,8 +29,8 @@ export const useTableData = ({
   selectedNodes,
   selectedEdges,
 }: UseTableDataProps) => {
-  const currentTable = currentTabIndex === 0 ? nodeTable : edgeTable
-  const selectedElements = currentTabIndex === 0 ? selectedNodes : selectedEdges
+  const currentTable = currentTabIndex === TableBrowserTab.NODES ? nodeTable : edgeTable
+  const selectedElements = currentTabIndex === TableBrowserTab.NODES ? selectedNodes : selectedEdges
 
   const isNodeTable = currentTable === nodeTable
   const currentTableConfig = isNodeTable
@@ -120,7 +121,7 @@ export const useTableData = ({
   }, [nodeTable])
 
   const virtualColumns = React.useMemo(() => {
-    if (currentTabIndex !== 1) { // 1 is Edge Table tab
+    if (currentTabIndex !== TableBrowserTab.EDGES) {
       return []
     }
 
@@ -177,7 +178,7 @@ export const useTableData = ({
 
   const allColumns = React.useMemo(
     () =>
-      currentTabIndex === 1
+      currentTabIndex === TableBrowserTab.EDGES
         ? [idColumn, ...virtualColumns, ...columns]
         : [idColumn, ...columns],
     [currentTabIndex, idColumn, virtualColumns, columns],

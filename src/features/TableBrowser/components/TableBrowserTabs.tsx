@@ -1,6 +1,12 @@
 import React from 'react'
 import { Tab, Tabs, Tooltip } from '@mui/material'
 
+export enum TableBrowserTab {
+  NODES = 0,
+  EDGES = 1,
+  NETWORK = 2,
+}
+
 export interface TableBrowserTabsProps {
   currentTabIndex: number
   handleChange: (event: React.SyntheticEvent, newValue: number) => void

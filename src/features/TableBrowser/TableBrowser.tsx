@@ -48,7 +48,7 @@ import { useTableData } from './hooks/useTableData';
 import { useListEditor } from './hooks/useListEditor';
 import { createHeaderIcons, handleDrawHeader } from './utils/tableRenderers';
 import { TabPanel } from './components/TabPanel'
-import { TableBrowserTabs } from './components/TableBrowserTabs'
+import { TableBrowserTabs, TableBrowserTab } from './components/TableBrowserTabs'
 import { useTableMinMaxIds } from './hooks/useTableMinMaxIds'
 import { useTableScrollToTop } from './hooks/useTableScrollToTop'
 import { useIsContextCellVirtual } from './hooks/useIsContextCellVirtual'
@@ -509,7 +509,7 @@ export default function TableBrowser(props: {
           </IconButton>
         </Tooltip>
       </Box>
-      <TabPanel value={currentTabIndex} index={0}>
+      <TabPanel value={currentTabIndex} index={TableBrowserTab.NODES}>
         {tableBrowserToolbar}
         <TableGrid
           testId="table-browser-node-editor"
@@ -534,7 +534,7 @@ export default function TableBrowser(props: {
           drawHeader={handleDrawHeader}
         />
       </TabPanel>
-      <TabPanel value={currentTabIndex} index={1}>
+      <TabPanel value={currentTabIndex} index={TableBrowserTab.EDGES}>
         {tableBrowserToolbar}
         <TableGrid
           testId="table-browser-edge-editor"
@@ -559,7 +559,7 @@ export default function TableBrowser(props: {
           drawHeader={handleDrawHeader}
         />
       </TabPanel>
-      <TabPanel value={currentTabIndex} index={2}>
+      <TabPanel value={currentTabIndex} index={TableBrowserTab.NETWORK}>
         <NetworkInfoPanel height={props.height - TOOLBAR_HEIGHT - 1} />
       </TabPanel>
       <TableContextMenu

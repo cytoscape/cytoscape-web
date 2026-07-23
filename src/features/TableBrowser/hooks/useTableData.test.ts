@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { ValueTypeName } from '../../../models/TableModel'
 import { useTableData } from './useTableData'
 import { ID_COLUMN_ID } from '../idColumn'
+import { TableBrowserTab } from '../components/TableBrowserTabs'
 
 describe('useTableData', () => {
   const mockNodeTable = {
@@ -29,7 +30,7 @@ describe('useTableData', () => {
 
   it('initializes with node table columns and rows when currentTabIndex is 0', () => {
     const { result } = renderHook(() => useTableData({
-      currentTabIndex: 0,
+      currentTabIndex: TableBrowserTab.NODES,
       nodeTable: mockNodeTable as any,
       edgeTable: mockEdgeTable as any,
       network: undefined,
@@ -48,7 +49,7 @@ describe('useTableData', () => {
 
   it('filters rows based on selectedElements', () => {
     const { result } = renderHook(() => useTableData({
-      currentTabIndex: 0,
+      currentTabIndex: TableBrowserTab.NODES,
       nodeTable: mockNodeTable as any,
       edgeTable: mockEdgeTable as any,
       network: undefined,
@@ -73,7 +74,7 @@ describe('useTableData', () => {
     }
 
     const { result } = renderHook(() => useTableData({
-      currentTabIndex: 0,
+      currentTabIndex: TableBrowserTab.NODES,
       nodeTable: mockNodeTable as any,
       edgeTable: mockEdgeTable as any,
       network: undefined,
@@ -85,8 +86,23 @@ describe('useTableData', () => {
     expect(result.current.sort.column).toBe('score')
     expect(result.current.sort.direction).toBe('desc')
     
-    // Rows should be sorted descending by score (node2 then node1)
     expect(result.current.rows[0].id).toBe('node2')
     expect(result.current.rows[1].id).toBe('node1')
+  })
+
+  it('does not include edge virtual columns when both tables are undefined and currentTabIndex is 0', () => {
+    const { result } = renderHook(() => useTableData({
+      currentTabIndex: 0,
+      nodeTable: undefined,
+      edgeTable: undefined,
+      network: undefined,
+      tableDisplayConfiguration: undefined,
+      selectedNodes: [],
+      selectedEdges: [],
+    }))
+
+    const columnIds = result.current.allColumns.map(c => c.id)
+    expect(columnIds).not.toContain('__sourceNodeName')
+    expect(columnIds).not.toContain('__targetNodeName')
   })
 })
