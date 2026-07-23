@@ -39,7 +39,6 @@ import { TableGrid } from './components/TableGrid'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { NetworkView } from '../../models/ViewModel'
 import { ListValueEditorDialog } from './ListValueEditorDialog'
 
 import NetworkInfoPanel from './NetworkInfoPanel'
@@ -50,6 +49,10 @@ import { useListEditor } from './hooks/useListEditor';
 import { createHeaderIcons, handleDrawHeader } from './utils/tableRenderers';
 import { TabPanel } from './components/TabPanel'
 import { TableBrowserTabs } from './components/TableBrowserTabs'
+import { useTableMinMaxIds } from './hooks/useTableMinMaxIds'
+import { useTableScrollToTop } from './hooks/useTableScrollToTop'
+import { useIsContextCellVirtual } from './hooks/useIsContextCellVirtual'
+import { useDataEditorTheme } from './hooks/useDataEditorTheme'
 
 export interface TableColumn {
   id: string
@@ -58,6 +61,8 @@ export interface TableColumn {
   index: number
   width?: number
 }
+
+const EMPTY_ARRAY: IdType[] = []
 
 // Used for calculating proper height for the Data Grid
 const TABS_HEIGHT = 32
@@ -131,11 +136,12 @@ export default function TableBrowser(props: {
   )
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
-  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
-    state.getViewModel(networkId),
+  const selectedNodes = useViewModelStore(
+    (state) => state.getViewModel(networkId)?.selectedNodes ?? EMPTY_ARRAY
   )
-  const selectedNodes = useViewModelStore(() => viewModel?.selectedNodes ?? [])
-  const selectedEdges = useViewModelStore(() => viewModel?.selectedEdges ?? [])
+  const selectedEdges = useViewModelStore(
+    (state) => state.getViewModel(networkId)?.selectedEdges ?? EMPTY_ARRAY
+  )
 
   const tableDisplayConfiguration = useUiStateStore(
     (state) =>
@@ -196,21 +202,15 @@ export default function TableBrowser(props: {
   const edgeTable = tables[networkId]?.edgeTable
   const network = useNetworkStore((state) => state.networks.get(networkId))
 
-  const nodeIds = Array.from(nodeTable?.rows?.keys() ?? new Map()).map(
-    (v) => +v,
+  const { minNodeId, maxNodeId, minEdgeId, maxEdgeId } = useTableMinMaxIds(
+    nodeTable,
+    edgeTable,
   )
-  const edgeIds = Array.from(edgeTable?.rows?.keys() ?? new Map()).map(
-    (v) => +v.slice(1),
-  )
-  const maxNodeId = nodeIds.sort((a, b) => b - a)[0]
-  const minNodeId = nodeIds.sort((a, b) => a - b)[0]
-  const maxEdgeId = edgeIds.sort((a, b) => b - a)[0]
-  const minEdgeId = edgeIds.sort((a, b) => a - b)[0]
+
   // Temporary fix: fallback to table columns if tableDisplayConfiguration is not found
   // Memoized so downstream memos (columns/allColumns) keep stable identities
   const {
     currentTable,
-    sort,
     setSort,
     allColumns,
     columns,
@@ -230,18 +230,7 @@ export default function TableBrowser(props: {
 
   
 
-  React.useEffect(() => {
-    // scroll to the first result anytime someone changes the filtered rows
-    // e.g. when the user selects nodes in the network view, scroll to the top of the list in the table
-    nodeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
-      vAlign: 'start',
-      hAlign: 'start',
-    })
-    edgeDataEditorRef.current?.scrollTo(0, 0, 'both', 0, 0, {
-      vAlign: 'start',
-      hAlign: 'start',
-    })
-  }, [selectedElements])
+  useTableScrollToTop(nodeDataEditorRef, edgeDataEditorRef, selectedElements)
 
   const handleChange = (
     event: React.SyntheticEvent,
@@ -429,13 +418,13 @@ export default function TableBrowser(props: {
 
 
   // scan the visual properties to see if the selected column name is used in any mappings
-  const visualPropertiesDependentOnSelectedColumn = Object.values(
-    visualStyle ?? {},
-  ).filter(
-    (vpValue) =>
-      selectedColumn?.id != null &&
-      vpValue?.mapping?.attribute === selectedColumn.id,
-  )
+  const visualPropertiesDependentOnSelectedColumn = React.useMemo(() => {
+    return Object.values(visualStyle ?? {}).filter(
+      (vpValue) =>
+        selectedColumn?.id != null &&
+        vpValue?.mapping?.attribute === selectedColumn.id,
+    )
+  }, [visualStyle, selectedColumn?.id])
   const tableBrowserToolbar = (
     <TableToolbar
       currentNetworkId={props.currentNetworkId}
@@ -465,29 +454,9 @@ export default function TableBrowser(props: {
     />
   )
 
-  const isContextCellVirtual =
-    contextMenu !== null &&
-    allColumns[contextMenu.cell[0]] &&
-    (allColumns[contextMenu.cell[0]] as any).isVirtual === true
+  const isContextCellVirtual = useIsContextCellVirtual(contextMenu, allColumns)
 
-  const dataEditorTheme = {
-    bgHeader: theme.palette.background.default,
-    bgHeaderHovered: theme.palette.action.hover,
-    bgHeaderHasFocus: theme.palette.action.focus,
-    textHeader: theme.palette.text.primary,
-    textHeaderSelected: theme.palette.primary.contrastText,
-    bgIconHeader: theme.palette.text.disabled,
-    fgIconHeader: theme.palette.background.default,
-    bgCell: theme.palette.background.paper,
-    bgCellMedium: theme.palette.background.paper,
-    bgCellLight: theme.palette.background.paper,
-    accentColor: theme.palette.primary.main,
-    accentLight: theme.palette.action.selected,
-    textDark: theme.palette.text.secondary,
-    textMedium: theme.palette.text.disabled,
-    textLight: theme.palette.text.disabled,
-    borderColor: theme.palette.divider,
-  }
+  const dataEditorTheme = useDataEditorTheme()
 
   return (
     <Box
@@ -547,8 +516,8 @@ export default function TableBrowser(props: {
           editorRef={nodeDataEditorRef}
           selection={selection}
           onGridSelectionChange={onGridSelectionChange}
-          minId={minNodeId}
-          maxId={maxNodeId}
+          minId={minNodeId ?? 0}
+          maxId={maxNodeId ?? 0}
           onCellContextMenu={onCellContextMenu}
           onCellActivated={onCellActivated}
           onPaste={onPaste}
@@ -572,8 +541,8 @@ export default function TableBrowser(props: {
           editorRef={edgeDataEditorRef}
           selection={selection}
           onGridSelectionChange={onGridSelectionChange}
-          minId={minEdgeId}
-          maxId={maxEdgeId}
+          minId={minEdgeId ?? 0}
+          maxId={maxEdgeId ?? 0}
           onCellContextMenu={onCellContextMenu}
           onCellActivated={onCellActivated}
           onPaste={onPaste}

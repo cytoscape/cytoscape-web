@@ -1,7 +1,6 @@
 import React from 'react'
 import { GridColumnIcon } from '@glideapps/glide-data-grid'
 import { orderBy } from 'lodash'
-import { IdType } from '../../../models/IdType'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Network } from '../../../models/NetworkModel'
 import { TableDisplayConfiguration, ColumnConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'
@@ -103,12 +102,8 @@ export const useTableData = ({
     [modelColumns, currentTable],
   )
 
-  const virtualColumns = React.useMemo(() => {
-    if (currentTable !== edgeTable) {
-      return []
-    }
-
-    const nodeNameMap = new Map<string, string>()
+  const nodeNameMap = React.useMemo(() => {
+    const map = new Map<string, string>()
     if (nodeTable) {
       nodeTable.rows.forEach((nodeData, nodeId) => {
         const nodeName =
@@ -118,8 +113,15 @@ export const useTableData = ({
           (nodeData.displayName as string) ||
           (nodeData.title as string) ||
           nodeId.toString()
-        nodeNameMap.set(nodeId.toString(), nodeName)
+        map.set(nodeId.toString(), nodeName)
       })
+    }
+    return map
+  }, [nodeTable])
+
+  const virtualColumns = React.useMemo(() => {
+    if (currentTable !== edgeTable) {
+      return []
     }
 
     return [
@@ -156,7 +158,7 @@ export const useTableData = ({
         },
       },
     ]
-  }, [currentTable, edgeTable, nodeTable, network])
+  }, [currentTable, edgeTable, nodeNameMap, network])
 
   const idColumn = React.useMemo(
     () => ({
@@ -181,11 +183,14 @@ export const useTableData = ({
     [currentTable, edgeTable, idColumn, virtualColumns, columns],
   )
 
-  const rows = React.useMemo(() => {
-    const selectedElementsSet = new Set(selectedElements)
-    const rowsWithIds = Array.from((currentTable?.rows ?? new Map()).entries()).map(
+  const rowsWithIds = React.useMemo(() => {
+    return Array.from((currentTable?.rows ?? new Map()).entries()).map(
       ([key, value]) => ({ ...value, id: key }),
     )
+  }, [currentTable])
+
+  const rows = React.useMemo(() => {
+    const selectedElementsSet = new Set(selectedElements)
     let result =
       selectedElements?.length > 0
         ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
@@ -193,20 +198,6 @@ export const useTableData = ({
 
     if (sort.column != null && sort.direction != null && sort.valueType != null) {
       if (sort.column === '__sourceNodeName' || sort.column === '__targetNodeName') {
-        const nodeNameMap = new Map<string, string>()
-        if (nodeTable) {
-          nodeTable.rows.forEach((nodeData, nodeId) => {
-            const nodeName =
-              (nodeData.name as string) ||
-              (nodeData.label as string) ||
-              (nodeData.nodeLabel as string) ||
-              (nodeData.displayName as string) ||
-              (nodeData.title as string) ||
-              nodeId.toString()
-            nodeNameMap.set(nodeId.toString(), nodeName)
-          })
-        }
-
         result = orderBy(
           result,
           (o) => {
@@ -233,7 +224,7 @@ export const useTableData = ({
     }
 
     return result
-  }, [selectedElements, currentTable, sort, nodeTable])
+  }, [selectedElements, rowsWithIds, sort, nodeNameMap])
 
 
   const createUpdatedTableDisplayConfiguration = React.useCallback(
