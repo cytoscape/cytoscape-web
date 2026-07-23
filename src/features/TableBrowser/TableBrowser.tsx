@@ -58,6 +58,7 @@ import {
   SortType,
   valueDisplay,
 } from '../../models/TableModel/impl/valueTypeImpl'
+import { handleCellEdit } from './utils/cellEditHandler'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
@@ -1007,119 +1008,25 @@ export default function TableBrowser(props: {
 
   const onCellEdited = React.useCallback(
     (cell: Item, newValue: EditableGridCell) => {
-      const [columnIndex, rowIndex] = cell
-      const rowData = rows?.[rowIndex]
-      const cxId = rowData?.id
-      const column = columns?.[columnIndex]
-      const columnKey = column?.id
-      let data = newValue.data
-
-      if (rowData == null || cxId == null || column == null || data == null)
-        return
-      const prevCellValue = (rowData as any)?.[columnKey]
-
-      if (isListType(column.type)) {
-        if (serializedStringIsValid(column.type, data as string)) {
-          data = deserializeValueList(column.type, data as string)
-          postEdit(
-            UndoCommandType.SET_CELL_VALUE,
-            'Set cell value',
-            [
-              props.currentNetworkId,
-              currentTable == nodeTable ? 'node' : 'edge',
-              cxId,
-              columnKey,
-              prevCellValue,
-            ],
-            [
-              props.currentNetworkId,
-              currentTable == nodeTable ? 'node' : 'edge',
-              cxId,
-              columnKey,
-              data as ValueType,
-            ],
-          )
-          setCellValue(
-            props.currentNetworkId,
-            currentTable === nodeTable ? 'node' : 'edge',
-            `${cxId}`,
-            columnKey,
-            data as ValueType,
-          )
-          setNetworkModified(networkId, true)
-        }
-      } else {
-        if (
-          column.type !== ValueTypeName.Integer &&
-          column.type !== ValueTypeName.Long
-        ) {
-          postEdit(
-            UndoCommandType.SET_CELL_VALUE,
-            'Set cell value',
-            [
-              props.currentNetworkId,
-              currentTable == nodeTable ? 'node' : 'edge',
-              cxId,
-              columnKey,
-              prevCellValue,
-            ],
-            [
-              props.currentNetworkId,
-              currentTable == nodeTable ? 'node' : 'edge',
-              cxId,
-              columnKey,
-              data as ValueType,
-            ],
-          )
-          setCellValue(
-            props.currentNetworkId,
-            currentTable === nodeTable ? 'node' : 'edge',
-            `${cxId}`,
-            columnKey,
-            data as ValueType,
-          )
-          setNetworkModified(networkId, true)
-        } else {
-          if (Number.isInteger(data)) {
-            postEdit(
-              UndoCommandType.SET_CELL_VALUE,
-              'Set cell value',
-              [
-                props.currentNetworkId,
-                currentTable == nodeTable ? 'node' : 'edge',
-                cxId,
-                columnKey,
-                prevCellValue,
-              ],
-              [
-                props.currentNetworkId,
-                currentTable == nodeTable ? 'node' : 'edge',
-                cxId,
-                columnKey,
-                parseFloat(data as string),
-              ],
-            )
-            setCellValue(
-              props.currentNetworkId,
-              currentTable === nodeTable ? 'node' : 'edge',
-              `${cxId}`,
-              columnKey,
-              parseFloat(data as string),
-            )
-            setNetworkModified(networkId, true)
-          } else {
-            // the user is trying to assign a double value to a integer column.  Ignore this value.
-          }
-        }
-      }
+      handleCellEdit({
+        cell,
+        newValue,
+        rows,
+        allColumns,
+        currentTable,
+        nodeTable,
+        currentNetworkId: props.currentNetworkId,
+        postEdit,
+        setCellValue,
+        setNetworkModified: (id, modified) => setNetworkModified(id, modified),
+      })
     },
     [
       props.currentNetworkId,
       currentTable,
       rows,
-      columns,
+      allColumns,
       postEdit,
-      networkId,
       setNetworkModified,
       nodeTable,
       setCellValue,
