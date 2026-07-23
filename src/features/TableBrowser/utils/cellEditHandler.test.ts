@@ -1,5 +1,5 @@
 import { Item } from '@glideapps/glide-data-grid'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { ValueTypeName } from '../../../models/TableModel'
@@ -10,7 +10,6 @@ describe('handleCellEdit', () => {
   const mockSetCellValue = vi.fn()
   const mockSetNetworkModified = vi.fn()
   const mockNodeTable = { id: 'nodeTable', rows: new Map(), columns: [] }
-  const mockEdgeTable = { id: 'edgeTable', rows: new Map(), columns: [] }
 
   const baseArgs = {
     currentTable: mockNodeTable,
