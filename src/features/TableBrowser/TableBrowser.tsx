@@ -65,7 +65,7 @@ export interface TableColumn {
 const EMPTY_ARRAY: IdType[] = []
 
 // Used for calculating proper height for the Data Grid
-const TABS_HEIGHT = 32
+const TABS_HEIGHT = 36
 const TOOLBAR_HEIGHT = 36
 
 // Adjust Data Grid size
@@ -478,6 +478,7 @@ export default function TableBrowser(props: {
           justifyContent: 'space-between',
           alignItems: 'center',
           backgroundColor: (theme) => theme.palette.background.subtle,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <TableBrowserTabs
