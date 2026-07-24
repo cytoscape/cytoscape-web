@@ -5,7 +5,7 @@
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ export const workspaceApi: WorkspaceApi = {
         networkCount: workspace.networkIds.length,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -88,7 +88,7 @@ export const workspaceApi: WorkspaceApi = {
       const { workspace } = useWorkspaceStore.getState()
       return ok({ networkIds: [...workspace.networkIds] })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -114,7 +114,7 @@ export const workspaceApi: WorkspaceApi = {
 
       return ok(list)
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -123,19 +123,13 @@ export const workspaceApi: WorkspaceApi = {
       const { workspace } = useWorkspaceStore.getState()
 
       if (!workspace.networkIds.includes(networkId)) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} is not in the workspace`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       const { summaries } = useNetworkSummaryStore.getState()
       const summary = summaries[networkId]
       if (summary === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Summary not found for network ${networkId}`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       return ok<WorkspaceNetworkInfo>({
@@ -147,7 +141,7 @@ export const workspaceApi: WorkspaceApi = {
         isModified: workspace.networkModified[networkId] ?? false,
       })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -159,55 +153,43 @@ export const workspaceApi: WorkspaceApi = {
         workspace.networkIds.length === 0 ||
         workspace.currentNetworkId === ''
       ) {
-        return fail(
-          ApiErrorCode.NoCurrentNetwork,
-          'No network is currently selected',
-        )
+        return fail(AppCodes.NO_CURRENT_NETWORK)
       }
 
       return ok({ networkId: workspace.currentNetworkId })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
   switchCurrentNetwork(networkId) {
     try {
       if (!networkId || networkId.trim() === '') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'networkId must be a non-empty string',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'networkId must be a non-empty string')
       }
 
       const { workspace } = useWorkspaceStore.getState()
       if (!workspace.networkIds.includes(networkId)) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} is not in the workspace`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       useWorkspaceStore.getState().setCurrentNetworkId(networkId)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
   setWorkspaceName(name) {
     try {
       if (!name || name.trim() === '') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'name must be a non-empty string',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'name must be a non-empty string')
       }
 
       useWorkspaceStore.getState().setName(name.trim())
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

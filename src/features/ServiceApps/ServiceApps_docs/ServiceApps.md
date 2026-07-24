@@ -92,6 +92,43 @@ The ServiceApps feature is primarily a hook-based system that manages:
 - **Graph Model**: Simplified graph structure
 - **Table**: Column-based data extraction
 
+### Menu Placement (`cyWebMenuItem`)
+
+A service's metadata places its menu item via `cyWebMenuItem`:
+
+- **`root`** — the top-level menu the item is added under. Valid roots are:
+  `Data`, `Edit`, `Layout`, `Analysis`, `Tools`, `Apps`, `Help`. Matching is
+  case-insensitive. A missing or unrecognized `root` falls back to the `Apps`
+  menu, and the user is shown a warning listing the valid roots when the app is
+  added (see `invalidRootMessage`).
+- **`path`** — the nested sub-menu path under the root, each entry with a
+  `name` and a `gravity` (lower gravity sorts earlier).
+
+Routing is implemented by pure helpers in
+`src/models/AppModel/impl/menuRouting.ts` (`resolveRootMenu`,
+`filterServiceAppsByRoot`). Each top-level menu component hosts the service
+apps routed to it via the shared `useServiceAppMenu(root)` hook. To support a
+new root, add it to `RootMenu` and `SUPPORTED_ROOT_MENUS`, and wire the
+corresponding menu component to call `useServiceAppMenu`.
+
+### Auto-filled Parameters
+
+Some parameter `type` values are resolved automatically by the webapp at run
+time instead of being shown as inputs in the dialog. They are hidden from the
+user and their value is injected into the task's `parameters` map on submit:
+
+- **`ndexUUID`** — the full NDEx URL of the current network
+  (`<ndexBaseUrl>/v3/networks/<uuid>`). Empty string when the current network
+  is not an NDEx network (CW-620).
+- **`accessToken`** — the user's NDEx access/credential token. Empty string
+  when the user is not signed in (CW-619).
+
+Resolution is implemented by pure helpers in
+`src/models/AppModel/impl/index.ts` (`buildCustomParameters`,
+`resolveParameterValue`, `isAutoFilledParameter`). To add a new auto-filled
+type, add it to `ParameterUiType`, mark it in `isAutoFilledParameter`, and
+resolve it in `resolveParameterValue`.
+
 ## Integration Points
 
 - **AppStore**: Manages current task state and progress

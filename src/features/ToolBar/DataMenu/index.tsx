@@ -6,18 +6,21 @@ import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
 import { debounce } from 'lodash'
 import { MenuItem } from 'primereact/menuitem'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { logUi } from '../../../debug'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 import { FileUpload } from '../FileUpload'
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
+import { DuplicateNetworkMenuItem } from './DuplicateNetworkMenuItem'
 import { ExportImageMenuItem } from './ExportNetworkToImage/DynamicExportImageMenuItem'
 import { UploadNetworkMenuItem } from './ImportNetworkFromFileMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
@@ -33,19 +36,30 @@ import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
 
-
 export const DataMenu = () => {
   const [open, setOpen] = useState(false)
   const [openNdexDialog, setOpenNdexDialog] = useState(false)
   const [openWorkspaceDialog, setOpenWorkspaceDialog] = useState(false)
   const [openFileUpload, setOpenFileUpload] = useState(false)
   const [openDeleteNetworkDialog, setOpenDeleteNetworkDialog] = useState(false)
-  const [openDeleteAllNetworksDialog, setOpenDeleteAllNetworksDialog] = useState(false)
-  const [openResetLocalWorkspaceDialog, setOpenResetLocalWorkspaceDialog] = useState(false)
+  const [openDeleteAllNetworksDialog, setOpenDeleteAllNetworksDialog] =
+    useState(false)
+  const [openResetLocalWorkspaceDialog, setOpenResetLocalWorkspaceDialog] =
+    useState(false)
 
   const handleClose = (): void => {
     setOpen(false)
   }
+
+  const onBeforeRun = useCallback((): void => {
+    setOpen(false)
+  }, [])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Data menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Data,
+    onBeforeRun,
+  )
 
   // NDEx loading handlers
   const handleOpenNdexDialog = (): void => {
@@ -152,7 +166,7 @@ export const DataMenu = () => {
     },
     {
       label: 'Import',
-      icon: <UploadIcon sx={{mr: 1}} />,
+      icon: <UploadIcon sx={{ mr: 1 }} />,
       items: [
         {
           template: <UploadNetworkMenuItem onClick={handleOpenFileUpload} />,
@@ -164,6 +178,9 @@ export const DataMenu = () => {
     },
     {
       separator: true,
+    },
+    {
+      template: <DuplicateNetworkMenuItem onClick={handleClose} />,
     },
     {
       template: <SaveToNDExMenuItem onClick={handleClose} />,
@@ -182,7 +199,7 @@ export const DataMenu = () => {
     },
     {
       label: 'Export',
-      icon: <DownloadIcon sx={{mr: 1}} />,
+      icon: <DownloadIcon sx={{ mr: 1 }} />,
       items: [
         {
           template: <ExportImageMenuItem onClick={handleClose} />,
@@ -193,17 +210,30 @@ export const DataMenu = () => {
       separator: true,
     },
     {
-      template: <RemoveNetworkMenuItem onClick={handleOpenDeleteNetworkDialog} />,
+      template: (
+        <RemoveNetworkMenuItem onClick={handleOpenDeleteNetworkDialog} />
+      ),
     },
     {
-      template: <RemoveAllNetworksMenuItem onClick={handleOpenDeleteAllNetworksDialog} />,
+      template: (
+        <RemoveAllNetworksMenuItem
+          onClick={handleOpenDeleteAllNetworksDialog}
+        />
+      ),
     },
     {
       separator: true,
     },
     {
-      template: <ResetLocalWorkspaceMenuItem onClick={handleOpenResetLocalWorkspaceDialog} />,
+      template: (
+        <ResetLocalWorkspaceMenuItem
+          onClick={handleOpenResetLocalWorkspaceDialog}
+        />
+      ),
     },
+    ...(serviceMenuItems.length > 0
+      ? [{ separator: true }, ...serviceMenuItems]
+      : []),
   ]
 
   return (
@@ -215,8 +245,14 @@ export const DataMenu = () => {
         open={open}
         onOpenChange={setOpen}
       />
-      <LoadFromNdexDialog open={openNdexDialog} handleClose={handleCloseNdexDialog} />
-      <LoadWorkspaceDialog open={openWorkspaceDialog} handleClose={handleCloseWorkspaceDialog} />
+      <LoadFromNdexDialog
+        open={openNdexDialog}
+        handleClose={handleCloseNdexDialog}
+      />
+      <LoadWorkspaceDialog
+        open={openWorkspaceDialog}
+        handleClose={handleCloseWorkspaceDialog}
+      />
       <FileUpload show={openFileUpload} handleClose={handleCloseFileUpload} />
       <ConfirmationDialog
         title="Remove Current Network"
@@ -245,6 +281,7 @@ export const DataMenu = () => {
         buttonTitle="Reset Workspace (cannot be undone)"
         isAlert
       />
+      {dialogs}
     </>
   )
 }

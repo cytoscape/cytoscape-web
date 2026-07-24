@@ -2,6 +2,45 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
+## 1.0.0-beta.3 (2026-07-16)
+
+### Changed — BREAKING
+
+- **`ApiErrorCode` (flat enum) removed.** Replaced by domain-grouped code
+  catalogs — `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` — each
+  a `Record<string, { code, severity, message }>` mirroring a
+  diagnostic-style error model. `ApiError` gains a `severity: 'error' |
+  'warning'` field; `ApiError.cx2Code` (an interim field from a prior
+  beta) is removed now that the primary `code` carries the precise
+  identity directly.
+- Codes that enforce a CX2 validation requirement now use the CX2 code
+  string itself as `error.code` (e.g. `FK1`, `BV1`, `MI3`) instead of a
+  coarse category. Codes with no CX2 equivalent (workspace/registry/
+  runtime concepts) use a new `APP1`–`APP9` namespace.
+- `fail()` signature changed: `fail(codeDef, ...templateArgs)` replaces
+  `fail(code, message, cx2Code?)`. External apps constructing `ApiError`
+  values directly (uncommon) must update to the new shape.
+
+**Old → new code mapping** (old `ApiErrorCode` member → new catalog entry):
+
+| Old | New |
+| --- | --- |
+| `NetworkNotFound` (`NETWORK_NOT_FOUND`) | `AppCodes.NETWORK_NOT_FOUND` (`APP1`) |
+| `NodeNotFound` (`NODE_NOT_FOUND`) | `ElementCodes.NODE_NOT_FOUND` (`GL1`) |
+| `EdgeNotFound` (`EDGE_NOT_FOUND`) | `ElementCodes.EDGE_NOT_FOUND` (`GL2`) |
+| `ElementNotFound` (`ELEMENT_NOT_FOUND`) | removed — bypass-target checks now return `StyleCodes.BYPASS_TARGET_NOT_FOUND` (`BV1`) directly |
+| `InvalidInput` (`INVALID_INPUT`) | `AppCodes.INVALID_INPUT` (`APP9`) for the residual generic case; many call sites now return a precise code instead (`FK1`, `FK2`, `A6`, `A8`, `A1`, `AC6`, `BV1`, `BV2`, `BV5`, `MC1`, `MI1`, `MI2`, `MI3`, `V7`, `VP1`–`VP10`, `N3`, `E6`) |
+| `InvalidCx2` (`INVALID_CX2`) | `AppCodes.INVALID_CX2` (`APP8`) |
+| `OperationFailed` (`OPERATION_FAILED`) | `AppCodes.OPERATION_FAILED` (`APP3`) |
+| `LayoutEngineNotFound` (`LAYOUT_ENGINE_NOT_FOUND`) | `AppCodes.LAYOUT_ENGINE_NOT_FOUND` (`APP4`) |
+| `FunctionNotAvailable` (`FUNCTION_NOT_AVAILABLE`) | `AppCodes.FUNCTION_NOT_AVAILABLE` (`APP5`) |
+| `NoCurrentNetwork` (`NO_CURRENT_NETWORK`) | `AppCodes.NO_CURRENT_NETWORK` (`APP2`) |
+| `ContextMenuItemNotFound` (`CONTEXT_MENU_ITEM_NOT_FOUND`) | `AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND` (`APP6`) |
+| `ResourceNotFound` (`RESOURCE_NOT_FOUND`) | `AppCodes.RESOURCE_NOT_FOUND` (`APP7`) |
+
+See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/ErrorCodes.md)
+for the full catalog, one entry per code.
+
 ## 1.0.0-beta.2 (2026-03-18)
 
 ### Added — Step 3.7 (TSV Table I/O)

@@ -10,9 +10,11 @@ import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { useCytoscapeDesktopPermissionNotice } from '../../data/hooks/useCytoscapeDesktopPermissionNotice'
 import { useOpenNetworkInCytoscape } from '../../data/hooks/useOpenInCytoscapeDesktop'
 import { IdType } from '../../models'
 import { Network } from '../../models/NetworkModel'
+import { CytoscapeDesktopPermissionDialog } from '../CytoscapeDesktopPermissionDialog'
 import { useFeatureAvailability } from '../FeatureAvailability'
 
 interface OpenInCytoscapeButtonProps {
@@ -26,6 +28,7 @@ export const OpenInCytoscapeButton = ({
 }: OpenInCytoscapeButtonProps): JSX.Element => {
   const featureAvailabilityState = useFeatureAvailability()
   const openNetworkInCytoscape = useOpenNetworkInCytoscape()
+  const desktopNotice = useCytoscapeDesktopPermissionNotice()
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -54,8 +57,8 @@ export const OpenInCytoscapeButton = ({
       ? allOpaqueAspects[targetNetworkId]
       : undefined
 
-  const handleClick = async (): Promise<void> => {
-    await openNetworkInCytoscape(
+  const openInCytoscape = (): void => {
+    void openNetworkInCytoscape(
       network,
       visualStyle,
       summary,
@@ -68,8 +71,17 @@ export const OpenInCytoscapeButton = ({
     )
   }
 
+  const handleClick = (): void => {
+    desktopNotice.run(openInCytoscape)
+  }
+
   return (
     <>
+      <CytoscapeDesktopPermissionDialog
+        open={desktopNotice.open}
+        onConfirm={desktopNotice.onConfirm}
+        onCancel={desktopNotice.onCancel}
+      />
       <Tooltip title={featureAvailabilityState.tooltip} placement="top" arrow>
         <span>
           <IconButton
