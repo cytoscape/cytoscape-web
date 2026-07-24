@@ -40,6 +40,8 @@ export const hydrateFromCrossTabChange = async (
       // We only log if debug is needed, otherwise keep it quiet to avoid spam.
       // logUi.info(`[Hydration] Syncing table ${table} key ${key} type ${type}`)
 
+
+      try {
       switch (table) {
         case 'workspace':
           if (type === 1 || type === 2) {
@@ -141,15 +143,15 @@ export const hydrateFromCrossTabChange = async (
                 panels: localUi.panels, // Keep side panels independent per tab
                 tableUi: {
                   ...ui.tableUi,
-                  activeTabIndex: localUi.tableUi.activeTabIndex, // Keep table tab local
+                  activeTabIndex: localUi.tableUi?.activeTabIndex ?? 0, // Keep table tab local
                 },
                 networkBrowserPanelUi: {
                   ...ui.networkBrowserPanelUi,
-                  activeTabIndex: localUi.networkBrowserPanelUi.activeTabIndex, // Keep left panel tab local
+                  activeTabIndex: localUi.networkBrowserPanelUi?.activeTabIndex ?? 0, // Keep left panel tab local
                 },
                 networkViewUi: {
                   ...ui.networkViewUi,
-                  activeTabIndex: localUi.networkViewUi.activeTabIndex, // Keep network canvas tab local
+                  activeTabIndex: localUi.networkViewUi?.activeTabIndex ?? 0, // Keep network canvas tab local
                 },
                 enablePopup: localUi.enablePopup,
                 showErrorDialog: localUi.showErrorDialog,
@@ -198,6 +200,9 @@ export const hydrateFromCrossTabChange = async (
 
         default:
           break
+      }
+      } catch (err) {
+        logUi.error(`[Hydration] Error hydrating table ${table} for key ${key}`, err)
       }
     }
   } catch (error) {

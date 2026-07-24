@@ -76,9 +76,11 @@ export const useViewModelStore = create(
                 // Replace the existing one if it already exists, but preserve selection state
                 const index =
                   state.viewModels[networkId]?.indexOf(existingViewModel)
-                // Preserve existing selection state
-                networkView.selectedNodes = existingViewModel.selectedNodes
-                networkView.selectedEdges = existingViewModel.selectedEdges
+                // Preserve existing selection state, UNLESS we are syncing from another tab
+                if (!isHydrating()) {
+                  networkView.selectedNodes = existingViewModel.selectedNodes
+                  networkView.selectedEdges = existingViewModel.selectedEdges
+                }
                 state.viewModels[networkId][index] = networkView
                 return state
               }

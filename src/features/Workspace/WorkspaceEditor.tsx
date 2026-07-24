@@ -84,7 +84,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   useHierarchyViewerManager()
 
   // Indicates if a network failed to load
-  const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
+  const [failedToLoad, setFailedToLoad] = useState<string>('')
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
   const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
     (state) => state.setShow,
@@ -322,7 +322,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
-      setFailedToLoad(true)
+      setFailedToLoad(error !== undefined && error !== null ? String(error) : 'Unknown Error')
     }
   }
 
@@ -354,7 +354,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
 
       isLoadingRef.current = true
-      setFailedToLoad(false)
+      setFailedToLoad('')
       logUi.info(
         `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${networkIdFromParams}`,
       )

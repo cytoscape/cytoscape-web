@@ -111,4 +111,62 @@ describe('crossTabHydration', () => {
     expect(updatedUi.errorMessage).toBe('Local Error') // preserved
     expect(updatedUi.tableUi.columnUiState).toEqual({ 'some-column': { width: 100 } }) // synced!
   })
+
+  it('adopts remote activeNetworkView if local network was deleted', async () => {
+    // Setup local state with a network that will be deleted
+    useWorkspaceStore.setState({
+      workspace: {
+        ...useWorkspaceStore.getState().workspace,
+        networkIds: ['remote-net'] // local-net was just deleted
+      }
+    })
+    
+    const localUi = {
+      ...useUiStateStore.getState().ui,
+      activeNetworkView: 'local-net', // this is now deleted
+    }
+    useUiStateStore.getState().setUi(localUi as any)
+
+    vi.mocked(getUiStateFromDb).mockResolvedValueOnce({
+      ...localUi,
+      activeNetworkView: 'remote-net',
+    } as any)
+
+    await hydrateFromCrossTabChange([{ type: 2, table: 'uiState', key: 'mock-ws' }])
+
+    // Should adopt remote-net since local-net is no longer in workspace.networkIds
+    expect(useUiStateStore.getState().ui.activeNetworkView).toBe('remote-net')
+  })
+
+  it('gracefully handles missing UI state fields in older databases', async () => {
+    // Setup local state with full UI fields
+    const localUi = {
+      ...useUiStateStore.getState().ui,
+      activeNetworkView: 'local-net',
+      tableUi: { activeTabIndex: 1, columnUiState: {} },
+      networkBrowserPanelUi: { activeTabIndex: 2 },
+      networkViewUi: { activeTabIndex: 3 },
+    }
+    useUiStateStore.getState().setUi(localUi as any)
+    
+    // Simulate an older database schema that lacks the newer UI tabs entirely
+    vi.mocked(getUiStateFromDb).mockResolvedValueOnce({
+      ...localUi,
+      // @ts-ignore (Simulating missing data)
+      tableUi: undefined,
+      // @ts-ignore
+      networkBrowserPanelUi: undefined,
+      // @ts-ignore
+      networkViewUi: undefined,
+    } as any)
+
+    // Should not throw any errors when trying to merge
+    await expect(hydrateFromCrossTabChange([{ type: 2, table: 'uiState', key: 'mock-ws' }])).resolves.not.toThrow()
+    
+    // Local tab indexes should be preserved
+    const updatedUi = useUiStateStore.getState().ui
+    expect(updatedUi.tableUi.activeTabIndex).toBe(1)
+    expect(updatedUi.networkBrowserPanelUi.activeTabIndex).toBe(2)
+    expect(updatedUi.networkViewUi.activeTabIndex).toBe(3)
+  })
 })

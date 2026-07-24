@@ -17,7 +17,7 @@ import { NetworkTabs } from './NetworkTabs'
 
 interface NetworkPanelProps {
   networkId: IdType
-  failedToLoad?: boolean
+  failedToLoad?: string
 }
 
 /**
@@ -28,7 +28,7 @@ interface NetworkPanelProps {
  */
 const NetworkPanel = ({
   networkId,
-  failedToLoad = false,
+  failedToLoad = '',
 }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
 
@@ -70,7 +70,7 @@ const NetworkPanel = ({
   const workspace = useWorkspaceStore((state) => state.workspace)
 
   if (failedToLoad) {
-    return <MessagePanel message="Failed to load network data" />
+    return <MessagePanel message={`Failed to load network data: ${failedToLoad}`} />
   }
 
   // If we have a networkId prop, we're expecting a network to load

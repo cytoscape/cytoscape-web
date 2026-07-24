@@ -125,6 +125,10 @@ export const useWorkspaceStore = create(
           })
         },
         resetWorkspace: async () => {
+          const channel = new BroadcastChannel('cyweb-ui-events')
+          channel.postMessage({ type: 'DATABASE_DELETED' })
+          channel.close()
+
           await deleteDb()
           logStore.info(
             `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
