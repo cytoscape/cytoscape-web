@@ -45,7 +45,19 @@ export const hydrateFromCrossTabChange = async (
           if (type === 1 || type === 2) {
             const ws = await getWorkspaceFromDb(key)
             if (ws) {
-              useWorkspaceStore.getState().set(ws)
+              const localWs = useWorkspaceStore.getState().workspace
+              
+              // CW-XXX: Preserve local navigation state across tabs so tabs don't
+              // automatically switch networks when another tab switches.
+              const isLocalNetworkStillValid = ws.networkIds.includes(localWs.currentNetworkId)
+              const safeCurrentNetworkId = isLocalNetworkStillValid 
+                ? localWs.currentNetworkId 
+                : ws.currentNetworkId
+
+              useWorkspaceStore.getState().set({
+                ...ws,
+                currentNetworkId: safeCurrentNetworkId
+              })
             }
           } else if (type === 3) {
             // Usually we don't delete the workspace row entirely from under the user
@@ -115,7 +127,19 @@ export const hydrateFromCrossTabChange = async (
           if (type === 1 || type === 2) {
             const ui = await getUiStateFromDb()
             if (ui) {
-              useUiStateStore.getState().setUi(ui)
+              const localUi = useUiStateStore.getState().ui
+              const networkIds = useWorkspaceStore.getState().workspace.networkIds
+              
+              const isLocalNetworkStillValid = networkIds.includes(localUi.activeNetworkView)
+              const safeActiveNetworkView = isLocalNetworkStillValid 
+                ? localUi.activeNetworkView 
+                : ui.activeNetworkView
+
+              useUiStateStore.getState().setUi({
+                ...ui,
+                activeNetworkView: safeActiveNetworkView,
+                panels: localUi.panels // Keep side panels independent per tab
+              })
             }
           }
           break
