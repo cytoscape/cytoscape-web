@@ -71,11 +71,17 @@ describe('crossTabHydration', () => {
         [Panel.LEFT]: 'open',
         [Panel.RIGHT]: 'closed',
         [Panel.BOTTOM]: 'closed'
-      }
+      },
+      tableUi: { activeTabIndex: 1, columnUiState: {} },
+      networkBrowserPanelUi: { activeTabIndex: 0 },
+      networkViewUi: { activeTabIndex: 0 },
+      enablePopup: false,
+      showErrorDialog: true,
+      errorMessage: 'Local Error'
     }
     useUiStateStore.getState().setUi(localUi as any)
 
-    // Remote tab switched to remote-net and opened RIGHT panel
+    // Remote tab switched to remote-net and opened RIGHT panel and changed all tabs
     vi.mocked(getUiStateFromDb).mockResolvedValueOnce({
       ...localUi,
       activeNetworkView: 'remote-net',
@@ -83,7 +89,13 @@ describe('crossTabHydration', () => {
         [Panel.LEFT]: 'open',
         [Panel.RIGHT]: 'open', // opened by remote
         [Panel.BOTTOM]: 'closed'
-      }
+      },
+      tableUi: { activeTabIndex: 2, columnUiState: { 'some-column': { width: 100 } } }, // table tab changed, column size changed
+      networkBrowserPanelUi: { activeTabIndex: 1 },
+      networkViewUi: { activeTabIndex: 1 },
+      enablePopup: true,
+      showErrorDialog: false,
+      errorMessage: ''
     } as any)
 
     await hydrateFromCrossTabChange([{ type: 2, table: 'uiState', key: 'mock-ws' }])
@@ -91,5 +103,12 @@ describe('crossTabHydration', () => {
     const updatedUi = useUiStateStore.getState().ui
     expect(updatedUi.activeNetworkView).toBe('local-net') // preserved
     expect(updatedUi.panels[Panel.RIGHT]).toBe('closed') // preserved
+    expect(updatedUi.tableUi.activeTabIndex).toBe(1) // preserved
+    expect(updatedUi.networkBrowserPanelUi.activeTabIndex).toBe(0) // preserved
+    expect(updatedUi.networkViewUi.activeTabIndex).toBe(0) // preserved
+    expect(updatedUi.enablePopup).toBe(false) // preserved
+    expect(updatedUi.showErrorDialog).toBe(true) // preserved
+    expect(updatedUi.errorMessage).toBe('Local Error') // preserved
+    expect(updatedUi.tableUi.columnUiState).toEqual({ 'some-column': { width: 100 } }) // synced!
   })
 })

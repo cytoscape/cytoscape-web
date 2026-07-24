@@ -138,7 +138,22 @@ export const hydrateFromCrossTabChange = async (
               useUiStateStore.getState().setUi({
                 ...ui,
                 activeNetworkView: safeActiveNetworkView,
-                panels: localUi.panels // Keep side panels independent per tab
+                panels: localUi.panels, // Keep side panels independent per tab
+                tableUi: {
+                  ...ui.tableUi,
+                  activeTabIndex: localUi.tableUi.activeTabIndex, // Keep table tab local
+                },
+                networkBrowserPanelUi: {
+                  ...ui.networkBrowserPanelUi,
+                  activeTabIndex: localUi.networkBrowserPanelUi.activeTabIndex, // Keep left panel tab local
+                },
+                networkViewUi: {
+                  ...ui.networkViewUi,
+                  activeTabIndex: localUi.networkViewUi.activeTabIndex, // Keep network canvas tab local
+                },
+                enablePopup: localUi.enablePopup,
+                showErrorDialog: localUi.showErrorDialog,
+                errorMessage: localUi.errorMessage,
               })
             }
           }
