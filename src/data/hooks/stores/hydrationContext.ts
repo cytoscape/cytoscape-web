@@ -10,10 +10,14 @@
  * layer (`persistNetworkSlices` and manual store DB puts) must check this flag and skip
  * writing to the DB if it is true.
  */
-let hydrating = false
+let hydratingCount = 0
 
-export const isHydrating = (): boolean => hydrating
+export const isHydrating = (): boolean => hydratingCount > 0
 
 export const setHydrating = (value: boolean): void => {
-  hydrating = value
+  if (value) {
+    hydratingCount++
+  } else {
+    hydratingCount = Math.max(0, hydratingCount - 1)
+  }
 }

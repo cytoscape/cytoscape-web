@@ -15,27 +15,6 @@ export const SyncTabsAction = (): ReactElement => {
       void hydrateFromCrossTabChange(changes)
     }
 
-    return () => {
-      channel.close()
-    }
-  }, [])
-
-  useEffect(() => {
-    const channel = new BroadcastChannel('cyweb-ui-events')
-
-    channel.onmessage = (event) => {
-      const { type, networkId } = event.data
-      if (type === 'FIT_NETWORK' && networkId) {
-        useRendererStore.getState().deleteViewport('cyjs', networkId)
-      }
-    }
-
-    return () => {
-      channel.close()
-    }
-  }, [])
-
-  useEffect(() => {
     const initDbListener = async (): Promise<void> => {
       const db = await getDb()
       db.on('changes', (changes) => {
@@ -57,9 +36,7 @@ export const SyncTabsAction = (): ReactElement => {
           }))
 
         if (payload.length > 0) {
-          const channel = new BroadcastChannel('cyweb-db-sync')
           channel.postMessage(payload)
-          channel.close()
         }
       })
     }
@@ -72,6 +49,25 @@ export const SyncTabsAction = (): ReactElement => {
           e,
         ),
       )
+
+    return () => {
+      channel.close()
+    }
+  }, [])
+
+  useEffect(() => {
+    const channel = new BroadcastChannel('cyweb-ui-events')
+
+    channel.onmessage = (event) => {
+      const { type, networkId } = event.data
+      if (type === 'FIT_NETWORK' && networkId) {
+        useRendererStore.getState().deleteViewport('cyjs', networkId)
+      }
+    }
+
+    return () => {
+      channel.close()
+    }
   }, [])
 
   return <></>
