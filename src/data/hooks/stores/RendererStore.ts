@@ -45,14 +45,19 @@ export const useRendererStore = create(
       viewport: ViewPort,
     ) => {
       set((state) => {
-        const newState = RendererImpl.setViewport(
-          state,
-          rendererId,
-          networkId,
-          viewport,
-        )
-        state.viewports = newState.viewports
-        return state
+        if (!state.viewports[rendererId]) {
+          state.viewports[rendererId] = {}
+        }
+        state.viewports[rendererId][networkId] = viewport
+      })
+    },
+
+    deleteViewport: (rendererId: string, networkId: IdType) => {
+      set((state) => {
+        const rendererViewports = state.viewports[rendererId]
+        if (rendererViewports !== undefined) {
+          delete rendererViewports[networkId]
+        }
       })
     },
 

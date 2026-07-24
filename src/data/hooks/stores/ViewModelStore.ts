@@ -18,6 +18,7 @@ import {
   putNetworkViewsToDb,
 } from '../../db'
 import { persistNetworkSlices } from './persistNetworkSlices'
+import { isHydrating } from './hydrationContext'
 
 // Re-export for compatibility
 export const DEF_VIEW_TYPE = ViewModelImpl.DEF_VIEW_TYPE
@@ -210,6 +211,12 @@ export const useViewModelStore = create(
             )
             return state
           })
+
+          if (!isHydrating()) {
+            const channel = new BroadcastChannel('cyweb-ui-events')
+            channel.postMessage({ type: 'FIT_NETWORK', networkId })
+            channel.close()
+          }
         },
         deleteObjects(networkId, ids) {
           set((state) => {

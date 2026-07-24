@@ -11,9 +11,7 @@ export interface KeycloakConfig {
   clientId: string
 }
 
-export interface DebugOptions {
-  disableAutoReload?: boolean
-}
+export interface DebugOptions {}
 
 /**
  * Application-wide configuration
@@ -74,7 +72,6 @@ export const defaultAppConfig: AppConfig = {
   googleAnalyticsId: '',
   undoStackSize: 20,
   debugOptions: {
-    disableAutoReload: false,
   },
   errorReportEndpoint: '',
   maxErrorReportSnapshotSizeMB: 10,

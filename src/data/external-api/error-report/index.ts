@@ -321,17 +321,6 @@ export const exportPartialSnapshotForNetwork = async (
       data[ObjectStoreNames.UiState] = []
     }
 
-    // Export timestamp
-    try {
-      const timestamp = await db.timestamp.get({ id: networkId })
-      data[ObjectStoreNames.Timestamp] = timestamp ? [timestamp] : []
-    } catch (error) {
-      logDb.warn(
-        `[exportPartialSnapshotForNetwork] Failed to export timestamp:`,
-        error,
-      )
-      data[ObjectStoreNames.Timestamp] = []
-    }
 
     // Export filters (may be network-specific)
     try {

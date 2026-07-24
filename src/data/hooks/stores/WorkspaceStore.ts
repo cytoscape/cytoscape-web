@@ -17,6 +17,7 @@ import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
 import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -42,8 +43,11 @@ const persist =
         const lastWorkspace = get().workspace
         set(args)
         const newWorkspace = get().workspace
-        // const deleted = updated === undefined
-        if (lastWorkspace !== newWorkspace && newWorkspace.id !== '') {
+        if (
+          !isHydrating() &&
+          lastWorkspace !== newWorkspace &&
+          newWorkspace.id !== ''
+        ) {
           // Convert Immer proxy to plain object before saving
           const plainWorkspace = toPlainObject(newWorkspace)
           void putWorkspaceToDb(plainWorkspace).then(() => {})

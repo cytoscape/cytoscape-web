@@ -325,7 +325,6 @@ const AppShell = (): ReactElement => {
 
       const importErrorMessages: string[] = []
 
-      let networkImportFailed = false
       if (isNetworkIdNotInWorkspace) {
         try {
           // Check if the network exists in NDEx
@@ -338,7 +337,6 @@ const AppShell = (): ReactElement => {
             workspace.currentNetworkId = networkId
             workspace.networkIds.push(networkId)
           } else {
-            networkImportFailed = true
             importErrorMessages.push(
               `Unable to import network ${networkId} from ${location.pathname}. ${networkId} does not exist in NDEx`,
             )
@@ -348,7 +346,6 @@ const AppShell = (): ReactElement => {
           // outage) must not abort init and silently strand the user on an
           // unrelated local workspace/network (CW-514). Mirror the try/catch of
           // the ?import= loop below.
-          networkImportFailed = true
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error'
           importErrorMessages.push(
@@ -425,14 +422,11 @@ const AppShell = (): ReactElement => {
           workspace.networkIds,
         ) ?? ''
 
-      // If the user explicitly requested a network via the URL but it could not
-      // be imported, keep that requested id in the URL (the error banner above
-      // explains why) rather than silently redirecting to an unrelated local
-      // network (CW-514).
-      workspace.currentNetworkId =
-        isNetworkIdInUrl && networkImportFailed
-          ? (networkId ?? '')
-          : resolvedNetworkId
+      // Note: If the user explicitly requested a network via the URL but it could not
+      // be imported, an error banner is displayed. We do NOT preserve the failed ID
+      // in the URL because keeping a bad ID forces React Router to adopt it into the
+      // app state, which corrupts the shared IndexedDB workspace for all tabs.
+      workspace.currentNetworkId = resolvedNetworkId
 
       addSummaries(summaries)
       setWorkspace(workspace)

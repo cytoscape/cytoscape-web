@@ -10,7 +10,6 @@ import { immer } from 'zustand/middleware/immer'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
-import * as NetworkSummaryImpl from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { NetworkSummaryStore } from '../../../models/StoreModel/NetworkSummaryStoreModel'
 import {
   clearNetworkSummaryFromDb,
@@ -18,22 +17,21 @@ import {
   putNetworkSummaryToDb,
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
     add: (networkId: IdType, summary: NetworkSummary) => {
       set((state) => {
-        const newState = NetworkSummaryImpl.add(state, networkId, summary)
-        putNetworkSummaryToDb(summary)
-        state.summaries = newState.summaries
-        return state
+        state.summaries[networkId] = summary
+        if (!isHydrating()) {
+          putNetworkSummaryToDb(summary)
+        }
       })
     },
     addAll: (summaries: Record<IdType, NetworkSummary>) => {
       set((state) => {
-        const newState = NetworkSummaryImpl.addAll(state, summaries)
-        state.summaries = newState.summaries
-        return state
+        Object.assign(state.summaries, summaries)
       })
     },
     update: (networkId: IdType, summaryUpdate: Partial<NetworkSummary>) => {
@@ -43,51 +41,50 @@ export const useNetworkSummaryStore = create(
       }
       // Convert Immer proxy to plain object before saving
       const updatedSummary = toPlainObject({ ...summary, ...summaryUpdate })
-      void putNetworkSummaryToDb(updatedSummary)
+      if (!isHydrating()) {
+        void putNetworkSummaryToDb(updatedSummary)
+      }
       set((state) => {
-        const newState = NetworkSummaryImpl.update(
-          state,
-          networkId,
-          summaryUpdate,
-        )
-        state.summaries = newState.summaries
-        return state
+        const draftSummary = state.summaries[networkId]
+        if (draftSummary !== undefined) {
+          Object.assign(draftSummary, summaryUpdate)
+        }
       })
     },
     delete: (networkId: IdType) => {
       set((state) => {
-        const newState = NetworkSummaryImpl.deleteSummary(state, networkId)
-        void deleteNetworkSummaryFromDb(networkId)
-          .then(() => {
-            logStore.info(
-              `[${useNetworkSummaryStore.name}]: Summary deleted: ${networkId}`,
-            )
-          })
-          .catch((err) => {
-            logStore.error(
-              `[${useNetworkSummaryStore.name}]: Error deleting summary: ${err}`,
-            )
-          })
-        state.summaries = newState.summaries
-        return state
+        delete state.summaries[networkId]
+        if (!isHydrating()) {
+          void deleteNetworkSummaryFromDb(networkId)
+            .then(() => {
+              logStore.info(
+                `[${useNetworkSummaryStore.name}]: Summary deleted: ${networkId}`,
+              )
+            })
+            .catch((err) => {
+              logStore.error(
+                `[${useNetworkSummaryStore.name}]: Error deleting summary: ${err}`,
+              )
+            })
+        }
       })
     },
     deleteAll: () => {
       set((state) => {
-        const newState = NetworkSummaryImpl.deleteAll(state)
-        clearNetworkSummaryFromDb()
-          .then((val) => {
-            logStore.info(
-              `[${useNetworkSummaryStore.name}]: Summary cleared: ${val}`,
-            )
-          })
-          .catch((err) => {
-            logStore.error(
-              `[${useNetworkSummaryStore.name}]: Failed to clear Summary: ${err}`,
-            )
-          })
-        state.summaries = newState.summaries
-        return state
+        state.summaries = {}
+        if (!isHydrating()) {
+          clearNetworkSummaryFromDb()
+            .then((val) => {
+              logStore.info(
+                `[${useNetworkSummaryStore.name}]: Summary cleared: ${val}`,
+              )
+            })
+            .catch((err) => {
+              logStore.error(
+                `[${useNetworkSummaryStore.name}]: Failed to clear Summary: ${err}`,
+              )
+            })
+        }
       })
     },
   })),

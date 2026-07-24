@@ -71,7 +71,6 @@ import {
   getNetworkViewsFromDb,
   getOpaqueAspectsFromDb,
   getTablesFromDb,
-  getTimestampFromDb,
   getUiStateFromDb,
   getUndoRedoStackFromDb,
   getVisualStyleFromDb,
@@ -87,7 +86,6 @@ import {
   putOpaqueAspectsToDb,
   putServiceAppToDb,
   putTablesToDb,
-  putTimestampToDb,
   putUiStateToDb,
   putUndoRedoStackToDb,
   putVisualStyleToDb,
@@ -809,14 +807,6 @@ describe('CyDB helper coverage', () => {
     expect(await getUiStateFromDb()).toBeUndefined()
   })
 
-  it('stores timestamps', async () => {
-    await setupFreshDb()
-
-    expect(await getTimestampFromDb()).toBeUndefined()
-
-    await putTimestampToDb(123456789)
-    expect(await getTimestampFromDb()).toBe(123456789)
-  })
 
   it('persists filter configurations with map values intact', async () => {
     await setupFreshDb()

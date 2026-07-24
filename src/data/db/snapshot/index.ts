@@ -106,7 +106,6 @@ export interface DatabaseSnapshot {
     [ObjectStoreNames.CyVisualStyles]?: any[]
     [ObjectStoreNames.CyNetworkViews]?: any[]
     [ObjectStoreNames.UiState]?: any[]
-    [ObjectStoreNames.Timestamp]?: any[]
     [ObjectStoreNames.Filters]?: any[]
     [ObjectStoreNames.Apps]?: CyApp[]
     [ObjectStoreNames.ServiceApps]?: ServiceApp[]
@@ -378,7 +377,6 @@ export const importDatabaseSnapshot = async (
       [ObjectStoreNames.CyVisualStyles]: 'id',
       [ObjectStoreNames.CyNetworkViews]: 'id',
       [ObjectStoreNames.UiState]: 'id',
-      [ObjectStoreNames.Timestamp]: 'id',
       [ObjectStoreNames.Filters]: 'id',
       [ObjectStoreNames.Apps]: 'id',
       [ObjectStoreNames.ServiceApps]: 'url',

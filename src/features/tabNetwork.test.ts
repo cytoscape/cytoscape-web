@@ -33,8 +33,8 @@ describe('resolveDisplayNetworkId (CW-722)', () => {
     expect(resolveDisplayNetworkId(undefined, null, 'C', networkIds)).toBe('C')
   })
 
-  it('returns the shared id as-is even when not a member (empty workspace)', () => {
-    expect(resolveDisplayNetworkId(undefined, null, '', [])).toBe('')
+  it('returns undefined if the shared currentNetworkId is not a member of the workspace (e.g. invalid/corrupted id)', () => {
+    expect(resolveDisplayNetworkId(undefined, null, 'Z', networkIds)).toBe(undefined)
     expect(resolveDisplayNetworkId('A', 'B', undefined, [])).toBe(undefined)
   })
 })

@@ -52,7 +52,7 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 9
+const currentVersion: number = 10
 
 /**
  * Predefined object store names.
@@ -69,7 +69,6 @@ export const ObjectStoreNames = {
   CyVisualStyles: 'cyVisualStyles',
   CyNetworkViews: 'cyNetworkViews',
   UiState: 'uiState',
-  Timestamp: 'timestamp',
   Filters: 'filters',
   Apps: 'apps',
 
@@ -103,7 +102,7 @@ const Keys = {
   [ObjectStoreNames.CyVisualStyles]: 'id',
   [ObjectStoreNames.CyNetworkViews]: 'id',
   [ObjectStoreNames.UiState]: 'id',
-  [ObjectStoreNames.Timestamp]: 'id',
+  timestamp: null, // explicit drop from v9 -> v10
   [ObjectStoreNames.Filters]: 'id',
   [ObjectStoreNames.Apps]: 'id',
 
@@ -127,7 +126,6 @@ class CyDB extends Dexie {
   [ObjectStoreNames.Summaries]!: DxTable<any>;
   [ObjectStoreNames.CyNetworkViews]!: DxTable<any>;
   [ObjectStoreNames.UiState]!: DxTable<any>;
-  [ObjectStoreNames.Timestamp]!: DxTable<any>;
   [ObjectStoreNames.Filters]!: DxTable<any>;
   [ObjectStoreNames.Apps]!: DxTable<CyApp>;
 
@@ -720,25 +718,7 @@ export const deleteUiStateFromDb = async (): Promise<void> => {
 }
 
 export const DEFAULT_TIMESTAMP_ID = 'timestamp'
-export const getTimestampFromDb = async (): Promise<number | undefined> => {
-  const ts = await db.timestamp.get({ id: DEFAULT_TIMESTAMP_ID })
-  if (ts !== undefined) {
-    return ts.timestamp
-  } else {
-    return undefined
-  }
-}
 
-export const putTimestampToDb = async (ts: number): Promise<void> => {
-  try {
-    await db.transaction('rw', db.timestamp, async () => {
-      await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
-    })
-  } catch (e) {
-    logDb.error('[putTimestampToDb] error:', e, ts)
-    throw e
-  }
-}
 
 /**
  * Store filter settings to the DB

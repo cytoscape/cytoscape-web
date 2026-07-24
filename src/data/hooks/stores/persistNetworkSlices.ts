@@ -6,6 +6,7 @@ import {
   cancelWrite,
   scheduleWrite,
 } from './persistenceScheduler'
+import { isHydrating } from './hydrationContext'
 
 /**
  * Zustand middleware that persists per-network slices to IndexedDB.
@@ -48,6 +49,11 @@ export const persistNetworkSlices =
       (args: any, replace?: any) => {
         const before = options.selectSlices(get())
         set(args, replace)
+
+        if (isHydrating()) {
+          return
+        }
+
         const after = options.selectSlices(get())
         if (before === after) {
           return

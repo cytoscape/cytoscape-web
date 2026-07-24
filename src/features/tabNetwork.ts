@@ -48,7 +48,10 @@ export const resolveDisplayNetworkId = (
   if (isMemberId(sessionNetworkId, networkIds)) {
     return sessionNetworkId
   }
-  return currentNetworkId
+  if (isMemberId(currentNetworkId, networkIds)) {
+    return currentNetworkId
+  }
+  return undefined
 }
 
 /** Read this tab's remembered network id from sessionStorage, if any. */

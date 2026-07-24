@@ -28,6 +28,8 @@ export interface RendererAction {
     viewport: ViewPort,
   ) => void
 
+  deleteViewport: (rendererId: string, networkId: IdType) => void
+
   // Get stored viewport for a renderer and network
   getViewport: (rendererId: string, networkId: IdType) => ViewPort | undefined
 }

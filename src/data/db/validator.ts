@@ -279,10 +279,6 @@ const WorkspaceSchema = z.object({
   options: z.unknown().optional(),
 })
 
-const TimestampSchema = z.object({
-  id: z.string(),
-  timestamp: z.number(),
-})
 
 const DiscreteFilterDetailsSchema = z.object({
   predicate: z.string(),
@@ -506,8 +502,6 @@ export const validateUiState = (value: unknown): Ui =>
 export const validateStoredUiState = (value: unknown) =>
   UiStateStoredSchema.parse(value) as Ui & { id: string }
 
-export const validateTimestampEntry = (value: unknown) =>
-  TimestampSchema.parse(value) as { id: string; timestamp: number }
 
 export const validateFilterConfig = (value: unknown): FilterConfig =>
   FilterConfigSchema.parse(value) as FilterConfig

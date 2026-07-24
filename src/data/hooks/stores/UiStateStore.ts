@@ -21,6 +21,13 @@ import {
 } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { putUiStateToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
+
+const persistUiState = (ui: Ui) => {
+  if (!isHydrating()) {
+    void putUiStateToDb(toPlainObject(ui))
+  }
+}
 
 export const DEFAULT_UI_STATE = {
   panels: {
@@ -56,7 +63,7 @@ export const useUiStateStore = create(
       set((state) => {
         state.ui = ui
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(ui))
+        persistUiState(ui)
         return state
       })
     },
@@ -130,7 +137,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -148,7 +155,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -163,7 +170,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -178,7 +185,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -196,7 +203,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -219,7 +226,7 @@ export const useUiStateStore = create(
         const nextUi = UiImpl.deleteNetworkUiState(state.ui, networkId)
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -235,7 +242,7 @@ export const useUiStateStore = create(
         }
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
