@@ -39,7 +39,6 @@ import { collectVisualStyleWarnings } from '../../models/VisualStyleModel'
 import { generateUniqueName } from '../../utils/generateUniqueName'
 import { createDataFromLocalSif } from '../../utils/sifUtils'
 import { validateSif } from '../../utils/sifUtils'
-import { detectBestDelimiter } from '../TableDataLoader/model/impl/DelimiterUtils'
 import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
@@ -312,7 +311,7 @@ export function FileUpload(props: FileUploadProps) {
 
   const onFileDrop = (file: File) => {
     const reader = new FileReader()
-    reader.addEventListener('load', () => {
+    reader.addEventListener('load', async () => {
       const text = reader.result as string
       const fileExtension = file.name.split('.').pop()?.toLowerCase()
 
@@ -362,6 +361,9 @@ export function FileUpload(props: FileUploadProps) {
         }
 
         // Use the robust delimiter detection utility
+        const { detectBestDelimiter } = await import(
+          '../TableDataLoader/model/impl/DelimiterUtils'
+        )
         const parseResult = detectBestDelimiter(text)
         let columnCount = 0
 
