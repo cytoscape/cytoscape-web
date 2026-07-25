@@ -11,6 +11,7 @@ import { isCrossTabSyncReady, onCrossTabSyncReady } from './crossTabSyncGate'
 import {
   DATABASE_DELETED,
   handleDatabaseDeleted,
+  isOwnResetAnnouncement,
   UI_EVENTS_CHANNEL,
 } from './databaseLifecycle'
 
@@ -19,7 +20,15 @@ import {
  * showing: the network list, the network names in the browser panel, and the
  * shared slice of UI state.
  */
-const WORKSPACE_WIDE_TABLES = new Set(['workspace', 'uiState', 'summaries'])
+const WORKSPACE_WIDE_TABLES = new Set([
+  'workspace',
+  'uiState',
+  'summaries',
+  // `filters` rows are keyed by FILTER NAME (`db.filters.put({ id: name })`),
+  // not by network id, so the per-network check below can never match one and
+  // filter changes would never reach the hydration case at all.
+  'filters',
+])
 
 /**
  * Should this tab apply a given change?
@@ -148,11 +157,18 @@ export const SyncTabsAction = (): ReactElement => {
     const channel = new BroadcastChannel(UI_EVENTS_CHANNEL)
 
     channel.onmessage = (event) => {
-      if (event.data?.type === DATABASE_DELETED) {
-        void handleDatabaseDeleted(channel, () => {
-          window.location.assign(rootHref)
-        })
+      if (event.data?.type !== DATABASE_DELETED) {
+        return
       }
+      // The resetting tab hears its own announcement: BroadcastChannel excludes
+      // only the posting channel object, and `announceDatabaseReset` opens a
+      // separate one. Acting on it would close our connection mid-delete.
+      if (isOwnResetAnnouncement(event.data)) {
+        return
+      }
+      void handleDatabaseDeleted(channel, () => {
+        window.location.assign(rootHref)
+      })
     }
 
     return () => {

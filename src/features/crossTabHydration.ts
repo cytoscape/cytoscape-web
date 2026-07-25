@@ -263,7 +263,10 @@ const prepareChange = async (
       const aspectList = Object.entries(aspectsDb.aspects).map(([k, v]) => ({
         [k]: v,
       }))
-      return () => useOpaqueAspectStore.getState().addAll(key, aspectList)
+      // `isUpdate: true` replaces this network's aspects instead of merging.
+      // The list is the complete DB snapshot, so merging would keep an aspect
+      // the other tab had just deleted.
+      return () => useOpaqueAspectStore.getState().addAll(key, aspectList, true)
     }
 
     case 'undoStacks': {

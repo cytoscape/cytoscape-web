@@ -51,7 +51,8 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
-    deleteDb: vi.fn().mockResolvedValue(undefined),
+    // deleteDb reports success/failure; resetWorkspace only resets on success
+    deleteDb: vi.fn().mockResolvedValue(true),
   }
 })
 
@@ -566,6 +567,33 @@ describe('useWorkspaceStore', () => {
       expect(result.current.workspace.currentNetworkId).toBe('')
       expect(result.current.workspace.networkModified).toEqual({})
       expect(result.current.workspace.isRemote).toBe(false)
+    })
+
+    /**
+     * `deleteDb` reports failure rather than throwing (callers await it without a
+     * try/catch). Resetting the store anyway would show the user an empty
+     * workspace while their data was still on disk, and the next write would
+     * persist that fiction.
+     */
+    it('does not clear the workspace when the database could not be deleted', async () => {
+      const { deleteDb } = await import('../../db')
+      vi.mocked(deleteDb).mockResolvedValueOnce(false)
+
+      const { result } = renderHook(() => useWorkspaceStore())
+
+      act(() => {
+        result.current.setId('workspace-1')
+        result.current.setName('Test Workspace')
+        result.current.addNetworkIds(['network-1'])
+      })
+
+      await act(async () => {
+        await result.current.resetWorkspace()
+      })
+
+      expect(result.current.workspace.id).toBe('workspace-1')
+      expect(result.current.workspace.name).toBe('Test Workspace')
+      expect(result.current.workspace.networkIds).toEqual(['network-1'])
     })
   })
 

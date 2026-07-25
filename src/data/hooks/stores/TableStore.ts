@@ -354,11 +354,18 @@ export const useTableStore = create(
             // Skip during cross-tab hydration: the peer tab already deleted
             // this row, so re-deleting it only mints another change record.
             if (!isHydrating()) {
-              void deleteTablesFromDb(networkId).then(() => {
-                logStore.info(
-                  `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
-                )
-              })
+              void deleteTablesFromDb(networkId)
+                .then(() => {
+                  logStore.info(
+                    `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
+                  )
+                })
+                .catch((e) => {
+                  logStore.error(
+                    `[${useTableStore.name}]: Failed to delete network table from db: ${networkId}`,
+                    e,
+                  )
+                })
             }
             return state
           })

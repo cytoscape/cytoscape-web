@@ -99,7 +99,12 @@ const NetworkPanel = ({
     // `cyTables` are separate IndexedDB rows written in separate transactions.
     // Cross-tab hydration can therefore deliver the network first. Waiting here
     // keeps the renderer from mounting against incomplete data.
-    if (tables[networkId] === undefined) {
+    // Same for the visual style: `renderNetwork` reads it unconditionally and
+    // bails without it, so mounting early would only show a blank canvas.
+    if (
+      tables[networkId] === undefined ||
+      visualStyles[networkId] === undefined
+    ) {
       return <MessagePanel message="Loading network data..." />
     }
 

@@ -46,6 +46,12 @@ const seedNetwork = (): void => {
   })
 }
 
+const seedVisualStyle = (): void => {
+  useVisualStyleStore.setState({
+    visualStyles: { [NETWORK_ID]: {} },
+  } as any)
+}
+
 const seedTables = (): void => {
   useTableStore
     .getState()
@@ -92,9 +98,22 @@ describe('NetworkPanel', () => {
     expect(screen.getByText(/Loading network data/i)).toBeDefined()
   })
 
-  it('mounts the renderer once both the network and its tables are present', () => {
+  it('does not mount the renderer when the visual style is missing', () => {
+    // renderNetwork reads the visual style unconditionally too, so mounting
+    // without it would only produce a blank canvas.
     seedNetwork()
     seedTables()
+
+    render(<NetworkPanel networkId={NETWORK_ID} />)
+
+    expect(screen.queryByTestId('network-tab-stub')).toBeNull()
+    expect(screen.getByText(/Loading network data/i)).toBeDefined()
+  })
+
+  it('mounts the renderer once the network, tables and style are present', () => {
+    seedNetwork()
+    seedTables()
+    seedVisualStyle()
 
     render(<NetworkPanel networkId={NETWORK_ID} />)
 

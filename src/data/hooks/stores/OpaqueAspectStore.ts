@@ -7,6 +7,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+import { logStore } from '../../../debug'
+
 import { IdType } from '../../../models/IdType'
 import { OpaqueAspects } from '../../../models/OpaqueAspectModel'
 import * as OpaqueAspectImpl from '../../../models/OpaqueAspectModel/impl/opaqueAspectImpl'
@@ -35,21 +37,36 @@ const persistAspects = (networkId: IdType, aspects: OpaqueAspects): void => {
   if (isHydrating()) {
     return
   }
-  void putOpaqueAspectsToDb(networkId, aspects).then(() => {})
+  void putOpaqueAspectsToDb(networkId, aspects).catch((e) => {
+    logStore.error(
+      `[${useOpaqueAspectStore.name}]: Failed to persist opaque aspects for ${networkId}`,
+      e,
+    )
+  })
 }
 
 const removeAspects = (networkId: IdType): void => {
   if (isHydrating()) {
     return
   }
-  void deleteOpaqueAspectsFromDb(networkId).then(() => {})
+  void deleteOpaqueAspectsFromDb(networkId).catch((e) => {
+    logStore.error(
+      `[${useOpaqueAspectStore.name}]: Failed to delete opaque aspects for ${networkId}`,
+      e,
+    )
+  })
 }
 
 const removeAllAspects = (): void => {
   if (isHydrating()) {
     return
   }
-  void clearOpaqueAspectsFromDb().then(() => {})
+  void clearOpaqueAspectsFromDb().catch((e) => {
+    logStore.error(
+      `[${useOpaqueAspectStore.name}]: Failed to clear opaque aspects`,
+      e,
+    )
+  })
 }
 
 export const useOpaqueAspectStore = create(

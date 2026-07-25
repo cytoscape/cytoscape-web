@@ -121,12 +121,7 @@ describe('useLayoutStore', () => {
       const { result } = renderHook(() => useLayoutStore())
 
       act(() => {
-        result.current.setLayoutOption(
-          'non-existent',
-          'grid',
-          'spacing',
-          100,
-        )
+        result.current.setLayoutOption('non-existent', 'grid', 'spacing', 100)
       })
 
       // Should not throw
@@ -134,4 +129,3 @@ describe('useLayoutStore', () => {
     })
   })
 })
-

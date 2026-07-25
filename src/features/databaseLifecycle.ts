@@ -84,13 +84,19 @@ export const announceDatabaseReset = async (): Promise<() => void> => {
   }
 }
 
+export const isOwnResetAnnouncement = (data: any): boolean =>
+  data?.tabId !== undefined && String(data.tabId) === getTabId()
+
 /**
  * Handle another tab deleting the database: release our connection, acknowledge,
  * and reload once the reset completes.
  *
- * @param channel the already-open UI events channel to acknowledge on
- * @param reload  performs the reload; injected so the caller can supply a
- *                base-path-aware URL and so tests need no navigation stub
+ * Callers must skip self-originated announcements — see
+ * {@link isOwnResetAnnouncement}. BroadcastChannel excludes only the channel
+ * OBJECT that posted, not the tab: `announceDatabaseReset` opens its own channel,
+ * so the deleting tab's `SyncTabs` channel receives the message too. Acting on it
+ * would make the resetting tab close its own connection mid-delete and navigate
+ * away from the reset it just performed.
  */
 export const handleDatabaseDeleted = async (
   channel: BroadcastChannel,

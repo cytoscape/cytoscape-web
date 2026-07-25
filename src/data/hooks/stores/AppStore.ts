@@ -48,7 +48,9 @@ export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
   if (root === RootMenu.Layout) {
     const actions = serviceApp.cyWebActions || []
     if (actions.some((action) => action !== 'updateLayouts')) {
-      throw new Error(`Service apps under the Layout menu may only declare the "updateLayouts" action.`)
+      throw new Error(
+        `Service apps under the Layout menu may only declare the "updateLayouts" action.`,
+      )
     }
   }
 

@@ -296,6 +296,35 @@ describe('SyncTabs', () => {
       }
     })
 
+    it('ignores its own reset announcement so the deleter does not self-reset', async () => {
+      // BroadcastChannel excludes only the posting channel object, not the tab:
+      // announceDatabaseReset opens its own channel, so the resetting tab's
+      // SyncTabs channel receives the message too. Acting on it would close our
+      // connection mid-delete and navigate away from our own reset.
+      render(<SyncTabsAction />)
+      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
+
+      uiEventsChannel.onmessage({
+        data: { type: DATABASE_DELETED, tabId: getTabId() },
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(closeDb).not.toHaveBeenCalled()
+      expect(window.location.assign).not.toHaveBeenCalled()
+    })
+
+    it('still acts on a reset announced by another tab', async () => {
+      render(<SyncTabsAction />)
+      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
+
+      uiEventsChannel.onmessage({
+        data: { type: DATABASE_DELETED, tabId: OTHER_TAB },
+      })
+
+      await vi.waitFor(() => expect(closeDb).toHaveBeenCalled())
+    })
+
     it('ignores unrelated ui-event messages', () => {
       render(<SyncTabsAction />)
       const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')

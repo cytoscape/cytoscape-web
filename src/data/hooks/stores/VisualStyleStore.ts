@@ -288,11 +288,18 @@ export const useVisualStyleStore = create(
           // Skip during cross-tab hydration: the peer tab already deleted this
           // row, so re-deleting it locally only mints another change record.
           if (!isHydrating()) {
-            void deleteVisualStyleFromDb(networkId).then(() => {
-              logStore.info(
-                `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
-              )
-            })
+            void deleteVisualStyleFromDb(networkId)
+              .then(() => {
+                logStore.info(
+                  `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
+                )
+              })
+              .catch((e) => {
+                logStore.error(
+                  `[${useVisualStyleStore.name}]: Failed to delete visual style from db: ${networkId}`,
+                  e,
+                )
+              })
           }
           return {
             ...state,

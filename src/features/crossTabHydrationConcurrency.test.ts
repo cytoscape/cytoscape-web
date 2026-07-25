@@ -28,6 +28,7 @@ vi.mock('../data/db', () => ({
   getTablesFromDb: vi.fn(),
   getUiStateFromDb: vi.fn(),
   getUndoRedoStackFromDb: vi.fn(),
+  getViewSelectionFromDb: vi.fn(),
   getVisualStyleFromDb: vi.fn(),
   getWorkspaceFromDb: (...args: any[]) => getWorkspaceFromDb(...args),
   putNetworkSummaryToDb: (...args: any[]) => putNetworkSummaryToDb(...args),

@@ -89,7 +89,12 @@ const persist =
               toPlainObject(withoutTabNetworkId(lastWorkspace)),
             )
           ) {
-            void putWorkspaceToDb(plainWorkspace).then(() => {})
+            void putWorkspaceToDb(plainWorkspace).catch((e) => {
+              logStore.error(
+                `[${useWorkspaceStore.name}]: Failed to persist workspace`,
+                e,
+              )
+            })
           }
         }
       },
@@ -171,8 +176,23 @@ export const useWorkspaceStore = create(
           // reload lands on the freshly created database rather than racing the
           // delete and re-creating the old workspace.
           const releasePeers = await announceDatabaseReset()
-          await deleteDb()
+          const deleted = await deleteDb()
+
+          // Release the peers either way: they have already closed their
+          // connections and are waiting, so signalling lets them reload
+          // promptly instead of stalling until their timeout.
           releasePeers()
+
+          if (!deleted) {
+            // Nothing was destroyed. Resetting the store to EMPTY_WORKSPACE here
+            // would show the user an empty workspace while their data is still
+            // on disk, and the next write would persist that fiction.
+            logStore.error(
+              `[${useWorkspaceStore.name}]: Workspace reset aborted — the database could not be deleted`,
+            )
+            return
+          }
+
           logStore.info(
             `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
           )

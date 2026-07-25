@@ -44,12 +44,19 @@ export const isGraphVisible = (cy: any): boolean => {
     }
     const viewport = cy.extent() as Extent
 
-    if (
-      !Number.isFinite(graph.x1) ||
-      !Number.isFinite(graph.x2) ||
-      !Number.isFinite(viewport.x1) ||
-      !Number.isFinite(viewport.x2)
-    ) {
+    // Every bound matters: a non-finite y would make `intersects` compare NaN,
+    // which is always false, and so trigger a spurious re-fit.
+    const bounds = [
+      graph.x1,
+      graph.x2,
+      graph.y1,
+      graph.y2,
+      viewport.x1,
+      viewport.x2,
+      viewport.y1,
+      viewport.y2,
+    ]
+    if (!bounds.every((value) => Number.isFinite(value))) {
       return true
     }
 

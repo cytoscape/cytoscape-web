@@ -290,7 +290,7 @@ export const closeDb = async (): Promise<void> => {
  * - This should create the completely new DB with no data.
  *
  */
-export const deleteDb = async (): Promise<void> => {
+export const deleteDb = async (): Promise<boolean> => {
   try {
     if (db) {
       db.close()
@@ -301,8 +301,13 @@ export const deleteDb = async (): Promise<void> => {
     db = new CyDB(DB_NAME)
     await db.open()
     logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
+    return true
   } catch (err) {
+    // Reported rather than thrown: existing callers (workspace import, tests)
+    // await this without a try/catch, so throwing would change their behavior.
+    // Callers that must not proceed on failure check the return value.
     logDb.error('[DeleteDB] Failed to reset DB', err)
+    return false
   }
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {

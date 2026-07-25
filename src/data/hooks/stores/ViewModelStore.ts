@@ -8,6 +8,7 @@ import { create, StateCreator } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
+import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { ViewModelStore } from '../../../models/StoreModel/ViewModelStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
@@ -284,7 +285,18 @@ export const useViewModelStore = create(
           // Skip during cross-tab hydration: the peer tab already deleted this
           // row, so re-deleting it locally only mints another change record.
           if (!isHydrating()) {
-            void deleteNetworkViewsFromDb(networkId).then(() => {})
+            void deleteNetworkViewsFromDb(networkId)
+              .then(() => {
+                logStore.info(
+                  `[ViewModelStore]: Deleted network views from db: ${networkId}`,
+                )
+              })
+              .catch((e) => {
+                logStore.error(
+                  `[ViewModelStore]: Failed to delete network views from db: ${networkId}`,
+                  e,
+                )
+              })
           }
           set((state) => {
             delete state.viewModels[networkId]
@@ -293,7 +305,16 @@ export const useViewModelStore = create(
         },
         deleteAll() {
           if (!isHydrating()) {
-            void clearNetworkViewsFromDb().then(() => {})
+            void clearNetworkViewsFromDb()
+              .then(() => {
+                logStore.info('[ViewModelStore]: Deleted all network views')
+              })
+              .catch((e) => {
+                logStore.error(
+                  '[ViewModelStore]: Failed to clear network views from db',
+                  e,
+                )
+              })
           }
           set((state) => {
             state.viewModels = {}

@@ -37,7 +37,8 @@ const gotoReady = async (page: Page): Promise<void> => {
   )
 }
 
-const seedNetwork = async (page: Page, name: string): Promise<void> => {
+/** Creates a network and returns its id, so tests never guess by index. */
+const seedNetwork = async (page: Page, name: string): Promise<string> => {
   const result = await page.evaluate((networkName) => {
     const api = (
       window as unknown as {
@@ -47,7 +48,7 @@ const seedNetwork = async (page: Page, name: string): Promise<void> => {
               name: string
               edgeList: Array<[string, string, string?]>
               addToWorkspace?: boolean
-            }) => { success: boolean }
+            }) => { success: boolean; data?: { networkId: string } }
           }
         }
       }
@@ -60,6 +61,9 @@ const seedNetwork = async (page: Page, name: string): Promise<void> => {
   }, name)
 
   expect(result?.success).toBe(true)
+  const networkId = result?.data?.networkId ?? ''
+  expect(networkId).not.toBe('')
+  return networkId
 }
 
 /** Network names this tab currently has in its workspace, read from the store. */
@@ -79,23 +83,6 @@ const workspaceNetworkNames = async (page: Page): Promise<string[]> =>
     ).CyWebApi
     const result = api?.workspace.getNetworkList()
     return (result?.data ?? []).map((n) => String(n.name))
-  })
-
-/** Id of the first network in this tab's workspace. */
-const firstNetworkId = async (page: Page): Promise<string> =>
-  await page.evaluate(() => {
-    const api = (
-      window as unknown as {
-        CyWebApi?: {
-          workspace: {
-            getNetworkList: () => {
-              data?: Array<{ networkId: string }>
-            }
-          }
-        }
-      }
-    ).CyWebApi
-    return String(api?.workspace.getNetworkList()?.data?.[0]?.networkId ?? '')
   })
 
 test.describe('cross-tab synchronization', () => {
@@ -196,13 +183,10 @@ test.describe('cross-tab synchronization', () => {
     await gotoReady(tabA)
     await gotoReady(tabB)
 
-    await seedNetwork(tabA, 'Selection Sync')
+    const networkId = await seedNetwork(tabA, 'Selection Sync')
     await expect
       .poll(async () => await workspaceNetworkNames(tabB), { timeout: 15_000 })
       .toContain('Selection Sync')
-
-    const networkId = await firstNetworkId(tabA)
-    expect(networkId).not.toBe('')
 
     // Tab B must have the network's VIEW MODEL loaded, not merely its summary.
     // Hydration deliberately skips applying a selection for a network this tab

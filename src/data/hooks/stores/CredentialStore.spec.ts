@@ -6,13 +6,15 @@ import { useCredentialStore } from './CredentialStore'
 
 // Mock Keycloak
 vi.mock('keycloak-js', () => {
-  return { default: vi.fn().mockImplementation(function() {
-    return {
-      token: 'mock-token',
-      tokenParsed: { sub: 'user-123' },
-      updateToken: vi.fn().mockResolvedValue(true),
-    }
-  }) }
+  return {
+    default: vi.fn().mockImplementation(function () {
+      return {
+        token: 'mock-token',
+        tokenParsed: { sub: 'user-123' },
+        updateToken: vi.fn().mockResolvedValue(true),
+      }
+    }),
+  }
 })
 
 describe('useCredentialStore', () => {
@@ -96,4 +98,3 @@ describe('useCredentialStore', () => {
     })
   })
 })
-
