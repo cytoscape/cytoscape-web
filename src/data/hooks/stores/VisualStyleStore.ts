@@ -28,6 +28,7 @@ import {
   deleteVisualStyleFromDb,
   putVisualStyleToDb,
 } from '../../db'
+import { isHydrating } from './hydrationContext'
 import { persistNetworkSlices } from './persistNetworkSlices'
 
 /**
@@ -284,11 +285,15 @@ export const useVisualStyleStore = create(
             }
             return acc
           }, {})
-          void deleteVisualStyleFromDb(networkId).then(() => {
-            logStore.info(
-              `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
-            )
-          })
+          // Skip during cross-tab hydration: the peer tab already deleted this
+          // row, so re-deleting it locally only mints another change record.
+          if (!isHydrating()) {
+            void deleteVisualStyleFromDb(networkId).then(() => {
+              logStore.info(
+                `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
+              )
+            })
+          }
           return {
             ...state,
             visualStyles: filtered,
@@ -298,17 +303,19 @@ export const useVisualStyleStore = create(
       deleteAll: () => {
         set((state) => {
           state.visualStyles = {}
-          clearVisualStyleFromDb()
-            .then(() => {
-              logStore.info(
-                `[${useVisualStyleStore.name}]: Deleted all visual styles from db`,
-              )
-            })
-            .catch((err) => {
-              logStore.error(
-                `[${useVisualStyleStore.name}]: Error clearing visual styles from db: ${err}`,
-              )
-            })
+          if (!isHydrating()) {
+            clearVisualStyleFromDb()
+              .then(() => {
+                logStore.info(
+                  `[${useVisualStyleStore.name}]: Deleted all visual styles from db`,
+                )
+              })
+              .catch((err) => {
+                logStore.error(
+                  `[${useVisualStyleStore.name}]: Error clearing visual styles from db: ${err}`,
+                )
+              })
+          }
 
           return state
         })

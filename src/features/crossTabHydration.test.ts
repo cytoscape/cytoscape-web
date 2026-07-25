@@ -19,20 +19,24 @@ describe('crossTabHydration', () => {
       workspace: {
         ...useWorkspaceStore.getState().workspace,
         currentNetworkId: 'local-net',
-        networkIds: ['local-net', 'remote-net']
-      }
+        networkIds: ['local-net', 'remote-net'],
+      },
     })
 
     vi.mocked(getWorkspaceFromDb).mockResolvedValueOnce({
       ...useWorkspaceStore.getState().workspace,
       currentNetworkId: 'remote-net', // The other tab switched to remote-net
-      networkIds: ['local-net', 'remote-net']
+      networkIds: ['local-net', 'remote-net'],
     } as any)
 
-    await hydrateFromCrossTabChange([{ type: 2, table: 'workspace', key: 'mock-ws' }])
-    
+    await hydrateFromCrossTabChange([
+      { type: 2, table: 'workspace', key: 'mock-ws' },
+    ])
+
     // It should have ignored the remote-net switch and kept local-net
-    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe('local-net')
+    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+      'local-net',
+    )
   })
 
   it('adopts remote currentNetworkId if local network was deleted', async () => {
@@ -40,20 +44,24 @@ describe('crossTabHydration', () => {
       workspace: {
         ...useWorkspaceStore.getState().workspace,
         currentNetworkId: 'deleted-net',
-        networkIds: ['deleted-net', 'remote-net']
-      }
+        networkIds: ['deleted-net', 'remote-net'],
+      },
     })
 
     vi.mocked(getWorkspaceFromDb).mockResolvedValueOnce({
       ...useWorkspaceStore.getState().workspace,
       currentNetworkId: 'remote-net',
-      networkIds: ['remote-net'] // deleted-net is gone
+      networkIds: ['remote-net'], // deleted-net is gone
     } as any)
 
-    await hydrateFromCrossTabChange([{ type: 2, table: 'workspace', key: 'mock-ws' }])
-    
+    await hydrateFromCrossTabChange([
+      { type: 2, table: 'workspace', key: 'mock-ws' },
+    ])
+
     // It should adopt the remote network since deleted-net is gone
-    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe('remote-net')
+    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+      'remote-net',
+    )
   })
 
   it('preserves local activeNetworkView and panels', async () => {
@@ -61,8 +69,8 @@ describe('crossTabHydration', () => {
     useWorkspaceStore.setState({
       workspace: {
         ...useWorkspaceStore.getState().workspace,
-        networkIds: ['local-net', 'remote-net']
-      }
+        networkIds: ['local-net', 'remote-net'],
+      },
     })
     const localUi = {
       ...useUiStateStore.getState().ui,
@@ -70,14 +78,14 @@ describe('crossTabHydration', () => {
       panels: {
         [Panel.LEFT]: 'open',
         [Panel.RIGHT]: 'closed',
-        [Panel.BOTTOM]: 'closed'
+        [Panel.BOTTOM]: 'closed',
       },
       tableUi: { activeTabIndex: 1, columnUiState: {} },
       networkBrowserPanelUi: { activeTabIndex: 0 },
       networkViewUi: { activeTabIndex: 0 },
       enablePopup: false,
       showErrorDialog: true,
-      errorMessage: 'Local Error'
+      errorMessage: 'Local Error',
     }
     useUiStateStore.getState().setUi(localUi as any)
 
@@ -88,17 +96,22 @@ describe('crossTabHydration', () => {
       panels: {
         [Panel.LEFT]: 'open',
         [Panel.RIGHT]: 'open', // opened by remote
-        [Panel.BOTTOM]: 'closed'
+        [Panel.BOTTOM]: 'closed',
       },
-      tableUi: { activeTabIndex: 2, columnUiState: { 'some-column': { width: 100 } } }, // table tab changed, column size changed
+      tableUi: {
+        activeTabIndex: 2,
+        columnUiState: { 'some-column': { width: 100 } },
+      }, // table tab changed, column size changed
       networkBrowserPanelUi: { activeTabIndex: 1 },
       networkViewUi: { activeTabIndex: 1 },
       enablePopup: true,
       showErrorDialog: false,
-      errorMessage: ''
+      errorMessage: '',
     } as any)
 
-    await hydrateFromCrossTabChange([{ type: 2, table: 'uiState', key: 'mock-ws' }])
+    await hydrateFromCrossTabChange([
+      { type: 2, table: 'uiState', key: 'mock-ws' },
+    ])
 
     const updatedUi = useUiStateStore.getState().ui
     expect(updatedUi.activeNetworkView).toBe('local-net') // preserved
@@ -109,33 +122,40 @@ describe('crossTabHydration', () => {
     expect(updatedUi.enablePopup).toBe(false) // preserved
     expect(updatedUi.showErrorDialog).toBe(true) // preserved
     expect(updatedUi.errorMessage).toBe('Local Error') // preserved
-    expect(updatedUi.tableUi.columnUiState).toEqual({ 'some-column': { width: 100 } }) // synced!
+    expect(updatedUi.tableUi.columnUiState).toEqual({
+      'some-column': { width: 100 },
+    }) // synced!
   })
 
-  it('adopts remote activeNetworkView if local network was deleted', async () => {
+  it('clears activeNetworkView when the local network was deleted', async () => {
     // Setup local state with a network that will be deleted
     useWorkspaceStore.setState({
       workspace: {
         ...useWorkspaceStore.getState().workspace,
-        networkIds: ['remote-net'] // local-net was just deleted
-      }
+        networkIds: ['remote-net'], // local-net was just deleted
+      },
     })
-    
+
     const localUi = {
       ...useUiStateStore.getState().ui,
       activeNetworkView: 'local-net', // this is now deleted
     }
     useUiStateStore.getState().setUi(localUi as any)
 
+    // activeNetworkView is per-tab and no longer stored in the shared row, so
+    // whatever another tab has active is irrelevant here.
     vi.mocked(getUiStateFromDb).mockResolvedValueOnce({
       ...localUi,
       activeNetworkView: 'remote-net',
     } as any)
 
-    await hydrateFromCrossTabChange([{ type: 2, table: 'uiState', key: 'mock-ws' }])
+    await hydrateFromCrossTabChange([
+      { type: 2, table: 'uiState', key: 'mock-ws' },
+    ])
 
-    // Should adopt remote-net since local-net is no longer in workspace.networkIds
-    expect(useUiStateStore.getState().ui.activeNetworkView).toBe('remote-net')
+    // Cleared rather than adopting the other tab's network: this tab resolves
+    // its own next network from the URL / its sessionStorage backstop.
+    expect(useUiStateStore.getState().ui.activeNetworkView).toBe('')
   })
 
   it('gracefully handles missing UI state fields in older databases', async () => {
@@ -148,7 +168,7 @@ describe('crossTabHydration', () => {
       networkViewUi: { activeTabIndex: 3 },
     }
     useUiStateStore.getState().setUi(localUi as any)
-    
+
     // Simulate an older database schema that lacks the newer UI tabs entirely
     vi.mocked(getUiStateFromDb).mockResolvedValueOnce({
       ...localUi,
@@ -161,8 +181,12 @@ describe('crossTabHydration', () => {
     } as any)
 
     // Should not throw any errors when trying to merge
-    await expect(hydrateFromCrossTabChange([{ type: 2, table: 'uiState', key: 'mock-ws' }])).resolves.not.toThrow()
-    
+    await expect(
+      hydrateFromCrossTabChange([
+        { type: 2, table: 'uiState', key: 'mock-ws' },
+      ]),
+    ).resolves.not.toThrow()
+
     // Local tab indexes should be preserved
     const updatedUi = useUiStateStore.getState().ui
     expect(updatedUi.tableUi.activeTabIndex).toBe(1)

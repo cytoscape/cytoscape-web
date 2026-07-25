@@ -11,8 +11,6 @@ export interface KeycloakConfig {
   clientId: string
 }
 
-export interface DebugOptions {}
-
 /**
  * Application-wide configuration
  * Loaded from assets/config.json and provided via React context
@@ -30,7 +28,6 @@ export interface AppConfig {
   openAIAPIKey: string
   googleAnalyticsId: string
   undoStackSize: number
-  debugOptions?: DebugOptions
   errorReportEndpoint: string
   maxErrorReportSnapshotSizeMB: number
   // Origins from which external apps may be installed (App Store CDN, etc.).
@@ -71,8 +68,6 @@ export const defaultAppConfig: AppConfig = {
   openAIAPIKey: '',
   googleAnalyticsId: '',
   undoStackSize: 20,
-  debugOptions: {
-  },
   errorReportEndpoint: '',
   maxErrorReportSnapshotSizeMB: 10,
   appInstallAllowedOrigins: ['https://apps.cytoscape.org'],

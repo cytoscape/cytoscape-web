@@ -15,6 +15,7 @@ import { IdType } from '../../../models/IdType'
 import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
 import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
+import { announceDatabaseReset } from '../../../features/databaseLifecycle'
 import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
@@ -29,6 +30,33 @@ const EMPTY_WORKSPACE: Workspace = {
   localModificationTime: new Date(),
   currentNetworkId: '',
 }
+
+/**
+ * Blank `currentNetworkId` before the workspace goes to IndexedDB.
+ *
+ * Which network a tab is looking at is per-tab view state — every tab has its
+ * own address bar — but it was being written to the single shared workspace row,
+ * so tabs overwrote each other's navigation. Hydration used to mask the field on
+ * read, which was not enough: the next local workspace mutation wrote this tab's
+ * value straight back into the shared row.
+ *
+ * The per-tab sources of truth are the URL and the sessionStorage backstop in
+ * `src/features/tabNetwork.ts`; the field is kept in the in-memory store (lots
+ * of code reads it) but is no longer shared. Blanked rather than omitted so the
+ * row still satisfies `validateWorkspace`.
+ */
+const withoutTabNetworkId = (workspace: Workspace): Workspace => ({
+  ...workspace,
+  currentNetworkId: '',
+})
+
+/**
+ * Compare two workspace rows ignoring `localModificationTime`, which changes on
+ * every mutation and would defeat the no-op check.
+ */
+const isSameSharedWorkspace = (a: Workspace, b: Workspace): boolean =>
+  JSON.stringify({ ...a, localModificationTime: 0 }) ===
+  JSON.stringify({ ...b, localModificationTime: 0 })
 
 const persist =
   (config: StateCreator<WorkspaceStore>) =>
@@ -49,8 +77,20 @@ const persist =
           newWorkspace.id !== ''
         ) {
           // Convert Immer proxy to plain object before saving
-          const plainWorkspace = toPlainObject(newWorkspace)
-          void putWorkspaceToDb(plainWorkspace).then(() => {})
+          const plainWorkspace = toPlainObject(
+            withoutTabNetworkId(newWorkspace),
+          )
+          // Switching networks changes only per-tab state, so it leaves the
+          // shared row byte-identical — skip the write rather than mint a
+          // change record every other tab would then hydrate.
+          if (
+            !isSameSharedWorkspace(
+              plainWorkspace,
+              toPlainObject(withoutTabNetworkId(lastWorkspace)),
+            )
+          ) {
+            void putWorkspaceToDb(plainWorkspace).then(() => {})
+          }
         }
       },
       get,
@@ -125,11 +165,14 @@ export const useWorkspaceStore = create(
           })
         },
         resetWorkspace: async () => {
-          const channel = new BroadcastChannel('cyweb-ui-events')
-          channel.postMessage({ type: 'DATABASE_DELETED' })
-          channel.close()
-
+          // Other tabs hold the database open, and IndexedDB will not delete a
+          // database with live connections. Ask them to let go and wait for the
+          // acknowledgements before deleting; release them afterwards so their
+          // reload lands on the freshly created database rather than racing the
+          // delete and re-creating the old workspace.
+          const releasePeers = await announceDatabaseReset()
           await deleteDb()
+          releasePeers()
           logStore.info(
             `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
           )

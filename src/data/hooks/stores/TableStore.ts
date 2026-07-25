@@ -25,6 +25,7 @@ import {
 import * as TableImpl from '../../../models/TableModel/impl/inMemoryTable'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
 import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
+import { isHydrating } from './hydrationContext'
 import { persistNetworkSlices } from './persistNetworkSlices'
 
 const persist = (config: StateCreator<TableStore>) =>
@@ -350,29 +351,35 @@ export const useTableStore = create(
             }, {})
             state.tables = filtered
 
-            void deleteTablesFromDb(networkId).then(() => {
-              logStore.info(
-                `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
-              )
-            })
+            // Skip during cross-tab hydration: the peer tab already deleted
+            // this row, so re-deleting it only mints another change record.
+            if (!isHydrating()) {
+              void deleteTablesFromDb(networkId).then(() => {
+                logStore.info(
+                  `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
+                )
+              })
+            }
             return state
           })
         },
         deleteAll() {
           set((state) => {
             state.tables = {}
-            clearTablesFromDb()
-              .then(() => {
-                logStore.info(
-                  `[${useTableStore.name}]: Deleted all network tables from db`,
-                )
-              })
-              .catch((err) => {
-                logStore.error(
-                  `[${useTableStore.name}]: Error clearing  all attribute tables from db: ${err}`,
-                  err,
-                )
-              })
+            if (!isHydrating()) {
+              clearTablesFromDb()
+                .then(() => {
+                  logStore.info(
+                    `[${useTableStore.name}]: Deleted all network tables from db`,
+                  )
+                })
+                .catch((err) => {
+                  logStore.error(
+                    `[${useTableStore.name}]: Error clearing  all attribute tables from db: ${err}`,
+                    err,
+                  )
+                })
+            }
 
             return state
           })

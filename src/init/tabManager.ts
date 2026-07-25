@@ -6,6 +6,7 @@
  */
 
 import { logStartup } from '../debug'
+import { CYWEB_TAB_PREFIX, getTabId } from './tabId'
 
 /**
  * Generates a channel name based on the current hostname and port
@@ -29,7 +30,7 @@ logStartup.info(
   CHANNEL_NAME,
 )
 
-const CYWEB_PREFIX: string = 'cyweb'
+const CYWEB_PREFIX: string = CYWEB_TAB_PREFIX
 
 const TabMessageType = {
   CREATED: `${CYWEB_PREFIX}-tab-created`,
@@ -58,14 +59,10 @@ interface TabMessage {
 export const initializeTabManager = (
   channelName: string = CHANNEL_NAME,
 ): string => {
-  // Check window.name for the tab ID
-  const windowName = window.name
-  let tabId = `${CYWEB_PREFIX}-${Date.now()}`
-
-  // Reuse the tab ID if it's already set by Cytoscape Web
-  if (windowName && windowName.startsWith(CYWEB_PREFIX + '-')) {
-    tabId = windowName
-  }
+  // Single source of truth for this tab's identity, shared with the IndexedDB
+  // layer so cross-tab sync can recognize the echo of its own writes.
+  // getTabId() also persists it to window.name.
+  const tabId = getTabId()
 
   const activeTabs = new Set<string>()
   const channel = new BroadcastChannel(channelName)
@@ -118,8 +115,7 @@ export const initializeTabManager = (
     }
   }
 
-  // Window name of this instance based on the current time
-  window.name = tabId
+  // window.name is already set by getTabId()
   logStartup.info(
     `[tab-manager.ts]:[${initializeTabManager.name}]: Cytoscape window name initialized. Use this as the target when you open this tab again.`,
     window.name,

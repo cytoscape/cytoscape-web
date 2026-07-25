@@ -53,8 +53,10 @@ import { parseSingleEntryManifest } from './AppManager/install/installGate'
 import { ConfirmationDialog } from './ConfirmationDialog'
 import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
+import { markCrossTabSyncReady } from './crossTabSyncGate'
 import { SyncTabsAction } from './SyncTabs'
-import { getTabNetworkId, resolveDisplayNetworkId } from './tabNetwork'
+import { applyTabViewState, getTabViewState } from './tabViewState'
+import { getTabNetworkId, resolveInitialNetworkId } from './tabNetwork'
 import { ToolBar } from './ToolBar'
 
 // Search param carrying an App Store install intent: a URL pointing to a
@@ -297,9 +299,14 @@ const AppShell = (): ReactElement => {
       // Update the workspace, uiState and summaries in the stores so react can start to render the workspace editor
       // Create a mutable copy to avoid read-only errors when object comes from IndexedDB
       const dbUiState = await getUiStateFromDb()
-      const uiState = dbUiState
+      const sharedUiState = dbUiState
         ? cloneDeep(dbUiState)
         : cloneDeep({ ...DEFAULT_UI_STATE })
+      // Per-tab view state (panels, tab indices) comes from this tab's
+      // sessionStorage, not the shared row, so opening a second tab does not
+      // inherit the first tab's layout. Precedence below is
+      // URL search param > this tab's remembered state > default.
+      const uiState = applyTabViewState(sharedUiState, getTabViewState())
       uiState.panels[Panel.LEFT] =
         (search.get(Panel.LEFT) as PanelState) ?? uiState.panels[Panel.LEFT]
       uiState.panels[Panel.RIGHT] =
@@ -325,6 +332,7 @@ const AppShell = (): ReactElement => {
 
       const importErrorMessages: string[] = []
 
+      let networkImportFailed = false
       if (isNetworkIdNotInWorkspace) {
         try {
           // Check if the network exists in NDEx
@@ -337,6 +345,7 @@ const AppShell = (): ReactElement => {
             workspace.currentNetworkId = networkId
             workspace.networkIds.push(networkId)
           } else {
+            networkImportFailed = true
             importErrorMessages.push(
               `Unable to import network ${networkId} from ${location.pathname}. ${networkId} does not exist in NDEx`,
             )
@@ -346,6 +355,7 @@ const AppShell = (): ReactElement => {
           // outage) must not abort init and silently strand the user on an
           // unrelated local workspace/network (CW-514). Mirror the try/catch of
           // the ?import= loop below.
+          networkImportFailed = true
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error'
           importErrorMessages.push(
@@ -414,19 +424,13 @@ const AppShell = (): ReactElement => {
       // reload); fall back to a per-tab sessionStorage backstop, then to the shared
       // currentNetworkId. This prevents a tab from adopting another tab's network
       // after a cross-tab reload (CW-722).
-      const resolvedNetworkId =
-        resolveDisplayNetworkId(
-          networkId,
-          getTabNetworkId(),
-          workspace.currentNetworkId,
-          workspace.networkIds,
-        ) ?? ''
-
-      // Note: If the user explicitly requested a network via the URL but it could not
-      // be imported, an error banner is displayed. We do NOT preserve the failed ID
-      // in the URL because keeping a bad ID forces React Router to adopt it into the
-      // app state, which corrupts the shared IndexedDB workspace for all tabs.
-      workspace.currentNetworkId = resolvedNetworkId
+      workspace.currentNetworkId = resolveInitialNetworkId(
+        networkId,
+        getTabNetworkId(),
+        workspace.currentNetworkId,
+        workspace.networkIds,
+        networkImportFailed,
+      )
 
       addSummaries(summaries)
       setWorkspace(workspace)
@@ -523,7 +527,12 @@ const AppShell = (): ReactElement => {
     if (!initialized.current) {
       initialized.current = true
       logStartup.info('[AppShell]: Initializing app shell')
-      initializeAppShell()
+      // Cross-tab hydration stays gated until init settles, so a peer tab's
+      // change cannot race the workspace load. `finally` rather than `then` —
+      // a failed init must not disable sync for the rest of the session.
+      initializeAppShell().finally(() => {
+        markCrossTabSyncReady()
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])

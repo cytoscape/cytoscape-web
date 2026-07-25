@@ -17,6 +17,40 @@ import {
   putOpaqueAspectsToDb,
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
+
+/**
+ * Persistence helpers that stand down during cross-tab hydration.
+ *
+ * Hydration applies a peer tab's aspects to this store; writing them back would
+ * mint a fresh change record that every other tab would hydrate in turn. This
+ * store was the one hydrated store with no such guard, and it only avoided an
+ * endless write loop because dexie-observable happens to drop no-op diffs —
+ * i.e. it depended on byte-identical re-serialization.
+ *
+ * `isHydrating()` is only ever true inside hydration's synchronous apply phase,
+ * so a genuine user edit can never be suppressed by these.
+ */
+const persistAspects = (networkId: IdType, aspects: OpaqueAspects): void => {
+  if (isHydrating()) {
+    return
+  }
+  void putOpaqueAspectsToDb(networkId, aspects).then(() => {})
+}
+
+const removeAspects = (networkId: IdType): void => {
+  if (isHydrating()) {
+    return
+  }
+  void deleteOpaqueAspectsFromDb(networkId).then(() => {})
+}
+
+const removeAllAspects = (): void => {
+  if (isHydrating()) {
+    return
+  }
+  void clearOpaqueAspectsFromDb().then(() => {})
+}
 
 export const useOpaqueAspectStore = create(
   immer<OpaqueAspectStore>((set) => ({
@@ -33,9 +67,7 @@ export const useOpaqueAspectStore = create(
         const updatedOpaqueAspects = toPlainObject(
           newState.opaqueAspects[networkId] || {},
         )
-        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
-          () => {},
-        )
+        persistAspects(networkId, updatedOpaqueAspects)
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
@@ -56,9 +88,7 @@ export const useOpaqueAspectStore = create(
         const updatedOpaqueAspects = toPlainObject(
           newState.opaqueAspects[networkId] || {},
         )
-        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
-          () => {},
-        )
+        persistAspects(networkId, updatedOpaqueAspects)
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
@@ -72,7 +102,7 @@ export const useOpaqueAspectStore = create(
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
-      void deleteOpaqueAspectsFromDb(networkId).then(() => {})
+      removeAspects(networkId)
     },
     deleteSingleAspect: (networkId: IdType, aspectName: string) => {
       set((state) => {
@@ -85,9 +115,7 @@ export const useOpaqueAspectStore = create(
         const updatedOpaqueAspects = toPlainObject(
           newState.opaqueAspects[networkId] || {},
         )
-        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
-          () => {},
-        )
+        persistAspects(networkId, updatedOpaqueAspects)
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
@@ -96,7 +124,7 @@ export const useOpaqueAspectStore = create(
       set((state) => {
         const newState = OpaqueAspectImpl.clearAspects(state, networkId)
         // Empty object doesn't need cloning, but being consistent
-        void putOpaqueAspectsToDb(networkId, toPlainObject({})).then(() => {})
+        persistAspects(networkId, toPlainObject({}))
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
@@ -104,7 +132,7 @@ export const useOpaqueAspectStore = create(
     deleteAll: () => {
       set((state) => {
         const newState = OpaqueAspectImpl.deleteAll(state)
-        void clearOpaqueAspectsFromDb().then(() => {})
+        removeAllAspects()
         state.opaqueAspects = newState.opaqueAspects
         return state
       })
@@ -121,9 +149,7 @@ export const useOpaqueAspectStore = create(
         const updatedOpaqueAspects = toPlainObject(
           newState.opaqueAspects[networkId] || {},
         )
-        void putOpaqueAspectsToDb(networkId, updatedOpaqueAspects).then(
-          () => {},
-        )
+        persistAspects(networkId, updatedOpaqueAspects)
         state.opaqueAspects = newState.opaqueAspects
         return state
       })

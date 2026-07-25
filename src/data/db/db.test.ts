@@ -1,4 +1,7 @@
+import Dexie from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { getTabId } from '../../init/tabId'
 
 import { logDb } from '../../debug'
 
@@ -12,7 +15,7 @@ import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
 import { SelectionType } from '../../models/FilterModel/SelectionType'
 import { IdType } from '../../models/IdType'
-import type { Edge,Network, Node } from '../../models/NetworkModel'
+import type { Edge, Network, Node } from '../../models/NetworkModel'
 import { GraphObjectType } from '../../models/NetworkModel/GraphObjectType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import type { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
@@ -73,6 +76,7 @@ import {
   getTablesFromDb,
   getUiStateFromDb,
   getUndoRedoStackFromDb,
+  getViewSelectionFromDb,
   getVisualStyleFromDb,
   getWorkspaceFromDb,
   initializeDb,
@@ -88,11 +92,15 @@ import {
   putTablesToDb,
   putUiStateToDb,
   putUndoRedoStackToDb,
+  putViewSelectionToDb,
   putVisualStyleToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
 } from './index'
-import { deserializeNetworkView, serializeNetworkView } from './serialization/mapSerialization'
+import {
+  deserializeNetworkView,
+  serializeNetworkView,
+} from './serialization/mapSerialization'
 
 const ensureDebugNamespace = () => {
   ;(window as any).debug = {}
@@ -807,7 +815,6 @@ describe('CyDB helper coverage', () => {
     expect(await getUiStateFromDb()).toBeUndefined()
   })
 
-
   it('persists filter configurations with map values intact', async () => {
     await setupFreshDb()
 
@@ -982,5 +989,148 @@ describe('read-path validation (observe mode)', () => {
     expect(row).toBeDefined()
     expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
     warnSpy.mockRestore()
+  })
+})
+
+/**
+ * Guard for the cross-tab origin tag (see `stampTransactionSource` in index.ts).
+ *
+ * Cross-tab sync ignores changes whose `source` equals this tab's id. If the
+ * `_createTransaction` override ever stops firing — e.g. a Dexie upgrade
+ * renames the internal — every change would read as foreign and each tab would
+ * re-hydrate its own writes, silently reintroducing the echo loop. These tests
+ * make that failure loud.
+ */
+describe('cross-tab change origin tagging', () => {
+  it('stamps this tab id onto _changes rows written through the db helpers', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    await putNetworkSummaryToDb(createTestSummary('origin-net'))
+
+    const changes = await (db as any)._changes.toArray()
+    const summaryChanges = changes.filter((c: any) => c.table === 'summaries')
+
+    expect(summaryChanges.length).toBeGreaterThan(0)
+    for (const change of summaryChanges) {
+      expect(change.source).toBe(getTabId())
+    }
+  })
+
+  it('does not overwrite a source set explicitly by the caller', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    await db.transaction('rw', db.summaries, async () => {
+      ;(Dexie.currentTransaction as any).source = 'explicit-source'
+      await db.summaries.put({ ...createTestSummary('explicit-net') })
+    })
+
+    const changes = await (db as any)._changes.toArray()
+    const row = changes.find(
+      (c: any) => c.table === 'summaries' && c.key === 'explicit-net',
+    )
+
+    expect(row?.source).toBe('explicit-source')
+  })
+})
+
+/**
+ * DB v11 moved node/edge selection out of the `cyNetworkViews` row into its own
+ * `viewSelections` store. Two properties matter: rows written before v11 must
+ * still surface their inline selection, and a selection change must not disturb
+ * the view row (an identical row produces no dexie-observable change record,
+ * which is what stops a click in one tab from replacing every other tab's view
+ * model).
+ */
+describe('view selection storage (DB v11)', () => {
+  it('round-trips a selection through its own store', async () => {
+    await setupFreshDb()
+
+    expect(await getViewSelectionFromDb('sel-net')).toBeUndefined()
+
+    await putViewSelectionToDb('sel-net', {
+      selectedNodes: ['n1', 'n2'],
+      selectedEdges: ['e1'],
+    })
+
+    expect(await getViewSelectionFromDb('sel-net')).toEqual({
+      selectedNodes: ['n1', 'n2'],
+      selectedEdges: ['e1'],
+    })
+  })
+
+  it('merges the stored selection into the views it reads', async () => {
+    await setupFreshDb()
+    const view = createNetworkView('merge-net-nodeLink-1', 'red')
+    await putNetworkViewsToDb('merge-net', [
+      { ...view, selectedNodes: [], selectedEdges: [] },
+    ])
+    await putViewSelectionToDb('merge-net', {
+      selectedNodes: ['n1'],
+      selectedEdges: ['e1'],
+    })
+
+    const views = await getNetworkViewsFromDb('merge-net')
+
+    expect(views?.[0].selectedNodes).toEqual(['n1'])
+    expect(views?.[0].selectedEdges).toEqual(['e1'])
+  })
+
+  it('falls back to inline selection for rows written before v11', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('legacy-net-nodeLink-1', 'blue')
+    // Write the row the way v10 did: selection inline, no viewSelections row.
+    await db.cyNetworkViews.put({
+      id: 'legacy-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: ['legacy-n1'],
+          selectedEdges: [],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    const views = await getNetworkViewsFromDb('legacy-net')
+
+    expect(views?.[0].selectedNodes).toEqual(['legacy-n1'])
+  })
+
+  it('drops the selection row when the network views are deleted', async () => {
+    await setupFreshDb()
+    await putViewSelectionToDb('gone-net', {
+      selectedNodes: ['n1'],
+      selectedEdges: [],
+    })
+
+    await deleteNetworkViewsFromDb('gone-net')
+
+    expect(await getViewSelectionFromDb('gone-net')).toBeUndefined()
+  })
+
+  it('writes no change record when only the selection changes', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('quiet-net-nodeLink-1', 'green')
+    const persistable = [{ ...view, selectedNodes: [], selectedEdges: [] }]
+
+    await putNetworkViewsToDb('quiet-net', persistable)
+    const before = (await (db as any)._changes.toArray()).filter(
+      (c: any) => c.table === 'cyNetworkViews',
+    ).length
+
+    // Re-persisting the same views (what a selection-only change produces, now
+    // that selection is stripped) must be a no-op at the change-log level.
+    await putNetworkViewsToDb('quiet-net', persistable)
+    const after = (await (db as any)._changes.toArray()).filter(
+      (c: any) => c.table === 'cyNetworkViews',
+    ).length
+
+    expect(after).toBe(before)
   })
 })

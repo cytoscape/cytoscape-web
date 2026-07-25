@@ -24,7 +24,6 @@ import {
   putAppSettingToDb,
   putServiceAppToDb,
 } from '../../db'
-import { isHydrating } from './hydrationContext'
 
 export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
   // Fetch the service app metadata from the given URL
@@ -101,9 +100,7 @@ export const useAppStore = create(
         return
       }
       const serviceApp = await serviceFetcher(url)
-      if (!isHydrating()) {
-        await putServiceAppToDb(serviceApp)
-      }
+      await putServiceAppToDb(serviceApp)
 
       set((state) => {
         const newState = AppStoreImpl.addService(state, serviceApp)
@@ -115,14 +112,12 @@ export const useAppStore = create(
     removeService: (url: string) => {
       set((state) => {
         const newState = AppStoreImpl.removeService(state, url)
-        if (!isHydrating()) {
-          deleteServiceAppFromDb(url).catch((error) => {
-            logStore.error(
-              `[${useAppStore.name}]: Failed to delete service metadata from ${url}`,
-              error,
-            )
-          })
-        }
+        deleteServiceAppFromDb(url).catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]: Failed to delete service metadata from ${url}`,
+            error,
+          )
+        })
         state.serviceApps = newState.serviceApps
         return state
       })
@@ -136,9 +131,7 @@ export const useAppStore = create(
         return
       }
       const serviceApp = await serviceFetcher(url)
-      if (!isHydrating()) {
-        await putServiceAppToDb(serviceApp)
-      }
+      await putServiceAppToDb(serviceApp)
 
       set((state) => {
         const newState = AppStoreImpl.refreshService(state, serviceApp)
@@ -153,9 +146,7 @@ export const useAppStore = create(
         urls.map(async (url) => {
           try {
             const serviceApp = await serviceFetcher(url)
-            if (!isHydrating()) {
-              await putServiceAppToDb(serviceApp)
-            }
+            await putServiceAppToDb(serviceApp)
             set((state) => {
               const newState = AppStoreImpl.refreshService(state, serviceApp)
               state.serviceApps = newState.serviceApps
@@ -220,20 +211,18 @@ export const useAppStore = create(
         state.serviceApps = newState.serviceApps
 
         // Update the cached service app
-        if (!isHydrating()) {
-          putServiceAppToDb({ ...newState.serviceApps[url] })
-            .then(() => {
-              logStore.info(
-                `[${useAppStore.name}]: Target column updated for service app: ${url}`,
-              )
-            })
-            .catch((error) => {
-              logStore.error(
-                `[${useAppStore.name}]: Failed to update service app`,
-                error,
-              )
-            })
-        }
+        putServiceAppToDb({ ...newState.serviceApps[url] })
+          .then(() => {
+            logStore.info(
+              `[${useAppStore.name}]: Target column updated for service app: ${url}`,
+            )
+          })
+          .catch((error) => {
+            logStore.error(
+              `[${useAppStore.name}]: Failed to update service app`,
+              error,
+            )
+          })
         return state
       })
     },
@@ -262,20 +251,18 @@ export const useAppStore = create(
         state.serviceApps = newState.serviceApps
 
         // Update the cached service app
-        if (!isHydrating()) {
-          putServiceAppToDb({ ...newState.serviceApps[url] })
-            .then(() => {
-              logStore.info(
-                `[${useAppStore.name}]: Target column updated for service app: ${url}`,
-              )
-            })
-            .catch((error) => {
-              logStore.error(
-                `[${useAppStore.name}]: Failed to update service app`,
-                error,
-              )
-            })
-        }
+        putServiceAppToDb({ ...newState.serviceApps[url] })
+          .then(() => {
+            logStore.info(
+              `[${useAppStore.name}]: Target column updated for service app: ${url}`,
+            )
+          })
+          .catch((error) => {
+            logStore.error(
+              `[${useAppStore.name}]: Failed to update service app`,
+              error,
+            )
+          })
         return state
       })
     },
@@ -307,22 +294,20 @@ export const useAppStore = create(
         return state
       })
       // Persist to IndexedDB
-      if (!isHydrating()) {
-        if (source !== undefined) {
-          putAppSettingToDb('manifestSource', source).catch((error) => {
-            logStore.error(
-              `[${useAppStore.name}]:[setManifestSource] Failed to persist:`,
-              error,
-            )
-          })
-        } else {
-          deleteAppSettingFromDb('manifestSource').catch((error) => {
-            logStore.error(
-              `[${useAppStore.name}]:[setManifestSource] Failed to delete:`,
-              error,
-            )
-          })
-        }
+      if (source !== undefined) {
+        putAppSettingToDb('manifestSource', source).catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]:[setManifestSource] Failed to persist:`,
+            error,
+          )
+        })
+      } else {
+        deleteAppSettingFromDb('manifestSource').catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]:[setManifestSource] Failed to delete:`,
+            error,
+          )
+        })
       }
     },
 

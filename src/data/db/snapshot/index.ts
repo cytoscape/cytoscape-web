@@ -106,6 +106,7 @@ export interface DatabaseSnapshot {
     [ObjectStoreNames.CyVisualStyles]?: any[]
     [ObjectStoreNames.CyNetworkViews]?: any[]
     [ObjectStoreNames.UiState]?: any[]
+    [ObjectStoreNames.ViewSelections]?: any[]
     [ObjectStoreNames.Filters]?: any[]
     [ObjectStoreNames.Apps]?: CyApp[]
     [ObjectStoreNames.ServiceApps]?: ServiceApp[]
@@ -377,6 +378,7 @@ export const importDatabaseSnapshot = async (
       [ObjectStoreNames.CyVisualStyles]: 'id',
       [ObjectStoreNames.CyNetworkViews]: 'id',
       [ObjectStoreNames.UiState]: 'id',
+      [ObjectStoreNames.ViewSelections]: 'id',
       [ObjectStoreNames.Filters]: 'id',
       [ObjectStoreNames.Apps]: 'id',
       [ObjectStoreNames.ServiceApps]: 'url',
@@ -473,9 +475,7 @@ export const importDatabaseSnapshot = async (
           let recordsToImport = sanitizedRecords
           let skipped = 0
           if (merge && skipConflicts) {
-            const keys = sanitizedRecords.map(
-              (record) => record[primaryKey],
-            )
+            const keys = sanitizedRecords.map((record) => record[primaryKey])
             const existing = await (db as any)[storeName].bulkGet(keys)
             recordsToImport = sanitizedRecords.filter(
               (_record, index) => existing[index] === undefined,

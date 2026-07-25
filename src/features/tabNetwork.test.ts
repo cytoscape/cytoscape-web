@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   getTabNetworkId,
   resolveDisplayNetworkId,
+  resolveInitialNetworkId,
   setTabNetworkId,
 } from './tabNetwork'
 
@@ -34,7 +35,9 @@ describe('resolveDisplayNetworkId (CW-722)', () => {
   })
 
   it('returns undefined if the shared currentNetworkId is not a member of the workspace (e.g. invalid/corrupted id)', () => {
-    expect(resolveDisplayNetworkId(undefined, null, 'Z', networkIds)).toBe(undefined)
+    expect(resolveDisplayNetworkId(undefined, null, 'Z', networkIds)).toBe(
+      undefined,
+    )
     expect(resolveDisplayNetworkId('A', 'B', undefined, [])).toBe(undefined)
   })
 })
@@ -54,5 +57,48 @@ describe('getTabNetworkId / setTabNetworkId', () => {
     setTabNetworkId('A')
     setTabNetworkId('')
     expect(getTabNetworkId()).toBe(undefined)
+  })
+})
+
+describe('resolveInitialNetworkId (CW-514)', () => {
+  const networkIds = ['net-a', 'net-b']
+
+  it('keeps the requested id when its import failed', () => {
+    // The error banner must name the network the user actually asked for,
+    // instead of the app quietly redirecting to an unrelated local network.
+    expect(
+      resolveInitialNetworkId('net-missing', null, 'net-a', networkIds, true),
+    ).toBe('net-missing')
+  })
+
+  it('does not keep a failed id that was not requested via the URL', () => {
+    expect(resolveInitialNetworkId('', null, 'net-a', networkIds, true)).toBe(
+      'net-a',
+    )
+    expect(
+      resolveInitialNetworkId(undefined, null, 'net-a', networkIds, true),
+    ).toBe('net-a')
+  })
+
+  it('resolves normally when the import succeeded', () => {
+    expect(
+      resolveInitialNetworkId('net-b', null, 'net-a', networkIds, false),
+    ).toBe('net-b')
+  })
+
+  it('prefers this tab sessionStorage backstop over the shared field', () => {
+    expect(
+      resolveInitialNetworkId(undefined, 'net-b', 'net-a', networkIds, false),
+    ).toBe('net-b')
+  })
+
+  it('returns empty string when nothing resolves', () => {
+    expect(resolveInitialNetworkId(undefined, null, '', [], false)).toBe('')
+  })
+
+  it('ignores a stale url id that is not in the workspace', () => {
+    expect(
+      resolveInitialNetworkId('net-gone', null, 'net-a', networkIds, false),
+    ).toBe('net-a')
   })
 })

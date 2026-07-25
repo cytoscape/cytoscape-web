@@ -14,6 +14,7 @@ This document identifies lines and areas in `src/db/index.ts` where the code may
 - `Summaries`: Uses `any` but should be `NetworkSummary`
 - `CyNetworkViews`: Uses `any` but stores `{ id: IdType, views: NetworkViewWithRecords[] }`
 - `UiState`: Uses `any` but stores `{ id: string, ...Ui }`
+- `ViewSelections`: Uses `any` but stores `{ id: IdType, selectedNodes: IdType[], selectedEdges: IdType[] }`
 - `Filters`: Uses `any` but stores `{ id: string, ...FilterConfigWithRecords }`
 - `OpaqueAspects`: Uses `any` but stores `OpaqueAspectsDB`
 - `UndoStacks`: Uses `any` but stores `UndoRedoStackDB`

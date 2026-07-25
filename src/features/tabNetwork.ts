@@ -54,6 +54,41 @@ export const resolveDisplayNetworkId = (
   return undefined
 }
 
+/**
+ * Resolve the network this tab shows on initial load.
+ *
+ * Layered on {@link resolveDisplayNetworkId} to add the one case it cannot see:
+ * the user asked for a specific network in the URL and importing it failed.
+ * Then the requested id is kept, so the error banner explains an address the
+ * user recognizes instead of the app silently redirecting to an unrelated local
+ * network (CW-514).
+ *
+ * Keeping an unresolvable id was previously unsafe because it reached the shared
+ * IndexedDB workspace row and so corrupted every tab. It cannot now:
+ * `currentNetworkId` is per-tab and is stripped before that row is written (see
+ * `withoutTabNetworkId` in `WorkspaceStore`).
+ */
+export const resolveInitialNetworkId = (
+  urlNetworkId: string | undefined,
+  sessionNetworkId: string | null | undefined,
+  currentNetworkId: string | undefined,
+  networkIds: readonly string[],
+  urlImportFailed: boolean,
+): string => {
+  const isNetworkIdInUrl = urlNetworkId !== undefined && urlNetworkId !== ''
+  if (isNetworkIdInUrl && urlImportFailed) {
+    return urlNetworkId
+  }
+  return (
+    resolveDisplayNetworkId(
+      urlNetworkId,
+      sessionNetworkId,
+      currentNetworkId,
+      networkIds,
+    ) ?? ''
+  )
+}
+
 /** Read this tab's remembered network id from sessionStorage, if any. */
 export const getTabNetworkId = (): string | undefined => {
   try {

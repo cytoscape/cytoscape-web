@@ -342,7 +342,9 @@ describe('db validator - FilterConfig', () => {
 
   it('accepts a numeric-range filter config', () => {
     const config = { ...validFilterConfig(), range: { min: 0, max: 100 } }
-    expect(validateFilterConfig(config)).toMatchObject({ name: 'status-filter' })
+    expect(validateFilterConfig(config)).toMatchObject({
+      name: 'status-filter',
+    })
   })
 
   it('rejects a filter config with an invalid range shape', () => {

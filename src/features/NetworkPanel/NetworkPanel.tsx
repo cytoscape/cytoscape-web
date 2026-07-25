@@ -70,7 +70,9 @@ const NetworkPanel = ({
   const workspace = useWorkspaceStore((state) => state.workspace)
 
   if (failedToLoad) {
-    return <MessagePanel message={`Failed to load network data: ${failedToLoad}`} />
+    return (
+      <MessagePanel message={`Failed to load network data: ${failedToLoad}`} />
+    )
   }
 
   // If we have a networkId prop, we're expecting a network to load

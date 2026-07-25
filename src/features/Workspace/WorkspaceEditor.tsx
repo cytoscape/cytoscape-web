@@ -322,7 +322,14 @@ const WorkSpaceEditor = (): JSX.Element => {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
-      setFailedToLoad(error !== undefined && error !== null ? String(error) : 'Unknown Error')
+      // Show the message but not raw internals: `String(error)` can surface
+      // stack-ish text, internal URLs, or response bodies. The detail is logged
+      // just above for anyone debugging.
+      setFailedToLoad(
+        error instanceof Error && error.message !== ''
+          ? error.message
+          : 'Unknown error',
+      )
     }
   }
 

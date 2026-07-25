@@ -37,7 +37,7 @@ describe('hydrationContext', () => {
     setHydrating(false)
     setHydrating(false)
     setHydrating(false)
-    
+
     // Counter should be 0, not -3. If it was -3, then one setHydrating(true) would leave it at -2 (still false).
     setHydrating(true)
     expect(isHydrating()).toBe(true)

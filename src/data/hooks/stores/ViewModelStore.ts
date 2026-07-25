@@ -16,13 +16,56 @@ import {
   clearNetworkViewsFromDb,
   deleteNetworkViewsFromDb,
   putNetworkViewsToDb,
+  putViewSelectionToDb,
 } from '../../db'
-import { persistNetworkSlices } from './persistNetworkSlices'
 import { isHydrating } from './hydrationContext'
+import { persistNetworkSlices } from './persistNetworkSlices'
+import { scheduleWrite } from './persistenceScheduler'
 
 // Re-export for compatibility
 export const DEF_VIEW_TYPE = ViewModelImpl.DEF_VIEW_TYPE
 export const getNetworkViewId = ViewModelImpl.getNetworkViewId
+
+/**
+ * Selection is shared across tabs but stored in its own row (DB v11).
+ *
+ * Keeping it inside the view row made every click rewrite the full view model —
+ * node positions and all — and, once cross-tab sync landed, made every other tab
+ * replace its entire view model in response. Writing it separately keeps the
+ * view row byte-identical on a selection change, so dexie-observable records no
+ * change for it and peers hydrate only the two id arrays.
+ *
+ * Reuses the shared 300ms write coalescer, so a burst of clicks is one write.
+ */
+const persistSelection = (networkId: IdType): void => {
+  if (isHydrating()) {
+    return
+  }
+  scheduleWrite(`ViewSelection:${networkId}`, 'ViewModelStore', () => {
+    const views = useViewModelStore.getState().viewModels[networkId]
+    const view = views?.find((v) => v.type !== 'circlePacking') ?? views?.[0]
+    if (view === undefined) {
+      return Promise.resolve()
+    }
+    return putViewSelectionToDb(networkId, {
+      selectedNodes: [...(view.selectedNodes ?? [])],
+      selectedEdges: [...(view.selectedEdges ?? [])],
+    })
+  })
+}
+
+/**
+ * Drop selection from a view before it is written to `cyNetworkViews`.
+ *
+ * Emitting empty arrays rather than omitting the keys keeps the row's shape
+ * stable, so a selection-only change produces an identical row and therefore no
+ * cross-tab change record.
+ */
+const withoutSelection = (view: NetworkView): NetworkView => ({
+  ...view,
+  selectedNodes: [],
+  selectedEdges: [],
+})
 
 const persist = (config: StateCreator<ViewModelStore>) =>
   persistNetworkSlices<ViewModelStore, NetworkView[]>(config, {
@@ -31,7 +74,9 @@ const persist = (config: StateCreator<ViewModelStore>) =>
     putSlice: (networkId, views) => {
       // Store only default view types (node-link diagram); circlePacking
       // views are derived and must never reach IndexedDB
-      const persistable = views.filter((view) => view.type !== 'circlePacking')
+      const persistable = views
+        .filter((view) => view.type !== 'circlePacking')
+        .map(withoutSelection)
       if (persistable.length === 0) {
         return Promise.resolve()
       }
@@ -73,14 +118,16 @@ export const useViewModelStore = create(
                   (viewModel) => viewModel.viewId === networkView.viewId,
                 )
               if (existingViewModel !== undefined) {
-                // Replace the existing one if it already exists, but preserve selection state
+                // Replace the existing one if it already exists, but always
+                // carry selection over. Selection has its own row since v11, so
+                // a view arriving from the DB (or from another tab's change)
+                // carries empty arrays — adopting those would silently clear the
+                // user's selection. Cross-tab selection updates arrive through
+                // the `viewSelections` hydration case instead.
                 const index =
                   state.viewModels[networkId]?.indexOf(existingViewModel)
-                // Preserve existing selection state, UNLESS we are syncing from another tab
-                if (!isHydrating()) {
-                  networkView.selectedNodes = existingViewModel.selectedNodes
-                  networkView.selectedEdges = existingViewModel.selectedEdges
-                }
+                networkView.selectedNodes = existingViewModel.selectedNodes
+                networkView.selectedEdges = existingViewModel.selectedEdges
                 state.viewModels[networkId][index] = networkView
                 return state
               }
@@ -134,6 +181,7 @@ export const useViewModelStore = create(
             )
             return state
           })
+          persistSelection(networkId)
         },
         toggleSelected: (networkId: IdType, eles: IdType[]) => {
           set((state) => {
@@ -149,6 +197,7 @@ export const useViewModelStore = create(
             )
             return state
           })
+          persistSelection(networkId)
         },
 
         // select elements without unselecing anything else
@@ -166,6 +215,7 @@ export const useViewModelStore = create(
             )
             return state
           })
+          persistSelection(networkId)
         },
 
         // unselect elements without selecting anything else
@@ -183,6 +233,7 @@ export const useViewModelStore = create(
             )
             return state
           })
+          persistSelection(networkId)
         },
         setNodePosition(networkId, eleId, position) {
           set((state) => {
@@ -213,12 +264,6 @@ export const useViewModelStore = create(
             )
             return state
           })
-
-          if (!isHydrating()) {
-            const channel = new BroadcastChannel('cyweb-ui-events')
-            channel.postMessage({ type: 'FIT_NETWORK', networkId })
-            channel.close()
-          }
         },
         deleteObjects(networkId, ids) {
           set((state) => {
@@ -236,14 +281,20 @@ export const useViewModelStore = create(
           })
         },
         delete(networkId) {
-          void deleteNetworkViewsFromDb(networkId).then(() => {})
+          // Skip during cross-tab hydration: the peer tab already deleted this
+          // row, so re-deleting it locally only mints another change record.
+          if (!isHydrating()) {
+            void deleteNetworkViewsFromDb(networkId).then(() => {})
+          }
           set((state) => {
             delete state.viewModels[networkId]
             return state
           })
         },
         deleteAll() {
-          void clearNetworkViewsFromDb().then(() => {})
+          if (!isHydrating()) {
+            void clearNetworkViewsFromDb().then(() => {})
+          }
           set((state) => {
             state.viewModels = {}
             return state

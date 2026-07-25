@@ -3,6 +3,7 @@ import 'dexie-observable'
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
+import { getTabId } from '../../init/tabId'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -33,6 +34,7 @@ import {
   validateStoredUiState,
   validateTable,
   validateUndoRedoStackDb,
+  validateViewSelection,
   validateVisualStyle,
   validateWorkspace,
 } from './validator'
@@ -52,7 +54,11 @@ const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 10
+// v11 adds the `viewSelections` store (node/edge selection moved out of the
+// `cyNetworkViews` row — see ViewModelStore). It is a separate version rather
+// than an edit to v10 because v10 already shipped to branch deploys, and Dexie
+// will not re-run a version whose number a client already has on disk.
+const currentVersion: number = 11
 
 /**
  * Predefined object store names.
@@ -82,6 +88,9 @@ export const ObjectStoreNames = {
 
   // From v9
   AppSettings: 'appSettings',
+
+  // From v11
+  ViewSelections: 'viewSelections',
 } as const
 
 // The type derived from the names of object stores
@@ -113,7 +122,53 @@ const Keys = {
   [ObjectStoreNames.UndoStacks]: 'id',
 
   [ObjectStoreNames.AppSettings]: 'key',
+
+  [ObjectStoreNames.ViewSelections]: 'id',
 } as const
+
+/**
+ * Tag every transaction with the id of the tab that opened it.
+ *
+ * dexie-observable copies `trans.source` onto each row it appends to its
+ * `_changes` table, and `db.on('changes')` fires in EVERY tab for EVERY change
+ * — own writes included, because `readChanges()` replays all `_changes` rows
+ * above that tab's own revision. Without an origin marker a tab cannot tell its
+ * own echo from a peer's edit, and re-applying its own write clobbers local
+ * state (the cross-tab selection desync).
+ *
+ * Stamping here rather than at each of the ~34 write helpers means a write
+ * helper added later is tagged by construction; the failure mode of forgetting
+ * one is a re-emergent echo loop, which is exactly the bug that is hard to
+ * trace back to its cause.
+ *
+ * `_createTransaction` is a Dexie internal, and `source` is typed by
+ * dexie-observable (`dexie-observable/api.d.ts`) rather than Dexie itself,
+ * hence the casts. This is the same hook dexie-observable overrides
+ * (dexie-observable.js:60-75), so a Dexie change that moved it would break the
+ * addon first and louder. `db.test.ts` asserts `_changes` rows carry the tab
+ * id, so a silent regression fails the suite instead of shipping. If the hook
+ * ever stops firing, every change reads as foreign and behavior degrades to
+ * self-hydration — wasteful, but not corrupting.
+ */
+const stampTransactionSource = (database: Dexie): void => {
+  const target = database as any
+  const createTransaction = target._createTransaction
+  if (typeof createTransaction !== 'function') {
+    logDb.warn(
+      '[stampTransactionSource] Dexie._createTransaction is unavailable; cross-tab changes will not carry an origin tab id',
+    )
+    return
+  }
+
+  target._createTransaction = function (...args: unknown[]) {
+    const trans = createTransaction.apply(this, args)
+    // Never overwrite an explicit source (e.g. a future sync addon).
+    if (trans !== undefined && trans !== null && trans.source === undefined) {
+      trans.source = getTabId()
+    }
+    return trans
+  }
+}
 
 /**
  * DB will be initialized to the current version.
@@ -138,11 +193,16 @@ class CyDB extends Dexie {
   [ObjectStoreNames.UndoStacks]!: DxTable<any>;
 
   // From v9
-  [ObjectStoreNames.AppSettings]!: DxTable<any>
+  [ObjectStoreNames.AppSettings]!: DxTable<any>;
+
+  // From v11
+  [ObjectStoreNames.ViewSelections]!: DxTable<any>
 
   constructor(dbName: string) {
     super(dbName)
     this.version(currentVersion).stores(Keys)
+
+    stampTransactionSource(this)
 
     // Register upgrade functions before open(); Dexie decides at open time
     // which ones the on-disk version needs
@@ -417,7 +477,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       // TODO: pick the newest one in production
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
-      return observeValidation(`workspace ${lastWs.id}`, lastWs, validateWorkspace)
+      return observeValidation(
+        `workspace ${lastWs.id}`,
+        lastWs,
+        validateWorkspace,
+      )
     }
   }
 
@@ -453,7 +517,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       const allWS: Workspace[] = await db.workspace.toArray()
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning workspace:', lastWs)
-      return observeValidation(`workspace ${lastWs.id}`, lastWs, validateWorkspace)
+      return observeValidation(
+        `workspace ${lastWs.id}`,
+        lastWs,
+        validateWorkspace,
+      )
     }
   }
 }
@@ -572,7 +640,70 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
  * @returns NetworkView[] | undefined
  *
  **/
-export const getNetworkViewsFromDb = async (
+/**
+ * Node/edge selection for one network.
+ *
+ * Stored apart from `cyNetworkViews` (v11). Selection is the highest-frequency
+ * thing a user changes, and while it lived inside the view row every click
+ * rewrote the whole view model — node positions included — and made every other
+ * tab replace its view model on hydration. Splitting it means a click writes a
+ * couple of id arrays, and the view row it no longer touches stays
+ * byte-identical, so dexie-observable records no change for it at all.
+ */
+export interface ViewSelection {
+  selectedNodes: IdType[]
+  selectedEdges: IdType[]
+}
+
+export const getViewSelectionFromDb = async (
+  id: IdType,
+): Promise<ViewSelection | undefined> => {
+  const entry = await db.viewSelections.get({ id })
+  if (entry === undefined) {
+    return undefined
+  }
+  return observeValidation(
+    `view selection ${id}`,
+    { selectedNodes: entry.selectedNodes, selectedEdges: entry.selectedEdges },
+    validateViewSelection,
+  )
+}
+
+export const putViewSelectionToDb = async (
+  id: IdType,
+  selection: ViewSelection,
+): Promise<void> => {
+  try {
+    await db.viewSelections.put({
+      id,
+      selectedNodes: [...selection.selectedNodes],
+      selectedEdges: [...selection.selectedEdges],
+    })
+  } catch (e) {
+    logDb.error('[putViewSelectionToDb] error:', e, id)
+    throw e
+  }
+}
+
+export const deleteViewSelectionFromDb = async (id: IdType): Promise<void> => {
+  await db.viewSelections.delete(id)
+}
+
+export const clearViewSelectionsFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.viewSelections, async () => {
+    await db.viewSelections.clear()
+  })
+}
+
+/**
+ * Read a network's views, with selection merged back in from `viewSelections`.
+ *
+ * Merging here rather than at each call site keeps `NetworkView` whole for
+ * consumers, so the v11 split is invisible above the DB layer. Rows written
+ * before v11 still carry their own selection; it is used when no selection row
+ * exists yet.
+ */
+const readNetworkViewsRow = async (
   id: IdType,
 ): Promise<NetworkView[] | undefined> => {
   const entry = await db.cyNetworkViews.get({ id })
@@ -582,7 +713,33 @@ export const getNetworkViewsFromDb = async (
       deserializeNetworkView(v),
       validateNetworkView,
     ),
-  ) as NetworkView[]
+  ) as NetworkView[] | undefined
+}
+
+export const getNetworkViewsFromDb = async (
+  id: IdType,
+): Promise<NetworkView[] | undefined> => {
+  const views = await readNetworkViewsRow(id)
+  if (views === undefined) {
+    return undefined
+  }
+
+  const storedSelection = await getViewSelectionFromDb(id)
+
+  return views.map((view) => {
+    const selection =
+      storedSelection ??
+      ({
+        // Pre-v11 rows kept selection inline
+        selectedNodes: view.selectedNodes ?? [],
+        selectedEdges: view.selectedEdges ?? [],
+      } satisfies ViewSelection)
+    return {
+      ...view,
+      selectedNodes: selection.selectedNodes,
+      selectedEdges: selection.selectedEdges,
+    }
+  })
 }
 /**
  * Add a new network view to the DB
@@ -603,7 +760,7 @@ export const putNetworkViewToDb = async (
         )
         return
       }
-      const viewList = await getNetworkViewsFromDb(id)
+      const viewList = await readNetworkViewsRow(id)
       if (viewList !== undefined) {
         // Add only if the view does not exist
         let found = false
@@ -678,6 +835,7 @@ export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.delete(id)
   })
+  await deleteViewSelectionFromDb(id)
 }
 
 /**
@@ -687,6 +845,7 @@ export const clearNetworkViewsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.clear()
   })
+  await clearViewSelectionsFromDb()
 }
 
 // UI State
@@ -716,9 +875,6 @@ export const deleteUiStateFromDb = async (): Promise<void> => {
     await db.uiState.delete(DEFAULT_UI_STATE_ID)
   })
 }
-
-export const DEFAULT_TIMESTAMP_ID = 'timestamp'
-
 
 /**
  * Store filter settings to the DB

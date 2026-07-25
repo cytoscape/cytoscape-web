@@ -19,13 +19,27 @@ import {
   TableDisplayConfiguration,
   VisualStyleOptions,
 } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import {
+  saveTabViewState,
+  withoutTabViewState,
+} from '../../../features/tabViewState'
 import { putUiStateToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
 
+/**
+ * Persist UI state, splitting it by ownership.
+ *
+ * Per-tab view state (panels, active tab indices, transient dialogs) goes to
+ * this tab's sessionStorage; only genuinely shared fields — column widths,
+ * visual style options, custom tab names — reach the IndexedDB row that all
+ * tabs read. See `src/features/tabViewState.ts` for why the split lives here
+ * rather than in the cross-tab hydration path.
+ */
 const persistUiState = (ui: Ui) => {
+  saveTabViewState(ui)
   if (!isHydrating()) {
-    void putUiStateToDb(toPlainObject(ui))
+    void putUiStateToDb(toPlainObject(withoutTabViewState(ui)))
   }
 }
 

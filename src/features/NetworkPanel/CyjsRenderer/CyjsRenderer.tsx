@@ -41,6 +41,7 @@ import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { registerCyExtensions } from './registerCyExtensions'
+import { isGraphVisible } from './viewportRecovery'
 
 registerCyExtensions()
 
@@ -975,9 +976,12 @@ const CyjsRenderer = ({
         }
       })
       if (viewCount === cyNodeCount) {
-        // Only fit if no saved viewport exists, otherwise preserve the current viewport
+        // Only fit if no saved viewport exists, otherwise preserve the current
+        // viewport — unless the new positions have moved the graph completely
+        // out of frame, which is the one case where holding the camera still
+        // leaves the user staring at blank canvas.
         const savedViewport = getViewport('cyjs', id)
-        if (!savedViewport) {
+        if (!savedViewport || !isGraphVisible(cy)) {
           cy.fit()
         }
       }

@@ -2,10 +2,7 @@ import { StateCreator, StoreApi } from 'zustand'
 
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
-import {
-  cancelWrite,
-  scheduleWrite,
-} from './persistenceScheduler'
+import { cancelWrite, scheduleWrite } from './persistenceScheduler'
 import { isHydrating } from './hydrationContext'
 
 /**
