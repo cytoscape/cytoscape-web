@@ -143,7 +143,7 @@ export const layoutApi: LayoutApi = {
 
       // 7. Apply layout — callback-based; wrap in Promise
       return new Promise<ApiResult>((resolve) => {
-        engine.apply(
+        const applyResult = engine.apply(
           network.nodes,
           network.edges,
           (positionMap: Map<IdType, [number, number]>) => {
@@ -198,6 +198,18 @@ export const layoutApi: LayoutApi = {
           },
           algorithm,
         )
+
+        if (applyResult instanceof Promise) {
+          applyResult.catch((err) => {
+            useLayoutStore.getState().setIsRunning(false)
+            resolve(
+              fail(
+                AppCodes.OPERATION_FAILED,
+                `Layout engine failed to load: ${String(err)}`,
+              ),
+            )
+          })
+        }
       })
     } catch (e) {
       useLayoutStore.getState().setIsRunning(false)

@@ -26,8 +26,8 @@ export const G6Layout: LayoutEngine = {
     edges: Edge[],
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
     algorithm: LayoutAlgorithm,
-  ): void => {
-    import('@antv/g6')
+  ): Promise<void> => {
+    return import('@antv/g6')
       .then(({ default: G6 }) => {
         const graph = new G6.Graph({
           container: dummyContainer,
@@ -50,9 +50,6 @@ export const G6Layout: LayoutEngine = {
           graph.destroy()
         })
         graph.render()
-      })
-      .catch((err) => {
-        console.error('Failed to load G6 engine', err)
       })
   },
 }
