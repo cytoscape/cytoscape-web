@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight } from '@mui/icons-material'
+import ChevronLeft from '@mui/icons-material/ChevronLeft'
+import ChevronRight from '@mui/icons-material/ChevronRight'
 import PaletteIcon from '@mui/icons-material/Palette'
 import ShareIcon from '@mui/icons-material/Share'
 import { Box, IconButton, Tab, Tabs, Tooltip } from '@mui/material'
