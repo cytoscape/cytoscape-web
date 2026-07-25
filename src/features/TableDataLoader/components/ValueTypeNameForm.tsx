@@ -10,7 +10,7 @@ import {
 
 import { ValueTypeName } from '../../../models/TableModel'
 import { DelimiterType } from '../model/DelimiterType'
-import { valueTypeName2Label } from '../model/impl/CreateNetworkFromTable'
+import { valueTypeNameLabel as valueTypeName2Label } from '../../../models/TableModel/impl/valueTypeNameDisplay'
 
 export interface ValueTypeFormProps {
   value: ValueTypeName
