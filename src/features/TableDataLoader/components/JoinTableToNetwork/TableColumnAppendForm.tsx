@@ -509,7 +509,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
                             label={`Column '${h.name}' has ${
                               h.invalidValues.length
                             } values that cannot be parsed as type ${
-                              valueTypeName2Label[h.dataType]
+                              valueTypeName2Label(h.dataType)
                             }`}
                           >
                             <IconAlertCircle size={20} color="red" />

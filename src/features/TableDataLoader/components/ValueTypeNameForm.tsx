@@ -29,7 +29,7 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
           .filter((x) => !x.startsWith('list_'))
           .map((v) => {
             return (
-              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label[v]}>
+              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label(v)}>
                 <Button
                   style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
                   disabled={!validValues.includes(v)}
@@ -50,7 +50,7 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
           .filter((x) => x.startsWith('list_'))
           .map((v) => {
             return (
-              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label[v]}>
+              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label(v)}>
                 <Button
                   style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
                   disabled={!validValues.includes(v)}
@@ -119,7 +119,7 @@ export const valueTypeNameRenderMap = {
 
 export function ValueTypeNameRenderCompact(props: { value: ValueTypeName }) {
   return (
-    <Tooltip zIndex={2001} label={valueTypeName2Label[props.value]}>
+    <Tooltip zIndex={2001} label={valueTypeName2Label(props.value)}>
       <Button
         justify="flex-start"
         size="compact-xs"
@@ -138,7 +138,7 @@ export function ValueTypeNameRender(props: { value: ValueTypeName }) {
       leftSection={valueTypeNameRenderMap[props.value]}
       variant="default"
     >
-      {valueTypeName2Label[props.value]}
+      {valueTypeName2Label(props.value)}
     </Button>
   )
 }
