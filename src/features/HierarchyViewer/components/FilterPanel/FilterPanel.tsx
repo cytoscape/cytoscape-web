@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
+import { isEqual } from 'lodash'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -170,12 +171,6 @@ export const FilterPanel = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only URL-param init; re-runs would clobber the toggle
   }, [])
 
-  /**
-   * Add visual mapping to the filter config
-   *
-   * `selectedFilter` must NOT be a dependency: this effect writes it back via
-   * updateFilterConfig with a fresh object, so adding it would loop forever.
-   */
   useEffect(() => {
     if (selectedFilter === undefined) return
 
@@ -183,8 +178,10 @@ export const FilterPanel = () => {
 
     if (visualMapping === undefined) return
 
-    const newFilterConfig = { ...selectedFilter, visualMapping }
-    updateFilterConfig(newFilterConfig.name, newFilterConfig)
+    if (!isEqual(selectedFilter.visualMapping, visualMapping)) {
+      const newFilterConfig = { ...selectedFilter, visualMapping }
+      updateFilterConfig(newFilterConfig.name, newFilterConfig)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- vs trigger only; selectedFilter is written here (loop)
   }, [vs])
 
@@ -210,8 +207,11 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     if (currentConfig !== undefined) {
-      const newConfig = { ...currentConfig, visualMapping }
-      updateFilterConfig(newConfig.name, newConfig)
+      if (!isEqual(currentConfig.visualMapping, visualMapping)) {
+        const newConfig = { ...currentConfig, visualMapping }
+        updateFilterConfig(newConfig.name, newConfig)
+      }
+      
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
       searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
       searchParams.set(
