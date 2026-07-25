@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
-import { isEqual } from 'lodash'
+import isEqual from 'lodash/isEqual'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 

@@ -1,4 +1,3 @@
-import OpenAI from 'openai'
 
 import { logApi } from '../../../debug'
 import testGPTResponse from '../model/gpt-4-0613-response.json'
@@ -10,6 +9,7 @@ export const analyzeSubsystemGeneSet = async (
   model: LLMModel,
   mock = false,
 ): Promise<string> => {
+  const { default: OpenAI } = await import('openai')
   const openai = new OpenAI({
     apiKey,
     dangerouslyAllowBrowser: true,

@@ -1,4 +1,4 @@
-import G6, { EdgeConfig, GraphData, LayoutConfig,NodeConfig } from '@antv/g6'
+import type { EdgeConfig, GraphData, LayoutConfig, NodeConfig } from '@antv/g6'
 
 import { IdType } from '../../../IdType'
 import { Edge,Node } from '../../../NetworkModel'
@@ -27,27 +27,33 @@ export const G6Layout: LayoutEngine = {
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
     algorithm: LayoutAlgorithm,
   ): void => {
-    const graph = new G6.Graph({
-      container: dummyContainer,
-      width: 4000,
-      height: 4000,
-      layout: algorithm.parameters as LayoutConfig,
-    })
+    import('@antv/g6')
+      .then(({ default: G6 }) => {
+        const graph = new G6.Graph({
+          container: dummyContainer,
+          width: 4000,
+          height: 4000,
+          layout: algorithm.parameters as LayoutConfig,
+        })
 
-    graph.data(transform(nodes, edges))
-    graph.on('afterlayout', () => {
-      const positions = new Map<IdType, [number, number]>()
-      const g6Nodes = graph.getNodes()
-      g6Nodes.forEach((g6Node) => {
-        const id = g6Node.getModel().id as string
-        const { x, y } = g6Node.getModel()
+        graph.data(transform(nodes, edges))
+        graph.on('afterlayout', () => {
+          const positions = new Map<IdType, [number, number]>()
+          const g6Nodes = graph.getNodes()
+          g6Nodes.forEach((g6Node) => {
+            const id = g6Node.getModel().id as string
+            const { x, y } = g6Node.getModel()
 
-        positions.set(id, [x as number, y as number])
+            positions.set(id, [x as number, y as number])
+          })
+          afterLayout(positions)
+          graph.destroy()
+        })
+        graph.render()
       })
-      afterLayout(positions)
-      graph.destroy()
-    })
-    graph.render()
+      .catch((err) => {
+        console.error('Failed to load G6 engine', err)
+      })
   },
 }
 
