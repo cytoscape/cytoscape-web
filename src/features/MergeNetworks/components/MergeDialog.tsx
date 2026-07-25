@@ -1,15 +1,13 @@
 import { styled } from '@mui/material/styles'
-import {
-  ArrowBack as ArrowBackIcon,
-  ArrowDownward as ArrowDownwardIcon,
-  ArrowForward as ArrowForwardIcon,
-  ArrowUpward as ArrowUpwardIcon,
-  ExpandMore as ExpandMoreIcon,
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
-  Help as HelpIcon,
-  Star as StarIcon,
-} from '@mui/icons-material'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import FullscreenIcon from '@mui/icons-material/Fullscreen'
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
+import HelpIcon from '@mui/icons-material/Help'
+import StarIcon from '@mui/icons-material/Star'
 import ReportGmailerrorredIcon from '@mui/icons-material/ReportGmailerrorred'
 import {
   Accordion,
