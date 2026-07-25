@@ -38,17 +38,25 @@ export const CosmosLayout: LayoutEngine = {
       })
       graph.setData(cNodes, links)
 
-      setTimeout(() => {
-        graph.pause()
-        const posMap = graph.getNodePositionsMap()
+      return new Promise<void>((resolve, reject) => {
+        setTimeout(() => {
+          try {
+            graph.pause()
+            const posMap = graph.getNodePositionsMap()
 
-        const scaledPosMap = new Map<IdType, [number, number]>()
-        posMap.forEach((value, key) => {
-          scaledPosMap.set(key, [value[0] * 10, value[1] * 10])
-        })
-        afterLayout(scaledPosMap)
+            const scaledPosMap = new Map<IdType, [number, number]>()
+            posMap.forEach((value, key) => {
+              scaledPosMap.set(key, [value[0] * 10, value[1] * 10])
+            })
+            afterLayout(scaledPosMap)
+            resolve()
+          } catch (err) {
+            reject(err)
+          }
+        }, 2400)
+      }).finally(() => {
         graph.destroy()
-      }, 2400)
+      })
     })
   },
 }
