@@ -41,7 +41,12 @@ describe('FilterPanel', () => {
       ui: { activeNetworkView: targetNetworkId } as any,
     })
     
-    const visualMapping = {
+    const visualMappingForStore = {
+      type: 'discrete',
+      attribute: 'interaction',
+    } as any
+
+    const visualMappingForStyle = {
       type: 'discrete',
       attribute: 'interaction',
     } as any
@@ -55,7 +60,7 @@ describe('FilterPanel', () => {
           type: 'checkbox',
           displayMode: DisplayMode.SELECT,
           targetObjectType: GraphObjectType.EDGE,
-          visualMapping,
+          visualMapping: visualMappingForStore,
         } as any,
       },
     })
@@ -73,7 +78,7 @@ describe('FilterPanel', () => {
       visualStyles: {
         [targetNetworkId]: {
           edgeLineColor: {
-            mapping: visualMapping
+            mapping: visualMappingForStyle
           }
         } as any,
       },

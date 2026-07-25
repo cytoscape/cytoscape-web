@@ -10,6 +10,7 @@ import {
   Typography,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
+import { isEqual } from 'lodash'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -177,10 +178,7 @@ export const FilterPanel = () => {
 
     if (visualMapping === undefined) return
 
-    const currentMappingStr = JSON.stringify(selectedFilter.visualMapping)
-    const newMappingStr = JSON.stringify(visualMapping)
-    
-    if (currentMappingStr !== newMappingStr) {
+    if (!isEqual(selectedFilter.visualMapping, visualMapping)) {
       const newFilterConfig = { ...selectedFilter, visualMapping }
       updateFilterConfig(newFilterConfig.name, newFilterConfig)
     }
@@ -209,10 +207,7 @@ export const FilterPanel = () => {
     const visualMapping = getMapping(vs, targetAttrName)
 
     if (currentConfig !== undefined) {
-      const currentMappingStr = JSON.stringify(currentConfig.visualMapping)
-      const newMappingStr = JSON.stringify(visualMapping)
-      
-      if (currentMappingStr !== newMappingStr) {
+      if (!isEqual(currentConfig.visualMapping, visualMapping)) {
         const newConfig = { ...currentConfig, visualMapping }
         updateFilterConfig(newConfig.name, newConfig)
       }
