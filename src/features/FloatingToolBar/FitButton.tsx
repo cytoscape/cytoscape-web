@@ -1,4 +1,4 @@
-import { ZoomOutMap } from '@mui/icons-material'
+import ZoomOutMap from '@mui/icons-material/ZoomOutMap'
 import { Box, IconButton, Tooltip } from '@mui/material'
 
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'

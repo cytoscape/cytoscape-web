@@ -1,4 +1,4 @@
-import { Share } from '@mui/icons-material'
+import Share from '@mui/icons-material/Share'
 import { IconButton, Tooltip } from '@mui/material'
 import { useContext } from 'react'
 import { useSearchParams } from 'react-router-dom'
