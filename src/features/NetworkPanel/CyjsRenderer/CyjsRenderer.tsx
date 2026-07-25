@@ -318,6 +318,20 @@ const CyjsRenderer = ({
       return
     }
 
+    // The node/edge tables and the visual style are dereferenced unconditionally
+    // below. A network can be present without them: `cyNetworks`, `cyTables` and
+    // `cyVisualStyles` are separate IndexedDB rows, so cross-tab hydration can
+    // deliver them in different batches, and a delete can remove them while this
+    // renderer is still mounted. NetworkPanel already waits for the tables before
+    // mounting; this is the backstop for the other mount paths (NetworkTabs) and
+    // for data disappearing mid-session.
+    if (table === undefined || vs === undefined) {
+      logUi.info(
+        `[${CyjsRenderer.name}]: Skipping render of ${id} — table or visual style not loaded yet`,
+      )
+      return
+    }
+
     // Mark the view as not yet created to avoid unnecessary style updates during initialization
     isViewCreated.current = false
 
@@ -1185,6 +1199,24 @@ const CyjsRenderer = ({
       }
     },
     [cy],
+  )
+
+  /**
+   * Effect: render once the table and visual style arrive.
+   *
+   * `renderNetwork` bails when either is missing (they are separate IndexedDB
+   * rows, so cross-tab hydration can deliver them after the network). Without
+   * this, nothing would re-trigger the render and the canvas would stay blank —
+   * none of the other render triggers watch these two.
+   */
+  useEffect(
+    function onNetworkDataCompleted() {
+      if (cy === null || table === undefined || vs === undefined) {
+        return
+      }
+      renderNetworkRef.current()
+    },
+    [cy, table, vs],
   )
 
   /**

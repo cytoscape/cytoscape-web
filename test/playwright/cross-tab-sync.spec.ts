@@ -204,10 +204,28 @@ test.describe('cross-tab synchronization', () => {
     const networkId = await firstNetworkId(tabA)
     expect(networkId).not.toBe('')
 
-    // Both tabs must have the network loaded before selection can apply.
+    // Tab B must have the network's VIEW MODEL loaded, not merely its summary.
+    // Hydration deliberately skips applying a selection for a network this tab
+    // has not opened, and `getSelection` fails without a view model — so assert
+    // on that precondition rather than racing it. A reload makes tab B resolve
+    // and load the network through its normal init path.
+    await tabB.reload()
+    await expect(tabB.locator('[data-testid="app-shell"]')).toBeVisible({
+      timeout: 15000,
+    })
     await expect
-      .poll(async () => await firstNetworkId(tabB), { timeout: 15_000 })
-      .toBe(networkId)
+      .poll(
+        async () =>
+          await tabB.evaluate(
+            ({ id }) => {
+              const api = (window as any).CyWebApi
+              return api?.selection?.getSelection(id)?.success === true
+            },
+            { id: networkId },
+          ),
+        { timeout: 20_000 },
+      )
+      .toBe(true)
 
     const selected = await tabA.evaluate(
       ({ id }) => {

@@ -79,14 +79,27 @@ export const resolveInitialNetworkId = (
   if (isNetworkIdInUrl && urlImportFailed) {
     return urlNetworkId
   }
-  return (
-    resolveDisplayNetworkId(
-      urlNetworkId,
-      sessionNetworkId,
-      currentNetworkId,
-      networkIds,
-    ) ?? ''
+
+  const resolved = resolveDisplayNetworkId(
+    urlNetworkId,
+    sessionNetworkId,
+    currentNetworkId,
+    networkIds,
   )
+  if (resolved !== undefined) {
+    return resolved
+  }
+
+  // Nothing per-tab to go on: a genuinely new tab, or one opened at the bare
+  // workspace URL. Open the workspace's first network rather than nothing.
+  //
+  // This fallback used to come for free from the shared `currentNetworkId`, but
+  // that field is no longer persisted (it is per-tab now — see
+  // `withoutTabNetworkId` in WorkspaceStore), so the shared row always reports
+  // ''. Without this, every fresh tab landed on "No network selected" even
+  // though the workspace had networks. Matches the fallback cross-tab hydration
+  // uses when a tab's network is deleted, so both paths agree.
+  return networkIds[0] ?? ''
 }
 
 /** Read this tab's remembered network id from sessionStorage, if any. */

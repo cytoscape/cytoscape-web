@@ -92,8 +92,29 @@ describe('resolveInitialNetworkId (CW-514)', () => {
     ).toBe('net-b')
   })
 
-  it('returns empty string when nothing resolves', () => {
+  it('returns empty string when the workspace has no networks', () => {
     expect(resolveInitialNetworkId(undefined, null, '', [], false)).toBe('')
+  })
+
+  /**
+   * Regression: a fresh tab used to fall back to the shared `currentNetworkId`.
+   * That field is no longer persisted (it is per-tab now), so the shared row
+   * always reports '' and every new tab landed on "No network selected" despite
+   * having networks. Caught by the two-tab e2e suite.
+   */
+  it('opens the first workspace network when there is no per-tab signal', () => {
+    expect(
+      resolveInitialNetworkId(undefined, null, '', networkIds, false),
+    ).toBe('net-a')
+  })
+
+  it('still prefers a per-tab signal over the first-network fallback', () => {
+    expect(
+      resolveInitialNetworkId(undefined, 'net-b', '', networkIds, false),
+    ).toBe('net-b')
+    expect(resolveInitialNetworkId('net-b', null, '', networkIds, false)).toBe(
+      'net-b',
+    )
   })
 
   it('ignores a stale url id that is not in the workspace', () => {
