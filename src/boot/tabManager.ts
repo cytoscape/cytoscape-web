@@ -1,128 +1,48 @@
 /**
- * This is an experimental module to manage multiple instances
- * of Cytoscape Web in different tabs.
+ * Gives this browser tab a stable, addressable identity.
  *
- * Currently, just manages the tab IDs for external applications
+ * The id is written to `window.name` so an external web application can focus
+ * an existing Cytoscape Web tab with `window.open(url, tabId)` and push a
+ * network into it, instead of spawning a new tab. That is the entire contract;
+ * the predecessor set a single fixed `window.name` for every tab, which is why
+ * unique ids were needed.
+ *
+ * NOT related to Cytoscape Desktop integration — that runs the other way
+ * (OpenNetworkInCytoscapeMenuItem -> CyNDEx/CyREST) and never touches
+ * window.name. A native application cannot target a named browser window at
+ * all, so this could not serve a Desktop-to-Web handoff even in principle.
+ *
+ * Not related to cross-tab data sync either: that is dexie-observable's
+ * `db.on('changes')`, wired up in SyncTabs.tsx.
+ *
+ * History: this module used to maintain an `activeTabs` Set fed by six
+ * BroadcastChannel message types (created/active/alive/inactive/closed/reload).
+ * The Set was function-local and never read by anything — it could not be,
+ * having no accessor — so the entire channel existed to keep a variable up to
+ * date that nobody could observe. Removed. If a tab census is wanted later, it
+ * needs a real consumer designed alongside it.
  */
 
 import { logStartup } from '../debug'
 
-/**
- * Generates a channel name based on the current hostname and port
- *
- * @returns a name for the channel based on the current hostname and port
- */
-const generateChannelName = (): string => {
-  const domain = window.location.hostname
-  const port = window.location.port
-  const hostWithPort = port ? `${domain}-${port}` : domain
-
-  const cleanName = hostWithPort.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-
-  return `cytoscape-${cleanName}-channel`
-}
-
-const CHANNEL_NAME: string = generateChannelName()
-
-logStartup.info(
-  `[tab-manager.ts]:[${generateChannelName.name}]: Cytoscape Web's current active broadcast channel name:`,
-  CHANNEL_NAME,
-)
-
-const CYWEB_PREFIX: string = 'cyweb'
-
-const TabMessageType = {
-  CREATED: `${CYWEB_PREFIX}-tab-created`,
-  ACTIVE: `${CYWEB_PREFIX}-tab-active`,
-  ALIVE: `${CYWEB_PREFIX}-tab-alive`,
-  INACTIVE: `${CYWEB_PREFIX}-tab-inactive`,
-  FOCUSED: `${CYWEB_PREFIX}-tab-focused`,
-  CLOSED: `${CYWEB_PREFIX}-tab-closed`,
-  RELOAD: `${CYWEB_PREFIX}-tab-reload`,
-} as const
-
-type TabMessageType = (typeof TabMessageType)[keyof typeof TabMessageType]
-
-interface TabMessage {
-  type: TabMessageType
-  tabId: string
-}
+const CYWEB_PREFIX = 'cyweb'
 
 /**
- * Basic tab manager for Cytoscape Web
+ * Returns this tab's id, reusing the existing one across reloads.
  *
- * @param channelName the name of the broadcast channel for the given domain
- *
- * @returns the tab ID for the current tab
+ * `window.name` survives reloads and same-tab navigations, so a tab keeps its
+ * identity — an external app's saved handle stays valid.
  */
-export const initializeTabManager = (
-  channelName: string = CHANNEL_NAME,
-): string => {
-  // Check window.name for the tab ID
+export const initializeTabManager = (): string => {
   const windowName = window.name
-  let tabId = `${CYWEB_PREFIX}-${Date.now()}`
+  const tabId =
+    windowName && windowName.startsWith(`${CYWEB_PREFIX}-`)
+      ? windowName
+      : `${CYWEB_PREFIX}-${Date.now()}`
 
-  // Reuse the tab ID if it's already set by Cytoscape Web
-  if (windowName && windowName.startsWith(CYWEB_PREFIX + '-')) {
-    tabId = windowName
-  }
-
-  const activeTabs = new Set<string>()
-  const channel = new BroadcastChannel(channelName)
-
-  // Add to the ID set
-  activeTabs.add(tabId)
-
-  const newTabCreated: TabMessage = { type: TabMessageType.CREATED, tabId }
-  channel.postMessage(newTabCreated)
-
-  // Send a message to all other tabs to announce this tab will be reloading
-  window.addEventListener('beforeunload', () => {
-    // Tell others that this tab is closing / reloading
-    const message: TabMessage = { type: TabMessageType.RELOAD, tabId }
-    channel.postMessage(message)
-  })
-
-  document.addEventListener('visibilitychange', () => {
-    const isVisible = !document.hidden
-    if (isVisible) {
-      logStartup.info(
-        `[tab-manager.ts]:[onVisibilitychange]: Current Cytoscape Instance: ${tabId} isVisible: ${isVisible}`,
-      )
-      channel.postMessage({ type: TabMessageType.ACTIVE, tabId })
-    } else {
-      channel.postMessage({ type: TabMessageType.INACTIVE, tabId })
-    }
-  })
-
-  channel.onmessage = (event) => {
-    const message = event.data as TabMessage
-
-    switch (message.type) {
-      case TabMessageType.CREATED:
-        activeTabs.add(message.tabId)
-        if (message.tabId !== tabId) {
-          channel.postMessage({ type: TabMessageType.ALIVE, tabId })
-        }
-        break
-      case TabMessageType.ACTIVE:
-        activeTabs.add(message.tabId)
-        break
-      case TabMessageType.ALIVE:
-        activeTabs.add(message.tabId)
-        break
-      case TabMessageType.CLOSED:
-      case TabMessageType.RELOAD:
-        activeTabs.delete(message.tabId)
-        break
-    }
-  }
-
-  // Window name of this instance based on the current time
   window.name = tabId
   logStartup.info(
-    `[tab-manager.ts]:[${initializeTabManager.name}]: Cytoscape window name initialized. Use this as the target when you open this tab again.`,
-    window.name,
+    `[boot]: tab id ${tabId} (use as the window.open target to focus this tab)`,
   )
 
   return tabId

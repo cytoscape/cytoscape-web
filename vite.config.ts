@@ -98,6 +98,39 @@ function bootShellPlugin(): Plugin {
       // Tolerate both "/cytoscape" and "/cytoscape/" style config values
       const base = ensureTrailingSlash(config.urlBaseName)
 
+      // Warm the TLS handshake for the origins the boot actually talks to:
+      // Keycloak's silent-SSO iframe and NDEx. Both are on the critical path
+      // and both are cross-origin, so without this the connection setup is
+      // paid serially at the moment of first use. (These existed in the
+      // earlier static boot shell and were lost when it became a chunk.)
+      const preconnectOrigins = [
+        ...new Set(
+          [config.keycloakConfig?.url, config.ndexBaseUrl]
+            .filter((url): url is string => typeof url === 'string' && url !== '')
+            .map((url) => {
+              try {
+                // ndexBaseUrl is stored bare ("dev1.ndexbio.org")
+                return new URL(url.includes('://') ? url : `https://${url}`).origin
+              } catch {
+                return undefined
+              }
+            })
+            .filter((origin): origin is string => origin !== undefined),
+        ),
+      ]
+
+      if (preconnectOrigins.length > 0) {
+        html = html.replace(
+          '</head>',
+          `${preconnectOrigins
+            .map(
+              (origin) =>
+                `<link rel="preconnect" href="${origin}" crossorigin><link rel="dns-prefetch" href="${origin}">`,
+            )
+            .join('')}</head>`,
+        )
+      }
+
       const findChunk = (facadeSuffix: string) => {
         const chunk = Object.values(bundle).find(
           (c) =>

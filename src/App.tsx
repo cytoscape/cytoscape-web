@@ -25,8 +25,22 @@ import { KeycloakContext } from '@/boot/keycloak'
 import { theme } from './theme'
 
 
-const AppShell = React.lazy(() => import('./features/AppShell'))
-const WorkspaceEditor = React.lazy(() => import('./features/Workspace/WorkspaceEditor'))
+// Started at module load rather than on first render, mirroring AppBootstrap's
+// prefetch of the App chunk. React.lazy alone requests a chunk only when its
+// boundary first renders.
+//
+// The WorkspaceEditor prefetch is the one that pays: its boundary does not
+// render until AppShell's boot navigates to /:workspaceId, so without this its
+// download does not even begin until the workspace is already hydrated.
+// Measured on a production build at 4Mbps/100ms (median of 5 cold loads),
+// workspace-editor-mounted goes 4359ms -> 4148ms. AppShell's own prefetch is
+// close to free (3206ms -> 3194ms) because its boundary renders immediately;
+// it is kept for symmetry and for slower links.
+const appShellPromise = import('./features/AppShell')
+const workspaceEditorPromise = import('./features/Workspace/WorkspaceEditor')
+
+const AppShell = React.lazy(() => appShellPromise)
+const WorkspaceEditor = React.lazy(() => workspaceEditorPromise)
 
 const routerOpts: any = {}
 
