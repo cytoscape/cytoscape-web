@@ -264,7 +264,12 @@ export const useRunTask = (): ((
     }: RunTaskProps): Promise<CytoContainerResult> => {
       // Prepare the task request with user-selected data
       let data: JsonNode = {}
-      if (serviceInputDefinition !== undefined) {
+      // A service app with input type 'none' declines any data payload; only
+      // its parameter options are sent (CW-468).
+      if (
+        serviceInputDefinition !== undefined &&
+        serviceInputDefinition.type !== SelectedDataType.None
+      ) {
         const { type, scope, inputNetwork, inputColumns } =
           serviceInputDefinition
         if (inputNetwork !== null && network !== undefined) {

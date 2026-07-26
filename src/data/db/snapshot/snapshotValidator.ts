@@ -39,10 +39,14 @@ export interface SnapshotValidationResult {
  * Validates the structure of a database snapshot object.
  *
  * @param snapshot - The database snapshot object to validate
+ * @param rawLength - Length of the ORIGINAL serialized snapshot, when the
+ *   caller has it (avoids re-stringifying the whole snapshot for the size
+ *   check)
  * @returns Validation result with errors and warnings
  */
 export const validateSnapshotStructure = (
   snapshot: any,
+  rawLength?: number,
 ): SnapshotValidationResult => {
   const errors: string[] = []
   const warnings: string[] = []
@@ -172,21 +176,16 @@ export const validateSnapshotStructure = (
     }
   }
 
-  // Check for suspicious patterns (security)
-  const snapshotString = JSON.stringify(snapshot)
-  if (snapshotString.length > MAX_SNAPSHOT_SIZE_BYTES) {
+  // Size check against the ORIGINAL serialized length when the caller
+  // provides it. (This used to re-JSON.stringify the entire parsed
+  // snapshot — a full extra main-thread pass over up to 100MB that
+  // doubled peak memory, just to re-measure a size the caller already
+  // knew; REVIEW.md A6. Prototype-pollution protection does not need a
+  // string scan either: sanitizeRecord strips dangerous keys from every
+  // record before it reaches Dexie.)
+  if (rawLength !== undefined && rawLength > MAX_SNAPSHOT_SIZE_BYTES) {
     errors.push(
-      `Snapshot size (${snapshotString.length} bytes) exceeds maximum allowed size (${MAX_SNAPSHOT_SIZE_BYTES} bytes)`,
-    )
-  }
-
-  // Check for potential prototype pollution
-  if (
-    snapshotString.includes('__proto__') ||
-    snapshotString.includes('constructor')
-  ) {
-    warnings.push(
-      'Snapshot contains potentially suspicious patterns. Proceed with caution.',
+      `Snapshot size (${rawLength} bytes) exceeds maximum allowed size (${MAX_SNAPSHOT_SIZE_BYTES} bytes)`,
     )
   }
 
@@ -305,6 +304,26 @@ export const sanitizeRecord = (record: any): any => {
 
   if (typeof record !== 'object') {
     return record
+  }
+
+  // Preserve rich values restored by the snapshot reviver (REVIEW.md R2-6).
+  // They carry no enumerable own properties, so the generic copy below
+  // would silently turn them into {}. Map/Set contents are sanitized
+  // recursively; none of these can carry __proto__ own-property pollution
+  // into Dexie.
+  if (record instanceof Date) {
+    return new Date(record.getTime())
+  }
+  if (record instanceof Map) {
+    return new Map(
+      Array.from(record.entries(), ([key, value]) => [
+        sanitizeRecord(key),
+        sanitizeRecord(value),
+      ]),
+    )
+  }
+  if (record instanceof Set) {
+    return new Set(Array.from(record.values(), (value) => sanitizeRecord(value)))
   }
 
   // Create a new object to avoid prototype pollution

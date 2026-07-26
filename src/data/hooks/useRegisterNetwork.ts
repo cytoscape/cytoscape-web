@@ -110,9 +110,9 @@ export const useRegisterNetwork = () => {
     if (!summary.hasLayout) {
       const totalNetworkElements = network.nodes.length + network.edges.length
       const defaultLayout = getDefaultLayout(
-        summary,
         totalNetworkElements,
         maxNetworkElementsThreshold,
+        isHCX(summary),
       )
 
       if (defaultLayout !== undefined) {

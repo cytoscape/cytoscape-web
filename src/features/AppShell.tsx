@@ -1,6 +1,6 @@
 import { Box } from '@mui/material'
 import cloneDeep from 'lodash/cloneDeep'
-import React, { ReactElement, useEffect, useRef } from 'react'
+import React, { ReactElement, useEffect, useRef, useState } from 'react'
 import {
   Location,
   Outlet,
@@ -27,6 +27,7 @@ import {
   DEFAULT_UI_STATE,
   useUiStateStore,
 } from '../data/hooks/stores/UiStateStore'
+import { useAppStore } from '../data/hooks/stores/AppStore'
 import { useAppManager } from '../data/hooks/stores/useAppManager'
 import { useViewModelStore } from '../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../data/hooks/stores/VisualStyleStore'
@@ -41,6 +42,7 @@ import {
 } from '../models/FilterModel'
 import { FilterUrlParams } from '../models/FilterModel/FilterUrlParams'
 import { IdType } from '../models/IdType'
+import { serviceAppUrlsToAdd } from '../models/AppModel/impl'
 import { MessageSeverity } from '../models/MessageModel'
 import { GraphObjectType } from '../models/NetworkModel'
 import { Panel } from '../models/UiModel/Panel'
@@ -48,6 +50,7 @@ import { PanelState } from '../models/UiModel/PanelState'
 import { NetworkView } from '../models/ViewModel'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
 import { parseSingleEntryManifest } from './AppManager/install/installGate'
+import { ConfirmationDialog } from './ConfirmationDialog'
 import { SelectionStates } from './FloatingToolBar/ShareNetworkButton'
 import { DEFAULT_FILTER_NAME } from './HierarchyViewer/components/FilterPanel/FilterPanel'
 import { SyncTabsAction } from './SyncTabs'
@@ -56,6 +59,11 @@ import { ToolBar } from './ToolBar'
 // Search param carrying an App Store install intent: a URL pointing to a
 // single-entry manifest (see workspace-app-install-design.md §7.2).
 const INSTALL_APP_QUERY_KEY = 'installApp'
+
+// Search param carrying a service-app install intent: one or more URLs of
+// external service endpoints to register (CW-521). Adding requires explicit
+// user confirmation, since it comes from an arbitrary link.
+const ADD_SERVICE_APP_QUERY_KEY = 'addserviceapp'
 
 /**
  * Application shell component that provides the main layout structure
@@ -77,6 +85,10 @@ const AppShell = (): ReactElement => {
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const setWorkspace = useWorkspaceStore((state) => state.set)
+  const addService = useAppStore((state) => state.addService)
+
+  // Service-app URLs requested via ?addserviceapp=, awaiting user confirmation.
+  const [serviceAppsToAdd, setServiceAppsToAdd] = useState<string[]>([])
   const location: Location = useLocation()
   const getToken: () => Promise<string> = useCredentialStore(
     (state) => state.getToken,
@@ -426,6 +438,20 @@ const AppShell = (): ReactElement => {
         }
       }
 
+      // Process a service-app install intent (?addserviceapp=<endpointUrl>).
+      // We only capture the URLs here and prompt for confirmation below; the
+      // param is stripped by the navigate() call at the end of init.
+      const requestedServiceAppUrls = search.getAll(ADD_SERVICE_APP_QUERY_KEY)
+      if (requestedServiceAppUrls.length > 0) {
+        const toAdd = serviceAppUrlsToAdd(
+          requestedServiceAppUrls,
+          useAppStore.getState().serviceApps,
+        )
+        if (toAdd.length > 0) {
+          setServiceAppsToAdd(toAdd)
+        }
+      }
+
       // Process state restoration parameters after workspace is set
       const hasSearchQueryParams = search.size > 0
       if (hasSearchQueryParams) {
@@ -468,6 +494,35 @@ const AppShell = (): ReactElement => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])
 
+  const handleConfirmAddServiceApps = (): void => {
+    const urls = serviceAppsToAdd
+    setServiceAppsToAdd([])
+    void (async () => {
+      for (const url of urls) {
+        try {
+          await addService(url)
+          addMessage({
+            message: `Added service app: ${url}`,
+            duration: 4000,
+            severity: MessageSeverity.SUCCESS,
+          })
+        } catch (error) {
+          addMessage({
+            message: `Failed to add service app from ${url}: ${
+              error instanceof Error ? error.message : 'unknown error'
+            }`,
+            duration: 5000,
+            severity: MessageSeverity.ERROR,
+          })
+          logStartup.warn(
+            `[AppShell]: addserviceapp intent failed for ${url}`,
+            error,
+          )
+        }
+      }
+    })()
+  }
+
   return (
     <AppManagerCommandsProvider value={appManagerCommands}>
       <Box
@@ -491,6 +546,22 @@ const AppShell = (): ReactElement => {
         </Box>
         <SyncTabsAction />
       </Box>
+      <ConfirmationDialog
+        open={serviceAppsToAdd.length > 0}
+        setOpen={(open) => {
+          if (!open) {
+            setServiceAppsToAdd([])
+          }
+        }}
+        title="Add service app?"
+        message={`This link wants to add the following service app${
+          serviceAppsToAdd.length > 1 ? 's' : ''
+        } to Cytoscape Web:\n\n${serviceAppsToAdd.join(
+          '\n',
+        )}\n\nOnly add service apps from sources you trust.`}
+        buttonTitle="Add"
+        onConfirm={handleConfirmAddServiceApps}
+      />
     </AppManagerCommandsProvider>
   )
 }

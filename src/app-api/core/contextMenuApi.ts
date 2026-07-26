@@ -20,7 +20,7 @@ import type {
   ContextMenuTarget,
 } from '../../models/StoreModel/ContextMenuItemStoreModel'
 import type { ApiResult } from '../types/ApiResult'
-import { ApiErrorCode, fail, ok } from '../types/ApiResult'
+import { AppCodes, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -62,10 +62,7 @@ function validateAndRegister(
 ): ApiResult<{ itemId: string }> {
   try {
     if (!config.label || config.label.trim() === '') {
-      return fail(
-        ApiErrorCode.InvalidInput,
-        'label is required and must be non-empty',
-      )
+      return fail(AppCodes.INVALID_INPUT, 'label is required and must be non-empty')
     }
 
     const itemId = uuidv4()
@@ -81,7 +78,7 @@ function validateAndRegister(
 
     return ok({ itemId })
   } catch (e) {
-    return fail(ApiErrorCode.OperationFailed, String(e))
+    return fail(AppCodes.OPERATION_FAILED, String(e))
   }
 }
 
@@ -89,15 +86,12 @@ function removeItem(itemId: string): ApiResult {
   try {
     const items = useContextMenuItemStore.getState().items
     if (!items.some((item) => item.itemId === itemId)) {
-      return fail(
-        ApiErrorCode.ContextMenuItemNotFound,
-        `Context menu item ${itemId} not found`,
-      )
+      return fail(AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND, itemId)
     }
     useContextMenuItemStore.getState().removeItem(itemId)
     return ok()
   } catch (e) {
-    return fail(ApiErrorCode.OperationFailed, String(e))
+    return fail(AppCodes.OPERATION_FAILED, String(e))
   }
 }
 

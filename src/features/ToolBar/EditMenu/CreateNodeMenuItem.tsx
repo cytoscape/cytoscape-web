@@ -55,9 +55,10 @@ export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const isHierarchy: boolean = networkSummary ? isHCX(networkSummary) : false
 
   useEffect(() => {
-    // Disable the menu item if the sub network view is selected, creation is not enabled, or network is a hierarchy
+    // Disable the menu item if no network is loaded, the sub network view is
+    // selected, creation is not enabled, or the network is a hierarchy
     if (
-      currentNetworkId &&
+      currentNetworkId !== '' &&
       targetNetworkId === currentNetworkId &&
       isCreationEnabled &&
       !isHierarchy
@@ -98,11 +99,14 @@ export const CreateNodeMenuItem = (props: BaseMenuItemProps): ReactElement => {
     props.onClick()
   }
 
-  const tooltipText = isHierarchy
-    ? 'Creation not available for hierarchy networks'
-    : !isCreationEnabled
-      ? 'Creation not available in circle packing view. Switch to node-link view to create elements.'
-      : ''
+  const tooltipText =
+    currentNetworkId === ''
+      ? 'Load or create a network first to add nodes'
+      : isHierarchy
+        ? 'Creation not available for hierarchy networks'
+        : !isCreationEnabled
+          ? 'Creation not available in circle packing view. Switch to node-link view to create elements.'
+          : ''
 
   return (
     <DropdownMenuItem

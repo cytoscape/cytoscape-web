@@ -32,6 +32,8 @@ interface FilterAction {
   ) => void
   getIndex: <T>(networkId: IdType, type: GraphObjectType) => T
   setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => void
+  deleteNetworkIndex: (networkId: string) => void
+  deleteAllNetworkIndexes: () => void
   setConverter: (converter: (result: any) => IdType[]) => void
   setOptions: (options: SearchOptions) => void
 
@@ -92,6 +94,20 @@ export const useFilterStore = create(
     setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => {
       set((state) => {
         const newState = FilterStoreImpl.setIndex(state, networkId, type, index)
+        state.search = newState.search
+        return state
+      })
+    },
+    deleteNetworkIndex: (networkId: string) => {
+      set((state) => {
+        const newState = FilterStoreImpl.deleteNetworkIndex(state, networkId)
+        state.search = newState.search
+        return state
+      })
+    },
+    deleteAllNetworkIndexes: () => {
+      set((state) => {
+        const newState = FilterStoreImpl.deleteAllNetworkIndexes(state)
         state.search = newState.search
         return state
       })

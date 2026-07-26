@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight } from '@mui/icons-material'
+import ChevronLeft from '@mui/icons-material/ChevronLeft'
+import ChevronRight from '@mui/icons-material/ChevronRight'
 import { Box, IconButton, Tooltip } from '@mui/material'
 
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'

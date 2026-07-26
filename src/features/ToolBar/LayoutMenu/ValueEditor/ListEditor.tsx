@@ -1,15 +1,19 @@
+import EditIcon from '@mui/icons-material/Edit'
 import {
   Box,
   Chip,
+  IconButton,
+  InputAdornment,
   ListItem,
   ListItemText,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { ChangeEvent, useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { ValueType, ValueTypeName } from '../../../../models/TableModel'
+import { ListValueEditorDialog } from '../../../TableBrowser/ListValueEditorDialog'
 
 interface ListEditorProps {
   optionName: string
@@ -23,58 +27,25 @@ interface ListEditorProps {
   error?: boolean
 }
 
-const getPlaceholder = (type: ValueTypeName): string => {
-  switch (type) {
-    case ValueTypeName.ListString:
-      return 'value1, value2'
-    case ValueTypeName.ListInteger:
-    case ValueTypeName.ListLong:
-      return '1, 2, 3'
-    case ValueTypeName.ListDouble:
-      return '1.5, 2.7, 3.9'
-    case ValueTypeName.ListBoolean:
-      return 'true, false, true'
-    default:
-      return ''
-  }
-}
-
-const parseListValue = (type: ValueTypeName, value: string): ValueType => {
-  if (!value.trim()) {
-    return []
-  }
-  
-  // Split by comma (with or without space), then trim each part
-  // This handles both "1, 2, 3" and "1,2,3" formats
-  const parts = value.split(',').map((part) => part.trim()).filter((part) => part.length > 0)
-  
-  if (parts.length === 0) {
-    return []
-  }
-  
-  switch (type) {
-    case ValueTypeName.ListString:
-      return parts
-    case ValueTypeName.ListInteger:
-    case ValueTypeName.ListLong:
-      return parts.map((v) => parseInt(v, 10)).filter((v) => !isNaN(v))
-    case ValueTypeName.ListDouble:
-      return parts.map((v) => parseFloat(v)).filter((v) => !isNaN(v))
-    case ValueTypeName.ListBoolean:
-      return parts.map((v) => v.toLowerCase() === 'true')
-    default:
-      return parts
-  }
-}
-
-const formatListValue = (value: ValueType): string => {
+// Human-readable one-line summary of the current list, shown in the read-only
+// trigger field. The actual editing happens in ListValueEditorDialog (CW-563).
+const summarizeList = (value: ValueType): string => {
   if (Array.isArray(value) && value.length > 0) {
-    // Use ", " separator to match the expected format
     return value.map((v) => String(v)).join(', ')
   }
   return ''
 }
 
+/**
+ * Editor for list-typed values (CW-563).
+ *
+ * Previously this rendered a single comma-separated TextField, which could not
+ * represent strings containing commas and silently dropped invalid elements.
+ * It now shows a read-only summary that opens the shared
+ * {@link ListValueEditorDialog} — the same row-by-row + paste editor used by the
+ * TableBrowser — so list editing is consistent everywhere ValueEditor is used
+ * (Node/Edge creation dialogs, layout options, etc.).
+ */
 export const ListEditor = ({
   optionName,
   description,
@@ -86,31 +57,58 @@ export const ListEditor = ({
   tableLayout = false,
   error = false,
 }: ListEditorProps): JSX.Element => {
-  const [inputValue, setInputValue] = useState<string>(formatListValue(value))
+  const [open, setOpen] = useState(false)
+  const summary = summarizeList(value)
 
-  // Update input value when prop value changes (e.g., when defaults are set)
-  // Only update if the formatted value would be different
-  useEffect(() => {
-    const formatted = formatListValue(value)
-    setInputValue((prev) => {
-      // Only update if the formatted value is different from current input
-      // This prevents clearing user input while they're typing
-      if (Array.isArray(value) && value.length === 0 && prev !== '') {
-        // Keep user input if they're typing and value is empty array
-        return prev
-      }
-      return formatted
-    })
-  }, [value])
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
-    const newInputValue = event.target.value
-    setInputValue(newInputValue)
-    const parsedValue = parseListValue(valueType, newInputValue)
-    setValue(optionName, parsedValue)
+  const handleSave = (next: ValueType): void => {
+    setValue(optionName, next)
+    setOpen(false)
   }
 
-  const placeholder = getPlaceholder(valueType)
+  const trigger = (helperText?: string): JSX.Element => (
+    <Tooltip arrow placement={'top'} title={description} key={optionName}>
+      <TextField
+        data-testid={`layout-value-editor-list-${optionName}`}
+        variant="outlined"
+        size="small"
+        fullWidth
+        value={summary}
+        placeholder="Click to edit list…"
+        onClick={() => setOpen(true)}
+        error={error}
+        helperText={helperText}
+        FormHelperTextProps={{
+          sx: { fontSize: '0.75rem', marginTop: 0.5 },
+        }}
+        InputProps={{
+          readOnly: true,
+          sx: { cursor: 'pointer' },
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                size="small"
+                aria-label={`edit list ${optionName}`}
+                onClick={() => setOpen(true)}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+    </Tooltip>
+  )
+
+  const dialog = (
+    <ListValueEditorDialog
+      open={open}
+      columnName={optionName}
+      listType={valueType}
+      value={value}
+      onCancel={() => setOpen(false)}
+      onSave={handleSave}
+    />
+  )
 
   if (tableLayout) {
     return (
@@ -124,7 +122,7 @@ export const ListEditor = ({
             maxWidth: 0,
           }}
         >
-          <Typography 
+          <Typography
             variant="body2"
             sx={{
               overflow: 'hidden',
@@ -145,9 +143,9 @@ export const ListEditor = ({
           }}
         >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px' }}
             />
@@ -161,19 +159,9 @@ export const ListEditor = ({
             verticalAlign: 'top',
           }}
         >
-          <Tooltip arrow placement={'top'} title={description} key={optionName}>
-            <TextField
-              data-testid={`layout-value-editor-list-${optionName}`}
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={inputValue}
-              onChange={handleChange}
-              placeholder={placeholder}
-              error={error}
-            />
-          </Tooltip>
+          {trigger()}
         </Box>
+        {dialog}
       </Box>
     )
   }
@@ -190,36 +178,22 @@ export const ListEditor = ({
       disablePadding
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <ListItemText 
-          id={optionName} 
+        <ListItemText
+          id={optionName}
           primary={optionName}
           sx={{ m: 0, flex: '0 0 auto' }}
         />
         {typeLabel && (
-          <Chip 
-            label={typeLabel} 
-            size="small" 
+          <Chip
+            label={typeLabel}
+            size="small"
             color={typeColor}
             sx={{ fontSize: '0.7rem', height: '22px' }}
           />
         )}
       </Box>
-      <Tooltip arrow placement={'top'} title={description} key={optionName}>
-        <TextField
-          data-testid={`layout-value-editor-list-${optionName}`}
-          variant="outlined"
-          size="small"
-          fullWidth
-          value={inputValue}
-          onChange={handleChange}
-          placeholder={placeholder}
-          helperText={`Comma-separated values (e.g., "${placeholder}")`}
-          FormHelperTextProps={{
-            sx: { fontSize: '0.75rem', marginTop: 0.5 },
-          }}
-        />
-      </Tooltip>
+      {trigger('Click to edit list items')}
+      {dialog}
     </ListItem>
   )
 }
-

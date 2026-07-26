@@ -451,19 +451,39 @@ describe('VisualStyleImpl', () => {
       expect(mapping.defaultValue).toBe(originalDefault)
     })
 
-    it('should return unchanged if vpType is not Color or Number', () => {
+    // CW-569: discrete-valued VPs (node shape, edge line type) now get a
+    // step-function continuous mapping instead of being left unchanged.
+    it('creates a stepped continuous mapping for a discrete-valued VP', () => {
       const visualStyle = createVisualStyle()
 
       const result = createContinuousMapping(
         visualStyle,
         'nodeShape',
         VisualPropertyValueTypeName.NodeShape,
+        'degree',
+        [1, 5, 10],
+      )
+
+      const mapping = result.nodeShape.mapping as ContinuousMappingFunction
+      expect(mapping).toBeDefined()
+      expect(mapping.type).toBe(MappingFunctionType.Continuous)
+      expect(mapping.attribute).toBe('degree')
+      expect(mapping.controlPoints.length).toBeGreaterThan(0)
+    })
+
+    it('returns unchanged for a VP type with no discrete values', () => {
+      const visualStyle = createVisualStyle()
+
+      const result = createContinuousMapping(
+        visualStyle,
+        'nodeLabelFont',
+        VisualPropertyValueTypeName.Font,
         'type',
-        ['type1', 'type2'],
+        [1, 2],
       )
 
       expect(result).toBe(visualStyle) // Should return unchanged
-      expect(result.nodeShape.mapping).toBeUndefined()
+      expect(result.nodeLabelFont.mapping).toBeUndefined()
     })
   })
 

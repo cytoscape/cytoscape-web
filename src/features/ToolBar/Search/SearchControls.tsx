@@ -4,18 +4,12 @@ import TuneIcon from '@mui/icons-material/Tune'
 import { Box, IconButton } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
-import { GraphObjectType } from '../../../models/NetworkModel'
-import { Settings } from './Settings'
 
 interface SearchControlsProps {
   searchTerm: string
   startSearch: () => void
   clearSearch: () => void
-  anchorEl: HTMLElement | null
-  setAnchorEl: (anchorEl: HTMLElement | null) => void
   handleOpenSettings: () => void
-  searchTargets: Record<GraphObjectType, boolean>
-  setSearchTargets: (searchTargets: Record<GraphObjectType, boolean>) => void
 }
 
 const baseStyle = {
@@ -30,14 +24,8 @@ export const SearchControls = ({
   searchTerm,
   startSearch,
   clearSearch,
-  anchorEl,
-  setAnchorEl,
   handleOpenSettings,
-  searchTargets,
-  setSearchTargets,
 }: SearchControlsProps): JSX.Element => {
-  const open = Boolean(anchorEl)
-
   const theme = useTheme()
 
   return (
@@ -66,14 +54,6 @@ export const SearchControls = ({
           <TuneIcon />
         </IconButton>
       </Box>
-      <Settings
-        open={open}
-        anchorEl={anchorEl}
-        setAnchorEl={setAnchorEl}
-        startSearch={startSearch}
-        searchTargets={searchTargets}
-        setSearchTargets={setSearchTargets}
-      />
     </>
   )
 }

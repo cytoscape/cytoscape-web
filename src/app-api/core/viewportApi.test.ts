@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/viewportApi.test.ts
 // Plain Jest tests for viewportApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { viewportApi } from './viewportApi'
 
 // ── Mock: RendererFunctionStore ───────────────────────────────────────────────
@@ -31,6 +31,18 @@ vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   },
 }))
 
+// ── Mock: NetworkStore (for node-existence checks) ───────────────────────────
+
+const mockNetworks = new Map<string, any>()
+
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: {
+    getState: vi.fn(() => ({
+      networks: mockNetworks,
+    })),
+  },
+}))
+
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
 function makeNetworkView(nodeViews: Record<string, any> = {}) {
@@ -41,6 +53,7 @@ function makeNetworkView(nodeViews: Record<string, any> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockNetworks.clear()
 })
 
 // --- fit ---------------------------------------------------------------------
@@ -64,7 +77,7 @@ describe('fit', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.FunctionNotAvailable)
+      expect(result.error.code).toBe(AppCodes.FUNCTION_NOT_AVAILABLE.code)
     }
   })
 
@@ -78,7 +91,7 @@ describe('fit', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 })
@@ -145,7 +158,7 @@ describe('getNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
@@ -153,7 +166,16 @@ describe('getNodePositions', () => {
 // --- updateNodePositions -----------------------------------------------------
 
 describe('updateNodePositions', () => {
+  const setupNetwork = (): void => {
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      edges: [],
+    })
+  }
+
   it('converts PositionRecord to Map and calls store', () => {
+    setupNetwork()
     mockGetViewModel.mockReturnValue(makeNetworkView())
 
     const positions = {
@@ -173,6 +195,39 @@ describe('updateNodePositions', () => {
     )
   })
 
+  it('rejects positions for nodes that do not exist (CX2 GL1)', () => {
+    setupNetwork()
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+
+    const result = viewportApi.updateNodePositions('net1', {
+      n1: [0, 0],
+      ghost: [10, 10],
+    })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
+      expect(result.error.message).toContain('ghost')
+    }
+    expect(mockUpdateNodePositions).not.toHaveBeenCalled()
+  })
+
+  it('rejects positions for edge IDs (positions are node-only)', () => {
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }],
+      edges: [{ id: 'e0', s: 'n1', t: 'n1' }],
+    })
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+
+    const result = viewportApi.updateNodePositions('net1', { e0: [5, 5] })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
+    }
+  })
+
   it('returns NetworkNotFound when view model does not exist', () => {
     mockGetViewModel.mockReturnValue(undefined)
 
@@ -180,12 +235,13 @@ describe('updateNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockUpdateNodePositions).not.toHaveBeenCalled()
   })
 
   it('returns OperationFailed when store throws', () => {
+    setupNetwork()
     mockGetViewModel.mockReturnValue(makeNetworkView())
     mockUpdateNodePositions.mockImplementation(() => {
       throw new Error('store error')
@@ -195,7 +251,7 @@ describe('updateNodePositions', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 })

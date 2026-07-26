@@ -9,5 +9,9 @@ export * from './VisualPropertyValue'
 export * from './VisualPropertyValueTypeName'
 export * from './VisualStyle'
 export * from './VisualStyleFn'
+export {
+  collectVisualStyleWarnings,
+  type VisualStyleWarning,
+} from './impl/visualStyleWarnings'
 
 export { VisualStyleFn as default }
