@@ -46,6 +46,8 @@ const JoinTableToNetworkForm = lazy(() =>
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
 import { AppConfigContext } from '../../AppConfigContext'
+import { markBoot } from '../../boot/metrics/bootMarks'
+import { publishBootReport } from '../../boot/metrics/bootReport'
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
@@ -80,6 +82,13 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
+
+  // Last boot milestone: the editor is on screen, so no part of the boot shell
+  // remains. The canvas may still be drawing network data beyond this point.
+  useEffect(() => {
+    markBoot('workspace-editor-mounted')
+    publishBootReport()
+  }, [])
 
   // Indicates if a network failed to load
   const [failedToLoad, setFailedToLoad] = useState<boolean>(false)

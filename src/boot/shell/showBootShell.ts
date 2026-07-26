@@ -1,3 +1,8 @@
+// Imported for its module-scope side effect: the boot URL flags must be
+// snapshotted here, in the first chunk to execute, before AppShell's
+// navigate() strips the search params.
+import '../metrics/bootFlags'
+import { markBoot } from '../metrics/bootMarks'
 import {
   BOOT_SHELL_TESTID,
   bootShellClassName,
@@ -34,4 +39,5 @@ export const showBootShell = (options: BootShellOptions = {}): void => {
   shell.innerHTML = bootShellInnerHtml(options)
 
   rootElement.appendChild(shell)
+  markBoot('shell-painted')
 }

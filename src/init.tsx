@@ -6,6 +6,7 @@ import * as ReactDOM from 'react-dom/client'
 
 import { AppConfigContext } from './AppConfigContext'
 import appConfig from './assets/config.json'
+import { markBoot } from './boot/metrics/bootMarks'
 import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 // this allows immer to work with Map and Set
 import { initializeDebug, logStartup } from './debug'
@@ -50,6 +51,7 @@ const UNAUTHENTICATED: AuthResolution = {
 }
 
 const initializeApp = () => {
+  markBoot('init-exec')
   const { urlBaseName } = appConfig
   const rootElement: HTMLElement | null = document.getElementById('root')
   if (rootElement == null) {
@@ -91,6 +93,7 @@ const initializeApp = () => {
           `[bootstrap.tsx]:[${keycloak.init.name}]: Authentication initialization timed out, continuing without SSO`,
         )
 
+        markBoot('auth-settled')
         completeAuthInitialization()
         resolveAuth(UNAUTHENTICATED)
       }, AUTH_INIT_TIMEOUT_MS)
@@ -127,6 +130,7 @@ const initializeApp = () => {
 
       // Release token waiters as soon as the SSO check settles — the email
       // verification lookup below needs the network and must not gate them.
+      markBoot('auth-settled')
       completeAuthInitialization()
 
       let isEmailUnverified = false
@@ -152,6 +156,7 @@ const initializeApp = () => {
         e,
       )
 
+      markBoot('auth-settled')
       completeAuthInitialization()
       resolveAuth(UNAUTHENTICATED)
     })
@@ -171,6 +176,8 @@ const initializeApp = () => {
       </React.StrictMode>
     </AppConfigContext.Provider>,
   )
+
+  markBoot('react-render')
 }
 
 initializeApp()

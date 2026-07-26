@@ -11,6 +11,7 @@ import {
 } from 'react-router-dom'
 
 import { initEventBus } from '../app-api/event-bus/initEventBus'
+import { markBoot } from '../boot/metrics/bootMarks'
 import { BootShell } from '../boot/shell/BootShell'
 import {
   getUiStateFromDb,
@@ -397,6 +398,7 @@ const AppShell = (): ReactElement => {
 
       addSummaries(summaries)
       setWorkspace(workspace)
+      markBoot('workspace-hydrated')
 
       // Initialize event bus after workspace is hydrated so store subscriptions
       // do not fire spurious network:created / network:switched events on startup.
@@ -489,6 +491,7 @@ const AppShell = (): ReactElement => {
 
     if (!initialized.current) {
       initialized.current = true
+      markBoot('app-shell-mounted')
       logStartup.info('[AppShell]: Initializing app shell')
       initializeAppShell()
     }
