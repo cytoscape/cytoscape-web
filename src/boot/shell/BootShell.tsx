@@ -1,7 +1,11 @@
+import { useLayoutEffect, useMemo, useRef } from 'react'
+
 import {
+  applyBootShellMessage,
   BOOT_SHELL_TESTID,
   bootShellClassName,
   bootShellInnerHtml,
+  ensureBootShellStyles,
   type BootShellOptions,
 } from './bootShellMarkup'
 import { useBootState } from './useBootState'
@@ -19,8 +23,15 @@ import { useBootState } from './useBootState'
  * same string `showBootShell()` writes, which makes the plain-DOM to React
  * handoff provably flash-free instead of relying on two hand-maintained copies
  * of the markup staying in step. The input is entirely locally-generated
- * (bootShellMarkup escapes the version, build time, message and error text),
- * so there is no untrusted content in it.
+ * (bootShellMarkup escapes the build metadata and error text), so there is no
+ * untrusted content in it.
+ *
+ * The message is applied through a ref rather than interpolated into that
+ * string, so the string only changes when `region` or the error does. If the
+ * message were part of it, every phase transition would hand React a new
+ * string, and React would replace the whole subtree — recreating every shimmer
+ * block and the spinner, and restarting their animations from frame zero.
+ * That was a visible flicker three times per boot.
  *
  * Deliberately dependency-free (no MUI): this renders before the app chunks
  * finish loading, so importing @mui/material here would put the whole MUI +
@@ -32,18 +43,33 @@ export const BootShell = ({
   error,
 }: BootShellOptions): JSX.Element => {
   const bootState = useBootState()
+  const shellRef = useRef<HTMLDivElement>(null)
+
+  const activeError = error ?? bootState.error
+  const activeMessage = message ?? bootState.message
+
+  // Stable across message changes; React skips the DOM write when the string
+  // is unchanged, which is the whole point.
+  const html = useMemo(
+    () => bootShellInnerHtml({ region, error: activeError }),
+    [region, activeError],
+  )
+
+  // Layout effect, not effect: runs after the DOM mutation but before the
+  // browser paints, so the status line is never briefly blank.
+  useLayoutEffect(() => {
+    ensureBootShellStyles()
+    if (shellRef.current !== null) {
+      applyBootShellMessage(shellRef.current, activeMessage)
+    }
+  }, [html, activeMessage])
 
   return (
     <div
+      ref={shellRef}
       className={bootShellClassName(region)}
       data-testid={BOOT_SHELL_TESTID}
-      dangerouslySetInnerHTML={{
-        __html: bootShellInnerHtml({
-          region,
-          message: message ?? bootState.message,
-          error: error ?? bootState.error,
-        }),
-      }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   )
 }

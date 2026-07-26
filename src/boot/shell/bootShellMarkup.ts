@@ -319,10 +319,56 @@ export const bootShellBuildTime = (): string => {
 export const bootShellClassName = (region: BootShellRegion): string =>
   `boot-shell boot-shell-${region}`
 
-const statusHtml = (message: string): string => `
+export const BOOT_SHELL_STYLE_ID = 'cyweb-boot-shell-style'
+
+/**
+ * Installs the shell stylesheet in <head>, once.
+ *
+ * It used to live inside the shell's own markup, which meant every repaint
+ * re-inserted the whole stylesheet and forced a style recalc. Keeping it out
+ * of the shell subtree also keeps the subtree cheap to leave alone.
+ */
+export const ensureBootShellStyles = (): void => {
+  if (
+    typeof document === 'undefined' ||
+    document.getElementById(BOOT_SHELL_STYLE_ID) !== null
+  ) {
+    return
+  }
+
+  const style = document.createElement('style')
+  style.id = BOOT_SHELL_STYLE_ID
+  style.textContent = BOOT_SHELL_CSS
+  document.head.appendChild(style)
+}
+
+const STATUS_MESSAGE_SELECTOR = '.boot-shell-status p'
+
+/**
+ * Writes the status line into an already-rendered shell.
+ *
+ * The message is applied imperatively, not baked into the markup, so that
+ * changing it does not change the HTML string. That matters because the React
+ * renderer feeds that string to dangerouslySetInnerHTML: if the string moved,
+ * React would replace the entire subtree, recreating every shimmer block and
+ * the spinner and restarting their CSS animations from frame zero — three
+ * times over a normal boot. Same helper drives both renderers, so they stay
+ * byte-identical.
+ */
+export const applyBootShellMessage = (
+  shell: Element,
+  message: string,
+): void => {
+  const target = shell.querySelector(STATUS_MESSAGE_SELECTOR)
+  if (target !== null) {
+    target.textContent = message
+  }
+}
+
+const statusHtml = (): string => `
     <div class="boot-shell-status">
       <div class="boot-shell-spinner"></div>
-      <p>${escapeHtml(message)}</p>
+      <p></p>
     </div>
     <p class="boot-shell-footer">Initial loading may take some time</p>`
 
@@ -345,13 +391,15 @@ const errorHtml = (error: BootShellError): string => `
  * Inner HTML of the boot shell container. Both renderers supply the container
  * element itself (with `bootShellClassName` and `BOOT_SHELL_TESTID`), so the
  * resulting DOM is identical whichever one produced it.
+ *
+ * Deliberately does NOT take the status message — see applyBootShellMessage.
+ * The result depends only on `region` and whether the boot has failed, both of
+ * which change at most once, so the subtree is built once and then left alone.
  */
-export const bootShellInnerHtml = (options: BootShellOptions = {}): string => {
-  const {
-    region = 'full',
-    message = DEFAULT_BOOT_MESSAGE,
-    error,
-  } = options
+export const bootShellInnerHtml = (
+  options: Omit<BootShellOptions, 'message'> = {},
+): string => {
+  const { region = 'full', error } = options
 
   const toolbar =
     region === 'full'
@@ -368,7 +416,7 @@ export const bootShellInnerHtml = (options: BootShellOptions = {}): string => {
   </div>`
       : ''
 
-  return `<style>${BOOT_SHELL_CSS}</style>${toolbar}
+  return `${toolbar}
   <div class="boot-shell-body">
     <div class="boot-shell-left">
       <div class="boot-shell-left-tabs">
@@ -388,7 +436,7 @@ export const bootShellInnerHtml = (options: BootShellOptions = {}): string => {
           <p class="boot-shell-built">Built on: ${escapeHtml(
             bootShellBuildTime(),
           )}</p>
-        </div>${error === undefined ? statusHtml(message) : errorHtml(error)}
+        </div>${error === undefined ? statusHtml() : errorHtml(error)}
       </div>
     </div>
   </div>

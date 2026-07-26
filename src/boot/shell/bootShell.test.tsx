@@ -8,6 +8,7 @@ import {
 } from '../bootState'
 import { BootShell } from './BootShell'
 import {
+  BOOT_SHELL_STYLE_ID,
   BOOT_SHELL_TESTID,
   bootShellBuildTime,
   bootShellInnerHtml,
@@ -124,6 +125,38 @@ describe('BootShell live phase tracking', () => {
     expect(container.textContent).not.toContain('Loading application...')
   })
 
+  it('updates the message without rebuilding the shell subtree', () => {
+    // The flicker regression: when the message was interpolated into the HTML
+    // string, every phase transition handed React a new string and it replaced
+    // the whole subtree — recreating every shimmer block and the spinner and
+    // restarting their CSS animations from frame zero, three times per boot.
+    const { container } = render(<BootShell />)
+    const spinnerBefore = container.querySelector('.boot-shell-spinner')
+    const blocksBefore = [...container.querySelectorAll('.boot-shell-block')]
+
+    act(() => {
+      setBootMessage('Loading workspace...')
+    })
+    act(() => {
+      setBootMessage('Loading network...')
+    })
+
+    // Same element instances, so no animation restarts.
+    expect(container.querySelector('.boot-shell-spinner')).toBe(spinnerBefore)
+    expect([...container.querySelectorAll('.boot-shell-block')]).toEqual(
+      blocksBefore,
+    )
+    expect(container.textContent).toContain('Loading network...')
+  })
+
+  it('keeps the stylesheet out of the shell subtree', () => {
+    // In <head>, so a repaint cannot re-insert it and force a style recalc.
+    const { container } = render(<BootShell />)
+
+    expect(container.querySelector('style')).toBeNull()
+    expect(document.getElementById(BOOT_SHELL_STYLE_ID)).not.toBeNull()
+  })
+
   it('lets an explicit message pin the status line', () => {
     const { container } = render(<BootShell message="Pinned" />)
 
@@ -147,11 +180,26 @@ describe('BootShell live phase tracking', () => {
 })
 
 describe('bootShellInnerHtml', () => {
-  it('escapes interpolated text', () => {
-    const html = bootShellInnerHtml({ message: '<img onerror=x>' })
+  it('escapes interpolated text in the markup', () => {
+    const html = bootShellInnerHtml({
+      error: { title: '<img onerror=x>', message: 'ok' },
+    })
 
     expect(html).not.toContain('<img onerror=x>')
     expect(html).toContain('&lt;img onerror=x&gt;')
+  })
+
+  it('sets the status message as text, never as markup', () => {
+    // The message goes through textContent rather than the HTML string, so it
+    // cannot inject markup regardless of escaping.
+    const root = mountRoot()
+    showBootShell({ message: '<img onerror=x>' })
+    const shell = root.querySelector(`[data-testid="${BOOT_SHELL_TESTID}"]`)
+
+    expect(shell?.querySelector('.boot-shell-status p')?.textContent).toBe(
+      '<img onerror=x>',
+    )
+    expect(shell?.querySelector('img')).toBeNull()
   })
 
   it('drops the spinner and the "may take some time" line in error mode', () => {

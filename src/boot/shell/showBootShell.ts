@@ -4,11 +4,23 @@
 import '../metrics/bootFlags'
 import { markBoot } from '../metrics/bootMarks'
 import {
+  applyBootShellMessage,
   BOOT_SHELL_TESTID,
   bootShellClassName,
   bootShellInnerHtml,
+  DEFAULT_BOOT_MESSAGE,
+  ensureBootShellStyles,
   type BootShellOptions,
 } from './bootShellMarkup'
+
+const renderInto = (
+  shell: HTMLElement,
+  { region = 'full', message = DEFAULT_BOOT_MESSAGE, error }: BootShellOptions,
+): void => {
+  shell.className = bootShellClassName(region)
+  shell.innerHTML = bootShellInnerHtml({ region, error })
+  applyBootShellMessage(shell, message)
+}
 
 /**
  * Paints the boot shell into #root with plain DOM, before react-dom exists.
@@ -33,10 +45,15 @@ export const showBootShell = (options: BootShellOptions = {}): void => {
     return
   }
 
+  ensureBootShellStyles()
+
   const shell = document.createElement('div')
+  // Attribute order matters: outerHTML preserves insertion order, and the
+  // parity test compares this against React's output, which emits className
+  // before data-testid.
   shell.className = bootShellClassName(options.region ?? 'full')
   shell.setAttribute('data-testid', BOOT_SHELL_TESTID)
-  shell.innerHTML = bootShellInnerHtml(options)
+  renderInto(shell, options)
 
   rootElement.appendChild(shell)
   markBoot('shell-painted')
@@ -61,6 +78,5 @@ export const repaintBootShell = (options: BootShellOptions = {}): void => {
     return
   }
 
-  shell.className = bootShellClassName(options.region ?? 'full')
-  shell.innerHTML = bootShellInnerHtml(options)
+  renderInto(shell, options)
 }
