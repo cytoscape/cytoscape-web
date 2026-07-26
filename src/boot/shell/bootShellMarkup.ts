@@ -46,8 +46,21 @@ export const BOOT_SHELL_CSS = `
   height: 100%;
   background-color: #ffffff;
   color: #495057;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  /*
+   * System fonts only — deliberately no Roboto.
+   *
+   * The app bundle ships Roboto as a webfont (roboto-v20-*.woff2, pulled in
+   * with MUI). Naming it here made the shell reference a family that does not
+   * exist at first paint: the browser rendered the fallback, then re-resolved
+   * to the webfont when the bundle landed a second or so later and re-rendered
+   * with different metrics — visible as the heading's letters and words
+   * spreading apart mid-boot. Worse at the heading's 600 weight, since the
+   * bundle only ships Roboto 400 and 700, so it snaps to 700.
+   *
+   * Anything listed here must be guaranteed present before any app CSS loads.
+   */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+    sans-serif;
 }
 .boot-shell,
 .boot-shell *,
