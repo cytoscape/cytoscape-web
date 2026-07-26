@@ -38,6 +38,31 @@ export interface BootShellOptions {
 export const DEFAULT_BOOT_MESSAGE = 'Loading application...'
 
 export const BOOT_SHELL_CSS = `
+/*
+ * Page reset, duplicated from src/styles/base.css on purpose.
+ *
+ * base.css is imported by bootstrap.tsx and App.tsx, so it rides in the init
+ * and app chunks — roughly a second after the shell has already painted. Until
+ * it arrived the shell sat inside the user-agent's default body margin and
+ * could not resolve its own height, because #root had none: measured at
+ * x=8 y=8 w=1424 h=469 on a 1440x900 viewport, then snapping to
+ * x=0 y=0 w=1440 h=900 when the chunk landed. A visible border and a jump.
+ *
+ * The values are identical to base.css, which simply re-asserts them later.
+ */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 .boot-shell {
   --boot-shell-logo-size: 120px;
   display: flex;

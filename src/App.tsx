@@ -108,7 +108,14 @@ export const App = (): React.ReactElement => {
     <CssVarsProvider theme={exTheme} defaultMode="system">
       <CssBaseline />
       <ErrorBoundary>
-        <div data-testid="app-router">
+        {/*
+          Full height so percentage-height children resolve against the
+          viewport. Without it this wrapper collapses to content height, and a
+          route element sized with height:100% — the boot shell — shrank from
+          900px to 495px the moment React took over from the pre-React shell.
+          AppShell never surfaced this because it uses 100vh.
+        */}
+        <div data-testid="app-router" style={{ height: '100%' }}>
           <RouterProvider router={router} />
         </div>
       </ErrorBoundary>
