@@ -47,12 +47,12 @@ import {
   serializeVisualStyle,
 } from './serialization/mapSerialization'
 // Unique, fixed DB name for the Cytoscape Web
-const DB_NAME: string = 'cyweb-db'
+export const DB_NAME: string = 'cyweb-db'
 
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 9
+export const currentVersion: number = 9
 
 /**
  * Predefined object store names.

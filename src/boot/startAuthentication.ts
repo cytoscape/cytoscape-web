@@ -45,6 +45,22 @@ export const UNAUTHENTICATED: AuthResolution = {
 export const isLocalDevHost = (): boolean =>
   LOCAL_DEV_HOSTS.has(window.location.hostname)
 
+/**
+ * A subscribable auth outcome rather than a one-shot promise.
+ *
+ * The watchdog below can fire before the SSO check comes back, and a settled
+ * promise cannot be corrected. That used to leave `authenticated: false`
+ * permanently for a genuinely signed-in user whose check was merely slow —
+ * silently skipping the email-verification modal and leaving the login UI
+ * showing them as logged out for the rest of the session. Consumers subscribe
+ * so a late real result replaces the timeout's placeholder.
+ */
+export interface AuthResolutionSource {
+  /** Null until the first outcome (timeout or real) is published. */
+  get: () => AuthResolution | null
+  subscribe: (listener: () => void) => () => void
+}
+
 export interface StartAuthenticationOptions {
   keycloak: Keycloak
   checkUserVerification: () => Promise<UserVerificationStatus>
@@ -52,26 +68,31 @@ export interface StartAuthenticationOptions {
 }
 
 /**
- * Kicks off the SSO check and returns a promise that settles with the outcome.
- * Never rejects: a failed or timed-out check resolves UNAUTHENTICATED, because
- * "we could not tell" and "not signed in" have the same consequence for
- * rendering, and the alternative is an unhandled rejection during boot.
+ * Kicks off the SSO check and returns a source that publishes the outcome.
+ * Never rejects: a failed or timed-out check publishes UNAUTHENTICATED,
+ * because "we could not tell" and "not signed in" have the same consequence
+ * for rendering, and the alternative is an unhandled rejection during boot.
  */
 export const startAuthentication = ({
   keycloak,
   checkUserVerification,
   urlBaseName,
-}: StartAuthenticationOptions): Promise<AuthResolution> => {
+}: StartAuthenticationOptions): AuthResolutionSource => {
   const { beginAuthInitialization, completeAuthInitialization } =
     useCredentialStore.getState()
   beginAuthInitialization()
 
   const start = bootNow()
   let released = false
-  let resolveAuth!: (resolution: AuthResolution) => void
-  const authResolution = new Promise<AuthResolution>((resolve) => {
-    resolveAuth = resolve
-  })
+  let current: AuthResolution | null = null
+  const listeners = new Set<() => void>()
+
+  const publish = (resolution: AuthResolution): void => {
+    current = resolution
+    for (const listener of listeners) {
+      listener()
+    }
+  }
 
   // Releasing the token gate and reporting the outcome are separate on
   // purpose. The gate opens the moment the SSO check itself settles; the
@@ -92,7 +113,7 @@ export const startAuthentication = ({
     status: 'ok' | 'error' = 'ok',
   ): void => {
     releaseTokenGate(status)
-    resolveAuth(resolution)
+    publish(resolution)
   }
 
   // No watchdog on localhost: a developer pointing at a local Keycloak wants
@@ -159,5 +180,13 @@ export const startAuthentication = ({
       settle(UNAUTHENTICATED, 'error')
     })
 
-  return authResolution
+  return {
+    get: () => current,
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+  }
 }

@@ -1,6 +1,7 @@
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useSyncExternalStore } from 'react'
 
 import { BootShell } from './shell/BootShell'
+import type { AuthResolutionSource } from './startAuthentication'
 
 // Kick off the heavy application chunks immediately, at module-load time, so
 // they download in parallel with the keycloak silent-SSO round-trip. As
@@ -32,7 +33,7 @@ export interface AuthResolution {
 }
 
 interface AppBootstrapProps {
-  authResolution: Promise<AuthResolution>
+  authResolution: AuthResolutionSource
   onVerify: () => void
   onCancel: () => void
 }
@@ -42,25 +43,21 @@ interface AppBootstrapProps {
  * instead of blocking the first render on the SSO check. When the check
  * resolves for a logged-in user with an unverified email, the app is swapped
  * out for the verification modal — everyone else never notices the swap.
+ *
+ * Subscribes rather than awaiting a promise so that a slow SSO check which
+ * lost the race against the 4s watchdog can still correct the outcome when it
+ * arrives.
  */
 export const AppBootstrap = ({
   authResolution,
   onVerify,
   onCancel,
 }: AppBootstrapProps): JSX.Element => {
-  const [auth, setAuth] = useState<AuthResolution | null>(null)
-
-  useEffect(() => {
-    let active = true
-    void authResolution.then((resolution) => {
-      if (active) {
-        setAuth(resolution)
-      }
-    })
-    return () => {
-      active = false
-    }
-  }, [authResolution])
+  const auth = useSyncExternalStore(
+    authResolution.subscribe,
+    authResolution.get,
+    authResolution.get,
+  )
 
   const needsEmailVerification =
     auth !== null && auth.authenticated && auth.isEmailUnverified

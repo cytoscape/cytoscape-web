@@ -10,10 +10,13 @@ import { initializeDebug, logStartup } from '../debug'
 import ErrorBoundary from '../features/ErrorBoundary'
 import { AppBootstrap } from './AppBootstrap'
 import { BootPhase } from './bootPhases'
+import { getBootState } from './bootState'
 import { initializeGoogleAnalytics } from './googleAnalytics'
 import { initializeKeycloak, KeycloakContext } from './keycloak'
 import { markBoot } from './metrics/bootMarks'
-import { runPhase } from './runBoot'
+import { openDatabasePhase } from './openDatabasePhase'
+import { isBootAborted, runPhase } from './runBoot'
+import { repaintBootShell } from './shell/showBootShell'
 import { startAuthentication } from './startAuthentication'
 import { initializeTabManager } from './tabManager'
 
@@ -48,6 +51,16 @@ const initializeApp = async (): Promise<void> => {
     initializeTabManager()
     initializeGoogleAnalytics()
   })
+
+  // The gate. A dead database is the one failure the app cannot render over —
+  // AppShell's first act is to read the workspace from it — so on failure the
+  // boot shell (already painted, no React required) switches to error mode and
+  // we stop here rather than mounting the app over it.
+  await runPhase(BootPhase.DATABASE, openDatabasePhase)
+  if (isBootAborted()) {
+    repaintBootShell({ error: getBootState().error })
+    return
+  }
 
   const { keycloak, handleVerify, handleCancel, checkUserVerification } =
     initializeKeycloak()
