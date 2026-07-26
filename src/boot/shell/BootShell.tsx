@@ -4,11 +4,16 @@ import {
   bootShellInnerHtml,
   type BootShellOptions,
 } from './bootShellMarkup'
+import { useBootState } from './useBootState'
 
 /**
  * React renderer for the boot shell — used as every Suspense fallback on the
  * boot path, and by AppShell for its content region until the workspace route
  * resolves.
+ *
+ * With no `message` prop it tracks the live boot phase, so the status line
+ * updates in place as the boot progresses instead of each boundary hard-coding
+ * its own wording. Pass `message` to pin it.
  *
  * dangerouslySetInnerHTML is deliberate, not a shortcut: it renders the exact
  * same string `showBootShell()` writes, which makes the plain-DOM to React
@@ -25,12 +30,20 @@ export const BootShell = ({
   region = 'full',
   message,
   error,
-}: BootShellOptions): JSX.Element => (
-  <div
-    className={bootShellClassName(region)}
-    data-testid={BOOT_SHELL_TESTID}
-    dangerouslySetInnerHTML={{
-      __html: bootShellInnerHtml({ region, message, error }),
-    }}
-  />
-)
+}: BootShellOptions): JSX.Element => {
+  const bootState = useBootState()
+
+  return (
+    <div
+      className={bootShellClassName(region)}
+      data-testid={BOOT_SHELL_TESTID}
+      dangerouslySetInnerHTML={{
+        __html: bootShellInnerHtml({
+          region,
+          message: message ?? bootState.message,
+          error: error ?? bootState.error,
+        }),
+      }}
+    />
+  )
+}

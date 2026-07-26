@@ -7,6 +7,12 @@ import { getNDExBaseUrl } from '../data/external-api/ndex/config'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
+export interface UserVerificationStatus {
+  isVerified: boolean
+  userName?: string
+  userEmail?: string
+}
+
 export const initializeKeycloak = () => {
   const { keycloakConfig, urlBaseName } = appConfig
 
@@ -40,7 +46,7 @@ export const initializeKeycloak = () => {
   }
 
   // Function to check if the user's email is verified
-  const checkUserVerification = async () => {
+  const checkUserVerification = async (): Promise<UserVerificationStatus> => {
     try {
       const ndexClient = new NDExClient({
         baseURL: getNDExBaseUrl(),

@@ -66,7 +66,7 @@ export const AppBootstrap = ({
     auth !== null && auth.authenticated && auth.isEmailUnverified
 
   return (
-    <Suspense fallback={<BootShell message="Loading application..." />}>
+    <Suspense fallback={<BootShell />}>
       {needsEmailVerification ? (
         <EmailVerificationModal
           userName={auth.userName}

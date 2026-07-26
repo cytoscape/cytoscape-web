@@ -41,8 +41,9 @@ const router = createBrowserRouter(
       element={
         // The same boot shell that painted before React: the real shell
         // replaces it region by region, so the boot sequence reads as the app
-        // assembling rather than a series of unrelated loading screens.
-        <Suspense fallback={<BootShell message="Loading workspace..." />}>
+        // assembling rather than a series of unrelated loading screens. The
+        // status line comes from the live boot phase, not from this boundary.
+        <Suspense fallback={<BootShell />}>
           <AppShell />
         </Suspense>
       }
@@ -53,11 +54,7 @@ const router = createBrowserRouter(
         element={
           // Content region only — the real toolbar is already rendered by
           // AppShell above, so only the region below it is still resolving.
-          <Suspense
-            fallback={
-              <BootShell region="content" message="Loading network..." />
-            }
-          >
+          <Suspense fallback={<BootShell region="content" />}>
             <WorkspaceEditor />
           </Suspense>
         }

@@ -555,7 +555,7 @@ const AppShell = (): ReactElement => {
             shell's content region until the route resolves.
           */}
           {params.workspaceId === undefined ? (
-            <BootShell region="content" message="Loading workspace..." />
+            <BootShell region="content" />
           ) : (
             <Outlet />
           )}

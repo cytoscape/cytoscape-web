@@ -1,6 +1,11 @@
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import {
+  resetBootStateForTesting,
+  setBootError,
+  setBootMessage,
+} from '../bootState'
 import { BootShell } from './BootShell'
 import {
   BOOT_SHELL_TESTID,
@@ -99,6 +104,45 @@ describe('BootShell / showBootShell parity', () => {
 
     expect(reactHtml).toBeDefined()
     expect(domHtml).toBe(reactHtml)
+  })
+})
+
+describe('BootShell live phase tracking', () => {
+  afterEach(() => {
+    resetBootStateForTesting()
+  })
+
+  it('follows the boot phase message when none is passed', () => {
+    const { container } = render(<BootShell />)
+    expect(container.textContent).toContain('Loading application...')
+
+    act(() => {
+      setBootMessage('Loading workspace...')
+    })
+
+    expect(container.textContent).toContain('Loading workspace...')
+    expect(container.textContent).not.toContain('Loading application...')
+  })
+
+  it('lets an explicit message pin the status line', () => {
+    const { container } = render(<BootShell message="Pinned" />)
+
+    act(() => {
+      setBootMessage('Loading workspace...')
+    })
+
+    expect(container.textContent).toContain('Pinned')
+  })
+
+  it('switches to error mode when the boot fails terminally', () => {
+    const { container } = render(<BootShell />)
+
+    act(() => {
+      setBootError({ title: 'Storage unavailable', message: 'Private mode?' })
+    })
+
+    expect(container.textContent).toContain('Storage unavailable')
+    expect(container.querySelector('.boot-shell-spinner')).toBeNull()
   })
 })
 
