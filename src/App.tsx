@@ -20,8 +20,7 @@ import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { RedirectPanel } from './features/RedirectPanel'
-import { AppShellSkeleton } from './features/AppShellSkeleton'
-import { WorkspaceSkeleton } from './features/WorkspaceSkeleton'
+import { BootShell } from './boot/shell/BootShell'
 import { KeycloakContext } from './init/keycloak'
 import { theme } from './theme'
 
@@ -40,10 +39,10 @@ const router = createBrowserRouter(
     <Route
       path="/"
       element={
-        // App-shaped skeleton (not a bare message panel): the real shell
-        // replaces it in place, so the boot sequence reads as the app
+        // The same boot shell that painted before React: the real shell
+        // replaces it region by region, so the boot sequence reads as the app
         // assembling rather than a series of unrelated loading screens.
-        <Suspense fallback={<AppShellSkeleton />}>
+        <Suspense fallback={<BootShell message="Loading workspace..." />}>
           <AppShell />
         </Suspense>
       }
@@ -52,10 +51,12 @@ const router = createBrowserRouter(
       <Route
         path=":workspaceId"
         element={
-          // Same skeleton the shell fallback composes, so the content region
-          // keeps its shape while the WorkspaceEditor chunk loads.
+          // Content region only — the real toolbar is already rendered by
+          // AppShell above, so only the region below it is still resolving.
           <Suspense
-            fallback={<WorkspaceSkeleton message="Initializing Workspace..." />}
+            fallback={
+              <BootShell region="content" message="Loading network..." />
+            }
           >
             <WorkspaceEditor />
           </Suspense>

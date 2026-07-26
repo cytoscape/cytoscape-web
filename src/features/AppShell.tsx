@@ -11,6 +11,7 @@ import {
 } from 'react-router-dom'
 
 import { initEventBus } from '../app-api/event-bus/initEventBus'
+import { BootShell } from '../boot/shell/BootShell'
 import {
   getUiStateFromDb,
   getWorkspaceFromDb,
@@ -542,7 +543,19 @@ const AppShell = (): ReactElement => {
           data-testid="app-shell-content-container"
           sx={{ flexGrow: 1, height: '100%', p: 0, margin: 0 }}
         >
-          <Outlet />
+          {/*
+            Until initializeAppShell's navigate() lands on /:workspaceId, no
+            child route matches and <Outlet/> renders nothing — which used to
+            leave the real toolbar sitting over blank white with no loading
+            affordance at all, for the whole duration of workspace hydration
+            (including a possible auth-gated NDEx round-trip). Keep the boot
+            shell's content region until the route resolves.
+          */}
+          {params.workspaceId === undefined ? (
+            <BootShell region="content" message="Loading workspace..." />
+          ) : (
+            <Outlet />
+          )}
         </Box>
         <SyncTabsAction />
       </Box>

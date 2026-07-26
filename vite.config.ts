@@ -61,29 +61,31 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
   }
 }
 
+const BOOT_SHELL_ENTRY = 'src/boot/shell/bootShellEntry.ts'
+
 /**
- * Build-only plugin that paints the boot splash before the Module
+ * Build-only plugin that paints the boot shell before the Module
  * Federation bootstrap finishes.
  *
  * The generated mf-entry-bootstrap awaits the federation runtime's
  * share-scope setup, which transitively downloads the ~700kB MUI shared
  * chunk (react-dom is co-located in it) before src/index.tsx ever runs —
  * so nothing in the normal entry graph can paint sooner than that
- * download. This plugin emits src/init/bootSplashEntry.ts as its own tiny
- * chunk (its graph is just the splash) and injects it as the FIRST module
- * script in index.html, so the splash paints within a few round-trips.
+ * download. This plugin emits the boot shell entry as its own tiny chunk
+ * (its graph is just the shell markup) and injects it as the FIRST module
+ * script in index.html, so the shell paints within a few round-trips.
  * It also preloads the dynamically-imported init chunk, which Vite's own
  * preload injection misses (one discovery round-trip saved).
  */
-function bootSplashPlugin(): Plugin {
+function bootShellPlugin(): Plugin {
   return {
-    name: 'boot-splash',
+    name: 'boot-shell',
     apply: 'build',
     buildStart() {
       this.emitFile({
         type: 'chunk',
-        id: 'src/init/bootSplashEntry.ts',
-        name: 'bootSplash',
+        id: BOOT_SHELL_ENTRY,
+        name: 'bootShell',
       })
     },
     // writeBundle (after index.html is finalized on disk): transformIndexHtml
@@ -105,17 +107,33 @@ function bootSplashPlugin(): Plugin {
         return chunk as { fileName: string; imports: string[] } | undefined
       }
 
-      const splashChunk = findChunk('src/init/bootSplashEntry.ts')
-      if (splashChunk !== undefined) {
-        const splashPreloads = splashChunk.imports
+      // Both injections below are string matches against generated HTML. A
+      // miss is invisible at runtime — the app still works, it just goes back
+      // to a blank screen until the shared chunks land — so fail loudly here
+      // rather than silently shipping the regression.
+      const warn = (message: string): void => {
+        this.warn(`[boot-shell] ${message}; boot shell will not be injected`)
+      }
+
+      const shellChunk = findChunk(BOOT_SHELL_ENTRY)
+      if (shellChunk === undefined) {
+        warn(`no emitted chunk with facadeModuleId ending in ${BOOT_SHELL_ENTRY}`)
+      } else if (!html.includes('<script type="module"')) {
+        warn('no <script type="module"> found in index.html')
+      } else {
+        // Skip anything Vite already preloaded, so the shell's imports are
+        // not listed twice.
+        const shellPreloads = shellChunk.imports
+          .map((fileName) => `${base}${fileName}`)
+          .filter((href) => !html.includes(`modulepreload" crossorigin href="${href}"`))
           .map(
-            (fileName) =>
-              `<link rel="modulepreload" crossorigin href="${base}${fileName}">`,
+            (href) =>
+              `<link rel="modulepreload" crossorigin href="${href}">`,
           )
           .join('')
         html = html.replace(
           '<script type="module"',
-          `${splashPreloads}<script type="module" crossorigin src="${base}${splashChunk.fileName}"></script><script type="module"`,
+          `${shellPreloads}<script type="module" crossorigin src="${base}${shellChunk.fileName}"></script><script type="module"`,
         )
       }
 
@@ -124,6 +142,10 @@ function bootSplashPlugin(): Plugin {
         html = html.replace(
           '</head>',
           `<link rel="modulepreload" crossorigin href="${base}${initChunk.fileName}"></head>`,
+        )
+      } else {
+        this.warn(
+          '[boot-shell] no chunk for src/init.tsx; skipping its modulepreload',
         )
       }
 
@@ -157,7 +179,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     appsConfigPlugin(appsConfigPath),
-    bootSplashPlugin(),
+    bootShellPlugin(),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old
