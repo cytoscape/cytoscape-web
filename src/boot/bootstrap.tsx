@@ -1,27 +1,27 @@
-import './styles/index.css'
+import '../styles/index.css'
 
 import { enableMapSet } from 'immer'
 import React from 'react'
 import * as ReactDOM from 'react-dom/client'
 
-import { AppConfigContext } from './AppConfigContext'
-import appConfig from './assets/config.json'
-import { markBoot } from './boot/metrics/bootMarks'
-import { useCredentialStore } from './data/hooks/stores/CredentialStore'
+import { AppConfigContext } from '../AppConfigContext'
+import appConfig from '../assets/config.json'
+import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 // this allows immer to work with Map and Set
-import { initializeDebug, logStartup } from './debug'
-import ErrorBoundary from './features/ErrorBoundary'
-import { AppBootstrap, AuthResolution } from './init/AppBootstrap'
-import { initializeGoogleAnalytics } from './init/googleAnalytics'
-import { initializeKeycloak, KeycloakContext } from './init/keycloak'
-import { initializeTabManager } from './init/tabManager'
-import { ensureTrailingSlash } from './utils/baseUrl'
+import { initializeDebug, logStartup } from '../debug'
+import ErrorBoundary from '../features/ErrorBoundary'
+import { ensureTrailingSlash } from '../utils/baseUrl'
+import { AppBootstrap, AuthResolution } from './AppBootstrap'
+import { initializeGoogleAnalytics } from './googleAnalytics'
+import { initializeKeycloak, KeycloakContext } from './keycloak'
+import { markBoot } from './metrics/bootMarks'
+import { initializeTabManager } from './tabManager'
 
 // Assign CyWebApi to window for external consumers (browser extensions, LLM
 // agents). Loaded asynchronously — it pulls in the store/data layer, which
 // must not block the boot chunk. Consumers already have to wait for the
 // cywebapi:ready event (wired in AppShell after stores hydrate) before use.
-void import('./app-api/core').then(({ CyWebApi }) => {
+void import('../app-api/core').then(({ CyWebApi }) => {
   ;(window as any).CyWebApi = CyWebApi
 })
 

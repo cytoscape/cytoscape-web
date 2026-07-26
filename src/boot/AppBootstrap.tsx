@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from 'react'
 
-import { BootShell } from '../boot/shell/BootShell'
+import { BootShell } from './shell/BootShell'
 
 // Kick off the heavy application chunks immediately, at module-load time, so
 // they download in parallel with the keycloak silent-SSO round-trip. As

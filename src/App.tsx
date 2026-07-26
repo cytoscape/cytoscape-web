@@ -21,7 +21,7 @@ import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { RedirectPanel } from './features/RedirectPanel'
 import { BootShell } from './boot/shell/BootShell'
-import { KeycloakContext } from './init/keycloak'
+import { KeycloakContext } from '@/boot/keycloak'
 import { theme } from './theme'
 
 

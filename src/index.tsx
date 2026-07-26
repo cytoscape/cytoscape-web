@@ -9,4 +9,4 @@ import { showBootShell } from './boot/shell/showBootShell'
 
 showBootShell()
 
-import('./init')
+import('./boot/bootstrap')

@@ -137,7 +137,7 @@ function bootShellPlugin(): Plugin {
         )
       }
 
-      const initChunk = findChunk('src/init.tsx')
+      const initChunk = findChunk('src/boot/bootstrap.tsx')
       if (initChunk !== undefined) {
         html = html.replace(
           '</head>',
@@ -145,7 +145,7 @@ function bootShellPlugin(): Plugin {
         )
       } else {
         this.warn(
-          '[boot-shell] no chunk for src/init.tsx; skipping its modulepreload',
+          '[boot-shell] no chunk for src/boot/bootstrap.tsx; skipping its modulepreload',
         )
       }
 
