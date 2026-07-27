@@ -42,27 +42,5 @@
     "tags": ["ai", "mcp", "bridge", "developer-tools"],
     "license": "MIT",
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
-  },
-  {
-    "id": "mcode",
-    "name": "MCODE",
-    "url": "http://localhost:5555/remoteEntry.js",
-    "author": "Bader Lab, University of Toronto",
-    "description": "Finds clusters (highly interconnected regions) in a network.",
-    "version": "1.0.0",
-    "tags": ["clustering", "graph-analysis"],
-    "license": "LGPL 2.1",
-    "repository": "https://github.com/cytoscape/mcode-cw-app"
-  },
-  {
-    "id": "networkAnalyzer",
-    "name": "Network Analyzer",
-    "url": "http://localhost:5556/remoteEntry.js",
-    "author": "Cytoscape Core Team",
-    "description": "Calculates topological properties of a network (degree distribution, clustering coefficients, centrality, etc.)",
-    "version": "1.0.0",
-    "tags": ["graph-analysis"],
-    "license": "LGPL 2.1",
-    "repository": "https://github.com/cytoscape/network-analyzer-cw"
   }
 ]
