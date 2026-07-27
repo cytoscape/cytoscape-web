@@ -1,12 +1,21 @@
 import Dexie from 'dexie'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { currentVersion, DB_NAME, deleteDb } from './index'
+import { currentVersion, DB_NAME, deleteDb, initializeDb } from './index'
 import { openDatabaseForStartup } from './startupOpen'
+
+// Partial mock: only initializeDb becomes a spy, and it calls through to the
+// real implementation by default so every other test in this file still
+// exercises a genuine Dexie open against fake-indexeddb.
+vi.mock('./index', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./index')>()
+  return { ...actual, initializeDb: vi.fn(actual.initializeDb) }
+})
 
 // The suite shares one fake-indexeddb, so a test that leaves a v99 database
 // behind breaks every later test that opens cyweb-db. Always clean up.
 afterEach(async () => {
+  vi.restoreAllMocks()
   await deleteDb()
 })
 
@@ -27,6 +36,22 @@ describe('openDatabaseForStartup', () => {
       kind: 'schema-too-new',
       onDiskVersion: 99,
       expectedVersion: currentVersion,
+    })
+  })
+
+  it('classifies a non-version failure as unavailable', async () => {
+    // Private browsing (Firefox InvalidStateError, Chrome UnknownError), quota
+    // exhaustion, or a corrupt file. This drives distinct user-facing copy in
+    // openDatabasePhase — there is nothing for the user to clear — so the
+    // branch needs to stay distinguishable from schema-too-new.
+    const failure = Object.assign(new Error('no storage here'), {
+      name: 'InvalidStateError',
+    })
+    vi.mocked(initializeDb).mockRejectedValueOnce(failure)
+
+    expect(await openDatabaseForStartup()).toEqual({
+      kind: 'unavailable',
+      reason: 'InvalidStateError',
     })
   })
 

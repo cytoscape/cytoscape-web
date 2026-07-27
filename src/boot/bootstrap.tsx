@@ -48,8 +48,23 @@ const initializeApp = async (): Promise<void> => {
   await runPhase(BootPhase.RUNTIME, () => {
     enableMapSet() // lets immer work with Map and Set
     initializeDebug()
-    initializeTabManager()
-    initializeGoogleAnalytics()
+
+    // Independently guarded rather than inlined above. Both touch APIs a
+    // hardened browsing context can refuse — window.name and analytics
+    // storage — and neither is a prerequisite for the other or for the app, so
+    // one being blocked must not take the other down with it. RUNTIME as a
+    // whole is non-fatal, but that isolation stops at the phase boundary.
+    try {
+      initializeTabManager()
+    } catch (cause) {
+      logStartup.warn('[boot]: tab identity unavailable', cause)
+    }
+
+    try {
+      initializeGoogleAnalytics()
+    } catch (cause) {
+      logStartup.warn('[boot]: analytics initialization failed', cause)
+    }
   })
 
   // The gate. A dead database is the one failure the app cannot render over —

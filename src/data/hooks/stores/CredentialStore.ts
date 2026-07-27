@@ -29,6 +29,21 @@ const createDeferred = (): Deferred => {
 // pending (between beginAuthInitialization and completeAuthInitialization).
 let authReadyDeferred: Deferred | null = null
 
+/**
+ * Reopens the gate between tests.
+ *
+ * The deferred is module scope, so a test that begins initialization without
+ * completing it — a rejected init, an assertion thrown mid-flight — leaves
+ * every later getToken/getParsedToken call in the run awaiting a promise that
+ * nothing will ever resolve. Those tests then fail by timeout, far from the
+ * cause. Not for production use: the boot path must go through
+ * completeAuthInitialization so waiters observe the real outcome.
+ */
+export const resetAuthGateForTesting = (): void => {
+  authReadyDeferred?.resolve()
+  authReadyDeferred = null
+}
+
 export const useCredentialStore = create(
   immer<CredentialStore>((set, get) => ({
     client: new Keycloak(),

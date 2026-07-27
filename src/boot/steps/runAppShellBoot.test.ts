@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { resetBootStateForTesting } from '../bootState'
 import { resetBootMetricsForTesting } from '../metrics/bootMarks'
 import { resetBootRunnerForTesting } from '../runBoot'
@@ -68,6 +68,10 @@ afterEach(() => {
   resetBootStateForTesting()
   resetBootMetricsForTesting()
   vi.clearAllMocks()
+  // Unconditional, unlike a manual call at the end of a test body: an
+  // assertion that throws first would otherwise leak a stubbed global fetch
+  // into every test that follows.
+  vi.unstubAllGlobals()
 })
 
 describe('runAppShellBoot: happy path', () => {
@@ -164,7 +168,9 @@ describe('runAppShellBoot: failure isolation', () => {
 
 describe('runAppShellBoot: deep links and imports', () => {
   it('adds a resolved deep-linked network and makes it current', async () => {
-    fetchNdexSummaries.mockResolvedValue([{ externalId: 'net-2', name: 'Net 2' }])
+    fetchNdexSummaries.mockResolvedValue([
+      { externalId: 'net-2', name: 'Net 2' },
+    ])
     const ctx = makeContext({
       networkIdParam: 'net-2',
       pathname: '/ws-1/networks/net-2',
@@ -179,19 +185,17 @@ describe('runAppShellBoot: deep links and imports', () => {
   })
 
   it('keeps importing after one URL fails', async () => {
-    fetchUrlCx
-      .mockRejectedValueOnce(new Error('404'))
-      .mockResolvedValueOnce({
-        summary: { externalId: 'imported-1' },
-        cyNetwork: {
-          network: { id: 'imported-1' },
-          nodeTable: {},
-          edgeTable: {},
-          visualStyle: {},
-          networkViews: [{}],
-          visualStyleOptions: {},
-        },
-      })
+    fetchUrlCx.mockRejectedValueOnce(new Error('404')).mockResolvedValueOnce({
+      summary: { externalId: 'imported-1' },
+      cyNetwork: {
+        network: { id: 'imported-1' },
+        nodeTable: {},
+        edgeTable: {},
+        visualStyle: {},
+        networkViews: [{}],
+        visualStyleOptions: {},
+      },
+    })
 
     const ctx = makeContext({
       search: new URLSearchParams(
@@ -233,6 +237,5 @@ describe('runAppShellBoot: install intents', () => {
     await runAppShellBoot(ctx)
 
     expect(ctx.navigate).toHaveBeenCalled()
-    vi.unstubAllGlobals()
   })
 })

@@ -8,7 +8,7 @@ export interface CredentialState {
    * beginAuthInitialization and completeAuthInitialization). Defaults to true
    * so consumers outside the boot flow (tests, external apps) are never gated.
    */
-  authInitialized: boolean
+  readonly authInitialized: boolean
 }
 
 export interface CredentialActions {

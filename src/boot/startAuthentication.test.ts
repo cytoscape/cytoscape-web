@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
-import { resetBootMetricsForTesting } from './metrics/bootMarks'
-import { startAuthentication } from './startAuthentication'
+import {
+  resetAuthGateForTesting,
+  useCredentialStore,
+} from '@/data/hooks/stores/CredentialStore'
 
-const AUTH_INIT_TIMEOUT_MS = 4000
+import { resetBootMetricsForTesting } from './metrics/bootMarks'
+import {
+  AUTH_INIT_TIMEOUT_MS,
+  startAuthentication,
+} from './startAuthentication'
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void
@@ -37,6 +42,9 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   resetBootMetricsForTesting()
+  // Several tests here leave keycloak.init pending forever, which leaves the
+  // module-scope token gate closed for every suite that runs after this file.
+  resetAuthGateForTesting()
 })
 
 describe('startAuthentication', () => {
@@ -51,6 +59,31 @@ describe('startAuthentication', () => {
 
     expect(source.get()).toMatchObject({
       authenticated: true,
+      isEmailUnverified: false,
+    })
+  })
+
+  it('stays authenticated when the verification lookup fails', async () => {
+    // The lookup is a second network call made *after* the SSO check already
+    // succeeded, so its failure says nothing about whether the user is signed
+    // in. Letting it reach the outer .catch published UNAUTHENTICATED for a
+    // genuinely authenticated user — and since the token gate is already open
+    // by then, their requests still carried credentials while the UI showed
+    // them as logged out.
+    const source = startAuthentication({
+      keycloak: makeKeycloak(Promise.resolve(true)),
+      checkUserVerification: vi
+        .fn()
+        .mockRejectedValue(new Error('verification endpoint down')),
+      urlBaseName: '/',
+    })
+
+    await vi.runAllTimersAsync()
+
+    expect(source.get()).toMatchObject({
+      authenticated: true,
+      // Not flagged unverified: that raises a modal the user cannot clear,
+      // because the lookup backing it is the thing that is down.
       isEmailUnverified: false,
     })
   })

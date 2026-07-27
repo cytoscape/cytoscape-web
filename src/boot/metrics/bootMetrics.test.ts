@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { initializeDebug } from '../../debug'
+import { initializeDebug } from '@/debug'
 import {
   BOOT_MARK_PREFIX,
   getBootMilestones,
@@ -194,5 +194,33 @@ describe('boot URL flags', () => {
     // Still false: re-reading the URL is exactly the bug this guards against.
     expect(BOOT_REPORT_REQUESTED).toBe(false)
     window.history.replaceState({}, '', '/')
+  })
+
+  it('renders the overlay unprompted when ?bootReport is set at load', async () => {
+    // The assertion above only proves a false snapshot stays false, which an
+    // always-false readFlag would also satisfy. This drives the other branch:
+    // the param is present *before* the modules are first imported, so the
+    // snapshot is true and publishing renders the overlay with no debug tool
+    // call. resetModules is what lets module-scope capture run again.
+    vi.resetModules()
+    window.history.replaceState({}, '', '/?bootReport')
+
+    try {
+      const flags = await import('./bootFlags')
+      expect(flags.BOOT_REPORT_REQUESTED).toBe(true)
+
+      const marks = await import('./bootMarks')
+      const report = await import('./bootReport')
+      marks.markBoot('shell-painted')
+      report.publishBootReport()
+
+      const overlay = document.getElementById('cyweb-boot-report')
+      expect(overlay).not.toBeNull()
+      expect(overlay?.textContent).toContain('shell-painted')
+    } finally {
+      window.history.replaceState({}, '', '/')
+      document.getElementById('cyweb-boot-report')?.remove()
+      vi.resetModules()
+    }
   })
 })

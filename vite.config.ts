@@ -5,7 +5,15 @@ import path from 'path'
 
 import { federation } from '@module-federation/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type ConfigEnv, type Connect, type Plugin, type PluginOption, type UserConfig, type ViteDevServer } from 'vite'
+import {
+  defineConfig,
+  type ConfigEnv,
+  type Connect,
+  type Plugin,
+  type PluginOption,
+  type UserConfig,
+  type ViteDevServer,
+} from 'vite'
 import type { ServerResponse } from 'node:http'
 
 import config from './src/assets/config.json'
@@ -41,15 +49,21 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
   return {
     name: 'apps-config',
     configureServer(server: ViteDevServer) {
-      server.middlewares.use((req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-        if (req.url === '/apps.json') {
-          res.setHeader('Content-Type', 'application/json')
-          res.end(fs.readFileSync(appsConfigPath, 'utf8'))
-          return
-        }
+      server.middlewares.use(
+        (
+          req: Connect.IncomingMessage,
+          res: ServerResponse,
+          next: Connect.NextFunction,
+        ) => {
+          if (req.url === '/apps.json') {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(fs.readFileSync(appsConfigPath, 'utf8'))
+            return
+          }
 
-        next()
-      })
+          next()
+        },
+      )
     },
     generateBundle() {
       this.emitFile({
@@ -106,11 +120,14 @@ function bootShellPlugin(): Plugin {
       const preconnectOrigins = [
         ...new Set(
           [config.keycloakConfig?.url, config.ndexBaseUrl]
-            .filter((url): url is string => typeof url === 'string' && url !== '')
+            .filter(
+              (url): url is string => typeof url === 'string' && url !== '',
+            )
             .map((url) => {
               try {
                 // ndexBaseUrl is stored bare ("dev1.ndexbio.org")
-                return new URL(url.includes('://') ? url : `https://${url}`).origin
+                return new URL(url.includes('://') ? url : `https://${url}`)
+                  .origin
               } catch {
                 return undefined
               }
@@ -135,7 +152,9 @@ function bootShellPlugin(): Plugin {
         const chunk = Object.values(bundle).find(
           (c) =>
             c.type === 'chunk' &&
-            ((c as { facadeModuleId?: string | null }).facadeModuleId ?? '').endsWith(facadeSuffix),
+            (
+              (c as { facadeModuleId?: string | null }).facadeModuleId ?? ''
+            ).endsWith(facadeSuffix),
         )
         return chunk as { fileName: string; imports: string[] } | undefined
       }
@@ -150,18 +169,23 @@ function bootShellPlugin(): Plugin {
 
       const shellChunk = findChunk(BOOT_SHELL_ENTRY)
       if (shellChunk === undefined) {
-        warn(`no emitted chunk with facadeModuleId ending in ${BOOT_SHELL_ENTRY}`)
+        warn(
+          `no emitted chunk with facadeModuleId ending in ${BOOT_SHELL_ENTRY}`,
+        )
       } else if (!html.includes('<script type="module"')) {
         warn('no <script type="module"> found in index.html')
       } else {
         // Skip anything Vite already preloaded, so the shell's imports are
-        // not listed twice.
+        // not listed twice. Matched on the href alone: keying off the full
+        // `modulepreload" crossorigin href=` prefix would stop matching the
+        // moment Vite reorders or adds an attribute, and the guard would go
+        // quietly dead. These hrefs are emitted chunk names, so nothing else
+        // in the document can reference them.
         const shellPreloads = shellChunk.imports
           .map((fileName) => `${base}${fileName}`)
-          .filter((href) => !html.includes(`modulepreload" crossorigin href="${href}"`))
+          .filter((href) => !html.includes(`href="${href}"`))
           .map(
-            (href) =>
-              `<link rel="modulepreload" crossorigin href="${href}">`,
+            (href) => `<link rel="modulepreload" crossorigin href="${href}">`,
           )
           .join('')
         html = html.replace(

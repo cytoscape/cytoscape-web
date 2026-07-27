@@ -1,7 +1,7 @@
 import BugReportOutlinedIcon from '@mui/icons-material/BugReportOutlined'
 import Tooltip from '@mui/material/Tooltip'
 
-import { useDebugEnabled } from '../../data/hooks/useDebugEnabled'
+import { useDebugEnabled } from '@/data/hooks/useDebugEnabled'
 
 /**
  * Small toolbar badge shown only while debug mode is on, so the otherwise

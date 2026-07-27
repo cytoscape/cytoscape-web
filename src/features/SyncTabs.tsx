@@ -2,17 +2,17 @@ import debounce from 'lodash.debounce'
 import { ReactElement, useContext, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { AppConfigContext } from '../AppConfigContext'
+import { AppConfigContext } from '@/AppConfigContext'
 import {
   getDb,
   getTimestampFromDb,
   getWorkspaceFromDb,
   putTimestampToDb,
-} from '../data/db'
-import { useDebugEnabled } from '../data/hooks/useDebugEnabled'
-import { useAppStore } from '../data/hooks/stores/AppStore'
-import { logUi } from '../debug'
-import { ServiceStatus } from '../models/AppModel/ServiceStatus'
+} from '@/data/db'
+import { useDebugEnabled } from '@/data/hooks/useDebugEnabled'
+import { useAppStore } from '@/data/hooks/stores/AppStore'
+import { logUi } from '@/debug'
+import { ServiceStatus } from '@/models/AppModel/ServiceStatus'
 
 const markForPageReload = debounce(() => {
   void putTimestampToDb(Date.now())

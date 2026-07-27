@@ -1,9 +1,9 @@
-import { useAppStore } from '../../data/hooks/stores/AppStore'
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
-import { logStartup } from '../../debug'
-import { serviceAppUrlsToAdd } from '../../models/AppModel/impl'
-import { MessageSeverity } from '../../models/MessageModel'
-import { parseSingleEntryManifest } from '../../features/AppManager/install/installGate'
+import { useAppStore } from '@/data/hooks/stores/AppStore'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { logStartup } from '@/debug'
+import { serviceAppUrlsToAdd } from '@/models/AppModel/impl'
+import { MessageSeverity } from '@/models/MessageModel'
+import { parseSingleEntryManifest } from '@/features/AppManager/install/installGate'
 import type { AppShellBootContext } from './appShellBootContext'
 
 /** A URL pointing to a single-entry manifest (workspace-app-install-design §7.2). */
@@ -11,6 +11,16 @@ const INSTALL_APP_QUERY_KEY = 'installApp'
 
 /** One or more external service endpoints to register (CW-521). */
 const ADD_SERVICE_APP_QUERY_KEY = 'addserviceapp'
+
+/**
+ * The manifest host comes from a URL parameter, so it is arbitrary and may be
+ * unreachable rather than merely slow. runPhase catches errors but cannot
+ * impose a deadline, so without this an unresponsive host stalls the INTENTS
+ * phase indefinitely — holding the boot shell open and, worse, never reaching
+ * the ROUTE phase that strips the query params, so a reload retries the same
+ * dead host forever.
+ */
+const MANIFEST_FETCH_TIMEOUT_MS = 10000
 
 /**
  * Processes app-install intents carried by the URL.
@@ -28,7 +38,9 @@ export const runInstallIntents = async (
 
   if (installAppUrl !== null) {
     try {
-      const response = await fetch(installAppUrl)
+      const response = await fetch(installAppUrl, {
+        signal: AbortSignal.timeout(MANIFEST_FETCH_TIMEOUT_MS),
+      })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
@@ -48,7 +60,10 @@ export const runInstallIntents = async (
         duration: 5000,
         severity: MessageSeverity.ERROR,
       })
-      logStartup.warn(`[boot]: install intent failed for ${installAppUrl}`, error)
+      logStartup.warn(
+        `[boot]: install intent failed for ${installAppUrl}`,
+        error,
+      )
     }
   }
 

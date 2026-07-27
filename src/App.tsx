@@ -24,7 +24,6 @@ import { BootShell } from './boot/shell/BootShell'
 import { KeycloakContext } from '@/boot/keycloak'
 import { theme } from './theme'
 
-
 // Started at module load rather than on first render, mirroring AppBootstrap's
 // prefetch of the App chunk. React.lazy alone requests a chunk only when its
 // boundary first renders.
@@ -32,12 +31,19 @@ import { theme } from './theme'
 // The WorkspaceEditor prefetch is the one that pays: its boundary does not
 // render until AppShell's boot navigates to /:workspaceId, so without this its
 // download does not even begin until the workspace is already hydrated.
-// Measured on a production build at 4Mbps/100ms (median of 5 cold loads),
+// Measured on a production build at 4 Mbps/100ms (median of 5 cold loads),
 // workspace-editor-mounted goes 4359ms -> 4148ms. AppShell's own prefetch is
 // close to free (3206ms -> 3194ms) because its boundary renders immediately;
 // it is kept for symmetry and for slower links.
 const appShellPromise = import('./features/AppShell')
 const workspaceEditorPromise = import('./features/Workspace/WorkspaceEditor')
+
+// React.lazy only subscribes to these when its boundary first renders. A chunk
+// that fails to load before then would surface as an unhandledrejection —
+// noise in error reporting — even though the boundary still re-throws it
+// properly afterwards. These no-op handlers silence the global event only.
+appShellPromise.catch(() => undefined)
+workspaceEditorPromise.catch(() => undefined)
 
 const AppShell = React.lazy(() => appShellPromise)
 const WorkspaceEditor = React.lazy(() => workspaceEditorPromise)

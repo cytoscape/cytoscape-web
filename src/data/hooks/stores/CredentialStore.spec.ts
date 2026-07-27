@@ -1,18 +1,28 @@
 import { act, renderHook } from '@testing-library/react'
 import Keycloak from 'keycloak-js'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { useCredentialStore } from './CredentialStore'
+import { resetAuthGateForTesting, useCredentialStore } from './CredentialStore'
+
+// The gate is module scope with no per-test lifecycle, so a test that begins
+// initialization and then fails before completing it would leave every later
+// getToken/getParsedToken call in the file awaiting a promise nothing resolves
+// — turning one failure into a cascade of unrelated timeouts.
+afterEach(() => {
+  resetAuthGateForTesting()
+})
 
 // Mock Keycloak
 vi.mock('keycloak-js', () => {
-  return { default: vi.fn().mockImplementation(function() {
-    return {
-      token: 'mock-token',
-      tokenParsed: { sub: 'user-123' },
-      updateToken: vi.fn().mockResolvedValue(true),
-    }
-  }) }
+  return {
+    default: vi.fn().mockImplementation(function () {
+      return {
+        token: 'mock-token',
+        tokenParsed: { sub: 'user-123' },
+        updateToken: vi.fn().mockResolvedValue(true),
+      }
+    }),
+  }
 })
 
 describe('useCredentialStore', () => {
@@ -160,4 +170,3 @@ describe('useCredentialStore', () => {
     })
   })
 })
-

@@ -23,7 +23,7 @@
  * needs a real consumer designed alongside it.
  */
 
-import { logStartup } from '../debug'
+import { logStartup } from '@/debug'
 
 const CYWEB_PREFIX = 'cyweb'
 
@@ -35,10 +35,13 @@ const CYWEB_PREFIX = 'cyweb'
  */
 export const initializeTabManager = (): string => {
   const windowName = window.name
+  // randomUUID rather than Date.now(): two tabs restored together by a session
+  // restore initialize in the same millisecond, and a shared id means
+  // window.open(url, tabId) focuses whichever one the browser picks.
   const tabId =
     windowName && windowName.startsWith(`${CYWEB_PREFIX}-`)
       ? windowName
-      : `${CYWEB_PREFIX}-${Date.now()}`
+      : `${CYWEB_PREFIX}-${crypto.randomUUID()}`
 
   window.name = tabId
   logStartup.info(

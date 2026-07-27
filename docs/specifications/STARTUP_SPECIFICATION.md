@@ -6,30 +6,41 @@ reasoning behind it.
 
 ## 1. Phases
 
-A phase is a named stage of startup declared in `src/boot/bootPhases.ts` and
-executed through `runPhase` (`src/boot/runBoot.ts`). Every phase gets, without
-its author doing anything:
+A phase is a named stage of startup declared in `src/boot/bootPhases.ts`. Every
+phase **executed through `runPhase`** (`src/boot/runBoot.ts`) gets the following
+without its author doing anything:
 
 - a `performance.mark`/`measure` pair named `cyweb.boot.<phase>`
 - the boot shell's status message, if the phase declares one
 - error capture, classification and logging
 - an abort decision
 
-| Phase | Runs in | Fatal | Message |
-| --- | --- | --- | --- |
-| `runtime` | `bootstrap.tsx` | no | Loading application... |
-| `database` | `bootstrap.tsx` | **yes** | Loading application... |
-| `auth` | `startAuthentication.ts` (measured, not run through `runPhase`) | no | — |
-| `workspace` | `steps/loadWorkspaceState.ts` | no | Loading workspace... |
-| `deep-link` | `steps/resolveDeepLink.ts` | no | Loading workspace... |
-| `imports` | `steps/runUrlImports.ts` | no | Importing network... |
-| `publish` | `steps/publishWorkspace.ts` | no | Loading network... |
-| `intents` | `steps/runInstallIntents.ts` | no | — |
-| `route` | `steps/runAppShellBoot.ts` | no | — |
+`auth` is the one declared phase that does **not** run through `runPhase`, and
+it is the exception that motivates the rule. The app renders optimistically over
+the SSO check (§2.4), so there is nothing to await and therefore nothing for the
+runner to wrap. `startAuthentication.ts` emits the `cyweb.boot.auth` measure
+itself and owns its own error handling: it never rejects, publishing
+`UNAUTHENTICATED` instead, because an unhandled rejection during boot is the
+failure mode being avoided. It has no status message and can never abort the
+boot. Treat it as a separately measured startup activity rather than as a
+counter-example to the contract above.
 
-Adding a stage means adding a row and a `runPhase` call. Do not add bare
-`await`s to the boot path — that is how the pre-existing pipeline became
-untimed and unguarded.
+| Phase       | Runs in                                                         | Fatal   | Message                |
+| ----------- | --------------------------------------------------------------- | ------- | ---------------------- |
+| `runtime`   | `bootstrap.tsx`                                                 | no      | Loading application... |
+| `database`  | `bootstrap.tsx`                                                 | **yes** | Loading application... |
+| `auth`      | `startAuthentication.ts` (measured, not run through `runPhase`) | no      | —                      |
+| `workspace` | `steps/loadWorkspaceState.ts`                                   | no      | Loading workspace...   |
+| `deep-link` | `steps/resolveDeepLink.ts`                                      | no      | Loading workspace...   |
+| `imports`   | `steps/runUrlImports.ts`                                        | no      | Importing network...   |
+| `publish`   | `steps/publishWorkspace.ts`                                     | no      | Loading network...     |
+| `intents`   | `steps/runInstallIntents.ts`                                    | no      | —                      |
+| `route`     | `steps/runAppShellBoot.ts`                                      | no      | —                      |
+
+Adding a stage means adding a row and a `runPhase` call — not following `auth`'s
+example, which exists only because it is never awaited. Do not add bare `await`s
+to the boot path: that is how the pre-existing pipeline became untimed and
+unguarded.
 
 ## 2. Rules
 
@@ -37,7 +48,7 @@ untimed and unguarded.
 
 `runPhase` returns `{ ok: true, value }` or `{ ok: false, error }`. It never
 rejects. Callers must not re-throw a failed result; the point is that a caller
-*cannot* accidentally skip later phases.
+_cannot_ accidentally skip later phases.
 
 ### 2.2 Only `database` is fatal
 
@@ -45,13 +56,13 @@ A fatal phase aborts the boot: `bootState` switches to the error shell and no
 further phase runs. Everything else degrades to a working, if less complete,
 application:
 
-| Failure | Outcome |
-| --- | --- |
-| `workspace` | Empty workspace plus an error message. App is usable. |
-| `deep-link` | Workspace without that network, plus a message. |
-| `imports` | Other imports still succeed; each failure is reported. |
-| `intents` | App not installed; message. Boot continues. |
-| `database` | **Boot stops.** Error shell explains and does not mount the app. |
+| Failure     | Outcome                                                          |
+| ----------- | ---------------------------------------------------------------- |
+| `workspace` | Empty workspace plus an error message. App is usable.            |
+| `deep-link` | Workspace without that network, plus a message.                  |
+| `imports`   | Other imports still succeed; each failure is reported.           |
+| `intents`   | App not installed; message. Boot continues.                      |
+| `database`  | **Boot stops.** Error shell explains and does not mount the app. |
 
 `database` is fatal because AppShell's first act is to read the workspace from
 IndexedDB — rendering over a dead database only relocates the failure.
@@ -104,15 +115,15 @@ first-chunk load; see `metrics/bootFlags.ts`.
 
 Point marks, recorded first-write-wins (StrictMode invokes effects twice):
 
-| Milestone | Meaning |
-| --- | --- |
-| `shell-painted` | Boot shell is on screen. First paint. |
-| `init-exec` | The bootstrap chunk started executing. |
-| `react-render` | `root.render` returned. |
-| `auth-settled` | SSO check settled; the token gate is open. |
-| `app-shell-mounted` | AppShell's boot effect fired. |
-| `workspace-hydrated` | Stores published; `cywebapi:ready` about to fire. |
-| `workspace-editor-mounted` | The editor is on screen; no boot shell remains. |
+| Milestone                  | Meaning                                           |
+| -------------------------- | ------------------------------------------------- |
+| `shell-painted`            | Boot shell is on screen. First paint.             |
+| `init-exec`                | The bootstrap chunk started executing.            |
+| `react-render`             | `root.render` returned.                           |
+| `auth-settled`             | SSO check settled; the token gate is open.        |
+| `app-shell-mounted`        | AppShell's boot effect fired.                     |
+| `workspace-hydrated`       | Stores published; `cywebapi:ready` about to fire. |
+| `workspace-editor-mounted` | The editor is on screen; no boot shell remains.   |
 
 Milestones are named for what happened, not for what a reader might infer:
 `workspace-editor-mounted` does not mean the canvas finished drawing.
@@ -131,18 +142,18 @@ otherwise silent).
 
 ## 4. Reference measurements
 
-Production build, 4Mbps / 100ms latency, median of 5 cold loads. Recorded so a
+Production build, 4 Mbps / 100ms latency, median of 5 cold loads. Recorded so a
 future change has something to compare against; re-measure rather than trusting
 these.
 
-| Milestone | ms |
-| --- | --- |
-| first contentful paint | 264 |
-| `shell-painted` | 247 |
-| `init-exec` | 1630 |
-| `react-render` | 1645 |
-| `app-shell-mounted` | 3194 |
-| `workspace-hydrated` | 3224 |
+| Milestone                  | ms   |
+| -------------------------- | ---- |
+| first contentful paint     | 264  |
+| `shell-painted`            | 247  |
+| `init-exec`                | 1630 |
+| `react-render`             | 1645 |
+| `app-shell-mounted`        | 3194 |
+| `workspace-hydrated`       | 3224 |
 | `workspace-editor-mounted` | 4148 |
 
 The gap from `shell-painted` to `init-exec` is the Module Federation shared

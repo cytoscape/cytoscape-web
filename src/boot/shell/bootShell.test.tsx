@@ -25,6 +25,12 @@ const mountRoot = (): HTMLElement => {
 
 afterEach(() => {
   document.body.innerHTML = ''
+  // The stylesheet lives in <head>, so clearing the body leaves it installed.
+  // Without this, the "keeps the stylesheet out of the shell subtree" test
+  // below would pass on a leftover from an earlier showBootShell call even if
+  // BootShell stopped installing it.
+  document.getElementById(BOOT_SHELL_STYLE_ID)?.remove()
+  resetBootStateForTesting()
 })
 
 describe('showBootShell', () => {
@@ -49,7 +55,9 @@ describe('showBootShell', () => {
     // The guard is what stops the second caller (src/index.tsx in production,
     // where the standalone chunk already painted) from clobbering the app.
     expect(root.childElementCount).toBe(1)
-    expect(root.querySelector(`[data-testid="${BOOT_SHELL_TESTID}"]`)).toBeNull()
+    expect(
+      root.querySelector(`[data-testid="${BOOT_SHELL_TESTID}"]`),
+    ).toBeNull()
   })
 
   it('is a no-op when #root is absent', () => {
@@ -72,6 +80,11 @@ describe('showBootShell', () => {
 })
 
 describe('BootShell / showBootShell parity', () => {
+  // With no message prop, BootShell falls back to the live bootState message
+  // while showBootShell falls back to DEFAULT_BOOT_MESSAGE. Those agree only
+  // while boot state is pristine, so the top-level afterEach reset is what
+  // keeps this suite from depending on which file ran before it.
+  //
   // The reason BootShell uses dangerouslySetInnerHTML: the plain-DOM shell
   // that paints pre-React and the React shell that replaces it must produce
   // identical DOM, or the handoff flashes. This is the guard for that.
@@ -109,10 +122,6 @@ describe('BootShell / showBootShell parity', () => {
 })
 
 describe('BootShell live phase tracking', () => {
-  afterEach(() => {
-    resetBootStateForTesting()
-  })
-
   it('follows the boot phase message when none is passed', () => {
     const { container } = render(<BootShell />)
     expect(container.textContent).toContain('Loading application...')
@@ -133,6 +142,11 @@ describe('BootShell live phase tracking', () => {
     const { container } = render(<BootShell />)
     const spinnerBefore = container.querySelector('.boot-shell-spinner')
     const blocksBefore = [...container.querySelectorAll('.boot-shell-block')]
+
+    // Without these the identity assertions below hold vacuously: a shell that
+    // rendered no spinner and no blocks at all would still "not rebuild" them.
+    expect(spinnerBefore).not.toBeNull()
+    expect(blocksBefore.length).toBeGreaterThan(0)
 
     act(() => {
       setBootMessage('Loading workspace...')
@@ -213,7 +227,9 @@ describe('bootShellInnerHtml', () => {
     // DOM rather than the HTML string — the stylesheet the shell carries
     // defines these class names whether or not they are used.
     expect(shell?.querySelector('.boot-shell-spinner')).toBeNull()
-    expect(shell?.textContent).not.toContain('Initial loading may take some time')
+    expect(shell?.textContent).not.toContain(
+      'Initial loading may take some time',
+    )
     // The build identity stays — it is what a developer needs to read here.
     expect(shell?.textContent).toContain('Version ')
     expect(shell?.textContent).toContain('Built on: ')

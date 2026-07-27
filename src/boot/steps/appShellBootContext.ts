@@ -1,7 +1,7 @@
-import type { AppCatalogEntry } from '../../models/AppModel'
-import type { IdType } from '../../models/IdType'
-import type { NetworkSummary } from '../../models/NetworkSummaryModel'
-import type { Workspace } from '../../models/WorkspaceModel'
+import type { AppCatalogEntry } from '@/models/AppModel'
+import type { IdType } from '@/models/IdType'
+import type { NetworkSummary } from '@/models/NetworkSummaryModel'
+import type { Workspace } from '@/models/WorkspaceModel'
 
 // Everything the AppShell boot steps need from React, gathered once at mount.
 //

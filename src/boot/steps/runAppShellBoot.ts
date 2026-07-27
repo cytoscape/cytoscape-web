@@ -1,5 +1,5 @@
-import { logStartup } from '../../debug'
-import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
+import { logStartup } from '@/debug'
+import { createWorkspace } from '@/models/WorkspaceModel/impl/workspaceImpl'
 import { BootPhase } from '../bootPhases'
 import { runPhase } from '../runBoot'
 import {

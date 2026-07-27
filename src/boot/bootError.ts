@@ -12,9 +12,7 @@ export interface BootError extends BootShellError {
   cause: unknown
 }
 
-export type BootErrorClassifier = (
-  cause: unknown,
-) => BootShellError | undefined
+export type BootErrorClassifier = (cause: unknown) => BootShellError | undefined
 
 const classifiers = new Map<BootPhase, BootErrorClassifier>()
 
@@ -36,7 +34,9 @@ export const errorMessageOf = (cause: unknown): string =>
       ? cause
       : String(cause)
 
-const GENERIC_TITLE: Record<string, string> = {
+// Keyed by BootPhase rather than string so adding a phase without a title is a
+// compile error instead of a silent fall through to the generic message.
+const GENERIC_TITLE: Record<BootPhase, string> = {
   [BootPhase.RUNTIME]: 'Cytoscape Web could not start',
   [BootPhase.DATABASE]: 'Local storage is unavailable',
   [BootPhase.AUTH]: 'Sign-in check failed',
@@ -57,7 +57,7 @@ export const classifyBootError = (
   return {
     phase,
     cause,
-    title: classified?.title ?? GENERIC_TITLE[phase] ?? 'Cytoscape Web could not start',
+    title: classified?.title ?? GENERIC_TITLE[phase],
     message:
       classified?.message ??
       'Something went wrong while starting up. Reloading the page may help.',

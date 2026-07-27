@@ -3,9 +3,9 @@ import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import { ReactElement, useContext, useState } from 'react'
 
-import { AppConfigContext } from '../../AppConfigContext'
-import { useCredentialStore } from '../../data/hooks/stores/CredentialStore'
-import { logApi } from '../../debug'
+import { AppConfigContext } from '@/AppConfigContext'
+import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
+import { logApi } from '@/debug'
 import { KeycloakContext } from '@/boot/keycloak'
 import { LoginPanel } from './LoginPanel'
 

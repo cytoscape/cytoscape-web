@@ -1,9 +1,9 @@
 import { act, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { AppConfigContext, AppConfig } from '../AppConfigContext'
-import appConfig from '../assets/config.json'
-import { getTimestampFromDb } from '../data/db'
+import { AppConfigContext, AppConfig } from '@/AppConfigContext'
+import appConfig from '@/assets/config.json'
+import { getTimestampFromDb } from '@/data/db'
 import { SyncTabsAction } from './SyncTabs'
 
 vi.mock('react-router-dom', () => ({

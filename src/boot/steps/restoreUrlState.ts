@@ -1,16 +1,16 @@
-import { useFilterStore } from '../../data/hooks/stores/FilterStore'
-import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
-import { SelectionStates } from '../../features/FloatingToolBar/ShareNetworkButton'
-import { DEFAULT_FILTER_NAME } from '../../features/HierarchyViewer/components/FilterPanel/FilterPanel'
+import { useFilterStore } from '@/data/hooks/stores/FilterStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
+import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
+import { SelectionStates } from '@/features/FloatingToolBar/ShareNetworkButton'
+import { DEFAULT_FILTER_NAME } from '@/features/HierarchyViewer/components/FilterPanel/FilterPanel'
 import {
   DisplayMode,
   FilterConfig,
   FilterWidgetType,
-} from '../../models/FilterModel'
-import { FilterUrlParams } from '../../models/FilterModel/FilterUrlParams'
-import { GraphObjectType } from '../../models/NetworkModel'
-import type { IdType } from '../../models/IdType'
+} from '@/models/FilterModel'
+import { FilterUrlParams } from '@/models/FilterModel/FilterUrlParams'
+import { GraphObjectType } from '@/models/NetworkModel'
+import type { IdType } from '@/models/IdType'
 import type { AppShellBootContext } from './appShellBootContext'
 
 // Restores shareable UI state from the URL (see ShareNetworkButton, which

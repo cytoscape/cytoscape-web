@@ -1,4 +1,4 @@
-import { isDebugEnabled, logPerformance, registerDebugTool } from '../../debug'
+import { isDebugEnabled, logPerformance, registerDebugTool } from '@/debug'
 import { BOOT_REPORT_REQUESTED } from './bootFlags'
 import {
   bootNow,
@@ -43,9 +43,9 @@ const round = (value: number): number => Math.round(value * 10) / 10
 
 const navigationEntry = (): PerformanceNavigationTiming | undefined => {
   try {
-    return performance.getEntriesByType(
-      'navigation',
-    )[0] as PerformanceNavigationTiming | undefined
+    return performance.getEntriesByType('navigation')[0] as
+      | PerformanceNavigationTiming
+      | undefined
   } catch {
     return undefined
   }
@@ -76,7 +76,9 @@ export const getBootReport = (): BootReport => {
   return {
     build: {
       version:
-        typeof REACT_APP_VERSION !== 'undefined' ? REACT_APP_VERSION : 'unknown',
+        typeof REACT_APP_VERSION !== 'undefined'
+          ? REACT_APP_VERSION
+          : 'unknown',
       commit: process.env.REACT_APP_GIT_COMMIT ?? 'unknown',
       buildTime:
         typeof REACT_APP_BUILD_TIME !== 'undefined'
@@ -124,20 +126,23 @@ const renderOverlay = (report: BootReport): void => {
 
   const panel = document.createElement('div')
   panel.id = OVERLAY_ID
-  panel.setAttribute('style', [
-    'position:fixed',
-    'right:12px',
-    'bottom:12px',
-    'z-index:2147483647',
-    'background:rgba(20,20,22,.94)',
-    'color:#e8e8ea',
-    'font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
-    'padding:10px 12px',
-    'border-radius:6px',
-    'box-shadow:0 4px 16px rgba(0,0,0,.4)',
-    'max-height:70vh',
-    'overflow:auto',
-  ].join(';'))
+  panel.setAttribute(
+    'style',
+    [
+      'position:fixed',
+      'right:12px',
+      'bottom:12px',
+      'z-index:2147483647',
+      'background:rgba(20,20,22,.94)',
+      'color:#e8e8ea',
+      'font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace',
+      'padding:10px 12px',
+      'border-radius:6px',
+      'box-shadow:0 4px 16px rgba(0,0,0,.4)',
+      'max-height:70vh',
+      'overflow:auto',
+    ].join(';'),
+  )
 
   panel.innerHTML = `
     <div style="display:flex;gap:10px;align-items:baseline;margin-bottom:6px">

@@ -1,13 +1,18 @@
 import cloneDeep from 'lodash/cloneDeep'
 
-import { getUiStateFromDb, getWorkspaceFromDb } from '../../data/db'
+import { getUiStateFromDb, getWorkspaceFromDb } from '@/data/db'
 import {
   DEFAULT_UI_STATE,
   useUiStateStore,
-} from '../../data/hooks/stores/UiStateStore'
-import { Panel } from '../../models/UiModel/Panel'
-import { PanelState } from '../../models/UiModel/PanelState'
+} from '@/data/hooks/stores/UiStateStore'
+import { Panel } from '@/models/UiModel/Panel'
+import { PanelState } from '@/models/UiModel/PanelState'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
+
+const PANEL_STATES = new Set<string>(Object.values(PanelState))
+
+const isPanelState = (value: string): value is PanelState =>
+  PANEL_STATES.has(value)
 
 /**
  * Reads the persisted workspace, its network summaries, and the UI state, then
@@ -22,16 +27,24 @@ export const loadWorkspaceState = async (
 ): Promise<WorkspaceDraft> => {
   const { search } = ctx
 
-  const workspace = await getWorkspaceFromDb()
+  // The UI state read does not depend on either of the other two, so it
+  // overlaps them rather than adding a third round-trip to the boot path.
+  const [workspace, dbUiState] = await Promise.all([
+    getWorkspaceFromDb(),
+    getUiStateFromDb(),
+  ])
   const summaries = await ctx.loadNetworkSummaries(workspace.networkIds)
 
   // Mutable copy: the record from IndexedDB is frozen.
-  const dbUiState = await getUiStateFromDb()
   const uiState = cloneDeep(dbUiState ?? { ...DEFAULT_UI_STATE })
 
   for (const panel of [Panel.LEFT, Panel.RIGHT, Panel.BOTTOM]) {
-    uiState.panels[panel] =
-      (search.get(panel) as PanelState) ?? uiState.panels[panel]
+    // Validated, not cast: these come from ?left=/?right=/?bottom= and an
+    // unrecognized value would otherwise be written straight into store state.
+    const requested = search.get(panel)
+    if (requested !== null && isPanelState(requested)) {
+      uiState.panels[panel] = requested
+    }
   }
 
   // Applied here only. It used to be set twice — once into uiState and again

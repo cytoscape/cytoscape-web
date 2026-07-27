@@ -1,8 +1,8 @@
 import type Keycloak from 'keycloak-js'
 
-import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
-import { logStartup } from '../debug'
-import { ensureTrailingSlash } from '../utils/baseUrl'
+import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
+import { logStartup } from '@/debug'
+import { ensureTrailingSlash } from '@/utils/baseUrl'
 import type { AuthResolution } from './AppBootstrap'
 import { BootPhase } from './bootPhases'
 import type { UserVerificationStatus } from './keycloak'
@@ -17,7 +17,8 @@ import { bootNow, markBoot, measureBoot } from './metrics/bootMarks'
 // much: *every* terminal path here must complete initialization, or any
 // credentialed request hangs forever.
 
-const AUTH_INIT_TIMEOUT_MS = 4000
+/** Exported so the tests assert against this boundary rather than a copy. */
+export const AUTH_INIT_TIMEOUT_MS = 4000
 const LOCAL_DEV_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
 // Dev-only: `?authDelay[=ms]` holds keycloak init's resolution to simulate the
@@ -163,13 +164,31 @@ export const startAuthentication = ({
         return
       }
 
-      const status = await checkUserVerification()
-      settle({
-        authenticated,
-        isEmailUnverified: !status.isVerified,
-        userName: status.userName ?? '',
-        userEmail: status.userEmail ?? '',
-      })
+      // Isolated from the outer .catch on purpose. The SSO check has already
+      // succeeded here, so a failure of this *second* network call says nothing
+      // about whether the user is signed in — letting it reach the .catch below
+      // would publish UNAUTHENTICATED for a genuinely authenticated user, which
+      // is the exact failure mode the doc comment above says this design
+      // exists to prevent. The token gate is already open at this point, so
+      // requests would carry credentials while the UI claimed otherwise.
+      try {
+        const status = await checkUserVerification()
+        settle({
+          authenticated,
+          isEmailUnverified: !status.isVerified,
+          userName: status.userName ?? '',
+          userEmail: status.userEmail ?? '',
+        })
+      } catch (cause) {
+        logStartup.warn(
+          '[boot]: email verification lookup failed; treating the session as verified',
+          cause,
+        )
+        // Not "unverified": that would raise a modal the user cannot clear
+        // because the lookup backing it is down. Staying authenticated with no
+        // modal degrades to the pre-verification behaviour.
+        settle({ ...UNAUTHENTICATED, authenticated }, 'error')
+      }
     })
     .catch((cause) => {
       clearWatchdog()

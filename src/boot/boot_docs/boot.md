@@ -7,24 +7,24 @@ this document is the map of the directory and the reasoning behind its shape.
 
 ## Directory
 
-| Path | Role |
-| --- | --- |
-| `bootstrap.tsx` | Entry. Wires phases together and renders. Deliberately thin. |
-| `bootPhases.ts` | The pipeline: every phase, its user-facing message, which are fatal. |
-| `runBoot.ts` | The phase runner — timing, error classification, abort handling. |
-| `bootState.ts` | What the boot shell displays. Module-scope observable, not Zustand. |
-| `bootError.ts` | Maps a thrown value to actionable copy; per-phase classifiers. |
-| `startAuthentication.ts` | Keycloak silent SSO. Started, never awaited. |
-| `openDatabasePhase.ts` | The DB gate and its error copy. |
-| `shell/` | The boot shell: one markup source, plain-DOM and React renderers. |
-| `metrics/` | User Timing marks and the dev boot report. |
-| `steps/` | The AppShell half of the boot, one file per step. |
-| `keycloak.ts`, `tabManager.ts`, `googleAnalytics.ts` | Integrations the boot sets up. |
-| `AppBootstrap.tsx` | First React component; swaps in the email-verification modal. |
+| Path                                                 | Role                                                                 |
+| ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `bootstrap.tsx`                                      | Entry. Wires phases together and renders. Deliberately thin.         |
+| `bootPhases.ts`                                      | The pipeline: every phase, its user-facing message, which are fatal. |
+| `runBoot.ts`                                         | The phase runner — timing, error classification, abort handling.     |
+| `bootState.ts`                                       | What the boot shell displays. Module-scope observable, not Zustand.  |
+| `bootError.ts`                                       | Maps a thrown value to actionable copy; per-phase classifiers.       |
+| `startAuthentication.ts`                             | Keycloak silent SSO. Started, never awaited.                         |
+| `openDatabasePhase.ts`                               | The DB gate and its error copy.                                      |
+| `shell/`                                             | The boot shell: one markup source, plain-DOM and React renderers.    |
+| `metrics/`                                           | User Timing marks and the dev boot report.                           |
+| `steps/`                                             | The AppShell half of the boot, one file per step.                    |
+| `keycloak.ts`, `tabManager.ts`, `googleAnalytics.ts` | Integrations the boot sets up.                                       |
+| `AppBootstrap.tsx`                                   | First React component; swaps in the email-verification modal.        |
 
 ## Sequence
 
-```
+```text
 index.html
   └─ bootShell chunk           ← injected by bootShellPlugin as the FIRST script
        └─ showBootShell()      ← paints the app-shaped shell   [shell-painted]
@@ -58,7 +58,7 @@ sooner.** The generated Module Federation bootstrap awaits its share-scope
 setup, which transitively downloads the ~700kB chunk holding react-dom, before
 `src/index.tsx` runs at all. So the shell is emitted as a standalone chunk whose
 entire import graph is the shell markup, and injected ahead of the MF
-bootstrap. Measured on a production build at 4Mbps: first paint ~250ms against
+bootstrap. Measured on a production build at 4 Mbps: first paint ~250ms against
 ~1.4s with no shell.
 
 **One shell, one markup source.** `showBootShell()` (plain DOM, pre-React) and

@@ -1,6 +1,11 @@
 import { Box } from '@mui/material'
 import { ReactElement, useEffect, useRef, useState } from 'react'
-import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import {
+  Outlet,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 
 import { markBoot } from '../boot/metrics/bootMarks'
 import { BootShell } from '../boot/shell/BootShell'
@@ -61,11 +66,27 @@ const AppShell = (): ReactElement => {
       navigate,
       loadNetworkSummaries,
       installApp: appManagerCommands.installApp,
-    }).then(({ serviceAppUrlsNeedingConfirmation }) => {
-      if (serviceAppUrlsNeedingConfirmation.length > 0) {
-        setServiceAppsToAdd(serviceAppUrlsNeedingConfirmation)
-      }
     })
+      .then(({ serviceAppUrlsNeedingConfirmation }) => {
+        if (serviceAppUrlsNeedingConfirmation.length > 0) {
+          setServiceAppsToAdd(serviceAppUrlsNeedingConfirmation)
+        }
+      })
+      // runAppShellBoot isolates its own phases, so reaching here means the
+      // failure was outside them — navigate() throwing, or the callback above.
+      // Without this the rejection is unhandled and, because workspaceId never
+      // becomes defined, the user sits on the content shell with no diagnostic
+      // and no retry (the run-once ref blocks one).
+      .catch((error) => {
+        logStartup.error('[boot]: app shell boot failed', error)
+        addMessage({
+          message: `Startup did not complete: ${
+            error instanceof Error ? error.message : 'unknown error'
+          }`,
+          duration: 8000,
+          severity: MessageSeverity.ERROR,
+        })
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])
 

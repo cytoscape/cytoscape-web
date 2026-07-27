@@ -1,5 +1,5 @@
-import { fetchNdexSummaries } from '../../data/external-api/ndex'
-import { useCredentialStore } from '../../data/hooks/stores/CredentialStore'
+import { fetchNdexSummaries } from '@/data/external-api/ndex'
+import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
 
 /**

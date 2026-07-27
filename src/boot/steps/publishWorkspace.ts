@@ -1,8 +1,8 @@
-import { initEventBus } from '../../app-api/event-bus/initEventBus'
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
-import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
-import { MessageSeverity } from '../../models/MessageModel'
+import { initEventBus } from '@/app-api/event-bus/initEventBus'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { MessageSeverity } from '@/models/MessageModel'
 import { markBoot } from '../metrics/bootMarks'
 import type { WorkspaceDraft } from './appShellBootContext'
 
