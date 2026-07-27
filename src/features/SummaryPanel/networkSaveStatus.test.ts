@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { getSaveButtonState, getSaveMenuItemState } from './networkSaveStatus'
 
 describe('getSaveButtonState (CW-488)', () => {
-  it('shows the up-to-date state (green check) when there are no changes', () => {
+  it('shows the up-to-date state when there are no changes', () => {
     const state = getSaveButtonState({
       networkModified: false,
       isNdex: true,

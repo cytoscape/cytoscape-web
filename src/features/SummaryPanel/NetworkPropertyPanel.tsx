@@ -1,4 +1,3 @@
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -317,15 +316,16 @@ export const NetworkPropertyPanel = ({
         onClick={onClickSaveStatus}
       >
         <ListItemIcon>
-          {saveButtonState.upToDate ? (
-            <CheckCircleIcon
-              sx={{ color: theme.palette.success.main, fontSize: 18 }}
-            />
-          ) : (
-            <CloudUploadIcon
-              sx={{ color: theme.palette.warning.main, fontSize: 18 }}
-            />
-          )}
+          {/* Orange only while there are unsaved changes; otherwise it reads as
+              a plain action icon like the rest of the menu. */}
+          <CloudUploadIcon
+            sx={{
+              fontSize: 18,
+              color: saveButtonState.upToDate
+                ? theme.palette.text.primary
+                : theme.palette.warning.main,
+            }}
+          />
         </ListItemIcon>
         <ListItemText
           primary={saveMenuItemState.label}

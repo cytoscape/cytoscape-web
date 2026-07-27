@@ -3,16 +3,17 @@ export type SaveAction = 'none' | 'overwrite' | 'copy' | 'signin'
 export interface SaveButtonState {
   /** What clicking the button should do. */
   action: SaveAction
-  /** True when there are no unsaved changes (show the green check). */
+  /** True when there are no unsaved changes (the upload icon stays neutral). */
   upToDate: boolean
   /** Tooltip text describing the current status / available action. */
   tooltip: string
 }
 
 /**
- * Decide how the network's save/status button should look and behave (CW-488).
- * Replaces the old red "modified" dot: an unsaved network shows an upload
- * button that saves on click, while an up-to-date network shows a green check.
+ * Decide how the network's save entry should look and behave (CW-488).
+ * Replaces the old red "modified" dot: an unsaved network offers a save that
+ * runs on click and an orange upload icon, while an up-to-date network keeps the
+ * same icon in the menu's own colour.
  * Anonymous users are told to sign in rather than being offered a broken save.
  */
 export const getSaveButtonState = ({
