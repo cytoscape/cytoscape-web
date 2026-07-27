@@ -1,13 +1,19 @@
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteIcon from '@mui/icons-material/Delete'
+import DownloadIcon from '@mui/icons-material/Download'
 import EditIcon from '@mui/icons-material/Edit'
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
+import LaptopChromebookIcon from '@mui/icons-material/LaptopChromebook'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
+import ShareIcon from '@mui/icons-material/Share'
 import {
   Badge,
   Box,
   Chip,
   CircularProgress,
+  Divider,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -22,10 +28,15 @@ import { lazy, ReactElement, Suspense, useContext, useState } from 'react'
 
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { useCloneNetwork } from '../../data/hooks/useCloneNetwork'
+import { useCytoscapeDesktopPermissionNotice } from '../../data/hooks/useCytoscapeDesktopPermissionNotice'
+import { useDownloadNetworkFile } from '../../data/hooks/useDownloadNetworkFile'
+import { useOpenNetworkInCytoscapeFromStores } from '../../data/hooks/useOpenInCytoscapeDesktop'
 import { useSaveCurrentNetworkToNDEx } from '../../data/hooks/useSaveCurrentNetworkToNDEx'
 import { KeycloakContext } from '../../init/keycloak'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { getRowActionStates } from './networkRowActions'
 import { getSaveButtonState, getSaveMenuItemState } from './networkSaveStatus'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
@@ -35,7 +46,11 @@ import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useDeleteCyNetwork } from '../../data/hooks/useDeleteCyNetwork'
 import { Network } from '../../models'
 import { ConfirmationDialog } from '../ConfirmationDialog'
+import { CytoscapeDesktopPermissionDialog } from '../CytoscapeDesktopPermissionDialog'
+import { useFeatureAvailability } from '../FeatureAvailability'
+import { useCopyShareableNetworkUrl } from '../FloatingToolBar/useCopyShareableNetworkUrl'
 import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
+import { ExportImage } from '../ToolBar/DataMenu/ExportNetworkToImage/ExportImage'
 
 interface NetworkPropertyPanelProps {
   summary: NetworkSummary
@@ -115,6 +130,24 @@ export const NetworkPropertyPanel = ({
     saveAction: saveButtonState.action,
     isNdex: summary.isNdex,
     isCurrentNetwork: id === currentNetworkId,
+  })
+
+  // Actions shared with the Data menu and the floating toolbar. Each one runs
+  // against the loaded (current) network, so rows that are not the open network
+  // offer them disabled — see getRowActionStates.
+  const cloneNetwork = useCloneNetwork()
+  const downloadNetworkFile = useDownloadNetworkFile()
+  const openNetworkInCytoscape = useOpenNetworkInCytoscapeFromStores()
+  const copyShareableNetworkUrl = useCopyShareableNetworkUrl()
+  const desktopNotice = useCytoscapeDesktopPermissionNotice()
+  const featureAvailability = useFeatureAvailability()
+  const [openExportImage, setOpenExportImage] = useState<boolean>(false)
+
+  const rowActions = getRowActionStates({
+    isCurrentNetwork: id === currentNetworkId,
+    isNdex: summary.isNdex,
+    isCyDeskAvailable: featureAvailability.state.isCyDeskAvailable !== false,
+    cyDeskHint: featureAvailability.tooltip,
   })
 
   const onClickSaveStatus = (e: React.MouseEvent<HTMLElement>): void => {
@@ -273,6 +306,10 @@ export const NetworkPropertyPanel = ({
       onClose={closeMenu}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      // Keep a long hint (e.g. the Cytoscape Desktop one) wrapping instead of
+      // stretching the menu across the panel.
+      slotProps={{ paper: { sx: { maxWidth: 360 } } }}
+      sx={{ '& .MuiListItemText-secondary': { whiteSpace: 'normal' } }}
     >
       <MenuItem
         data-testid="network-save-status-menuitem"
@@ -318,6 +355,104 @@ export const NetworkPropertyPanel = ({
         </ListItemIcon>
         <ListItemText primary="Edit Network Properties" />
       </MenuItem>
+      <MenuItem
+        data-testid="network-open-in-cytoscape-menuitem"
+        disabled={rowActions.openInCytoscape.disabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          // The permission notice is a dialog, so the menu closes first to
+          // avoid stacking two layers over the row.
+          closeMenu()
+          desktopNotice.run(() => {
+            void openNetworkInCytoscape(id)
+          })
+        }}
+      >
+        <ListItemIcon>
+          <LaptopChromebookIcon
+            sx={{ fontSize: 18, color: theme.palette.text.primary }}
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary="Open Network in Cytoscape Desktop"
+          secondary={rowActions.openInCytoscape.hint}
+        />
+      </MenuItem>
+      <MenuItem
+        data-testid="network-duplicate-menuitem"
+        disabled={rowActions.duplicate.disabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          closeMenu()
+          cloneNetwork(id)
+        }}
+      >
+        <ListItemIcon>
+          <ContentCopyIcon
+            sx={{ fontSize: 18, color: theme.palette.text.primary }}
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary="Duplicate Network"
+          secondary={rowActions.duplicate.hint}
+        />
+      </MenuItem>
+      <MenuItem
+        data-testid="network-download-cx2-menuitem"
+        disabled={rowActions.download.disabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          closeMenu()
+          void downloadNetworkFile(id)
+        }}
+      >
+        <ListItemIcon>
+          <DownloadIcon
+            sx={{ fontSize: 18, color: theme.palette.text.primary }}
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary="Download Network File (.cx2)"
+          secondary={rowActions.download.hint}
+        />
+      </MenuItem>
+      <MenuItem
+        data-testid="network-export-image-menuitem"
+        disabled={rowActions.exportImage.disabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          closeMenu()
+          setOpenExportImage(true)
+        }}
+      >
+        <ListItemIcon>
+          <ImageOutlinedIcon
+            sx={{ fontSize: 18, color: theme.palette.text.primary }}
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary="Export Network to Image"
+          secondary={rowActions.exportImage.hint}
+        />
+      </MenuItem>
+      <MenuItem
+        data-testid="network-share-url-menuitem"
+        disabled={rowActions.share.disabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          closeMenu()
+          copyShareableNetworkUrl(id)
+        }}
+      >
+        <ListItemIcon>
+          <ShareIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
+        </ListItemIcon>
+        <ListItemText
+          primary="Share Network (Copy URL to Clipboard)"
+          secondary={rowActions.share.hint}
+        />
+      </MenuItem>
+      <Divider />
       <MenuItem
         data-testid="network-property-delete-menuitem"
         onClick={onClickDelete}
@@ -475,9 +610,18 @@ export const NetworkPropertyPanel = ({
           isAlert
         />
       </Box>
-      {/* Rendered outside the clickable row: React events from the menu's
-          portal still bubble through the component tree */}
+      {/* Rendered outside the clickable row: React events from these portals
+          still bubble through the component tree */}
       {networkActionsMenu}
+      <CytoscapeDesktopPermissionDialog
+        open={desktopNotice.open}
+        onConfirm={desktopNotice.onConfirm}
+        onCancel={desktopNotice.onCancel}
+      />
+      <ExportImage
+        open={openExportImage}
+        handleClose={() => setOpenExportImage(false)}
+      />
     </>
   )
 }

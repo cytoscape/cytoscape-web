@@ -56,8 +56,29 @@ The SummaryPanel is composed of several components that work together to display
       "No unsaved changes", "Sign in to save to NDEx" (anonymous user), or
       "Open this network first" (only the currently open network's data is
       loaded, so only it can be saved). See `networkSaveStatus.ts`.
-    - Edit network properties (opens property editor)
-    - Remove the network from workspace
+    - Edit Network Properties (opens property editor)
+    - Open Network in Cytoscape Desktop
+    - Duplicate Network
+    - Download Network File (.cx2)
+    - Export Network to Image
+    - Share Network (Copy URL to Clipboard)
+    - _divider_
+    - Remove the Network from Workspace
+
+#### Network actions in the overflow menu
+
+The five actions between Edit and the divider are the same ones the Data menu
+and the floating toolbar offer, sharing their hooks: `useCloneNetwork`,
+`useDownloadNetworkFile`, `useOpenNetworkInCytoscapeFromStores`,
+`useCopyShareableNetworkUrl`, and the `ExportImage` dialog.
+
+All of them act on the loaded (current) network — the stores hold that network's
+data alone, and the image export renders the live view. A row that is not the
+open network therefore shows them disabled with "Open this network first" on a
+second line. Two actions have their own blocker, reported ahead of that one:
+Open in Cytoscape Desktop when Cytoscape is unreachable (the
+`FeatureAvailability` tooltip), and Share for a local network ("Save this
+network to NDEx first"). See `networkRowActions.ts`.
 
 ### Network Navigation
 

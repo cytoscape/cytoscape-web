@@ -102,6 +102,129 @@ test.describe('Network summary overflow menu', () => {
     ).toHaveCount(0)
   })
 
+  test('menu lists every action in order, with a divider before Remove', async ({
+    page,
+  }) => {
+    await page
+      .locator('[data-testid="network-property-menu-button"]')
+      .first()
+      .click()
+
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      /Save a Copy to NDEx/,
+      /Edit Network Properties/,
+      /Open Network in Cytoscape Desktop/,
+      /Duplicate Network/,
+      /Download Network File \(\.cx2\)/,
+      /Export Network to Image/,
+      /Share Network \(Copy URL to Clipboard\)/,
+      /Remove the Network from Workspace/,
+    ])
+
+    // The divider separates Share (7th item) from Remove (8th).
+    await expect(menu.locator('hr')).toHaveCount(1)
+  })
+
+  test('actions are enabled for the open network, except sharing a local one', async ({
+    page,
+  }) => {
+    await page
+      .locator('[data-testid="network-property-menu-button"]')
+      .first()
+      .click()
+
+    // The seeded network is the open one, so the actions act on loaded data.
+    for (const enabled of [
+      'network-duplicate-menuitem',
+      'network-download-cx2-menuitem',
+      'network-export-image-menuitem',
+    ]) {
+      await expect(
+        page.locator(`[data-testid="${enabled}"]`),
+      ).not.toHaveAttribute('aria-disabled', 'true')
+    }
+
+    // A seeded network is local, so it has no NDEx URL to share yet.
+    const share = page.locator('[data-testid="network-share-url-menuitem"]')
+    await expect(share).toHaveAttribute('aria-disabled', 'true')
+    await expect(share).toContainText('Save this network to NDEx first')
+  })
+
+  test('duplicate action adds a second row to the workspace', async ({
+    page,
+  }) => {
+    const rows = page.locator('[data-testid="network-property-menu-button"]')
+    await expect(rows).toHaveCount(1)
+
+    await rows.first().click()
+    await page.locator('[data-testid="network-duplicate-menuitem"]').click()
+
+    await expect(rows).toHaveCount(2)
+  })
+
+  test('export action opens the image export dialog', async ({ page }) => {
+    await page
+      .locator('[data-testid="network-property-menu-button"]')
+      .first()
+      .click()
+    await page.locator('[data-testid="network-export-image-menuitem"]').click()
+
+    const dialog = page.locator(
+      '[data-testid="export-network-to-image-dialog"]',
+    )
+    await expect(dialog).toBeVisible()
+    await page
+      .locator('[data-testid="export-network-to-image-cancel-button"]')
+      .click()
+    await expect(dialog).toHaveCount(0)
+  })
+
+  test('actions are disabled on a row that is not the open network', async ({
+    page,
+  }) => {
+    // Duplicating switches the workspace to the copy, leaving the original row
+    // in the list without being the open network.
+    const rows = page.locator('[data-testid="network-property-menu-button"]')
+    await rows.first().click()
+    await page.locator('[data-testid="network-duplicate-menuitem"]').click()
+    await expect(rows).toHaveCount(2)
+
+    // Find the row whose actions are gated, i.e. the one that is not current.
+    const menuButtons = await rows.all()
+    let foundGatedRow = false
+    for (const button of menuButtons) {
+      await button.click()
+      const duplicate = page.locator(
+        '[data-testid="network-duplicate-menuitem"]',
+      )
+      const isDisabled =
+        (await duplicate.getAttribute('aria-disabled')) === 'true'
+      if (isDisabled) {
+        foundGatedRow = true
+        for (const gated of [
+          'network-open-in-cytoscape-menuitem',
+          'network-duplicate-menuitem',
+          'network-download-cx2-menuitem',
+          'network-export-image-menuitem',
+          'network-share-url-menuitem',
+        ]) {
+          await expect(
+            page.locator(`[data-testid="${gated}"]`),
+          ).toHaveAttribute('aria-disabled', 'true')
+        }
+        // Share names its own blocker; the rest point at the open network.
+        await expect(
+          page.locator('[data-testid="network-duplicate-menuitem"]'),
+        ).toContainText('Open this network first')
+      }
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('menu')).toHaveCount(0)
+      if (foundGatedRow) break
+    }
+    expect(foundGatedRow).toBe(true)
+  })
+
   test('edit action opens the network property editor', async ({ page }) => {
     await page
       .locator('[data-testid="network-property-menu-button"]')
