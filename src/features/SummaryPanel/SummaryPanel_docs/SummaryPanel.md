@@ -21,7 +21,7 @@ The SummaryPanel is composed of several components that work together to display
 
 - **NetworkPropertyPanel.tsx**: Individual network summary card
   - Displays network name, version, and description
-  - Shows edit and delete buttons
+  - Shows a single vertical "..." overflow button whose menu holds the save-to-NDEx, edit and delete actions
   - Handles click to navigate to network
   - Highlights active network
   - Integrates with NetworkPropertyEditor for editing
@@ -47,8 +47,12 @@ The SummaryPanel is composed of several components that work together to display
   - Network name (editable)
   - Version (editable)
   - Description preview (editable, full description in editor)
-  - Edit button (opens property editor)
-  - Delete button (removes network from workspace)
+  - Overflow ("...") button next to the network name, opening a menu with:
+    - Save status / save to NDEx (disabled when there are no unsaved changes, or
+      when the row is not the currently open network — only that network's data
+      is loaded, so only it can be saved)
+    - Edit network properties (opens property editor)
+    - Remove the network from workspace
 
 ### Network Navigation
 
@@ -58,7 +62,8 @@ The SummaryPanel is composed of several components that work together to display
 
 ### Property Editing
 
-- Clicking edit button opens a popover editor
+- Choosing "Edit network properties" in the overflow menu opens a popover editor
+  anchored to the overflow button
 - Editor allows editing:
   - Name: Simple text input
   - Version: Simple text input
@@ -69,7 +74,7 @@ The SummaryPanel is composed of several components that work together to display
 
 ### Network Deletion
 
-- Delete button removes network from workspace
+- The overflow menu's "Remove the network from workspace" item removes the network
 - Confirmation dialog may be shown (handled by parent)
 - Deletion updates workspace state
 

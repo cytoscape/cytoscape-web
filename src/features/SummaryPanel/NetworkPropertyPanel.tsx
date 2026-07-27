@@ -2,11 +2,16 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
   Box,
   Chip,
   CircularProgress,
   IconButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Theme,
   Tooltip,
   Typography,
@@ -60,6 +65,21 @@ export const NetworkPropertyPanel = ({
     HTMLButtonElement | undefined
   >(undefined)
 
+  // Anchor of the overflow ("...") menu holding the save / edit / delete actions
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLButtonElement | null>(
+    null,
+  )
+
+  const openMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    // Opening the menu must not select / navigate to the network
+    event.stopPropagation()
+    setMenuAnchorEl(event.currentTarget)
+  }
+
+  const closeMenu = (): void => {
+    setMenuAnchorEl(null)
+  }
+
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -74,11 +94,9 @@ export const NetworkPropertyPanel = ({
     setEditNetworkSummaryAnchorEl(undefined)
   }
 
-  const showEditNetworkSummaryForm = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    event.stopPropagation()
-    setEditNetworkSummaryAnchorEl(event.currentTarget)
+  // Anchored to the overflow menu button, which stays mounted after the menu closes
+  const showEditNetworkSummaryForm = (anchorEl: HTMLButtonElement): void => {
+    setEditNetworkSummaryAnchorEl(anchorEl)
   }
 
   const networkModified =
@@ -95,16 +113,30 @@ export const NetworkPropertyPanel = ({
     authenticated,
   })
 
-  const onClickSaveStatus = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    // The save action can only run on the loaded (current) network. For any
-    // other row, let the click bubble so the row navigates to/selects it first.
-    if (id !== currentNetworkId) {
-      return
-    }
+  // The save action can only run on the loaded (current) network, since the
+  // stores hold the data of that network alone.
+  const saveDisabled: boolean =
+    saveButtonState.action === 'none' || id !== currentNetworkId
+
+  // For an up-to-date network the item is a disabled status line; otherwise it
+  // is the save action, explaining itself when the network is not the open one.
+  const saveLabel: string =
+    saveButtonState.action === 'none'
+      ? saveButtonState.tooltip
+      : saveButtonState.action === 'signin'
+        ? 'Sign in to save to NDEx'
+        : saveButtonState.action === 'overwrite'
+          ? 'Save to NDEx'
+          : 'Save a copy to NDEx'
+
+  const saveHint: string | undefined =
+    saveButtonState.action !== 'none' && id !== currentNetworkId
+      ? 'Open this network first'
+      : undefined
+
+  const onClickSaveStatus = (e: React.MouseEvent<HTMLElement>): void => {
     e.stopPropagation()
-    if (saveButtonState.action === 'none') {
-      return
-    }
+    closeMenu()
     if (saveButtonState.action === 'signin') {
       addMessage({
         message: 'Please sign in to save this network to NDEx.',
@@ -118,8 +150,9 @@ export const NetworkPropertyPanel = ({
 
   const { deleteNetwork } = useDeleteCyNetwork()
 
-  const onClickDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onClickDelete = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
+    closeMenu()
     setLastOpenedNetworkId(currentNetworkId)
     setCurrentNetworkId(id)
     setOpenConfirmation(true)
@@ -213,25 +246,86 @@ export const NetworkPropertyPanel = ({
     }
   }
 
-  const networkModifiedIcon = (
-    <Tooltip title={saveButtonState.tooltip}>
+  /**
+   * Single overflow button replacing the former save-status, edit and delete
+   * buttons. Its menu holds those three actions.
+   */
+  const networkActionsMenuButton = (
+    <Tooltip title="Network actions">
       <IconButton
-        data-testid="network-save-status-button"
+        data-testid="network-property-menu-button"
         size="small"
-        sx={{ width: 22, height: 22 }}
-        onClick={onClickSaveStatus}
+        sx={{ width: 24, height: 24 }}
+        onClick={openMenu}
       >
-        {saveButtonState.upToDate ? (
-          <CheckCircleIcon
-            sx={{ color: theme.palette.success.main, fontSize: 16 }}
-          />
-        ) : (
-          <CloudUploadIcon
-            sx={{ color: theme.palette.warning.main, fontSize: 16 }}
-          />
-        )}
+        <MoreVertIcon
+          sx={{ fontSize: 18, color: theme.palette.text.primary }}
+        />
       </IconButton>
     </Tooltip>
+  )
+
+  const networkActionsMenu = (
+    <Menu
+      anchorEl={menuAnchorEl}
+      open={menuAnchorEl !== null}
+      onClose={closeMenu}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      <MenuItem
+        data-testid="network-save-status-menuitem"
+        disabled={saveDisabled}
+        onClick={onClickSaveStatus}
+      >
+        <ListItemIcon>
+          {saveButtonState.upToDate ? (
+            <CheckCircleIcon
+              sx={{ color: theme.palette.success.main, fontSize: 18 }}
+            />
+          ) : (
+            <CloudUploadIcon
+              sx={{ color: theme.palette.warning.main, fontSize: 18 }}
+            />
+          )}
+        </ListItemIcon>
+        <ListItemText primary={saveLabel} secondary={saveHint} />
+      </MenuItem>
+      <MenuItem
+        data-testid="network-property-edit-menuitem"
+        onClick={(e) => {
+          e.stopPropagation()
+          const anchorEl = menuAnchorEl
+          closeMenu()
+          setCurrentNetworkId(id)
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: id,
+            searchParams: new URLSearchParams(location.search),
+            replace: false,
+          })
+          if (anchorEl !== null) {
+            showEditNetworkSummaryForm(anchorEl)
+          }
+        }}
+      >
+        <ListItemIcon>
+          <EditIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
+        </ListItemIcon>
+        <ListItemText primary="Edit network properties" />
+      </MenuItem>
+      <MenuItem
+        data-testid="network-property-delete-menuitem"
+        onClick={onClickDelete}
+      >
+        <ListItemIcon>
+          <DeleteIcon
+            sx={{ fontSize: 18, color: theme.palette.text.primary }}
+          />
+        </ListItemIcon>
+        <ListItemText primary="Remove the network from workspace" />
+      </MenuItem>
+    </Menu>
   )
 
   return (
@@ -260,41 +354,50 @@ export const NetworkPropertyPanel = ({
           })
         }}
       >
-        <Box sx={{ width: '100%' }}>
+        <Box 
+          sx={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 0.5,
+          }}
+        >
           <Box
             sx={{
+              width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: 1,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Tooltip
-                title={
-                  summary.isNdex
-                    ? 'A network stored in the NDEx database (ndexbio.org)'
-                    : 'A network stored on your local machine'
+            <Tooltip
+              title={
+                summary.isNdex
+                  ? 'A network stored in the NDEx database (ndexbio.org)'
+                  : 'A network stored on your local machine'
+              }
+            >
+              <Chip
+                color={summary.isNdex ? 'primary' : 'success'}
+                size="small"
+                sx={{ opacity: 0.8 }}
+                label={
+                  <Typography sx={{ fontSize: 10 }} variant="caption">
+                    {summary.isNdex ? 'NDEx' : 'Local'}
+                  </Typography>
                 }
-              >
-                <Chip
-                  color={summary.isNdex ? 'primary' : 'success'}
-                  size="small"
-                  sx={{ mr: 1, opacity: 0.8 }}
-                  label={
-                    <Typography sx={{ fontSize: 10 }} variant="caption">
-                      {summary.isNdex ? 'NDEx' : 'Local'}
-                    </Typography>
-                  }
-                />
-              </Tooltip>
-              <Typography
-                variant={'body2'}
-                sx={{ color: theme.palette.text.primary }}
-              >
-                {summary.name}
-              </Typography>
-            </Box>
-            {networkModifiedIcon}
+              />
+            </Tooltip>
+            <Typography
+              variant={'body2'}
+              sx={{ flexGrow: 1, color: theme.palette.text.primary }}
+            >
+              {summary.name}
+            </Typography>
+            {networkActionsMenuButton}
           </Box>
           {summary.sourcePath && (
             <Tooltip
@@ -336,41 +439,6 @@ export const NetworkPropertyPanel = ({
             </Typography>
 
             <HcxValidationButtonGroup id={id} />
-            <Tooltip title="Edit network properties">
-              <IconButton
-                data-testid="network-property-edit-button"
-                size="small"
-                sx={{ width: 25, height: 25 }}
-                onClick={(e) => {
-                  setCurrentNetworkId(id)
-                  navigateToNetwork({
-                    workspaceId: workspace.id,
-                    networkId: id,
-                    searchParams: new URLSearchParams(location.search),
-                    replace: false,
-                  })
-                  showEditNetworkSummaryForm(e)
-                }}
-              >
-                <EditIcon
-                  sx={{ fontSize: 18, color: theme.palette.text.primary }}
-                />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Remove the network from workspace">
-              <IconButton
-                data-testid="network-property-delete-button"
-                size="small"
-                sx={{ width: 25, height: 25 }}
-                onClick={(e) => {
-                  onClickDelete(e)
-                }}
-              >
-                <DeleteIcon
-                  sx={{ fontSize: 18, color: theme.palette.text.primary }}
-                />
-              </IconButton>
-            </Tooltip>
           </Box>
         </Box>
         <Suspense
@@ -403,6 +471,9 @@ export const NetworkPropertyPanel = ({
           isAlert
         />
       </Box>
+      {/* Rendered outside the clickable row: React events from the menu's
+          portal still bubble through the component tree */}
+      {networkActionsMenu}
     </>
   )
 }
