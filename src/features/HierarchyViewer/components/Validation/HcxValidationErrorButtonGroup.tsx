@@ -1,4 +1,5 @@
-import { PublishedWithChanges, WarningAmberOutlined } from '@mui/icons-material'
+import PublishedWithChanges from '@mui/icons-material/PublishedWithChanges'
+import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import {
   Box,

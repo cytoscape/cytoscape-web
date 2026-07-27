@@ -37,7 +37,7 @@ import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
 import { DelimiterType } from '../../model/DelimiterType'
-import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
+import { valueTypeNameLabel as valueTypeName2Label } from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   convertFileDelimiterToEffective,
   convertFileDelimiterToStorageValue,
@@ -509,7 +509,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
                             label={`Column '${h.name}' has ${
                               h.invalidValues.length
                             } values that cannot be parsed as type ${
-                              valueTypeName2Label[h.dataType]
+                              valueTypeName2Label(h.dataType)
                             }`}
                           >
                             <IconAlertCircle size={20} color="red" />

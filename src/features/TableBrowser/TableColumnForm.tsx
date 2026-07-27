@@ -267,12 +267,21 @@ export function CreateTableColumnForm(
   const [defaultValue, setDefaultValue] = React.useState('')
   // Opens the shared list editor for a list-typed default value (CW-563).
   const [listEditorOpen, setListEditorOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (props.open) {
+      setColumnName('')
+      setDefaultValue('')
+      setValueTypeName(ValueTypeName.String)
+    }
+  }, [props.open])
+
   const disabled = columnName === ''
 
   const submitButton = disabled ? (
     <Tooltip title="Column name must not be empty">
       <Box>
-        <Button variant="contained" disabled>
+        <Button data-testid="create-table-column-confirm-button" variant="contained" disabled>
           Confirm
         </Button>
       </Box>
@@ -284,9 +293,6 @@ export function CreateTableColumnForm(
       disabled={columnName === ''}
       onClick={() => {
         props.onSubmit(columnName, valueTypeName, defaultValue)
-        setColumnName('')
-        setDefaultValue('')
-        setValueTypeName(ValueTypeName.String)
       }}
     >
       Confirm

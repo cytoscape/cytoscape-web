@@ -1,5 +1,5 @@
 import { CyNDEx } from '@js4cytoscape/ndex-client'
-import { OpenInNew } from '@mui/icons-material'
+import OpenInNew from '@mui/icons-material/OpenInNew'
 import { IconButton, Tooltip } from '@mui/material'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'

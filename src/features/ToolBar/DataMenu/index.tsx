@@ -4,7 +4,7 @@ import '@mantine/dropzone/styles.css'
 
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import { MenuItem } from 'primereact/menuitem'
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
