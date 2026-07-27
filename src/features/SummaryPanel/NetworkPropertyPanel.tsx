@@ -4,6 +4,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
+  Badge,
   Box,
   Chip,
   CircularProgress,
@@ -248,19 +249,45 @@ export const NetworkPropertyPanel = ({
 
   /**
    * Single overflow button replacing the former save-status, edit and delete
-   * buttons. Its menu holds those three actions.
+   * buttons. Its menu holds those three actions, and a badge keeps the unsaved
+   * state visible on the row without opening the menu.
    */
   const networkActionsMenuButton = (
-    <Tooltip title="Network actions">
+    <Tooltip
+      title={
+        saveButtonState.upToDate
+          ? 'Network actions'
+          : 'Network actions (unsaved changes)'
+      }
+    >
       <IconButton
         data-testid="network-property-menu-button"
         size="small"
         sx={{ width: 24, height: 24 }}
         onClick={openMenu}
       >
-        <MoreVertIcon
-          sx={{ fontSize: 18, color: theme.palette.text.primary }}
-        />
+        <Badge
+          variant="dot"
+          color="warning"
+          overlap="circular"
+          invisible={saveButtonState.upToDate}
+          // data-* attributes are not part of MUI's badge slot props type
+          slotProps={{
+            badge: { 'data-testid': 'network-unsaved-badge' } as any,
+          }}
+          sx={{
+            '& .MuiBadge-badge': {
+              minWidth: 7,
+              height: 7,
+              top: 2,
+              right: 2,
+            },
+          }}
+        >
+          <MoreVertIcon
+            sx={{ fontSize: 18, color: theme.palette.text.primary }}
+          />
+        </Badge>
       </IconButton>
     </Tooltip>
   )
@@ -354,7 +381,7 @@ export const NetworkPropertyPanel = ({
           })
         }}
       >
-        <Box 
+        <Box
           sx={{
             width: '100%',
             display: 'flex',

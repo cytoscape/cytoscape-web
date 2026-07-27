@@ -22,6 +22,7 @@ The SummaryPanel is composed of several components that work together to display
 - **NetworkPropertyPanel.tsx**: Individual network summary card
   - Displays network name, version, and description
   - Shows a single vertical "..." overflow button whose menu holds the save-to-NDEx, edit and delete actions
+  - Badges that button with a warning dot while the network has unsaved changes
   - Handles click to navigate to network
   - Highlights active network
   - Integrates with NetworkPropertyEditor for editing
@@ -47,7 +48,8 @@ The SummaryPanel is composed of several components that work together to display
   - Network name (editable)
   - Version (editable)
   - Description preview (editable, full description in editor)
-  - Overflow ("...") button next to the network name, opening a menu with:
+  - Overflow ("...") button next to the network name, carrying a warning dot
+    badge while the network has unsaved changes, and opening a menu with:
     - Save status / save to NDEx (disabled when there are no unsaved changes, or
       when the row is not the currently open network — only that network's data
       is loaded, so only it can be saved)
