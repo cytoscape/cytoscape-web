@@ -20,15 +20,13 @@ import {
 import { useTheme } from '@mui/material/styles'
 import { lazy, ReactElement, Suspense, useContext, useState } from 'react'
 
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useSaveCurrentNetworkToNDEx } from '../../data/hooks/useSaveCurrentNetworkToNDEx'
 import { KeycloakContext } from '../../init/keycloak'
 import { IdType } from '../../models/IdType'
-import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { getSaveButtonState } from './networkSaveStatus'
+import { getSaveButtonState, getSaveMenuItemState } from './networkSaveStatus'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
@@ -105,7 +103,6 @@ export const NetworkPropertyPanel = ({
 
   const client = useContext(KeycloakContext)
   const authenticated: boolean = client?.authenticated ?? false
-  const addMessage = useMessageStore((state) => state.addMessage)
   const saveCurrentNetworkToNDEx = useSaveCurrentNetworkToNDEx()
 
   const saveButtonState = getSaveButtonState({
@@ -114,38 +111,15 @@ export const NetworkPropertyPanel = ({
     authenticated,
   })
 
-  // The save action can only run on the loaded (current) network, since the
-  // stores hold the data of that network alone.
-  const saveDisabled: boolean =
-    saveButtonState.action === 'none' || id !== currentNetworkId
-
-  // For an up-to-date network the item is a disabled status line; otherwise it
-  // is the save action, explaining itself when the network is not the open one.
-  const saveLabel: string =
-    saveButtonState.action === 'none'
-      ? saveButtonState.tooltip
-      : saveButtonState.action === 'signin'
-        ? 'Sign in to save to NDEx'
-        : saveButtonState.action === 'overwrite'
-          ? 'Save to NDEx'
-          : 'Save a copy to NDEx'
-
-  const saveHint: string | undefined =
-    saveButtonState.action !== 'none' && id !== currentNetworkId
-      ? 'Open this network first'
-      : undefined
+  const saveMenuItemState = getSaveMenuItemState({
+    saveAction: saveButtonState.action,
+    isNdex: summary.isNdex,
+    isCurrentNetwork: id === currentNetworkId,
+  })
 
   const onClickSaveStatus = (e: React.MouseEvent<HTMLElement>): void => {
     e.stopPropagation()
     closeMenu()
-    if (saveButtonState.action === 'signin') {
-      addMessage({
-        message: 'Please sign in to save this network to NDEx.',
-        duration: 4000,
-        severity: MessageSeverity.WARNING,
-      })
-      return
-    }
     void saveCurrentNetworkToNDEx()
   }
 
@@ -302,7 +276,7 @@ export const NetworkPropertyPanel = ({
     >
       <MenuItem
         data-testid="network-save-status-menuitem"
-        disabled={saveDisabled}
+        disabled={saveMenuItemState.disabled}
         onClick={onClickSaveStatus}
       >
         <ListItemIcon>
@@ -316,7 +290,10 @@ export const NetworkPropertyPanel = ({
             />
           )}
         </ListItemIcon>
-        <ListItemText primary={saveLabel} secondary={saveHint} />
+        <ListItemText
+          primary={saveMenuItemState.label}
+          secondary={saveMenuItemState.hint}
+        />
       </MenuItem>
       <MenuItem
         data-testid="network-property-edit-menuitem"
@@ -339,7 +316,7 @@ export const NetworkPropertyPanel = ({
         <ListItemIcon>
           <EditIcon sx={{ fontSize: 18, color: theme.palette.text.primary }} />
         </ListItemIcon>
-        <ListItemText primary="Edit network properties" />
+        <ListItemText primary="Edit Network Properties" />
       </MenuItem>
       <MenuItem
         data-testid="network-property-delete-menuitem"
@@ -350,7 +327,7 @@ export const NetworkPropertyPanel = ({
             sx={{ fontSize: 18, color: theme.palette.text.primary }}
           />
         </ListItemIcon>
-        <ListItemText primary="Remove the network from workspace" />
+        <ListItemText primary="Remove the Network from Workspace" />
       </MenuItem>
     </Menu>
   )

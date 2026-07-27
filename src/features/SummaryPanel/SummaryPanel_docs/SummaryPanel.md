@@ -50,9 +50,12 @@ The SummaryPanel is composed of several components that work together to display
   - Description preview (editable, full description in editor)
   - Overflow ("...") button next to the network name, carrying a warning dot
     badge while the network has unsaved changes, and opening a menu with:
-    - Save status / save to NDEx (disabled when there are no unsaved changes, or
-      when the row is not the currently open network — only that network's data
-      is loaded, so only it can be saved)
+    - Save to NDEx — "Save to NDEx" for an NDEx network, "Save a Copy to NDEx"
+      for a local one. The label always names the action; whatever blocks it is
+      named on a second line, and the item is disabled whenever one is shown:
+      "No unsaved changes", "Sign in to save to NDEx" (anonymous user), or
+      "Open this network first" (only the currently open network's data is
+      loaded, so only it can be saved). See `networkSaveStatus.ts`.
     - Edit network properties (opens property editor)
     - Remove the network from workspace
 

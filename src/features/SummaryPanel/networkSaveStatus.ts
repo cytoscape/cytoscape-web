@@ -54,3 +54,43 @@ export const getSaveButtonState = ({
     tooltip: 'Unsaved changes — click to save a copy to NDEx',
   }
 }
+
+export interface SaveMenuItemState {
+  /** Primary text: the save action the item offers, whether or not it is available. */
+  label: string
+  /** Secondary text naming what currently blocks the save, if anything. */
+  hint?: string
+  /** True whenever a hint blocks the save. */
+  disabled: boolean
+}
+
+/**
+ * Text and enabled state of the save entry in a network row's overflow menu.
+ *
+ * The label always names the save action, so the menu reads the same whether or
+ * not saving is available right now; anything blocking it is named in the hint.
+ * Saving can only run on the loaded (current) network, since the stores hold the
+ * data of that network alone.
+ */
+export const getSaveMenuItemState = ({
+  saveAction,
+  isNdex,
+  isCurrentNetwork,
+}: {
+  saveAction: SaveAction
+  isNdex: boolean
+  isCurrentNetwork: boolean
+}): SaveMenuItemState => {
+  const label = isNdex ? 'Save to NDEx' : 'Save a Copy to NDEx'
+
+  const hint =
+    saveAction === 'none'
+      ? 'No unsaved changes'
+      : saveAction === 'signin'
+        ? 'Sign in to save to NDEx'
+        : !isCurrentNetwork
+          ? 'Open this network first'
+          : undefined
+
+  return { label, hint, disabled: hint !== undefined }
+}
