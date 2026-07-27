@@ -7,7 +7,6 @@ import omit from 'lodash/omit'
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
-import { useCredentialStore } from '../../data/hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -47,6 +46,8 @@ const JoinTableToNetworkForm = lazy(() =>
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
 import { AppConfigContext } from '../../AppConfigContext'
+import { markBoot } from '../../boot/metrics/bootMarks'
+import { publishBootReport } from '../../boot/metrics/bootReport'
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
@@ -82,6 +83,13 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Last boot milestone: the editor is on screen, so no part of the boot shell
+  // remains. The canvas may still be drawing network data beyond this point.
+  useEffect(() => {
+    markBoot('workspace-editor-mounted')
+    publishBootReport()
+  }, [])
+
   // Indicates if a network failed to load
   const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
@@ -91,10 +99,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
-
-  const getToken: () => Promise<string> = useCredentialStore(
-    (state) => state.getToken,
-  )
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -222,14 +226,11 @@ const WorkSpaceEditor = (): JSX.Element => {
    */
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
-      const currentToken = await getToken()
-
-      const summaryMap = await loadNetworkSummaries([networkId], currentToken)
+      // Cached summaries/content resolve immediately; the loaders only wait
+      // for the auth token when they actually fetch from NDEx (cache miss).
+      const summaryMap = await loadNetworkSummaries([networkId])
       const summary = summaryMap[networkId]
-      const cyNetworkData: CyNetwork = await loadCyNetwork(
-        networkId,
-        currentToken,
-      )
+      const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
       const {
         network,
         nodeTable,

@@ -5,7 +5,7 @@ import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
 import { useWorkspaceData } from '../../../data/hooks/useWorkspaceData'
-import { KeycloakContext } from '../../../init/keycloak'
+import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu';

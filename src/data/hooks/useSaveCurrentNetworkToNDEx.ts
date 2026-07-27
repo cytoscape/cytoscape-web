@@ -2,7 +2,7 @@ import { useContext } from 'react'
 
 import { AppConfigContext } from '../../AppConfigContext'
 import { logUi } from '../../debug'
-import { KeycloakContext } from '../../init/keycloak'
+import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Network } from '../../models/NetworkModel'
 import {
