@@ -33,15 +33,26 @@ const CYWEB_PREFIX = 'cyweb'
  * `window.name` survives reloads and same-tab navigations, so a tab keeps its
  * identity — an external app's saved handle stays valid.
  */
+/**
+ * `Date.now()` alone collides when several tabs initialize in the same
+ * millisecond — a session restore reopening a window full of them — and a
+ * shared id means `window.open(url, tabId)` focuses whichever one the browser
+ * picks. The random suffix fixes that.
+ *
+ * Deliberately not `crypto.randomUUID()`: that is only defined in a secure
+ * context, so it throws when the app is served over plain HTTP — reaching a
+ * dev server by LAN IP from another machine, for instance. This works
+ * everywhere.
+ */
+const mintTabId = (): string =>
+  `${CYWEB_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
 export const initializeTabManager = (): string => {
   const windowName = window.name
-  // randomUUID rather than Date.now(): two tabs restored together by a session
-  // restore initialize in the same millisecond, and a shared id means
-  // window.open(url, tabId) focuses whichever one the browser picks.
   const tabId =
     windowName && windowName.startsWith(`${CYWEB_PREFIX}-`)
       ? windowName
-      : `${CYWEB_PREFIX}-${crypto.randomUUID()}`
+      : mintTabId()
 
   window.name = tabId
   logStartup.info(

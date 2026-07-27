@@ -32,14 +32,18 @@ const describe = (
         title: 'This browser has a newer Cytoscape Web database',
         message:
           `Your browser stores a Cytoscape Web database at version ${result.onDiskVersion ?? 'unknown'}, ` +
-          `but this build expects version ${result.expectedVersion}. This usually means you opened a ` +
-          'newer deployment in this same browser.',
+          `but this build expects version ${result.expectedVersion}. This happens when two ` +
+          'versions of Cytoscape Web are served from the same address — most often a local dev ' +
+          'server switched between branches, or a deployment rolled back to an earlier build.',
         // Instructions, not a button: clearing the database destroys the whole
         // local workspace, and a mis-click here is unrecoverable.
+        //
+        // The port tip only helps a developer, but a developer is who almost
+        // always sees this — an end user reaches it only through a rollback.
         detail:
-          'Open the newer deployment in a different browser profile, or clear the "cyweb-db" ' +
-          'database in DevTools > Application > IndexedDB to start fresh. Clearing permanently ' +
-          'deletes this browser\'s local workspace.',
+          'Clear the "cyweb-db" database in DevTools > Application > IndexedDB to start fresh; ' +
+          "this permanently deletes this browser's local workspace. When running locally, " +
+          'serving the other build on a different port gives it its own database instead.',
       }
     : {
         title: 'Cytoscape Web cannot access local storage',

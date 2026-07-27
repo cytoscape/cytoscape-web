@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { initializeTabManager } from './tabManager'
 
-const CYWEB_TAB_ID = /^cyweb-[0-9a-f-]{36}$/
+const CYWEB_TAB_ID = /^cyweb-\d+-[a-z0-9]{1,6}$/
 
 afterEach(() => {
   window.name = ''
@@ -30,9 +30,10 @@ describe('initializeTabManager', () => {
   })
 
   it('gives every tab a distinct id', () => {
-    // The id used to be `cyweb-${Date.now()}`, so tabs initializing within the
-    // same millisecond — a session restore reopening several at once — shared a
-    // window.name, and window.open(url, tabId) could focus the wrong one.
+    // The id used to be `cyweb-${Date.now()}` with no suffix, so tabs
+    // initializing within the same millisecond — a session restore reopening
+    // several at once — shared a window.name, and window.open(url, tabId)
+    // could focus the wrong one. This loop runs well inside one millisecond.
     const ids = new Set<string>()
     for (let i = 0; i < 50; i++) {
       window.name = ''

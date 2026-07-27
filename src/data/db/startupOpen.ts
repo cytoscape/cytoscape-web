@@ -12,11 +12,19 @@ import { currentVersion, DB_NAME, initializeDb } from './index'
 // surfaced as an unhandled rejection with a blank shell.
 //
 // The case that actually bites is a schema downgrade: IndexedDB refuses to
-// open a database at a version below the one on disk. End users only ever move
-// forward, but every branch auto-deploys to
-// <branch>--incredible-meringue-aa83b1.netlify.app, so reviewers flipping
-// between deploys in one browser profile hit it routinely and got no hint that
-// clearing cyweb-db is the fix.
+// open a database at a version below the one on disk, and currentVersion has
+// moved seven times so far.
+//
+// It needs two builds on one *origin* (scheme + host + port). Netlify's branch
+// deploys are therefore safe — <branch>--incredible-meringue-aa83b1.netlify.app
+// gives each branch its own hostname and so its own IndexedDB. What is not safe
+// is localhost:5500, which is a single origin for every branch you check out:
+// run a branch whose schema is ahead, switch back, and the app cannot open the
+// database it left behind. Rarer but worse, a production rollback past a
+// version bump does the same to every user who booted the newer build.
+//
+// Either way it used to present as a blank screen with no hint that clearing
+// cyweb-db is the fix.
 
 export type DbOpenResult =
   | { kind: 'ok' }
@@ -62,7 +70,11 @@ export const openDatabaseForStartup = async (): Promise<DbOpenResult> => {
       logDb.error(
         `[startupOpen] on-disk schema v${onDiskVersion ?? '?'} is newer than this build's v${currentVersion}`,
       )
-      return { kind: 'schema-too-new', onDiskVersion, expectedVersion: currentVersion }
+      return {
+        kind: 'schema-too-new',
+        onDiskVersion,
+        expectedVersion: currentVersion,
+      }
     }
 
     // Private browsing (Firefox InvalidStateError, Chrome UnknownError),
