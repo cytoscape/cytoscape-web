@@ -7,10 +7,19 @@ import { getNDExBaseUrl } from '../data/external-api/ndex/config'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
+export interface UserVerificationStatus {
+  isVerified: boolean
+  userName?: string
+  userEmail?: string
+}
+
 /**
  * Parses the NDEx error message to extract user information
  * @param errorMessage - The error message from NDEx API
  * @returns User name and email if found, null otherwise
+ *
+ * At module scope rather than inside initializeKeycloak so it can be tested
+ * directly — the regex is the whole behaviour and it is easy to get wrong.
  */
 export const parseUserInfoFromErrorMessage = (
   errorMessage: string,
@@ -40,7 +49,7 @@ export const initializeKeycloak = () => {
   }
 
   // Function to check if the user's email is verified
-  const checkUserVerification = async () => {
+  const checkUserVerification = async (): Promise<UserVerificationStatus> => {
     try {
       const ndexClient = new NDExClient({
         baseURL: getNDExBaseUrl(),

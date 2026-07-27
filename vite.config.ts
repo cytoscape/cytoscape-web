@@ -5,11 +5,20 @@ import path from 'path'
 
 import { federation } from '@module-federation/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, type ConfigEnv, type Connect, type Plugin, type PluginOption, type UserConfig, type ViteDevServer } from 'vite'
+import {
+  defineConfig,
+  type ConfigEnv,
+  type Connect,
+  type Plugin,
+  type PluginOption,
+  type UserConfig,
+  type ViteDevServer,
+} from 'vite'
 import type { ServerResponse } from 'node:http'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
+import { ensureTrailingSlash } from './src/utils/baseUrl'
 import {
   FEDERATION_EXPOSES,
   FEDERATION_FILENAME,
@@ -40,15 +49,21 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
   return {
     name: 'apps-config',
     configureServer(server: ViteDevServer) {
-      server.middlewares.use((req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
-        if (req.url === '/apps.json') {
-          res.setHeader('Content-Type', 'application/json')
-          res.end(fs.readFileSync(appsConfigPath, 'utf8'))
-          return
-        }
+      server.middlewares.use(
+        (
+          req: Connect.IncomingMessage,
+          res: ServerResponse,
+          next: Connect.NextFunction,
+        ) => {
+          if (req.url === '/apps.json') {
+            res.setHeader('Content-Type', 'application/json')
+            res.end(fs.readFileSync(appsConfigPath, 'utf8'))
+            return
+          }
 
-        next()
-      })
+          next()
+        },
+      )
     },
     generateBundle() {
       this.emitFile({
@@ -60,10 +75,142 @@ function appsConfigPlugin(appsConfigPath: string): Plugin {
   }
 }
 
+const BOOT_SHELL_ENTRY = 'src/boot/shell/bootShellEntry.ts'
+
 /**
- * Dev-server-only plugin that processes simple EJS-like tags in index.html
- * (parity with Webpack's HtmlWebpackPlugin).
+ * Build-only plugin that paints the boot shell before the Module
+ * Federation bootstrap finishes.
+ *
+ * The generated mf-entry-bootstrap awaits the federation runtime's
+ * share-scope setup, which transitively downloads the ~700kB MUI shared
+ * chunk (react-dom is co-located in it) before src/index.tsx ever runs —
+ * so nothing in the normal entry graph can paint sooner than that
+ * download. This plugin emits the boot shell entry as its own tiny chunk
+ * (its graph is just the shell markup) and injects it as the FIRST module
+ * script in index.html, so the shell paints within a few round-trips.
+ * It also preloads the dynamically-imported init chunk, which Vite's own
+ * preload injection misses (one discovery round-trip saved).
  */
+function bootShellPlugin(): Plugin {
+  return {
+    name: 'boot-shell',
+    apply: 'build',
+    buildStart() {
+      this.emitFile({
+        type: 'chunk',
+        id: BOOT_SHELL_ENTRY,
+        name: 'bootShell',
+      })
+    },
+    // writeBundle (after index.html is finalized on disk): transformIndexHtml
+    // hooks run before Vite injects its own preload tags.
+    writeBundle(options, bundle) {
+      const htmlPath = path.resolve(options.dir ?? 'dist', 'index.html')
+      if (!fs.existsSync(htmlPath)) return
+
+      let html = fs.readFileSync(htmlPath, 'utf8')
+      // Tolerate both "/cytoscape" and "/cytoscape/" style config values
+      const base = ensureTrailingSlash(config.urlBaseName)
+
+      // Warm the TLS handshake for the origins the boot actually talks to:
+      // Keycloak's silent-SSO iframe and NDEx. Both are on the critical path
+      // and both are cross-origin, so without this the connection setup is
+      // paid serially at the moment of first use. (These existed in the
+      // earlier static boot shell and were lost when it became a chunk.)
+      const preconnectOrigins = [
+        ...new Set(
+          [config.keycloakConfig?.url, config.ndexBaseUrl]
+            .filter(
+              (url): url is string => typeof url === 'string' && url !== '',
+            )
+            .map((url) => {
+              try {
+                // ndexBaseUrl is stored bare ("dev1.ndexbio.org")
+                return new URL(url.includes('://') ? url : `https://${url}`)
+                  .origin
+              } catch {
+                return undefined
+              }
+            })
+            .filter((origin): origin is string => origin !== undefined),
+        ),
+      ]
+
+      if (preconnectOrigins.length > 0) {
+        html = html.replace(
+          '</head>',
+          `${preconnectOrigins
+            .map(
+              (origin) =>
+                `<link rel="preconnect" href="${origin}" crossorigin><link rel="dns-prefetch" href="${origin}">`,
+            )
+            .join('')}</head>`,
+        )
+      }
+
+      const findChunk = (facadeSuffix: string) => {
+        const chunk = Object.values(bundle).find(
+          (c) =>
+            c.type === 'chunk' &&
+            (
+              (c as { facadeModuleId?: string | null }).facadeModuleId ?? ''
+            ).endsWith(facadeSuffix),
+        )
+        return chunk as { fileName: string; imports: string[] } | undefined
+      }
+
+      // Both injections below are string matches against generated HTML. A
+      // miss is invisible at runtime — the app still works, it just goes back
+      // to a blank screen until the shared chunks land — so fail loudly here
+      // rather than silently shipping the regression.
+      const warn = (message: string): void => {
+        this.warn(`[boot-shell] ${message}; boot shell will not be injected`)
+      }
+
+      const shellChunk = findChunk(BOOT_SHELL_ENTRY)
+      if (shellChunk === undefined) {
+        warn(
+          `no emitted chunk with facadeModuleId ending in ${BOOT_SHELL_ENTRY}`,
+        )
+      } else if (!html.includes('<script type="module"')) {
+        warn('no <script type="module"> found in index.html')
+      } else {
+        // Skip anything Vite already preloaded, so the shell's imports are
+        // not listed twice. Matched on the href alone: keying off the full
+        // `modulepreload" crossorigin href=` prefix would stop matching the
+        // moment Vite reorders or adds an attribute, and the guard would go
+        // quietly dead. These hrefs are emitted chunk names, so nothing else
+        // in the document can reference them.
+        const shellPreloads = shellChunk.imports
+          .map((fileName) => `${base}${fileName}`)
+          .filter((href) => !html.includes(`href="${href}"`))
+          .map(
+            (href) => `<link rel="modulepreload" crossorigin href="${href}">`,
+          )
+          .join('')
+        html = html.replace(
+          '<script type="module"',
+          `${shellPreloads}<script type="module" crossorigin src="${base}${shellChunk.fileName}"></script><script type="module"`,
+        )
+      }
+
+      const initChunk = findChunk('src/boot/bootstrap.tsx')
+      if (initChunk !== undefined) {
+        html = html.replace(
+          '</head>',
+          `<link rel="modulepreload" crossorigin href="${base}${initChunk.fileName}"></head>`,
+        )
+      } else {
+        this.warn(
+          '[boot-shell] no chunk for src/boot/bootstrap.tsx; skipping its modulepreload',
+        )
+      }
+
+      fs.writeFileSync(htmlPath, html)
+    },
+  }
+}
+
 export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   const appsConfigPath = path.resolve(
     __dirname,
@@ -89,6 +236,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
       ),
     }),
     appsConfigPlugin(appsConfigPath),
+    bootShellPlugin(),
   ]
 
   // Emit a bundle-size report when ANALYZE=true (parity with the old
@@ -107,7 +255,7 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   }
 
   const resolved: UserConfig = {
-    base: config.urlBaseName !== '' ? config.urlBaseName : '/',
+    base: ensureTrailingSlash(config.urlBaseName),
     plugins,
     resolve: {
       alias: {
