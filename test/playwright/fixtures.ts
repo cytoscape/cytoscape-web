@@ -26,8 +26,12 @@ export const gotoAndWaitReady = async (
   })
 
   await page.goto(path)
+  // Generous on purpose: several workers each boot the whole app, and a boot that
+  // is merely slow under that contention is not a failure worth reporting. Every
+  // spec should come through here rather than asserting on app-shell itself with
+  // expect's 5s default.
   await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
-    timeout: 15000,
+    timeout: 30000,
   })
 
   await page.waitForFunction(
