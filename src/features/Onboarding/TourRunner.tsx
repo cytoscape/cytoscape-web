@@ -9,10 +9,12 @@ import {
   Step,
 } from 'react-joyride'
 
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../debug'
 import { useOnboardingStore } from './store/OnboardingStore'
 import { getTour } from './tours/registry'
 import { stepSelector, TourStepDef } from './tours/types'
+import { visibleSteps } from './tours/visibleSteps'
 import { openPanel, waitForPanel } from './utils/tourActions'
 
 /**
@@ -30,17 +32,22 @@ export const TourRunner = (): ReactElement | null => {
 
   const tour = getTour(activeTour)
 
+  // Network-only steps are filtered out rather than left to self-skip; see
+  // visibleSteps for why joyride's TARGET_NOT_FOUND is not enough on its own.
+  const hasNetwork = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId !== '',
+  )
+
   const steps = useMemo<Step[]>(() => {
     if (tour == null) {
       return []
     }
-    return tour.steps.map((step: TourStepDef) => ({
+    return visibleSteps(tour.steps, hasNetwork).map((step: TourStepDef) => ({
       target: stepSelector(step),
       title: step.title,
       content: step.content,
       placement: step.placement ?? 'auto',
-      // Wait a little longer for network-only targets before giving up.
-      targetWaitTimeout: step.requiresNetwork ? 500 : 2000,
+      targetWaitTimeout: 2000,
       before:
         step.openPanel != null
           ? async () => {
@@ -49,7 +56,7 @@ export const TourRunner = (): ReactElement | null => {
             }
           : undefined,
     }))
-  }, [tour])
+  }, [tour, hasNetwork])
 
   if (tour == null) {
     return null

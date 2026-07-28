@@ -45,6 +45,10 @@ export const gettingStartedTour: TourDef = {
       content:
         'Your network is drawn here. Pan by dragging, zoom with the scroll wheel, and click nodes or edges to select them.',
       placement: 'top',
+      // The pane itself is always mounted, so this has to be flagged
+      // explicitly or the step would claim a network is drawn on an empty
+      // canvas. See tours/visibleSteps.ts.
+      requiresNetwork: true,
     },
     {
       target: 'floating-toolbar',
