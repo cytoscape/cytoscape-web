@@ -1,6 +1,12 @@
 # App API Specification
 
-**Rev. 2 (2/15/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
+**Rev. 3 (7/28/2026): aligned with `1.0.0-beta.3` source API**
+
+This specification describes the current public contract. For method-by-method
+behavior and error tables, [Api.md](../../../../src/app-api/api_docs/Api.md) and
+[ErrorCodes.md](../../../../src/app-api/api_docs/ErrorCodes.md) are the canonical
+references. Historical phase-design documents retain the contracts that applied
+when those phases were implemented.
 
 Detailed design for the app API (External App API) layer. For priorities and roadmap, see [module-federation-design.md](../module-federation-design.md). For the audit of the current system, see [module-federation-audit.md](../module-federation-audit.md).
 
@@ -18,10 +24,10 @@ never breaks the external API.
 **Two-layer design (see [ADR 0003](../adr/0003-framework-agnostic-core-layer.md)):**
 
 ```
-src/app-api/core/<domain>Api.ts    Framework-agnostic pure functions
+src/app-api/core/<domain>Api.ts    Framework-agnostic domain functions
                                    • Uses useXxxStore.getState() — no React context required
                                    • Implements validation, store coordination, ApiResult wrapping
-                                   • Assembled into window.CyWebApi in src/init.tsx
+                                   • Assembled into window.CyWebApi during bootstrap
 
 src/app-api/use<Domain>Api.ts      React Hook wrapper (ultra-thin)
                                    • Returns the core object: () => domainApi
@@ -39,7 +45,7 @@ This split enables two access paths with identical semantics:
 Each app API domain provides:
 
 - Input validation at the boundary before any store mutation
-- Consistent `ApiResult<T>` return types (no thrown exceptions cross the app API boundary)
+- Consistent `ApiResult<T>` return types for fallible operations (no thrown exceptions cross the app API boundary)
 - Internal-only options (`skipUndo`) hidden from external callers
 - Side-effect control via explicit options
 
@@ -56,8 +62,9 @@ src/app-api/
 ├── api_docs/
 │   └── Api.md                     # Behavioral documentation
 ├── types/
-│   ├── ApiResult.ts               # ApiResult<T>, ApiError, ApiErrorCode
+│   ├── ApiResult.ts               # ApiResult<T>, ApiError, domain error catalogs
 │   ├── AppContext.ts              # AppContext, CyAppWithLifecycle
+│   ├── AppResourceTypes.ts         # Per-app resource registration types
 │   ├── ElementTypes.ts            # Curated re-exports of public model types
 │   └── index.ts                   # Barrel export
 ├── core/                          # Framework-agnostic domain logic (no React)
@@ -70,6 +77,9 @@ src/app-api/
 │   ├── viewportApi.ts             # Viewport control — plain functions
 │   ├── exportApi.ts               # CX2 export — plain functions
 │   ├── workspaceApi.ts            # Workspace state reads + network switching — plain functions
+│   ├── contextMenuApi.ts           # Context-menu singleton + per-app factory
+│   ├── resourceApi.ts              # Per-app resource-registration factory
+│   ├── validation.ts               # Shared boundary validation
 │   └── index.ts                   # Assembles CyWebApi; assigned to window.CyWebApi in init.tsx
 ├── event-bus/                     # Event bus — Phase 1 Step 2 (see event-bus-specification.md)
 │   ├── CyWebEvents.ts             # CyWebEvents interface + CyWebEventMap type
@@ -108,7 +118,8 @@ interface ApiFailure {
 type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
 
 interface ApiError {
-  readonly code: ApiErrorCode
+  readonly code: string
+  readonly severity: 'error' | 'warning'
   readonly message: string
 }
 
@@ -116,19 +127,28 @@ interface ApiError {
 // Record (not Map) is used to guarantee JSON serializability across all access paths.
 type PositionRecord = Record<IdType, [number, number, number?]>
 
-const ApiErrorCode = {
-  NetworkNotFound: 'NETWORK_NOT_FOUND',
-  NodeNotFound: 'NODE_NOT_FOUND',
-  EdgeNotFound: 'EDGE_NOT_FOUND',
-  InvalidInput: 'INVALID_INPUT',
-  InvalidCx2: 'INVALID_CX2',
-  OperationFailed: 'OPERATION_FAILED',
-  LayoutEngineNotFound: 'LAYOUT_ENGINE_NOT_FOUND',
-  FunctionNotAvailable: 'FUNCTION_NOT_AVAILABLE',
-  NoCurrentNetwork: 'NO_CURRENT_NETWORK',
-  ContextMenuItemNotFound: 'CONTEXT_MENU_ITEM_NOT_FOUND',
-} as const
+interface ApiErrorCodeDef {
+  readonly code: string
+  readonly severity: 'error' | 'warning'
+  readonly message: string | ((...args: any[]) => string)
+}
+
+// Domain-grouped catalogs. CX2-derived codes use their CX2 identity directly;
+// app/runtime failures use APP1–APP9.
+const ElementCodes: Record<string, ApiErrorCodeDef>
+const TableCodes: Record<string, ApiErrorCodeDef>
+const StyleCodes: Record<string, ApiErrorCodeDef>
+const AppCodes: Record<string, ApiErrorCodeDef>
+
+function fail(codeDef: ApiErrorCodeDef, ...templateArgs: any[]): ApiFailure
 ```
+
+The former flat `ApiErrorCode` object is removed in `1.0.0-beta.3`. Consumers
+compare `result.error.code` with a catalog entry such as
+`ElementCodes.NODE_NOT_FOUND.code` (`GL1`) or
+`AppCodes.NETWORK_NOT_FOUND.code` (`APP1`). See
+[ADR 0005](../adr/0005-structured-error-codes.md) for the decision and
+[ErrorCodes.md](../../../../src/app-api/api_docs/ErrorCodes.md) for every code.
 
 Usage by external apps:
 
@@ -158,7 +178,27 @@ export type { NetworkView } from '../../models/ViewModel/NetworkView'
 export type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSummary'
 
 // App lifecycle types
-export type { AppContext, CyAppWithLifecycle } from './AppContext'
+export type {
+  AppContext,
+  AppContextApis,
+  CyAppWithLifecycle,
+} from './AppContext'
+export type {
+  ApiError,
+  ApiErrorCodeDef,
+  ApiErrorSeverity,
+  ApiResult,
+} from './ApiResult'
+export {
+  AppCodes,
+  ElementCodes,
+  StyleCodes,
+  TableCodes,
+  fail,
+  isFail,
+  isOk,
+  ok,
+} from './ApiResult'
 ```
 
 ### 1.5 App API Hook Specifications
@@ -205,14 +245,14 @@ interface ElementApi {
     networkId: IdType,
     position: [number, number, number?],
     options?: CreateNodeOptions,
-  ): ApiResult<{ nodeId: IdType }>
+  ): ApiResult<{ nodeId: IdType; node: NodeData }>
 
   createEdge(
     networkId: IdType,
     sourceNodeId: IdType,
     targetNodeId: IdType,
     options?: CreateEdgeOptions,
-  ): ApiResult<{ edgeId: IdType }>
+  ): ApiResult<{ edgeId: IdType; edge: EdgeData }>
 
   // --- Update ---
   moveEdge(
@@ -226,15 +266,55 @@ interface ElementApi {
   deleteNodes(
     networkId: IdType,
     nodeIds: IdType[],
-  ): ApiResult<{ deletedNodeCount: number; deletedEdgeCount: number }>
+  ): ApiResult<{
+    deletedNodeCount: number
+    deletedEdgeCount: number
+    deletedNodes: Array<{ id: IdType } & NodeData>
+    deletedEdges: Array<{ id: IdType } & EdgeData>
+  }>
 
   deleteEdges(
     networkId: IdType,
     edgeIds: IdType[],
-  ): ApiResult<{ deletedEdgeCount: number }>
+  ): ApiResult<{
+    deletedEdgeCount: number
+    deletedEdges: Array<{ id: IdType } & EdgeData>
+  }>
 
   generateNextNodeId(networkId: IdType): IdType
   generateNextEdgeId(networkId: IdType): IdType
+
+  getNodeIds(networkId: IdType): ApiResult<{ nodeIds: IdType[] }>
+  getEdgeIds(networkId: IdType): ApiResult<{ edgeIds: IdType[] }>
+  getEdges(networkId: IdType): ApiResult<{
+    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  }>
+  getConnectedEdges(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ edges: EdgeData[] }>
+  getConnectedNodes(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[] }>
+  getOutgoers(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[]; edgeIds: IdType[] }>
+  getIncomers(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[]; edgeIds: IdType[] }>
+  getSuccessors(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[] }>
+  getPredecessors(
+    networkId: IdType,
+    nodeId: IdType,
+  ): ApiResult<{ nodeIds: IdType[] }>
+  getRoots(networkId: IdType): ApiResult<{ nodeIds: IdType[] }>
+  getLeaves(networkId: IdType): ApiResult<{ nodeIds: IdType[] }>
 }
 
 const useElementApi: () => ElementApi // React hook — returns elementApi from core/
@@ -244,10 +324,11 @@ const useElementApi: () => ElementApi // React hook — returns elementApi from 
 
 **Implementation strategy (core functions — no React, uses `.getState()`):**
 
-- **`getNode`**: Reads attributes from `TableStore.getState()` and position from `ViewModelStore.getState()`. Validates node existence in `NetworkStore.getState()`. Returns `NodeNotFound` if the node does not exist.
-- **`getEdge`**: Reads source/target from `NetworkStore.getState()` and attributes from `TableStore.getState()`. Returns `EdgeNotFound` if the edge does not exist.
-- **`createNode` / `createEdge`**: Coordinates `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, `UndoStore` directly via `.getState()`, replicating the logic of `useCreateNode()` / `useCreateEdge()`. The `skipUndo` option is never passed — undo always records. If `options.bypass` is non-empty, `visualStyleApi.setBypass()` is called immediately after element creation so that bypass values are applied atomically in the same operation.
-- **`moveEdge`**: Atomically updates an edge's source and/or target node using Cytoscape.js's native `edge.move()` on the headless core. This preserves the edge ID, so all data keyed by edge ID — table row attributes, visual style bypasses, and edge views — remains intact without any migration. Only the network topology store is mutated. A new `MOVE_EDGES` undo command records `(networkId, edgeId, oldSource, oldTarget)` for rollback. Returns `EdgeNotFound` or `NodeNotFound` on invalid IDs. See [§ 3.1.1](#311-moveedge--detailed-implementation-design) for the full implementation design.
+- **`getNode` / `getEdge`**: Read attributes and topology/view data from the relevant stores. Missing elements return `GL1` or `GL2`; a missing network returns `APP1`.
+- **`createNode` / `createEdge`**: Coordinate `NetworkStore`, `TableStore`, `ViewModelStore`, `VisualStyleStore`, `NetworkSummaryStore`, and `UndoStore`. They reject an `id` key in the attribute payload (`N3`/`E6`) and return the complete created element data with its ID.
+- **`deleteNodes` / `deleteEdges`**: Return complete deleted element snapshots as well as counts, allowing callers to retain removed data without pre-reading it.
+- **Graph reads**: `getEdges` provides all edge endpoints in one call; the traversal methods wrap the headless Cytoscape.js core and return JSON-serializable arrays.
+- **`moveEdge`**: Atomically updates an edge's endpoints while preserving its ID and associated data. Invalid edge/node IDs return `GL2`/`GL1`. See [§ 3.1.1](#311-moveedge--detailed-implementation-design).
 
 #### 1.5.2 Network API
 
@@ -260,6 +341,7 @@ interface CreateNetworkFromEdgeListProps {
   name: string
   description?: string
   edgeList: Array<[IdType, IdType, string?]>
+  addToWorkspace?: boolean // default: false
 }
 
 interface CreateNetworkFromCx2Props {
@@ -269,7 +351,14 @@ interface CreateNetworkFromCx2Props {
 }
 
 interface DeleteNetworkOptions {
-  navigate?: boolean // default: true
+  /** Retained for source compatibility; currently does not change behavior. */
+  navigate?: boolean
+}
+
+interface CreateNetworkFromNodeListOptions {
+  name?: string // default: "Subnetwork of <source name>"
+  description?: string
+  addToWorkspace?: boolean // default: false
 }
 
 interface CreateNetworkData {
@@ -280,6 +369,13 @@ interface CreateNetworkData {
 interface NetworkApi {
   createNetworkFromEdgeList(
     props: CreateNetworkFromEdgeListProps,
+  ): ApiResult<CreateNetworkData>
+
+  createNetworkFromNodeList(
+    networkId: IdType,
+    nodeIds: IdType[],
+    edgeIds?: IdType[] | 'all',
+    options?: CreateNetworkFromNodeListOptions,
   ): ApiResult<CreateNetworkData>
 
   createNetworkFromCx2(
@@ -300,9 +396,10 @@ const useNetworkApi: () => NetworkApi // React hook — returns networkApi from 
 
 **Implementation strategy (core functions — no React, uses `.getState()`):**
 
-- `createNetworkFromEdgeList`: Coordinates stores directly via `.getState()`, replicating the logic of the `useCreateNetwork` task hook. Catches errors, returns `ApiResult`.
-- `createNetworkFromCx2`: **Adds `validateCX2()` before processing** (fixes Audit Section 4.5 bug). Coordinates stores directly, replicating `useCreateNetworkFromCx2` with support for `navigate` and `addToWorkspace` options (fixes Audit Section 4.6).
-- `deleteNetwork` / `deleteCurrentNetwork` / `deleteAllNetworks`: Coordinates stores directly, replicating the logic of `useDeleteCyNetwork`.
+- `createNetworkFromEdgeList`: Creates a network from endpoint tuples and optionally adds it to the workspace.
+- `createNetworkFromNodeList`: Copies a node subset from an existing network, including table columns/rows and positions. Omitting `edgeIds` (or passing `'all'`) creates the induced subgraph; an explicit array selects a validated subset.
+- `createNetworkFromCx2`: Calls `validateCX2()` before processing, then coordinates store creation with `navigate` and `addToWorkspace` options.
+- `deleteNetwork` / `deleteCurrentNetwork` / `deleteAllNetworks`: Use the shared deletion orchestrator so every network-owned store is cleared consistently. Deleting the current network always repairs `currentNetworkId`; deleting a non-current network does not switch networks. The legacy `navigate` option is ignored.
 
 #### 1.5.3 Selection API
 
@@ -343,7 +440,7 @@ Wraps: `TableStore` CRUD methods
 ```typescript
 // src/app-api/useTableApi.ts
 
-type TableType = 'node' | 'edge'
+type AppTableType = 'node' | 'edge'
 
 interface CellEdit {
   id: IdType
@@ -351,25 +448,73 @@ interface CellEdit {
   value: ValueType
 }
 
+interface ColumnInfo {
+  name: string
+  type: ValueTypeName
+}
+
+interface GetTableOptions {
+  columns?: string[]
+}
+
+interface ExportTableToTsvOptions extends GetTableOptions {
+  includeTypeHeader?: boolean
+}
+
+interface ImportTableFromTsvOptions {
+  keyColumn?: string
+}
+
 interface TableApi {
   // --- Read ---
   getValue(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     elementId: IdType,
     column: AttributeName,
   ): ApiResult<{ value: ValueType }>
 
   getRow(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     elementId: IdType,
   ): ApiResult<{ row: Record<AttributeName, ValueType> }>
+
+  getTable(
+    networkId: IdType,
+    tableType: AppTableType,
+    options?: GetTableOptions,
+  ): ApiResult<{
+    columns: ColumnInfo[]
+    rows: Array<Record<string, ValueType>>
+  }>
+
+  getColumns(
+    networkId: IdType,
+    tableType: AppTableType,
+  ): ApiResult<{ columns: ColumnInfo[] }>
+
+  exportTableToTsv(
+    networkId: IdType,
+    tableType: AppTableType,
+    options?: ExportTableToTsvOptions,
+  ): ApiResult<{ tsvText: string }>
+
+  importTableFromTsv(
+    networkId: IdType,
+    tableType: AppTableType,
+    tsvText: string,
+    options?: ImportTableFromTsvOptions,
+  ): ApiResult<{
+    rowCount: number
+    newColumns: string[]
+    skippedRows: string[]
+  }>
 
   // --- Write ---
   createColumn(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     columnName: string,
     dataType: ValueTypeName,
     defaultValue: ValueType,
@@ -377,20 +522,20 @@ interface TableApi {
 
   deleteColumn(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     columnName: string,
   ): ApiResult
 
   setColumnName(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     currentName: string,
     newName: string,
   ): ApiResult
 
   setValue(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     elementId: IdType,
     column: AttributeName,
     value: ValueType,
@@ -398,19 +543,19 @@ interface TableApi {
 
   setValues(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     cellEdits: CellEdit[],
   ): ApiResult
 
   editRows(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     rows: Record<IdType, Record<AttributeName, ValueType>>,
   ): ApiResult
 
   applyValueToElements(
     networkId: IdType,
-    tableType: TableType,
+    tableType: AppTableType,
     columnName: string,
     value: ValueType,
     elementIds?: IdType[],
@@ -424,8 +569,10 @@ const useTableApi: () => TableApi // React hook — returns tableApi from core/
 
 **Implementation strategy (core functions — no React, uses `.getState()`):**
 
-- **`getValue` / `getRow`**: Reads directly from `TableStore.getState().tables[networkId]`. Validates table and element existence. Returns `NetworkNotFound` if the table does not exist.
-- **Write operations**: Validates `tables[networkId]` existence via `TableStore.getState()`, then calls `TableStore.getState()` actions directly. Adds column existence checks for operations on existing columns.
+- **Reads**: `getValue`/`getRow` validate element existence (`GL1`/`GL2`). `getTable` returns selected rows plus schema; `getColumns` returns schema without materializing rows.
+- **TSV I/O**: Export supports column filtering and optional type headers. Import merges only provided cells, creates missing columns, skips unmatched element keys, and returns those keys in `skippedRows`.
+- **Schema writes**: Reject reserved, null-default, and duplicate columns (`FK1`, `FK2`, `A8`, `A6`, `AC6`). Column create/rename/delete also updates Table Browser display configuration and dependent visual-style mappings.
+- **Value writes**: Validate target elements and declared column value types before mutation (`GL1`, `GL2`, `A1`).
 
 #### 1.5.5 Visual Style API
 
@@ -465,10 +612,13 @@ interface VisualStyleApi {
   createContinuousMapping(
     networkId: IdType,
     vpName: VisualPropertyName,
-    vpType: string,
+    vpType: VisualPropertyValueTypeName,
     attribute: AttributeName,
     attributeValues: ValueType[],
     attributeType: ValueTypeName,
+    controlPoints?: ContinuousFunctionControlPoint[],
+    ltMinVpValue?: VisualPropertyValueType,
+    gtMaxVpValue?: VisualPropertyValueType,
   ): ApiResult
 
   createPassthroughMapping(
@@ -486,7 +636,12 @@ const useVisualStyleApi: () => VisualStyleApi // React hook — returns visualSt
 
 **Implementation location:** `src/app-api/core/visualStyleApi.ts`
 
-**Implementation strategy (core functions — no React, uses `.getState()`):** Validates `visualStyles[networkId]` existence via `VisualStyleStore.getState()`, then calls `VisualStyleStore.getState()` actions directly.
+**Implementation strategy (core functions — no React, uses `.getState()`):**
+
+- Default and bypass writes validate the visual property value (`VP1`–`VP10`).
+- Bypasses validate target existence, element scope, and network-scoped-property restrictions (`BV1`, `BV2`, `BV5`).
+- Mapping creation validates the source column, source type, visual-property scope, and continuous numeric bounds (`MC1`, `MI1`, `MI2`, `MI3`, `V7`).
+- Discrete entries may be supplied in the creation call. Continuous mappings may override control points and values below/above the data range.
 
 #### 1.5.6 Layout API
 
@@ -557,8 +712,8 @@ const useViewportApi: () => ViewportApi // React hook — returns viewportApi fr
 
 **Implementation strategy (core functions — no React, uses `.getState()`):**
 
-- **`fit()`**: Retrieves and calls `RendererFunctionStore.getState().getFunction('cyjs', 'fit', networkId)`. Returns `Promise<ApiResult>` because Cytoscape.js `cy.fit()` may involve animation; wrapping in a Promise future-proofs against animated transitions. Returns `FunctionNotAvailable` error if the renderer function is not registered.
-- **`getNodePositions()`**: Reads positions from `ViewModelStore.getState().getViewModel(networkId)`. Returns `NetworkNotFound` if the view model does not exist. Returns positions for only the requested node IDs.
+- **`fit()`**: Retrieves and calls `RendererFunctionStore.getState().getFunction('cyjs', 'fit', networkId)`. Its public contract is `Promise<ApiResult>` and it returns `AppCodes.FUNCTION_NOT_AVAILABLE` (`APP5`) until the renderer function is registered.
+- **`getNodePositions()`**: Reads positions from `ViewModelStore.getState().getViewModel(networkId)`. Returns `AppCodes.NETWORK_NOT_FOUND` (`APP1`) if the view model does not exist. Returns positions for only the requested node IDs.
 
 #### 1.5.8 Export API
 
@@ -595,14 +750,21 @@ interface AppContext {
   appId: string
 
   /**
-   * All app API instances — same singleton as window.CyWebApi at runtime.
-   * Typed as CyWebApiType to make the relationship explicit.
+   * Global domain APIs plus per-app resource and context-menu factories.
    */
-  apis: CyWebApiType  // imported from '../core'
+  apis: AppContextApis
+}
+
+interface AppContextApis extends CyWebApiType {
+  resource: ResourceApi
+  contextMenu: ContextMenuApi
 }
 
 // Extended CyApp interface (backward-compatible)
 interface CyAppWithLifecycle extends CyApp {
+  apiVersion?: string
+  resources?: ResourceDeclaration[]
+
   /**
    * Called when the app is activated (after React components are registered).
    * Use for initializing app state, registering event listeners, and preparing resources.
@@ -619,14 +781,15 @@ interface CyAppWithLifecycle extends CyApp {
 }
 ```
 
-**Implementation strategy (Phase 1g):**
+**Implementation strategy:**
 
-- `AppContext.apis` is typed as `CyWebApiType` and set to `CyWebApi` (from `src/app-api/core`) — the same singleton as `window.CyWebApi`. No React context or separate instantiation is needed.
-- The host (`src/data/hooks/stores/useAppManager.ts`) calls `mount({ appId: cyApp.id, apis: CyWebApi })` after `registerApp(cyApp)`, if the app implements `CyAppWithLifecycle.mount`.
+- The host creates `AppContextApis` by spreading `CyWebApi`, adding `createResourceApi(appId)`, and replacing `contextMenu` with `createContextMenuApi(appId)`.
+- The host calls `mount({ appId: cyApp.id, apis })` after registration when the app implements `mount`.
 - The host calls `unmount()` when the app is deactivated or the page is unloading (`beforeunload`). The host guarantees `unmount()` is always called for apps where `mount` was invoked.
 - Both callbacks are optional — existing apps without lifecycle methods continue to work unchanged.
 - If `mount()` returns a `Promise`, the host awaits it before marking the app as ready.
-- `AppContext` and `CyAppWithLifecycle` types are exported via `cyweb/ApiTypes`.
+- Declarative `resources` are registered before `mount`; all per-app registrations are cleaned up when the app is disabled.
+- `AppContext`, `AppContextApis`, and `CyAppWithLifecycle` are exported via `cyweb/ApiTypes`.
 
 #### 1.5.10 Workspace API
 
@@ -638,7 +801,7 @@ Reads: `WorkspaceStore.workspace` and `NetworkSummaryStore.summaries`
 interface WorkspaceInfo {
   workspaceId: IdType
   name: string
-  currentNetworkId: IdType   // '' when no networks are open
+  currentNetworkId: IdType // '' when no networks are open
   networkCount: number
 }
 
@@ -648,7 +811,7 @@ interface WorkspaceNetworkInfo {
   description: string
   nodeCount: number
   edgeCount: number
-  isModified: boolean        // true when the network has unsaved local changes
+  isModified: boolean // true when the network has unsaved local changes
 }
 
 interface WorkspaceApi {
@@ -668,13 +831,13 @@ interface WorkspaceApi {
 
   /**
    * Returns summary metadata for a single network.
-   * fail(NetworkNotFound) if networkId is not in the workspace.
+   * fail(AppCodes.NETWORK_NOT_FOUND) if networkId is not in the workspace.
    */
   getNetworkSummary(networkId: IdType): ApiResult<WorkspaceNetworkInfo>
 
   /**
    * Returns the currently active network ID.
-   * fail(NoCurrentNetwork) if no networks are open.
+   * fail(AppCodes.NO_CURRENT_NETWORK) if no networks are open.
    */
   getCurrentNetworkId(): ApiResult<{ networkId: IdType }>
 
@@ -683,14 +846,14 @@ interface WorkspaceApi {
   /**
    * Switches the active network.
    * Fires the 'network:switched' event via the existing initEventBus subscription.
-   * fail(NetworkNotFound) if networkId is not in the workspace.
-   * fail(InvalidInput) if networkId is empty.
+   * fail(AppCodes.NETWORK_NOT_FOUND) if networkId is not in the workspace.
+   * fail(AppCodes.INVALID_INPUT) if networkId is empty.
    */
   switchCurrentNetwork(networkId: IdType): ApiResult
 
   /**
    * Renames the workspace.
-   * fail(InvalidInput) if name is empty or whitespace-only.
+   * fail(AppCodes.INVALID_INPUT) if name is empty or whitespace-only.
    */
   setWorkspaceName(name: string): ApiResult
 }
@@ -705,8 +868,8 @@ const useWorkspaceApi: () => WorkspaceApi // React hook — returns workspaceApi
 - **`getWorkspaceInfo`**: Reads `WorkspaceStore.getState().workspace`. Always succeeds.
 - **`getNetworkIds`**: Returns `[...workspace.networkIds]` (shallow copy to prevent mutation).
 - **`getNetworkList`**: Joins `workspace.networkIds` with `NetworkSummaryStore.getState().summaries`. Networks with no summary entry are silently omitted; callers should not assume all IDs in `getNetworkIds()` have summaries.
-- **`getNetworkSummary`**: Validates `networkId ∈ workspace.networkIds` before reading the summary. Returns `NetworkNotFound` if either check fails.
-- **`getCurrentNetworkId`**: Returns `NoCurrentNetwork` when `workspace.networkIds.length === 0 || workspace.currentNetworkId === ''`.
+- **`getNetworkSummary`**: Validates `networkId ∈ workspace.networkIds` before reading the summary. Returns `APP1` if either check fails.
+- **`getCurrentNetworkId`**: Returns `APP2` when `workspace.networkIds.length === 0 || workspace.currentNetworkId === ''`.
 - **`switchCurrentNetwork`**: Validates `networkId ∈ workspace.networkIds`, then calls `WorkspaceStore.getState().setCurrentNetworkId(networkId)`. The `network:switched` event is dispatched automatically by the existing `initEventBus` Zustand subscription — no explicit dispatch is needed here.
 - **`setWorkspaceName`**: Validates `name.trim() !== ''`, then calls `WorkspaceStore.getState().setName(name.trim())`.
 
@@ -742,7 +905,9 @@ interface ContextMenuItemConfig {
 }
 
 interface ContextMenuApi {
-  addContextMenuItem(config: ContextMenuItemConfig): ApiResult<{ itemId: string }>
+  addContextMenuItem(
+    config: ContextMenuItemConfig,
+  ): ApiResult<{ itemId: string }>
   removeContextMenuItem(itemId: string): ApiResult
 }
 
@@ -755,10 +920,10 @@ const contextMenuApi: ContextMenuApi
 
 **Two access paths:**
 
-| Path | Factory | Auto-cleanup | Use case |
-|------|---------|-------------|----------|
-| `context.apis.contextMenu` | `createContextMenuApi(appId)` | Yes — `removeAllByAppId` on disable | Plugin apps in `mount()` or components |
-| `window.CyWebApi.contextMenu` | anonymous singleton | No — items persist until explicit removal | Browser console, extensions |
+| Path                          | Factory                       | Auto-cleanup                              | Use case                               |
+| ----------------------------- | ----------------------------- | ----------------------------------------- | -------------------------------------- |
+| `context.apis.contextMenu`    | `createContextMenuApi(appId)` | Yes — `removeAllByAppId` on disable       | Plugin apps in `mount()` or components |
+| `window.CyWebApi.contextMenu` | anonymous singleton           | No — items persist until explicit removal | Browser console, extensions            |
 
 Items registered via the per-app factory carry `appId` and are automatically
 removed when the app is disabled (via `AppCleanupRegistry`). Explicit removal
@@ -780,27 +945,28 @@ App API operations use a **mixed sync/async** return type strategy based on the 
 
 **Classification of all app API operations:**
 
-| Return Type                  | Operations                                                                                                                                                                                                                                                                                                                                                                                                                | Internal Mechanism                                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ApiResult<T>` (sync)        | `createNode`, `createEdge`, `deleteNodes`, `deleteEdges`, `getNode`, `getEdge`, `moveEdge`, `createNetworkFromEdgeList`, `createNetworkFromCx2`, `deleteNetwork`, `exclusiveSelect`, `additiveSelect`, `getSelection`, `getValue`, `getRow`, `createColumn`, `setValue`, `setValues`, `setDefault`, `setBypass`, `createDiscreteMapping`, `getNodePositions`, `updateNodePositions`, `getAvailableLayouts`, `exportToCx2`, `getWorkspaceInfo`, `getNetworkIds`, `getNetworkList`, `getNetworkSummary`, `getCurrentNetworkId`, `switchCurrentNetwork`, `setWorkspaceName`, `addContextMenuItem`, `removeContextMenuItem` | Zustand store read/write — state mutation is synchronous; IndexedDB persistence runs asynchronously but is not awaited                                      |
-| `Promise<ApiResult>` (async) | `applyLayout`                                                                                                                                                                                                                                                                                                                                                                                                             | `LayoutEngine.apply()` is callback-based (CyjsLayout listens for `layoutstop` event; CosmosLayout uses a timer)                                             |
-| `Promise<ApiResult>` (async) | `fit`                                                                                                                                                                                                                                                                                                                                                                                                                     | `RendererFunctionStore` delegates to Cytoscape.js `cy.fit()`, which may involve animation; wrapping in a Promise future-proofs against animated transitions |
+| Return Type                  | Operations                                                                                                                          | Internal Mechanism                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `ApiResult<T>` (sync)        | All fallible operations except `applyLayout` and `fit`                                                                              | Store reads/writes and transformations complete synchronously; IndexedDB persistence is not awaited     |
+| Direct value (sync)          | `generateNextNodeId`, `generateNextEdgeId`; resource queries `getSupportedSlots`, `getRegisteredResources`, `getResourceVisibility` | In-memory reads whose public contracts do not model failure                                             |
+| `Promise<ApiResult>` (async) | `applyLayout`                                                                                                                       | Loads the selected engine and resolves after its callback completes; every failure path resolves `APP3` |
+| `Promise<ApiResult>` (async) | `fit`                                                                                                                               | Invokes the renderer function when available and resolves an `ApiResult`                                |
 
 **Stability guarantee:** Changing a synchronous operation to `Promise<ApiResult<T>>` is a **breaking change** for callers (they must add `await`). App API operations are classified conservatively — if there is a reasonable expectation that the underlying implementation will become asynchronous, the operation returns `Promise` from the start.
 
 ### 1.7 Design Rules
 
-| Rule                                             | Rationale                                                                                                                                                                                                                                                                                             |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `skipUndo` is never exposed externally           | Prevents external apps from corrupting the undo stack                                                                                                                                                                                                                                                 |
-| All exceptions caught → `ApiFailure`             | External apps never need try/catch around app API calls                                                                                                                                                                                                                                               |
-| Validate inputs before any store mutation        | Prevents partial state updates on invalid input                                                                                                                                                                                                                                                       |
-| Options with sensible defaults                   | Minimize required parameters; opt-in for advanced behavior                                                                                                                                                                                                                                            |
-| Core functions do not call internal React hooks  | Ensures `core/` is usable outside React context (browser extensions, LLM bridges)                                                                                                                                                                                                                     |
-| `core/` has zero React imports                   | Enforced by linting or code review; violation breaks non-React consumers                                                                                                                                                                                                                              |
-| Hook wrappers contain no domain logic            | All logic lives in `core/`; hooks are identity wrappers                                                                                                                                                                                                                                               |
-| All API inputs and outputs are JSON-serializable | `Map`, `Set`, class instances, and functions must not appear in the public API surface. Use `Record<K, V>` for key-value structures (`PositionRecord`, `editRows` rows). This guarantees that `window.CyWebApi` responses can be relayed through WebSocket, `postMessage`, or MCP without conversion. |
-| Sync/async return types match implementation     | See § 1.6 — do not force `await` on inherently synchronous operations                                                                                                                                                                                                                                 |
+| Rule                                                    | Rationale                                                                                                                                                                                                 |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `skipUndo` is never exposed externally                  | Prevents external apps from corrupting the undo stack                                                                                                                                                     |
+| Fallible domain exceptions caught → `ApiFailure`        | Exceptions do not cross the `ApiResult`-based domain operation boundary                                                                                                                                   |
+| Validate inputs before any store mutation               | Prevents partial state updates on invalid input                                                                                                                                                           |
+| Options with sensible defaults                          | Minimize required parameters; opt-in for advanced behavior                                                                                                                                                |
+| Core functions do not call internal React hooks         | Ensures `core/` is usable outside React context (browser extensions, LLM bridges)                                                                                                                         |
+| `core/` has zero React imports                          | Enforced by linting or code review; violation breaks non-React consumers                                                                                                                                  |
+| Hook wrappers contain no domain logic                   | All logic lives in `core/`; hooks are identity wrappers                                                                                                                                                   |
+| Data-operation inputs and outputs are JSON-serializable | Graph, table, style, layout, viewport, export, and workspace operations use plain objects and arrays. Callback registration APIs such as `contextMenu` and per-app `resource` are intentional exceptions. |
+| Sync/async return types match implementation            | See § 1.6 — do not force `await` on inherently synchronous operations                                                                                                                                     |
 
 ### 1.8 Wrapping Pattern
 
@@ -847,15 +1013,14 @@ Two access paths, one implementation:
 
 ### 1.9 Versioning Strategy
 
-The App API employs an **Evergreen (Backward Compatible)** versioning strategy. This approach ensures that external apps continue to function without modification as Cytoscape Web evolves, while avoiding the complexity of maintaining multiple parallel API versions.
+Import paths and global object keys are unversioned. Compatibility is governed by
+the Semantic Version of `@cytoscape-web/api-types`, not by a runtime property.
 
 **Key Principles:**
 
 1. **No Version Numbers in Paths:** Module Federation import paths (`cyweb/ElementApi`) and the global object (`window.CyWebApi.element`) do not contain version numbers (e.g., no `v1`).
-2. **Additive Changes Only:** The API evolves exclusively through additive changes:
-   - Adding new functions to existing domain APIs.
-   - Adding new _optional_ arguments to existing functions. Optional arguments must always be added as properties of a trailing options object (never as positional arguments), so that existing call sites remain valid without modification.
-3. **Deprecation over Deletion:** Existing functions and required arguments are never removed or changed in a breaking way. If a function must be replaced, it is marked with the `@deprecated` JSDoc tag (with a migration path) and kept functional internally, while a new function is introduced.
+2. **Pre-1.0 Changes:** Alpha and beta releases may make breaking contract changes. Every such change must be called out in the package CHANGELOG with a migration note.
+3. **Stable Changes:** Starting at `1.0.0`, compatible changes are additive. Removals or incompatible signature changes require deprecation and a new major version.
 4. **Feature Detection:** External apps should use feature detection rather than version checking to determine if a specific API capability is available in the host environment:
    ```javascript
    const elementApi = useElementApi()
@@ -863,31 +1028,25 @@ The App API employs an **Evergreen (Backward Compatible)** versioning strategy. 
      elementApi.newFeature()
    }
    ```
-5. **API Version Property:** For debugging and logging purposes only, the `CyWebApi` global object exposes a `version` property. This version is always identical to the published `@cytoscape-web/api-types` npm package version (e.g., `window.CyWebApi.version === '0.1.0-alpha.0'` during the alpha phase, `'1.0.0'` at stable release). It is intended for debugging and logging purposes only — external apps must use feature detection (see principle 4) rather than version comparisons for conditional logic. This version follows Semantic Versioning (SemVer). The version progression and digit meanings are defined as follows:
+5. **No Runtime Version Field:** `CyWebApiType` deliberately has no `version` property. Use the installed package version at build time and feature detection at runtime.
 
-   | Phase | Version range | Meaning |
-   | ----- | ------------- | ------- |
-   | Alpha (Phase 0 → Phase 5) | `0.1.0-alpha.0` … `0.x.y-alpha.z` | Pre-stable; API surface is still growing |
-   | Stable release (Phase 6 complete) | `1.0.0` | Full API surface finalized, evergreen guarantees apply |
-
-   Once stable (`1.0.0`+), the digit semantics are:
-
-   | Digit | Meaning | Example |
-   | ----- | ------- | ------- |
-   | Patch | Bug fixes or internal changes with no API surface change | `1.0.1` |
-   | Minor | New function added to an existing domain API, or new domain API added | `1.1.0` |
-   | Major | Removal of previously deprecated symbols (rare, after minimum 2 release cycles) | `2.0.0` |
+| Phase        | Version range        | Compatibility policy                                                             |
+| ------------ | -------------------- | -------------------------------------------------------------------------------- |
+| Alpha / beta | `<1.0.0` prereleases | Breaking changes are permitted when documented                                   |
+| Stable       | `1.0.0` and later    | Patch = compatible fixes, minor = compatible additions, major = breaking changes |
 
 ---
 
 ## 2. Public API via Module Federation
 
-### 2.1 New Expose Entries
+### 2.1 Module Federation Exposes
 
-Add 10 app API entries to `webpack.config.js` `exposes`. These are the **only recommended public API** for new external apps:
+`vite.config.ts` passes the shared `FEDERATION_EXPOSES` map from
+`src/app-api/federation/federationExposes.ts` to `@module-federation/vite`.
+The supported app-facing entries are:
 
 ```javascript
-exposes: {
+export const FEDERATION_EXPOSES = {
   // === Public App API (the only supported public API) ===
   './ElementApi':     './src/app-api/useElementApi.ts',
   './NetworkApi':     './src/app-api/useNetworkApi.ts',
@@ -898,19 +1057,17 @@ exposes: {
   './ViewportApi':    './src/app-api/useViewportApi.ts',
   './ExportApi':      './src/app-api/useExportApi.ts',
   './WorkspaceApi':   './src/app-api/useWorkspaceApi.ts',
+  './AppIdContext':   './src/app-api/AppIdContext.tsx',
+  './EventBus':       './src/app-api/useCyWebEvent.ts',
   './ApiTypes':       './src/app-api/types/index.ts',
 
-  // === @deprecated — Raw stores (backward compatibility only) ===
-  // These will be removed after 2 release cycles once the app API is stable.
-  // Do NOT use in new apps. Use the app API above instead.
+  // Legacy raw stores and task hooks remain exposed for compatibility.
   './CredentialStore':      './src/data/hooks/stores/CredentialStore.ts',
   './LayoutStore':          './src/data/hooks/stores/LayoutStore.ts',
-  // ... (12 stores unchanged)
-
-  // === @deprecated — Legacy task hooks (use NetworkApi instead) ===
+  // ... other compatibility entries are defined in the source map
   './CreateNetwork':        './src/data/task/useCreateNetwork.tsx',
   './CreateNetworkFromCx2': './src/data/task/useCreateNetworkFromCx2.tsx',
-},
+} as const
 ```
 
 ### 2.2 External App Usage
@@ -960,73 +1117,61 @@ import { useNetworkStore } from 'cyweb/NetworkStore'
 
 ### 2.3 API Surface Summary
 
-| Access path         | Module / Property         | Hook / Object         | Operations                                                                                                              |
-| ------------------- | ------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Module Federation   | `cyweb/ElementApi`        | `useElementApi()`     | getNode, getEdge, createNode, createEdge, moveEdge, deleteNodes, deleteEdges                                            |
-| Module Federation   | `cyweb/NetworkApi`        | `useNetworkApi()`     | createNetworkFromEdgeList, createNetworkFromCx2, deleteNetwork                                                          |
-| Module Federation   | `cyweb/SelectionApi`      | `useSelectionApi()`   | exclusiveSelect, additiveSelect, additiveUnselect, toggleSelected, getSelection                                         |
-| Module Federation   | `cyweb/TableApi`          | `useTableApi()`       | getValue, getRow, createColumn, deleteColumn, setValue, setValues, editRows                                             |
-| Module Federation   | `cyweb/VisualStyleApi`    | `useVisualStyleApi()` | setDefault, setBypass, createDiscreteMapping, createContinuousMapping, createPassthroughMapping                         |
-| Module Federation   | `cyweb/LayoutApi`         | `useLayoutApi()`      | applyLayout, getAvailableLayouts                                                                                        |
-| Module Federation   | `cyweb/ViewportApi`       | `useViewportApi()`    | fit, getNodePositions, updateNodePositions                                                                              |
-| Module Federation   | `cyweb/ExportApi`         | `useExportApi()`      | exportToCx2                                                                                                             |
-| Module Federation   | `cyweb/WorkspaceApi`      | `useWorkspaceApi()`   | getWorkspaceInfo, getNetworkIds, getNetworkList, getNetworkSummary, getCurrentNetworkId, switchCurrentNetwork, setWorkspaceName |
-| Module Federation   | `cyweb/EventBus`          | `useCyWebEvent()`     | Subscribe to typed window events (network, selection, layout, style, data)                                              |
-| Module Federation   | `cyweb/ApiTypes`          | —                     | IdType, ApiResult, ApiErrorCode, VisualPropertyName, ValueTypeName, CyNetwork, Cx2, WorkspaceInfo, WorkspaceNetworkInfo, AppContext, CyAppWithLifecycle, ... |
-| Global (vanilla JS) | `window.CyWebApi.element` | plain object          | Same as ElementApi operations                                                                                           |
-| Global (vanilla JS) | `window.CyWebApi.network` | plain object          | Same as NetworkApi operations                                                                                           |
-| Global (vanilla JS) | `window.CyWebApi.layout`  | plain object          | Same as LayoutApi operations                                                                                            |
-| Global (vanilla JS) | `window.CyWebApi.workspace` | plain object        | Same as WorkspaceApi operations                                                                                         |
-| Global (vanilla JS) | `window.CyWebApi.*`       | plain object          | All 9 domain APIs — same operations, same `ApiResult<T>` returns                                                        |
+| Module / Property      | Hook / Object         | Operations                                                                                              |
+| ---------------------- | --------------------- | ------------------------------------------------------------------------------------------------------- |
+| `cyweb/ElementApi`     | `useElementApi()`     | CRUD; ID generation; node/edge listing; `getEdges`; neighborhood, directed traversal, roots, and leaves |
+| `cyweb/NetworkApi`     | `useNetworkApi()`     | Create from edge list, node list, or CX2; delete one/current/all networks                               |
+| `cyweb/SelectionApi`   | `useSelectionApi()`   | Select, unselect, toggle, and read selection                                                            |
+| `cyweb/TableApi`       | `useTableApi()`       | Read rows/schema; TSV import/export; column and cell mutations                                          |
+| `cyweb/VisualStyleApi` | `useVisualStyleApi()` | Defaults, bypasses, and discrete/continuous/passthrough mappings                                        |
+| `cyweb/LayoutApi`      | `useLayoutApi()`      | Apply a layout and list available layouts                                                               |
+| `cyweb/ViewportApi`    | `useViewportApi()`    | Fit and read/update node positions                                                                      |
+| `cyweb/ExportApi`      | `useExportApi()`      | Export CX2                                                                                              |
+| `cyweb/WorkspaceApi`   | `useWorkspaceApi()`   | Read/switch/rename workspace state                                                                      |
+| `cyweb/EventBus`       | `useCyWebEvent()`     | Subscribe to typed network, selection, layout, style, and data events                                   |
+| `cyweb/AppIdContext`   | `useAppContext()`     | Read the host-injected `appId` and per-app APIs inside plugin resources                                 |
+| `cyweb/ApiTypes`       | Type/value exports    | `ApiResult`, error catalogs, domain interfaces, lifecycle/resource types, and curated model types       |
+
+`window.CyWebApi` contains the ten domain objects `element`, `network`,
+`selection`, `viewport`, `table`, `visualStyle`, `layout`, `export`,
+`workspace`, and `contextMenu`. It does not contain the per-app `resource` API.
 
 ### 2.4 Backward Compatibility Strategy
 
-| Aspect                      | Approach                                         |
-| --------------------------- | ------------------------------------------------ |
-| Existing 12 store exposures | Kept as-is, marked `@deprecated` in JSDoc        |
-| Existing 2 task hooks       | Kept as-is, marked `@deprecated` in JSDoc        |
-| Runtime behavior            | No change for existing consumers                 |
-| Migration path              | Incremental — replace one import at a time       |
-| Removal timeline            | Minimum 2 release cycles after Phase 6 is complete (documentation + deprecation markers in place) |
+Raw store and task-hook exposes remain in `FEDERATION_EXPOSES` for existing
+consumers, but they are not part of the supported App API contract. New apps
+use the domain hooks, `EventBus`, `AppIdContext`, and `ApiTypes`. Any removal of
+a compatibility expose follows the package's SemVer and deprecation policy.
 
 ### 2.5 Revised Use Case Gap Matrix
 
 With the app API in place, the use case coverage from Audit Section 5 changes:
 
-| Use Case                                                                | Before             | After                                                                |
-| ----------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
-| **A: Network Generator** — create + layout + style + fit                | Partial            | Full (`NetworkApi` + `LayoutApi` + `VisualStyleApi` + `ViewportApi`) |
-| **B: Custom Layout** — read topology + compute + update positions + fit | Partial: No fit    | Full (`NetworkApi` read + `ViewportApi` + `LayoutApi`)               |
-| **C: Style Modification** — mappings + bypasses                         | Partial: No types  | Full (`VisualStyleApi` + `ApiTypes` for VP names)                    |
-| **D: Analysis / Annotation** — read + write attributes + select + style | Partial: No types  | Full (`TableApi` + `SelectionApi` + `VisualStyleApi`)                |
-| **E: Data Import/Export** — import CX2 + export CX2                     | Partial: No export | Full (`NetworkApi` + `ExportApi`)                                    |
-| **F: Graph Structure Modification** — add/remove nodes and edges        | [No]               | Full (`ElementApi` + `TableApi` + `VisualStyleApi` + `ViewportApi`)  |
-| **G: LLM Agent-Driven Generation** — agent creates networks via relay   | [No]               | Full (`NetworkApi` + `ElementApi` + `LayoutApi` + `ApiTypes`)        |
-| **H: Workspace Browsing** — list open networks, display names/counts, switch active network | [No] | Full (`WorkspaceApi`) |
+| Use Case                                                                                    | Before             | After                                                                |
+| ------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------- |
+| **A: Network Generator** — create + layout + style + fit                                    | Partial            | Full (`NetworkApi` + `LayoutApi` + `VisualStyleApi` + `ViewportApi`) |
+| **B: Custom Layout** — read topology + compute + update positions + fit                     | Partial: No fit    | Full (`NetworkApi` read + `ViewportApi` + `LayoutApi`)               |
+| **C: Style Modification** — mappings + bypasses                                             | Partial: No types  | Full (`VisualStyleApi` + `ApiTypes` for VP names)                    |
+| **D: Analysis / Annotation** — read + write attributes + select + style                     | Partial: No types  | Full (`TableApi` + `SelectionApi` + `VisualStyleApi`)                |
+| **E: Data Import/Export** — import CX2 + export CX2                                         | Partial: No export | Full (`NetworkApi` + `ExportApi`)                                    |
+| **F: Graph Structure Modification** — add/remove nodes and edges                            | [No]               | Full (`ElementApi` + `TableApi` + `VisualStyleApi` + `ViewportApi`)  |
+| **G: LLM Agent-Driven Generation** — agent creates networks via relay                       | [No]               | Full (`NetworkApi` + `ElementApi` + `LayoutApi` + `ApiTypes`)        |
+| **H: Workspace Browsing** — list open networks, display names/counts, switch active network | [No]               | Full (`WorkspaceApi`)                                                |
 
-### 2.6 Implementation Phases
+### 2.6 Implementation Status
 
-Each phase produces **two** files per domain: `src/app-api/core/<domain>Api.ts` (core functions,
-plain Jest tests) and `src/app-api/use<Domain>Api.ts` (thin hook wrapper).
+The original phase plan is complete. The current implementation consists of:
 
-| Phase | Scope                       | Key Files                                                                                                                  |
-| ----- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Types + Element API         | `src/app-api/types/`, `src/app-api/core/elementApi.ts`, `src/app-api/useElementApi.ts`                                     |
-| 2     | Network API                 | `src/app-api/core/networkApi.ts`, `src/app-api/useNetworkApi.ts`, refactor `src/data/task/useCreateNetworkFromCx2.tsx`     |
-| 3     | Selection + Viewport        | `src/app-api/core/selectionApi.ts`, `src/app-api/core/viewportApi.ts`, hook wrappers                                       |
-| 4     | Table + Visual Style        | `src/app-api/core/tableApi.ts`, `src/app-api/core/visualStyleApi.ts`, hook wrappers                                        |
-| 5     | Layout + Export             | `src/app-api/core/layoutApi.ts`, `src/app-api/core/exportApi.ts`, hook wrappers                                            |
-| 5.5   | Global assembly             | `src/app-api/core/index.ts` (CyWebApi object), `window.CyWebApi` assignment in `src/init.tsx`                              |
-| 6     | Workspace API               | `src/app-api/core/workspaceApi.ts`, `src/app-api/useWorkspaceApi.ts`, add `workspace` to `CyWebApi`                        |
-| 1g    | App Lifecycle (Phase 1g)    | `src/data/hooks/stores/useAppManager.ts` wiring; `AppContext.apis` typed as `CyWebApiType`; `mount`/`unmount` tests        |
-| 1a+   | Element bypass              | `bypass` field on `CreateNodeOptions` + `CreateEdgeOptions`; atomic create+bypass in `core/elementApi.ts`                  |
-| 1h    | Context Menu API (Phase 1h) | `src/data/hooks/stores/ContextMenuItemStore.ts`; `core/contextMenuApi.ts` (factory + singleton); host UI wiring. `useContextMenuApi.ts` deleted in Phase 2. |
-| 7     | Documentation + deprecation | `src/app-api/api_docs/Api.md`, update `webpack.config.js`, mark legacy `@deprecated`                                       |
+- Ten core domain objects in `src/app-api/core/`, with thin React hook wrappers.
+- Per-app resource and context-menu factories supplied through `AppContextApis`.
+- Typed event subscriptions through `cyweb/EventBus`.
+- A Vite Module Federation expose map shared by configuration and contract tests.
+- Public declarations published from `packages/api-types`.
 
 ### 2.7 `window.CyWebApi` Global API
 
-`window.CyWebApi` is a singleton object assembled from the 9 core domain objects. It is assigned in
-`src/init.tsx` after all Zustand stores are initialized.
+`window.CyWebApi` is a singleton object assembled from ten core domain objects.
+It is assigned during bootstrap before the workspace publication phase.
 
 ```typescript
 // src/app-api/core/index.ts
@@ -1042,7 +1187,6 @@ import { visualStyleApi } from './visualStyleApi'
 import { workspaceApi } from './workspaceApi'
 
 export const CyWebApi = {
-  version: '0.1.0-alpha.0' as string, // Synced with @cytoscape-web/api-types; cast to string so `as const` does not widen to a literal type. Reaches '1.0.0' at stable release (Phase 6 complete).
   element: elementApi,
   network: networkApi,
   selection: selectionApi,
@@ -1053,13 +1197,11 @@ export const CyWebApi = {
   export: exportApi,
   workspace: workspaceApi,
   contextMenu: contextMenuApi,
-} as const
-
-export type CyWebApiType = typeof CyWebApi
+} satisfies CyWebApiType
 ```
 
 ```typescript
-// src/init.tsx (add after enableMapSet() and store initialization)
+// Bootstrap initialization (before React renders)
 import { CyWebApi } from './app-api/core'
 
 declare global {
@@ -1069,51 +1211,21 @@ declare global {
 }
 
 window.CyWebApi = CyWebApi
-// Optional: signal readiness for consumers that wait for initialization
-window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 ```
 
-#### Two-phase readiness
+#### Readiness
 
-`window.CyWebApi` is assigned in `src/init.tsx`, but not all operations are immediately usable:
-
-| Phase            | Event                     | Available operations                                            | Not yet available |
-| ---------------- | ------------------------- | --------------------------------------------------------------- | ----------------- |
-| App initialized  | `cywebapi:ready`          | element, network, selection, table, visualStyle, layout, export, workspace, contextMenu | `viewport.fit()`  |
-| Renderer mounted | `cywebapi:renderer-ready` | All operations                                                  | —                 |
-
-`viewport.fit()` requires the Cytoscape.js renderer to be registered in `RendererFunctionStore`.
-This happens after React renders the first network view, which is later than `cywebapi:ready`. If
-called before the renderer is ready, `fit()` returns `fail(ApiErrorCode.FunctionNotAvailable, ...)`.
+`src/boot/steps/publishWorkspace.ts` initializes event subscriptions after
+workspace hydration, then dispatches `cywebapi:ready`. Consumers may call the
+global API after that event. Renderer-dependent `viewport.fit()` can still
+return `APP5` (`AppCodes.FUNCTION_NOT_AVAILABLE`) until a renderer has
+registered its function; there is no `cywebapi:renderer-ready` contract.
 
 ```typescript
-// src/init.tsx
-window.CyWebApi = CyWebApi
-window.dispatchEvent(
-  new CustomEvent('cywebapi:ready', {
-    detail: {
-      version: '1.0',
-      capabilities: [
-        'element',
-        'network',
-        'selection',
-        'table',
-        'visualStyle',
-        'layout',
-        'export',
-        'workspace',
-        'contextMenu',
-      ],
-    },
-  }),
-)
-
-// src/features/NetworkPanel/CyjsRenderer/ — add after renderer registers its functions:
-window.dispatchEvent(
-  new CustomEvent('cywebapi:renderer-ready', {
-    detail: { networkId },
-  }),
-)
+window.addEventListener('cywebapi:ready', () => {
+  const result = window.CyWebApi.workspace.getWorkspaceInfo()
+  // The event carries no detail payload; inspect capabilities on the object.
+})
 ```
 
 **Consumer readiness guard:**
@@ -1132,8 +1244,10 @@ function onApiReady(callback) {
 
 #### JSON serialization guarantee
 
-All `window.CyWebApi` inputs and outputs are JSON-serializable. The public API surface contains no
-`Map`, `Set`, class instances, or functions. Key choices driven by this rule:
+Data-operation inputs and outputs are JSON-serializable. The graph, table,
+style, layout, viewport, export, and workspace APIs do not expose `Map`, `Set`,
+or class instances. Context-menu handlers and per-app resource callbacks are
+registration APIs and are intentional exceptions.
 
 | Operation                 | Type used                                          | Why not `Map`                                   |
 | ------------------------- | -------------------------------------------------- | ----------------------------------------------- |
@@ -1147,10 +1261,8 @@ directly to `JSON.stringify` without preprocessing.
 #### Type distribution for non-Module-Federation consumers
 
 Browser extensions and other vanilla JS consumers need TypeScript types for `window.CyWebApi`.
-The `@cytoscape-web/api-types` npm package (see module-federation-design.md § 1.3+) will
-provide these. The package is not yet published; `0.1.0-alpha.0` will be released at the end of
-Phase 0, once the public type surface in `src/app-api/types/` is finalized. Until then,
-consumers can declare a minimal ambient declaration:
+The published `@cytoscape-web/api-types` npm package provides these declarations.
+Consumers can include its ambient declaration as follows:
 
 ```typescript
 // In the consuming project (e.g., browser extension): global.d.ts
@@ -1162,18 +1274,24 @@ declare global {
 }
 ```
 
-#### `AppContext` relationship (Phase 1g)
+#### `AppContext` relationship
 
-`AppContext.apis` is a direct reference to `window.CyWebApi` — not a new set of instances
-created inside React context. The host (`useAppManager.ts`) passes `CyWebApi` directly:
+`AppContext.apis` extends the global domains with a per-app `resource` factory
+and replaces the anonymous context-menu singleton with a factory bound to the
+app ID. Therefore it is deliberately not the same object as `window.CyWebApi`:
 
 ```typescript
-// Phase 1g host-side lifecycle wiring (useAppManager.ts)
-mount({ appId: app.id, apis: CyWebApi })  // CyWebApi imported from src/app-api/core
+const apis = {
+  ...CyWebApi,
+  resource: createResourceApi(app.id),
+  contextMenu: createContextMenuApi(app.id),
+}
+mount({ appId: app.id, apis })
 ```
 
-`AppContext.apis` is typed as `CyWebApiType` (the same interface as `window.CyWebApi`) to make
-this relationship explicit. Both refer to the same singleton object at runtime.
+`AppContext.apis` is typed as `AppContextApis`, which extends `CyWebApiType`.
+Resources and context-menu items registered through it participate in automatic
+per-app cleanup.
 
 #### Security model
 
@@ -1206,6 +1324,12 @@ declare global {
 ---
 
 ## 3. Wrap Target Mapping Tables
+
+> **Historical implementation snapshot:** Sections 3–6 record the original
+> implementation plan and are retained for design traceability. Their old
+> method payloads, flat `ApiErrorCode` names, Webpack file lists, and phase
+> status are not the current public contract. Use Sections 1–2 and the
+> canonical `src/app-api/api_docs/` documents for current behavior.
 
 **Rev. 2 addition (2/15/2026): Wrap target mappings for all 8 app API hooks**
 **Rev. 3 note (2/19/2026): Core functions do not call internal hooks**
@@ -1846,15 +1970,15 @@ viewport API are not undoable (unlike `applyLayout`).
 
 **Internal targets:** `WorkspaceStore.workspace`, `NetworkSummaryStore.summaries` (direct reads and `setCurrentNetworkId`, `setName`)
 
-| App API Method | Internal Target | Input Transformation | Output Transformation | Error → ApiErrorCode |
-| --- | --- | --- | --- | --- |
-| `getWorkspaceInfo()` | Direct read: `WorkspaceStore.getState().workspace` | None | Assemble `{workspaceId, name, currentNetworkId, networkCount}` → `ok(WorkspaceInfo)` | Catch → `OperationFailed` |
-| `getNetworkIds()` | Direct read: `WorkspaceStore.getState().workspace.networkIds` | None | `[...networkIds]` → `ok({networkIds})` | Catch → `OperationFailed` |
-| `getNetworkList()` | Direct reads: `WorkspaceStore.getState().workspace`, `NetworkSummaryStore.getState().summaries` | None | Join ids with summaries; omit missing summaries → `ok(WorkspaceNetworkInfo[])` | Catch → `OperationFailed` |
-| `getNetworkSummary(networkId)` | Direct reads: `WorkspaceStore.getState().workspace`, `NetworkSummaryStore.getState().summaries` | Validate `networkId ∈ workspace.networkIds` | Assemble `WorkspaceNetworkInfo` → `ok(...)` | `networkId ∉ workspace.networkIds` → `NetworkNotFound`. Summary missing → `NetworkNotFound`. Catch → `OperationFailed` |
-| `getCurrentNetworkId()` | Direct read: `WorkspaceStore.getState().workspace.currentNetworkId` | None | `ok({networkId: workspace.currentNetworkId})` | `networkIds.length === 0 \|\| currentNetworkId === ''` → `NoCurrentNetwork`. Catch → `OperationFailed` |
-| `switchCurrentNetwork(networkId)` | `WorkspaceStore.getState().setCurrentNetworkId(networkId)` | Validate non-empty; validate `networkId ∈ workspace.networkIds` | `ok()` | Empty string → `InvalidInput`. `networkId ∉ workspace.networkIds` → `NetworkNotFound`. Catch → `OperationFailed` |
-| `setWorkspaceName(name)` | `WorkspaceStore.getState().setName(name.trim())` | Validate non-empty after trim | `ok()` | Empty/whitespace-only → `InvalidInput`. Catch → `OperationFailed` |
+| App API Method                    | Internal Target                                                                                 | Input Transformation                                            | Output Transformation                                                                | Error → ApiErrorCode                                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `getWorkspaceInfo()`              | Direct read: `WorkspaceStore.getState().workspace`                                              | None                                                            | Assemble `{workspaceId, name, currentNetworkId, networkCount}` → `ok(WorkspaceInfo)` | Catch → `OperationFailed`                                                                                              |
+| `getNetworkIds()`                 | Direct read: `WorkspaceStore.getState().workspace.networkIds`                                   | None                                                            | `[...networkIds]` → `ok({networkIds})`                                               | Catch → `OperationFailed`                                                                                              |
+| `getNetworkList()`                | Direct reads: `WorkspaceStore.getState().workspace`, `NetworkSummaryStore.getState().summaries` | None                                                            | Join ids with summaries; omit missing summaries → `ok(WorkspaceNetworkInfo[])`       | Catch → `OperationFailed`                                                                                              |
+| `getNetworkSummary(networkId)`    | Direct reads: `WorkspaceStore.getState().workspace`, `NetworkSummaryStore.getState().summaries` | Validate `networkId ∈ workspace.networkIds`                     | Assemble `WorkspaceNetworkInfo` → `ok(...)`                                          | `networkId ∉ workspace.networkIds` → `NetworkNotFound`. Summary missing → `NetworkNotFound`. Catch → `OperationFailed` |
+| `getCurrentNetworkId()`           | Direct read: `WorkspaceStore.getState().workspace.currentNetworkId`                             | None                                                            | `ok({networkId: workspace.currentNetworkId})`                                        | `networkIds.length === 0 \|\| currentNetworkId === ''` → `NoCurrentNetwork`. Catch → `OperationFailed`                 |
+| `switchCurrentNetwork(networkId)` | `WorkspaceStore.getState().setCurrentNetworkId(networkId)`                                      | Validate non-empty; validate `networkId ∈ workspace.networkIds` | `ok()`                                                                               | Empty string → `InvalidInput`. `networkId ∉ workspace.networkIds` → `NetworkNotFound`. Catch → `OperationFailed`       |
+| `setWorkspaceName(name)`          | `WorkspaceStore.getState().setName(name.trim())`                                                | Validate non-empty after trim                                   | `ok()`                                                                               | Empty/whitespace-only → `InvalidInput`. Catch → `OperationFailed`                                                      |
 
 **Stores involved (2):** `WorkspaceStore`, `NetworkSummaryStore`
 
@@ -2338,17 +2462,17 @@ describe('use<Domain>Api', () => {
 
 ### 4.3 Test Categories Per App API Hook
 
-| App API Hook        | Success Cases                                     | Error Cases                                                 | Special Cases                                                                       |
-| ------------------- | ------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `useElementApi`     | CRUD operations return correct data               | NetworkNotFound, NodeNotFound, EdgeNotFound, InvalidInput   | `skipUndo` never forwarded, cascading edge deletion in deleteNodes                  |
-| `useNetworkApi`     | Network creation returns `{networkId, cyNetwork}` | InvalidInput (empty name/edges), InvalidCx2                 | `validateCX2` called before `createNetworkFromCx2`, navigate/addToWorkspace options |
-| `useSelectionApi`   | Selection state reads/writes                      | NetworkNotFound                                             | Silent no-op → explicit error conversion                                            |
-| `useTableApi`       | Read/write operations on tables                   | NetworkNotFound, row not found                              | Inconsistent store null-safety → consistent app API errors                          |
-| `useVisualStyleApi` | Mapping/bypass operations                         | NetworkNotFound                                             | Zero store validation → app API must validate                                       |
-| `useLayoutApi`      | Layout completes, positions updated               | LayoutEngineNotFound, NetworkNotFound, FunctionNotAvailable | Async callback resolution, `fitAfterLayout` optional                                |
-| `useViewportApi`    | Fit, position read/write                          | FunctionNotAvailable, NetworkNotFound                       | `fit()` returns Promise                                                             |
-| `useExportApi`      | CX2 assembly from 6 stores                        | NetworkNotFound (any store entry)                           | Multi-store assembly validation                                                     |
-| `useWorkspaceApi`   | Workspace reads (info, network list, current id) and writes (switch, rename) | NetworkNotFound, NoCurrentNetwork, InvalidInput | Silent omission of missing NetworkSummary entries in `getNetworkList` |
+| App API Hook        | Success Cases                                                                | Error Cases                                                 | Special Cases                                                                       |
+| ------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `useElementApi`     | CRUD operations return correct data                                          | NetworkNotFound, NodeNotFound, EdgeNotFound, InvalidInput   | `skipUndo` never forwarded, cascading edge deletion in deleteNodes                  |
+| `useNetworkApi`     | Network creation returns `{networkId, cyNetwork}`                            | InvalidInput (empty name/edges), InvalidCx2                 | `validateCX2` called before `createNetworkFromCx2`, navigate/addToWorkspace options |
+| `useSelectionApi`   | Selection state reads/writes                                                 | NetworkNotFound                                             | Silent no-op → explicit error conversion                                            |
+| `useTableApi`       | Read/write operations on tables                                              | NetworkNotFound, row not found                              | Inconsistent store null-safety → consistent app API errors                          |
+| `useVisualStyleApi` | Mapping/bypass operations                                                    | NetworkNotFound                                             | Zero store validation → app API must validate                                       |
+| `useLayoutApi`      | Layout completes, positions updated                                          | LayoutEngineNotFound, NetworkNotFound, FunctionNotAvailable | Async callback resolution, `fitAfterLayout` optional                                |
+| `useViewportApi`    | Fit, position read/write                                                     | FunctionNotAvailable, NetworkNotFound                       | `fit()` returns Promise                                                             |
+| `useExportApi`      | CX2 assembly from 6 stores                                                   | NetworkNotFound (any store entry)                           | Multi-store assembly validation                                                     |
+| `useWorkspaceApi`   | Workspace reads (info, network list, current id) and writes (switch, rename) | NetworkNotFound, NoCurrentNetwork, InvalidInput             | Silent omission of missing NetworkSummary entries in `getNetworkList`               |
 
 ---
 
@@ -2448,25 +2572,25 @@ _Fully specified in [phase0-shared-types-design.md](phase0-shared-types-design.m
 
 ### Phase 1f: Workspace API
 
-| Action | File | Notes |
-| ------ | ---- | ----- |
+| Action | File                                    | Notes                                                                                                                     |
+| ------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Create | `src/app-api/core/workspaceApi.ts`      | Framework-agnostic; coordinates `WorkspaceStore` + `NetworkSummaryStore` via `.getState()` — 7 methods. No React imports. |
-| Create | `src/app-api/core/workspaceApi.test.ts` | Plain Jest tests for all core methods per § 4.3 |
-| Create | `src/app-api/useWorkspaceApi.ts`        | Thin hook: `export const useWorkspaceApi = (): WorkspaceApi => workspaceApi` |
-| Create | `src/app-api/useWorkspaceApi.test.ts`   | Trivial hook test: verifies hook returns core `workspaceApi` object |
-| Modify | `src/app-api/core/index.ts`             | Add `workspace: workspaceApi` to `CyWebApi` |
-| Modify | `src/app-api/index.ts`                  | Export `useWorkspaceApi` |
-| Modify | `src/app-api/types/index.ts`            | Export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi` |
-| Modify | `src/app-api/types/AppContext.ts`       | Add `workspace: WorkspaceApi` to `AppContext.apis` |
-| Modify | `webpack.config.js`                     | Add `'./WorkspaceApi'` entry |
+| Create | `src/app-api/core/workspaceApi.test.ts` | Plain Jest tests for all core methods per § 4.3                                                                           |
+| Create | `src/app-api/useWorkspaceApi.ts`        | Thin hook: `export const useWorkspaceApi = (): WorkspaceApi => workspaceApi`                                              |
+| Create | `src/app-api/useWorkspaceApi.test.ts`   | Trivial hook test: verifies hook returns core `workspaceApi` object                                                       |
+| Modify | `src/app-api/core/index.ts`             | Add `workspace: workspaceApi` to `CyWebApi`                                                                               |
+| Modify | `src/app-api/index.ts`                  | Export `useWorkspaceApi`                                                                                                  |
+| Modify | `src/app-api/types/index.ts`            | Export `WorkspaceInfo`, `WorkspaceNetworkInfo`, `WorkspaceApi`                                                            |
+| Modify | `src/app-api/types/AppContext.ts`       | Add `workspace: WorkspaceApi` to `AppContext.apis`                                                                        |
+| Modify | `webpack.config.js`                     | Add `'./WorkspaceApi'` entry                                                                                              |
 
 ### Phase 1g: App Lifecycle
 
-| Action | File                                                       | Notes |
-| ------ | ---------------------------------------------------------- | ----- |
-| Modify | `src/app-api/types/AppContext.ts`                          | Replace inline `apis` type with `CyWebApiType` imported from `../core`; add JSDoc noting it equals `window.CyWebApi` |
-| Modify | `src/data/hooks/stores/useAppManager.ts`                   | Import `CyAppWithLifecycle` + `CyWebApi`; call `mount({ appId, apis: CyWebApi })` after `registerApp`; call `unmount()` on `beforeunload` and `AppStatus.Error` transition |
-| Create | `src/data/hooks/stores/useAppManager.lifecycle.test.ts`    | Plain Jest tests: `mount` called with correct context; `mount` not called for plain `CyApp`; async `mount` awaited; `unmount` on `beforeunload`; `unmount` on `AppStatus.Error` |
+| Action | File                                                    | Notes                                                                                                                                                                           |
+| ------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Modify | `src/app-api/types/AppContext.ts`                       | Replace inline `apis` type with `CyWebApiType` imported from `../core`; add JSDoc noting it equals `window.CyWebApi`                                                            |
+| Modify | `src/data/hooks/stores/useAppManager.ts`                | Import `CyAppWithLifecycle` + `CyWebApi`; call `mount({ appId, apis: CyWebApi })` after `registerApp`; call `unmount()` on `beforeunload` and `AppStatus.Error` transition      |
+| Create | `src/data/hooks/stores/useAppManager.lifecycle.test.ts` | Plain Jest tests: `mount` called with correct context; `mount` not called for plain `CyApp`; async `mount` awaited; `unmount` on `beforeunload`; `unmount` on `AppStatus.Error` |
 
 ---
 
@@ -2474,16 +2598,16 @@ _Fully specified in [phase0-shared-types-design.md](phase0-shared-types-design.m
 
 The following table summarizes the validation behavior of each internal store. The app API must compensate for these gaps by performing input validation before every store call.
 
-| Store                   | Null-check on `networkId`                                                        | Input validation | Failure mode on missing data                                        |
-| ----------------------- | -------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------- |
-| `NetworkStore`          | ✅ (returns `undefined` from `networks.get()`)                                   | None             | Safe — returns `undefined`                                          |
-| `TableStore`            | ⚠️ Inconsistent — `setValue`/`setValues` check, `createColumn`/`editRows` do not | None             | Throws on missing `networkId` (some methods), silent no-op (others) |
-| `ViewModelStore`        | ✅ All selection/position methods guard                                          | None             | Silent no-op (returns unchanged state)                              |
-| `VisualStyleStore`      | ❌ Zero null-checks                                                              | None             | Passes `undefined` to `VisualStyleImpl` → may throw                 |
-| `RendererFunctionStore` | ✅ `getFunction` returns `undefined` safely                                      | None             | Safe — returns `undefined`                                          |
-| `LayoutStore`           | N/A (no per-network state)                                                       | None             | Safe — state is global                                              |
-| `OpaqueAspectStore`     | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
-| `NetworkSummaryStore`   | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                 |
+| Store                   | Null-check on `networkId`                                                        | Input validation | Failure mode on missing data                                          |
+| ----------------------- | -------------------------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------- |
+| `NetworkStore`          | ✅ (returns `undefined` from `networks.get()`)                                   | None             | Safe — returns `undefined`                                            |
+| `TableStore`            | ⚠️ Inconsistent — `setValue`/`setValues` check, `createColumn`/`editRows` do not | None             | Throws on missing `networkId` (some methods), silent no-op (others)   |
+| `ViewModelStore`        | ✅ All selection/position methods guard                                          | None             | Silent no-op (returns unchanged state)                                |
+| `VisualStyleStore`      | ❌ Zero null-checks                                                              | None             | Passes `undefined` to `VisualStyleImpl` → may throw                   |
+| `RendererFunctionStore` | ✅ `getFunction` returns `undefined` safely                                      | None             | Safe — returns `undefined`                                            |
+| `LayoutStore`           | N/A (no per-network state)                                                       | None             | Safe — state is global                                                |
+| `OpaqueAspectStore`     | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                   |
+| `NetworkSummaryStore`   | ✅ (simple record lookup)                                                        | None             | Returns `undefined`                                                   |
 | `WorkspaceStore`        | N/A (no per-network state; `workspace` is a single object)                       | None             | Safe — `workspace` is always defined; `networkIds` is always an array |
 
 **App API rule:** Always check store state existence _before_ calling mutation methods. Never rely on store-level null-safety.

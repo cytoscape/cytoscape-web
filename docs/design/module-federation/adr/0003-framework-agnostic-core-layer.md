@@ -34,7 +34,7 @@ the only React constraint is the function signature convention.
 
 Split each app API domain into two files:
 
-1. **`src/app-api/core/<domain>Api.ts`** — Framework-agnostic pure functions.
+1. **`src/app-api/core/<domain>Api.ts`** — Framework-agnostic domain functions.
    Uses `useXxxStore.getState()` for all store access. No React imports. Never
    calls internal React hooks (`useCreateNode`, etc.).
 2. **`src/app-api/use<Domain>Api.ts`** — React Hook wrapper. Returns the core
@@ -43,7 +43,7 @@ Split each app API domain into two files:
 
 The core functions are assembled into a `CyWebApi` singleton object in
 `src/app-api/core/index.ts` and assigned to `window.CyWebApi` during app
-initialization (`src/init.tsx`).
+initialization (before the workspace publication phase).
 
 ### Directory structure
 
@@ -58,6 +58,9 @@ src/app-api/
 │   ├── layoutApi.ts
 │   ├── viewportApi.ts
 │   ├── exportApi.ts
+│   ├── workspaceApi.ts
+│   ├── contextMenuApi.ts
+│   ├── resourceApi.ts       ← per-app factory; not on window.CyWebApi
 │   └── index.ts             ← assembles and exports CyWebApi object
 ├── useElementApi.ts          ← React wrapper: returns elementApi
 ├── useNetworkApi.ts
@@ -67,6 +70,8 @@ src/app-api/
 ├── useLayoutApi.ts
 ├── useViewportApi.ts
 ├── useExportApi.ts
+├── useWorkspaceApi.ts
+├── useCyWebEvent.ts
 ├── types/
 │   ├── ApiResult.ts
 │   ├── AppContext.ts
@@ -81,19 +86,26 @@ src/app-api/
 // src/app-api/core/elementApi.ts
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
-import { ok, fail, ApiErrorCode } from '../types'
+import { AppCodes, fail, ok } from '../types'
 import type { ElementApi } from '../types'
 
 export const elementApi: ElementApi = {
-  createNode(networkId, position, options): ApiResult<{ nodeId: IdType }> {
+  createNode(
+    networkId,
+    position,
+    options,
+  ): ApiResult<{
+    nodeId: IdType
+    node: NodeData
+  }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
-      if (!network) return fail(ApiErrorCode.NetworkNotFound, `Network ${networkId} not found`)
+      if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       // Coordinate stores directly — no useCreateNode() hook call
       // ...
-      return ok({ nodeId })
+      return ok({ nodeId, node })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
   // ...
@@ -127,15 +139,21 @@ export const CyWebApi = {
   layout: layoutApi,
   viewport: viewportApi,
   export: exportApi,
+  workspace: workspaceApi,
+  contextMenu: contextMenuApi,
 }
 
 export type CyWebApiType = typeof CyWebApi
 ```
 
 ```typescript
-// src/init.tsx (existing initialization file — add at end of init sequence)
+// Bootstrap initialization, before React renders
 import { CyWebApi } from './app-api/core'
-declare global { interface Window { CyWebApi: CyWebApiType } }
+declare global {
+  interface Window {
+    CyWebApi: CyWebApiType
+  }
+}
 window.CyWebApi = CyWebApi
 ```
 
@@ -150,12 +168,11 @@ in the core API layer; the internal hooks are convenience wrappers for React
 components inside Cytoscape Web's own UI. Internal hooks remain unchanged and
 are not modified by this decision.
 
-### All public API inputs and outputs are JSON-serializable
+### Data-operation inputs and outputs are JSON-serializable
 
-All types appearing in core function signatures (parameters and return values) must
-be serializable with `JSON.stringify`. This guarantees correct behavior when results
-are relayed over WebSocket, `postMessage`, or other message-passing channels used by
-vanilla JS consumers.
+Graph, table, style, layout, viewport, export, and workspace values must be
+serializable with `JSON.stringify`. Callback registration surfaces such as
+context menus and per-app resources are intentional exceptions.
 
 **Concrete implications:**
 
@@ -212,31 +229,29 @@ with its own directory, tests, and linting rules.
 
 ## Consequences
 
-**File count increase:** Each domain gains a `core/<domain>Api.ts` file (+8
-files). Hook wrappers become thin (~3–5 lines each). Net code reduction overall
-since domain logic moves from hooks to core.
+**File count increase:** Each domain gains a `core/<domain>Api.ts` file. Hook
+wrappers remain thin (~3–5 lines each).
 
 **Testing simplification:** Core function tests do not use `renderHook` or
 `@testing-library/react` — they are plain Jest tests with mocked Zustand stores.
 This is faster to write and faster to run.
 
-**`window.CyWebApi` availability:** Assigned in `src/init.tsx` after all stores
-are initialized. Consumers must check `window.CyWebApi !== undefined` or listen
-for the optional `'cywebapi:ready'` CustomEvent before accessing it.
+**`window.CyWebApi` availability:** Assigned during bootstrap. Consumers should
+listen for `'cywebapi:ready'`, which fires after hydrated workspace state and
+event subscriptions are published.
 
-**`AppContext.apis` delegates to core:** When Phase 3 App Lifecycle is
-implemented, `AppContext.apis` is assembled from the same core function objects
-rather than from hook instances. This removes the React-context dependency from
-`AppContext` setup.
+**`AppContext.apis` delegates to core:** The host spreads the same core domain
+objects into a per-app object, then adds a resource factory and a context-menu
+factory bound to the app ID.
 
 **Linting rule:** A new ESLint rule (or comment convention) should prevent
 `import React` or `import { useXxx }` from `react` inside `src/app-api/core/`.
 
 **Related documents:**
 
-- [app-api-specification.md § 1.2, 1.8, 2.7](../design/module-federation/app-api-specification.md)
+- [app-api-specification.md § 1.2, 1.8, 2.7](../specifications/app-api-specification.md)
   — Directory structure, wrapping pattern, `window.CyWebApi` specification
-- [module-federation-design.md § 1.1](../design/module-federation/module-federation-design.md)
+- [module-federation-design.md § 1.1](../module-federation-design.md)
   — Priority and roadmap update
 - [ADR 0001](0001-api-result-discriminated-union.md) — `ApiResult<T>` used by
   both core functions and hooks unchanged
