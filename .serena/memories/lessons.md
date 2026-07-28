@@ -15,6 +15,11 @@
 - [2026-03-04] Import sorting: Import sorting is no longer lint-enforced after the oxlint migration; keep imports sorted by convention.
 - [2026-03-04] No `console.log`: Production builds strip direct `console.*()` calls through Vite's Oxc minifier. Use the `debug` logger from `src/debug.ts`.
 
+## Testing
+
+- [2026-07-27] E2E unsaved-state race: `WorkspaceEditor.tsx` clears `networkModified` when a network's initial auto-layout completes (a seeded network has no stored layout, so this always fires). A Playwright test that edits a freshly seeded network and asserts its unsaved state must wait for that one-shot reset first — the summary's `hasLayout` flipping to `true` in IndexedDB is its observable side. Symptom otherwise: the first dirty-state assertion passes, a later one polls a clean row until it times out.
+- [2026-07-27] AppManager toggle detaching: `app-toggle-*` (a MUI `Switch`) is rendered only for the `enable`/`disable` actions and is swapped for a `CircularProgress` while `loadState === 'loading'`. So "element was detached from the DOM, retrying" in the remote-app specs means activation started and never completed (often a stale fixture remote reused on :4191 — `reuseExistingServer: true`), not a missing toggle.
+
 ## Agent Workflow
 
 - [2026-07-20] Commit cadence: Commit each completed, verified round of work immediately with a detailed message — don't batch rounds or wait to be asked (standing instruction from Max).
