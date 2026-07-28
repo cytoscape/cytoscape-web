@@ -9,11 +9,15 @@ import {
   deleteDb,
   getDb,
   getNetworkFromDb,
+  getNetworkSummaryFromDb,
+  getUndoRedoStackFromDb,
   getWorkspaceFromDb,
   initializeDb,
   ObjectStoreNames,
+  putNetworkSummaryToDb,
   putNetworkToDb,
   putTablesToDb,
+  putUndoRedoStackToDb,
   putWorkspaceToDb,
 } from '../index'
 /**
@@ -417,6 +421,163 @@ describe('Database Snapshot Import/Export', () => {
       // Network data should also be imported
       const imported = await getNetworkFromDb('import-file-test-1')
       expect(imported).toBeDefined()
+    })
+
+    // REVIEW.md R2-3: workspaces used to be cleared BEFORE the file content
+    // was read or validated, so a corrupt file destroyed the user's
+    // workspace. The clear must only happen after the snapshot has been
+    // parsed and validated.
+    describe('workspace preservation on failed import (regression: R2-3)', () => {
+      it('preserves existing workspaces when the file contains invalid JSON', async () => {
+        const testWorkspace = createWorkspace()
+        testWorkspace.id = 'precious-workspace'
+        await putWorkspaceToDb(testWorkspace)
+
+        const file = new File(['{ this is not valid JSON'], 'corrupt.json', {
+          type: 'application/json',
+        })
+
+        await expect(importDatabaseSnapshotFromFile(file)).rejects.toThrow()
+
+        const db = await getDb()
+        const workspaces = await db.workspace.toArray()
+        expect(workspaces.map((w: any) => w.id)).toContain('precious-workspace')
+      })
+
+      it('preserves existing workspaces when the snapshot fails structure validation', async () => {
+        const testWorkspace = createWorkspace()
+        testWorkspace.id = 'precious-workspace-2'
+        await putWorkspaceToDb(testWorkspace)
+
+        const notASnapshot = JSON.stringify({ foo: 'bar' })
+        const file = new File([notASnapshot], 'not-a-snapshot.json', {
+          type: 'application/json',
+        })
+
+        await expect(importDatabaseSnapshotFromFile(file)).rejects.toThrow()
+
+        const db = await getDb()
+        const workspaces = await db.workspace.toArray()
+        expect(workspaces.map((w: any) => w.id)).toContain(
+          'precious-workspace-2',
+        )
+      })
+    })
+  })
+
+  // REVIEW.md R2-6/7/8/14: snapshot fidelity. Export used raw
+  // JSON.stringify (Maps → {}, Dates → strings), exported and re-imported
+  // dexie-observable's internal tables, only "replaced" the workspace
+  // store, and stamped no usable format version.
+  describe('snapshot fidelity (regression: R2-6/7/8/14)', () => {
+    it('round-trips Maps and Dates through export → import (R2-6)', async () => {
+      await putUndoRedoStackToDb('fidelity-net', {
+        undoStack: [
+          {
+            undoCommand: 'SET_BYPASS_MAP' as any,
+            description: 'move nodes',
+            undoParams: [new Map([['n1', { x: 1, y: 2 }]])],
+            redoParams: [],
+          },
+        ],
+        redoStack: [],
+      })
+      await putNetworkSummaryToDb({
+        externalId: 'fidelity-net',
+        name: 'Fidelity',
+        creationTime: new Date('2026-01-02T03:04:05Z'),
+        modificationTime: new Date('2026-02-03T04:05:06Z'),
+      } as any)
+
+      const snapshotJson = await exportDatabaseSnapshot()
+
+      const db = await getDb()
+      await db.table(ObjectStoreNames.UndoStacks).clear()
+      await db.table(ObjectStoreNames.Summaries).clear()
+
+      const result = await importDatabaseSnapshot(snapshotJson)
+      expect(result.success).toBe(true)
+
+      const restored = await getUndoRedoStackFromDb('fidelity-net')
+      const param = restored?.undoRedoStack?.undoStack[0].undoParams[0]
+      expect(param).toBeInstanceOf(Map)
+      expect((param as Map<string, any>).get('n1')).toEqual({ x: 1, y: 2 })
+
+      const summary = await getNetworkSummaryFromDb('fidelity-net')
+      if (summary === undefined) {
+        throw new Error('expected the imported summary to exist')
+      }
+      expect(summary.creationTime).toBeInstanceOf(Date)
+      expect(summary.creationTime.toISOString()).toBe(
+        '2026-01-02T03:04:05.000Z',
+      )
+    })
+
+    it('stamps a snapshot format version (R2-14)', async () => {
+      const snapshotJson = await exportDatabaseSnapshot()
+      const snapshot = JSON.parse(snapshotJson)
+      expect(snapshot.metadata.formatVersion).toBeGreaterThanOrEqual(2)
+    })
+
+    it('does not export dexie-observable internal tables (R2-7)', async () => {
+      const snapshotJson = await exportDatabaseSnapshot()
+      const snapshot = JSON.parse(snapshotJson)
+      const internalKeys = Object.keys(snapshot.data).filter((key) =>
+        key.startsWith('_'),
+      )
+      expect(internalKeys).toEqual([])
+    })
+
+    it('ignores dexie-observable tables on import (R2-7)', async () => {
+      const craftedSnapshot = JSON.stringify({
+        metadata: {
+          version: 9,
+          exportDate: new Date().toISOString(),
+          exportVersion: 'test',
+        },
+        data: {
+          [ObjectStoreNames.CyNetworks]: [],
+          _changes: [{ rev: 999999, source: 'foreign-tab', type: 1 }],
+          _syncNodes: [{ id: 42, myRevision: 123, type: 'local' }],
+        },
+      })
+
+      const result = await importDatabaseSnapshot(craftedSnapshot)
+      expect(result.success).toBe(true)
+      expect(result.importedCounts).not.toHaveProperty('_changes')
+      expect(result.importedCounts).not.toHaveProperty('_syncNodes')
+
+      const db = await getDb()
+      const foreignChange = await db.table('_changes').get(999999)
+      expect(foreignChange).toBeUndefined()
+    })
+
+    it('replace import clears networks absent from the snapshot (R2-8)', async () => {
+      const keptNetwork: Network = {
+        id: 'kept-network',
+        nodes: [{ id: 'n1' }],
+        edges: [],
+      }
+      await putNetworkToDb(keptNetwork)
+      const snapshotJson = await exportDatabaseSnapshot()
+
+      // A network created after the snapshot was taken — a true "replace
+      // all existing data" import (the UI dialog's wording) must remove it
+      const staleNetwork: Network = {
+        id: 'stale-network',
+        nodes: [{ id: 'n9' }],
+        edges: [],
+      }
+      await putNetworkToDb(staleNetwork)
+
+      const file = new File([snapshotJson], 'replace.json', {
+        type: 'application/json',
+      })
+      const result = await importDatabaseSnapshotFromFile(file)
+      expect(result.success).toBe(true)
+
+      expect(await getNetworkFromDb('kept-network')).toBeDefined()
+      expect(await getNetworkFromDb('stale-network')).toBeUndefined()
     })
   })
 

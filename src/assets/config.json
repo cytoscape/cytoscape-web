@@ -9,13 +9,17 @@
     "realm": "ndex"
   },
   "testNetworks": [
+    "2496d8c5-5c74-11ec-b3be-0ac135e8bacf",
+    "1366ba85-9acc-11ef-9702-005056ae6f73",
+    "88521140-6a12-11ef-b816-005056ae6f73",
     "a9763574-c72f-11ed-a79c-005056ae23aa",
-    "132684d4-d207-11ef-8900-005056ae6f73",
-    "a5bf5dc8-8ffb-11ef-b136-005056ae6f73"
+    "06f859c1-8051-11ef-b4e1-005056ae6f73",
+    "cfb7d52e-a2f2-11ed-9a1f-005056ae23aa"
   ],
   "defaultServices": [
     "https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample",
-    "https://cd.ndexbio.org/cy/cytocontainer/v1/iqueryenrichment"
+    "https://cd.ndexbio.org/cy/cytocontainer/v1/iqueryenrichment",
+    "https://cd.ndexbio.org/cy/cytocontainer/v1/gprofilerenrichment"
   ],
   "maxNetworkElementsThreshold": 26000,
   "maxEdgeCountThreshold": 20000,
@@ -24,7 +28,10 @@
   "openAIAPIKey": "",
   "googleAnalyticsId": "G-B3X9SFXC2P",
   "undoStackSize": 20,
-  "errorReportEndpoint": "https://dev1.ndexbio.org/report",
+  "errorReportEndpoint": "https://www.ndexbio.org/report",
   "maxErrorReportSnapshotSizeMB": 10,
-  "appInstallAllowedOrigins": ["https://apps.cytoscape.org"]
+  "appInstallAllowedOrigins": [
+    "https://apps.cytoscape.org",
+    "https://apps-stage.cytoscape.org"
+  ]
 }

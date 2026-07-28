@@ -52,7 +52,8 @@ The main workspace editor component that provides layout and network management.
   - Automatically applies default layout to networks without layouts
   - Fits viewport after layout is applied
   - Updates network summary with `hasLayout: true` after layout
-  - Sets network as unmodified after layout completes
+  - Sets network as unmodified after layout completes, unless the user edited the network while the layout was running
+  - Completion logic lives in `layoutCompletion.ts` (`createLayoutCompletionHandler`), which snapshots `networkModified` before applying layout positions so the layout's own view model write is not mistaken for a user edit
 
 - **HCX Validation:**
   - Validates HCX networks on load
@@ -149,10 +150,11 @@ The WorkspaceEditor integrates with the following stores and services:
 2. **Select Default:** Get default layout based on network size and threshold
 3. **Find Engine:** Find layout engine matching default layout
 4. **Apply Layout:** Call engine.apply with nodes, edges, and callback
-5. **Update Positions:** Update node positions in view model
-6. **Fit Viewport:** Call fit function to center network
-7. **Update Summary:** Update summary with `hasLayout: true`
-8. **Reset Modified:** Set network as unmodified (layout is not a user modification)
+5. **Snapshot Modified:** Read the live `networkModified` flag before touching the view model
+6. **Update Positions:** Update node positions in view model
+7. **Fit Viewport:** Call fit function to center network
+8. **Update Summary:** Update summary with `hasLayout: true`
+9. **Reset Modified:** Set network as unmodified only if the snapshot showed no user modification (layout is not a user modification)
 
 ## Design Decisions
 

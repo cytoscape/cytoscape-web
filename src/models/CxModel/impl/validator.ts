@@ -301,7 +301,11 @@ export const validateCx2ReferentialIntegrity = (
   }
 }
 
-const cx2TypeToZod = (type: string) => {
+// Returns undefined for an unknown type — callers must report it as a
+// validation error. This used to `throw z.string()` (a Zod schema object,
+// not even an Error), breaking validateCX2's returns-a-ValidationResult
+// contract for any CX2 with a typo'd attribute type (REVIEW.md R2-18).
+const cx2TypeToZod = (type: string): z.ZodTypeAny | undefined => {
   switch (type) {
     case 'string':
       return z.string()
@@ -324,7 +328,7 @@ const cx2TypeToZod = (type: string) => {
     case 'list_of_boolean':
       return z.array(z.boolean())
     default:
-      throw z.string()
+      return undefined
   }
 }
 
@@ -337,6 +341,16 @@ const createAttributeSchema = (
 
   Object.entries(declarations).forEach(([attrName, attrDecl]) => {
     const { d: type, a, v } = attrDecl
+
+    const zodType = cx2TypeToZod(type)
+    if (zodType === undefined) {
+      errors.push({
+        message: `Unknown attribute type '${String(type)}' declared for attribute '${attrName}'`,
+        severity: 'error',
+        path: ['attributeDeclarations', attrName, 'd'],
+      })
+      return
+    }
 
     // For network attributes, check for unsupported 'a' and 'v' fields
     if (isNetworkAttributes) {
@@ -354,9 +368,8 @@ const createAttributeSchema = (
           path: ['attributeDeclarations', 'network', attrName, 'v'],
         })
       }
-      schemaShape[attrName] = cx2TypeToZod(type).optional()
+      schemaShape[attrName] = zodType.optional()
     } else {
-      const zodType = cx2TypeToZod(type)
       schemaShape[a ?? attrName] = zodType.optional()
     }
   })

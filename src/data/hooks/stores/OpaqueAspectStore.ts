@@ -4,7 +4,6 @@
  * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
  * This cyweb/OpaqueAspectStore Module Federation export will be removed after 2 release cycles.
  */
-import { clear } from 'idb-keyval'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
@@ -12,7 +11,11 @@ import { IdType } from '../../../models/IdType'
 import { OpaqueAspects } from '../../../models/OpaqueAspectModel'
 import * as OpaqueAspectImpl from '../../../models/OpaqueAspectModel/impl/opaqueAspectImpl'
 import { OpaqueAspectStore } from '../../../models/StoreModel/OpaqueAspectStoreModel'
-import { deleteOpaqueAspectsFromDb, putOpaqueAspectsToDb } from '../../db'
+import {
+  clearOpaqueAspectsFromDb,
+  deleteOpaqueAspectsFromDb,
+  putOpaqueAspectsToDb,
+} from '../../db'
 import { toPlainObject } from '../../db/serialization'
 
 export const useOpaqueAspectStore = create(
@@ -101,7 +104,7 @@ export const useOpaqueAspectStore = create(
     deleteAll: () => {
       set((state) => {
         const newState = OpaqueAspectImpl.deleteAll(state)
-        void clear().then(() => {})
+        void clearOpaqueAspectsFromDb().then(() => {})
         state.opaqueAspects = newState.opaqueAspects
         return state
       })

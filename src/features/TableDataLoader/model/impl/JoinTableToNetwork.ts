@@ -1,5 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep'
-import { DataTableValue } from 'primereact/datatable'
+import type { DataTableValue } from 'primereact/datatable'
 
 import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'

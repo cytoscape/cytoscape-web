@@ -7,6 +7,10 @@ import { Table } from '../../../../models/TableModel'
 import { HcxMetaTag, SubsystemTag } from '../HcxMetaTag'
 import { HcxValidationResult } from '../HcxValidator'
 import { HcxVersion } from '../HcxVersion'
+import {
+  hasUniformEdgeInteraction,
+  MIXED_INTERACTION_WARNING,
+} from './circlePackingSupport'
 
 export const HCX_VERSION_0_1: HcxVersion = 'hierarchy_v0.1'
 
@@ -21,6 +25,7 @@ export const hcxVersionValidators = {
     validate: (
       summary: NetworkSummary,
       nodeTable: Table,
+      edgeTable?: Table,
     ): HcxValidationResult => {
       const warnings: string[] = []
       let isValid = true
@@ -125,6 +130,12 @@ export const hcxVersionValidators = {
         }
       }
 
+      // A hierarchy carrying non parent-child edges is still valid HCX, so this
+      // only adds a warning explaining why Cell View is disabled (issue #630).
+      if (!hasUniformEdgeInteraction(edgeTable)) {
+        warnings.push(MIXED_INTERACTION_WARNING)
+      }
+
       return {
         isValid,
         version: version as HcxVersion,
@@ -138,6 +149,7 @@ export const validateHcx = (
   version: string,
   summary: NetworkSummary,
   nodeTable: Table,
+  edgeTable?: Table,
 ): HcxValidationResult => {
   const validator = hcxVersionValidators[version]
   if (validator === undefined) {
@@ -147,5 +159,5 @@ export const validateHcx = (
       warnings: [`Unsupported hcx version: ${version}`],
     }
   }
-  return validator.validate(summary, nodeTable)
+  return validator.validate(summary, nodeTable, edgeTable)
 }

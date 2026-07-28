@@ -16,10 +16,7 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
-import {
-  ExportFormRef,
-  ExportImageFormatProps,
-} from './ExportNetworkToImageMenuItem'
+import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
 export const PaperSize = {
   LETTER: 'LETTER',

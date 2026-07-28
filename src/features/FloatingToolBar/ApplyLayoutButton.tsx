@@ -1,4 +1,4 @@
-import { Refresh } from '@mui/icons-material'
+import Refresh from '@mui/icons-material/Refresh'
 import { Box, IconButton, Tooltip } from '@mui/material'
 import { useEffect, useState } from 'react'
 

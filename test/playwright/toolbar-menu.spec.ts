@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+import { expect, gotoAndSeedNetwork, test } from './fixtures'
 
 // Tests for CW-715: darker toolbar visual identity (commit afdee4e5)
 // Verifies the toolbar renders correctly and menus open/close via real clicks.
@@ -7,10 +7,9 @@ import { expect, test } from './fixtures'
 
 test.describe('Toolbar Menus', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
-      timeout: 15000,
-    })
+    // Network-operating menus (e.g. Edit) are disabled while the workspace is
+    // empty; navigate and seed a network so those menu buttons are enabled.
+    await gotoAndSeedNetwork(page)
   })
 
   test('toolbar is visible after load', async ({ page }) => {

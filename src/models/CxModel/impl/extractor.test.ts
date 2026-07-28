@@ -341,6 +341,24 @@ describe('extractor', () => {
       const edgeAttributes = getEdgeAttributes(cx2)
       expect(edgeAttributes.size).toBe(0)
     })
+
+    // Regression: CW-650. Empty v:{} was incorrectly skipped, causing nodes/edges
+    // to lose their default attribute values. They should be included in the map.
+    it('should include edges whose v is an empty object', () => {
+      const cx2: Cx2 = [
+        { CXVersion: '2.0' },
+        {
+          edges: [{ id: 0, s: 0, t: 1, v: {} }],
+        },
+        {
+          status: [{ success: true }],
+        },
+      ]
+
+      const edgeAttributes = getEdgeAttributes(cx2)
+      expect(edgeAttributes.size).toBe(1)
+      expect(edgeAttributes.get('0')).toEqual({})
+    })
   })
 
   describe('getVisualProperties', () => {

@@ -12,7 +12,7 @@ import { AppStatus } from '../../models/AppModel/AppStatus'
 import type { RegisteredAppResource } from '../../models/AppModel/RegisteredAppResource'
 import type { ResourceSlot } from '../../models/AppModel/RegisteredAppResource'
 import type { ApiError, ApiResult } from '../types/ApiResult'
-import { ApiErrorCode, fail, ok } from '../types/ApiResult'
+import { AppCodes, fail, ok } from '../types/ApiResult'
 import type {
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
@@ -50,14 +50,11 @@ export const createResourceApi = (appId: string): ResourceApi => ({
   registerPanel(options) {
     try {
       if (!options.id || options.id.trim() === '') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'id is required and must be non-empty',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'id is required and must be non-empty')
       }
       if (!isValidComponent(options.component)) {
         return fail(
-          ApiErrorCode.InvalidInput,
+          AppCodes.INVALID_INPUT,
           `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
         )
       }
@@ -75,7 +72,7 @@ export const createResourceApi = (appId: string): ResourceApi => ({
       })
       return ok({ resourceId: `${appId}::right-panel::${options.id}` })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -83,29 +80,23 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     try {
       const store = useAppResourceStore.getState()
       if (!store.hasResource(appId, 'right-panel', panelId)) {
-        return fail(
-          ApiErrorCode.ResourceNotFound,
-          `Panel '${panelId}' not found`,
-        )
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Panel '${panelId}'`)
       }
       store.removeResource(appId, 'right-panel', panelId)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
   registerMenuItem(options) {
     try {
       if (!options.id || options.id.trim() === '') {
-        return fail(
-          ApiErrorCode.InvalidInput,
-          'id is required and must be non-empty',
-        )
+        return fail(AppCodes.INVALID_INPUT, 'id is required and must be non-empty')
       }
       if (!isValidComponent(options.component)) {
         return fail(
-          ApiErrorCode.InvalidInput,
+          AppCodes.INVALID_INPUT,
           `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
         )
       }
@@ -124,7 +115,7 @@ export const createResourceApi = (appId: string): ResourceApi => ({
       })
       return ok({ resourceId: `${appId}::apps-menu::${options.id}` })
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -132,15 +123,12 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     try {
       const store = useAppResourceStore.getState()
       if (!store.hasResource(appId, 'apps-menu', menuItemId)) {
-        return fail(
-          ApiErrorCode.ResourceNotFound,
-          `Menu item '${menuItemId}' not found`,
-        )
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Menu item '${menuItemId}'`)
       }
       store.removeResource(appId, 'apps-menu', menuItemId)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -149,7 +137,7 @@ export const createResourceApi = (appId: string): ResourceApi => ({
       useAppResourceStore.getState().removeAllByAppId(appId)
       return ok()
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -174,7 +162,8 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           id: entry.id,
           slot: entry.slot,
           error: {
-            code: ApiErrorCode.InvalidInput,
+            code: AppCodes.INVALID_INPUT.code,
+            severity: AppCodes.INVALID_INPUT.severity,
             message: `Unsupported slot: ${entry.slot}`,
           },
         })

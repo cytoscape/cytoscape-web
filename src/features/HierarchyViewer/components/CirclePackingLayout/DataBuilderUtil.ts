@@ -37,15 +37,28 @@ export const getMembers = (nodeId: IdType, table: Table): string[] => {
   }
 }
 
-export const findRoot = (cyNet: Core): NodeSingular => {
-  // Get the selected node
-
-  // Find root
+/**
+ * Find the single root of the hierarchy.
+ *
+ * A hierarchy that also contains non parent-child edges can have zero roots
+ * (cycles, or edges pointing back into the root) or several roots (a forest).
+ * That is not renderable as a circle packing, but it must not throw: this runs
+ * inside an async layout builder, so a throw became an unhandled rejection and
+ * the Cell View tab was left blank with no explanation (issue #630).
+ *
+ * @param cyNet - internal cytoscape instance of the hierarchy
+ *
+ * @returns the root node, or undefined when the network is not a single-rooted
+ * tree / DAG
+ */
+export const findRoot = (cyNet: Core): NodeSingular | undefined => {
   const roots = cyNet.nodes().roots()
   if (roots.size() !== 1) {
-    throw new Error(
-      'This is not a tree / DAG. There should be only one root node',
+    logUi.warn(
+      `[${findRoot.name}]: This is not a tree / DAG. There should be only one root node, but found`,
+      roots.size(),
     )
+    return undefined
   }
   return roots[0]
 }

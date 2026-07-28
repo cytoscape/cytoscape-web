@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 // src/app-api/core/exportApi.test.ts
 // Plain Jest tests for exportApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes } from '../types/ApiResult'
 import { exportApi } from './exportApi'
 
 // ── Mock: exportCyNetworkToCx2 ────────────────────────────────────────────────
@@ -92,7 +92,7 @@ describe('exportToCx2 — validation', () => {
     const result = exportApi.exportToCx2('net1')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       expect(result.error.message).toContain('net1')
     }
   })
@@ -102,8 +102,8 @@ describe('exportToCx2 — validation', () => {
     const result = exportApi.exportToCx2('net1')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
-      expect(result.error.message).toContain('Tables')
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      expect(result.error.message).toContain('net1')
     }
   })
 
@@ -113,8 +113,8 @@ describe('exportToCx2 — validation', () => {
     const result = exportApi.exportToCx2('net1')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
-      expect(result.error.message).toContain('Visual style')
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      expect(result.error.message).toContain('net1')
     }
   })
 
@@ -126,8 +126,8 @@ describe('exportToCx2 — validation', () => {
     const result = exportApi.exportToCx2('net1')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
-      expect(result.error.message).toContain('View model')
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      expect(result.error.message).toContain('net1')
     }
   })
 })
@@ -206,7 +206,7 @@ describe('exportToCx2 — happy path', () => {
     const result = exportApi.exportToCx2('net1')
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 })

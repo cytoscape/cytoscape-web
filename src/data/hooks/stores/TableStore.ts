@@ -4,7 +4,7 @@
  * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
  * This cyweb/TableStore Module Federation export will be removed after 2 release cycles.
  */
-import { create, StateCreator, StoreApi } from 'zustand'
+import { create, StateCreator } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
@@ -25,34 +25,15 @@ import {
 import * as TableImpl from '../../../models/TableModel/impl/inMemoryTable'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
 import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
-import { useWorkspaceStore } from './WorkspaceStore'
+import { persistNetworkSlices } from './persistNetworkSlices'
 
-const persist =
-  (config: StateCreator<TableStore>) =>
-  (
-    set: StoreApi<TableStore>['setState'],
-    get: StoreApi<TableStore>['getState'],
-    api: StoreApi<TableStore>,
-  ) =>
-    config(
-      async (args) => {
-        logStore.info('[TableStore]: Persisting table store')
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-        set(args)
-        const updated = get().tables[currentNetworkId]
-        const deleted = updated === undefined
-        if (!deleted) {
-          await putTablesToDb(
-            currentNetworkId,
-            updated.nodeTable,
-            updated.edgeTable,
-          ).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+const persist = (config: StateCreator<TableStore>) =>
+  persistNetworkSlices<TableStore, TableRecord>(config, {
+    label: 'TableStore',
+    selectSlices: (state) => state.tables,
+    putSlice: (networkId, record) =>
+      putTablesToDb(networkId, record.nodeTable, record.edgeTable),
+  })
 
 export const useTableStore = create(
   subscribeWithSelector(
@@ -68,7 +49,6 @@ export const useTableStore = create(
               )
             }
             state.tables[networkId] = { nodeTable, edgeTable }
-            void putTablesToDb(networkId, nodeTable, edgeTable)
 
             return state
           })

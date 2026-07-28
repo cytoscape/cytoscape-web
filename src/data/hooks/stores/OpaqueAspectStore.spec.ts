@@ -27,13 +27,11 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    putOpaqueAspectsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteOpaqueAspectsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearOpaqueAspectsFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
-
-// Mock idb-keyval
-vi.mock('idb-keyval', () => ({
-  clear: vi.fn().mockResolvedValue(undefined),
-}))
 
 describe('useOpaqueAspectStore', () => {
   beforeEach(() => {
@@ -318,6 +316,40 @@ describe('useOpaqueAspectStore', () => {
       })
 
       expect(result.current.opaqueAspects).toEqual({})
+    })
+  })
+
+  // REVIEW.md R2-4: deleteAll used to call idb-keyval's clear(), which wipes
+  // idb-keyval's default `keyval-store` database — NOT cyweb-db. The opaque
+  // aspects live in cyweb-db via putOpaqueAspectsToDb, so "delete all
+  // networks" left every network's aspects orphaned in IndexedDB forever.
+  describe('IndexedDB persistence (regression: R2-4)', () => {
+    it('deleteAll clears the opaque aspects from cyweb-db', async () => {
+      const { clearOpaqueAspectsFromDb } = await import('../../db')
+      const { result } = renderHook(() => useOpaqueAspectStore())
+
+      act(() => {
+        result.current.add('network-1', 'aspect-1', [{ id: 1 }])
+      })
+      vi.mocked(clearOpaqueAspectsFromDb).mockClear()
+
+      act(() => {
+        result.current.deleteAll()
+      })
+
+      expect(clearOpaqueAspectsFromDb).toHaveBeenCalled()
+    })
+
+    it('delete removes the network aspects row from cyweb-db', async () => {
+      const { deleteOpaqueAspectsFromDb } = await import('../../db')
+      const { result } = renderHook(() => useOpaqueAspectStore())
+
+      act(() => {
+        result.current.add('network-1', 'aspect-1', [{ id: 1 }])
+        result.current.delete('network-1')
+      })
+
+      expect(deleteOpaqueAspectsFromDb).toHaveBeenCalledWith('network-1')
     })
   })
 })

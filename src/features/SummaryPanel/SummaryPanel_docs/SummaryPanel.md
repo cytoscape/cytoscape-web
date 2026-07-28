@@ -21,7 +21,8 @@ The SummaryPanel is composed of several components that work together to display
 
 - **NetworkPropertyPanel.tsx**: Individual network summary card
   - Displays network name, version, and description
-  - Shows edit and delete buttons
+  - Shows a single vertical "..." overflow button whose menu holds the save-to-NDEx, edit and delete actions
+  - Badges that button with a warning dot while the network has unsaved changes
   - Handles click to navigate to network
   - Highlights active network
   - Integrates with NetworkPropertyEditor for editing
@@ -47,8 +48,37 @@ The SummaryPanel is composed of several components that work together to display
   - Network name (editable)
   - Version (editable)
   - Description preview (editable, full description in editor)
-  - Edit button (opens property editor)
-  - Delete button (removes network from workspace)
+  - Overflow ("...") button next to the network name, carrying a warning dot
+    badge while the network has unsaved changes, and opening a menu with:
+    - Save to NDEx — "Save to NDEx" for an NDEx network, "Save a Copy to NDEx"
+      for a local one. The label always names the action; whatever blocks it is
+      named on a second line, and the item is disabled whenever one is shown:
+      "No unsaved changes", "Sign in to save to NDEx" (anonymous user), or
+      "Open this network first" (only the currently open network's data is
+      loaded, so only it can be saved). See `networkSaveStatus.ts`.
+    - Edit Network Properties (opens property editor)
+    - Open Network in Cytoscape Desktop
+    - Duplicate Network
+    - Download Network File (.cx2)
+    - Export Network to Image
+    - Share Network (Copy URL to Clipboard)
+    - _divider_
+    - Remove the Network from Workspace
+
+#### Network actions in the overflow menu
+
+The five actions between Edit and the divider are the same ones the Data menu
+and the floating toolbar offer, sharing their hooks: `useCloneNetwork`,
+`useDownloadNetworkFile`, `useOpenNetworkInCytoscapeFromStores`,
+`useCopyShareableNetworkUrl`, and the `ExportImage` dialog.
+
+All of them act on the loaded (current) network — the stores hold that network's
+data alone, and the image export renders the live view. A row that is not the
+open network therefore shows them disabled with "Open this network first" on a
+second line. Two actions have their own blocker, reported ahead of that one:
+Open in Cytoscape Desktop when Cytoscape is unreachable (the
+`FeatureAvailability` tooltip), and Share for a local network ("Save this
+network to NDEx first"). See `networkRowActions.ts`.
 
 ### Network Navigation
 
@@ -58,7 +88,8 @@ The SummaryPanel is composed of several components that work together to display
 
 ### Property Editing
 
-- Clicking edit button opens a popover editor
+- Choosing "Edit network properties" in the overflow menu opens a popover editor
+  anchored to the overflow button
 - Editor allows editing:
   - Name: Simple text input
   - Version: Simple text input
@@ -69,7 +100,7 @@ The SummaryPanel is composed of several components that work together to display
 
 ### Network Deletion
 
-- Delete button removes network from workspace
+- The overflow menu's "Remove the network from workspace" item removes the network
 - Confirmation dialog may be shown (handled by parent)
 - Deletion updates workspace state
 

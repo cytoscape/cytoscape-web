@@ -11,6 +11,7 @@ import { PanelState } from '../PanelState'
 import { TableUIState } from '../TableUi'
 import { Ui } from '../Ui'
 import {
+  deleteNetworkUiState,
   deserializeColumnUIKey,
   enablePopup,
   serializeColumnUIKey,
@@ -561,6 +562,55 @@ describe('UiImpl', () => {
       expect(original.errorMessage).toBe('')
       expect(original.tableUi.activeTabIndex).toBe(0)
       expect(original.visualStyleOptions['network-1']).toBeUndefined()
+    })
+  })
+
+  describe('deleteNetworkUiState', () => {
+    const buildUiWithTwoNetworks = (): Ui => {
+      let ui = createDefaultUi()
+      ui = setNodeSizeLockedState(ui, 'network-1', true)
+      ui = setNodeSizeLockedState(ui, 'network-2', false)
+      ui = setColumnWidth(ui, 'network-1', TableType.NODE, 'name', 120)
+      ui = setColumnWidth(ui, 'network-2', TableType.EDGE, 'weight', 80)
+      return ui
+    }
+
+    it('removes visualStyleOptions for the deleted network only', () => {
+      const ui = buildUiWithTwoNetworks()
+
+      const result = deleteNetworkUiState(ui, 'network-1')
+
+      expect(result.visualStyleOptions['network-1']).toBeUndefined()
+      expect(result.visualStyleOptions['network-2']).toBeDefined()
+    })
+
+    it('removes column UI state for the deleted network only', () => {
+      const ui = buildUiWithTwoNetworks()
+      const deletedKey = serializeColumnUIKey('network-1', TableType.NODE, 'name')
+      const keptKey = serializeColumnUIKey('network-2', TableType.EDGE, 'weight')
+
+      const result = deleteNetworkUiState(ui, 'network-1')
+
+      expect(result.tableUi.columnUiState[deletedKey]).toBeUndefined()
+      expect(result.tableUi.columnUiState[keptKey]).toBeDefined()
+    })
+
+    it('does not mutate the original ui object', () => {
+      const ui = buildUiWithTwoNetworks()
+
+      const result = deleteNetworkUiState(ui, 'network-1')
+
+      expect(result).not.toBe(ui)
+      expect(ui.visualStyleOptions['network-1']).toBeDefined()
+    })
+
+    it('is a no-op for a network with no UI state', () => {
+      const ui = buildUiWithTwoNetworks()
+
+      const result = deleteNetworkUiState(ui, 'network-99')
+
+      expect(result.visualStyleOptions).toEqual(ui.visualStyleOptions)
+      expect(result.tableUi.columnUiState).toEqual(ui.tableUi.columnUiState)
     })
   })
 })
