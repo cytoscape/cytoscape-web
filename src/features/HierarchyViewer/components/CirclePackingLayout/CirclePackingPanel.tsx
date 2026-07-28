@@ -29,7 +29,12 @@ import { Network } from '../../../../models/NetworkModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import { VisualStyle } from '../../../../models/VisualStyleModel'
 import { applyVisualStyle } from '../../../../models/VisualStyleModel/impl/visualStyleFnImpl'
+import { MessagePanel } from '../../../Messages'
 import { CirclePackingView } from '../../model/CirclePackingView'
+import {
+  CP_NO_SINGLE_ROOT_MESSAGE,
+  CP_UNAVAILABLE_MESSAGE,
+} from '../../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
 // Local imports
 import {
@@ -100,6 +105,8 @@ export const CirclePackingPanel = ({
   const [tooltipContent, setTooltipContent] = useState<string>('')
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
   const [hoveredEnter, setHoveredEnter] = useState<D3TreeNode>()
+  // Reason the circle packing diagram could not be built, if any
+  const [cpError, setCpError] = useState<string>()
 
   // ===== STORE SELECTORS =====
   // Network and table data
@@ -401,31 +408,48 @@ export const CirclePackingPanel = ({
       rootNetworkHostUrl,
       getToken,
       rootNetworkId,
-    }).then((root) => {
-      rootNode = root
-      if (rootNode && Object.keys(rootNode).length === 0) return
-
-      const updatedView = applyVisualStyle({
-        network: network,
-        visualStyle: visualStyle,
-        nodeTable: nodeTable,
-        edgeTable: edgeTable,
-        networkView: primaryView,
-      })
-
-      // Create a new Circle Packing view model
-      const width = initialSize?.w ?? 0
-      const height = initialSize?.h ?? 0
-      const cpViewModel: CirclePackingView = createCirclePackingView(
-        updatedView,
-        rootNode,
-        width,
-        height,
-      )
-
-      // Register the new view model
-      addViewModel(network.id, cpViewModel)
     })
+      .then((root) => {
+        rootNode = root
+        if (rootNode && Object.keys(rootNode).length === 0) {
+          // createTreeLayout could not build a tree from this hierarchy
+          setCpError(CP_NO_SINGLE_ROOT_MESSAGE)
+          return
+        }
+
+        const updatedView = applyVisualStyle({
+          network: network,
+          visualStyle: visualStyle,
+          nodeTable: nodeTable,
+          edgeTable: edgeTable,
+          networkView: primaryView,
+        })
+
+        // Create a new Circle Packing view model
+        const width = initialSize?.w ?? 0
+        const height = initialSize?.h ?? 0
+        const cpViewModel: CirclePackingView = createCirclePackingView(
+          updatedView,
+          rootNode,
+          width,
+          height,
+        )
+
+        // Register the new view model
+        addViewModel(network.id, cpViewModel)
+        setCpError(undefined)
+      })
+      .catch((error) => {
+        // Without this, a rejection here (e.g. a subsystem with no member list)
+        // became an unhandled rejection and left this panel blank (issue #630).
+        logUi.error(
+          `[${CirclePackingPanel.name}]: Failed to build the circle packing view`,
+          error,
+        )
+        setCpError(
+          error instanceof Error ? error.message : CP_NO_SINGLE_ROOT_MESSAGE,
+        )
+      })
   }
 
   // ===== EFFECTS ====
@@ -1032,6 +1056,17 @@ export const CirclePackingPanel = ({
   )
 
   /**
+   * Clear the failure state when the network changes, so a hierarchy that could
+   * not be built does not keep hiding the diagram of the next one.
+   */
+  useEffect(
+    function onNetworkIdChange() {
+      setCpError(undefined)
+    },
+    [networkId],
+  )
+
+  /**
    * Initialize view model when initial size is available
    *
    * buildCirclePackingViewModel must NOT be a dependency: its identity changes
@@ -1047,6 +1082,16 @@ export const CirclePackingPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot build when the measured size arrives
     [initialSize],
   )
+
+  if (cpError !== undefined) {
+    return (
+      <MessagePanel
+        message={CP_UNAVAILABLE_MESSAGE}
+        subMessage={cpError}
+        data-testid="circle-packing-unavailable"
+      />
+    )
+  }
 
   return (
     <>

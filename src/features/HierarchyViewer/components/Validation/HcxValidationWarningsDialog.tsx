@@ -21,12 +21,21 @@ export const HcxValidationWarningsDialog = (
   props: HcxValidationWarningsDialogProps,
 ): ReactElement => {
   const { open, onClose, validationResult } = props
+
+  // A network can be valid HCX and still carry warnings, e.g. a hierarchy whose
+  // edges are not all parent-child relationships (issue #630).
+  const isValid: boolean = validationResult?.isValid ?? false
+
   return (
     <Dialog open={open} data-testid="hcx-validation-warnings-dialog">
-      <DialogTitle>Invalid HCX Network</DialogTitle>
+      <DialogTitle>
+        {isValid ? 'HCX Network Warnings' : 'Invalid HCX Network'}
+      </DialogTitle>
       <DialogContent>
         <DialogContentText>
-          {`This network is marked as an hierarchical network (HCX), but it does not fully meet the HCX specification. Some Hierarchical viewer features may not work.`}
+          {isValid
+            ? `This network meets the HCX specification, but some Hierarchical viewer features are not available for it.`
+            : `This network is marked as an hierarchical network (HCX), but it does not fully meet the HCX specification. Some Hierarchical viewer features may not work.`}
         </DialogContentText>
         <DialogContentText>
           {`Review HCX specification version '${

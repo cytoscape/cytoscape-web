@@ -93,6 +93,7 @@ export const useRegisterNetwork = () => {
         hcxVersion as string,
         summary,
         nodeTable,
+        edgeTable,
       )
 
       if (!validationResult.isValid) {

@@ -374,6 +374,17 @@ async function generateAllCx2(): Promise<void> {
       output: join(HCX_OUTPUT_DIR, 'invalid', 'not-dag.invalid.cx2'),
       category: 'Invalid HCX',
     },
+    {
+      name: 'HCX not a DAG with a single interaction type',
+      type: 'invalid',
+      args: ['--error', 'not-dag-single-interaction'],
+      output: join(
+        HCX_OUTPUT_DIR,
+        'invalid',
+        'not-dag-single-interaction.invalid.cx2',
+      ),
+      category: 'Invalid HCX',
+    },
   ]
 
   console.log('Generating CX2 and HCX test fixtures...\n')

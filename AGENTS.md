@@ -197,6 +197,14 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 - `npm run test:e2e` - Run Playwright end-to-end tests (all browsers)
 - `npm run test:e2e:chromium` - Run Playwright end-to-end tests (Chromium only; used by `npm test`)
 
+**Port 5500 must be free before an e2e run.** Playwright builds the app and serves
+it with `vite preview` on 5500 — the port Keycloak's client registration expects —
+and checks the port before starting, so a dev server there fails the run with
+"already used". **Agents:** check for a listener on 5500 first and, if it is a dev
+server the user started, ask before stopping it; never kill it silently. Use
+`E2E_DEV=1` to run against an existing dev server instead, at the cost of a
+flakier suite. See `test/playwright/README.md`.
+
 **Code Quality:**
 
 - `npm run lint` - Lint TypeScript/JavaScript files in src/

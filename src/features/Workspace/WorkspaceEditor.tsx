@@ -263,6 +263,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           hcxVersion as string,
           summary,
           nodeTable,
+          edgeTable,
         )
 
         if (!validationResult.isValid) {
