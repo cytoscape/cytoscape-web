@@ -68,16 +68,25 @@ const restoreSelection = (
   selectWhenViewReady(viewId, splitIds(nodes), splitIds(edges))
 }
 
-const restoreFilter = (search: URLSearchParams): void => {
+/**
+ * Builds a FilterConfig from URL search parameters, or undefined unless
+ * FILTER_FOR, FILTER_BY and FILTER_RANGE are all present.
+ *
+ * Pure and exported so the shareable-URL filter semantics can be tested
+ * without touching the store.
+ */
+export const buildFilterConfigFromSearchParams = (
+  search: URLSearchParams,
+): FilterConfig | undefined => {
   const filterFor = search.get(FilterUrlParams.FILTER_FOR)
   const filterBy = search.get(FilterUrlParams.FILTER_BY)
   const filterRange = search.get(FilterUrlParams.FILTER_RANGE)
 
   if (filterFor == null || filterBy == null || filterRange == null) {
-    return
+    return undefined
   }
 
-  const filterConfig: FilterConfig = {
+  return {
     name: DEFAULT_FILTER_NAME,
     attributeName: filterBy,
     target:
@@ -90,7 +99,13 @@ const restoreFilter = (search: URLSearchParams): void => {
     range: { values: filterRange.split(',') },
     displayMode: DisplayMode.SELECT,
   }
-  useFilterStore.getState().addFilterConfig(filterConfig)
+}
+
+const restoreFilter = (search: URLSearchParams): void => {
+  const filterConfig = buildFilterConfigFromSearchParams(search)
+  if (filterConfig !== undefined) {
+    useFilterStore.getState().addFilterConfig(filterConfig)
+  }
 }
 
 const restoreNetworkViewTab = (search: URLSearchParams): void => {
