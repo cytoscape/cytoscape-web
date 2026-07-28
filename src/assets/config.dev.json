@@ -1,5 +1,8 @@
 {
   "ndexBaseUrl": "dev1.ndexbio.org",
+  "debugOptions": {
+    "disableAutoReload": true
+  },
   "keycloakConfig": {
     "url": "https://dev1.ndexbio.org/auth2",
     "clientId": "cytoscapendex",
@@ -11,7 +14,7 @@
     "88521140-6a12-11ef-b816-005056ae6f73",
     "a9763574-c72f-11ed-a79c-005056ae23aa",
     "06f859c1-8051-11ef-b4e1-005056ae6f73",
-    "cfb7d52e-a2f2-11ed-9a1f-005056ae23aa"
+    "cfb7d52e-a2f2-11ed-a79c-005056ae23aa"
   ],
   "defaultServices": [
     "https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample",
@@ -23,9 +26,9 @@
   "maxNetworkFileSize": 524288000,
   "urlBaseName": "/",
   "openAIAPIKey": "",
-  "googleAnalyticsId": "G-B3X9SFXC2P",
+  "googleAnalyticsId": "",
   "undoStackSize": 20,
-  "errorReportEndpoint": "https://www.ndexbio.org/report",
+  "errorReportEndpoint": "https://dev1.ndexbio.org/report",
   "maxErrorReportSnapshotSizeMB": 10,
   "appInstallAllowedOrigins": [
     "https://apps.cytoscape.org",

@@ -11,9 +11,9 @@ import { getDatabaseVersion, getDb, ObjectStoreNames } from '../../db'
 import type { DatabaseSnapshot } from '../../db/snapshot'
 
 /**
- * Envelope expected by https://dev1.ndexbio.org/report
+ * Envelope expected by the error report endpoint configured in `assets/config.json`.
  *
- * curl -X POST https://dev1.ndexbio.org/report \
+ * curl -X POST <errorReportEndpoint> \
  *   -H "Content-Type: application/json" \
  *   -d '{"summary":"...","data":{...}}'
  */

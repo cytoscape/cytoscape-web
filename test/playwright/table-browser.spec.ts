@@ -1,12 +1,13 @@
 import { test, expect } from './fixtures'
-import { gotoAndSeedNetwork } from './fixtures'
+import { gotoAndSeedNetwork, gotoAndWaitReady } from './fixtures'
 
 test.describe('Table Browser', () => {
   test.describe('1. Basic Rendering & Tabs', () => {
     test('1.1 Initial Load without Network', async ({ page }) => {
-      // Navigate to app without seeding a network
-      await page.goto('/')
-      await expect(page.locator('[data-testid="app-shell"]')).toBeVisible()
+      // Navigate to app without seeding a network. Use the shared helper rather
+      // than a bare goto + toBeVisible: the latter gives a whole app boot only
+      // expect's 5s default, which is the one thing that still failed the suite.
+      await gotoAndWaitReady(page)
 
       // Table browser tabs should be visible
       const tabs = page.locator('[data-testid="table-browser-tabs"]')

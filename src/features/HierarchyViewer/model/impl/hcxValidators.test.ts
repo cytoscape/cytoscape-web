@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest'
 import type { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import type { Table } from '../../../../models/TableModel'
 import { HcxMetaTag, SubsystemTag } from '../HcxMetaTag'
+import {
+  EDGE_INTERACTION_ATTR,
+  MIXED_INTERACTION_WARNING,
+} from './circlePackingSupport'
 import { isValidHcxVersion, validateHcx } from './hcxValidators'
 
 const HCX_VERSION = 'hierarchy_v0.1'
@@ -61,9 +65,7 @@ describe('validateHcx', () => {
     const result = validateHcx('hierarchy_v9.9', validSummary, validTable)
 
     expect(result.isValid).toBe(false)
-    expect(result.warnings).toEqual([
-      'Unsupported hcx version: hierarchy_v9.9',
-    ])
+    expect(result.warnings).toEqual(['Unsupported hcx version: hierarchy_v9.9'])
   })
 
   it('warns twice when the ndexSchema attribute has the wrong format', () => {
@@ -137,5 +139,59 @@ describe('validateHcx', () => {
     expect(validateHcx(HCX_VERSION, noUuid, memberNamesTable).isValid).toBe(
       false,
     )
+  })
+
+  describe('mixed edge interaction types (issue #630)', () => {
+    const edgeTableWith = (interactions: (string | null)[]): Table =>
+      ({
+        columns: [{ name: EDGE_INTERACTION_ATTR, type: 'string' }],
+        rows: new Map(
+          interactions.map((interaction, i) => [
+            `e${i}`,
+            { [EDGE_INTERACTION_ATTR]: interaction },
+          ]),
+        ),
+      }) as unknown as Table
+
+    it('warns when the hierarchy carries more than one interaction type', () => {
+      const result = validateHcx(
+        HCX_VERSION,
+        validSummary,
+        validTable,
+        edgeTableWith(['interacts', 'activates']),
+      )
+
+      expect(result.warnings).toContain(MIXED_INTERACTION_WARNING)
+    })
+
+    it('keeps the network valid, since extra edge types are still legal HCX', () => {
+      const result = validateHcx(
+        HCX_VERSION,
+        validSummary,
+        validTable,
+        edgeTableWith(['interacts', 'activates']),
+      )
+
+      expect(result.isValid).toBe(true)
+    })
+
+    it('does not warn for a hierarchy with a single interaction type', () => {
+      const result = validateHcx(
+        HCX_VERSION,
+        validSummary,
+        validTable,
+        edgeTableWith(['interacts', 'interacts']),
+      )
+
+      expect(result.isValid).toBe(true)
+      expect(result.warnings).toEqual([])
+    })
+
+    it('behaves exactly as before when no edge table is supplied', () => {
+      const result = validateHcx(HCX_VERSION, validSummary, validTable)
+
+      expect(result.isValid).toBe(true)
+      expect(result.warnings).toEqual([])
+    })
   })
 })

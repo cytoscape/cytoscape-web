@@ -10,7 +10,7 @@
 
 import { writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { generateValidCx2 } from './generate-cx2'
+import { generateValidCx2, moveStatusLast } from './generate-cx2'
 
 // Default values
 const DEFAULT_NODES = 50
@@ -30,6 +30,7 @@ type ErrorType =
   | 'invalid-schema-version'
   | 'invalid-filter-config'
   | 'not-dag'
+  | 'not-dag-single-interaction'
 
 interface GenerateHcxOptions {
   nodeCount: number
@@ -197,7 +198,8 @@ function generateValidHcx(options: GenerateHcxOptions): any[] {
     cx2.push(generateFilterWidgets())
   }
 
-  return cx2
+  // Keep the status aspect last, otherwise the aspect after it is dropped on read
+  return moveStatusLast(cx2)
 }
 
 /**
@@ -269,6 +271,22 @@ function generateInvalidHcx(errorType: ErrorType, baseNetwork?: any[]): any {
         cyclic[edgesIndex].edges[2].t = 0
       }
       return cyclic
+
+    case 'not-dag-single-interaction':
+      // Same cycles as 'not-dag', but every edge shares one interaction type.
+      // The interaction heuristic therefore cannot detect this hierarchy, so it
+      // exercises the graceful failure of the circle packing builder itself
+      // (issue #630).
+      const uniformCyclic = generateInvalidHcx('not-dag', baseNetwork)
+      const uniformEdgesIndex = uniformCyclic.findIndex((a: any) => a.edges)
+      if (uniformEdgesIndex >= 0) {
+        uniformCyclic[uniformEdgesIndex].edges.forEach((edge: any) => {
+          if (edge.v !== undefined) {
+            edge.v.interaction = 'interacts'
+          }
+        })
+      }
+      return uniformCyclic
 
     default:
       return baseNetwork

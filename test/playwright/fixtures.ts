@@ -1,8 +1,37 @@
 import { test as base, expect, type Page } from '@playwright/test'
 
-type Fixtures = {}
+type Fixtures = {
+  /**
+   * When false (the default), first-run onboarding is suppressed by seeding
+   * `cyweb.onboarding` in localStorage so the welcome modal never blocks a
+   * test. Opt in with `test.use({ onboarding: true })` to exercise first-run.
+   */
+  onboarding: boolean
+}
 
-export const test = base.extend<Fixtures>({})
+export const test = base.extend<Fixtures>({
+  onboarding: [false, { option: true }],
+  page: async ({ page, onboarding }, use) => {
+    if (!onboarding) {
+      await page.addInitScript(() => {
+        try {
+          window.localStorage.setItem(
+            'cyweb.onboarding',
+            JSON.stringify({
+              hasSeenWelcome: true,
+              completedTours: [],
+              dismissedHints: [],
+            }),
+          )
+        } catch {
+          // Ignore — onboarding will simply show; tests that care opt in.
+        }
+      })
+    }
+    await use(page)
+  },
+})
+
 export { expect }
 
 type ReadyWindow = { __cywebReady?: boolean }
@@ -26,8 +55,12 @@ export const gotoAndWaitReady = async (
   })
 
   await page.goto(path)
+  // Generous on purpose: several workers each boot the whole app, and a boot that
+  // is merely slow under that contention is not a failure worth reporting. Every
+  // spec should come through here rather than asserting on app-shell itself with
+  // expect's 5s default.
   await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
-    timeout: 15000,
+    timeout: 30000,
   })
 
   await page.waitForFunction(
