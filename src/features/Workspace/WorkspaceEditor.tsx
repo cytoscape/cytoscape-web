@@ -32,6 +32,7 @@ import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchy
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
+import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
@@ -292,31 +293,26 @@ const WorkSpaceEditor = (): JSX.Element => {
             const summaryWithLayout = { ...summary, hasLayout: true }
 
             setIsRunning(true)
-            const handleLayoutComplete = (
-              positionMap: Map<IdType, [number, number]>,
-            ): void => {
-              updateNodePositions(networkId, positionMap)
-              const fitFunction = getFunction('cyjs', 'fit', networkId)
-
-              // Fit the viewport to center the initial layout
-              if (fitFunction !== undefined) {
-                fitFunction()
-              }
-
-              updateSummary(networkId, summaryWithLayout)
-              setIsRunning(false)
-              // Only clear the modified flag when no user-initiated changes were
-              // made while the layout was running. Read from the store directly
-              // to get the value current at callback time rather than the
-              // stale closure value.
-              const modifiedDuringLayout =
-                useWorkspaceStore.getState().workspace.networkModified[
-                  networkId
-                ]
-              if (!modifiedDuringLayout) {
-                setNetworkModified(networkId, false)
-              }
-            }
+            const handleLayoutComplete = createLayoutCompletionHandler(
+              networkId,
+              {
+                // Read from the store directly to get the value current at
+                // callback time rather than the stale closure value.
+                isNetworkModified: (id) =>
+                  useWorkspaceStore.getState().workspace.networkModified[id] ===
+                  true,
+                updateNodePositions,
+                fitViewport: (id) => {
+                  const fitFunction = getFunction('cyjs', 'fit', id)
+                  if (fitFunction !== undefined) {
+                    fitFunction()
+                  }
+                },
+                markLayoutApplied: (id) => updateSummary(id, summaryWithLayout),
+                setLayoutRunning: setIsRunning,
+                setNetworkModified,
+              },
+            )
 
             layoutEngine.apply(
               network.nodes,
