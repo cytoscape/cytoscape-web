@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { TOURS } from '../../src/features/Onboarding/tours/registry'
-import { expect, test } from './fixtures'
+import { expect, gotoAndWaitReady, test } from './fixtures'
 
 /**
  * Anti-staleness guard for onboarding tours.
@@ -62,10 +62,7 @@ test.describe('onboarding tour anchors', () => {
   test('every tour anchor exists in the app or in component source', async ({
     page,
   }) => {
-    await page.goto('/')
-    await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
-      timeout: 15000,
-    })
+    await gotoAndWaitReady(page)
     await expect(page.locator('[data-testid="toolbar"]')).toBeVisible()
 
     const broken: string[] = []
