@@ -1,13 +1,6 @@
 import { useTheme } from '@mui/material/styles'
 import { ReactElement, useMemo } from 'react'
-import {
-  Controls,
-  EventData,
-  EVENTS,
-  Joyride,
-  STATUS,
-  Step,
-} from 'react-joyride'
+import { EventData, EVENTS, Joyride, STATUS, Step } from 'react-joyride'
 
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../debug'
@@ -62,14 +55,15 @@ export const TourRunner = (): ReactElement | null => {
     return null
   }
 
-  const handleEvent = (data: EventData, controls: Controls): void => {
+  const handleEvent = (data: EventData): void => {
     const { type, status } = data
 
-    // A network-only target isn't present (e.g. no network loaded) — advance
-    // past it instead of stalling the tour.
+    // Joyride already advances the index itself when a target is missing (and
+    // decrements it when the user was going back), so this only logs. Calling
+    // controls.next() here advanced a second time and silently ate the
+    // following step.
     if (type === EVENTS.TARGET_NOT_FOUND) {
       logUi.info('Tour target not found, skipping step', data.step?.target)
-      controls.next()
       return
     }
 
