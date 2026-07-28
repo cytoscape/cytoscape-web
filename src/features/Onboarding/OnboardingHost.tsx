@@ -1,10 +1,18 @@
-import { ReactElement, useEffect, useState } from 'react'
+import { lazy, ReactElement, Suspense, useEffect, useState } from 'react'
 
 import { logUi } from '../../debug'
 import { useOnboardingStore } from './store/OnboardingStore'
-import { TourRunner } from './TourRunner'
 import { DEFAULT_TOUR_ID } from './tours/registry'
 import { WelcomeDialog } from './WelcomeDialog'
+
+// react-joyride is ~104 KB and was 85% of this feature's chunk, which App,
+// AppShell and bootstrap all statically import — so it landed on the cold-load
+// critical path for every user, to render a tour most of them see once. Loading
+// it only once a tour starts keeps it off that path; the fetch happens while
+// the user is reacting to their own click on "Start tour".
+const TourRunner = lazy(async () => ({
+  default: (await import('./TourRunner')).TourRunner,
+}))
 
 /** Event dispatched by AppShell once stores are hydrated and the app is ready. */
 const APP_READY_EVENT = 'cywebapi:ready'
@@ -14,8 +22,8 @@ const READY_FALLBACK_MS = 8000
 /**
  * App-wide onboarding host. Mounted once at the App root (beside the
  * multi-tab / cookie notices). Shows the first-run Welcome dialog after the
- * app is ready, and always renders the tour runner (which is a no-op unless a
- * tour is active).
+ * app is ready, and mounts the lazily-loaded tour runner only while a tour is
+ * active.
  */
 export const OnboardingHost = (): ReactElement => {
   const hasSeenWelcome = useOnboardingStore((state) => state.hasSeenWelcome)
@@ -54,7 +62,11 @@ export const OnboardingHost = (): ReactElement => {
         onSkip={markWelcomeSeen}
         onStartTour={() => startTour(DEFAULT_TOUR_ID)}
       />
-      <TourRunner />
+      {activeTour != null ? (
+        <Suspense fallback={null}>
+          <TourRunner />
+        </Suspense>
+      ) : null}
     </>
   )
 }
