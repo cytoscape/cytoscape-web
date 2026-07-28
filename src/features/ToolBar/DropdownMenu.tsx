@@ -122,6 +122,8 @@ interface DropdownMenuItemProps {
   icon?: React.ReactNode
   disabled?: boolean
   onClick?: () => void
+  /** Optional test anchor, so specs need not select the item by its label. */
+  dataTestId?: string
 }
 
 export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
@@ -130,6 +132,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
   icon = null,
   disabled = false,
   onClick,
+  dataTestId,
 }) => {
   const theme = useTheme()
 
@@ -137,6 +140,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
     <Tooltip title={tooltip} placement="right">
       <span>
         <Box
+          data-testid={dataTestId}
           sx={{
             display: 'flex',
             alignItems: 'center',

@@ -19,6 +19,7 @@ import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
+import { OnboardingHost } from './features/Onboarding'
 import { RedirectPanel } from './features/RedirectPanel'
 import { BootShell } from './boot/shell/BootShell'
 import { KeycloakContext } from '@/boot/keycloak'
@@ -126,6 +127,7 @@ export const App = (): React.ReactElement => {
         </div>
       </ErrorBoundary>
       <CookieConsentWidget />
+      <OnboardingHost />
     </CssVarsProvider>
   )
 }
