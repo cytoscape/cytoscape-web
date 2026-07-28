@@ -305,7 +305,17 @@ const WorkSpaceEditor = (): JSX.Element => {
 
               updateSummary(networkId, summaryWithLayout)
               setIsRunning(false)
-              setNetworkModified(networkId, false)
+              // Only clear the modified flag when no user-initiated changes were
+              // made while the layout was running. Read from the store directly
+              // to get the value current at callback time rather than the
+              // stale closure value.
+              const modifiedDuringLayout =
+                useWorkspaceStore.getState().workspace.networkModified[
+                  networkId
+                ]
+              if (!modifiedDuringLayout) {
+                setNetworkModified(networkId, false)
+              }
             }
 
             layoutEngine.apply(
