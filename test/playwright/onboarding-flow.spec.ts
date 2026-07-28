@@ -14,6 +14,9 @@ import { expect, gotoAndWaitReady, test } from './fixtures'
  */
 
 const WELCOME = '[data-testid="onboarding-welcome-dialog"]'
+const TAKE_A_TOUR = '[data-testid="help-take-a-tour"]'
+/** First step of the getting-started tour, keyed on its anchor not its prose. */
+const FIRST_STEP = '[data-testid="tour-step-toolbar"]'
 
 test.describe('first-run onboarding', () => {
   test.use({ onboarding: true })
@@ -28,7 +31,7 @@ test.describe('first-run onboarding', () => {
     await page.locator('[data-testid="onboarding-welcome-start-tour"]').click()
 
     // First tour step spotlights the toolbar.
-    await expect(page.getByText('The toolbar')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator(FIRST_STEP)).toBeVisible({ timeout: 10000 })
 
     // Welcome is marked seen — it must not reappear on a fresh load. A second
     // navigation rather than page.reload() so the ready wait applies again.
@@ -43,7 +46,7 @@ test.describe('first-run onboarding', () => {
     await expect(page.locator(WELCOME)).toBeVisible({ timeout: 15000 })
     await page.locator('[data-testid="onboarding-welcome-skip"]').click()
     await expect(page.locator(WELCOME)).toBeHidden()
-    await expect(page.getByText('The toolbar')).toBeHidden()
+    await expect(page.locator(FIRST_STEP)).toBeHidden()
   })
 })
 
@@ -54,8 +57,8 @@ test.describe('relaunch from Help menu', () => {
     await expect(page.locator(WELCOME)).toBeHidden()
 
     await page.locator('[data-testid="toolbar-help-menu-menu-button"]').click()
-    await page.getByText('Take a tour').click()
+    await page.locator(TAKE_A_TOUR).click()
 
-    await expect(page.getByText('The toolbar')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator(FIRST_STEP)).toBeVisible({ timeout: 10000 })
   })
 })

@@ -38,7 +38,11 @@ export const TourRunner = (): ReactElement | null => {
     return visibleSteps(tour.steps, hasNetwork).map((step: TourStepDef) => ({
       target: stepSelector(step),
       title: step.title,
-      content: step.content,
+      // Wrapped so tests can assert on a specific step without matching its
+      // prose. Targets are unique within a tour, so they make stable ids.
+      content: (
+        <span data-testid={`tour-step-${step.target}`}>{step.content}</span>
+      ),
       placement: step.placement ?? 'auto',
       targetWaitTimeout: 2000,
       before:

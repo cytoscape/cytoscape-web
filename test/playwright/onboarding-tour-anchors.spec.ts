@@ -46,10 +46,25 @@ const collectSource = (dir: string): string => {
 
 const sourceBlob = collectSource(SRC_DIR)
 
-const testIdLiteralExists = (testId: string): boolean =>
-  sourceBlob.includes(`"${testId}"`) ||
-  sourceBlob.includes(`'${testId}'`) ||
-  sourceBlob.includes(`\`${testId}\``)
+/**
+ * True when the source declares `data-testid` with exactly this value.
+ *
+ * Matching any quoted occurrence of the string was too loose: an unrelated
+ * constant that happened to equal a tour target counted as an anchor, so a
+ * removed testid could still pass the guard. This requires an actual attribute
+ * assignment, in either the plain or JSX-expression form:
+ *   data-testid="x"   data-testid='x'
+ *   data-testid={'x'}  data-testid={"x"}  data-testid={`x`}
+ *
+ * Interpolated testids (`data-testid={`toolbar-${id}-menu-button`}`) do not
+ * match by design — those are covered by the running-app check instead.
+ */
+const testIdLiteralExists = (testId: string): boolean => {
+  const escaped = testId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(
+    `data-testid\\s*=\\s*(?:["']${escaped}["']|\\{\\s*["'\`]${escaped}["'\`]\\s*\\})`,
+  ).test(sourceBlob)
+}
 
 test.describe('onboarding tour anchors', () => {
   test('registry has at least one tour with steps', () => {

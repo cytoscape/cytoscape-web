@@ -19,6 +19,7 @@ export const TakeATourMenuItem = (props: BaseMenuItemProps): ReactElement => {
   return (
     <DropdownMenuItem
       label="Take a tour"
+      dataTestId="help-take-a-tour"
       icon={<ExploreIcon />}
       onClick={handleClick}
     />
