@@ -3,7 +3,7 @@ import 'dexie-observable'
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
-import { getTabId } from '../../init/tabId'
+import { getTabId } from '../../boot/tabId'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -49,7 +49,7 @@ import {
   serializeVisualStyle,
 } from './serialization/mapSerialization'
 // Unique, fixed DB name for the Cytoscape Web
-const DB_NAME: string = 'cyweb-db'
+export const DB_NAME: string = 'cyweb-db'
 
 // Current version of the DB (integer only).
 // If older version is found, the migration
@@ -58,7 +58,7 @@ const DB_NAME: string = 'cyweb-db'
 // `cyNetworkViews` row — see ViewModelStore). It is a separate version rather
 // than an edit to v10 because v10 already shipped to branch deploys, and Dexie
 // will not re-run a version whose number a client already has on disk.
-const currentVersion: number = 11
+export const currentVersion: number = 11
 
 /**
  * Predefined object store names.

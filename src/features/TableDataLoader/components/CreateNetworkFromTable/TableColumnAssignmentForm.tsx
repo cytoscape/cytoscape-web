@@ -50,8 +50,8 @@ import {
   updateColumnType,
   validColumnAssignmentTypes,
   validValueTypes,
-  valueTypeName2Label,
 } from '../../model/impl/CreateNetworkFromTable'
+import { valueTypeNameLabel as valueTypeName2Label } from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   convertFileDelimiterToEffective,
   convertFileDelimiterToStorageValue,
@@ -459,7 +459,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
                         {h.invalidValues?.length > 0 ? (
                           <Tooltip
                             zIndex={2001}
-                            label={`Column '${h.name}' has ${h.invalidValues?.length} values that cannot be parsed as type ${valueTypeName2Label[h.dataType]}`}
+                            label={`Column '${h.name}' has ${h.invalidValues?.length} values that cannot be parsed as type ${valueTypeName2Label(h.dataType)}`}
                           >
                             <IconAlertCircle size={20} color="red" />
                           </Tooltip>

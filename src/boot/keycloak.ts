@@ -7,6 +7,34 @@ import { getNDExBaseUrl } from '../data/external-api/ndex/config'
 
 export const KeycloakContext = createContext<Keycloak>(new Keycloak())
 
+export interface UserVerificationStatus {
+  isVerified: boolean
+  userName?: string
+  userEmail?: string
+}
+
+/**
+ * Parses the NDEx error message to extract user information
+ * @param errorMessage - The error message from NDEx API
+ * @returns User name and email if found, null otherwise
+ *
+ * At module scope rather than inside initializeKeycloak so it can be tested
+ * directly — the regex is the whole behaviour and it is easy to get wrong.
+ */
+export const parseUserInfoFromErrorMessage = (
+  errorMessage: string,
+): { userName: string; userEmail: string } | null => {
+  const userInfoPattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
+  const match = errorMessage.match(userInfoPattern)
+
+  if (match) {
+    const userName = match[1]
+    const userEmail = match[2]
+    return { userName, userEmail }
+  }
+  return null
+}
+
 export const initializeKeycloak = () => {
   const { keycloakConfig, urlBaseName } = appConfig
 
@@ -20,27 +48,8 @@ export const initializeKeycloak = () => {
     keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
   }
 
-  /**
-   * Parses the NDEx error message to extract user information
-   * @param errorMessage - The error message from NDEx API
-   * @returns User name and email if found, null otherwise
-   */
-  const parseUserInfoFromErrorMessage = (
-    errorMessage: string,
-  ): { userName: string; userEmail: string } | null => {
-    const userInfoPattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
-    const match = errorMessage.match(userInfoPattern)
-
-    if (match) {
-      const userName = match[1]
-      const userEmail = match[2]
-      return { userName, userEmail }
-    }
-    return null
-  }
-
   // Function to check if the user's email is verified
-  const checkUserVerification = async () => {
+  const checkUserVerification = async (): Promise<UserVerificationStatus> => {
     try {
       const ndexClient = new NDExClient({
         baseURL: getNDExBaseUrl(),

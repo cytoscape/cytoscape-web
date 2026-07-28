@@ -5,7 +5,7 @@ import { useHref } from 'react-router-dom'
 import { getDb } from '../data/db'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../debug'
-import { getTabId } from '../init/tabId'
+import { getTabId } from '../boot/tabId'
 import { hydrateFromCrossTabChange } from './crossTabHydration'
 import { isCrossTabSyncReady, onCrossTabSyncReady } from './crossTabSyncGate'
 import {

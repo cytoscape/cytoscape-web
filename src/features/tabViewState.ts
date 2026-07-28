@@ -127,10 +127,18 @@ export const saveTabViewState = (ui: Ui): void => {
   }
 }
 
-/** Overlay a remembered per-tab view state onto a `Ui` value. */
+/**
+ * Overlay a remembered per-tab view state onto a `Ui` value.
+ *
+ * `panels` is copied, not aliased: `tabState` may be `DEFAULT_TAB_VIEW_STATE`
+ * (both `getTabViewState`'s fallback and `withoutTabViewState` pass it), and
+ * callers go on to assign into `result.panels` — the boot's URL overlay does.
+ * Sharing the reference let one such assignment rewrite the module-level
+ * default for the rest of the session.
+ */
 export const applyTabViewState = (ui: Ui, tabState: TabViewState): Ui => ({
   ...ui,
-  panels: tabState.panels,
+  panels: { ...tabState.panels },
   tableUi: {
     ...ui.tableUi,
     activeTabIndex: tabState.tableActiveTabIndex,

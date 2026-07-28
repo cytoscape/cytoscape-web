@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { closeDb, getDb } from '../data/db'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
-import { getTabId } from '../init/tabId'
+import { getTabId } from '../boot/tabId'
 import { hydrateFromCrossTabChange } from './crossTabHydration'
 import {
   markCrossTabSyncReady,

@@ -14,6 +14,17 @@ export default defineConfig(async () => {
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
       setupFiles: ['./vitest-setup.ts'],
       coverage: {
+        // Measure app source only; generated types, tests, and test
+        // fixtures would otherwise dilute the numbers.
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: [
+          'src/**/*.{test,spec}.{ts,tsx}',
+          'src/**/*.d.ts',
+          'src/**/__mocks__/**',
+        ],
+        // text-summary for the terminal, html for local browsing
+        // (coverage/index.html), lcov for CI tooling.
+        reporter: ['text-summary', 'html', 'lcov'],
         // Coverage floor for the IndexedDB layer (REVIEW.md A8): enforced
         // whenever coverage is collected (npm run test:coverage). Floors
         // sit slightly below the measured 2026-07-20 levels (76% stmts /

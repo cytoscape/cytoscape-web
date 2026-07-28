@@ -3,12 +3,17 @@ import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../db'
 import { fetchNdexSummaries } from '../external-api/ndex'
+import { useCredentialStore } from './stores/CredentialStore'
 
 /**
  * Hook that returns a function to load network summaries from cache or NDEx.
  *
  * Checks the local cache first, then fetches any missing summaries from NDEx.
  * Fetched summaries are automatically saved to the cache.
+ *
+ * When no accessToken is passed, the token is resolved from CredentialStore
+ * only at the moment an NDEx fetch is actually needed — cached summaries
+ * resolve without waiting for the boot SSO check.
  *
  * @returns Function to load network summaries from cache or NDEx
  */
@@ -36,10 +41,12 @@ export const useLoadNetworkSummaries = () => {
 
       // fetch summaries not found in the cache in NDEx
       // and then save them to the cache
-      const newSummaries = await fetchNdexSummaries(
-        Array.from(nonCachedIds),
-        accessToken,
-      )
+      let newSummaries: NetworkSummary[] = []
+      if (nonCachedIds.size > 0) {
+        const token =
+          accessToken ?? (await useCredentialStore.getState().getToken())
+        newSummaries = await fetchNdexSummaries(Array.from(nonCachedIds), token)
+      }
       const validNewSummaries = newSummaries.filter((s) => s !== undefined)
       validNewSummaries.forEach(async (summary: NetworkSummary) => {
         await putNetworkSummaryToDb(summary)

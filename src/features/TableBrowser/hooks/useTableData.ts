@@ -1,6 +1,6 @@
 import React from 'react'
 import { GridColumnIcon } from '@glideapps/glide-data-grid'
-import { orderBy } from 'lodash'
+import orderBy from 'lodash/orderBy'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Network } from '../../../models/NetworkModel'
 import { TableDisplayConfiguration, ColumnConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'

@@ -1,4 +1,4 @@
-import { DataTableValue } from 'primereact/datatable'
+import type { DataTableValue } from 'primereact/datatable'
 
 import { ValueType,ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'

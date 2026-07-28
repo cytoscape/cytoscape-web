@@ -8,11 +8,9 @@ import {
 } from '@mui/material'
 import React from 'react'
 
-import {
-  CheckBoxOutlined as CheckBoxOutlinedIcon,
-  ContentCopy,
-  ContentPaste,
-} from '@mui/icons-material'
+import CheckBoxOutlinedIcon from '@mui/icons-material/CheckBoxOutlined'
+import ContentCopy from '@mui/icons-material/ContentCopy'
+import ContentPaste from '@mui/icons-material/ContentPaste'
 
 import { DataEditorRef, GridSelection } from '@glideapps/glide-data-grid'
 import { IdType } from '../../../models/IdType'

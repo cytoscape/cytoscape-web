@@ -1,7 +1,7 @@
 import Dexie from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getTabId } from '../../init/tabId'
+import { getTabId } from '../../boot/tabId'
 
 import { logDb } from '../../debug'
 

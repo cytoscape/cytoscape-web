@@ -24,5 +24,5 @@ export interface LayoutEngine {
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
 
     algorithm: LayoutAlgorithm,
-  ) => void
+  ) => void | Promise<void>
 }

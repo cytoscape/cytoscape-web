@@ -161,9 +161,17 @@ Query paramters will set the initial ui state and subsequently removed from the 
 **Combined Import Logic**:
 
 - If both URL networkId and import parameter exist:
-  - Import network from import parameter first
-  - Then attempt to load networkId if not in workspace
-  - Apply selection states to imported network
+  - Resolve `networkId` against NDEx first, if it is not already in the
+    workspace (`src/boot/steps/resolveDeepLink.ts`)
+  - Then process `?import=` URLs (`src/boot/steps/runUrlImports.ts`)
+  - The **last import wins** `currentNetworkId`, and selection states are
+    applied to it
+
+  This section previously described the two steps in the opposite order while
+  still stating that selections apply to the imported network. The sequencing
+  was wrong, not the outcome: imports have always been processed second and
+  have always won the current-network slot. Corrected to match the code rather
+  than changing long-standing behavior that existing deep links depend on.
 
 ## Search Parameter Management
 

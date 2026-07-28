@@ -11,8 +11,9 @@
  * the same identity across refreshes.
  *
  * MUST stay lazy. `CyDB` is constructed at module-import time, which happens
- * before `initializeTabManager()` runs in `src/init.tsx`, so the id has to be
- * resolved when a transaction is created rather than captured at construction.
+ * before `initializeTabManager()` runs in `src/boot/bootstrap.tsx`, so the id
+ * has to be resolved when a transaction is created rather than captured at
+ * construction.
  */
 
 export const CYWEB_TAB_PREFIX = 'cyweb'

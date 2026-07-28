@@ -15,11 +15,17 @@
 - [2026-07-25] Dexie transaction scope: Inside `db.transaction('rw', db.someTable, ...)`, calling a helper that reads a DIFFERENT table throws `NotFoundError`. Keep a raw in-scope reader separate from the public getter that joins across tables.
 - [2026-07-25] Per-tab state: Keep per-tab state OUT of shared IndexedDB rows rather than filtering it on read. Masking on hydration is not enough — the next local mutation writes the tab's private value back into the shared row, and a newly opened tab inherits whatever tab wrote last.
 - [2026-07-25] PanelState has four values (OPEN, CLOSED, HIDDEN, MINIMIZED). Validating against only OPEN/CLOSED silently resets hidden or minimized panels.
+- [2026-07-28] Shared defaults by reference: `applyTabViewState` spread `panels: tabState.panels`, so passing `DEFAULT_TAB_VIEW_STATE` (its own fallback, and what `withoutTabViewState` passes) handed callers the module-level default itself. The boot's URL overlay then assigned into it and rewrote the default for the session — a wrong panel state for every later read. Copy any object taken from a module-level default before returning it.
 
 ## Build & CI
 
 - [2026-03-04] Import sorting: Import sorting is no longer lint-enforced after the oxlint migration; keep imports sorted by convention.
 - [2026-03-04] No `console.log`: Production builds strip direct `console.*()` calls through Vite's Oxc minifier. Use the `debug` logger from `src/debug.ts`.
+
+## Testing
+
+- [2026-07-27] E2E unsaved-state race: `WorkspaceEditor.tsx` clears `networkModified` when a network's initial auto-layout completes (a seeded network has no stored layout, so this always fires). A Playwright test that edits a freshly seeded network and asserts its unsaved state must wait for that one-shot reset first — the summary's `hasLayout` flipping to `true` in IndexedDB is its observable side. Symptom otherwise: the first dirty-state assertion passes, a later one polls a clean row until it times out.
+- [2026-07-27] AppManager toggle detaching: `app-toggle-*` (a MUI `Switch`) is rendered only for the `enable`/`disable` actions and is swapped for a `CircularProgress` while `loadState === 'loading'`. So "element was detached from the DOM, retrying" in the remote-app specs means activation started and never completed (often a stale fixture remote reused on :4191 — `reuseExistingServer: true`), not a missing toggle.
 
 ## Agent Workflow
 

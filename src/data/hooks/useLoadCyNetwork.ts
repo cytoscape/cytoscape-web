@@ -4,6 +4,7 @@ import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
+import { useCredentialStore } from './stores/CredentialStore'
 
 /**
  * Hook that returns a function to load a CyNetwork from cache or NDEx.
@@ -39,11 +40,15 @@ export const useLoadCyNetwork = () => {
           throw new Error(errorMessage)
         }
 
-        // Network is either on NDEx or we don't know - try fetching from NDEx
+        // Network is either on NDEx or we don't know - try fetching from NDEx.
+        // Token is resolved lazily, only for this fetch path, so cached
+        // networks above never wait for the boot SSO check.
         logDb.info(
           `[${loadCyNetwork.name}]: Cache miss for ${networkId}, fetching from NDEx`,
         )
-        const cxData: Cx2 = await fetchNdexNetwork(networkId, accessToken)
+        const token =
+          accessToken ?? (await useCredentialStore.getState().getToken())
+        const cxData: Cx2 = await fetchNdexNetwork(networkId, token)
         // getCyNetworkFromCx2 validates the CX2 data before processing
         return getCyNetworkFromCx2(networkId, cxData)
       }
