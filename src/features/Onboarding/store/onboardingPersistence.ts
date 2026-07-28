@@ -20,6 +20,12 @@ export const DEFAULT_ONBOARDING_STATE: OnboardingPersistedState = {
   dismissedHints: [],
 }
 
+/** The string entries of an unknown value, or [] if it is not an array. */
+const stringsOf = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : []
+
 /** Read persisted onboarding state, falling back to defaults on any failure. */
 export const loadOnboardingState = (): OnboardingPersistedState => {
   try {
@@ -27,15 +33,21 @@ export const loadOnboardingState = (): OnboardingPersistedState => {
     if (raw == null) {
       return { ...DEFAULT_ONBOARDING_STATE }
     }
-    const parsed = JSON.parse(raw) as Partial<OnboardingPersistedState>
+    // Treated as untrusted: localStorage is user-writable and may hold a value
+    // written by an older or newer build, so each field is checked rather than
+    // asserted. Anything unexpected falls back to its default.
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) {
+      return { ...DEFAULT_ONBOARDING_STATE }
+    }
+    const record = parsed as Record<string, unknown>
     return {
-      hasSeenWelcome: parsed.hasSeenWelcome ?? false,
-      completedTours: Array.isArray(parsed.completedTours)
-        ? parsed.completedTours
-        : [],
-      dismissedHints: Array.isArray(parsed.dismissedHints)
-        ? parsed.dismissedHints
-        : [],
+      hasSeenWelcome:
+        typeof record.hasSeenWelcome === 'boolean'
+          ? record.hasSeenWelcome
+          : DEFAULT_ONBOARDING_STATE.hasSeenWelcome,
+      completedTours: stringsOf(record.completedTours),
+      dismissedHints: stringsOf(record.dismissedHints),
     }
   } catch {
     // localStorage unavailable (privacy mode) or corrupt JSON — start fresh.
