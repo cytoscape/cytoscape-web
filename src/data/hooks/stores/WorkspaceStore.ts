@@ -176,23 +176,33 @@ export const useWorkspaceStore = create(
           // reload lands on the freshly created database rather than racing the
           // delete and re-creating the old workspace.
           const releasePeers = await announceDatabaseReset()
-          const deleted = await deleteDb()
+          const outcome = await deleteDb()
 
           // Release the peers either way: they have already closed their
           // connections and are waiting, so signalling lets them reload
           // promptly instead of stalling until their timeout.
           releasePeers()
 
-          if (!deleted) {
-            // Nothing was destroyed. Resetting the store to EMPTY_WORKSPACE here
-            // would show the user an empty workspace while their data is still
-            // on disk, and the next write would persist that fiction.
+          if (outcome === 'delete-failed') {
+            // Nothing was destroyed and the connection was restored. Resetting
+            // the store to EMPTY_WORKSPACE here would show the user an empty
+            // workspace while their data is still on disk, and the next write
+            // would persist that fiction.
             logStore.error(
               `[${useWorkspaceStore.name}]: Workspace reset aborted — the database could not be deleted`,
             )
-            return
+            return {
+              status: 'failed',
+              reason: 'The database could not be deleted. Nothing was changed.',
+            }
           }
 
+          // Every remaining outcome means the data is gone or on its way out
+          // (`delete-blocked` leaves the request queued in IndexedDB, so it can
+          // land at any moment). Clearing the store is therefore the honest
+          // thing to do — keeping the workspace would let the next mutation
+          // re-persist it into the fresh database, which is exactly the ghost
+          // workspace the reset handshake exists to prevent.
           logStore.info(
             `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
           )
@@ -203,6 +213,22 @@ export const useWorkspaceStore = create(
             state.workspace = EMPTY_WORKSPACE
             return state
           })
+
+          if (outcome === 'deleted') {
+            return { status: 'reset' }
+          }
+
+          // No usable connection remains, and the other stores still hold this
+          // workspace's networks, tables and views. Only a reload can stop them
+          // from being written back.
+          const reason =
+            outcome === 'delete-blocked'
+              ? 'Another tab is still holding the database open, so the reset could not be confirmed.'
+              : 'The workspace was cleared but the database could not be reopened.'
+          logStore.error(
+            `[${useWorkspaceStore.name}]: Workspace reset needs a reload (${outcome})`,
+          )
+          return { status: 'reload-required', reason }
         },
 
         setNetworkModified: (networkId: IdType, isModified: boolean) => {

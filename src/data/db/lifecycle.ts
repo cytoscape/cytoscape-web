@@ -14,8 +14,9 @@
  *
  * 1. deleter posts `DATABASE_DELETED`
  * 2. peers close their DB connection and post `DATABASE_DELETED_ACK`
- * 3. deleter waits a short grace period, then deletes
- * 4. deleter posts `DATABASE_RESET_COMPLETE`
+ * 3. deleter waits a short grace period, then deletes (bounded — see
+ *    `DELETE_TIMEOUT_MS` in `src/data/db/index.ts`)
+ * 4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
  * 5. peers reload — against a database that is already gone and freshly created
  *
  * Every wait is bounded: a wedged or closing tab must never leave the user
@@ -23,6 +24,13 @@
  * stuck on a blank page. BroadcastChannel is the right transport here because
  * this is a liveness signal — there is nothing to replay, and it has to arrive
  * before the data it refers to is gone.
+ *
+ * The handshake makes the release prompt and observable; it is not the only
+ * thing that produces one. `deleteDatabase` also fires `versionchange` at every
+ * open connection, and Dexie's default handler closes the database in response,
+ * so a peer that never processes the message above still lets go once its event
+ * loop turns. What the handshake adds is ordering — peers reload *after* the
+ * delete rather than racing it and re-creating the workspace they just dropped.
  */
 
 import { closeDb } from '@/data/db'
@@ -45,8 +53,22 @@ export const PEER_CLOSE_GRACE_MS = 300
 /**
  * How long a peer waits for `DATABASE_RESET_COMPLETE` before reloading anyway,
  * in case the deleting tab was closed mid-reset.
+ *
+ * Must exceed the deleter's own worst case — `PEER_CLOSE_GRACE_MS` plus
+ * `DELETE_TIMEOUT_MS` from `src/data/db/index.ts` — so it fires only when the
+ * deleter really is gone rather than while it is still working.
+ * `resetWorkspace` signals completion on every outcome (success, failure, and
+ * give-up), so a peer that times out has heard nothing at all. Written as a
+ * literal rather than imported from the db module: this is evaluated at module
+ * load, and every test that mocks `@/data/db` would then have to supply it.
+ * `lifecycle.test.ts` guards the relationship.
+ *
+ * Reloading early is safe but pointless: IndexedDB processes a database's
+ * connection queue in order, so an `open()` issued while a delete is still
+ * pending waits for that delete rather than blocking it. It just means the
+ * reloading tab sits on a blank boot until the delete resolves.
  */
-export const RESET_COMPLETE_TIMEOUT_MS = 3000
+export const RESET_COMPLETE_TIMEOUT_MS = 6300
 
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))

@@ -108,6 +108,19 @@ re-persist that change locally, minting a fresh change record for every other ta
 to hydrate in turn. Every store that hydration writes to must consult
 `isHydrating()` before persisting.
 
+**Batches are applied one at a time, in arrival order.** The synchronous apply
+phase orders changes _within_ a batch and says nothing about ordering _between_
+batches, so an unserialized `hydrateFromCrossTabChange` let two batches overlap in
+their fetch phases. Since every case re-reads the row's current value rather than
+applying the change's delta, the batch that started earlier holds the staler read
+— and if it also contains a slow row (a `cyNetworks` read deserializes up to
+`maxNetworkElementsThreshold` elements) it finishes last and overwrites the newer
+value. Nothing corrects that afterwards: the store disagrees with IndexedDB until
+the next change to the same row, and a local edit in between persists the stale
+value back out to every other tab. A single promise chain in
+`crossTabHydration.ts` serializes them; it costs nothing in practice because
+`dedupeChanges` collapses a queued batch to one read per row.
+
 ### 2.4 Initialization gate
 
 `SyncTabsAction` mounts with `AppShell`, before `initializeAppShell` has finished
@@ -197,8 +210,9 @@ handshake in `src/data/db/lifecycle.ts`:
 
 1. deleter posts `DATABASE_DELETED`
 2. peers close their connection and post `DATABASE_DELETED_ACK`
-3. deleter waits a short grace period, then deletes
-4. deleter posts `DATABASE_RESET_COMPLETE`
+3. deleter waits a short grace period, then deletes — bounded by
+   `DELETE_TIMEOUT_MS`
+4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
 5. peers reload, against a database that is already gone and recreated
 
 Every wait is bounded, in both directions: a wedged tab must not stop a user
@@ -206,6 +220,34 @@ resetting their workspace, and a deleter that dies must not leave peers stuck.
 The previous version announced and deleted immediately while peers reloaded at
 once, so a reload could re-create the database mid-delete — the "ghost workspace"
 the announcement existed to prevent.
+
+The handshake makes the release prompt and observable; it is not the only thing
+that produces one. `deleteDatabase` also fires `versionchange` at every open
+connection and Dexie's default handler closes the database in response, so a peer
+that never processes the announcement still lets go once its event loop turns.
+What the handshake adds is _ordering_ — peers reload after the delete instead of
+racing it. `RESET_COMPLETE_TIMEOUT_MS` is therefore set above the deleter's own
+worst case, so the fallback reload means "the deleter died", not "the deleter is
+still working" (`lifecycle.test.ts` guards that relationship).
+
+`step 3` cannot wait forever. IndexedDB fires `blocked` and waits with no timeout
+of its own, so `deleteDb` races the delete against `DELETE_TIMEOUT_MS` and reports
+one of four outcomes rather than a single boolean:
+
+| outcome          | data                | connection  | caller must               |
+| ---------------- | ------------------- | ----------- | ------------------------- |
+| `deleted`        | gone                | fresh, open | clear its stores          |
+| `delete-failed`  | intact              | reopened    | keep state, tell the user |
+| `delete-blocked` | delete still queued | none        | clear state and reload    |
+| `reopen-failed`  | gone                | none        | clear state and reload    |
+
+The three non-`deleted` outcomes exist because they need different handling and
+used to be indistinguishable. In particular, `reopen-failed` means the data IS
+gone: keeping the in-memory workspace there (the old behavior) let the next
+mutation re-persist it into the freshly created database — the ghost workspace
+again, arriving by a different route. `resetWorkspace` returns a
+`WorkspaceResetOutcome` so its callers can show an error or force a reload
+instead of chaining work behind a promise that might never settle.
 
 BroadcastChannel is correct here: this is a liveness signal, not data. There is
 nothing to replay, and it has to arrive _before_ the data it refers to is gone.

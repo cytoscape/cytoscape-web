@@ -51,8 +51,9 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
-    // deleteDb reports success/failure; resetWorkspace only resets on success
-    deleteDb: vi.fn().mockResolvedValue(true),
+    // deleteDb reports which of four outcomes happened (see DeleteDbOutcome);
+    // only 'deleted' is a completed reset.
+    deleteDb: vi.fn().mockResolvedValue('deleted'),
   }
 })
 
@@ -569,6 +570,17 @@ describe('useWorkspaceStore', () => {
       expect(result.current.workspace.isRemote).toBe(false)
     })
 
+    it('reports a completed reset', async () => {
+      const { result } = renderHook(() => useWorkspaceStore())
+
+      let outcome: any
+      await act(async () => {
+        outcome = await result.current.resetWorkspace()
+      })
+
+      expect(outcome).toEqual({ status: 'reset' })
+    })
+
     /**
      * `deleteDb` reports failure rather than throwing (callers await it without a
      * try/catch). Resetting the store anyway would show the user an empty
@@ -577,7 +589,7 @@ describe('useWorkspaceStore', () => {
      */
     it('does not clear the workspace when the database could not be deleted', async () => {
       const { deleteDb } = await import('../../db')
-      vi.mocked(deleteDb).mockResolvedValueOnce(false)
+      vi.mocked(deleteDb).mockResolvedValueOnce('delete-failed')
 
       const { result } = renderHook(() => useWorkspaceStore())
 
@@ -587,13 +599,69 @@ describe('useWorkspaceStore', () => {
         result.current.addNetworkIds(['network-1'])
       })
 
+      let outcome: any
       await act(async () => {
-        await result.current.resetWorkspace()
+        outcome = await result.current.resetWorkspace()
       })
 
+      expect(outcome.status).toBe('failed')
       expect(result.current.workspace.id).toBe('workspace-1')
       expect(result.current.workspace.name).toBe('Test Workspace')
       expect(result.current.workspace.networkIds).toEqual(['network-1'])
+    })
+
+    /**
+     * The database IS gone in this case — it was `db.open()` that failed, not
+     * `Dexie.delete()`. Keeping the workspace in memory (the old behavior, which
+     * treated this identically to a failed delete) meant the next mutation
+     * re-persisted it into the fresh database: a partial ghost workspace, which
+     * is what the reset handshake exists to prevent.
+     */
+    it('clears the workspace and demands a reload when the database could not be reopened', async () => {
+      const { deleteDb } = await import('../../db')
+      vi.mocked(deleteDb).mockResolvedValueOnce('reopen-failed')
+
+      const { result } = renderHook(() => useWorkspaceStore())
+
+      act(() => {
+        result.current.setId('workspace-1')
+        result.current.addNetworkIds(['network-1'])
+      })
+
+      let outcome: any
+      await act(async () => {
+        outcome = await result.current.resetWorkspace()
+      })
+
+      expect(outcome.status).toBe('reload-required')
+      expect(outcome.reason).toBeTruthy()
+      expect(result.current.workspace.id).toBe('')
+      expect(result.current.workspace.networkIds).toEqual([])
+    })
+
+    /**
+     * A blocked delete stays queued inside IndexedDB, so it can land at any
+     * moment. Treating it as "nothing happened" would leave this tab writing to
+     * a database that is about to be destroyed.
+     */
+    it('clears the workspace and demands a reload when the delete was blocked', async () => {
+      const { deleteDb } = await import('../../db')
+      vi.mocked(deleteDb).mockResolvedValueOnce('delete-blocked')
+
+      const { result } = renderHook(() => useWorkspaceStore())
+
+      act(() => {
+        result.current.setId('workspace-1')
+        result.current.addNetworkIds(['network-1'])
+      })
+
+      let outcome: any
+      await act(async () => {
+        outcome = await result.current.resetWorkspace()
+      })
+
+      expect(outcome.status).toBe('reload-required')
+      expect(result.current.workspace.networkIds).toEqual([])
     })
   })
 

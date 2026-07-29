@@ -40,7 +40,11 @@ The database uses version-based migrations. The current version is defined in `c
 - `initializeDb()`: Opens and initializes the database connection
 - `getDb()`: Returns the database instance
 - `closeDb()`: Closes the database connection
-- `deleteDb()`: Deletes the entire database (use with caution)
+- `deleteDb()`: Deletes the entire database and reopens a fresh one (use with
+  caution). Never throws; returns a `DeleteDbOutcome` — only `'deleted'` means the
+  reset completed, and the other three values each need different handling by the
+  caller. The delete is bounded by `DELETE_TIMEOUT_MS` because IndexedDB waits
+  indefinitely for other connections to close.
 - `getDatabaseVersion()`: Returns the current database version
 
 ### Network Operations

@@ -324,30 +324,145 @@ export const closeDb = async (): Promise<void> => {
 }
 
 /**
- * Delete the current DB and create a new one
+ * What actually happened in {@link deleteDb}.
  *
- * - This should create the completely new DB with no data.
- *
+ * A single boolean used to cover all of these, which meant "the delete failed
+ * and your data is intact" and "your data is gone but I could not reopen the
+ * database" were reported identically — and the caller guessed wrong about
+ * which one it had. Only `deleted` is safe to treat as a completed reset.
  */
-export const deleteDb = async (): Promise<boolean> => {
+export type DeleteDbOutcome =
+  /** Destroyed, and a fresh empty database is open and ready. */
+  | 'deleted'
+  /** Nothing was destroyed. The previous data is intact and the DB is open. */
+  | 'delete-failed'
+  /**
+   * The delete did not finish within {@link DELETE_TIMEOUT_MS} — another
+   * connection is holding the database open. IndexedDB keeps the request
+   * queued, so it may still complete at any moment: the data must be treated
+   * as gone, and this tab has no usable connection.
+   */
+  | 'delete-blocked'
+  /**
+   * The database is gone (or in an unknown state) and no usable connection
+   * remains. Callers must not keep in-memory state that could be written back.
+   */
+  | 'reopen-failed'
+
+/**
+ * How long to wait for `deleteDatabase` before giving up on it.
+ *
+ * IndexedDB will not delete a database that still has open connections: it
+ * fires `blocked` and waits — with no timeout of its own — until every
+ * connection closes. `src/data/db/lifecycle.ts` asks the other tabs to let go
+ * first, but that handshake is best-effort by design (there is no tab census),
+ * so this is the backstop that keeps a wedged peer from hanging the reset
+ * forever with no way out for the user.
+ */
+export const DELETE_TIMEOUT_MS = 5000
+
+/**
+ * Delete the database, bounded in time, reporting whether it was blocked.
+ *
+ * `Dexie.delete()` is not used because it builds its own throwaway instance,
+ * which leaves no way to subscribe to `blocked`. Same work, one observable
+ * instance.
+ */
+const deleteDatabaseBounded = async (
+  timeoutMs: number,
+): Promise<'deleted' | 'blocked'> => {
+  // `addons: []` keeps dexie-observable off the throwaway deleter instance;
+  // this is what Dexie's own static `delete()` does.
+  const deleter = new Dexie(DB_NAME, { addons: [] })
+  deleter.on('blocked', () => {
+    logDb.warn(
+      `[DeleteDB] ${DB_NAME} delete is blocked: another connection still has ` +
+        'it open. Waiting for it to close.',
+    )
+  })
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deletion = deleter.delete().then((): 'deleted' => 'deleted')
+
+  // A rejection here propagates to the caller through the race, which is also
+  // what keeps it handled.
+  const result = await Promise.race([
+    deletion,
+    new Promise<'blocked'>((resolve) => {
+      timer = setTimeout(() => resolve('blocked'), timeoutMs)
+    }),
+  ])
+  clearTimeout(timer)
+
+  if (result === 'blocked') {
+    // The request stays queued in IndexedDB after we stop waiting for it, so
+    // its eventual settlement must not surface as an unhandled rejection.
+    void deletion.catch((err) => {
+      logDb.error('[DeleteDB] The queued delete request later failed', err)
+    })
+  }
+
+  return result
+}
+
+/** Point the module-level `db` at a fresh, open instance. */
+const reopenDb = async (): Promise<boolean> => {
   try {
-    if (db) {
-      db.close()
-      logDb.info('[DeleteDB] DB is closed')
-    }
-    await Dexie.delete(DB_NAME)
-    logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
     db = new CyDB(DB_NAME)
     await db.open()
     logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
     return true
   } catch (err) {
-    // Reported rather than thrown: existing callers (workspace import, tests)
-    // await this without a try/catch, so throwing would change their behavior.
-    // Callers that must not proceed on failure check the return value.
-    logDb.error('[DeleteDB] Failed to reset DB', err)
+    logDb.error(`[DeleteDB] Failed to reopen ${DB_NAME}`, err)
     return false
   }
+}
+
+/**
+ * Delete the current DB and create a new one.
+ *
+ * Never throws: existing callers (workspace import, tests) await this without a
+ * try/catch. Callers that must not proceed on failure check the outcome — see
+ * {@link DeleteDbOutcome}, and note that three of the four values mean "do not
+ * treat this as a completed reset".
+ */
+export const deleteDb = async (
+  options: { timeoutMs?: number } = {},
+): Promise<DeleteDbOutcome> => {
+  const timeoutMs = options.timeoutMs ?? DELETE_TIMEOUT_MS
+
+  try {
+    if (db) {
+      db.close()
+      logDb.info('[DeleteDB] DB is closed')
+    }
+  } catch (err) {
+    logDb.warn('[DeleteDB] Failed to close the database before deleting', err)
+  }
+
+  let result: 'deleted' | 'blocked'
+  try {
+    result = await deleteDatabaseBounded(timeoutMs)
+  } catch (err) {
+    logDb.error('[DeleteDB] Failed to delete DB', err)
+    // Nothing was destroyed, but `db.close()` above set Dexie's `autoOpen` to
+    // false and a sticky DatabaseClosed error, so without this the tab would
+    // keep its data on disk and be unable to read or write any of it.
+    return (await reopenDb()) ? 'delete-failed' : 'reopen-failed'
+  }
+
+  if (result === 'blocked') {
+    // Deliberately not reopened: an open() issued now queues behind the
+    // still-pending delete, so it would block for as long as the peer does.
+    logDb.error(
+      `[DeleteDB] ${DB_NAME} was not deleted within ${timeoutMs}ms — another ` +
+        'tab is holding it open. The delete is still queued.',
+    )
+    return 'delete-blocked'
+  }
+
+  logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
+  return (await reopenDb()) ? 'deleted' : 'reopen-failed'
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]

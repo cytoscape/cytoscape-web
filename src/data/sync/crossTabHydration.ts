@@ -341,9 +341,13 @@ const prepareChange = async (
  * The flag is still required: without it, applying a peer's change would
  * re-persist it locally, minting a fresh change record that every other tab
  * would then hydrate.
+ *
+ * Batches are applied one at a time, in arrival order — see
+ * {@link hydrateFromCrossTabChange}.
  */
-export const hydrateFromCrossTabChange = async (
+const applyBatch = async (
   changes: CrossTabChange[],
+  guard: { abandoned: boolean } = { abandoned: false },
 ): Promise<void> => {
   // --- Phase 1: fetch (async, unsuppressed) ---
   const prepared = await Promise.all(
@@ -367,6 +371,16 @@ export const hydrateFromCrossTabChange = async (
     return
   }
 
+  // The queue gave up on this batch and moved on, so a later batch may already
+  // have applied fresher values for these rows. Applying now would put the stale
+  // ones back — the exact reordering the queue exists to prevent.
+  if (guard.abandoned) {
+    logUi.warn(
+      `[Hydration] Dropping ${tasks.length} apply task(s) from an abandoned batch`,
+    )
+    return
+  }
+
   // --- Phase 2: apply (synchronous, suppressed) ---
   setHydrating(true)
   try {
@@ -381,4 +395,73 @@ export const hydrateFromCrossTabChange = async (
   } finally {
     setHydrating(false)
   }
+}
+
+/**
+ * Tail of the hydration queue. Never rejects — a failed batch must not stop the
+ * ones behind it.
+ */
+let hydrationQueue: Promise<void> = Promise.resolve()
+
+/**
+ * How long a single batch may hold the queue.
+ *
+ * Serializing batches means one that never settles would stop cross-tab sync for
+ * the lifetime of the page, silently. Reads can genuinely block for a while — an
+ * `open()` issued while another tab's `deleteDatabase` is pending waits for that
+ * delete — so this is set well above any legitimate wait and only fires on a real
+ * wedge.
+ */
+export const HYDRATION_BATCH_TIMEOUT_MS = 30_000
+
+/**
+ * Apply another tab's IndexedDB changes, one batch at a time.
+ *
+ * The apply phase of {@link applyBatch} is synchronous, which orders the changes
+ * WITHIN a batch but says nothing about ordering BETWEEN batches. Left
+ * unserialized, two batches overlap in their async fetch phases, and since every
+ * `prepareChange` re-reads the row's current value rather than applying the
+ * change's delta, the batch that started earlier holds the staler read. If it
+ * also happens to contain a slow row (a `cyNetworks` read deserializes up to
+ * `maxNetworkElementsThreshold` elements) it finishes last and overwrites the
+ * newer value with the stale one. Nothing corrects that afterwards: the store
+ * now disagrees with IndexedDB until the next change to the same row, and a
+ * local edit in between persists the stale value back out to every other tab.
+ *
+ * Queueing costs nothing in the common case — `dedupeChanges` collapses each
+ * row to one read, so a batch that waits is also a batch that got cheaper.
+ *
+ * Each batch's turn is bounded by {@link HYDRATION_BATCH_TIMEOUT_MS}: a queue is
+ * only an improvement if one wedged batch cannot take every later one down with
+ * it. An abandoned batch is not merely skipped — it is marked, so if its reads do
+ * eventually resolve it drops its apply tasks instead of writing values that a
+ * later batch has already superseded.
+ */
+export const hydrateFromCrossTabChange = async (
+  changes: CrossTabChange[],
+): Promise<void> => {
+  hydrationQueue = hydrationQueue.then(async () => {
+    const guard = { abandoned: false }
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      await Promise.race([
+        applyBatch(changes, guard),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(() => {
+            guard.abandoned = true
+            logUi.error(
+              `[Hydration] A batch did not finish within ${HYDRATION_BATCH_TIMEOUT_MS}ms; ` +
+                'giving up on it so later changes still hydrate',
+            )
+            resolve()
+          }, HYDRATION_BATCH_TIMEOUT_MS)
+        }),
+      ])
+    } catch (err) {
+      logUi.error('[Hydration] Batch failed', err)
+    } finally {
+      clearTimeout(timer)
+    }
+  })
+  return hydrationQueue
 }

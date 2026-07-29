@@ -7,7 +7,7 @@ import UploadIcon from '@mui/icons-material/Upload'
 import debounce from 'lodash/debounce'
 import { MenuItem } from 'primereact/menuitem'
 import { useCallback, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useHref, useNavigate } from 'react-router-dom'
 
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
@@ -114,6 +114,9 @@ export const DataMenu = () => {
   }
 
   const navigate = useNavigate()
+  // Root path with the router basename applied, so a deployment under a
+  // sub-path does not reload to the wrong origin root.
+  const rootHref = useHref('/')
   const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
 
   const handleDeleteAllNetworks = (): void => {
@@ -130,12 +133,29 @@ export const DataMenu = () => {
     setOpenResetLocalWorkspaceDialog(false)
   }
 
+  /**
+   * `ConfirmationDialog` has already closed itself by the time this runs, so
+   * every path from here has to end in something the user can see: previously a
+   * reset that could not complete simply did nothing — no navigation, no error,
+   * and (before `deleteDb` was bounded) no end either, because a peer tab holding
+   * the database open left `Dexie.delete` waiting indefinitely.
+   */
   const handleResetLocalWorkspace = (): void => {
     resetWorkspace()
-      .then(() => {
-        handleCloseResetLocalWorkspaceDialog()
-      })
-      .then(() => {
+      .then((outcome) => {
+        if (outcome.status === 'failed') {
+          alert(`Failed to reset workspace. ${outcome.reason}`)
+          return
+        }
+
+        if (outcome.status === 'reload-required') {
+          // The stores still hold the old workspace and there is no usable
+          // database connection, so reload immediately rather than debouncing.
+          alert(`${outcome.reason} Reloading Cytoscape Web.`)
+          window.location.assign(rootHref)
+          return
+        }
+
         // For safety: debounce the navigation to prevent any potential timing issues
         debounce(() => {
           navigate('/')
@@ -143,6 +163,7 @@ export const DataMenu = () => {
         }, 1500)()
       })
       .catch((error) => {
+        handleCloseResetLocalWorkspaceDialog()
         logUi.error(
           `[${ResetLocalWorkspaceMenuItem.name}]:[${handleResetLocalWorkspace.name}] Failed to reset workspace`,
           error,

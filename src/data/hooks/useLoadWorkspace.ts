@@ -75,7 +75,16 @@ export const useLoadWorkspace = (
     try {
       // Step 1: Clear the database
       logDb.info('[loadWorkspace] Clearing database')
-      await deleteDb()
+      const outcome = await deleteDb()
+      if (outcome !== 'deleted') {
+        // Writing the imported workspace now would either land in a database
+        // whose delete is still queued (it would be destroyed underneath us) or
+        // fail row by row against a connection that never reopened. The outer
+        // catch rethrows, so the caller reports the failure.
+        throw new Error(
+          `Cannot import a workspace: the local database was not cleared (${outcome})`,
+        )
+      }
 
       // Step 2: Create and write workspace to DB
       const workspace: Workspace = {

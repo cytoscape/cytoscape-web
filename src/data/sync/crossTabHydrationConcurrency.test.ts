@@ -37,7 +37,10 @@ vi.mock('@/data/db', () => ({
 }))
 
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
-import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
+import {
+  hydrateFromCrossTabChange,
+  HYDRATION_BATCH_TIMEOUT_MS,
+} from '@/data/sync/crossTabHydration'
 
 // Static imports: a dynamic import() inside a test body charges module load
 // time to the 1s per-test timeout, which tips over under full-suite load.
@@ -92,6 +95,90 @@ describe('cross-tab hydration: concurrent local writes', () => {
     ])
 
     expect(putNetworkSummaryToDb).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Two batches used to overlap in their async fetch phases. Every
+   * `prepareChange` re-reads the row's current value rather than applying the
+   * change's delta, so the batch that started earlier holds the staler read — and
+   * if it also contains a slow row it finishes last and overwrites the newer
+   * value. Nothing corrects that afterwards, so the tab keeps serving a value
+   * IndexedDB no longer holds until the next change to the same row.
+   */
+  it('applies overlapping batches in arrival order', async () => {
+    let releaseFirstRead: (value: any) => void = () => {}
+    getNetworkSummaryFromDb
+      // Batch 1's read: held open, and it read the older value.
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          releaseFirstRead = resolve
+        }),
+      )
+      // Batch 2's read: resolves immediately, with the newer value.
+      .mockResolvedValueOnce(summaryFixture('second'))
+
+    const first = hydrateFromCrossTabChange([
+      { type: 2, table: 'summaries', key: 'net-1' },
+    ])
+    await Promise.resolve()
+
+    const second = hydrateFromCrossTabChange([
+      { type: 2, table: 'summaries', key: 'net-1' },
+    ])
+
+    releaseFirstRead(summaryFixture('first'))
+    await Promise.all([first, second])
+
+    expect(
+      useNetworkSummaryStore.getState().summaries['net-1'].name,
+      'the later batch must win, whatever order the reads resolved in',
+    ).toBe('second')
+  })
+
+  /**
+   * The queue is only an improvement if one stuck batch cannot stop every later
+   * one: without a bound, a read that never settles would silently end cross-tab
+   * sync for the lifetime of the page.
+   */
+  it('gives up on a batch that never finishes, and drops its late apply', async () => {
+    vi.useFakeTimers()
+    try {
+      let releaseWedged: (value: any) => void = () => {}
+      getNetworkSummaryFromDb
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            releaseWedged = resolve
+          }),
+        )
+        .mockResolvedValueOnce(summaryFixture('after the wedge'))
+
+      const wedged = hydrateFromCrossTabChange([
+        { type: 2, table: 'summaries', key: 'net-1' },
+      ])
+      const next = hydrateFromCrossTabChange([
+        { type: 2, table: 'summaries', key: 'net-1' },
+      ])
+
+      await vi.advanceTimersByTimeAsync(HYDRATION_BATCH_TIMEOUT_MS + 1)
+      await wedged
+      await next
+
+      expect(
+        useNetworkSummaryStore.getState().summaries['net-1'].name,
+        'the batch behind the wedged one must still hydrate',
+      ).toBe('after the wedge')
+
+      // The abandoned batch's read finally lands. It must not resurrect the value
+      // the batch behind it already superseded.
+      releaseWedged(summaryFixture('stale, from the wedged batch'))
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(useNetworkSummaryStore.getState().summaries['net-1'].name).toBe(
+        'after the wedge',
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('reads each (table, key) once when a batch repeats it', async () => {
