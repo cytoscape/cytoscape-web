@@ -5,6 +5,7 @@ import { Alert,Box, Typography } from '@mui/material'
 import * as React from 'react'
 
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { AUTHORABLE_CUSTOM_GRAPHIC_KINDS } from '../utils/constants'
 
 export type CustomGraphicKind =
   | typeof CustomGraphicsNameType.PieChart
@@ -15,12 +16,18 @@ interface SelectTypeStepProps {
   selectedKind: CustomGraphicKind
   onKindChange: (kind: CustomGraphicKind) => void
   hasNumericProperties?: boolean
+  /**
+   * Kinds to offer. Defaults to the authorable set, which excludes Image —
+   * callers editing a value that is already an image must pass it explicitly.
+   */
+  availableKinds?: readonly CustomGraphicKind[]
 }
 
 export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
   selectedKind,
   onKindChange,
   hasNumericProperties = true,
+  availableKinds = AUTHORABLE_CUSTOM_GRAPHIC_KINDS,
 }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -43,13 +50,7 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
           py: 4,
         }}
       >
-        {(
-          [
-            CustomGraphicsNameType.PieChart,
-            CustomGraphicsNameType.RingChart,
-            CustomGraphicsNameType.Image,
-          ] as const
-        ).map((k) => {
+        {availableKinds.map((k) => {
           const selected = selectedKind === k
           const Icon =
             k === CustomGraphicsNameType.PieChart

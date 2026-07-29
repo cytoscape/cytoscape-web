@@ -32,7 +32,10 @@ import { AttributeName } from '../../../../models/TableModel/AttributeName'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  CustomGraphicsNameType,
+  isImageCustomGraphicsName,
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   PieChartPropertiesType,
   RingChartPropertiesType,
@@ -42,9 +45,14 @@ import { ColorsForm } from './Forms/ColorsForm'
 import { PropertiesForm } from './Forms/PropertiesForm'
 import { ImageForm } from './Forms/ImageForm'
 import { useCustomGraphicState } from './hooks/useCustomGraphicState'
-import { CHART_CONSTANTS, COLORS } from './utils/constants'
+import {
+  AUTHORABLE_CUSTOM_GRAPHIC_KINDS,
+  CHART_CONSTANTS,
+  COLORS,
+} from './utils/constants'
 import { isRingChartProperties, isImageProperties } from './utils/typeGuards'
 import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
+import { CustomGraphicKind } from './WizardSteps/SelectTypeStep'
 
 /** Props for the custom graphics dialog */
 interface CustomGraphicDialogProps {
@@ -86,6 +94,22 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   // Determine if this is a new chart or editing existing
   const isNewChart =
     !initialValue || initialValue.name === CustomGraphicsNameType.None
+
+  // The graphic kinds this dialog offers. Authoring an image from scratch is
+  // withheld (see AUTHORABLE_CUSTOM_GRAPHIC_KINDS for why), but a value that
+  // already IS an image — imported from a CX2, or authored before the
+  // restriction — must stay selectable: otherwise the dialog opens with `kind`
+  // hydrated to image and no card highlighted, and the only way out is clicking
+  // Pie, which silently discards the image.
+  const editingExistingImage =
+    initialValue != null && isImageCustomGraphicsName(initialValue.name)
+  const availableKinds = React.useMemo<readonly CustomGraphicKind[]>(
+    () =>
+      editingExistingImage
+        ? [...AUTHORABLE_CUSTOM_GRAPHIC_KINDS, CustomGraphicsNameType.Image]
+        : AUTHORABLE_CUSTOM_GRAPHIC_KINDS,
+    [editingExistingImage],
+  )
 
   // Type-safe alias for chart properties — used in chart-guarded JSX blocks
   // where TypeScript can't correlate `kind` with `currentProps` type.
@@ -332,13 +356,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         mt: 4,
                       }}
                     >
-                      {(
-                        [
-                          CustomGraphicsNameType.PieChart,
-                          CustomGraphicsNameType.RingChart,
-                          CustomGraphicsNameType.Image,
-                        ] as const
-                      ).map((k) => {
+                      {availableKinds.map((k) => {
                         const selected = kind === k
                         const Icon =
                           k === CustomGraphicsNameType.PieChart
@@ -670,13 +688,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         mt: 2,
                       }}
                     >
-                      {(
-                        [
-                          CustomGraphicsNameType.PieChart,
-                          CustomGraphicsNameType.RingChart,
-                          CustomGraphicsNameType.Image,
-                        ] as const
-                      ).map((k) => {
+                      {availableKinds.map((k) => {
                         const selected = kind === k
                         const Icon =
                           k === CustomGraphicsNameType.PieChart
