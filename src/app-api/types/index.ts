@@ -1,8 +1,24 @@
 // src/app-api/types/index.ts
 
 // ── App API result types ─────────────────────────────────────────
-export type { ApiError, ApiFailure, ApiResult, ApiSuccess } from './ApiResult'
-export { ApiErrorCode, fail, isFail, isOk, ok } from './ApiResult'
+export type {
+  ApiError,
+  ApiErrorCodeDef,
+  ApiErrorSeverity,
+  ApiFailure,
+  ApiResult,
+  ApiSuccess,
+} from './ApiResult'
+export {
+  AppCodes,
+  ElementCodes,
+  fail,
+  isFail,
+  isOk,
+  ok,
+  StyleCodes,
+  TableCodes,
+} from './ApiResult'
 
 // ── App lifecycle types ─────────────────────────────────────────
 export type { AppContext, AppContextApis, CyAppWithLifecycle } from './AppContext'

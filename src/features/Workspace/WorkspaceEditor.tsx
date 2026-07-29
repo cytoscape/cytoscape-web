@@ -7,7 +7,6 @@ import omit from 'lodash/omit'
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
-import { useCredentialStore } from '../../data/hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -32,6 +31,7 @@ import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchy
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
+import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
@@ -47,6 +47,8 @@ const JoinTableToNetworkForm = lazy(() =>
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
 import { AppConfigContext } from '../../AppConfigContext'
+import { markBoot } from '../../boot/metrics/bootMarks'
+import { publishBootReport } from '../../boot/metrics/bootReport'
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
@@ -82,6 +84,13 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Last boot milestone: the editor is on screen, so no part of the boot shell
+  // remains. The canvas may still be drawing network data beyond this point.
+  useEffect(() => {
+    markBoot('workspace-editor-mounted')
+    publishBootReport()
+  }, [])
+
   // Indicates if a network failed to load
   const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
@@ -91,10 +100,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
-
-  const getToken: () => Promise<string> = useCredentialStore(
-    (state) => state.getToken,
-  )
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -222,14 +227,11 @@ const WorkSpaceEditor = (): JSX.Element => {
    */
   const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
     try {
-      const currentToken = await getToken()
-
-      const summaryMap = await loadNetworkSummaries([networkId], currentToken)
+      // Cached summaries/content resolve immediately; the loaders only wait
+      // for the auth token when they actually fetch from NDEx (cache miss).
+      const summaryMap = await loadNetworkSummaries([networkId])
       const summary = summaryMap[networkId]
-      const cyNetworkData: CyNetwork = await loadCyNetwork(
-        networkId,
-        currentToken,
-      )
+      const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
       const {
         network,
         nodeTable,
@@ -261,6 +263,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           hcxVersion as string,
           summary,
           nodeTable,
+          edgeTable,
         )
 
         if (!validationResult.isValid) {
@@ -278,9 +281,9 @@ const WorkSpaceEditor = (): JSX.Element => {
       if (!summary.hasLayout) {
         const totalNetworkElements = network.nodes.length + network.edges.length
         const defaultLayout = getDefaultLayout(
-          summary,
           totalNetworkElements,
           maxNetworkElementsThreshold,
+          isHCX(summary),
         )
 
         if (defaultLayout !== undefined) {
@@ -292,21 +295,26 @@ const WorkSpaceEditor = (): JSX.Element => {
             const summaryWithLayout = { ...summary, hasLayout: true }
 
             setIsRunning(true)
-            const handleLayoutComplete = (
-              positionMap: Map<IdType, [number, number]>,
-            ): void => {
-              updateNodePositions(networkId, positionMap)
-              const fitFunction = getFunction('cyjs', 'fit', networkId)
-
-              // Fit the viewport to center the initial layout
-              if (fitFunction !== undefined) {
-                fitFunction()
-              }
-
-              updateSummary(networkId, summaryWithLayout)
-              setIsRunning(false)
-              setNetworkModified(networkId, false)
-            }
+            const handleLayoutComplete = createLayoutCompletionHandler(
+              networkId,
+              {
+                // Read from the store directly to get the value current at
+                // callback time rather than the stale closure value.
+                isNetworkModified: (id) =>
+                  useWorkspaceStore.getState().workspace.networkModified[id] ===
+                  true,
+                updateNodePositions,
+                fitViewport: (id) => {
+                  const fitFunction = getFunction('cyjs', 'fit', id)
+                  if (fitFunction !== undefined) {
+                    fitFunction()
+                  }
+                },
+                markLayoutApplied: (id) => updateSummary(id, summaryWithLayout),
+                setLayoutRunning: setIsRunning,
+                setNetworkModified,
+              },
+            )
 
             layoutEngine.apply(
               network.nodes,

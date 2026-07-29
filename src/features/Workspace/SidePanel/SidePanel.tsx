@@ -8,6 +8,9 @@ import { IdType } from '../../../models/IdType'
 import { isSubnetwork } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { renderPanelContents, usePanelEntries } from './TabContents'
 
+
+const TABS_HEIGHT = 40
+
 /**
  * The collapsible side panel for extra UI components.
  *
@@ -126,6 +129,7 @@ export const SidePanel = (): JSX.Element => {
           paddingLeft: '2.5em',
           m: 0,
           backgroundColor: (theme) => theme.palette.background.subtle,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <Tabs
@@ -137,14 +141,14 @@ export const SidePanel = (): JSX.Element => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            '& button': {
-              height: '2.5em',
-              minHeight: '2.5em',
-            },
-            height: '2.5em',
-            minHeight: '2.5em',
             flexGrow: 1,
             margin: 0,
+            height: TABS_HEIGHT,
+            minHeight: TABS_HEIGHT,
+            '& button': {
+              minHeight: TABS_HEIGHT,
+              height: TABS_HEIGHT,
+            },
           }}
         >
           {entries.map((entry, index) => (

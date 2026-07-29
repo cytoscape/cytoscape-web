@@ -165,6 +165,10 @@ export const SubNetworkPanel = ({
     selectedHierarchyNodeNames: string[],
   ) => void = useSubNetworkStore((state) => state.setSelectedHierarchyNodes)
 
+  const setCurrentSubNetworkId: (id: IdType) => void = useSubNetworkStore(
+    (state) => state.setCurrentSubNetworkId,
+  )
+
   useEffect(() => {
     // Convert node IDs to names
     const tableRecord = tables[queryNetworkId]
@@ -314,7 +318,18 @@ export const SubNetworkPanel = ({
       return
     }
     prevQueryNetworkIdRef.current = queryNetworkId
-  }, [queryNetworkId, getViewModel])
+    // Publish the shown subnetwork so the hierarchy-side share URL can capture
+    // it even when the user hasn't clicked the subnetwork pane (CW-654).
+    setCurrentSubNetworkId(queryNetworkId)
+  }, [queryNetworkId, getViewModel, setCurrentSubNetworkId])
+
+  useEffect(() => {
+    // Clear the shown subnetwork when the viewer unmounts so it can't leak into
+    // an unrelated network's share URL.
+    return () => {
+      setCurrentSubNetworkId('')
+    }
+  }, [setCurrentSubNetworkId])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {

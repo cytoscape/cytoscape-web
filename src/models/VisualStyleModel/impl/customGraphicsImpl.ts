@@ -41,7 +41,7 @@ export const getPieBackgroundColorViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    logModel.warn(
+    logModel.info(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -76,7 +76,7 @@ export const getPieBackgroundSizeViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    logModel.warn(
+    logModel.info(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }

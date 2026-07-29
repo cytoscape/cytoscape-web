@@ -1,43 +1,25 @@
-import { create, StateCreator, StoreApi } from 'zustand'
+import { create, StateCreator } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { logStore } from '../../../debug'
 import { IdType } from '../../../models'
 import {
   Edit,
   UndoRedoStack,
   UndoStore,
 } from '../../../models/StoreModel/UndoStoreModel'
-import { putUndoRedoStackToDb } from '../../db'
+import { deleteUndoRedoStackFromDb, putUndoRedoStackToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
-import { useWorkspaceStore } from './WorkspaceStore'
+import { persistNetworkSlices } from './persistNetworkSlices'
 
-const persist =
-  (config: StateCreator<UndoStore>) =>
-  (
-    set: StoreApi<UndoStore>['setState'],
-    get: StoreApi<UndoStore>['getState'],
-    api: StoreApi<UndoStore>,
-  ) =>
-    config(
-      async (args) => {
-        logStore.info('[UndoStore]: Persisting undo store')
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-
-        set(args)
-        const updated = get().undoRedoStacks[currentNetworkId]
-        const deleted = updated === undefined
-
-        if (!deleted) {
-          // Convert Immer proxy to plain object before saving
-          const plainStack = toPlainObject(updated)
-          await putUndoRedoStackToDb(currentNetworkId, plainStack).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+const persist = (config: StateCreator<UndoStore>) =>
+  persistNetworkSlices<UndoStore, UndoRedoStack>(config, {
+    label: 'UndoStore',
+    selectSlices: (state) => state.undoRedoStacks,
+    // Convert Immer proxy to plain object before saving
+    putSlice: (networkId, stack) =>
+      putUndoRedoStackToDb(networkId, toPlainObject(stack)),
+    removeSlice: (networkId) => deleteUndoRedoStackFromDb(networkId),
+  })
 
 export const useUndoStore = create(
   immer<UndoStore>(

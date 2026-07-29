@@ -7,10 +7,12 @@ import { LoginButton } from '../Login/LoginButton'
 import { AnalysisMenu } from './AnalysisMenu'
 import { AppMenu } from './AppMenu'
 import { DataMenu } from './DataMenu'
+import { DebugIndicator } from './DebugIndicator'
 import { EditMenu } from './EditMenu'
 import { HelpMenu } from './HelpMenu'
 import { LayoutMenu } from './LayoutMenu'
 import { SearchBox } from './Search'
+import { ThemeToggleButton } from './ThemeToggleButton'
 import { ToolsMenu } from './ToolsMenu'
 
 
@@ -44,7 +46,9 @@ export const ToolBar = (): JSX.Element => {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <DebugIndicator />
             <SearchBox />
+            <ThemeToggleButton />
             <LoginButton />
           </Box>
         </Toolbar>

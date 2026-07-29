@@ -7,24 +7,50 @@ export const serializeValueList = (value: ListOfValueType): string => {
   return value?.map((v) => String(v)).join(', ') ?? ''
 }
 
+// Split a serialized list into its elements. A blank string is an empty
+// list. String lists split only on the canonical ', ' delimiter — a bare
+// comma may legitimately appear inside an element, and any tolerant split
+// would corrupt it. Non-string lists (numbers/booleans cannot contain
+// commas) tolerate missing/extra whitespace around the separator.
+const splitSerializedList = (
+  valueTypeName: ValueTypeName,
+  serializedString: string,
+): string[] => {
+  if (serializedString.trim() === '') {
+    return []
+  }
+  return valueTypeName === ValueTypeName.ListString
+    ? serializedString.split(', ')
+    : serializedString.trim().split(/\s*,\s*/)
+}
+
 export const serializedStringIsValid = (
   valueTypeName: ValueTypeName,
   serializedString: string,
 ): boolean => {
   if (isListType(valueTypeName)) {
-    return serializedString.split(', ').reduce((a, b) => {
-      return (
-        a &&
-        serializedStringIsValid(
-          valueTypeName.replace('list_of_', '') as ValueTypeName,
-          b,
+    return splitSerializedList(valueTypeName, serializedString).reduce(
+      (a, b) => {
+        return (
+          a &&
+          serializedStringIsValid(
+            valueTypeName.replace('list_of_', '') as ValueTypeName,
+            b,
+          )
         )
-      )
-    }, true)
+      },
+      true,
+    )
   } else {
     if (valueTypeName === ValueTypeName.Boolean) {
       return serializedString === 'true' || serializedString === 'false'
-    } else if (valueTypeName === ValueTypeName.Double) {
+    }
+    // `+'' === 0`, so a blank string would otherwise "validate" as a number
+    // and clearing a numeric cell would silently write 0 (REVIEW.md R2-15)
+    if (serializedString.trim() === '') {
+      return valueTypeName === ValueTypeName.String
+    }
+    if (valueTypeName === ValueTypeName.Double) {
       return !isNaN(+serializedString)
     } else if (valueTypeName === ValueTypeName.Long) {
       return !isNaN(+serializedString) && Number.isInteger(+serializedString)
@@ -73,15 +99,23 @@ export const deserializeValueList = (
   const deserializeFnMap: Record<ValueTypeName, (value: string) => ValueType> =
     {
       [ValueTypeName.ListString]: (value: string) =>
-        value.split(', ') as ValueType,
+        splitSerializedList(ValueTypeName.ListString, value) as ValueType,
       [ValueTypeName.ListLong]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
+        splitSerializedList(ValueTypeName.ListLong, value).map(
+          (v) => +v,
+        ) as ValueType,
       [ValueTypeName.ListInteger]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
+        splitSerializedList(ValueTypeName.ListInteger, value).map(
+          (v) => +v,
+        ) as ValueType,
       [ValueTypeName.ListDouble]: (value: string) =>
-        value.split(', ').map((v) => +v) as ValueType,
+        splitSerializedList(ValueTypeName.ListDouble, value).map(
+          (v) => +v,
+        ) as ValueType,
       [ValueTypeName.ListBoolean]: (value: string) =>
-        value.split(', ').map((v) => v === 'true') as ValueType,
+        splitSerializedList(ValueTypeName.ListBoolean, value).map(
+          (v) => v === 'true',
+        ) as ValueType,
       [ValueTypeName.Boolean]: (value: string) => value === 'true',
       [ValueTypeName.String]: (value: string) => value,
       [ValueTypeName.Long]: (value: string) => +value,
@@ -212,14 +246,28 @@ export const compareStrings = (
     ? (a ?? '').localeCompare(b)
     : (b ?? '').localeCompare(a)
 
+// Missing values (undefined/null/NaN) always sort to the bottom regardless
+// of direction. The previous `(a ?? Infinity) - (b ?? -Infinity)` returned
+// +Infinity for BOTH orderings of a defined and an undefined operand,
+// violating comparator antisymmetry (REVIEW.md R2-17).
 export const compareNumbers = (
   a: number,
   b: number,
   sortDirection: SortDirection,
-): number =>
-  sortDirection === 'asc'
-    ? (a ?? Infinity) - (b ?? -Infinity) // always put undefined values at the bottom of the list
-    : (b ?? Infinity) - (a ?? -Infinity)
+): number => {
+  const aMissing = a == null || Number.isNaN(a)
+  const bMissing = b == null || Number.isNaN(b)
+  if (aMissing && bMissing) {
+    return 0
+  }
+  if (aMissing) {
+    return 1
+  }
+  if (bMissing) {
+    return -1
+  }
+  return sortDirection === 'asc' ? a - b : b - a
+}
 
 export const compareBooleans = (
   a: boolean,

@@ -8,7 +8,7 @@
 //   - All public model types (IdType, Network, Table, etc.)
 //   - All domain API types (ElementApi, NetworkApi, ..., ContextMenuApi)
 //   - Phase 2 types (AppContextApis, ResourceApi, ResourceSlot, ResourceDeclaration, etc.)
-//   - ApiResult<T>, ApiErrorCode, and helper types
+//   - ApiResult<T>, error code catalogs (ElementCodes, TableCodes, StyleCodes, AppCodes), and helper types
 //   - AppContext, AppContextApis, CyAppWithLifecycle for apps implementing lifecycle hooks
 
 // Import for use in the global Window augmentation below.
@@ -42,7 +42,7 @@ declare global {
      * ```typescript
      * window.addEventListener('cywebapi:ready', () => {
      *   const api = window.CyWebApi  // typed as CyWebApiType
-     *   const result = api.network.getCurrentNetwork()
+     *   const result = api.workspace.getCurrentNetworkId()
      * })
      * ```
      */

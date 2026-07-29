@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/networkApi.test.ts
 // Plain Jest tests for networkApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { networkApi } from './networkApi'
 
 // ── Mock: uuid ────────────────────────────────────────────────────────────────
@@ -49,10 +49,14 @@ const mockSummaryActions = {
   delete: vi.fn(),
   deleteAll: vi.fn(),
 }
+const mockSummaries: Record<string, any> = {}
 
 vi.mock('../../data/hooks/stores/NetworkSummaryStore', () => ({
   useNetworkSummaryStore: {
-    getState: vi.fn(() => mockSummaryActions),
+    getState: vi.fn(() => ({
+      ...mockSummaryActions,
+      summaries: mockSummaries,
+    })),
   },
 }))
 
@@ -61,10 +65,14 @@ const mockViewModelActions = {
   delete: vi.fn(),
   deleteAll: vi.fn(),
 }
+const mockGetViewModel = vi.fn()
 
 vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: vi.fn(() => mockViewModelActions),
+    getState: vi.fn(() => ({
+      ...mockViewModelActions,
+      getViewModel: mockGetViewModel,
+    })),
   },
 }))
 
@@ -90,10 +98,14 @@ const mockTableActions = {
   delete: vi.fn(),
   deleteAll: vi.fn(),
 }
+const mockTables: Record<string, any> = {}
 
 vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
-    getState: vi.fn(() => mockTableActions),
+    getState: vi.fn(() => ({
+      ...mockTableActions,
+      tables: mockTables,
+    })),
   },
 }))
 
@@ -124,7 +136,20 @@ const mockUiStateActions = {
   setActiveNetworkView: vi.fn((id: string) => {
     mockActiveNetworkView = id
   }),
+  deleteNetworkUiState: vi.fn(),
+  deleteAllNetworkUiState: vi.fn(),
 }
+
+const mockFilterActions = {
+  deleteNetworkIndex: vi.fn(),
+  deleteAllNetworkIndexes: vi.fn(),
+}
+
+vi.mock('../../data/hooks/stores/FilterStore', () => ({
+  useFilterStore: {
+    getState: vi.fn(() => mockFilterActions),
+  },
+}))
 
 vi.mock('../../data/hooks/stores/UiStateStore', () => ({
   useUiStateStore: {
@@ -224,7 +249,10 @@ function resetMocks() {
   Object.keys(mockValidationResults).forEach(
     (k) => delete mockValidationResults[k],
   )
+  Object.keys(mockTables).forEach((k) => delete mockTables[k])
+  Object.keys(mockSummaries).forEach((k) => delete mockSummaries[k])
   vi.clearAllMocks()
+  mockGetViewModel.mockReturnValue(undefined)
   mockValidateCX2.mockReturnValue({ isValid: true, errors: [], warnings: [] })
   mockCreateCyNetworkFromCx2.mockReturnValue(makeFakeCyNetwork('test-uuid'))
 }
@@ -297,7 +325,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -308,7 +336,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -319,7 +347,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -333,7 +361,7 @@ describe('networkApi', () => {
       })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })
@@ -358,7 +386,7 @@ describe('networkApi', () => {
       const result = networkApi.createNetworkFromCx2({ cxData: fakeCx2 as any })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidCx2)
+        expect(result.error.code).toBe(AppCodes.INVALID_CX2.code)
         expect(result.error.message).toBe('Bad CX2')
       }
     })
@@ -403,12 +431,207 @@ describe('networkApi', () => {
       const result = networkApi.createNetworkFromCx2({ cxData: fakeCx2 as any })
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })
 
   // ── deleteNetwork ─────────────────────────────────────────────────────────
+
+  describe('createNetworkFromNodeList', () => {
+    const setupSourceNetwork = (): void => {
+      mockNetworks.set('src', {
+        id: 'src',
+        nodes: [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }],
+        edges: [
+          { id: 'e0', s: 'n1', t: 'n2' },
+          { id: 'e1', s: 'n2', t: 'n3' },
+          { id: 'e2', s: 'n1', t: 'n3' },
+        ],
+      })
+      mockTables['src'] = {
+        nodeTable: {
+          columns: [{ name: 'name', type: 'string' }],
+          rows: new Map([
+            ['n1', { name: 'Node 1' }],
+            ['n2', { name: 'Node 2' }],
+            ['n3', { name: 'Node 3' }],
+          ]),
+        },
+        edgeTable: {
+          columns: [{ name: 'weight', type: 'double' }],
+          rows: new Map([['e0', { weight: 0.5 }]]),
+        },
+      }
+      mockSummaries['src'] = { name: 'Source Net' }
+    }
+
+    it('creates an induced subgraph when edgeIds is omitted', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList('src', ['n1', 'n2'])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(
+          result.data.cyNetwork.network.nodes.map((n: any) => n.id),
+        ).toEqual(['n1', 'n2'])
+        expect(result.data.cyNetwork.network.edges).toEqual([
+          { id: 'e0', s: 'n1', t: 'n2' },
+        ])
+      }
+      expect(mockNetworkActions.add).toHaveBeenCalled()
+    })
+
+    it('allows isolated nodes (the createNetworkFromEdgeList gap)', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList('src', ['n1'])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(
+          result.data.cyNetwork.network.nodes.map((n: any) => n.id),
+        ).toEqual(['n1'])
+        expect(result.data.cyNetwork.network.edges).toEqual([])
+      }
+    })
+
+    it("treats edgeIds 'all' the same as omitted (induced subgraph)", () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList(
+        'src',
+        ['n1', 'n3'],
+        'all',
+      )
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.cyNetwork.network.edges).toEqual([
+          { id: 'e2', s: 'n1', t: 'n3' },
+        ])
+      }
+    })
+
+    it('selects only the given edgeIds when provided', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList(
+        'src',
+        ['n1', 'n2', 'n3'],
+        ['e1'],
+      )
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.cyNetwork.network.edges).toEqual([
+          { id: 'e1', s: 'n2', t: 'n3' },
+        ])
+      }
+    })
+
+    it('rejects edgeIds whose endpoints are outside nodeIds', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList(
+        'src',
+        ['n1', 'n2'],
+        ['e1'],
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+        expect(result.error.message).toContain('e1')
+      }
+      expect(mockNetworkActions.add).not.toHaveBeenCalled()
+    })
+
+    it('rejects nodeIds that do not exist in the source (CX2 GL1)', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList('src', ['n1', 'ghost'])
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
+      }
+    })
+
+    it('rejects edgeIds that do not exist in the source (CX2 GL2)', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList(
+        'src',
+        ['n1', 'n2'],
+        ['ghostEdge'],
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
+      }
+    })
+
+    it('copies column schemas and the selected rows from the source tables', () => {
+      setupSourceNetwork()
+
+      const result = networkApi.createNetworkFromNodeList('src', ['n1', 'n2'])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        const { nodeTable, edgeTable } = result.data.cyNetwork
+        expect(nodeTable.columns).toEqual([{ name: 'name', type: 'string' }])
+        expect(nodeTable.rows.get('n1')).toEqual({ name: 'Node 1' })
+        expect(nodeTable.rows.get('n3')).toBeUndefined()
+        expect(edgeTable.rows.get('e0')).toEqual({ weight: 0.5 })
+      }
+    })
+
+    it('copies node positions from the source view model', () => {
+      setupSourceNetwork()
+      mockGetViewModel.mockReturnValue({
+        nodeViews: {
+          n1: { id: 'n1', x: 11, y: 22, z: 3 },
+          n2: { id: 'n2', x: 44, y: 55 },
+        },
+      })
+
+      const result = networkApi.createNetworkFromNodeList('src', ['n1', 'n2'])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        const view = result.data.cyNetwork.networkViews[0]
+        expect(view.nodeViews['n1']).toMatchObject({ x: 11, y: 22, z: 3 })
+        expect(view.nodeViews['n2']).toMatchObject({ x: 44, y: 55 })
+      }
+    })
+
+    it('returns NetworkNotFound for a missing source network', () => {
+      const result = networkApi.createNetworkFromNodeList('missing', ['n1'])
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
+    })
+
+    it('adds to workspace when requested', () => {
+      setupSourceNetwork()
+
+      networkApi.createNetworkFromNodeList('src', ['n1'], undefined, {
+        addToWorkspace: true,
+      })
+
+      expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith(
+        'test-uuid',
+      )
+      expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
+        'test-uuid',
+      )
+    })
+  })
 
   describe('deleteNetwork', () => {
     beforeEach(() => {
@@ -436,6 +659,21 @@ describe('networkApi', () => {
       expect(mockWorkspaceActions.deleteNetwork).toHaveBeenCalledWith('net1')
     })
 
+    it('purges per-network UI state (visualStyleOptions etc.)', () => {
+      networkApi.deleteNetwork('net1')
+      expect(mockUiStateActions.deleteNetworkUiState).toHaveBeenCalledWith(
+        'net1',
+      )
+    })
+
+    it('purges per-network UI state for every network on deleteAllNetworks', () => {
+      mockWorkspaceState.networkIds = ['net1', 'net2']
+      networkApi.deleteAllNetworks()
+      // The delete orchestrator sweeps ALL per-network UI state in one
+      // call rather than looping per id
+      expect(mockUiStateActions.deleteAllNetworkUiState).toHaveBeenCalled()
+    })
+
     it('navigates to next network by default (navigate=true)', () => {
       networkApi.deleteNetwork('net1')
       // 'net2' is the next network in workspace.networkIds
@@ -444,8 +682,19 @@ describe('networkApi', () => {
       )
     })
 
-    it('does not navigate when navigate=false', () => {
+    // REVIEW.md R2-13: previously navigate:false left currentNetworkId
+    // pointing at the deleted network. The orchestrator now owns the
+    // invariant and repairs the pointer regardless of navigation.
+    it('repairs currentNetworkId even when navigate=false (regression: R2-13)', () => {
       networkApi.deleteNetwork('net1', { navigate: false })
+      expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
+        'net2',
+      )
+    })
+
+    it('does not touch currentNetworkId when a non-current network is deleted', () => {
+      mockNetworks.set('net2', { id: 'net2' })
+      networkApi.deleteNetwork('net2', { navigate: false })
       expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
@@ -453,7 +702,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteNetwork('missing')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -475,7 +724,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteNetwork('net1')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })
@@ -488,7 +737,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteCurrentNetwork()
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NoCurrentNetwork)
+        expect(result.error.code).toBe(AppCodes.NO_CURRENT_NETWORK.code)
       }
     })
 
@@ -531,7 +780,7 @@ describe('networkApi', () => {
       const result = networkApi.deleteAllNetworks()
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
       }
     })
   })

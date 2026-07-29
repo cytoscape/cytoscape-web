@@ -141,7 +141,15 @@ export const AppListPanel = () => {
           No apps available in catalog.
         </Typography>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            maxHeight: 300,
+            overflowY: 'auto',
+          }}
+        >
           {displayEntries.map((entry) => {
             const action = getAction(entry)
             const isActive =

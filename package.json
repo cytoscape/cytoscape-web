@@ -1,6 +1,6 @@
 {
   "name": "cytoscape-web",
-  "version": "1.0.7",
+  "version": "1.1.0-dev.0",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -167,6 +167,7 @@
     "react-draggable": "^4.4.5",
     "react-error-boundary": "^4.0.13",
     "react-ga4": "^2.1.0",
+    "react-joyride": "^3.2.0",
     "react-laag": "^2.0.5",
     "react-popper": "^2.3.0",
     "react-responsive-carousel": "^3.2.23",

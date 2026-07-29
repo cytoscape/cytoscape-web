@@ -22,7 +22,10 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../../debug'
 import {
+  columnTypeMatchesFilter,
   inputColumnFilterFn,
+  isAutoFilledParameter,
+  shouldShowServiceDescription,
   validateParameter,
 } from '../../../models/AppModel/impl'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
@@ -315,20 +318,27 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
                 label={parameter.displayName}
                 value={parameter.value || ''}
               >
-                {nodeColumns.map((column, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        column.name,
-                      )
-                    }
-                  >
-                    {column.name}
-                  </MenuItem>
-                ))}
+                {nodeColumns
+                  .filter((column) =>
+                    columnTypeMatchesFilter(
+                      column.type,
+                      parameter.columnTypeFilter,
+                    ),
+                  )
+                  .map((column, i) => (
+                    <MenuItem
+                      key={i}
+                      onClick={() =>
+                        updateServiceParameter(
+                          app.url,
+                          parameter.displayName,
+                          column.name,
+                        )
+                      }
+                    >
+                      {column.name}
+                    </MenuItem>
+                  ))}
               </Select>
             </Box>
           </Tooltip>
@@ -349,20 +359,27 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
                 label={parameter.displayName}
                 value={parameter.value || ''}
               >
-                {edgeColumns.map((column, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        column.name,
-                      )
-                    }
-                  >
-                    {column.name}
-                  </MenuItem>
-                ))}
+                {edgeColumns
+                  .filter((column) =>
+                    columnTypeMatchesFilter(
+                      column.type,
+                      parameter.columnTypeFilter,
+                    ),
+                  )
+                  .map((column, i) => (
+                    <MenuItem
+                      key={i}
+                      onClick={() =>
+                        updateServiceParameter(
+                          app.url,
+                          parameter.displayName,
+                          column.name,
+                        )
+                      }
+                    >
+                      {column.name}
+                    </MenuItem>
+                  ))}
               </Select>
             </Box>
           </Tooltip>
@@ -415,16 +432,29 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     </Box>
   ) : null
 
-  const parametersSection = app.parameters ? (
-    <Box sx={{ p: 3 }}>
-      <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
-      {app.parameters?.map((parameter: ServiceAppParameter) => (
-        <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
-          {renderParameter(parameter)}
-        </Box>
-      ))}
-    </Box>
-  ) : null
+  // Auto-filled parameters (ndexUUID, accessToken, ...) are resolved at run
+  // time and never shown to the user.
+  const visibleParameters =
+    app.parameters?.filter(
+      (parameter) => !isAutoFilledParameter(parameter.type),
+    ) ?? []
+
+  const parametersSection =
+    visibleParameters.length > 0 ? (
+      <Box sx={{ p: 3 }}>
+        <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
+        {visibleParameters.map((parameter: ServiceAppParameter) => (
+          <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
+            {renderParameter(parameter)}
+          </Box>
+        ))}
+      </Box>
+    ) : null
+
+  const showDescription = shouldShowServiceDescription(
+    app.description,
+    app.showDescriptionInDialog,
+  )
 
   const shouldAddMarginTop = !inputDefinition && !parametersSection
 
@@ -469,6 +499,15 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     >
       <Box sx={{ p: 3.5 }}>
         <Typography variant="h5">{app.name}</Typography>
+        {showDescription ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1, whiteSpace: 'pre-line' }}
+          >
+            {app.description}
+          </Typography>
+        ) : null}
         {inputDefinition}
         {parametersSection}
         {submitButton}

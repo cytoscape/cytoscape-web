@@ -7,7 +7,7 @@ import {
   deleteEdgesCore,
   deleteNodesCore,
 } from '../../models/CyNetworkModel'
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { elementApi } from './elementApi'
 
 // ── Mock stores ──────────────────────────────────────────────────────────────
@@ -342,7 +342,7 @@ describe('elementApi', () => {
       const result = elementApi.getNode('missing', 'n1')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -351,7 +351,7 @@ describe('elementApi', () => {
       const result = elementApi.getNode('net1', 'n1')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -401,7 +401,7 @@ describe('elementApi', () => {
       const result = elementApi.getEdge('missing', 'e1')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -410,7 +410,7 @@ describe('elementApi', () => {
       const result = elementApi.getEdge('net1', 'e1')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
+        expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
       }
     })
 
@@ -441,7 +441,7 @@ describe('elementApi', () => {
       const result = elementApi.createNode('missing', [0, 0])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -460,6 +460,23 @@ describe('elementApi', () => {
           attributes: {},
           position: [100, 200],
         })
+      }
+    })
+
+    it('rejects an "id" key in the attributes payload (CX2 N3)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        attributes: { id: '99', name: 'shadow' },
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ElementCodes.NODE_ID_FORBIDDEN.code)
       }
     })
 
@@ -568,7 +585,7 @@ describe('elementApi', () => {
       const result = elementApi.createEdge('missing', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -577,7 +594,7 @@ describe('elementApi', () => {
       const result = elementApi.createEdge('net1', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -586,7 +603,7 @@ describe('elementApi', () => {
       const result = elementApi.createEdge('net1', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -606,6 +623,23 @@ describe('elementApi', () => {
           targetId: 'n2',
           attributes: {},
         })
+      }
+    })
+
+    it('rejects an "id" key in the attributes payload (CX2 E6)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createEdge('net1', 'n1', 'n2', {
+        attributes: { id: 'e99' },
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ElementCodes.EDGE_ID_FORBIDDEN.code)
       }
     })
 
@@ -647,7 +681,7 @@ describe('elementApi', () => {
       const result = elementApi.moveEdge('missing', 'e1', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -656,7 +690,7 @@ describe('elementApi', () => {
       const result = elementApi.moveEdge('net1', 'e1', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
+        expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
       }
     })
 
@@ -668,7 +702,7 @@ describe('elementApi', () => {
       const result = elementApi.moveEdge('net1', 'e1', 'missing', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -680,7 +714,7 @@ describe('elementApi', () => {
       const result = elementApi.moveEdge('net1', 'e1', 'n1', 'missing')
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -738,7 +772,7 @@ describe('elementApi', () => {
       const result = elementApi.deleteNodes('missing', ['n1'])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -747,7 +781,7 @@ describe('elementApi', () => {
       const result = elementApi.deleteNodes('net1', [])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -756,7 +790,7 @@ describe('elementApi', () => {
       const result = elementApi.deleteNodes('net1', ['n1'])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
       }
     })
 
@@ -803,7 +837,7 @@ describe('elementApi', () => {
       const result = elementApi.deleteEdges('missing', ['e1'])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
     })
 
@@ -812,7 +846,7 @@ describe('elementApi', () => {
       const result = elementApi.deleteEdges('net1', [])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.InvalidInput)
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
       }
     })
 
@@ -824,7 +858,7 @@ describe('elementApi', () => {
       const result = elementApi.deleteEdges('net1', ['e1'])
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error.code).toBe(ApiErrorCode.EdgeNotFound)
+        expect(result.error.code).toBe(ElementCodes.EDGE_NOT_FOUND.code)
       }
     })
 
@@ -901,7 +935,7 @@ describe('elementApi', () => {
         const result = elementApi.getNodeIds('invalid')
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+          expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
         }
       })
     })
@@ -919,7 +953,38 @@ describe('elementApi', () => {
         const result = elementApi.getEdgeIds('invalid')
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+          expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+        }
+      })
+    })
+
+    describe('getEdges', () => {
+      it('returns all edges with source and target IDs in one call', () => {
+        const result = elementApi.getEdges('net1')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges).toEqual([
+            { id: 'e1', sourceId: 'A', targetId: 'B' },
+            { id: 'e2', sourceId: 'B', targetId: 'C' },
+            { id: 'e3', sourceId: 'A', targetId: 'D' },
+          ])
+        }
+      })
+
+      it('returns an empty array for a network with no edges', () => {
+        mockNetworks.set('empty', makeNetwork('empty', [{ id: 'X' }], []))
+        const result = elementApi.getEdges('empty')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges).toEqual([])
+        }
+      })
+
+      it('returns NetworkNotFound for invalid network', () => {
+        const result = elementApi.getEdges('invalid')
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
         }
       })
     })
@@ -943,7 +1008,7 @@ describe('elementApi', () => {
         const result = elementApi.getConnectedEdges('net1', 'Z')
         expect(result.success).toBe(false)
         if (!result.success) {
-          expect(result.error.code).toBe(ApiErrorCode.NodeNotFound)
+          expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
         }
       })
     })

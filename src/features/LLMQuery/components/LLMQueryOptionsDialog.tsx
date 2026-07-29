@@ -1,4 +1,5 @@
-import { ContentCopy, Preview } from '@mui/icons-material'
+import ContentCopy from '@mui/icons-material/ContentCopy'
+import Preview from '@mui/icons-material/Preview'
 import {
   Box,
   Button,
