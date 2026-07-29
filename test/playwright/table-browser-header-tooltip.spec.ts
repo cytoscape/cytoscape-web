@@ -18,9 +18,7 @@ test.describe('Table Browser header tooltip', () => {
   // The consent banner overlays the bottom of the window, which is exactly where
   // the table browser lives, and it swallows the hover.
   const acceptCookies = async (page: any): Promise<void> => {
-    const accept = page.locator(
-      '[data-testid="cookie-consent"] button:has-text("Accept")',
-    )
+    const accept = page.locator('[data-testid="cookie-consent-accept-button"]')
     if (await accept.isVisible()) {
       await accept.click()
       await expect(page.locator('[data-testid="cookie-consent"]')).toBeHidden()
@@ -47,7 +45,11 @@ test.describe('Table Browser header tooltip', () => {
     await expect(tooltip).toBeVisible()
 
     // The title line is the column name, verbatim.
-    const title = (await tooltip.locator('p').first().innerText()).trim()
+    const title = (
+      await page
+        .locator('[data-testid="table-header-tooltip-title"]')
+        .innerText()
+    ).trim()
     expect(columnNames).toContain(title)
 
     // The data type badge is the shared one used across the app.

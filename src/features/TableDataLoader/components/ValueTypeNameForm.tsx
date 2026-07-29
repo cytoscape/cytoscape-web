@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 
-import { ValueTypeNameChip } from '../../../components/ValueTypeNameChip'
+import { ValueTypeNameChip } from '@/components/ValueTypeNameChip'
 import { ValueTypeName } from '../../../models/TableModel'
 import { DelimiterType } from '../model/DelimiterType'
 import { valueTypeNameLabel as valueTypeName2Label } from '../../../models/TableModel/impl/valueTypeNameDisplay'

@@ -7,7 +7,7 @@ import DataEditor, {
   Item,
   Theme,
 } from '@glideapps/glide-data-grid'
-import React from 'react'
+import type { FC, RefObject } from 'react'
 
 /**
  * Bounds for auto-sized columns (the ones `useTableData` hands over without a
@@ -20,7 +20,7 @@ const MAX_COLUMN_AUTO_WIDTH = 320
 
 export interface TableGridProps {
   testId: string
-  editorRef: React.RefObject<DataEditorRef>
+  editorRef: RefObject<DataEditorRef>
   selection: GridSelection
   onGridSelectionChange: (selection: GridSelection) => void
   minId: number
@@ -52,7 +52,7 @@ export interface TableGridProps {
   theme: Partial<Theme>
 }
 
-export const TableGrid: React.FC<TableGridProps> = ({
+export const TableGrid: FC<TableGridProps> = ({
   testId,
   editorRef,
   selection,

@@ -1,9 +1,9 @@
 import { Box, Tooltip, Typography } from '@mui/material'
 import * as React from 'react'
 
-import { ValueTypeNameChip } from '../../../components/ValueTypeNameChip'
-import { ValueTypeName } from '../../../models/TableModel'
-import { valueTypeNameLabel } from '../../../models/TableModel/impl/valueTypeNameDisplay'
+import { ValueTypeNameChip } from '@/components/ValueTypeNameChip'
+import { ValueTypeName } from '@/models/TableModel'
+import { valueTypeNameLabel } from '@/models/TableModel/impl/valueTypeNameDisplay'
 import { HeaderTooltipTarget } from '../hooks/useHeaderTooltip'
 
 export interface TableHeaderTooltipColumn {
@@ -49,6 +49,7 @@ export const TableHeaderTooltip = ({
       <Box data-testid="table-header-tooltip-content">
         <Typography
           variant="body2"
+          data-testid="table-header-tooltip-title"
           sx={{ fontWeight: 600, wordBreak: 'break-word' }}
         >
           {column.title}

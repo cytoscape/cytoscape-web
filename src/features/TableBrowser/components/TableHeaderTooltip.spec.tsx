@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { ValueTypeName } from '../../../models/TableModel'
+import { ValueTypeName } from '@/models/TableModel'
 import { HeaderTooltipTarget } from '../hooks/useHeaderTooltip'
 import {
   TableHeaderTooltip,
