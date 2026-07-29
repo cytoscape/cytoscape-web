@@ -19,7 +19,7 @@ Add the package to your `tsconfig.json`:
 ```json
 {
   "compilerOptions": {
-    "typeRoots": ["./node_modules/@types", "./node_modules/@cytoscape-web"]
+    "types": ["@cytoscape-web/api-types"]
   }
 }
 ```
@@ -29,30 +29,62 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 
 ## What's included
 
-| Export | Description |
-|--------|-------------|
-| `CyWebApiType` | Type of `window.CyWebApi` (10 domain API objects) |
-| `ElementApi` | Create/delete nodes and edges, visual bypasses, graph traversal queries |
-| `NetworkApi` | Create, delete, and switch networks |
-| `SelectionApi` | Read and modify node/edge selection state |
-| `ViewportApi` | Pan, zoom, and fit the viewport |
-| `TableApi` | Read and write node/edge attribute tables |
-| `VisualStyleApi` | Read and set visual style properties and bypasses |
-| `LayoutApi` | Run and stop layout algorithms |
-| `ExportApi` | Export networks to CX2, PNG, and SVG |
-| `WorkspaceApi` | Read workspace and network summary metadata |
-| `ContextMenuApi` | Register custom items in the network context menu |
-| `AppContextApis` | Per-app API shape passed to `mount()` (extends `CyWebApiType`) |
-| `ResourceApi` | Register panels and menu items at runtime |
-| `ResourceDeclaration` | Declarative resource entry for `CyAppWithLifecycle.resources` |
-| `ApiResult<T>` | Discriminated union returned by all API functions |
-| `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` | Domain-grouped error code catalogs — each entry is `{ code, severity, message }` |
-| `ApiErrorCodeDef`, `ApiErrorSeverity` | Supporting types for the error code catalogs |
-| `CyWebEvents` | Typed event detail shapes for all `window` events |
-| Model types | `IdType`, `Network`, `Node`, `Edge`, `Table`, `VisualStyle`, … |
+| Export                                                 | Description                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `CyWebApiType`                                         | Type of `window.CyWebApi` (10 domain API objects)                                                            |
+| `ElementApi`                                           | Create/delete nodes and edges, return full mutation data, batch edge topology reads, graph traversal queries |
+| `NetworkApi`                                           | Create networks from edge lists, CX2, or node subsets; delete networks                                       |
+| `SelectionApi`                                         | Read and modify node/edge selection state                                                                    |
+| `ViewportApi`                                          | Fit the renderer and read/update node positions                                                              |
+| `TableApi`                                             | Read schemas/rows, write node/edge attribute tables, and import/export TSV                                   |
+| `VisualStyleApi`                                       | Set defaults, bypasses, and discrete/continuous/passthrough mappings                                         |
+| `LayoutApi`                                            | Run layout algorithms and list available layouts                                                             |
+| `ExportApi`                                            | Export networks to CX2                                                                                       |
+| `WorkspaceApi`                                         | Read, switch, and rename workspace state                                                                     |
+| `ContextMenuApi`                                       | Register custom items in the network context menu                                                            |
+| `AppContextApis`                                       | Per-app API shape passed to `mount()` (extends `CyWebApiType`)                                               |
+| `ResourceApi`                                          | Register panels and menu items at runtime                                                                    |
+| `ResourceDeclaration`                                  | Declarative resource entry for `CyAppWithLifecycle.resources`                                                |
+| `ApiResult<T>`                                         | Discriminated union returned by fallible API functions                                                       |
+| `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` | Domain-grouped error code catalogs — each entry is `{ code, severity, message }`                             |
+| `ApiErrorCodeDef`, `ApiErrorSeverity`                  | Supporting types for the error code catalogs                                                                 |
+| `CyWebEvents`                                          | Typed detail shapes for lifecycle, topology, selection, layout, style, and table events                      |
+| Model types                                            | `IdType`, `Network`, `Node`, `Edge`, `Table`, `VisualStyle`, …                                               |
 
 Ambient module declarations for all `cyweb/*` Module Federation remotes are also bundled, so imports
 like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in TypeScript.
+
+## `1.0.0-beta.3` migration notes
+
+`1.0.0-beta.3` contains a breaking error-model migration and several additive API changes:
+
+- Replace comparisons against `ApiErrorCode` with the domain catalogs shown
+  below. Failed results now include `error.severity`; `ApiError.cx2Code` (an
+  interim field from a prior beta) is removed — the primary `code` now carries
+  that identity directly.
+- `fail()` changed signature: `fail(codeDef, ...templateArgs)` replaces
+  `fail(code, message, cx2Code?)`. Only apps constructing `ApiError` values
+  directly are affected.
+- Boundary validation is stricter: invalid element attributes, table schemas
+  and values, visual style values, bypass targets/scopes, and mapping
+  sources/bounds that earlier prereleases accepted are now rejected.
+- `NetworkApi.deleteNetwork()` no longer changes behavior based on
+  `DeleteNetworkOptions.navigate` (kept for source compatibility): deleting the
+  current network always repairs `currentNetworkId`, and deleting a non-current
+  network never switches networks.
+- `createNode`, `createEdge`, `deleteNodes`, and `deleteEdges` return complete
+  element data as well as IDs/counts.
+- `VisualStyleApi.createDiscreteMapping()` accepts an optional mapping-entry
+  record; `createContinuousMapping()` accepts optional `controlPoints`,
+  `ltMinVpValue`, and `gtMaxVpValue` arguments.
+- `data:changed` handlers receive `addedColumns` and `removedColumns` arrays.
+- New APIs include `ElementApi.getEdges`, `TableApi.getColumns`, and
+  `NetworkApi.createNetworkFromNodeList`.
+- `importTableFromTsv` returns `skippedRows` for TSV keys that do not match a
+  node or edge.
+
+See the bundled [CHANGELOG](./CHANGELOG.md) for the complete list and migration
+mapping.
 
 ## Usage examples
 
@@ -78,14 +110,15 @@ if (!result.success) {
 }
 ```
 
-See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/ErrorCodes.md)
+See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/ErrorCodes.md)
 for the full code catalog.
 
 ### Declarative resource registration (recommended)
 
 ```typescript
 import { lazy } from 'react'
-import { CyAppWithLifecycle } from 'cyweb/ApiTypes'
+import { VisualPropertyName } from 'cyweb/ApiTypes'
+import type { CyAppWithLifecycle } from 'cyweb/ApiTypes'
 
 export const MyApp: CyAppWithLifecycle = {
   id: 'myApp',
@@ -116,7 +149,14 @@ export const MyApp: CyAppWithLifecycle = {
       label: 'Highlight node',
       targetTypes: ['node'],
       handler: ({ id, networkId }) => {
-        apis.visualStyle.setBypass(networkId, 'NODE_BACKGROUND_COLOR', { [id]: '#ff0000' })
+        if (id !== undefined) {
+          apis.visualStyle.setBypass(
+            networkId,
+            VisualPropertyName.NodeBackgroundColor,
+            [id],
+            '#ff0000',
+          )
+        }
       },
     })
   },
@@ -176,36 +216,37 @@ window.addEventListener('cywebapi:ready', () => {
 })
 ```
 
-> **Note:** `window.CyWebApi` is typed as `CyWebApiType` which does NOT include
-> `resource` or per-app `contextMenu`. These are only available via `AppContextApis`
-> inside `mount()` or `useAppContext()`.
+> **Note:** `window.CyWebApi` is typed as `CyWebApiType`. It includes the
+> anonymous `contextMenu` singleton, but not `resource` or the lifecycle-bound
+> context-menu factory. Those per-app APIs are available through
+> `AppContextApis` inside `mount()` or `useAppContext()`.
 
 ## Available `cyweb/*` remotes
 
-| Remote | Hook |
-|--------|------|
-| `cyweb/ElementApi` | `useElementApi()` |
-| `cyweb/NetworkApi` | `useNetworkApi()` |
-| `cyweb/SelectionApi` | `useSelectionApi()` |
-| `cyweb/ViewportApi` | `useViewportApi()` |
-| `cyweb/TableApi` | `useTableApi()` |
-| `cyweb/VisualStyleApi` | `useVisualStyleApi()` |
-| `cyweb/LayoutApi` | `useLayoutApi()` |
-| `cyweb/ExportApi` | `useExportApi()` |
-| `cyweb/WorkspaceApi` | `useWorkspaceApi()` |
-| `cyweb/EventBus` | `useCyWebEvent(type, handler)` |
-| `cyweb/AppIdContext` | `useAppContext()` — per-app context for plugin components |
-| `cyweb/ApiTypes` | Re-exports all types from this package |
+| Remote                 | Hook                                                      |
+| ---------------------- | --------------------------------------------------------- |
+| `cyweb/ElementApi`     | `useElementApi()`                                         |
+| `cyweb/NetworkApi`     | `useNetworkApi()`                                         |
+| `cyweb/SelectionApi`   | `useSelectionApi()`                                       |
+| `cyweb/ViewportApi`    | `useViewportApi()`                                        |
+| `cyweb/TableApi`       | `useTableApi()`                                           |
+| `cyweb/VisualStyleApi` | `useVisualStyleApi()`                                     |
+| `cyweb/LayoutApi`      | `useLayoutApi()`                                          |
+| `cyweb/ExportApi`      | `useExportApi()`                                          |
+| `cyweb/WorkspaceApi`   | `useWorkspaceApi()`                                       |
+| `cyweb/EventBus`       | `useCyWebEvent(type, handler)`                            |
+| `cyweb/AppIdContext`   | `useAppContext()` — per-app context for plugin components |
+| `cyweb/ApiTypes`       | Re-exports all types from this package                    |
 
 ## Documentation
 
-- [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/app-api-specification.md) — Full API reference
-- [Event Bus Specification](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/specifications/event-bus-specification.md) — Event types, detail shapes, and subscription patterns
-- [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0001-api-result-discriminated-union.md) (error code/severity shape superseded by ADR 0005)
-- [ADR 0002 — Public type re-export strategy](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0002-public-type-reexport-strategy.md)
-- [ADR 0003 — Framework-agnostic core layer](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md)
-- [ADR 0005 — Structured, severity-tagged error codes](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/docs/design/module-federation/adr/0005-structured-error-codes.md)
-- [ErrorCodes.md — Full error code reference](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/ErrorCodes.md)
+- [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/app-api-specification.md) — Full API reference
+- [Event Bus Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/event-bus-specification.md) — Event types, detail shapes, and subscription patterns
+- [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/adr/0001-api-result-discriminated-union.md) (error code/severity shape superseded by ADR 0005)
+- [ADR 0002 — Public type re-export strategy](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/adr/0002-public-type-reexport-strategy.md)
+- [ADR 0003 — Framework-agnostic core layer](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md)
+- [ADR 0005 — Structured, severity-tagged error codes](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/adr/0005-structured-error-codes.md)
+- [ErrorCodes.md — Full error code reference](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/ErrorCodes.md)
 
 ## License
 
