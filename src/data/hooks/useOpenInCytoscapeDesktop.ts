@@ -2,6 +2,11 @@ import { CyNDEx } from '@js4cytoscape/ndex-client'
 
 import { logApi } from '../../debug'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import {
+  hasImageCustomGraphics,
+  IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+  IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+} from '../../models/CxModel/impl/customGraphicsCompat'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { MessageSeverity } from '../../models/MessageModel'
@@ -78,6 +83,18 @@ export const useOpenNetworkInCytoscape = () => {
       exportSummary,
       `Copy of ${exportSummary.name}`,
     )
+
+    // Cytoscape Desktop loads custom-graphic image bytes from its own image pool, not
+    // from the network file — so image custom graphics sent via CX2 appear as "?" in a
+    // fresh Desktop session (for any URL scheme) unless a supporting app repopulates the
+    // pool. Warn, but still send: charts and the rest of the network import fine.
+    if (hasImageCustomGraphics(cx)) {
+      addMessage({
+        message: IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+        duration: IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+        severity: MessageSeverity.WARNING,
+      })
+    }
 
     try {
       addMessage({

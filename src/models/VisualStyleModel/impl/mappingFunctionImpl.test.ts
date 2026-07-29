@@ -201,6 +201,53 @@ describe('MappingFunctionImpl', () => {
       ).toBe(false)
     })
 
+    // Image custom graphics are authored ONLY through this passthrough path —
+    // the Vizmapper wizard deliberately offers no image option, because
+    // Cytoscape Desktop cannot render CX2-carried images. Keeping this `true`
+    // is therefore a product decision; a merge that silently flips
+    // valueType2BaseType[CustomGraphic] to null removes the feature.
+    // See docs/design/custom-graphics-image/custom-graphics-image-passthrough.md
+    it('allows passthrough from a string column to a custom graphic visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.CustomGraphic,
+        ),
+      ).toBe(true)
+    })
+
+    // Numeric and boolean columns reach the `singleStringType` rule (their base
+    // type and the custom-graphic base type are both 'string'), but they cannot
+    // hold an image URL or chart JSON, so the mapping must not be offered.
+    it.each([
+      ValueTypeName.Double,
+      ValueTypeName.Integer,
+      ValueTypeName.Long,
+      ValueTypeName.Boolean,
+    ])(
+      'rejects passthrough from a %s column to a custom graphic visual property',
+      (valueTypeName) => {
+        expect(
+          typesCanBeMapped(
+            MappingFunctionType.Passthrough,
+            valueTypeName,
+            VisualPropertyValueTypeName.CustomGraphic,
+          ),
+        ).toBe(false)
+      },
+    )
+
+    it('rejects passthrough from a list column to a custom graphic visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.ListString,
+          VisualPropertyValueTypeName.CustomGraphic,
+        ),
+      ).toBe(false)
+    })
+
     it('should allow discrete mapping for any types', () => {
       expect(
         typesCanBeMapped(
@@ -248,9 +295,9 @@ describe('MappingFunctionImpl', () => {
     })
 
     it('validMappingsForVP offers continuous for edge line type', () => {
-      expect(validMappingsForVP(VisualPropertyValueTypeName.EdgeLine)).toContain(
-        MappingFunctionType.Continuous,
-      )
+      expect(
+        validMappingsForVP(VisualPropertyValueTypeName.EdgeLine),
+      ).toContain(MappingFunctionType.Continuous)
     })
 
     it('typesCanBeMapped allows continuous edge line on a numeric attribute', () => {
@@ -350,4 +397,3 @@ describe('MappingFunctionImpl', () => {
     })
   })
 })
-

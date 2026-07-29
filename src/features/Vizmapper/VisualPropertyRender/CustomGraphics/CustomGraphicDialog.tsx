@@ -8,6 +8,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import SettingsIcon from '@mui/icons-material/Settings'
+import ImageIcon from '@mui/icons-material/Image'
 import {
   Accordion,
   AccordionDetails,
@@ -31,15 +32,27 @@ import { AttributeName } from '../../../../models/TableModel/AttributeName'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { CustomGraphicsNameType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import {} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  CustomGraphicsNameType,
+  isImageCustomGraphicsName,
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  PieChartPropertiesType,
+  RingChartPropertiesType,
+} from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { AttributesForm } from './Forms/AttributesForm'
 import { ColorsForm } from './Forms/ColorsForm'
 import { PropertiesForm } from './Forms/PropertiesForm'
+import { ImageForm } from './Forms/ImageForm'
 import { useCustomGraphicState } from './hooks/useCustomGraphicState'
-import { CHART_CONSTANTS, COLORS } from './utils/constants'
-import { isRingChartProperties } from './utils/typeGuards'
+import {
+  AUTHORABLE_CUSTOM_GRAPHIC_KINDS,
+  CHART_CONSTANTS,
+  COLORS,
+} from './utils/constants'
+import { isRingChartProperties, isImageProperties } from './utils/typeGuards'
 import { CustomGraphicPreview } from './WizardSteps/CustomGraphicPreview'
+import { CustomGraphicKind } from './WizardSteps/SelectTypeStep'
 
 /** Props for the custom graphics dialog */
 interface CustomGraphicDialogProps {
@@ -69,15 +82,39 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     handleRemoveCharts,
     handleAttributesAndColorsUpdate,
     handlePropertiesUpdate,
+    handleImageUrlUpdate,
   } = useCustomGraphicState({ open, initialValue })
 
   // Wizard step state
   const [activeStep, setActiveStep] = React.useState(0)
-  const steps = ['Chart Type', 'Attributes', 'Colors', 'Properties']
+  const steps = kind === CustomGraphicsNameType.Image
+    ? ['Graphic Type', 'Image URL']
+    : ['Graphic Type', 'Attributes', 'Colors', 'Properties']
 
   // Determine if this is a new chart or editing existing
   const isNewChart =
     !initialValue || initialValue.name === CustomGraphicsNameType.None
+
+  // The graphic kinds this dialog offers. Authoring an image from scratch is
+  // withheld (see AUTHORABLE_CUSTOM_GRAPHIC_KINDS for why), but a value that
+  // already IS an image — imported from a CX2, or authored before the
+  // restriction — must stay selectable: otherwise the dialog opens with `kind`
+  // hydrated to image and no card highlighted, and the only way out is clicking
+  // Pie, which silently discards the image.
+  const editingExistingImage =
+    initialValue != null && isImageCustomGraphicsName(initialValue.name)
+  const availableKinds = React.useMemo<readonly CustomGraphicKind[]>(
+    () =>
+      editingExistingImage
+        ? [...AUTHORABLE_CUSTOM_GRAPHIC_KINDS, CustomGraphicsNameType.Image]
+        : AUTHORABLE_CUSTOM_GRAPHIC_KINDS,
+    [editingExistingImage],
+  )
+
+  // Type-safe alias for chart properties — used in chart-guarded JSX blocks
+  // where TypeScript can't correlate `kind` with `currentProps` type.
+  // Safe because useCustomGraphicState guarantees the pairing.
+  const chartProps = currentProps as PieChartPropertiesType
 
   // Reset step when dialog opens/closes
   React.useEffect(() => {
@@ -86,25 +123,37 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     }
   }, [open])
 
+  // Reset step to 0 when kind changes to prevent out-of-bounds step index
+  React.useEffect(() => {
+    setActiveStep(0)
+  }, [kind])
+
   // Initialize colors to gray when entering step 3 (Colors) if needed
   // This is a backup in case user navigates directly or goes back/forward
   const prevStepRef = React.useRef<number>(0)
+  const chartDataColumnCount = !isImageProperties(currentProps)
+    ? chartProps.cy_dataColumns.length
+    : 0
+  const chartColorScheme = !isImageProperties(currentProps)
+    ? chartProps.cy_colorScheme
+    : ''
   React.useEffect(() => {
     // Only initialize when first entering step 3 (Colors step)
     if (
+      !isImageProperties(currentProps) &&
       activeStep === 2 &&
       prevStepRef.current !== 2 &&
-      currentProps.cy_dataColumns.length > 0 &&
-      !currentProps.cy_colorScheme
+      chartProps.cy_dataColumns.length > 0 &&
+      !chartProps.cy_colorScheme
     ) {
       // Check if colors need to be set to gray
       const needsGray =
-        currentProps.cy_colors.length !== currentProps.cy_dataColumns.length ||
-        currentProps.cy_colors.some((color) => color !== COLORS.DEFAULT)
+        chartProps.cy_colors.length !== chartProps.cy_dataColumns.length ||
+        chartProps.cy_colors.some((color) => color !== COLORS.DEFAULT)
       if (needsGray) {
-        const grayColors = currentProps.cy_dataColumns.map(() => COLORS.DEFAULT)
+        const grayColors = chartProps.cy_dataColumns.map(() => COLORS.DEFAULT)
         handleAttributesAndColorsUpdate(
-          currentProps.cy_dataColumns,
+          chartProps.cy_dataColumns,
           grayColors,
           '',
         )
@@ -112,11 +161,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     }
     prevStepRef.current = activeStep
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only on entering step 2; prevStepRef guards re-runs
-  }, [
-    activeStep,
-    currentProps.cy_dataColumns.length,
-    currentProps.cy_colorScheme,
-  ])
+  }, [activeStep, chartDataColumnCount, chartColorScheme])
 
   // Handler to remove graphics and reset to defaults
   const handleRemoveChartsClick = () => {
@@ -126,17 +171,26 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 
   // Validation for each step
   const isStepValid = (step: number): boolean => {
-    switch (step) {
-      case 0:
-        return kind !== null && hasNumericProperties
-      case 1:
-        return currentProps.cy_dataColumns.length > 0
-      case 2:
-        return currentProps.cy_dataColumns.length > 0
-      case 3:
-        return currentProps.cy_dataColumns.length > 0
-      default:
-        return false
+    if (kind === CustomGraphicsNameType.Image) {
+      switch (step) {
+        case 0:
+          return true
+        case 1:
+          return isImageProperties(currentProps) && currentProps.url.trim().length > 0
+        default:
+          return false
+      }
+    } else {
+      switch (step) {
+        case 0:
+          return kind !== null && hasNumericProperties
+        case 1:
+        case 2:
+        case 3:
+          return !isImageProperties(currentProps) && chartProps.cy_dataColumns.length > 0
+        default:
+          return false
+      }
     }
   }
 
@@ -147,13 +201,15 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       // When moving to Colors step (step 2), initialize colors to gray if no palette
       // Do this synchronously before state update to prevent flicker
       if (
+        kind !== CustomGraphicsNameType.Image &&
         nextStep === 2 &&
-        currentProps.cy_dataColumns.length > 0 &&
-        !currentProps.cy_colorScheme
+        !isImageProperties(currentProps) &&
+        chartProps.cy_dataColumns.length > 0 &&
+        !chartProps.cy_colorScheme
       ) {
-        const grayColors = currentProps.cy_dataColumns.map(() => COLORS.DEFAULT)
+        const grayColors = chartProps.cy_dataColumns.map(() => COLORS.DEFAULT)
         handleAttributesAndColorsUpdate(
-          currentProps.cy_dataColumns,
+          chartProps.cy_dataColumns,
           grayColors,
           '',
         )
@@ -167,10 +223,10 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   }
 
   const handleConfirm = () => {
-    if (!isStepValid(3)) return
+    if (!isStepValid(steps.length - 1)) return
     onConfirm({
       ...DEFAULT_CUSTOM_GRAPHICS,
-      type: 'chart',
+      type: kind === CustomGraphicsNameType.Image ? 'image' : 'chart',
       name: kind,
       properties: currentProps,
     } as CustomGraphicsType)
@@ -184,7 +240,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     handleAttributesAndColorsUpdate(
       dataColumns,
       colors,
-      currentProps.cy_colorScheme,
+      chartProps.cy_colorScheme,
     )
   }
 
@@ -199,7 +255,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
     handleAttributesAndColorsUpdate(
       dataColumns,
       colors,
-      currentProps.cy_colorScheme,
+      chartProps.cy_colorScheme,
     )
   }
 
@@ -280,14 +336,14 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     >
                       <PieChartIcon color="primary" />
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Choose Chart Type
+                        Choose Graphic Type
                       </Typography>
                     </Box>
                     {!hasNumericProperties && (
                       <Alert severity="warning" sx={{ mb: 3 }}>
                         <Typography variant="body2">
                           This network does not have any numeric properties in
-                          the node table. Custom graphics require numeric data
+                          the node table. Pie and donut charts require numeric data
                           to display values.
                         </Typography>
                       </Alert>
@@ -298,31 +354,29 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         justifyContent: 'center',
                         gap: 3,
                         mt: 4,
-                        opacity: hasNumericProperties ? 1 : 0.5,
-                        pointerEvents: hasNumericProperties ? 'auto' : 'none',
                       }}
                     >
-                      {(
-                        [
-                          CustomGraphicsNameType.PieChart,
-                          CustomGraphicsNameType.RingChart,
-                        ] as const
-                      ).map((k) => {
+                      {availableKinds.map((k) => {
                         const selected = kind === k
                         const Icon =
                           k === CustomGraphicsNameType.PieChart
                             ? PieChartIcon
-                            : DonutLargeIcon
+                            : k === CustomGraphicsNameType.RingChart
+                              ? DonutLargeIcon
+                              : ImageIcon
                         const label =
                           k === CustomGraphicsNameType.PieChart
                             ? 'Pie Chart'
-                            : 'Donut Chart'
+                            : k === CustomGraphicsNameType.RingChart
+                              ? 'Donut Chart'
+                              : 'Image'
+                        const isDisabled = k !== CustomGraphicsNameType.Image && !hasNumericProperties
                         return (
                           <Box
                             key={k}
-                            onClick={() => hasNumericProperties && setKind(k)}
+                            onClick={() => !isDisabled && setKind(k)}
                             sx={{
-                              cursor: hasNumericProperties
+                              cursor: !isDisabled
                                 ? 'pointer'
                                 : 'not-allowed',
                               display: 'flex',
@@ -339,7 +393,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                                 : 'background.paper',
                               minWidth: 160,
                               transition: 'all 0.2s ease',
-                              '&:hover': hasNumericProperties
+                              opacity: isDisabled ? 0.5 : 1,
+                              '&:hover': !isDisabled
                                 ? {
                                     borderColor: 'primary.main',
                                     boxShadow: 2,
@@ -375,8 +430,29 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   </Box>
                 )}
 
-                {/* Step 2: Attributes */}
-                {activeStep === 1 && (
+                {/* Step 2: Attributes or Image URL */}
+                {activeStep === 1 && kind === CustomGraphicsNameType.Image && (
+                  <Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 3,
+                      }}
+                    >
+                      <ImageIcon color="primary" />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Image URL
+                      </Typography>
+                    </Box>
+                    <ImageForm
+                      url={isImageProperties(currentProps) ? currentProps.url : ''}
+                      onUpdate={handleImageUrlUpdate}
+                    />
+                  </Box>
+                )}
+                {activeStep === 1 && kind !== CustomGraphicsNameType.Image && (
                   <Box>
                     <Box
                       sx={{
@@ -397,9 +473,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       </Typography>
                     </Alert>
                     <AttributesForm
-                      dataColumns={currentProps.cy_dataColumns}
-                      colors={currentProps.cy_colors}
-                      colorScheme={currentProps.cy_colorScheme}
+                      dataColumns={chartProps.cy_dataColumns}
+                      colors={chartProps.cy_colors}
+                      colorScheme={chartProps.cy_colorScheme}
                       currentNetworkId={currentNetworkId}
                       onUpdate={handleAttributesUpdate}
                       hideGuidance={false}
@@ -408,7 +484,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                 )}
 
                 {/* Step 3: Colors */}
-                {activeStep === 2 && (
+                {activeStep === 2 && kind !== CustomGraphicsNameType.Image && (
                   <Box>
                     <Box
                       sx={{
@@ -423,18 +499,18 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         Choose Colors
                       </Typography>
                     </Box>
-                    {currentProps.cy_dataColumns.length === 0 && (
+                    {chartProps.cy_dataColumns.length === 0 && (
                       <Alert severity="info" sx={{ mb: 3 }}>
                         <Typography variant="body2">
                           Please go back and add attributes first.
                         </Typography>
                       </Alert>
                     )}
-                    {currentProps.cy_dataColumns.length > 0 && (
+                    {chartProps.cy_dataColumns.length > 0 && (
                       <ColorsForm
-                        dataColumns={currentProps.cy_dataColumns}
-                        colors={currentProps.cy_colors}
-                        colorScheme={currentProps.cy_colorScheme}
+                        dataColumns={chartProps.cy_dataColumns}
+                        colors={chartProps.cy_colors}
+                        colorScheme={chartProps.cy_colorScheme}
                         currentNetworkId={currentNetworkId}
                         onUpdate={handleAttributesAndColorsUpdate}
                       />
@@ -443,7 +519,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                 )}
 
                 {/* Step 4: Properties */}
-                {activeStep === 3 && (
+                {activeStep === 3 && kind !== CustomGraphicsNameType.Image && (
                   <Box>
                     <Box
                       sx={{
@@ -458,20 +534,20 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         Chart Properties
                       </Typography>
                     </Box>
-                    {currentProps.cy_dataColumns.length === 0 && (
+                    {chartProps.cy_dataColumns.length === 0 && (
                       <Alert severity="info" sx={{ mb: 3 }}>
                         <Typography variant="body2">
                           Please go back and add attributes first.
                         </Typography>
                       </Alert>
                     )}
-                    {currentProps.cy_dataColumns.length > 0 && (
+                    {chartProps.cy_dataColumns.length > 0 && (
                       <PropertiesForm
-                        startAngle={currentProps.cy_startAngle}
+                        startAngle={chartProps.cy_startAngle}
                         holeSize={
                           kind === CustomGraphicsNameType.RingChart &&
                           isRingChartProperties(currentProps)
-                            ? currentProps.cy_holeSize
+                            ? (currentProps as RingChartPropertiesType).cy_holeSize
                             : undefined
                         }
                         kind={kind}
@@ -533,19 +609,23 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       size={200}
                       showLabels={false}
                       useGrayColors={
-                        activeStep === 1 ||
-                        (activeStep === 2 &&
-                          !currentProps.cy_colorScheme &&
-                          (currentProps.cy_colors.length === 0 ||
-                            currentProps.cy_colors.some(
-                              (color) => color !== COLORS.DEFAULT,
-                            )))
+                        kind !== CustomGraphicsNameType.Image &&
+                        !isImageProperties(currentProps) &&
+                        (activeStep === 1 ||
+                          (activeStep === 2 &&
+                            !chartProps.cy_colorScheme &&
+                            (chartProps.cy_colors.length === 0 ||
+                              chartProps.cy_colors.some(
+                                (color) => color !== COLORS.DEFAULT,
+                              ))))
                       }
                       showIndices={
                         activeStep === 1 || activeStep === 2 || activeStep === 3
                       }
                     />
-                    {currentProps.cy_dataColumns.length === 0 &&
+                    {kind !== CustomGraphicsNameType.Image &&
+                      !isImageProperties(currentProps) &&
+                      chartProps.cy_dataColumns.length === 0 &&
                       activeStep > 1 && (
                         <Alert severity="info" sx={{ mt: 3, width: '100%' }}>
                           Add at least one attribute to create a chart
@@ -595,7 +675,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     >
                       <PieChartIcon color="primary" />
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Chart Type
+                        Graphic Type
                       </Typography>
                     </Box>
                   </AccordionSummary>
@@ -608,17 +688,14 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         mt: 2,
                       }}
                     >
-                      {(
-                        [
-                          CustomGraphicsNameType.PieChart,
-                          CustomGraphicsNameType.RingChart,
-                        ] as const
-                      ).map((k) => {
+                      {availableKinds.map((k) => {
                         const selected = kind === k
                         const Icon =
                           k === CustomGraphicsNameType.PieChart
                             ? PieChartIcon
-                            : DonutLargeIcon
+                            : k === CustomGraphicsNameType.RingChart
+                              ? DonutLargeIcon
+                              : ImageIcon
                         return (
                           <Box
                             key={k}
@@ -645,7 +722,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                             <Typography fontSize="0.875rem">
                               {k === CustomGraphicsNameType.PieChart
                                 ? 'Pie Chart'
-                                : 'Donut Chart'}
+                                : k === CustomGraphicsNameType.RingChart
+                                  ? 'Donut Chart'
+                                  : 'Image'}
                             </Typography>
                           </Box>
                         )
@@ -654,7 +733,41 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   </AccordionDetails>
                 </Accordion>
 
+                {/* Image Form Accordion */}
+                {kind === CustomGraphicsNameType.Image && (
+                  <Accordion>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{
+                        '& .MuiAccordionSummary-content': {
+                          alignItems: 'center',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <ImageIcon color="primary" />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          Image URL
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <ImageForm
+                        url={isImageProperties(currentProps) ? currentProps.url : ''}
+                        onUpdate={handleImageUrlUpdate}
+                      />
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
                 {/* Attributes Form */}
+                {kind !== CustomGraphicsNameType.Image && (
                 <Accordion>
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
@@ -678,7 +791,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     </Box>
                   </AccordionSummary>
                   <AccordionDetails>
-                    {currentProps.cy_dataColumns.length === 0 && (
+                    {chartProps.cy_dataColumns.length === 0 && (
                       <Alert severity="info" sx={{ mb: 2 }}>
                         <Typography variant="body2">
                           {`Select up to ${CHART_CONSTANTS.MAX_SLICES} numeric attributes. Use the arrow buttons to move items between lists. The order in Selected Attributes determines slice order in the chart.`}
@@ -686,17 +799,19 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       </Alert>
                     )}
                     <AttributesForm
-                      dataColumns={currentProps.cy_dataColumns}
-                      colors={currentProps.cy_colors}
-                      colorScheme={currentProps.cy_colorScheme}
+                      dataColumns={chartProps.cy_dataColumns}
+                      colors={chartProps.cy_colors}
+                      colorScheme={chartProps.cy_colorScheme}
                       currentNetworkId={currentNetworkId}
                       onUpdate={handleAttributesUpdateCompact}
                       hideGuidance={true}
                     />
                   </AccordionDetails>
                 </Accordion>
+                )}
 
                 {/* Colors Form */}
+                {kind !== CustomGraphicsNameType.Image && (
                 <Accordion>
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
@@ -720,26 +835,28 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     </Box>
                   </AccordionSummary>
                   <AccordionDetails>
-                    {currentProps.cy_dataColumns.length === 0 && (
+                    {chartProps.cy_dataColumns.length === 0 && (
                       <Alert severity="info" sx={{ mb: 3 }}>
                         <Typography variant="body2">
                           Please add attributes first.
                         </Typography>
                       </Alert>
                     )}
-                    {currentProps.cy_dataColumns.length > 0 && (
+                    {chartProps.cy_dataColumns.length > 0 && (
                       <ColorsForm
-                        dataColumns={currentProps.cy_dataColumns}
-                        colors={currentProps.cy_colors}
-                        colorScheme={currentProps.cy_colorScheme}
+                        dataColumns={chartProps.cy_dataColumns}
+                        colors={chartProps.cy_colors}
+                        colorScheme={chartProps.cy_colorScheme}
                         currentNetworkId={currentNetworkId}
                         onUpdate={handleAttributesAndColorsUpdate}
                       />
                     )}
                   </AccordionDetails>
                 </Accordion>
+                )}
 
                 {/* Properties Form */}
+                {kind !== CustomGraphicsNameType.Image && (
                 <Accordion>
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
@@ -763,20 +880,20 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     </Box>
                   </AccordionSummary>
                   <AccordionDetails>
-                    {currentProps.cy_dataColumns.length === 0 && (
+                    {chartProps.cy_dataColumns.length === 0 && (
                       <Alert severity="info" sx={{ mb: 3 }}>
                         <Typography variant="body2">
                           Please add attributes first.
                         </Typography>
                       </Alert>
                     )}
-                    {currentProps.cy_dataColumns.length > 0 && (
+                    {chartProps.cy_dataColumns.length > 0 && (
                       <PropertiesForm
-                        startAngle={currentProps.cy_startAngle}
+                        startAngle={chartProps.cy_startAngle}
                         holeSize={
                           kind === CustomGraphicsNameType.RingChart &&
                           isRingChartProperties(currentProps)
-                            ? currentProps.cy_holeSize
+                            ? (currentProps as RingChartPropertiesType).cy_holeSize
                             : undefined
                         }
                         kind={kind}
@@ -785,6 +902,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     )}
                   </AccordionDetails>
                 </Accordion>
+                )}
               </Box>
             </Box>
 
@@ -815,7 +933,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                 >
                   Preview
                 </Typography>
-                {currentProps.cy_dataColumns.length === 0 ? (
+                {kind !== CustomGraphicsNameType.Image && chartProps.cy_dataColumns.length === 0 ? (
                   <Box
                     sx={{
                       display: 'flex',
@@ -828,6 +946,21 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                   >
                     <Typography variant="body2" color="text.secondary">
                       Add attributes to see preview
+                    </Typography>
+                  </Box>
+                ) : kind === CustomGraphicsNameType.Image && (!isImageProperties(currentProps) || currentProps.url.trim().length === 0) ? (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: 200,
+                      textAlign: 'center',
+                      px: 2,
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Add an Image URL to see preview
                     </Typography>
                   </Box>
                 ) : (
@@ -877,9 +1010,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                 variant="contained"
                 startIcon={<CheckIcon />}
                 onClick={handleConfirm}
-                disabled={!isStepValid(3)}
+                disabled={!isStepValid(steps.length - 1)}
                 title={
-                  !isStepValid(3)
+                  !isStepValid(steps.length - 1)
                     ? 'Complete all required fields to confirm'
                     : 'Save chart configuration'
                 }
@@ -892,9 +1025,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
           <Button
             variant="contained"
             onClick={handleConfirm}
-            disabled={!isStepValid(3)}
+            disabled={!isStepValid(steps.length - 1)}
             title={
-              !isStepValid(3)
+              !isStepValid(steps.length - 1)
                 ? 'Complete all required fields to confirm'
                 : 'Save chart configuration'
             }

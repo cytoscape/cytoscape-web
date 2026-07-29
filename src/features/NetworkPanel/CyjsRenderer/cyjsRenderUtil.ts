@@ -367,10 +367,37 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     }
 
     /**
-     * Placeholder for image custom graphics properties.
-     * (Not implemented yet.)
+     * Adds Cytoscape.js image custom graphics properties.
      */
-    const addCyjsImageProperties = () => {}
+    const addCyjsImageProperties = () => {
+      const imageProps: Array<{
+        selectorStr: SpecialPropertyName
+        styleStr: string
+      }> = [
+        {
+          selectorStr: SpecialPropertyName.BackgroundImage,
+          styleStr: 'background-image',
+        },
+        {
+          selectorStr: SpecialPropertyName.BackgroundFit,
+          styleStr: 'background-fit',
+        },
+        {
+          selectorStr: SpecialPropertyName.BackgroundImageCrossorigin,
+          styleStr: 'background-image-crossorigin',
+        },
+      ]
+
+      imageProps.forEach(({ selectorStr, styleStr }) => {
+        const mapping = {
+          selector: `node[${selectorStr}]`,
+          style: {
+            [styleStr as CyjsVisualPropertyType]: `data(${selectorStr})`,
+          },
+        }
+        cyStyle.push(mapping as CyjsDirectMapper)
+      })
+    }
 
     addCyjsPieProperties()
     addCyjsRingProperties()
@@ -504,6 +531,7 @@ const updateCyElements = <T extends View>(
           obj.removeData(key as any)
         }
       })
+
 
       // If node size is locked, set width equal to height.
       if (visualEditorProperties?.nodeSizeLocked) {

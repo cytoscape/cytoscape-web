@@ -6,8 +6,14 @@ import {
   VisualStyle,
 } from '../../models'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import {
+  hasImageCustomGraphics,
+  IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+  IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+} from '../../models/CxModel/impl/customGraphicsCompat'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
+import { MessageSeverity } from '../../models/MessageModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { putNetworkSummaryToDb } from '../db'
@@ -17,6 +23,7 @@ import {
   getNetworkValidationStatus,
 } from '../external-api/ndex'
 import { useUrlNavigation } from './navigation/useUrlNavigation'
+import { useMessageStore } from './stores/MessageStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useDeleteCyNetwork } from './useDeleteCyNetwork'
@@ -39,6 +46,7 @@ export const useSaveCyNetworkCopyToNDEx = () => {
   const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
   const addSummary = useNetworkSummaryStore((state) => state.add)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const saveCopyToNDEx = async (
     accessToken: string,
     network: Network,
@@ -72,6 +80,18 @@ export const useSaveCyNetworkCopyToNDEx = () => {
       summary,
       deleteOriginal ? summary.name : `Copy of ${summary.name}`,
     )
+
+    // Networks saved to NDEx are routinely opened in Cytoscape Desktop from
+    // there, where custom-graphic images render as "?" — Desktop loads image
+    // bytes from its own pool, not from the network file. Warn, but still save.
+    if (hasImageCustomGraphics(cx)) {
+      addMessage({
+        message: IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+        duration: IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+        severity: MessageSeverity.WARNING,
+      })
+    }
+
     const ndexClient = getNdexClient(accessToken)
     const { uuid } = await ndexClient.networks.createNetworkFromRawCX2(cx)
     const summaryIsValid = await getNetworkValidationStatus(
