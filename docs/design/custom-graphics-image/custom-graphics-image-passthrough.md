@@ -152,6 +152,26 @@ Image custom graphics authored in Cytoscape Web must survive export to Cytoscape
 - Image custom graphics support **passthrough, default, and bypass**, but not discrete mappings.
 - The passthrough mapping definition drops the `type` field on round-trip when the attribute type is not captured; verified non-breaking on Desktop 3.10.3 import, but non-conformant with Desktop's own output.
 
+### Shipping Decision: Authoring Withheld, Passthrough Kept
+
+Because the "image bytes are not carried by CX2" row above is a Desktop architectural limitation and **not** something Cytoscape Web can fix by changing its output, this feature ships deliberately asymmetric:
+
+| Capability | Status | Where |
+|------------|--------|-------|
+| **Rendering** images (defaults, bypasses, passthrough, imported CX2, Desktop-authored SVG) | **Enabled** | `computeImageProperties`, `addCyjsImageProperties`, `CustomGraphicRender` |
+| **Authoring** an image from scratch in the custom-graphics picker | **Withheld** | `AUTHORABLE_CUSTOM_GRAPHIC_KINDS` in `.../CustomGraphics/utils/constants.ts` |
+| **Authoring** via a string column + passthrough mapping on `nodeImageChart*` | **Enabled** | `valueType2BaseType[CustomGraphic] = 'string'` in `mappingFunctionImpl.ts` |
+| **Editing** an image value that already exists | **Enabled** | `availableKinds` in `CustomGraphicDialog.tsx` |
+
+Rationale: a picker that offers "Image" implies the result is a first-class, portable value. It is not — it renders in Web and shows `?` in Desktop. Withholding the option avoids manufacturing broken files through the most discoverable path, while the passthrough route stays available to users who are driving images from data and can be told about the caveat.
+
+Two consequences worth knowing:
+
+- The picker still shows the Image card **when the value being edited is already an image** — imported from a CX2, or authored before this restriction. Without that carve-out the dialog would open with `kind` hydrated to image and no card highlighted, and the only escape would be clicking Pie, silently discarding the image. This is also what keeps `ImageForm.tsx` reachable rather than dead code.
+- Because passthrough authoring remains, the Desktop caveat is surfaced at every export path a person watches — "Open in Cytoscape Desktop", the CX2 download, and both NDEx saves — via `hasImageCustomGraphics()` and the shared `IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING`. All of those emit byte-identical CX2, so warning on only the Desktop hand-off would cover a fraction of the exposure. The Vizmapper's existing `nodeImageChart` advisory tooltip carries the same caveat at authoring time.
+
+**To re-enable image authoring** once Desktop parity exists (CW populating Desktop's pool over CyREST, or a Desktop-side reader change): add `CustomGraphicsNameType.Image` back to `AUTHORABLE_CUSTOM_GRAPHIC_KINDS`. That is the whole change — all three type-card grids read from that list. The `CustomGraphicDialog.spec.tsx` assertions and the `mappingFunctionImpl.test.ts` passthrough guard will need updating to match the new intent.
+
 ### No Table Browser UI Changes
 
 Standard string columns hold image URLs. No special input widget or preview is needed.
@@ -166,8 +186,14 @@ Standard string columns hold image URLs. No special input widget or preview is n
 | `src/models/VisualStyleModel/impl/cxVisualPropertyConverter.ts` | Desktop-compat in `vpToCX`: SVG-vs-raster class + tag, size stringification, `tag`/`id` injection |
 | `src/models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/directMappingSelector.ts` | Image `SpecialPropertyName` constants |
 | `src/models/VisualStyleModel/impl/computeViewUtil.ts` | Pass custom graphic VPs to `computeCustomGraphicsProperties` |
-| `src/models/CxModel/impl/customGraphicsCompat.ts` | `hasDataUriCustomGraphics()` — detect Desktop-incompatible inline images |
-| `src/data/hooks/useOpenInCytoscapeDesktop.ts` | Warn on data-URI custom graphics before sending to Desktop |
+| `src/models/CxModel/impl/customGraphicsCompat.ts` | `hasDataUriCustomGraphics()` / `hasImageCustomGraphics()` — detect Desktop-incompatible images; shared warning text |
+| `src/data/hooks/useOpenInCytoscapeDesktop.ts` | Warn on image custom graphics before sending to Desktop |
+| `src/data/hooks/useDownloadNetworkFile.ts` | Same warning before a `.cx2` download (identical bytes) |
+| `src/data/hooks/useSaveCyNetworkToNDEx.ts`, `useSaveCyNetworkCopyToNDEx.ts` | Same warning before an NDEx save |
+| `src/features/Vizmapper/index.tsx` | Desktop caveat added to the existing `nodeImageChart` advisory tooltip |
+| `.../CustomGraphics/utils/constants.ts` | `AUTHORABLE_CUSTOM_GRAPHIC_KINDS` — the single gate for which kinds the picker offers |
+| `.../CustomGraphics/CustomGraphicDialog.tsx` | Both type-card grids read `availableKinds`; image kept only when editing an existing image |
+| `.../CustomGraphics/WizardSteps/SelectTypeStep.tsx` | Third type-card copy reads the same list via an `availableKinds` prop |
 | `src/features/NetworkPanel/CyjsRenderer/cyjsRenderUtil.ts` | Implement `addCyjsImageProperties()` |
 | `scripts/desktop-roundtrip/` | Standalone CyREST round-trip harness for Desktop verification |
 
