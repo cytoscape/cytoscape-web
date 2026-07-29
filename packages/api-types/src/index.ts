@@ -42,7 +42,7 @@ declare global {
      * ```typescript
      * window.addEventListener('cywebapi:ready', () => {
      *   const api = window.CyWebApi  // typed as CyWebApiType
-     *   const result = api.network.getCurrentNetwork()
+     *   const result = api.workspace.getCurrentNetworkId()
      * })
      * ```
      */

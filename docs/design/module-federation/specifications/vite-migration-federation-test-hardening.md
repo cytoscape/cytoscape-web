@@ -29,11 +29,11 @@ Every existing test that touches federation or the public API mocks out the
 exact boundary the migration rewrote, so the suite is currently **blind** to
 migration breakage:
 
-| Existing test | What it mocks | Blind to |
-| --- | --- | --- |
-| `src/features/AppManager/loader/loadRemoteApp.test.ts` | `loadModule` fully mocked | the real MF runtime in `ExternalComponent.tsx` (rewritten in this branch) |
-| `src/app-api/cywebapi-ready.test.ts` | hand-built mock object; real `CyWebApi` never imported | whether `init.tsx` actually assigns `window.CyWebApi` under Vite |
-| `src/app-api/core/*.test.ts` | stores mocked; pure logic only | anything about bundling / exposes / federation |
+| Existing test                                          | What it mocks                                          | Blind to                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `src/features/AppManager/loader/loadRemoteApp.test.ts` | `loadModule` fully mocked                              | the real MF runtime in `ExternalComponent.tsx` (rewritten in this branch) |
+| `src/app-api/cywebapi-ready.test.ts`                   | hand-built mock object; real `CyWebApi` never imported | whether bootstrap actually assigns `window.CyWebApi` under Vite           |
+| `src/app-api/core/*.test.ts`                           | stores mocked; pure logic only                         | anything about bundling / exposes / federation                            |
 
 None would fail if `vite build` silently shipped a broken or incomplete public
 surface.
@@ -103,7 +103,7 @@ still drags in the federation plugin, hence the extraction.)
   - **Frozen expected-keys list.** A literal array of the 26 expected
     `./Xxx` keys lives in the test. Assert
     `Object.keys(FEDERATION_EXPOSES)` equals it exactly (set equality — fails on
-    both *missing* and *unexpected* keys). This is the human-reviewed gate: a
+    both _missing_ and _unexpected_ keys). This is the human-reviewed gate: a
     diff to the public surface forces a deliberate test edit.
   - **Target files exist on disk.** For every value in `FEDERATION_EXPOSES`,
     `fs.existsSync(path.resolve(__dirname, '../../../', value))` is true.
@@ -121,7 +121,7 @@ still drags in the federation plugin, hence the extraction.)
 - Parse `mf-declarations.d.ts` for `declare module 'cyweb/<Name>'` blocks.
 - Assert every declared `cyweb/<Name>` has a matching `./<Name>` in
   `FEDERATION_EXPOSES`, and that every **public hook/type** expose (the
-  `Api`/`EventBus`/`AppIdContext`/`ApiTypes` subset — *not* the raw store
+  `Api`/`EventBus`/`AppIdContext`/`ApiTypes` subset — _not_ the raw store
   exposes, which are intentionally untyped for plugin authors) has a matching
   `declare module`. Keeps shipped types from drifting from shipped code.
 
@@ -150,7 +150,7 @@ default `test:unit` run.
   3. **Shared singletons present.** Assert the build registers
      `react`, `react-dom`, `@mui/material` as shared singletons (grep the
      `localSharedImportMap` / loadShare chunks for these names). This guards the
-     classic federation failure where a remote loads a *second* React/MUI copy
+     classic federation failure where a remote loads a _second_ React/MUI copy
      and hooks/context explode at runtime.
   4. Non-empty output: each referenced exposed chunk file actually exists in
      `dist/assets/`.
@@ -163,8 +163,8 @@ default `test:unit` run.
 
 ### Tier 3 — Real-browser E2E (Playwright)
 
-The only tests that cross the real bundler boundary `ExternalComponent.tsx` /
-`init.tsx` were rewritten on. Highest value, highest setup.
+The only tests that cross the real bundler boundary around remote loading and
+bootstrap publication. Highest value, highest setup.
 
 #### 3.1 `cywebapi:ready` + public API presence
 
@@ -175,10 +175,10 @@ The only tests that cross the real bundler boundary `ExternalComponent.tsx` /
     (`element`, `network`, `selection`, `viewport`, `table`, `visualStyle`,
     `layout`, `export`, `workspace`, `contextMenu`).
   - A read-only call returns a well-formed `ApiResult` — e.g.
-    `window.CyWebApi.network.getCurrentNetwork()` has a boolean `success`
+    `window.CyWebApi.workspace.getWorkspaceInfo()` has a boolean `success`
     field. (Pick a call with no side effects and no network dependency.)
-- This is what `cywebapi-ready.test.ts` *cannot* do — it runs against the real
-  Vite bundle and real `init.tsx`, not a mock object.
+- This is what `cywebapi-ready.test.ts` _cannot_ do — it runs against the real
+  Vite bundle and real bootstrap path, not a mock object.
 
 #### 3.2 Real federated-remote load (gold standard)
 
@@ -215,27 +215,35 @@ the best value-per-effort and cover the most probable migration regressions.
 
 ## 5. CI wiring (summary)
 
-| Test | Command | When |
-| --- | --- | --- |
-| Tier 1 contract tests | `npm run test:unit` | every PR (already gated) |
-| Tier 2 build verifier | `npm run build && npm run verify:federation` | CI build job |
-| Tier 3 E2E | `npm run test:e2e` | CI e2e job (may already exist) |
+| Test                  | Command                                      | When                           |
+| --------------------- | -------------------------------------------- | ------------------------------ |
+| Tier 1 contract tests | `npm run test:unit`                          | every PR (already gated)       |
+| Tier 2 build verifier | `npm run build && npm run verify:federation` | CI build job                   |
+| Tier 3 E2E            | `npm run test:e2e`                           | CI e2e job (may already exist) |
 
 ## 6. Files touched / added (at a glance)
 
 **Refactor**
+
 - `vite.config.ts` (consume extracted exposes)
 
+**Modified**
+
+- `package.json` — adds the `verify:federation` script (runs via the existing `ts-node` dev dependency; no dependency change required)
+
 **New (Tier 1)**
+
 - `src/app-api/federation/federationExposes.ts`
 - `src/app-api/federation/federationExposes.test.ts`
 - `packages/api-types/src/mf-declarations.test.ts`
 
 **New (Tier 2)**
+
 - `scripts/verify-federation-build.ts`
 - `package.json` — `verify:federation` script (runs via the existing `ts-node` dev dependency; no dependency change required)
 
 **New (Tier 3)**
+
 - `test/playwright/cywebapi-ready.spec.ts`
 - `test/fixtures/remote-app/` (mini MF remote + its vite config)
 - `test/playwright/remote-app-load.spec.ts`

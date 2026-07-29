@@ -6,6 +6,7 @@ import {
   EditableGridCell,
   GridCell,
   GridColumn,
+  GridMouseEventArgs,
   Item,
 } from '@glideapps/glide-data-grid'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
@@ -14,7 +15,6 @@ import {
   Tooltip,
 } from '@mui/material'
 import Box from '@mui/material/Box'
-import { useTheme } from '@mui/material/styles'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 
@@ -36,6 +36,7 @@ import { handleColumnMove, handleColumnResize } from './utils/columnHandlers'
 import { handlePaste } from './utils/pasteHandler'
 import { TableContextMenu } from './components/TableContextMenu'
 import { TableGrid } from './components/TableGrid'
+import { TableHeaderTooltip } from './components/TableHeaderTooltip'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
@@ -46,13 +47,13 @@ import { TableToolbar } from './components/TableToolbar'
 import { useTableSelection } from './hooks/useTableSelection';
 import { useTableData } from './hooks/useTableData';
 import { useListEditor } from './hooks/useListEditor';
-import { createHeaderIcons, handleDrawHeader } from './utils/tableRenderers';
 import { TabPanel } from './components/TabPanel'
 import { TableBrowserTabs, TableBrowserTab } from './components/TableBrowserTabs'
 import { useTableMinMaxIds } from './hooks/useTableMinMaxIds'
 import { useTableScrollToTop } from './hooks/useTableScrollToTop'
 import { useIsContextCellVirtual } from './hooks/useIsContextCellVirtual'
 import { useDataEditorTheme } from './hooks/useDataEditorTheme'
+import { useHeaderTooltip } from './hooks/useHeaderTooltip'
 
 export interface TableColumn {
   id: string
@@ -83,12 +84,6 @@ export default function TableBrowser(props: {
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
-  const theme = useTheme()
-  const isDark = theme.palette.mode === 'dark'
-
-  const headerIcons = React.useMemo(() => createHeaderIcons(isDark), [isDark])
-  
-  
   const setUi = useUiStateStore((state) => state.setUi)
   const currentTabIndex = ui.tableUi.activeTabIndex
 
@@ -295,9 +290,23 @@ export default function TableBrowser(props: {
     ],
   )
 
+  const {
+    target: headerTooltipTarget,
+    onItemHovered: onHeaderHovered,
+    clearTooltip: clearHeaderTooltip,
+  } = useHeaderTooltip()
+
+  // A tab switch swaps the grid out from under the pointer, so any header
+  // tooltip still showing would point at a column that is no longer there.
+  useEffect(() => {
+    clearHeaderTooltip()
+  }, [currentTabIndex, clearHeaderTooltip])
+
   const onItemHovered = React.useCallback(
-    (cell: Item) => {
-      const rowIndex = cell[1]
+    (args: GridMouseEventArgs) => {
+      onHeaderHovered(args)
+
+      const rowIndex = args.location[1]
       const rowData = rows[rowIndex]
       const cxId = rowData?.id
 
@@ -307,7 +316,7 @@ export default function TableBrowser(props: {
         // setHovered(networkId, String(cxId))
       }
     },
-    [rows],
+    [onHeaderHovered, rows],
   )
 
   const onColumnResize = React.useCallback(
@@ -524,6 +533,7 @@ export default function TableBrowser(props: {
           onPaste={onPaste}
           onColumnMoved={onColMoved}
           onItemHovered={onItemHovered}
+          onGridMouseLeave={clearHeaderTooltip}
           onColumnResizeEnd={onColumnResize}
           width={width}
           height={props.height - GRID_GAP}
@@ -531,8 +541,6 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={allColumns}
           theme={dataEditorTheme}
-          headerIcons={headerIcons}
-          drawHeader={handleDrawHeader}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={TableBrowserTab.EDGES}>
@@ -549,6 +557,7 @@ export default function TableBrowser(props: {
           onPaste={onPaste}
           onColumnMoved={onColMoved}
           onItemHovered={onItemHovered}
+          onGridMouseLeave={clearHeaderTooltip}
           onColumnResizeEnd={onColumnResize}
           width={width}
           height={props.height - GRID_GAP}
@@ -556,13 +565,12 @@ export default function TableBrowser(props: {
           onCellEdited={onCellEdited}
           columns={allColumns}
           theme={dataEditorTheme}
-          headerIcons={headerIcons}
-          drawHeader={handleDrawHeader}
         />
       </TabPanel>
       <TabPanel value={currentTabIndex} index={TableBrowserTab.NETWORK}>
         <NetworkInfoPanel height={props.height - TOOLBAR_HEIGHT - 1} />
       </TabPanel>
+      <TableHeaderTooltip target={headerTooltipTarget} columns={allColumns} />
       <TableContextMenu
         contextMenu={contextMenu}
         handleContextMenuClose={handleContextMenuClose}

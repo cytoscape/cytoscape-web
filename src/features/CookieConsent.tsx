@@ -19,6 +19,10 @@ export const CookieConsentWidget: React.FC = () => {
   return (
     <CookieConsent
       customContainerAttributes={{ 'data-testid': 'cookie-consent' }}
+      customButtonProps={{ 'data-testid': 'cookie-consent-accept-button' }}
+      customDeclineButtonProps={{
+        'data-testid': 'cookie-consent-decline-button',
+      }}
       location="bottom"
       buttonText="Accept"
       declineButtonText="Decline"
