@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -137,5 +139,42 @@ describe('hasImageCustomGraphics', () => {
       },
     ]
     expect(hasImageCustomGraphics(cx as any)).toBe(false)
+  })
+})
+
+/**
+ * The cases above are hand-built CX2. These run the detector against the real
+ * fixtures, which are shaped by the actual exporter — the thing the four export
+ * hooks feed it in production.
+ */
+describe('hasImageCustomGraphics against real CX2 fixtures', () => {
+  const loadFixture = (name: string): any =>
+    JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, '../../../../test/fixtures/cx2/valid', name),
+        'utf8',
+      ),
+    )
+
+  it('flags an image custom graphic in a default node visual property', () => {
+    expect(hasImageCustomGraphics(loadFixture('images.valid.cx2'))).toBe(true)
+  })
+
+  // This fixture carries an SVGCustomGraphics bypass pointing at a `file:` URL.
+  // Desktop cannot fetch that either, so it must be flagged — but it is not a
+  // data URI, which is precisely why the narrow hasDataUriCustomGraphics() is not
+  // sufficient on its own and hasImageCustomGraphics() exists.
+  it('flags a file: URL SVG bypass that the data-URI detector misses', () => {
+    const cx = loadFixture('svg-passthrough.valid.cx2')
+    expect(hasImageCustomGraphics(cx)).toBe(true)
+    expect(hasDataUriCustomGraphics(cx)).toBe(false)
+  })
+
+  it('finds a lone image slot among many chart slots', () => {
+    // gal-filtered-chart has charts in slots 1-7 and 9 and an image in slot 8;
+    // the detector must not stop at the first chart it sees.
+    expect(hasImageCustomGraphics(loadFixture('gal-filtered-chart.valid.cx2'))).toBe(
+      true,
+    )
   })
 })
