@@ -227,6 +227,10 @@ the best value-per-effort and cover the most probable migration regressions.
 
 - `vite.config.ts` (consume extracted exposes)
 
+**Modified**
+
+- `package.json` — adds the `verify:federation` script (runs via the existing `ts-node` dev dependency; no dependency change required)
+
 **New (Tier 1)**
 
 - `src/app-api/federation/federationExposes.ts`

@@ -470,7 +470,7 @@ window.addEventListener('selection:changed', (e) => {
 The augmentation is declared inside the package as:
 
 ```typescript
-// packages/api-types/src/index.ts (published declaration output)
+// packages/api-types/src/index.ts (source entry; emitted to dist/index.d.ts)
 declare global {
   interface WindowEventMap extends CyWebEventMap {} // maps each key → CustomEvent<detail>
   interface Window {

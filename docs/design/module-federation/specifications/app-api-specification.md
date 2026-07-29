@@ -1202,7 +1202,7 @@ export const CyWebApi = {
 
 ```typescript
 // Bootstrap initialization (before React renders)
-import { CyWebApi } from './app-api/core'
+import { CyWebApi, type CyWebApiType } from './app-api/core'
 
 declare global {
   interface Window {
@@ -1230,9 +1230,19 @@ window.addEventListener('cywebapi:ready', () => {
 
 **Consumer readiness guard:**
 
+`window.CyWebApi` is assigned in `src/boot/bootstrap.tsx`, before workspace
+hydration — so its presence does **not** mean the API is ready. Readiness is
+signalled only by `cywebapi:ready`. A guard must therefore track whether that
+event has already fired, so callbacks registered after it still run:
+
 ```javascript
+let apiReady = false
+window.addEventListener('cywebapi:ready', () => (apiReady = true), {
+  once: true,
+})
+
 function onApiReady(callback) {
-  if (window.CyWebApi) {
+  if (apiReady) {
     callback(window.CyWebApi)
   } else {
     window.addEventListener('cywebapi:ready', () => callback(window.CyWebApi), {
@@ -1241,6 +1251,9 @@ function onApiReady(callback) {
   }
 }
 ```
+
+Register the flag listener as early as possible — before the app's bundle
+finishes loading — so the event cannot be missed.
 
 #### JSON serialization guarantee
 

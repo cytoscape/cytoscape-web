@@ -599,7 +599,7 @@ Install the published `@cytoscape-web/api-types` package and reference it in
 The package declares the global augmentation:
 
 ```typescript
-// packages/api-types/src/index.ts (published declaration output)
+// packages/api-types/src/index.ts (source entry; emitted to dist/index.d.ts)
 
 import type { CyWebEventMap, CyWebApiType } from '.'
 
@@ -627,17 +627,17 @@ window.addEventListener('selection:changed', (e) => {
 
 ### 2.1 Store Subscription Mapping
 
-| Event               | Store            | Selector / source                               | Equality check              |
-| ------------------- | ---------------- | ----------------------------------------------- | --------------------------- |
-| `network:created`   | WorkspaceStore   | `state.workspace.networkIds`                    | Reference                   |
-| `network:deleted`   | WorkspaceStore   | `state.workspace.networkIds`                    | Reference                   |
-| `network:changed`   | NetworkStore     | `state.networks`                                | Reference + ID diff         |
-| `network:switched`  | WorkspaceStore   | `state.workspace.currentNetworkId`              | `===`                       |
-| `selection:changed` | ViewModelStore   | primary view for the current network            | Value comparison            |
-| `layout:started`    | —                | dispatched from `core/layoutApi.ts`             | —                           |
-| `layout:completed`  | —                | dispatched from `core/layoutApi.ts`             | —                           |
-| `style:changed`     | VisualStyleStore | full-state subscription on `state.visualStyles` | Reference                   |
-| `data:changed`      | TableStore       | `state.tables`                                  | Reference + row/schema diff |
+| Event               | Store            | Selector / source                                       | Equality check              |
+| ------------------- | ---------------- | ------------------------------------------------------- | --------------------------- |
+| `network:created`   | WorkspaceStore   | `state.workspace.networkIds`                            | Reference                   |
+| `network:deleted`   | WorkspaceStore   | `state.workspace.networkIds`                            | Reference                   |
+| `network:changed`   | NetworkStore     | `state.networks`                                        | Reference + ID diff         |
+| `network:switched`  | WorkspaceStore   | `state.workspace.currentNetworkId`                      | `===`                       |
+| `selection:changed` | ViewModelStore   | primary view for the current network                    | Value comparison            |
+| `layout:started`    | —                | dispatched from `core/layoutApi.ts`                     | —                           |
+| `layout:completed`  | —                | dispatched from `core/layoutApi.ts`                     | —                           |
+| `style:changed`     | VisualStyleStore | basic `(curr, prev)` subscription; diffs `visualStyles` | Reference                   |
+| `data:changed`      | TableStore       | `state.tables`                                          | Reference + row/schema diff |
 
 Workspace, network, view-model, and table subscriptions use
 `subscribeWithSelector`. `VisualStyleStore` uses Zustand's basic full-state

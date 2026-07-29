@@ -148,7 +148,7 @@ export type CyWebApiType = typeof CyWebApi
 
 ```typescript
 // Bootstrap initialization, before React renders
-import { CyWebApi } from './app-api/core'
+import { CyWebApi, type CyWebApiType } from './app-api/core'
 declare global {
   interface Window {
     CyWebApi: CyWebApiType

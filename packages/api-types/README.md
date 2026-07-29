@@ -59,9 +59,24 @@ like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in Typ
 `1.0.0-beta.3` contains a breaking error-model migration and several additive API changes:
 
 - Replace comparisons against `ApiErrorCode` with the domain catalogs shown
-  below. Failed results now include `error.severity`.
+  below. Failed results now include `error.severity`; `ApiError.cx2Code` (an
+  interim field from a prior beta) is removed — the primary `code` now carries
+  that identity directly.
+- `fail()` changed signature: `fail(codeDef, ...templateArgs)` replaces
+  `fail(code, message, cx2Code?)`. Only apps constructing `ApiError` values
+  directly are affected.
+- Boundary validation is stricter: invalid element attributes, table schemas
+  and values, visual style values, bypass targets/scopes, and mapping
+  sources/bounds that earlier prereleases accepted are now rejected.
+- `NetworkApi.deleteNetwork()` no longer changes behavior based on
+  `DeleteNetworkOptions.navigate` (kept for source compatibility): deleting the
+  current network always repairs `currentNetworkId`, and deleting a non-current
+  network never switches networks.
 - `createNode`, `createEdge`, `deleteNodes`, and `deleteEdges` return complete
   element data as well as IDs/counts.
+- `VisualStyleApi.createDiscreteMapping()` accepts an optional mapping-entry
+  record; `createContinuousMapping()` accepts optional `controlPoints`,
+  `ltMinVpValue`, and `gtMaxVpValue` arguments.
 - `data:changed` handlers receive `addedColumns` and `removedColumns` arrays.
 - New APIs include `ElementApi.getEdges`, `TableApi.getColumns`, and
   `NetworkApi.createNetworkFromNodeList`.
