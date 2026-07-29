@@ -5,6 +5,7 @@ import {
   valueTypeNameAbbreviation,
   valueTypeNameChipColor,
   valueTypeNameDescription,
+  valueTypeNameGlyph,
   valueTypeNameLabel,
   orderedValueTypeNames,
 } from './valueTypeNameDisplay'
@@ -17,6 +18,25 @@ describe('valueTypeNameDisplay (CW-562)', () => {
       // Never leak the raw enum wire format to the user
       expect(label).not.toContain('list_of_')
     })
+  })
+
+  it('provides a short sample-value glyph for every ValueTypeName', () => {
+    Object.values(ValueTypeName).forEach((t) => {
+      const glyph = valueTypeNameGlyph(t)
+      expect(glyph).toBeTruthy()
+      expect(glyph).not.toContain('list_of_')
+      // Header space is the whole point: stay shorter than the abbreviation.
+      expect(glyph.length).toBeLessThanOrEqual(5)
+    })
+  })
+
+  it('brackets list glyphs and samples the value shape', () => {
+    expect(valueTypeNameGlyph(ValueTypeName.String)).toBe('ab')
+    expect(valueTypeNameGlyph(ValueTypeName.Integer)).toBe('1')
+    expect(valueTypeNameGlyph(ValueTypeName.Double)).toBe('1.0')
+    expect(valueTypeNameGlyph(ValueTypeName.Boolean)).toBe('y/n')
+    expect(valueTypeNameGlyph(ValueTypeName.ListString)).toBe('[ab]')
+    expect(valueTypeNameGlyph(ValueTypeName.ListBoolean)).toBe('[y/n]')
   })
 
   it('uses the canonical readable list wording', () => {

@@ -17,6 +17,12 @@ interface ValueTypeNameChipProps {
   /** Wrap in a tooltip showing the type description. Default true. */
   showTooltip?: boolean
   size?: 'small' | 'medium'
+  /**
+   * Force the badge palette instead of following the app theme. Needed on
+   * surfaces whose background does not track the theme mode, such as the
+   * always-dark MUI tooltip.
+   */
+  colorScheme?: 'light' | 'dark'
 }
 
 /**
@@ -26,10 +32,14 @@ export const ValueTypeNameChip = ({
   type,
   variant = 'chip',
   showTooltip = true,
+  colorScheme,
 }: ValueTypeNameChipProps): JSX.Element => {
   const description = valueTypeNameDescription(type)
   const theme = useTheme()
-  const isDark = theme.palette.mode === 'dark'
+  const isDark =
+    colorScheme !== undefined
+      ? colorScheme === 'dark'
+      : theme.palette.mode === 'dark'
 
   let content: JSX.Element
   if (variant === 'chip' || variant === 'abbreviation' || variant === 'chip-and-text') {

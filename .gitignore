@@ -19,8 +19,9 @@ dist-ssr
 *.local
 yarn.lock
 
-# AI agent local settings
-.claude/
+# AI agent settings: shared team rules are tracked, everything else is local
+.claude/*
+!.claude/settings.json
 
 # Editor directories and files
 .vscode/*

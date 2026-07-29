@@ -143,7 +143,7 @@ export const ListValueEditorDialog = ({
           }}
         >
           <Box>
-            <ValueTypeNameChip type={listType} />
+            <ValueTypeNameChip type={listType} variant="chip-and-text" />
           </Box>
           <Typography
             variant="caption"

@@ -64,7 +64,11 @@ export const TypeDropDownTemplate = React.memo(
         >
           {typeOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
-              <ValueTypeNameChip type={option.type} showTooltip={false} />
+              <ValueTypeNameChip
+                type={option.type}
+                variant="chip-and-text"
+                showTooltip={false}
+              />
             </MenuItem>
           ))}
         </Select>
