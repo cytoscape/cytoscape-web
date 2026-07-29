@@ -90,6 +90,56 @@ describe('useTableData', () => {
     expect(result.current.rows[1].id).toBe('node1')
   })
 
+  it('leaves width off attribute columns so the grid auto-fits them', () => {
+    const { result } = renderHook(() =>
+      useTableData({
+        currentTabIndex: TableBrowserTab.NODES,
+        nodeTable: mockNodeTable as any,
+        edgeTable: mockEdgeTable as any,
+        network: undefined,
+        tableDisplayConfiguration: undefined,
+        selectedNodes: [],
+        selectedEdges: [],
+      }),
+    )
+
+    result.current.columns.forEach((col) => {
+      expect(col).not.toHaveProperty('width')
+    })
+  })
+
+  it('keeps a width the user dragged instead of auto-fitting it', () => {
+    const mockDisplayConfig = {
+      nodeTable: {
+        sortColumn: undefined,
+        sortDirection: undefined,
+        columnConfiguration: [
+          { attributeName: 'name', visible: true, columnWidth: 275 },
+          { attributeName: 'score', visible: true, columnWidth: undefined },
+        ],
+      },
+      edgeTable: undefined,
+    }
+
+    const { result } = renderHook(() =>
+      useTableData({
+        currentTabIndex: TableBrowserTab.NODES,
+        nodeTable: mockNodeTable as any,
+        edgeTable: mockEdgeTable as any,
+        network: undefined,
+        tableDisplayConfiguration: mockDisplayConfig as any,
+        selectedNodes: [],
+        selectedEdges: [],
+      }),
+    )
+
+    const byId = (id: string) =>
+      result.current.columns.find((c) => c.id === id) as any
+
+    expect(byId('name').width).toBe(275)
+    expect(byId('score')).not.toHaveProperty('width')
+  })
+
   it('does not include edge virtual columns when both tables are undefined and currentTabIndex is 0', () => {
     const { result } = renderHook(() => useTableData({
       currentTabIndex: 0,

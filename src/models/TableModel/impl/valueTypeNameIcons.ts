@@ -1,4 +1,5 @@
 import { ValueTypeName } from '../ValueTypeName'
+import { valueTypeNameGlyph } from './valueTypeNameDisplay'
 import { isListType } from './valueTypeImpl'
 
 export const getValueTypeNameColors = (type: ValueTypeName, isDarkTheme: boolean) => {
@@ -25,21 +26,32 @@ export const getBaseTypeName = (type: ValueTypeName): string => {
   return isListType(type) ? type.replace('list_of_', '') : type
 }
 
+/**
+ * Glyph drawn inside the badge, without the list brackets — callers that
+ * colorize the brackets separately add them back.
+ */
+export const getBaseGlyph = (type: ValueTypeName): string => {
+  return valueTypeNameGlyph(getBaseTypeName(type) as ValueTypeName)
+}
+
+/** Narrowest badge, so a one-character glyph such as "1" is not cramped. */
+const MIN_BADGE_WIDTH = 26
+
 export const getBadgeWidth = (type: ValueTypeName): number => {
   const isList = isListType(type)
-  const baseText = getBaseTypeName(type)
-  
+  const glyph = getBaseGlyph(type)
+
   // These character widths are approximate for font-size 11px monospace
   const charWidth = 6.6
-  const paddingX = 8
-  const textWidth = baseText.length * charWidth
-  const totalTextWidth = isList ? textWidth + (2 * charWidth) : textWidth
-  return Math.ceil(totalTextWidth + paddingX)
+  const paddingX = 10
+  const textWidth = glyph.length * charWidth
+  const totalTextWidth = isList ? textWidth + 2 * charWidth : textWidth
+  return Math.max(MIN_BADGE_WIDTH, Math.ceil(totalTextWidth + paddingX))
 }
 
 export const getValueTypeNameSVG = (type: ValueTypeName, isDarkTheme: boolean): string => {
   const isList = isListType(type)
-  const baseText = getBaseTypeName(type)
+  const glyph = getBaseGlyph(type)
   const { textColor, bracketColor, borderColor, bgColor } = getValueTypeNameColors(type, isDarkTheme)
 
   const badgeWidth = getBadgeWidth(type)
@@ -51,9 +63,9 @@ export const getValueTypeNameSVG = (type: ValueTypeName, isDarkTheme: boolean): 
 
   let textContent = ''
   if (isList) {
-    textContent = `<tspan fill="${bracketColor}">[</tspan><tspan fill="${textColor}">${baseText}</tspan><tspan fill="${bracketColor}">]</tspan>`
+    textContent = `<tspan fill="${bracketColor}">[</tspan><tspan fill="${textColor}">${glyph}</tspan><tspan fill="${bracketColor}">]</tspan>`
   } else {
-    textContent = `<tspan fill="${textColor}">${baseText}</tspan>`
+    textContent = `<tspan fill="${textColor}">${glyph}</tspan>`
   }
 
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">

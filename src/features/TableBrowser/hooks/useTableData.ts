@@ -6,8 +6,6 @@ import { Network } from '../../../models/NetworkModel'
 import { TableDisplayConfiguration, ColumnConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { getElementId, ID_COLUMN_ID, ID_COLUMN_TITLE } from '../idColumn'
 import { SortType } from '../../../models/TableModel/impl/valueTypeImpl'
-import { getHeaderIconForType } from '../utils/tableRenderers'
-import { getBadgeWidth } from '../../../models/TableModel/impl/valueTypeNameIcons'
 import { TableBrowserTab } from '../components/TableBrowserTabs'
 
 export interface UseTableDataProps {
@@ -82,23 +80,23 @@ export const useTableData = ({
         const attributeName = col?.attributeName ?? ''
         const resolvedType = columnType ?? ValueTypeName.String
 
-        const badgeWidth = getBadgeWidth(resolvedType)
-        const charWidth = 8
-        const padding = 48
-        const calculatedWidth = Math.max(100, attributeName.length * charWidth + badgeWidth + padding)
-
+        // No data type badge in the header: the name gets the whole width, and
+        // the type is one hover away (see TableHeaderTooltip). `type` is still
+        // carried on the column for the tooltip, sorting and editing.
         const baseColumn = {
           id: attributeName,
           title: attributeName,
-          icon: getHeaderIconForType(resolvedType),
-          themeOverride: { headerIconSize: badgeWidth },
           type: resolvedType,
           index,
         }
 
+        // Omitting `width` makes this a glide AutoGridColumn: the grid measures
+        // the header and a sample of the cell content on the canvas and sizes
+        // the column to fit, bounded by the min/max in TableGrid. A width the
+        // user dragged is stored as `columnWidth` and always wins.
         return col?.columnWidth !== undefined
           ? { ...baseColumn, width: col.columnWidth }
-          : { ...baseColumn, width: calculatedWidth }
+          : baseColumn
       }),
     [modelColumns, currentTable],
   )
@@ -133,7 +131,7 @@ export const useTableData = ({
         style: 'highlight' as const,
         type: ValueTypeName.String,
         index: 0,
-        width: 150,
+        // No width: node names vary wildly in length, so let the grid measure.
         isVirtual: true,
         getValue: (edgeData: any) => {
           const edgeId = edgeData?.id?.toString()
@@ -149,7 +147,6 @@ export const useTableData = ({
         style: 'highlight' as const,
         type: ValueTypeName.String,
         index: 1,
-        width: 150,
         isVirtual: true,
         getValue: (edgeData: any) => {
           const edgeId = edgeData?.id?.toString()

@@ -56,6 +56,30 @@ export const valueTypeNameAbbreviation = (type: ValueTypeName): string => {
 }
 
 /**
+ * Sample-value glyph for the badge drawn next to a column name, e.g.
+ * `string` -> "ab", `double` -> "1.0", `list_of_boolean` -> "[y/n]".
+ *
+ * Shorter than {@link valueTypeNameAbbreviation} because the table browser
+ * paints these into the header canvas, where every pixel the badge takes is a
+ * pixel the column name loses. The readable label is one hover away.
+ */
+export const valueTypeNameGlyph = (type: ValueTypeName): string => {
+  const glyphs: Record<ValueTypeName, string> = {
+    [ValueTypeName.String]: 'ab',
+    [ValueTypeName.Integer]: '1',
+    [ValueTypeName.Long]: '123',
+    [ValueTypeName.Double]: '1.0',
+    [ValueTypeName.Boolean]: 'y/n',
+    [ValueTypeName.ListString]: '[ab]',
+    [ValueTypeName.ListInteger]: '[1]',
+    [ValueTypeName.ListLong]: '[123]',
+    [ValueTypeName.ListDouble]: '[1.0]',
+    [ValueTypeName.ListBoolean]: '[y/n]',
+  }
+  return glyphs[type] ?? String(type)
+}
+
+/**
  * Longer sentence description with an example, suitable for helper text in
  * data-entry forms.
  */
