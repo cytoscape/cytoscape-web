@@ -201,6 +201,32 @@ describe('MappingFunctionImpl', () => {
       ).toBe(false)
     })
 
+    // Image custom graphics are authored ONLY through this passthrough path —
+    // the Vizmapper wizard deliberately offers no image option, because
+    // Cytoscape Desktop cannot render CX2-carried images. Keeping this `true`
+    // is therefore a product decision; a merge that silently flips
+    // valueType2BaseType[CustomGraphic] to null removes the feature.
+    // See docs/design/custom-graphics-image/custom-graphics-image-passthrough.md
+    it('allows passthrough from a string column to a custom graphic visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.CustomGraphic,
+        ),
+      ).toBe(true)
+    })
+
+    it('rejects passthrough from a list column to a custom graphic visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.ListString,
+          VisualPropertyValueTypeName.CustomGraphic,
+        ),
+      ).toBe(false)
+    })
+
     it('should allow discrete mapping for any types', () => {
       expect(
         typesCanBeMapped(
