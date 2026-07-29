@@ -127,3 +127,17 @@ export const hasImageCustomGraphics = (cx2: Cx2): boolean => {
 
   return false
 }
+
+/**
+ * The single wording for the Desktop image-custom-graphics caveat, shared by every
+ * export path that a person watches: "Open in Cytoscape Desktop", the CX2 file
+ * download, and both NDEx saves. All of those emit byte-identical CX2, so a
+ * downloaded file later opened via Desktop's File > Import fails exactly like the
+ * direct hand-off — keeping one constant stops the four call sites from drifting.
+ */
+export const IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING =
+  'Node custom-graphic images may appear as "?" in Cytoscape Desktop — ' +
+  'Desktop loads images from its own image pool, not from the network file.'
+
+/** How long the Desktop caveat stays on screen (ms). Long enough to read. */
+export const IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION = 8000

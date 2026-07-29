@@ -171,7 +171,8 @@ function VisualPropertyView(props: {
         <Tooltip
           placement="top"
           title={
-            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default.  Original size values are preserved.'
+            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default.  Original size values are preserved. ' +
+            'Custom-graphic images render here but not in Cytoscape Desktop, which loads images from its own image pool rather than from the network file.'
           }
           arrow={true}
           sx={{

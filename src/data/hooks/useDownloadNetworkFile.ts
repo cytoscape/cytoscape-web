@@ -1,5 +1,10 @@
 import { logUi } from '../../debug'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import {
+  hasImageCustomGraphics,
+  IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+  IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+} from '../../models/CxModel/impl/customGraphicsCompat'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { MessageSeverity } from '../../models/MessageModel'
@@ -56,6 +61,19 @@ export const useDownloadNetworkFile = () => {
       },
     }
     const cx = exportCyNetworkToCx2(cyNetwork, summary, summary.name)
+
+    // A downloaded .cx2 is byte-identical to what "Open in Cytoscape Desktop"
+    // sends, so opening this file in Desktop hits the same limitation: Desktop
+    // loads custom-graphic image bytes from its own pool and never fetches them
+    // from the network file. Warn, but still download — everything else imports.
+    if (hasImageCustomGraphics(cx)) {
+      addMessage({
+        message: IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+        duration: IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+        severity: MessageSeverity.WARNING,
+      })
+    }
+
     const link = document.createElement('a')
     link.download = `${summary.name}.cx2`
     const cxFile = new Blob([JSON.stringify(cx)], { type: 'text/plain' })
