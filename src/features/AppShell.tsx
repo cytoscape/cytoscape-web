@@ -16,6 +16,7 @@ import { useAppManager } from '../data/hooks/stores/useAppManager'
 import { useLoadNetworkSummaries } from '../data/hooks/useLoadNetworkSummaries'
 import { logStartup } from '../debug'
 import { MessageSeverity } from '../models/MessageModel'
+import { AppDialogHost } from './AppManager/AppDialogHost'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
 import { ConfirmationDialog } from './ConfirmationDialog'
 import { SyncTabsAction } from './SyncTabs'
@@ -170,6 +171,7 @@ const AppShell = (): ReactElement => {
         buttonTitle="Add"
         onConfirm={handleConfirmAddServiceApps}
       />
+      <AppDialogHost />
     </AppManagerCommandsProvider>
   )
 }

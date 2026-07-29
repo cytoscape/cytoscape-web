@@ -240,7 +240,8 @@ describe('createResourceApi', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({
         id: 'M1',
-        component: DummyComponent,
+        label: 'My Action',
+        onClick: () => {},
       })
 
       expect(result.success).toBe(true)
@@ -252,20 +253,29 @@ describe('createResourceApi', () => {
           id: 'M1',
           appId: 'app1',
           slot: 'apps-menu',
+          label: 'My Action',
         }),
       )
     })
 
-    it('passes closeOnAction to store', () => {
+    it('passes tooltip, icon, and isEnabled to store', () => {
       const api = createResourceApi('app1')
+      const isEnabled = () => true
       api.registerMenuItem({
         id: 'M1',
-        component: DummyComponent,
-        closeOnAction: true,
+        label: 'My Action',
+        tooltip: 'Does a thing',
+        icon: { svgPath: 'M0,0 L10,10', viewBox: '0 0 10 10' },
+        isEnabled,
+        onClick: () => {},
       })
 
       expect(mockStore.upsertResource).toHaveBeenCalledWith(
-        expect.objectContaining({ closeOnAction: true }),
+        expect.objectContaining({
+          tooltip: 'Does a thing',
+          icon: { svgPath: 'M0,0 L10,10', viewBox: '0 0 10 10' },
+          isEnabled,
+        }),
       )
     })
 
@@ -273,7 +283,8 @@ describe('createResourceApi', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({
         id: '',
-        component: DummyComponent,
+        label: 'My Action',
+        onClick: () => {},
       })
 
       expect(result.success).toBe(false)
@@ -282,11 +293,26 @@ describe('createResourceApi', () => {
       }
     })
 
-    it('returns fail(InvalidInput) for primitive component (number)', () => {
+    it('returns fail(InvalidInput) for empty label', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({
         id: 'M1',
-        component: 42 as any,
+        label: '',
+        onClick: () => {},
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('returns fail(InvalidInput) when onClick is not a function', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Action',
+        onClick: 42 as any,
       })
 
       expect(result.success).toBe(false)
@@ -350,7 +376,8 @@ describe('createResourceApi', () => {
         {
           slot: 'apps-menu',
           id: 'M1',
-          component: DummyComponent,
+          label: 'My Action',
+          onClick: () => {},
         },
       ])
 
@@ -365,7 +392,7 @@ describe('createResourceApi', () => {
       const api = createResourceApi('app1')
       const result = api.registerAll([
         { slot: 'right-panel', id: '', component: DummyComponent }, // fails: empty id
-        { slot: 'apps-menu', id: 'M1', component: DummyComponent }, // succeeds
+        { slot: 'apps-menu', id: 'M1', label: 'My Action', onClick: () => {} }, // succeeds
       ])
 
       expect(result.success).toBe(true)

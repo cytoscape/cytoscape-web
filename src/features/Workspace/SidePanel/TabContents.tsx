@@ -14,6 +14,7 @@ import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredA
 import { AppIdProvider } from '../.././../app-api/AppIdContext'
 import { CyWebApi } from '../../../app-api/core'
 import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { createDialogApi } from '../../../app-api/core/dialogApi'
 import { createResourceApi } from '../../../app-api/core/resourceApi'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
@@ -139,6 +140,7 @@ function getPerAppApis(appId: string) {
     ...CyWebApi,
     resource: createResourceApi(appId),
     contextMenu: createContextMenuApi(appId),
+    dialog: createDialogApi(appId),
   }
 }
 

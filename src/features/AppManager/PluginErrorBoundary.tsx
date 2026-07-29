@@ -19,7 +19,8 @@ import type { ResourceSlot } from '../../models/AppModel/RegisteredAppResource'
 
 interface PluginErrorBoundaryProps {
   appId: string
-  slot: ResourceSlot
+  /** 'dialog' covers app-supplied content rendered by AppDialogHost — not a registered resource slot, but the same isolation boundary. */
+  slot: ResourceSlot | 'dialog'
   children: ReactNode
   /**
    * Optional plugin-provided fallback component. If supplied, it is used
@@ -38,7 +39,7 @@ const PluginFallback = ({
   slot,
 }: {
   appId: string
-  slot: ResourceSlot
+  slot: ResourceSlot | 'dialog'
 }): ReactNode => (
   <Box sx={{ p: 2, textAlign: 'center' }} role="alert">
     <Typography variant="body2" color="text.secondary">

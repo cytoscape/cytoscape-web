@@ -94,10 +94,16 @@ export const createResourceApi = (appId: string): ResourceApi => ({
       if (!options.id || options.id.trim() === '') {
         return fail(AppCodes.INVALID_INPUT, 'id is required and must be non-empty')
       }
-      if (!isValidComponent(options.component)) {
+      if (!options.label || options.label.trim() === '') {
         return fail(
           AppCodes.INVALID_INPUT,
-          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
+          'label is required and must be non-empty',
+        )
+      }
+      if (typeof options.onClick !== 'function') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `onClick must be a function, got ${typeof options.onClick}`,
         )
       }
       const store = useAppResourceStore.getState()
@@ -105,13 +111,14 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         id: options.id,
         appId,
         slot: 'apps-menu',
-        title: options.title,
+        label: options.label,
+        tooltip: options.tooltip,
+        icon: options.icon,
         order: options.order,
         group: options.group,
         requires: options.requires,
-        component: options.component as unknown,
-        errorFallback: options.errorFallback as unknown,
-        closeOnAction: options.closeOnAction,
+        onClick: options.onClick as (apis: unknown) => void | Promise<void>,
+        isEnabled: options.isEnabled,
       })
       return ok({ resourceId: `${appId}::apps-menu::${options.id}` })
     } catch (e) {
@@ -158,13 +165,17 @@ export const createResourceApi = (appId: string): ResourceApi => ({
       } else if (entry.slot === 'apps-menu') {
         result = this.registerMenuItem(entry as RegisterMenuItemOptions)
       } else {
+        // `entry` is typed `never` here (the union's only two slots were
+        // just excluded above) — but at runtime an untyped/JS caller can
+        // still pass an unrecognized `slot`, so this branch stays reachable.
+        const unknownEntry = entry as { id: string; slot: ResourceSlot }
         errors.push({
-          id: entry.id,
-          slot: entry.slot,
+          id: unknownEntry.id,
+          slot: unknownEntry.slot,
           error: {
             code: AppCodes.INVALID_INPUT.code,
             severity: AppCodes.INVALID_INPUT.severity,
-            message: `Unsupported slot: ${entry.slot}`,
+            message: `Unsupported slot: ${unknownEntry.slot}`,
           },
         })
         continue
@@ -198,7 +209,7 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           resourceId: `${r.appId}::${r.slot}::${r.id}`,
           slot: r.slot as ResourceSlot,
           id: r.id,
-          title: r.title,
+          title: r.title ?? r.label,
           order: r.order,
           requires: r.requires,
         }),

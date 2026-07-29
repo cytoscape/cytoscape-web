@@ -4,6 +4,7 @@
 // Defines the slot model, host-injected props per slot, registration
 // options, and the public ResourceApi interface.
 
+import type { AppContextApis } from './AppContext'
 import type { ApiError, ApiResult } from './ApiResult'
 
 // ── Slot model ──────────────────────────────────────────────────
@@ -20,27 +21,33 @@ import type { ApiError, ApiResult } from './ApiResult'
  */
 export type ResourceSlot = 'right-panel' | 'apps-menu'
 
+/**
+ * Icon for an 'apps-menu' entry — a raw SVG path `d` string (concatenate
+ * multiple subpaths into one `d` if the source icon has several `<path>`
+ * elements) plus an optional `viewBox` for icons not authored on the
+ * default 0-24 grid. Rendered inside the host's own fixed-size `<SvgIcon>`
+ * so sizing/color stay host-controlled. Plain data — never a component.
+ *
+ * No curated "pick a built-in icon by name" option: too few apps would use
+ * it to justify either maintaining a hand-picked list against MUI upgrades,
+ * or shipping/dynamically-resolving the full MUI icon set (which also
+ * defeats tree-shaking).
+ *
+ * Duplicated from models/AppModel/RegisteredAppResource.ts to keep the
+ * model layer free of app-api imports (same convention as ResourceSlot
+ * above). Must stay in sync.
+ */
+export interface MenuIcon {
+  svgPath: string
+  viewBox?: string
+}
+
 // ── Per-slot host props ─────────────────────────────────────────
 
 /** Props injected by the host into every 'right-panel' component. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PanelHostProps {
   // Empty in first rollout. Future: isActive, requestFocus, closePanel.
-}
-
-/**
- * Props injected by the host into every 'apps-menu' component.
- *
- * When `closeOnAction: true` on the registration, the host wraps the
- * component in a click-capturing container that auto-closes the dropdown
- * via `queueMicrotask`. Plugins do NOT need to call `handleClose` in
- * that case — it is still injected for edge cases.
- *
- * When `closeOnAction: false` (default), the plugin MUST call
- * `handleClose` manually when appropriate.
- */
-export interface MenuItemHostProps {
-  handleClose: () => void
 }
 
 // ── Registration options ────────────────────────────────────────
@@ -68,50 +75,56 @@ export interface RegisterPanelOptions {
   }>
 }
 
+/**
+ * Registers a single entry in the Apps dropdown. Deliberately has no
+ * `component` field — the host renders every 'apps-menu' entry itself as a
+ * standard MUI menu item, so an app can never inject arbitrary React (and
+ * therefore arbitrary sizing/styling) into the shared menu.
+ *
+ * For anything beyond a plain action — a parameter form, a progress modal,
+ * custom hooks/state — call `apis.dialog.open(...)` from `onClick`. That
+ * renders in its own modal layer (chrome owned by the host), never inline
+ * in the menu.
+ */
 export interface RegisterMenuItemOptions {
   id: string
-  /** Display label for the menu item. Falls back to `id` if omitted. */
-  title?: string
+  /** Display label for the menu item. */
+  label: string
+  /** Optional tooltip shown on hover. */
+  tooltip?: string
+  /** Optional icon — see `MenuIcon`. Never a component. */
+  icon?: MenuIcon
   order?: number
   group?: string
   requires?: {
     network?: boolean
     selection?: boolean
   }
-  component: React.ComponentType<MenuItemHostProps>
   /**
-   * If true, the host automatically closes the Apps dropdown after the menu
-   * item component's onClick handler completes.
-   * @default false
+   * Called with this app's per-app API object when the item is clicked.
+   * The host closes the dropdown immediately beforehand (matching how the
+   * host's own built-in menu items already behave) — the click handler
+   * doesn't need to (and can't) keep the dropdown open while it runs. If it
+   * returns a Promise, the host awaits it only to log a failure; it never
+   * blocks the UI on it.
    */
-  closeOnAction?: boolean
-  /** Custom error fallback (same as RegisterPanelOptions.errorFallback). */
-  errorFallback?: React.ComponentType<{
-    error: Error
-    resetErrorBoundary: () => void
-  }>
+  onClick: (apis: AppContextApis) => void | Promise<void>
+  /**
+   * Optional extra enablement check, called by the host right before the
+   * menu is rendered — a plain function snapshot (mirrors Cytoscape
+   * Desktop's `TaskFactory.isReady()`), not a reactive hook. Combined with
+   * `requires`. Prefer `requires` for the common cases (network loaded,
+   * selection non-empty) since those are evaluated reactively from the
+   * host's own stores; reach for `isEnabled` only for conditions `requires`
+   * can't express.
+   */
+  isEnabled?: () => boolean
 }
 
 /** Entry for batch registration via registerAll(). */
-export interface RegisterResourceEntry {
-  slot: ResourceSlot
-  id: string
-  title?: string
-  order?: number
-  group?: string
-  requires?: {
-    network?: boolean
-    selection?: boolean
-  }
-  component: React.ComponentType<any>
-  /** Custom error fallback. */
-  errorFallback?: React.ComponentType<{
-    error: Error
-    resetErrorBoundary: () => void
-  }>
-  /** For 'apps-menu' only: auto-close after action. */
-  closeOnAction?: boolean
-}
+export type RegisterResourceEntry =
+  | ({ slot: 'right-panel' } & RegisterPanelOptions)
+  | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
 
 // ── Introspection types ─────────────────────────────────────────
 
@@ -143,26 +156,10 @@ export interface ResourceVisibilityResult {
 
 /**
  * Declarative resource entry used in CyAppWithLifecycle.resources.
- * Same fields as RegisterResourceEntry — the host registers these
+ * Same shape as RegisterResourceEntry — the host registers these
  * automatically when the app is loaded.
  */
-export interface ResourceDeclaration {
-  slot: ResourceSlot
-  id: string
-  title?: string
-  order?: number
-  group?: string
-  requires?: {
-    network?: boolean
-    selection?: boolean
-  }
-  component: React.ComponentType<any>
-  errorFallback?: React.ComponentType<{
-    error: Error
-    resetErrorBoundary: () => void
-  }>
-  closeOnAction?: boolean
-}
+export type ResourceDeclaration = RegisterResourceEntry
 
 // ── Public API interface ────────────────────────────────────────
 

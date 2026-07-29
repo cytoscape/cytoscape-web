@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from 'react'
 
 import { CyWebApi } from '../../../app-api/core'
 import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { createDialogApi } from '../../../app-api/core/dialogApi'
 import { createResourceApi } from '../../../app-api/core/resourceApi'
 import type {
   AppContextApis,
@@ -65,6 +66,7 @@ function buildPerAppApis(appId: string): AppContextApis {
     ...CyWebApi,
     resource: createResourceApi(appId),
     contextMenu: createContextMenuApi(appId),
+    dialog: createDialogApi(appId),
   }
 }
 
@@ -84,8 +86,12 @@ function processDeclarativeResources(cyApp: CyApp): void {
     } else if (entry.slot === 'apps-menu') {
       resourceApi.registerMenuItem(entry as RegisterMenuItemOptions)
     } else {
+      // `entry` is typed `never` here (both known slots excluded above) —
+      // but an untyped/JS app config can still declare an unrecognized
+      // slot at runtime, so this branch stays reachable.
+      const unknownEntry = entry as { slot: string }
       logApp.warn(
-        `[useAppManager]: Unsupported slot '${entry.slot}' in declarative resources for ${cyApp.id}`,
+        `[useAppManager]: Unsupported slot '${unknownEntry.slot}' in declarative resources for ${cyApp.id}`,
       )
     }
   }

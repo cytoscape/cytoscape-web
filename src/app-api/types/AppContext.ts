@@ -3,6 +3,7 @@
 import { CyApp } from '../../models/AppModel/CyApp'
 import type { CyWebApiType } from '../core'
 import type { ContextMenuApi } from '../core/contextMenuApi'
+import type { DialogApi } from './AppDialogTypes'
 import type { ResourceApi, ResourceDeclaration } from './AppResourceTypes'
 
 /**
@@ -23,6 +24,14 @@ export interface AppContextApis extends CyWebApiType {
    * Overrides the anonymous contextMenu from CyWebApiType.
    */
   readonly contextMenu: ContextMenuApi
+  /**
+   * Per-app Dialog API (factory-bound to this app's ID). Lets 'apps-menu'
+   * `onClick` handlers (or any other app code holding this object) open a
+   * host-chrome'd modal for a custom form, progress UI, or anything else
+   * that needs real component state — without ever registering a component
+   * as a menu item. Always provided by the host.
+   */
+  readonly dialog: DialogApi
 }
 
 /**

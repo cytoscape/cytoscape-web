@@ -74,7 +74,7 @@ export type {
 
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
-  MenuItemHostProps,
+  MenuIcon,
   PanelHostProps,
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
@@ -85,6 +85,13 @@ export type {
   ResourceVisibilityResult,
 } from './AppResourceTypes'
 export type { ResourceSlot } from './AppResourceTypes'
+
+// ── Dialog API types (escape hatch for 'apps-menu' actions) ─────
+export type {
+  DialogApi,
+  DialogRenderProps,
+  OpenDialogOptions,
+} from './AppDialogTypes'
 
 // ── CyWebApiType: assembles all 10 domain APIs (Phase 1g+1h) ─────
 export type { CyWebApiType } from '../core'
