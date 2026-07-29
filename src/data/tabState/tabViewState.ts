@@ -16,10 +16,10 @@
  * in `tabNetwork.ts`, which also owns the priority rules for resolving it.
  */
 
-import { logUi } from '../debug'
-import { Panel } from '../models/UiModel/Panel'
-import { PanelState } from '../models/UiModel/PanelState'
-import { Ui } from '../models/UiModel'
+import { logUi } from '@/debug'
+import { Panel } from '@/models/UiModel/Panel'
+import { PanelState } from '@/models/UiModel/PanelState'
+import { Ui } from '@/models/UiModel'
 
 const TAB_VIEW_STATE_KEY = 'cyweb.tab.viewState'
 

@@ -22,7 +22,7 @@ import {
 import {
   saveTabViewState,
   withoutTabViewState,
-} from '../../../features/tabViewState'
+} from '@/data/tabState/tabViewState'
 import { putUiStateToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
@@ -33,7 +33,7 @@ import { isHydrating } from './hydrationContext'
  * Per-tab view state (panels, active tab indices, transient dialogs) goes to
  * this tab's sessionStorage; only genuinely shared fields — column widths,
  * visual style options, custom tab names — reach the IndexedDB row that all
- * tabs read. See `src/features/tabViewState.ts` for why the split lives here
+ * tabs read. See `src/data/tabState/tabViewState.ts` for why the split lives here
  * rather than in the cross-tab hydration path.
  */
 const persistUiState = (ui: Ui) => {

@@ -3,7 +3,7 @@ import 'dexie-observable'
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
-import { getTabId } from '../../boot/tabId'
+import { getTabId } from '@/data/tabState/tabId'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -270,6 +270,45 @@ export const initializeDb = async (): Promise<void> => {
   })
 
   registerDebugTool('db', db)
+}
+
+/**
+ * Verify at runtime that {@link stampTransactionSource}'s hook is still firing.
+ *
+ * `db.test.ts` asserts the same property, but a unit test only protects a build
+ * someone remembered to run the suite against. This makes the regression visible
+ * in the field: if a Dexie upgrade moves `_createTransaction`, cross-tab sync
+ * silently degrades to every tab hydrating its own writes, and nothing else in
+ * the app would say so.
+ *
+ * Uses a READ transaction on purpose — it writes no rows and creates no
+ * `_changes` records, so the check itself cannot perturb what it is checking.
+ *
+ * Never throws: a failed self-check means degraded sync, not an unusable app.
+ */
+export const verifyTransactionSourceStamp = async (): Promise<boolean> => {
+  try {
+    const expected = getTabId()
+    const observed = await db.transaction(
+      'r',
+      db.workspace,
+      async () => (Dexie.currentTransaction as any)?.source,
+    )
+
+    if (observed === expected) {
+      return true
+    }
+
+    logDb.error(
+      `[verifyTransactionSourceStamp] Dexie transactions are not carrying this tab's origin id ` +
+        `(expected "${expected}", saw "${String(observed)}"). Cross-tab sync will treat this tab's ` +
+        'own writes as foreign and re-hydrate them. See stampTransactionSource in src/data/db/index.ts.',
+    )
+    return false
+  } catch (err) {
+    logDb.error('[verifyTransactionSourceStamp] Self-check failed to run', err)
+    return false
+  }
 }
 
 export const getDatabaseVersion = (): number => {
@@ -729,22 +768,50 @@ export const getNetworkViewsFromDb = async (
     return undefined
   }
 
-  const storedSelection = await getViewSelectionFromDb(id)
+  let storedSelection = await getViewSelectionFromDb(id)
 
-  return views.map((view) => {
-    const selection =
-      storedSelection ??
-      ({
-        // Pre-v11 rows kept selection inline
-        selectedNodes: view.selectedNodes ?? [],
-        selectedEdges: view.selectedEdges ?? [],
-      } satisfies ViewSelection)
-    return {
-      ...view,
-      selectedNodes: selection.selectedNodes,
-      selectedEdges: selection.selectedEdges,
+  if (storedSelection === undefined) {
+    // Pre-v11 row: selection is still inline. Reading it is not enough — the
+    // inline copy is the ONLY copy, and the next write of this row strips it
+    // (`withoutSelection` in ViewModelStore), so a node move or a layout would
+    // silently discard the user's selection. Move it to its new home now.
+    //
+    // A lazy back-fill rather than a Dexie upgrade function on purpose: an
+    // upgrade would have to read every `cyNetworkViews` row at open time, and it
+    // buys nothing. A view row is only ever rewritten for a network whose slice
+    // is in the store, which means a network the user opened, which means this
+    // read already ran for it. The loss window is exactly this call.
+    const inline: ViewSelection = {
+      selectedNodes: views[0]?.selectedNodes ?? [],
+      selectedEdges: views[0]?.selectedEdges ?? [],
     }
-  })
+    storedSelection = inline
+
+    // Only when there is something to preserve: writing an empty row for every
+    // legacy network would mint a change record each peer tab then hydrates.
+    if (inline.selectedNodes.length > 0 || inline.selectedEdges.length > 0) {
+      try {
+        await putViewSelectionToDb(id, inline)
+        logDb.info(
+          `[getNetworkViewsFromDb] Migrated inline selection for ${id} to viewSelections (v11)`,
+        )
+      } catch (e) {
+        // Non-fatal: the caller still gets the selection this time round, and
+        // the next read retries. Failing the network load over it would be worse.
+        logDb.warn(
+          `[getNetworkViewsFromDb] Failed to back-fill selection for ${id}`,
+          e,
+        )
+      }
+    }
+  }
+
+  const selection = storedSelection
+  return views.map((view) => ({
+    ...view,
+    selectedNodes: selection.selectedNodes,
+    selectedEdges: selection.selectedEdges,
+  }))
 }
 /**
  * Add a new network view to the DB

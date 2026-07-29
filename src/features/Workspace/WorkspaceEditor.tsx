@@ -31,7 +31,7 @@ import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchy
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
-import { setTabNetworkId } from '../tabNetwork'
+import { setTabNetworkId } from '@/data/tabState/tabNetwork'
 import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'

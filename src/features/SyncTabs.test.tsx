@@ -4,18 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { closeDb, getDb } from '../data/db'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
-import { getTabId } from '../boot/tabId'
-import { hydrateFromCrossTabChange } from './crossTabHydration'
+import { getTabId } from '@/data/tabState/tabId'
+import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
 import {
   markCrossTabSyncReady,
   resetCrossTabSyncGateForTesting,
-} from './crossTabSyncGate'
+} from '@/data/sync/crossTabSyncGate'
 import {
   DATABASE_DELETED,
   DATABASE_DELETED_ACK,
   DATABASE_RESET_COMPLETE,
   RESET_COMPLETE_TIMEOUT_MS,
-} from './databaseLifecycle'
+} from '@/data/db/lifecycle'
 import { SyncTabsAction } from './SyncTabs'
 
 vi.mock('../data/db', () => ({
@@ -23,7 +23,7 @@ vi.mock('../data/db', () => ({
   closeDb: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('./crossTabHydration', () => ({
+vi.mock('@/data/sync/crossTabHydration', () => ({
   hydrateFromCrossTabChange: vi.fn().mockResolvedValue(undefined),
 }))
 

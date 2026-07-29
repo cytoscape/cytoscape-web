@@ -1,7 +1,7 @@
 import Dexie from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getTabId } from '../../boot/tabId'
+import { getTabId } from '@/data/tabState/tabId'
 
 import { logDb } from '../../debug'
 
@@ -96,6 +96,7 @@ import {
   putVisualStyleToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
+  verifyTransactionSourceStamp,
 } from './index'
 import {
   deserializeNetworkView,
@@ -1033,6 +1034,34 @@ describe('cross-tab change origin tagging', () => {
 
     expect(row?.source).toBe('explicit-source')
   })
+
+  it('self-check reports the stamp as present', async () => {
+    await setupFreshDb()
+
+    // The runtime counterpart of the two tests above: `openDatabaseForStartup`
+    // calls this on every boot so a broken hook is visible in the field, not
+    // just in CI.
+    await expect(verifyTransactionSourceStamp()).resolves.toBe(true)
+  })
+
+  it('self-check reports failure when the hook stops firing', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    // Simulate the regression: restore an unpatched _createTransaction.
+    const patched = (db as any)._createTransaction
+    ;(db as any)._createTransaction = function (...args: unknown[]) {
+      const trans = patched.apply(this, args)
+      trans.source = undefined
+      return trans
+    }
+
+    try {
+      await expect(verifyTransactionSourceStamp()).resolves.toBe(false)
+    } finally {
+      ;(db as any)._createTransaction = patched
+    }
+  })
 })
 
 /**
@@ -1099,6 +1128,70 @@ describe('view selection storage (DB v11)', () => {
     const views = await getNetworkViewsFromDb('legacy-net')
 
     expect(views?.[0].selectedNodes).toEqual(['legacy-n1'])
+  })
+
+  it('back-fills a pre-v11 inline selection so a later view write cannot erase it', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('backfill-net-nodeLink-1', 'blue')
+    // A v10 row: selection inline, no viewSelections row.
+    await db.cyNetworkViews.put({
+      id: 'backfill-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: ['keep-n1'],
+          selectedEdges: ['keep-e1'],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    // Loading the network reads it, which is the moment the selection must be
+    // moved to its new home.
+    await getNetworkViewsFromDb('backfill-net')
+    expect(await getViewSelectionFromDb('backfill-net')).toEqual({
+      selectedNodes: ['keep-n1'],
+      selectedEdges: ['keep-e1'],
+    })
+
+    // Now any non-selection edit (a node move, a layout) rewrites the view row
+    // with selection stripped — `withoutSelection` in ViewModelStore. Without
+    // the back-fill above, the inline copy was the ONLY copy and this erased it.
+    await putNetworkViewsToDb('backfill-net', [
+      { ...view, selectedNodes: [], selectedEdges: [] },
+    ])
+
+    const reloaded = await getNetworkViewsFromDb('backfill-net')
+    expect(reloaded?.[0].selectedNodes).toEqual(['keep-n1'])
+    expect(reloaded?.[0].selectedEdges).toEqual(['keep-e1'])
+  })
+
+  it('does not create a selection row for a legacy view with no selection', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('empty-sel-net-nodeLink-1', 'blue')
+    await db.cyNetworkViews.put({
+      id: 'empty-sel-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: [],
+          selectedEdges: [],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    await getNetworkViewsFromDb('empty-sel-net')
+
+    // Nothing to preserve, so nothing is written — reading a network must not
+    // mint a change record every other tab then hydrates.
+    expect(await getViewSelectionFromDb('empty-sel-net')).toBeUndefined()
   })
 
   it('drops the selection row when the network views are deleted', async () => {

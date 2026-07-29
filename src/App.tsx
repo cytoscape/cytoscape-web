@@ -125,9 +125,13 @@ export const App = (): React.ReactElement => {
         <div data-testid="app-router" style={{ height: '100%' }}>
           <RouterProvider router={router} />
         </div>
+        {/*
+          Inside the boundary: a crash in the tour runner (react-joyride walking
+          a DOM that moved under it) must be caught, not escape to a blank page.
+        */}
+        <OnboardingHost />
       </ErrorBoundary>
       <CookieConsentWidget />
-      <OnboardingHost />
     </CssVarsProvider>
   )
 }

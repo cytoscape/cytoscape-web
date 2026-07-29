@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { getTabId, resetTabIdForTesting } from './tabId'
+import { getTabId, resetTabIdForTesting } from '@/data/tabState/tabId'
 import { initializeTabManager } from './tabManager'
 
 // Minting and uniqueness are `tabId`'s contract and are covered in
@@ -39,9 +39,37 @@ describe('initializeTabManager', () => {
     expect(initializeTabManager()).toMatch(CYWEB_TAB_ID)
   })
 
-  it('reports the same id the database layer stamps on its writes', () => {
-    // Cross-tab sync drops changes whose source is this tab's id, so the boot
-    // announcement and the id the DB stamps must not diverge.
+  it('seeds a fresh tab name from the sync id', () => {
+    // Not a required invariant — just where the initial unique string comes from.
     expect(initializeTabManager()).toBe(getTabId())
+  })
+
+  it('leaves the sync id alone when window.name was set by someone else', () => {
+    // The whole point of the split: cross-tab sync must not inherit a value any
+    // script on the page can write. A reused or foreign window.name changes what
+    // an external app can focus, and nothing about what the DB stamps.
+    window.name = 'cyweb-someone-elses-handle'
+    const syncId = getTabId()
+
+    expect(initializeTabManager()).toBe('cyweb-someone-elses-handle')
+    expect(getTabId()).toBe(syncId)
+  })
+
+  it('still returns an id when window.name cannot be written', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, 'name')
+    Object.defineProperty(window, 'name', {
+      configurable: true,
+      get: () => {
+        throw new Error('blocked')
+      },
+    })
+
+    try {
+      expect(initializeTabManager()).toBe(getTabId())
+    } finally {
+      if (descriptor !== undefined) {
+        Object.defineProperty(window, 'name', descriptor)
+      }
+    }
   })
 })

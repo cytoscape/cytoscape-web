@@ -5,15 +5,18 @@ import { useHref } from 'react-router-dom'
 import { getDb } from '../data/db'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../debug'
-import { getTabId } from '../boot/tabId'
-import { hydrateFromCrossTabChange } from './crossTabHydration'
-import { isCrossTabSyncReady, onCrossTabSyncReady } from './crossTabSyncGate'
+import { getTabId } from '@/data/tabState/tabId'
+import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
+import {
+  isCrossTabSyncReady,
+  onCrossTabSyncReady,
+} from '@/data/sync/crossTabSyncGate'
 import {
   DATABASE_DELETED,
   handleDatabaseDeleted,
   isOwnResetAnnouncement,
   UI_EVENTS_CHANNEL,
-} from './databaseLifecycle'
+} from '@/data/db/lifecycle'
 
 /**
  * Tables holding workspace-wide state, relevant to a tab whatever network it is

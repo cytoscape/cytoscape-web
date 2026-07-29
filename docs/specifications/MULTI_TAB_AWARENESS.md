@@ -48,19 +48,47 @@ and harmful:
 
 A tab has to ignore its own writes. `stampTransactionSource` in
 `src/data/db/index.ts` overrides Dexie's `_createTransaction` to set
-`trans.source` to this tab's id (`src/init/tabId.ts`, stored in `window.name` so
-it survives reload). `dexie-observable` copies that onto every `_changes` row, so
-the listener filters with `change.source !== getTabId()`.
+`trans.source` to this tab's id (`src/data/tabState/tabId.ts`).
+`dexie-observable` copies that onto every `_changes` row, so the listener filters
+with `change.source !== getTabId()`.
 
-`_createTransaction` is a Dexie internal, so `db.test.ts` asserts that `_changes`
-rows really do carry the tab id. If a Dexie upgrade ever breaks the hook, that
-test fails rather than the app silently regressing to an echo loop. The
-degradation would be benign — everything reads as foreign, so tabs re-apply their
-own writes — but it is the kind of thing that must not ship quietly.
+The id is per-document and deliberately NOT persisted. It does not need to be:
+filtering own writes only requires uniqueness for the lifetime of one page, and
+replay positioning is dexie-observable's own syncNode revision, not our id. An
+earlier version stored it in `window.name` — which is writable by any script on
+the page (a federated app, an auth redirect, a third-party widget) and is copied
+by "Duplicate tab", giving two live tabs one id and making each ignore the
+other's edits. `window.name` still carries the _addressable_ tab name for
+`window.open(url, tabId)` focusing (`src/boot/tabManager.ts`); that is a separate
+concern with a separate failure mode.
+
+The cost of not persisting it: a `_changes` row written immediately before a
+reload reads as foreign afterwards, so the tab hydrates that one write itself.
+It lands during boot, where the sync gate buffers it and hydration dedupes it to
+a single read.
+
+`_createTransaction` is a Dexie internal, so this is defended three ways:
+
+1. `db.test.ts` asserts `_changes` rows really do carry the tab id, so a Dexie
+   upgrade fails CI rather than silently regressing to an echo loop.
+2. `verifyTransactionSourceStamp()` runs once per boot from
+   `openDatabaseForStartup` and logs an error if the hook stopped firing — CI
+   only protects builds someone ran the suite against; this is visible in the
+   field.
+3. `dexie` and `dexie-observable` are pinned to exact versions, so the internal
+   cannot move under a `^` range bump. **A Dexie 4 migration must re-validate
+   this hook**, with the `db.test.ts` stamp assertions as the acceptance gate.
+
+If the stamp is lost anyway, every change reads as foreign and each tab
+re-applies its own writes. That is wasteful rather than corrupting, and the apply
+tasks are written to keep it that way: the `viewSelections` case — the only one
+that overwrites local state outright instead of merging into it — compares
+against the current selection and returns early when they match, so an echo
+cannot clear a user's live selection.
 
 ### 2.3 Hydration: fetch, then apply
 
-`hydrateFromCrossTabChange` (`src/features/crossTabHydration.ts`) runs in two
+`hydrateFromCrossTabChange` (`src/data/sync/crossTabHydration.ts`) runs in two
 phases, and the split is the whole point:
 
 1. **Fetch** (async) — dedupe the batch to one entry per row, then read every
@@ -73,7 +101,7 @@ interaction can interleave with it. The earlier version held the suppression fla
 across the awaited reads, so **any edit a user made during those reads was
 applied to Zustand but silently never persisted** — and `persistNetworkSlices`
 only diffs before/after of the current `set`, so nothing recovered it. Regression
-tests: `src/features/crossTabHydrationConcurrency.test.ts`.
+tests: `src/data/sync/crossTabHydrationConcurrency.test.ts`.
 
 The flag itself is still needed: applying a peer's change without it would
 re-persist that change locally, minting a fresh change record for every other tab
@@ -84,7 +112,7 @@ to hydrate in turn. Every store that hydration writes to must consult
 
 `SyncTabsAction` mounts with `AppShell`, before `initializeAppShell` has finished
 loading the workspace. Hydrating during that window would race initialization, so
-`src/features/crossTabSyncGate.ts` holds hydration until init settles. Changes
+`src/data/sync/crossTabSyncGate.ts` holds hydration until init settles. Changes
 seen in the meantime are **buffered, not dropped** — a change written after
 init's read would otherwise leave the tab stale until the next unrelated edit.
 
@@ -127,7 +155,25 @@ DB v11 moves it to `viewSelections`, keyed by network id. A selection change now
 writes two small id arrays, and the view row it no longer touches stays
 byte-identical, so `dexie-observable` records no change for it at all.
 `getNetworkViewsFromDb` merges selection back in, so `NetworkView` is still whole
-above the DB layer; rows written before v11 fall back to their inline selection.
+above the DB layer.
+
+**Existing workspaces.** There is no Dexie upgrade function for v11 — the schema
+change is additive and no stored data is transformed, so an existing workspace
+opens normally and no network, table, style, view or position is touched. Only
+selection needed care, and only for one narrow reason: reading a pre-v11 row falls
+back to its inline `selectedNodes`/`selectedEdges`, but the _next_ write of that
+row strips them (`withoutSelection` in `ViewModelStore`), and if no
+`viewSelections` row existed yet the inline copy was the only copy. A node move or
+a layout would then have discarded a selection the user could still see.
+
+So `getNetworkViewsFromDb` back-fills: when it finds a legacy row with a non-empty
+inline selection and no `viewSelections` row, it writes one. Lazy rather than an
+upgrade function, because it is provably sufficient — a view row is only rewritten
+for a network whose slice is in the store, which means a network the user opened,
+which means this read already ran for it — and an upgrade would have to touch
+every `cyNetworkViews` row at open time to buy nothing. Nothing is written when
+the legacy selection is empty, so opening a workspace does not mint change records
+for every network in it.
 
 ### 3.2 Camera recovery without a cross-tab message
 
@@ -147,7 +193,7 @@ the position data on a separate channel.
 
 `resetWorkspace` deletes the whole database, which every other tab still has
 open — and IndexedDB will not delete a database with live connections. The
-handshake in `src/features/databaseLifecycle.ts`:
+handshake in `src/data/db/lifecycle.ts`:
 
 1. deleter posts `DATABASE_DELETED`
 2. peers close their connection and post `DATABASE_DELETED_ACK`
@@ -181,7 +227,7 @@ not a detail.
 1. Add the object store in `src/data/db/index.ts` and bump `currentVersion`.
    Never edit a released version's schema — Dexie will not re-run a version a
    client already has on disk.
-2. Add a `case` to `prepareChange` in `src/features/crossTabHydration.ts`. The
+2. Add a `case` to `prepareChange` in `src/data/sync/crossTabHydration.ts`. The
    fetch half may `await`; the returned apply function must be synchronous.
 3. Guard every DB write in the owning store with `isHydrating()`. Without this
    the table write-loops across tabs. Conversely, do **not** add the guard to a

@@ -10,19 +10,20 @@ import {
   getViewSelectionFromDb,
   getVisualStyleFromDb,
   getWorkspaceFromDb,
-} from '../data/db'
-import { useFilterStore } from '../data/hooks/stores/FilterStore'
-import { setHydrating } from '../data/hooks/stores/hydrationContext'
-import { useNetworkStore } from '../data/hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from '../data/hooks/stores/OpaqueAspectStore'
-import { useTableStore } from '../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../data/hooks/stores/UiStateStore'
-import { useUndoStore } from '../data/hooks/stores/UndoStore'
-import { useViewModelStore } from '../data/hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
-import { logUi } from '../debug'
+} from '@/data/db'
+import { useFilterStore } from '@/data/hooks/stores/FilterStore'
+import { setHydrating } from '@/data/hooks/stores/hydrationContext'
+import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '@/data/hooks/stores/OpaqueAspectStore'
+import { useTableStore } from '@/data/hooks/stores/TableStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
+import { useUndoStore } from '@/data/hooks/stores/UndoStore'
+import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { logUi } from '@/debug'
+import type { NetworkView } from '@/models/ViewModel'
 
 /**
  * Mirrors dexie-observable's `DatabaseChangeType`. Declared locally rather than
@@ -55,6 +56,20 @@ export interface CrossTabChange {
  * {@link hydrateFromCrossTabChange} for why.
  */
 type ApplyTask = () => void
+
+/** Ordered id-list equality. Selection arrays are built deterministically. */
+const sameIds = (
+  a: readonly string[] = [],
+  b: readonly string[] = [],
+): boolean => a.length === b.length && a.every((id, i) => id === b[i])
+
+/**
+ * The view `persistSelection` in ViewModelStore reads and writes selection for.
+ * Hydration must compare against the same one, or the echo guard below looks at
+ * a view whose selection was never persisted.
+ */
+const selectionView = (views: readonly NetworkView[] | undefined) =>
+  views?.find((v) => v.type !== 'circlePacking') ?? views?.[0]
 
 /**
  * Collapse a change batch to one entry per row, keeping the last.
@@ -158,9 +173,26 @@ const prepareChange = async (
       return () => {
         // No-op when this tab has not loaded the network; it will read the
         // selection from the DB when it does.
-        if (useViewModelStore.getState().viewModels[key] === undefined) {
+        const views = useViewModelStore.getState().viewModels[key]
+        if (views === undefined) {
           return
         }
+
+        // Don't clobber a selection that already matches. This is the one apply
+        // task that overwrites local state outright rather than merging into it,
+        // so it is the one place where a change that reached us by mistake — a
+        // missing origin stamp, if `stampTransactionSource` ever stops firing —
+        // would destroy the user's live selection instead of being a wasteful
+        // no-op. Making it idempotent means correctness no longer rests solely
+        // on that Dexie internal.
+        const local = selectionView(views)
+        if (
+          sameIds(local?.selectedNodes, selection.selectedNodes) &&
+          sameIds(local?.selectedEdges, selection.selectedEdges)
+        ) {
+          return
+        }
+
         useViewModelStore
           .getState()
           .exclusiveSelect(

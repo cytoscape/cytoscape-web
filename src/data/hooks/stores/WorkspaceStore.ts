@@ -15,7 +15,7 @@ import { IdType } from '../../../models/IdType'
 import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
 import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
-import { announceDatabaseReset } from '../../../features/databaseLifecycle'
+import { announceDatabaseReset } from '@/data/db/lifecycle'
 import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
@@ -41,7 +41,7 @@ const EMPTY_WORKSPACE: Workspace = {
  * value straight back into the shared row.
  *
  * The per-tab sources of truth are the URL and the sessionStorage backstop in
- * `src/features/tabNetwork.ts`; the field is kept in the in-memory store (lots
+ * `src/data/tabState/tabNetwork.ts`; the field is kept in the in-memory store (lots
  * of code reads it) but is no longer shared. Blanked rather than omitted so the
  * row still satisfies `validateWorkspace`.
  */

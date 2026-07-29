@@ -5,7 +5,10 @@ import {
   DEFAULT_UI_STATE,
   useUiStateStore,
 } from '@/data/hooks/stores/UiStateStore'
-import { applyTabViewState, getTabViewState } from '@/features/tabViewState'
+import {
+  applyTabViewState,
+  getTabViewState,
+} from '@/data/tabState/tabViewState'
 import type { Ui } from '@/models/UiModel'
 import { Panel } from '@/models/UiModel/Panel'
 import { PanelState } from '@/models/UiModel/PanelState'

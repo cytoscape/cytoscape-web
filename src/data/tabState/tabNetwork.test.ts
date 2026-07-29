@@ -5,7 +5,7 @@ import {
   resolveDisplayNetworkId,
   resolveInitialNetworkId,
   setTabNetworkId,
-} from './tabNetwork'
+} from '@/data/tabState/tabNetwork'
 
 describe('resolveDisplayNetworkId (CW-722)', () => {
   const networkIds = ['A', 'B', 'C']

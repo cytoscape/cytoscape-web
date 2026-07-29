@@ -19,7 +19,7 @@ const putNetworkSummaryToDb = vi.fn()
 const getNetworkSummaryFromDb = vi.fn()
 const getWorkspaceFromDb = vi.fn()
 
-vi.mock('../data/db', () => ({
+vi.mock('@/data/db', () => ({
   getFilterFromDb: vi.fn(),
   getNetworkFromDb: vi.fn(),
   getNetworkSummaryFromDb: (...args: any[]) => getNetworkSummaryFromDb(...args),
@@ -36,8 +36,8 @@ vi.mock('../data/db', () => ({
   deleteNetworkSummaryFromDb: vi.fn(),
 }))
 
-import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
-import { hydrateFromCrossTabChange } from './crossTabHydration'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
 
 // Static imports: a dynamic import() inside a test body charges module load
 // time to the 1s per-test timeout, which tips over under full-suite load.

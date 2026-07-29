@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { Panel } from '../models/UiModel/Panel'
-import { PanelState } from '../models/UiModel/PanelState'
+import { Panel } from '@/models/UiModel/Panel'
+import { PanelState } from '@/models/UiModel/PanelState'
 import {
   applyTabViewState,
   DEFAULT_TAB_VIEW_STATE,
@@ -9,7 +9,7 @@ import {
   saveTabViewState,
   toTabViewState,
   withoutTabViewState,
-} from './tabViewState'
+} from '@/data/tabState/tabViewState'
 
 const uiFixture = (overrides: Record<string, any> = {}): any => ({
   panels: {
@@ -28,7 +28,7 @@ const uiFixture = (overrides: Record<string, any> = {}): any => ({
   ...overrides,
 })
 
-describe('tabViewState', () => {
+describe('@/data/tabState/tabViewState', () => {
   beforeEach(() => {
     window.sessionStorage.clear()
   })

@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { hydrateFromCrossTabChange } from './crossTabHydration'
-import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
-import { useUiStateStore } from '../data/hooks/stores/UiStateStore'
+import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 
-vi.mock('../data/db', () => ({
+vi.mock('@/data/db', () => ({
   getWorkspaceFromDb: vi.fn(),
   getUiStateFromDb: vi.fn(),
   putUiStateToDb: vi.fn(),
   putWorkspaceToDb: vi.fn(),
 }))
 
-import { getWorkspaceFromDb, getUiStateFromDb } from '../data/db'
-import { Panel } from '../models/UiModel/Panel'
+import { getWorkspaceFromDb, getUiStateFromDb } from '@/data/db'
+import { Panel } from '@/models/UiModel/Panel'
 
-describe('crossTabHydration', () => {
+describe('@/data/sync/crossTabHydration', () => {
   it('preserves local currentNetworkId if still valid', async () => {
     useWorkspaceStore.setState({
       workspace: {

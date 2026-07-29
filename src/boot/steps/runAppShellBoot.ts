@@ -1,5 +1,8 @@
 import { logStartup } from '@/debug'
-import { getTabNetworkId, resolveInitialNetworkId } from '@/features/tabNetwork'
+import {
+  getTabNetworkId,
+  resolveInitialNetworkId,
+} from '@/data/tabState/tabNetwork'
 import { createWorkspace } from '@/models/WorkspaceModel/impl/workspaceImpl'
 import { BootPhase } from '../bootPhases'
 import { runPhase } from '../runBoot'

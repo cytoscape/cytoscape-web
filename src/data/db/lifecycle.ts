@@ -25,9 +25,9 @@
  * before the data it refers to is gone.
  */
 
-import { closeDb } from '../data/db'
-import { logDb } from '../debug'
-import { getTabId } from '../boot/tabId'
+import { closeDb } from '@/data/db'
+import { logDb } from '@/debug'
+import { getTabId } from '@/data/tabState/tabId'
 
 export const UI_EVENTS_CHANNEL = 'cyweb-ui-events'
 
