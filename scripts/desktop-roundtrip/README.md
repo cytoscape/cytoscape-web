@@ -15,7 +15,7 @@ export-compatibility issues.
 This reproduces exactly what "Open Network in Cytoscape Desktop" does in Cytoscape Web
 (`src/data/hooks/useOpenInCytoscapeDesktop.ts` → `CyNDEx.postCX2NetworkToCytoscape`):
 
-```
+```http
 POST http://127.0.0.1:1234/v1/networks?format=cx2&title=<n>&collection=<n>
 Content-Type: application/json
 body: <raw CX2 JSON string>
@@ -55,7 +55,14 @@ Override the endpoint with `CYREST_URL` (e.g. `CYREST_URL=http://127.0.0.1:1235`
 
 - Cytoscape Web's export imports into Desktop 3.10.3 **without crashing** (size stringified
   as `"50.0"`, `tag`/`id` injected — all accepted).
-- `data:` URIs and inline SVG in custom graphics render in Web but **not** in Desktop
-  (Java has no `data:` URL handler) → "?". Prefer hosted `http(s)` image URLs for Desktop.
+- **No URL scheme renders from a CX2 import in a fresh Desktop session.** Desktop loads
+  custom-graphic image bytes from its session `CustomGraphicsManager` pool, not from the
+  network file; a CX2 import keeps only the reference (`class`, `id`, `name`, `tag`) and never
+  fetches `properties.url` — for `http`, `https`, `data`, or `file` alike. All of them show
+  "?". Verified by rendering imported views via
+  `GET /v1/networks/{suid}/views/{viewSuid}.png`. (`data:` URIs and inline SVG additionally
+  have no Java URL handler, but switching to a hosted `http(s)` URL does **not** fix the
+  placeholder — there is no "preferred" scheme here.) Only a Desktop-side app that pools the
+  images itself (e.g. stringApp) makes them appear.
 - SVG images must use Desktop's SVG factory class
   (`org.cytoscape.ding.customgraphics.image.SVGCustomGraphics`), not the bitmap class.

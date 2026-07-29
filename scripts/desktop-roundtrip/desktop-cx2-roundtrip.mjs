@@ -187,6 +187,14 @@ async function probeCmd(baseFile) {
   )
 }
 
+const USAGE =
+  'Usage: check | post <file.cx2> [name] | probe <baseFile.cx2> | readback <suid> [out.cx2]'
+
+function usageExit() {
+  err(USAGE)
+  process.exit(2)
+}
+
 async function main() {
   const [cmd, ...args] = process.argv.slice(2)
   switch (cmd) {
@@ -194,19 +202,21 @@ async function main() {
       process.exit((await checkCmd()) ? 0 : 1)
       break
     case 'post':
+      if (!args[0]) usageExit()
       if (!(await checkCmd())) process.exit(1)
       await postCmd(args[0], args[1])
       break
     case 'probe':
+      if (!args[0]) usageExit()
       if (!(await checkCmd())) process.exit(1)
       await probeCmd(args[0])
       break
     case 'readback':
+      if (!args[0]) usageExit()
       await readbackCmd(args[0], args[1])
       break
     default:
-      err('Usage: check | post <file.cx2> [name] | probe <baseFile.cx2> | readback <suid> [out.cx2]')
-      process.exit(2)
+      usageExit()
   }
 }
 

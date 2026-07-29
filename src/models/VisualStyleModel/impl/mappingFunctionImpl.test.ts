@@ -217,6 +217,27 @@ describe('MappingFunctionImpl', () => {
       ).toBe(true)
     })
 
+    // Numeric and boolean columns reach the `singleStringType` rule (their base
+    // type and the custom-graphic base type are both 'string'), but they cannot
+    // hold an image URL or chart JSON, so the mapping must not be offered.
+    it.each([
+      ValueTypeName.Double,
+      ValueTypeName.Integer,
+      ValueTypeName.Long,
+      ValueTypeName.Boolean,
+    ])(
+      'rejects passthrough from a %s column to a custom graphic visual property',
+      (valueTypeName) => {
+        expect(
+          typesCanBeMapped(
+            MappingFunctionType.Passthrough,
+            valueTypeName,
+            VisualPropertyValueTypeName.CustomGraphic,
+          ),
+        ).toBe(false)
+      },
+    )
+
     it('rejects passthrough from a list column to a custom graphic visual property', () => {
       expect(
         typesCanBeMapped(
@@ -274,9 +295,9 @@ describe('MappingFunctionImpl', () => {
     })
 
     it('validMappingsForVP offers continuous for edge line type', () => {
-      expect(validMappingsForVP(VisualPropertyValueTypeName.EdgeLine)).toContain(
-        MappingFunctionType.Continuous,
-      )
+      expect(
+        validMappingsForVP(VisualPropertyValueTypeName.EdgeLine),
+      ).toContain(MappingFunctionType.Continuous)
     })
 
     it('typesCanBeMapped allows continuous edge line on a numeric attribute', () => {
@@ -376,4 +397,3 @@ describe('MappingFunctionImpl', () => {
     })
   })
 })
-

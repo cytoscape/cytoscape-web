@@ -31,11 +31,11 @@ sequenceDiagram
     CV->>MF: buildMappers() calls createPassthroughMapper()
     MF->>MF: Validates URL (http/https/data), wraps in CustomGraphicsType
     CV->>CV: getFirstValidCustomGraphicVp() finds slot (mapping-aware)
-    CV->>CG: computeCustomGraphicsProperties(value, ..., customGraphicVps)
-    CG->>CG: computeImageProperties() → [BackgroundImage, url], [BackgroundWidth, size], ...
+    CV->>CG: computeCustomGraphicsProperties(value, row, widthVp, heightVp, mappers)
+    CG->>CG: computeImageProperties() → [BackgroundImage, url], [BackgroundFit, contain], ...
     CG-->>CV: Returns property tuples
     CV-->>RU: View model with image properties
-    RU->>CY: addCyjsImageProperties() maps to background-image, background-fit, etc.
+    RU->>CY: addCyjsImageProperties() maps to background-image, background-fit, background-image-crossorigin
     CY->>CY: Renders image on node
 ```
 
@@ -80,13 +80,27 @@ Add to the `CustomGraphicsType.properties` union.
 
 | Property | Value | Source |
 |----------|-------|--------|
-| `BackgroundImage` | URL string | `ImagePropertiesType.url` |
-| `BackgroundWidth` | `${size}px` | Slot-specific `nodeImageChartSizeX` VP |
-| `BackgroundHeight` | `${size}px` | Same as width (square bounding box) |
+| `BackgroundImage` | URL string | `ImagePropertiesType.url` (SVG is re-wrapped — see below) |
 | `BackgroundFit` | `contain` | Hardcoded (preserves aspect ratio) |
 | `BackgroundImageCrossorigin` | `null` | Hardcoded (see CORS Default below) |
 
-`computeCustomGraphicsProperties` gains `firstValidCustomGraphicVp` and `customGraphicVps` parameters so it can find the slot-specific size VP via `getSizePropertyForCustomGraphic` for the Image branch.
+Only those three tuples are emitted, and `addCyjsImageProperties()` registers a Cytoscape.js
+mapper for exactly those three. There is deliberately **no** `BackgroundWidth` /
+`BackgroundHeight` pair: passing explicit `background-width`/`background-height` alongside a
+data-URI image triggered a Cytoscape.js zoom-offset bug (see `zoom-bug-demo.html`). Sizing is
+instead baked into the image itself — for SVG sources, `computeImageProperties` wraps the source
+markup in an outer `<svg>` whose `viewBox`/`width`/`height` match the computed slot size, with
+the inner SVG centered in it. Raster sources fall back to `background-fit: contain` against the
+node box.
+
+`computeImageProperties` and `computeCustomGraphicsProperties` both take `widthVp`, `heightVp`,
+and `mappers` — and, as shipped, `computeViewUtil` passes the **node's** `nodeWidth`/`nodeHeight`
+VPs there, not the slot-specific `nodeImageChartSizeN` VP (the `getSizePropertyForCustomGraphic`
+call is commented out at `computeViewUtil.ts:328`). Each is resolved per node through
+`computeCustomGraphicSizeProperties`, which applies that VP's bypass or mapper to the node's row.
+This is why the Vizmapper shows a "custom graphics size cannot be edited and will scale to the
+size of nodes" advisory: the `NODE_CUSTOMGRAPHICS_SIZE_n` value is preserved on round-trip but is
+not what the renderer uses.
 
 #### Property Cleanup — `directMappingSelector.ts` + `customGraphicsImpl.ts`
 
@@ -95,20 +109,18 @@ New `SpecialPropertyName` constants:
 ```typescript
 BackgroundImage: 'backgroundImage',
 BackgroundFit: 'backgroundFit',
-BackgroundWidth: 'backgroundWidth',
-BackgroundHeight: 'backgroundHeight',
 BackgroundImageCrossorigin: 'backgroundImageCrossorigin',
 ```
 
-These are registered in `getCustomGraphicsPropertyKeys()` so the cleanup loop in `cyjsRenderUtil.ts` (lines 497–506) properly removes stale image properties when switching to a different custom graphic type.
+These are registered in `getCustomGraphicsPropertyKeys()` (`customGraphicsImpl.ts`), which is the list `cyjsRenderUtil.ts` iterates to `removeData()` any custom-graphics key no longer present in the view model — that is what clears stale image properties when switching to a different custom graphic type.
 
 #### Rendering — `cyjsRenderUtil.ts`
 
-`addCyjsImageProperties()` is implemented to register `CyjsDirectMapper` entries mapping the `SpecialPropertyName` data fields to Cytoscape.js style properties (`background-image`, `background-fit`, `background-width`, `background-height`, `background-image-crossorigin`).
+`addCyjsImageProperties()` is implemented to register `CyjsDirectMapper` entries mapping the `SpecialPropertyName` data fields to Cytoscape.js style properties (`background-image`, `background-fit`, `background-image-crossorigin`) — one per emitted tuple, no width/height mappers.
 
 ### View Computation — `computeViewUtil.ts`
 
-All 3 call sites to `computeCustomGraphicsProperties` pass the additional `firstValidCustomGraphicVp` and `customGraphicNodeVps` arguments.
+All 3 call sites to `computeCustomGraphicsProperties` (bypass, mapping, default) pass the node's `nodeWidth`/`nodeHeight` VPs plus the `mappers` map so the Image branch can size the wrapper SVG.
 
 ## Key Decisions
 
@@ -120,9 +132,9 @@ Only one custom graphic slot is active at a time (the first valid one). A user c
 
 The passthrough mapper performs lightweight URL validation (`http://`, `https://`, `data:` prefix check) rather than accepting any string or doing full URL parsing. This catches accidental column mismatches while keeping the implementation simple.
 
-### Image Sizing via Slot-Specific Size VP
+### Image Sizing Follows the Node Box
 
-Images use `background-fit: contain` with dimensions from the slot-specific `nodeImageChartSizeX` VP, not the node width/height. This gives users explicit control over image size via the Vizmapper, matching how custom graphic sizes work in Cytoscape Desktop.
+Images use `background-fit: contain` against the node's own `nodeWidth`/`nodeHeight`, and for SVG sources those dimensions also drive the wrapper `<svg>`. The slot-specific `nodeImageChartSizeN` VP is preserved on CX2 round-trip but is **not** consumed by the renderer — same as pie/ring charts, and the reason the Vizmapper marks custom-graphics size as non-editable. Honoring the slot size (as Cytoscape Desktop does) means re-enabling `getSizePropertyForCustomGraphic` in `computeViewUtil` and is a pending feature, not the current behavior.
 
 ### CORS Default
 

@@ -1,31 +1,40 @@
 import { Cx2 } from '../Cx2'
 
 /**
- * Cytoscape Desktop's image custom graphics are loaded through Java's URL/ImageIO stack,
- * which has no handler for `data:` URIs (and cannot decode inline `<svg>` markup as a
- * bitmap). When Cytoscape Web sends such a network to Desktop, those nodes render a "?"
- * placeholder even though the rest of the network imports fine.
- *
- * This detects whether an exported CX2 carries any custom-graphic image backed by inline
- * data (a `data:` URI or raw SVG), so callers can warn the user before sending to Desktop.
- * It checks three places a custom-graphic URL can live:
- *   1. default node visual properties (NODE_CUSTOMGRAPHICS_n image objects),
- *   2. per-node bypasses,
- *   3. node table columns referenced by a NODE_CUSTOMGRAPHICS_n passthrough mapping.
+ * A node custom-graphics *value* slot (NODE_CUSTOMGRAPHICS_1..9), as opposed to
+ * its paired size or position slot.
  */
-export const hasDataUriCustomGraphics = (cx2: Cx2): boolean => {
-  const isInlineImage = (value: unknown): boolean =>
-    typeof value === 'string' &&
-    (value.startsWith('data:') || value.trimStart().startsWith('<svg'))
+const isCustomGraphicValueKey = (key: string): boolean =>
+  key.startsWith('NODE_CUSTOMGRAPHICS_') &&
+  !key.startsWith('NODE_CUSTOMGRAPHICS_SIZE') &&
+  !key.startsWith('NODE_CUSTOMGRAPHICS_POSITION')
 
-  const isCustomGraphicValueKey = (key: string): boolean =>
-    key.startsWith('NODE_CUSTOMGRAPHICS_') &&
-    !key.startsWith('NODE_CUSTOMGRAPHICS_SIZE') &&
-    !key.startsWith('NODE_CUSTOMGRAPHICS_POSITION')
-
-  const imageUrlOf = (value: unknown): unknown =>
-    (value as { properties?: { url?: unknown } } | undefined)?.properties?.url
-
+/**
+ * Walk every place a custom-graphic image reference can live in a CX2 and report
+ * whether any of them matches.
+ *
+ * There are four such places, and both detectors below need all four:
+ *   1. default node visual properties (NODE_CUSTOMGRAPHICS_n objects),
+ *   2. per-node bypasses,
+ *   3. node table columns referenced by a NODE_CUSTOMGRAPHICS_n passthrough
+ *      mapping — both the per-node values and the column's declared default in
+ *      `attributeDeclarations` (a CX2 column default applies to every node that
+ *      omits the value, so a data URI declared there is just as real as one
+ *      repeated on each node),
+ *
+ * `isSlotMatch` tests a custom-graphics slot value (a `{type, name, properties}`
+ * object); `isColumnMatch` tests a raw column value (a string).
+ */
+const scanCustomGraphics = (
+  cx2: Cx2,
+  {
+    isSlotMatch,
+    isColumnMatch,
+  }: {
+    isSlotMatch: (value: unknown) => boolean
+    isColumnMatch: (value: unknown) => boolean
+  },
+): boolean => {
   const aspects = cx2 as any[]
   const passthroughAttributes = new Set<string>()
 
@@ -33,39 +42,67 @@ export const hasDataUriCustomGraphics = (cx2: Cx2): boolean => {
     // 1 & passthrough discovery — visualProperties
     for (const vp of aspect?.visualProperties ?? []) {
       for (const [key, value] of Object.entries(vp?.default?.node ?? {})) {
-        if (isCustomGraphicValueKey(key) && isInlineImage(imageUrlOf(value))) {
-          return true
-        }
+        if (isCustomGraphicValueKey(key) && isSlotMatch(value)) return true
       }
       for (const [key, mapping] of Object.entries(vp?.nodeMapping ?? {})) {
-        if (isCustomGraphicValueKey(key) && (mapping as any)?.type === 'PASSTHROUGH') {
+        const isPassthrough = (mapping as any)?.type === 'PASSTHROUGH'
+        if (isCustomGraphicValueKey(key) && isPassthrough) {
           const attribute = (mapping as any)?.definition?.attribute
-          if (typeof attribute === 'string') passthroughAttributes.add(attribute)
+          if (typeof attribute === 'string') {
+            passthroughAttributes.add(attribute)
+          }
         }
       }
     }
     // 2 — per-node bypasses
     for (const bypass of aspect?.nodeBypasses ?? []) {
       for (const [key, value] of Object.entries(bypass?.v ?? {})) {
-        if (isCustomGraphicValueKey(key) && isInlineImage(imageUrlOf(value))) {
-          return true
-        }
+        if (isCustomGraphicValueKey(key) && isSlotMatch(value)) return true
       }
     }
   }
 
-  // 3 — node column values feeding a custom-graphics passthrough
-  if (passthroughAttributes.size > 0) {
-    for (const aspect of aspects) {
-      for (const node of aspect?.nodes ?? []) {
-        for (const attribute of passthroughAttributes) {
-          if (isInlineImage(node?.v?.[attribute])) return true
-        }
+  // 3 — columns feeding a custom-graphics passthrough
+  if (passthroughAttributes.size === 0) return false
+
+  for (const aspect of aspects) {
+    for (const declaration of aspect?.attributeDeclarations ?? []) {
+      for (const attribute of passthroughAttributes) {
+        if (isColumnMatch(declaration?.nodes?.[attribute]?.v)) return true
+      }
+    }
+    for (const node of aspect?.nodes ?? []) {
+      for (const attribute of passthroughAttributes) {
+        if (isColumnMatch(node?.v?.[attribute])) return true
       }
     }
   }
 
   return false
+}
+
+const imageUrlOf = (value: unknown): unknown =>
+  (value as { properties?: { url?: unknown } } | undefined)?.properties?.url
+
+/**
+ * Cytoscape Desktop's image custom graphics are loaded through Java's URL/ImageIO stack,
+ * which has no handler for `data:` URIs (and cannot decode inline `<svg>` markup as a
+ * bitmap). When Cytoscape Web sends such a network to Desktop, those nodes render a "?"
+ * placeholder even though the rest of the network imports fine.
+ *
+ * This detects whether an exported CX2 carries any custom-graphic image backed by inline
+ * data (a `data:` URI or raw SVG), so callers can warn the user before sending to Desktop.
+ * It is the *narrow* case — see `hasImageCustomGraphics` for the broader one.
+ */
+export const hasDataUriCustomGraphics = (cx2: Cx2): boolean => {
+  const isInlineImage = (value: unknown): boolean =>
+    typeof value === 'string' &&
+    (value.startsWith('data:') || value.trimStart().startsWith('<svg'))
+
+  return scanCustomGraphics(cx2, {
+    isSlotMatch: (value) => isInlineImage(imageUrlOf(value)),
+    isColumnMatch: isInlineImage,
+  })
 }
 
 /**
@@ -88,44 +125,10 @@ export const hasImageCustomGraphics = (cx2: Cx2): boolean => {
       value.trimStart().startsWith('<svg') ||
       /\.(svg|png|jpe?g|gif|bmp)(\?|#|$)/i.test(value))
 
-  const isCustomGraphicValueKey = (key: string): boolean =>
-    key.startsWith('NODE_CUSTOMGRAPHICS_') &&
-    !key.startsWith('NODE_CUSTOMGRAPHICS_SIZE') &&
-    !key.startsWith('NODE_CUSTOMGRAPHICS_POSITION')
-
-  const aspects = cx2 as any[]
-  const passthroughAttributes = new Set<string>()
-
-  for (const aspect of aspects) {
-    for (const vp of aspect?.visualProperties ?? []) {
-      for (const [key, value] of Object.entries(vp?.default?.node ?? {})) {
-        if (isCustomGraphicValueKey(key) && isImageValue(value)) return true
-      }
-      for (const [key, mapping] of Object.entries(vp?.nodeMapping ?? {})) {
-        if (isCustomGraphicValueKey(key) && (mapping as any)?.type === 'PASSTHROUGH') {
-          const attribute = (mapping as any)?.definition?.attribute
-          if (typeof attribute === 'string') passthroughAttributes.add(attribute)
-        }
-      }
-    }
-    for (const bypass of aspect?.nodeBypasses ?? []) {
-      for (const [key, value] of Object.entries(bypass?.v ?? {})) {
-        if (isCustomGraphicValueKey(key) && isImageValue(value)) return true
-      }
-    }
-  }
-
-  if (passthroughAttributes.size > 0) {
-    for (const aspect of aspects) {
-      for (const node of aspect?.nodes ?? []) {
-        for (const attribute of passthroughAttributes) {
-          if (looksLikeImageRef(node?.v?.[attribute])) return true
-        }
-      }
-    }
-  }
-
-  return false
+  return scanCustomGraphics(cx2, {
+    isSlotMatch: isImageValue,
+    isColumnMatch: looksLikeImageRef,
+  })
 }
 
 /**

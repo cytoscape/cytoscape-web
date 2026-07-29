@@ -127,9 +127,15 @@ export const vpToCX = (
   // JavaScript's JSON.stringify truncates `.0` from whole numbers (50.0 -> 50),
   // which causes Cytoscape Desktop's CX2 importer to crash with a ClassCastException (Integer cannot be cast to Double).
   // Exporting as a formatted string ("50.0") forces Cytoscape Desktop to gracefully parse it as a Double.
+  // A size that is already a string (e.g. "50.0" carried over from a Desktop
+  // import) or otherwise malformed has no `toFixed`, so guard rather than throw
+  // and abort the whole export.
   if (vpName.startsWith('nodeImageChartSize')) {
-    const num = vpValue as number
-    return num.toFixed(1) as any
+    return (
+      typeof vpValue === 'number' && Number.isFinite(vpValue)
+        ? vpValue.toFixed(1)
+        : vpValue
+    ) as any
   }
 
   // Cytoscape Desktop throws a NullPointerException during view creation if an image Custom Graphic
@@ -288,7 +294,9 @@ export const VPNumberConverter = (
   return {
     cxVPName,
     valueConverter: (cxVPValue: CXVisualPropertyValue): number =>
-      typeof cxVPValue === 'string' ? parseFloat(cxVPValue) : (cxVPValue as number),
+      typeof cxVPValue === 'string'
+        ? parseFloat(cxVPValue)
+        : (cxVPValue as number),
   }
 }
 export const VPFontTypeConverter = (

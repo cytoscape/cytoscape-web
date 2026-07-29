@@ -529,14 +529,28 @@ describe('CustomGraphicsImpl', () => {
       const heightVp = { defaultValue: 100 } as any
       const mappers = new Map()
 
-      const resultEmpty = computePieChartProperties(id, value, row, widthVp, heightVp, mappers)
+      const resultEmpty = computePieChartProperties(
+        id,
+        value,
+        row,
+        widthVp,
+        heightVp,
+        mappers,
+      )
       expect(resultEmpty).toEqual([])
 
       const valueUndefined = {
         ...value,
         properties: {} as unknown as PieChartPropertiesType,
       }
-      const resultUndefined = computePieChartProperties(id, valueUndefined, row, widthVp, heightVp, mappers)
+      const resultUndefined = computePieChartProperties(
+        id,
+        valueUndefined,
+        row,
+        widthVp,
+        heightVp,
+        mappers,
+      )
       expect(resultUndefined).toEqual([])
     })
 
@@ -775,14 +789,28 @@ describe('CustomGraphicsImpl', () => {
       const heightVp = { defaultValue: 100 } as any
       const mappers = new Map()
 
-      const resultEmpty = computeRingChartProperties(id, value, row, widthVp, heightVp, mappers)
+      const resultEmpty = computeRingChartProperties(
+        id,
+        value,
+        row,
+        widthVp,
+        heightVp,
+        mappers,
+      )
       expect(resultEmpty).toEqual([])
 
       const valueUndefined = {
         ...value,
         properties: {} as unknown as RingChartPropertiesType,
       }
-      const resultUndefined = computeRingChartProperties(id, valueUndefined, row, widthVp, heightVp, mappers)
+      const resultUndefined = computeRingChartProperties(
+        id,
+        valueUndefined,
+        row,
+        widthVp,
+        heightVp,
+        mappers,
+      )
       expect(resultUndefined).toEqual([])
     })
 
@@ -940,7 +968,9 @@ describe('CustomGraphicsImpl', () => {
 
       expect(Array.isArray(result)).toBe(true)
       expect(result.length).toBeGreaterThan(0)
-      const bgImage = result.find(([name]) => name === SpecialPropertyName.BackgroundImage)
+      const bgImage = result.find(
+        ([name]) => name === SpecialPropertyName.BackgroundImage,
+      )
       expect(bgImage).toBeDefined()
       expect(bgImage?.[1]).toBe('http://example.com/img.png')
     })
@@ -981,6 +1011,86 @@ describe('CustomGraphicsImpl', () => {
       )
 
       expect(result).toEqual([])
+    })
+
+    describe('SVG sizing wrapper', () => {
+      // 120x80 slot, so the inner SVG is drawn 80x80 and offset 20 in x and 0 in
+      // y to sit centered in the outer box.
+      const sizeVp = (name: string, defaultValue: number) => ({
+        name: name as any,
+        group: 'node' as any,
+        displayName: name,
+        type: 'number' as any,
+        defaultValue,
+        bypassMap: new Map(),
+      })
+
+      const bgImageFor = (url: string): string => {
+        const result = computeImageProperties(
+          '1',
+          {
+            type: 'image',
+            name: CustomGraphicsNameType.SVGImage,
+            properties: { url },
+          },
+          {},
+          sizeVp('nodeWidth', 120),
+          sizeVp('nodeHeight', 80),
+          new Map(),
+        )
+        const bgImage = result.find(
+          ([name]) => name === SpecialPropertyName.BackgroundImage,
+        )
+        expect(bgImage).toBeDefined()
+        const encoded = bgImage![1] as string
+        return decodeURIComponent(encoded.replace('data:image/svg+xml,', ''))
+      }
+
+      const innerSvg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">' +
+        '<circle cx="50" cy="50" r="40" fill="red" /></svg>'
+
+      const expectWrapped = (decoded: string) => {
+        expect(decoded).toContain('viewBox="0 0 120 80"')
+        expect(decoded).toContain('width="120" height="80"')
+        expect(decoded).toContain('x="20" y="0" width="80" height="80"')
+        expect(decoded).toContain(
+          '<circle cx="50" cy="50" r="40" fill="red" />',
+        )
+      }
+
+      it('wraps a percent-encoded SVG data URI', () => {
+        expectWrapped(
+          bgImageFor('data:image/svg+xml,' + encodeURIComponent(innerSvg)),
+        )
+      })
+
+      it('wraps a base64 SVG data URI', () => {
+        expectWrapped(bgImageFor('data:image/svg+xml;base64,' + btoa(innerSvg)))
+      })
+
+      it('wraps raw SVG markup by promoting it to a data URI first', () => {
+        expectWrapped(bgImageFor(`  ${innerSvg}`))
+      })
+
+      it('leaves a raster URL untouched', () => {
+        const result = computeImageProperties(
+          '1',
+          {
+            type: 'image',
+            name: CustomGraphicsNameType.Image,
+            properties: { url: 'https://example.com/a.png' },
+          },
+          {},
+          sizeVp('nodeWidth', 120),
+          sizeVp('nodeHeight', 80),
+          new Map(),
+        )
+        const bgImage = result.find(
+          ([name]) => name === SpecialPropertyName.BackgroundImage,
+        )
+        expect(bgImage?.[1]).toBe('https://example.com/a.png')
+      })
     })
   })
 

@@ -877,7 +877,7 @@
                             "name": "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics",
                             "properties": {
                                 "tag": "bitmap image",
-                                "url": "file:/Users/jingchen/CytoscapeConfiguration/images3/25.png",
+                                "url": "file:/tmp/cytoscape-images/25.png",
                                 "id": 2
                             }
                         },

@@ -13984,7 +13984,7 @@
                         "properties": {
                             "id": 1,
                             "tag": "vector image",
-                            "url": "file:/Users/dylanfong/src/code/cw/cw5/node_modules/@tabler/icons/categories/devices/xbox-a.svg"
+                            "url": "file:/tmp/xbox-a.svg"
                         }
                     }
                 }

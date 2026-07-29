@@ -333,7 +333,7 @@
                             "properties": {
                                 "id": 1,
                                 "tag": "bitmap image",
-                                "url": "file:/var/folders/8y/5s8dc52d6yxchwprfjxb80nc0000gn/T/TemporaryItems/NSIRD_screencaptureui_hnKEal/Screenshot%202026-05-07%20at%208.05.59%E2%80%AFPM.png"
+                                "url": "file:/tmp/cytoscape-images/screenshot-1.png"
                             }
                         },
                         "NODE_CUSTOMGRAPHICS_SIZE_1": 50.0,
@@ -575,7 +575,7 @@
                         "properties": {
                             "id": 2,
                             "tag": "bitmap image",
-                            "url": "file:/Users/dylanfong/Desktop/Screenshot%202025-08-25%20at%205.14.55%E2%80%AFPM.png"
+                            "url": "file:/tmp/cytoscape-images/screenshot-2.png"
                         }
                     }
                 }

@@ -1,12 +1,5 @@
 import InfoIcon from '@mui/icons-material/Info'
-import {
-  Box,
-  IconButton,
-  Tab,
-  Tabs,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { Box, IconButton, Tab, Tabs, Tooltip, Typography } from '@mui/material'
 import * as React from 'react'
 
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -31,7 +24,6 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { MappingForm } from './Forms/MappingForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
-
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -144,7 +136,10 @@ function VisualPropertyView(props: {
           <Typography
             variant="body2"
             sx={{
-              color: (theme) => (disabled ? theme.palette.text.disabled : theme.palette.text.primary)
+              color: (theme) =>
+                disabled
+                  ? theme.palette.text.disabled
+                  : theme.palette.text.primary,
             }}
           >
             {visualProperty.displayName}
@@ -171,7 +166,7 @@ function VisualPropertyView(props: {
         <Tooltip
           placement="top"
           title={
-            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default.  Original size values are preserved. ' +
+            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default. Original size values are preserved. ' +
             'Custom-graphic images render here but not in Cytoscape Desktop, which loads images from its own image pool rather than from the network file.'
           }
           arrow={true}
@@ -284,28 +279,22 @@ export default function VizmapperView(props: {
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
-        <Tab
-          data-testid="vizmapper-nodes-tab"
-          label="Nodes"
-        />
-        <Tab
-          data-testid="vizmapper-edges-tab"
-          label="Edges"
-        />
-        <Tab
-          data-testid="vizmapper-network-tab"
-          label="Network"
-        />
+        <Tab data-testid="vizmapper-nodes-tab" label="Nodes" />
+        <Tab data-testid="vizmapper-edges-tab" label="Edges" />
+        <Tab data-testid="vizmapper-network-tab" label="Network" />
       </Tabs>
-      <Box sx={{
-        display: 'flex',
-        px: 1.5,
-        pt: 1.5,
-        pb: 0,
-        ml: 0.5, 
-        minHeight: '40px' ,
-        borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          px: 1.5,
+          pt: 1.5,
+          pb: 0,
+          ml: 0.5,
+          minHeight: '40px',
+          borderBottom: (theme) =>
+            `2px solid ${theme.palette.background.default}`,
+        }}
+      >
         <Box
           sx={{
             width: TAB_TEXT_WIDTH,

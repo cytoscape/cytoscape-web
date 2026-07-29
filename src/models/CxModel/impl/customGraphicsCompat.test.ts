@@ -24,7 +24,11 @@ describe('hasDataUriCustomGraphics', () => {
     const cx = [
       {
         visualProperties: [
-          { default: { node: { NODE_CUSTOMGRAPHICS_1: imageCg('https://x/y.png') } } },
+          {
+            default: {
+              node: { NODE_CUSTOMGRAPHICS_1: imageCg('https://x/y.png') },
+            },
+          },
         ],
       },
     ]
@@ -44,7 +48,11 @@ describe('hasDataUriCustomGraphics', () => {
 
   it('detects a data: URI in a node bypass', () => {
     const cx = [
-      { nodeBypasses: [{ id: 7, v: { NODE_CUSTOMGRAPHICS_1: imageCg(svgDataUri) } }] },
+      {
+        nodeBypasses: [
+          { id: 7, v: { NODE_CUSTOMGRAPHICS_1: imageCg(svgDataUri) } },
+        ],
+      },
     ]
     expect(hasDataUriCustomGraphics(cx as any)).toBe(true)
   })
@@ -69,6 +77,32 @@ describe('hasDataUriCustomGraphics', () => {
           { id: 1, v: { name: 'b' } },
         ],
       },
+    ]
+    expect(hasDataUriCustomGraphics(cx as any)).toBe(true)
+  })
+
+  it('detects inline data declared as a passthrough column default', () => {
+    // A CX2 column default applies to every node that omits the value, so a
+    // data URI declared here is as real as one repeated on each node.
+    const cx = [
+      {
+        attributeDeclarations: [
+          { nodes: { svg: { d: 'string', v: svgDataUri } } },
+        ],
+      },
+      {
+        visualProperties: [
+          {
+            nodeMapping: {
+              NODE_CUSTOMGRAPHICS_1: {
+                type: 'PASSTHROUGH',
+                definition: { attribute: 'svg' },
+              },
+            },
+          },
+        ],
+      },
+      { nodes: [{ id: 0, v: { name: 'a' } }] },
     ]
     expect(hasDataUriCustomGraphics(cx as any)).toBe(true)
   })
@@ -98,7 +132,11 @@ describe('hasImageCustomGraphics', () => {
     const cx = [
       {
         visualProperties: [
-          { default: { node: { NODE_CUSTOMGRAPHICS_1: imageCg('https://x/y.png') } } },
+          {
+            default: {
+              node: { NODE_CUSTOMGRAPHICS_1: imageCg('https://x/y.png') },
+            },
+          },
         ],
       },
     ]
@@ -160,21 +198,30 @@ describe('hasImageCustomGraphics against real CX2 fixtures', () => {
     expect(hasImageCustomGraphics(loadFixture('images.valid.cx2'))).toBe(true)
   })
 
-  // This fixture carries an SVGCustomGraphics bypass pointing at a `file:` URL.
-  // Desktop cannot fetch that either, so it must be flagged — but it is not a
-  // data URI, which is precisely why the narrow hasDataUriCustomGraphics() is not
-  // sufficient on its own and hasImageCustomGraphics() exists.
-  it('flags a file: URL SVG bypass that the data-URI detector misses', () => {
-    const cx = loadFixture('svg-passthrough.valid.cx2')
+  // This fixture's images are `file:` URLs — Desktop cannot fetch those either,
+  // so they must be flagged, but they are not data URIs. That gap is precisely
+  // why the narrow hasDataUriCustomGraphics() is not sufficient on its own and
+  // hasImageCustomGraphics() exists.
+  it('flags file: URL images that the data-URI detector misses', () => {
+    const cx = loadFixture('images.valid.cx2')
     expect(hasImageCustomGraphics(cx)).toBe(true)
     expect(hasDataUriCustomGraphics(cx)).toBe(false)
+  })
+
+  // This fixture drives NODE_CUSTOMGRAPHICS_1 from a `svg` column whose data URI
+  // lives in the column's attributeDeclarations default rather than on each
+  // node, so both detectors must look there.
+  it('flags a data URI declared as a passthrough column default', () => {
+    const cx = loadFixture('svg-passthrough.valid.cx2')
+    expect(hasImageCustomGraphics(cx)).toBe(true)
+    expect(hasDataUriCustomGraphics(cx)).toBe(true)
   })
 
   it('finds a lone image slot among many chart slots', () => {
     // gal-filtered-chart has charts in slots 1-7 and 9 and an image in slot 8;
     // the detector must not stop at the first chart it sees.
-    expect(hasImageCustomGraphics(loadFixture('gal-filtered-chart.valid.cx2'))).toBe(
-      true,
-    )
+    expect(
+      hasImageCustomGraphics(loadFixture('gal-filtered-chart.valid.cx2')),
+    ).toBe(true)
   })
 })

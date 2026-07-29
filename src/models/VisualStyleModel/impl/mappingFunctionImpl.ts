@@ -93,6 +93,14 @@ export const typesCanBeMapped = (
     const singleStringType =
       isSingleValue &&
       valueType2BaseType[vpValueTypeName] === VisualPropertyValueTypeName.String /// any single value type can be mapped to a string
+    // Custom graphics are the exception to the rule above: their base type is
+    // 'string' only because the value they carry is an image URL / chart JSON
+    // string. A numeric or boolean column can never hold either, so offering
+    // the mapping for those columns produces a mapping that silently falls back
+    // to the VP default at render time (see mapperFactory's string parsing).
+    if (vpValueTypeName === VisualPropertyValueTypeName.CustomGraphic) {
+      return valueTypeName === ValueTypeName.String
+    }
     return typesMatch || singleStringType
   }
 
@@ -112,7 +120,11 @@ export const typesCanBeMapped = (
 }
 
 export type MappingColumnChange =
-  | { kind: 'create'; attributeType: ValueTypeName; mappingType: MappingFunctionType }
+  | {
+      kind: 'create'
+      attributeType: ValueTypeName
+      mappingType: MappingFunctionType
+    }
   | { kind: 'remove' }
   | { kind: 'clear' }
 
@@ -137,9 +149,7 @@ export const resolveMappingColumnChange = (
   mappingType: MappingFunctionType | '',
   vpValueTypeName: VisualPropertyValueTypeName,
 ): MappingColumnChange => {
-  const nextAttributeType = columns.find(
-    (c) => c.name === nextAttribute,
-  )?.type
+  const nextAttributeType = columns.find((c) => c.name === nextAttribute)?.type
 
   if (mappingType === '' || nextAttribute === '' || nextAttributeType == null) {
     return { kind: 'clear' }
