@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ValueTypeName } from '../../TableModel'
 import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
+import { Mapper } from '../VisualMappingFunction/Mapper'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import {
   createContinuousMapper,
@@ -194,6 +195,111 @@ describe('MapperFactory', () => {
       // Should normalize string boolean values
       expect(mapper('true')).toBe('element')
       expect(mapper('false')).toBe('none')
+    })
+
+    describe('CustomGraphic Passthrough', () => {
+      let mapping: PassthroughMappingFunction
+      let mapper: Mapper
+
+      beforeEach(() => {
+        mapping = {
+          type: MappingFunctionType.Passthrough,
+          attribute: 'image',
+          visualPropertyType: VisualPropertyValueTypeName.CustomGraphic,
+          defaultValue: { type: 'none', name: 'none', properties: {} } as any,
+          attributeType: ValueTypeName.String,
+        }
+        mapper = createPassthroughMapper(mapping)
+      })
+
+      it('should parse HTTP/HTTPS URLs to images', () => {
+        const url1 = 'https://example.com/img.png'
+        const url2 = 'http://example.com/img.png'
+        expect(mapper(url1)).toMatchObject({ type: 'image', properties: { url: url1 } })
+        expect(mapper(url2)).toMatchObject({ type: 'image', properties: { url: url2 } })
+      })
+
+      it('should parse data URIs to images', () => {
+        const dataUri = 'data:image/png;base64,iVBOR...'
+        expect(mapper(dataUri)).toMatchObject({ type: 'image', properties: { url: dataUri } })
+      })
+
+      it('should parse raw SVGs to images with data URI', () => {
+        const svg = '<svg><rect/></svg>'
+        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent(svg)
+        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+      })
+
+      it('should parse SVGs with leading whitespace', () => {
+        const svg = '  <svg><rect/></svg>  '
+        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent('<svg><rect/></svg>')
+        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+      })
+
+      it('should reject file: URLs and return default', () => {
+        const result = mapper('file:/Users/foo/img.png')
+        expect(result).toEqual(mapping.defaultValue)
+      })
+
+      it('should reject blob: URLs and return default', () => {
+        const result = mapper('blob:http://localhost/abc-123')
+        expect(result).toEqual(mapping.defaultValue)
+      })
+
+      it('should parse valid pie JSON to pie chart', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"]}'
+        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.PieChart', properties: { cy_dataColumns: ["a"] } })
+      })
+
+      it('should parse valid ring JSON to ring chart', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"],"cy_holeSize":0.4}'
+        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.RingChart', properties: { cy_holeSize: 0.4 } })
+      })
+
+      it('should return default for malformed JSON', () => {
+        expect(mapper('{ broken json')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for valid JSON but wrong shape', () => {
+        expect(mapper('{"foo":"bar"}')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for empty string', () => {
+        expect(mapper('')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for null/undefined', () => {
+        expect(mapper(null as any)).toEqual(mapping.defaultValue)
+        expect(mapper(undefined as any)).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for unrecognized strings', () => {
+        expect(mapper('not-a-url')).toEqual(mapping.defaultValue)
+      })
+
+      // Cytoscape Desktop uses a different custom-graphics factory for vector (SVG)
+      // vs. raster images. The mapper must pick the right class from the content so
+      // the graphic round-trips to Desktop instead of rendering as a "?" placeholder.
+      it('should label raster URLs as the bitmap image class', () => {
+        expect(mapper('https://example.com/img.png')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        })
+        expect(mapper('data:image/png;base64,iVBOR...')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        })
+      })
+
+      it('should label SVG content as the SVG image class', () => {
+        expect(mapper('<svg><rect/></svg>')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+        expect(mapper('https://example.com/icon.svg')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+        expect(mapper('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+      })
     })
 
     // CW-517: passthrough mappings on node shape / edge line type authored in

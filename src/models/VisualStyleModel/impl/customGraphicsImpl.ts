@@ -7,11 +7,14 @@ import { logModel } from '../../../debug'
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Mapper } from '../VisualMappingFunction'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualProperty } from '../VisualProperty'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import {
   CustomGraphicsNameType,
   CustomGraphicsType,
+  ImagePropertiesType,
+  isImageCustomGraphicsName,
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
@@ -130,6 +133,11 @@ export const getCustomGraphicsPropertyKeys = (): string[] => {
     propertyKeys.push(getPieBackgroundSizeViewModelProp(i))
   }
 
+  // Image properties
+  propertyKeys.push(SpecialPropertyName.BackgroundImage)
+  propertyKeys.push(SpecialPropertyName.BackgroundFit)
+  propertyKeys.push(SpecialPropertyName.BackgroundImageCrossorigin)
+
   return propertyKeys
 }
 
@@ -142,7 +150,7 @@ export const getFirstValidCustomGraphicVp = (
   const isSupportedGraphicsType = (value: CustomGraphicsType) =>
     value.name === CustomGraphicsNameType.PieChart ||
     value.name === CustomGraphicsNameType.RingChart ||
-    value.name === CustomGraphicsNameType.Image
+    isImageCustomGraphicsName(value.name)
 
   const fullyValid = customGraphicNodeVps.find((vp) => {
     const defaultValue = vp.defaultValue as CustomGraphicsType
@@ -157,6 +165,15 @@ export const getFirstValidCustomGraphicVp = (
   })
   if (fullyValid) {
     return fullyValid as VisualProperty<CustomGraphicsType>
+  }
+
+  // A slot with a passthrough mapping is valid — the mapper will produce
+  // CustomGraphicsType objects at runtime from raw string values
+  const passthroughValid = customGraphicNodeVps.find((vp) => {
+    return vp.mapping?.type === MappingFunctionType.Passthrough
+  })
+  if (passthroughValid) {
+    return passthroughValid as VisualProperty<CustomGraphicsType>
   }
 
   // If none of the preferred types are fully valid, pick the first “empty” graphic (None)
@@ -362,10 +379,69 @@ export const computeImageProperties = (
   id: IdType,
   value: CustomGraphicsType,
   row: Record<AttributeName, ValueType>,
-  customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
-) => {
-  computeCustomGraphicSizeProperties(id, customGraphicsSizeVp, mappers, row)
+): [string, VisualPropertyValueType][] => {
+  const pairs: [string, VisualPropertyValueType][] = []
+  const imageProps = value.properties as ImagePropertiesType
+
+  if (!imageProps.url) {
+    return pairs
+  }
+
+  const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
+  const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+
+  // A custom graphic can carry raw `<svg>` markup rather than a URL (Desktop-authored
+  // values and hand-edited CX2 both do this). Cytoscape.js only accepts a URL for
+  // background-image, so promote the markup to the data URI form the wrapping branch
+  // below already handles.
+  let finalUrl = imageProps.url
+  if (finalUrl.trimStart().startsWith('<svg')) {
+    finalUrl = 'data:image/svg+xml,' + encodeURIComponent(finalUrl.trimStart())
+  }
+
+  // For SVG data URIs we wrap the source SVG in an outer SVG sized to the slot's
+  // width/height and centered inside it. This pins the rendered aspect ratio and
+  // works around a Cytoscape.js bug where data-URI background images pick up a zoom
+  // offset. See docs/design/custom-graphics-image/zoom-bug-demo.html for a repro.
+  if (finalUrl.startsWith('data:image/svg+xml')) {
+    try {
+      const commaIdx = finalUrl.indexOf(',')
+      if (commaIdx !== -1) {
+        const metadata = finalUrl.substring(0, commaIdx)
+        const data = finalUrl.substring(commaIdx + 1)
+
+        let rawSvg = ''
+        if (metadata.includes('base64')) {
+          rawSvg = atob(data)
+        } else {
+          rawSvg = decodeURIComponent(data)
+        }
+
+        const size = Math.min(width, height)
+        const offsetX = (width - size) / 2
+        const offsetY = (height - size) / 2
+
+        const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><svg x="${offsetX}" y="${offsetY}" width="${size}" height="${size}">${rawSvg}</svg></svg>`
+
+        finalUrl = 'data:image/svg+xml,' + encodeURIComponent(wrapperSvg)
+      }
+    } catch (e) {
+      logModel.warn('Failed to wrap SVG custom graphic', e)
+    }
+  }
+
+  pairs.push([SpecialPropertyName.BackgroundImage, finalUrl])
+  pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
+  // 'null' is a valid Cytoscape.js background-image-crossorigin value meaning "do not
+  // set the crossOrigin attribute". This lets images load from servers without CORS
+  // headers; the tradeoff is that such images taint the canvas and are excluded from
+  // PNG/JPEG export. Use 'anonymous' instead if export fidelity matters more than reach.
+  pairs.push([SpecialPropertyName.BackgroundImageCrossorigin, 'null'])
+
+  return pairs
 }
 
 export const computeCustomGraphicsProperties = (
@@ -388,8 +464,8 @@ export const computeCustomGraphicsProperties = (
       heightVp,
       mappers,
     )
-  } else if (value.name === CustomGraphicsNameType.Image) {
-    return []
+  } else if (isImageCustomGraphicsName(value.name)) {
+    return computeImageProperties(id, value, row, widthVp, heightVp, mappers)
   }
 
   return []

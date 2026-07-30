@@ -1,4 +1,5 @@
 import {
+  ImagePropertiesType,
   NonePropertiesType,
   PieChartPropertiesType,
   RingChartPropertiesType,
@@ -8,6 +9,7 @@ type AllPropertiesType =
   | PieChartPropertiesType
   | RingChartPropertiesType
   | NonePropertiesType
+  | ImagePropertiesType
 
 /**
  * Type guard to check if properties are for a pie chart
@@ -27,3 +29,11 @@ export function isRingChartProperties(
   return 'cy_dataColumns' in props && 'cy_holeSize' in props
 }
 
+/**
+ * Type guard to check if properties are for an image
+ */
+export function isImageProperties(
+  props: AllPropertiesType,
+): props is ImagePropertiesType {
+  return 'url' in props
+}
