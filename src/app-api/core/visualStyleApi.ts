@@ -4,12 +4,17 @@
 
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
-import { AttributeName, ValueType, ValueTypeName } from '../../models/TableModel'
+import {
+  AttributeName,
+  ValueType,
+  ValueTypeName,
+} from '../../models/TableModel'
 import {
   ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
   MappingFunctionType,
   VisualMappingFunction,
+  VisualProperty,
   VisualPropertyGroup,
   VisualPropertyName,
   VisualPropertyValueType,
@@ -221,7 +226,7 @@ function resolveVisualProperty(
   networkId: IdType,
   vpName: VisualPropertyName,
 ):
-  | { property: any }
+  | { property: VisualProperty<VisualPropertyValueType> }
   | { failure: ApiFailure } {
   const style = useVisualStyleStore.getState().visualStyles[networkId]
   if (style === undefined) {
@@ -230,25 +235,36 @@ function resolveVisualProperty(
   const property = style[vpName]
   if (property === undefined) {
     return {
-      failure: fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`),
+      failure: fail(
+        AppCodes.INVALID_INPUT,
+        `Unknown visual property ${vpName}`,
+      ),
     }
   }
   return { property }
 }
 
 export const visualStyleApi: VisualStyleApi = {
-  getVisualProperties(networkId): ApiResult<{ properties: VisualPropertyInfo[] }> {
+  getVisualProperties(
+    networkId,
+  ): ApiResult<{ properties: VisualPropertyInfo[] }> {
     try {
       const style = useVisualStyleStore.getState().visualStyles[networkId]
       if (style === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const properties: VisualPropertyInfo[] = []
+      // Every field is treated as possibly absent: the runtime style
+      // object can carry non-property fields that the VisualStyle type
+      // does not describe, and those are filtered out below.
       for (const [name, vp] of Object.entries(style) as Array<
-        [VisualPropertyName, any]
+        [
+          VisualPropertyName,
+          Partial<VisualProperty<VisualPropertyValueType>> | undefined,
+        ]
       >) {
         // Skip non-property fields the style object may carry
-        if (vp === undefined || vp.group === undefined) continue
+        if (vp?.group === undefined || vp.type === undefined) continue
         properties.push({
           name,
           group: vp.group,
@@ -357,7 +373,10 @@ export const visualStyleApi: VisualStyleApi = {
       for (const [vpName, vpValue] of entries) {
         const visualProperty = style[vpName]
         if (visualProperty === undefined) {
-          return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
+          return fail(
+            AppCodes.INVALID_INPUT,
+            `Unknown visual property ${vpName}`,
+          )
         }
         const invalidValue = validateVisualPropertyValue(
           vpName,
@@ -438,10 +457,14 @@ export const visualStyleApi: VisualStyleApi = {
       if (missingElements) return missingElements
 
       // Validate every property before applying any (all-or-nothing)
+      const groupsToScopeCheck = new Set<'node' | 'edge'>()
       for (const [vpName, vpValue] of entries) {
         const visualProperty = style[vpName]
         if (visualProperty === undefined) {
-          return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
+          return fail(
+            AppCodes.INVALID_INPUT,
+            `Unknown visual property ${vpName}`,
+          )
         }
         if (visualProperty.group === 'network') {
           return fail(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN, vpName)
@@ -452,10 +475,17 @@ export const visualStyleApi: VisualStyleApi = {
           vpValue,
         )
         if (invalidValue) return invalidValue
+        groupsToScopeCheck.add(visualProperty.group)
+      }
+
+      // The scope check depends only on (networkId, elementIds, group), so
+      // it runs once per distinct group rather than once per property —
+      // each one scans the network's node list
+      for (const group of groupsToScopeCheck) {
         const scopeMismatch = validateBypassTargetScope(
           networkId,
           elementIds,
-          visualProperty.group,
+          group,
         )
         if (scopeMismatch) return scopeMismatch
       }
@@ -476,16 +506,20 @@ export const visualStyleApi: VisualStyleApi = {
       if (visualStyles[networkId] === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      useVisualStyleStore
-        .getState()
-        .deleteBypass(networkId, vpName, elementIds)
+      useVisualStyleStore.getState().deleteBypass(networkId, vpName, elementIds)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
-  createDiscreteMapping(networkId, vpName, attribute, attributeType, mapping): ApiResult {
+  createDiscreteMapping(
+    networkId,
+    vpName,
+    attribute,
+    attributeType,
+    mapping,
+  ): ApiResult {
     try {
       const store = useVisualStyleStore.getState()
       const visualStyles = store.visualStyles
@@ -570,26 +604,29 @@ export const visualStyleApi: VisualStyleApi = {
 
       // createContinuousMapping computes default min/max/controlPoints/lt/gt values;
       // read them back so any caller-supplied overrides can fall back to those defaults.
-      const currentMapping = useVisualStyleStore.getState().visualStyles[networkId][
-        vpName
-      ].mapping as ContinuousMappingFunction | undefined
+      const currentMapping = useVisualStyleStore.getState().visualStyles[
+        networkId
+      ][vpName].mapping as ContinuousMappingFunction | undefined
       if (currentMapping) {
-        const effectiveControlPoints = controlPoints ?? currentMapping.controlPoints
+        const effectiveControlPoints =
+          controlPoints ?? currentMapping.controlPoints
         const min: ContinuousFunctionControlPoint = controlPoints
           ? controlPoints[0]
           : currentMapping.min
         const max: ContinuousFunctionControlPoint = controlPoints
           ? controlPoints[controlPoints.length - 1]
           : currentMapping.max
-        useVisualStyleStore.getState().setContinuousMappingValues(
-          networkId,
-          vpName,
-          min,
-          max,
-          effectiveControlPoints,
-          ltMinVpValue ?? currentMapping.ltMinVpValue,
-          gtMaxVpValue ?? currentMapping.gtMaxVpValue,
-        )
+        useVisualStyleStore
+          .getState()
+          .setContinuousMappingValues(
+            networkId,
+            vpName,
+            min,
+            max,
+            effectiveControlPoints,
+            ltMinVpValue ?? currentMapping.ltMinVpValue,
+            gtMaxVpValue ?? currentMapping.gtMaxVpValue,
+          )
       }
       return ok()
     } catch (e) {
@@ -597,7 +634,12 @@ export const visualStyleApi: VisualStyleApi = {
     }
   },
 
-  createPassthroughMapping(networkId, vpName, attribute, attributeType): ApiResult {
+  createPassthroughMapping(
+    networkId,
+    vpName,
+    attribute,
+    attributeType,
+  ): ApiResult {
     try {
       const visualStyles = useVisualStyleStore.getState().visualStyles
       if (visualStyles[networkId] === undefined) {

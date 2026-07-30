@@ -271,9 +271,7 @@ function cascadeColumnToMappings(
     setMapping(
       networkId,
       vpName as VisualPropertyName,
-      newName === undefined
-        ? undefined
-        : { ...vp.mapping, attribute: newName },
+      newName === undefined ? undefined : { ...vp.mapping, attribute: newName },
     )
   })
 }
@@ -281,7 +279,12 @@ function cascadeColumnToMappings(
 // ── Core implementation ──────────────────────────────────────────────────────
 
 export const tableApi: TableApi = {
-  getValue(networkId, tableType, elementId, column): ApiResult<{ value: ValueType }> {
+  getValue(
+    networkId,
+    tableType,
+    elementId,
+    column,
+  ): ApiResult<{ value: ValueType }> {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -299,7 +302,10 @@ export const tableApi: TableApi = {
       }
       // source/target are pseudo-columns synthesized from the network
       // model for edge tables (matching getTable/getColumns)
-      if (tableType === 'edge' && (column === 'source' || column === 'target')) {
+      if (
+        tableType === 'edge' &&
+        (column === 'source' || column === 'target')
+      ) {
         const edge = useNetworkStore
           .getState()
           .networks.get(networkId)
@@ -319,7 +325,11 @@ export const tableApi: TableApi = {
     }
   },
 
-  getRow(networkId, tableType, elementId): ApiResult<{ row: Record<AttributeName, ValueType> }> {
+  getRow(
+    networkId,
+    tableType,
+    elementId,
+  ): ApiResult<{ row: Record<AttributeName, ValueType> }> {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -341,7 +351,13 @@ export const tableApi: TableApi = {
     }
   },
 
-  createColumn(networkId, tableType, columnName, dataType, defaultValue): ApiResult {
+  createColumn(
+    networkId,
+    tableType,
+    columnName,
+    dataType,
+    defaultValue,
+  ): ApiResult {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -568,7 +584,13 @@ export const tableApi: TableApi = {
     }
   },
 
-  applyValueToElements(networkId, tableType, columnName, value, elementIds): ApiResult {
+  applyValueToElements(
+    networkId,
+    tableType,
+    columnName,
+    value,
+    elementIds,
+  ): ApiResult {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -590,7 +612,13 @@ export const tableApi: TableApi = {
 
       useTableStore
         .getState()
-        .applyValueToElements(networkId, tableType, columnName, value, elementIds)
+        .applyValueToElements(
+          networkId,
+          tableType,
+          columnName,
+          value,
+          elementIds,
+        )
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -762,9 +790,15 @@ export const tableApi: TableApi = {
       // Validate all new column names before mutating anything, so a
       // forbidden name (CX2 FK1/FK2/A8) fails the import cleanly instead
       // of leaving some columns created (same rules as createColumn)
+      // `source`/`target` are structural on edge tables (synthesized from
+      // the network model, never stored as columns) but are ordinary
+      // attribute names on node tables, so the skip is edge-only
+      const isStructuralColumn = (colName: string): boolean =>
+        tableType === 'edge' && (colName === 'source' || colName === 'target')
+
       for (const colName of colNames) {
         if (colName === keyColumn) continue
-        if (colName === 'source' || colName === 'target') continue
+        if (isStructuralColumn(colName)) continue
         if (existingColumns.has(colName)) continue
         const invalidName = validateColumnName(colName, tableType)
         if (invalidName) return invalidName
@@ -775,7 +809,7 @@ export const tableApi: TableApi = {
       const storeState = useTableStore.getState()
       for (const colName of colNames) {
         if (colName === keyColumn) continue
-        if (colName === 'source' || colName === 'target') continue
+        if (isStructuralColumn(colName)) continue
         if (!existingColumns.has(colName)) {
           const inferredType =
             colTypes.get(colName) ?? inferTypeFromData(lines, colNames, colName)
@@ -857,7 +891,7 @@ export const tableApi: TableApi = {
         for (let j = 0; j < colNames.length; j++) {
           const colName = colNames[j]
           if (colName === keyColumn) continue
-          if (colName === 'source' || colName === 'target') continue
+          if (isStructuralColumn(colName)) continue
           const rawValue = values[j] ?? ''
           const colType = (colTypes.get(colName) ??
             existingColumns.get(colName) ??
@@ -890,7 +924,12 @@ export const tableApi: TableApi = {
 
       // Count unique row IDs from cell edits
       const uniqueRows = new Set(cellEdits.map((e) => e.row))
-      return ok({ rowCount: uniqueRows.size, newColumns, skippedRows, skippedCells })
+      return ok({
+        rowCount: uniqueRows.size,
+        newColumns,
+        skippedRows,
+        skippedCells,
+      })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -950,9 +989,7 @@ function defaultForType(type: ValueTypeName): ValueType {
 const INTEGER_PATTERN = /^-?\d+$/
 
 function parseIntStrict(raw: string): number | undefined {
-  return INTEGER_PATTERN.test(raw.trim())
-    ? parseInt(raw.trim(), 10)
-    : undefined
+  return INTEGER_PATTERN.test(raw.trim()) ? parseInt(raw.trim(), 10) : undefined
 }
 
 function parseFloatStrict(raw: string): number | undefined {
@@ -982,7 +1019,10 @@ function parseList<T>(
  * caller can skip and report the cell (CX2 A1: values must match the
  * declared column type).
  */
-function parseTsvValue(raw: string, type: ValueTypeName): ValueType | undefined {
+function parseTsvValue(
+  raw: string,
+  type: ValueTypeName,
+): ValueType | undefined {
   switch (type) {
     case ValueTypeName.Long:
     case ValueTypeName.Integer:

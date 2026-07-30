@@ -12,8 +12,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 - **Scoped current-network API.** `CyWebApi.forNetwork(networkId?)` returns
   the network-scoped domains (`element`, `table`, `selection`, `viewport`,
   `visualStyle`, `export`) with `networkId` pre-bound, so it need not be
-  passed on every call. Omit the argument to target the current network,
-  resolved at call time. New type `ScopedCyWebApi`.
+  passed on every call. `layout` is included but carries only its
+  network-scoped method, `applyLayout`; read the available algorithms from
+  the top-level `layout.getAvailableLayouts()`. Omit the argument to target
+  the current network, resolved at call time. New type `ScopedCyWebApi`.
 - **Visual Style read API.** `VisualStyleApi` was previously write-only; it
   now exposes `getVisualProperties`, `getDefault`, `getBypass`,
   `getBypasses`, and `getMapping` (all returning `ApiResult`).

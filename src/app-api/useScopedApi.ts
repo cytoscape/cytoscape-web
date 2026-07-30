@@ -14,8 +14,9 @@ export type { ScopedCyWebApi }
 
 /**
  * Returns the network-scoped API (element, table, selection, viewport,
- * visualStyle, export) with `networkId` pre-bound. Pass a specific id, or
- * omit it to target the workspace's current network, resolved at call time.
+ * visualStyle, export, plus `layout.applyLayout`) with `networkId`
+ * pre-bound. Pass a specific id, or omit it to target the workspace's
+ * current network, resolved at call time.
  *
  * @example
  * const net = useScopedApi()          // current network

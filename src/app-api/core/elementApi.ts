@@ -307,6 +307,12 @@ function validateCreateTimeBypass(
     if (visualProperty === undefined) {
       return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
     }
+    // Network-scoped properties can never be bypassed on an element, so
+    // they get the dedicated code rather than the generic scope mismatch
+    // (same distinction visualStyleApi.setBypass draws)
+    if (visualProperty.group === 'network') {
+      return fail(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN, vpName)
+    }
     if (visualProperty.group !== group) {
       return fail(
         StyleCodes.BYPASS_SCOPE_MISMATCH,
@@ -441,7 +447,7 @@ export const elementApi: ElementApi = {
       }
       const tableRecord = useTableStore.getState().tables[networkId]
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
-      const readNode = (id: IdType): ({ id: IdType } & NodeData) => {
+      const readNode = (id: IdType): { id: IdType } & NodeData => {
         const row = tableRecord?.nodeTable?.rows?.get(id) ?? {}
         const nodeView = viewModel?.nodeViews?.[id]
         const position: [number, number, number?] = nodeView
@@ -525,11 +531,7 @@ export const elementApi: ElementApi = {
       if (invalidBypass) return invalidBypass
 
       // Generate unique ID (replicate useCreateNode.generateNextNodeId)
-      const existingIds = network.nodes
-        .map((n) => parseInt(n.id))
-        .filter((id) => !isNaN(id))
-      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-      const newNodeId = `${maxId + 1}`
+      const newNodeId = `${maxNumericNodeId(network) + 1}`
 
       // Prepare attributes with defaults
       const attributes: Record<AttributeName, ValueType> = {
@@ -621,14 +623,7 @@ export const elementApi: ElementApi = {
       }
 
       // Generate unique edge ID (replicate useCreateEdge.generateNextEdgeId)
-      const existingIds = network.edges
-        .map((e) => {
-          const id = e.id.startsWith('e') ? e.id.slice(1) : e.id
-          return parseInt(id)
-        })
-        .filter((id) => !isNaN(id))
-      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-      const newEdgeId = `e${maxId + 1}`
+      const newEdgeId = `e${maxNumericEdgeId(network) + 1}`
 
       // Prepare attributes with defaults
       const attributes: Record<AttributeName, ValueType> = {
@@ -705,10 +700,7 @@ export const elementApi: ElementApi = {
 
       // Validate everything up front — batch creation is all-or-nothing
       for (const spec of nodes) {
-        const invalidAttributes = validateNoIdAttribute(
-          spec.attributes,
-          'node',
-        )
+        const invalidAttributes = validateNoIdAttribute(spec.attributes, 'node')
         if (invalidAttributes) return invalidAttributes
         const invalidBypass = validateCreateTimeBypass(
           networkId,
@@ -925,7 +917,10 @@ export const elementApi: ElementApi = {
 
       return ok()
     } catch (e) {
-      return fail(AppCodes.OPERATION_FAILED, `Failed to move edge: ${String(e)}`)
+      return fail(
+        AppCodes.OPERATION_FAILED,
+        `Failed to move edge: ${String(e)}`,
+      )
     }
   },
 
@@ -1203,11 +1198,7 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
-      const existingIds = network.nodes
-        .map((n) => parseInt(n.id))
-        .filter((id) => !isNaN(id))
-      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-      return ok({ nodeId: `${maxId + 1}` })
+      return ok({ nodeId: `${maxNumericNodeId(network) + 1}` })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -1217,14 +1208,7 @@ export const elementApi: ElementApi = {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
-      const existingIds = network.edges
-        .map((e) => {
-          const id = e.id.startsWith('e') ? e.id.slice(1) : e.id
-          return parseInt(id)
-        })
-        .filter((id) => !isNaN(id))
-      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-      return ok({ edgeId: `e${maxId + 1}` })
+      return ok({ edgeId: `e${maxNumericEdgeId(network) + 1}` })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }

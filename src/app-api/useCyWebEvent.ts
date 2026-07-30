@@ -1,7 +1,7 @@
 // src/app-api/useCyWebEvent.ts
 // Exposed as cyweb/EventBus
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import type { CyWebEvents } from './event-bus/CyWebEvents'
 
@@ -28,9 +28,13 @@ export function useCyWebEvent<K extends keyof CyWebEvents>(
   handler: (detail: CyWebEvents[K]) => void,
 ): void {
   // Keep the latest handler in a ref so the listener identity is stable
-  // across renders while still calling the current handler.
+  // across renders while still calling the current handler. Synchronized
+  // in a layout effect, not a passive one: the listener registered by an
+  // earlier render stays attached across re-renders (its deps are only
+  // [eventType]), so an event dispatched after commit but before passive
+  // effects flush would otherwise invoke the previous render's closure.
   const handlerRef = useRef(handler)
-  useEffect(() => {
+  useLayoutEffect(() => {
     handlerRef.current = handler
   }, [handler])
 

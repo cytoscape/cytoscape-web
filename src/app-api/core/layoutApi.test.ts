@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 // src/app-api/core/layoutApi.test.ts
@@ -322,12 +322,18 @@ describe('applyLayout — happy path', () => {
 describe('applyLayout — engine failure', () => {
   beforeEach(() => {
     mockNetworks.set('net1', { nodes: [{ id: 'node1' }], edges: [] })
-  })
-
-  it('resolves fail() instead of throwing when engine.apply throws synchronously', async () => {
     mockLayoutEngines[0].apply.mockImplementation(() => {
       throw new Error('malformed engine')
     })
+  })
+
+  // The throwing implementation outlives clearAllMocks (which clears calls,
+  // not implementations), so it must be reset or it leaks into later suites
+  afterEach(() => {
+    mockLayoutEngines[0].apply.mockReset()
+  })
+
+  it('resolves fail() instead of throwing when engine.apply throws synchronously', async () => {
     // Must not reject — the API contract is "never throw across the boundary"
     const result = await layoutApi.applyLayout('net1')
     expect(result.success).toBe(false)
@@ -338,18 +344,12 @@ describe('applyLayout — engine failure', () => {
   })
 
   it('resets isRunning to false when engine.apply throws synchronously', async () => {
-    mockLayoutEngines[0].apply.mockImplementation(() => {
-      throw new Error('malformed engine')
-    })
     await layoutApi.applyLayout('net1')
     expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true)
     expect(mockSetIsRunning).toHaveBeenNthCalledWith(2, false)
   })
 
   it('does not dispatch layout:completed when the engine throws', async () => {
-    mockLayoutEngines[0].apply.mockImplementation(() => {
-      throw new Error('malformed engine')
-    })
     await layoutApi.applyLayout('net1')
     const completedCall = mockDispatchCyWebEvent.mock.calls.find(
       ([type]) => type === 'layout:completed',

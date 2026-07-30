@@ -38,8 +38,9 @@ type Scoped<T> = { [K in keyof T]: OmitFirstArg<T[K]> }
  * The subset of CyWebApi whose every method is network-scoped
  * (`networkId` first), presented with that id already bound. Domains
  * whose methods are not uniformly network-scoped — `network`,
- * `workspace`, `layout`, `contextMenu` — are intentionally excluded;
- * call those on the top-level `CyWebApi`.
+ * `workspace`, `contextMenu` — are intentionally excluded; call those on
+ * the top-level `CyWebApi`. `layout` is the one partial case: only its
+ * network-scoped `applyLayout` is bound here.
  */
 export interface ScopedCyWebApi {
   element: Scoped<ElementApi>

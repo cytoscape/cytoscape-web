@@ -1126,7 +1126,11 @@ escape.
 
 #### `getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>`
 
-Returns all registered layout algorithms across all engines. Never fails.
+Returns all registered layout algorithms across all engines. There are no
+validation failures to report — an empty engine registry yields
+`ok({ layouts: [] })` — but the call is still wrapped like every other, so an
+unexpected store error resolves to `fail(APP3)`. Handle both branches of the
+`ApiResult`.
 
 ---
 

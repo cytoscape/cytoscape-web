@@ -2,11 +2,21 @@
 // Framework-agnostic undo recording shared by app API core modules.
 // Zero React imports; all store access via .getState().
 
+import appConfig from '@/assets/config.json'
+
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 
-const DEFAULT_UNDO_STACK_SIZE = 20
+/**
+ * The same bound `useUndoStack` applies, read from the config file that
+ * hydrates AppConfigContext rather than from the context itself (this
+ * module is React-free, like the other non-React config consumers —
+ * keycloak, googleAnalytics). A deployment that raises the limit, or
+ * disables undo with 0, now governs app API edits too instead of only the
+ * in-app ones.
+ */
+const UNDO_STACK_SIZE: number = appConfig.undoStackSize
 
 /**
  * Framework-agnostic postEdit — records an undo entry on the stack of the
@@ -29,9 +39,12 @@ export function corePostEdit(
     redoStack: [],
   }
   const newEdit = { undoCommand, description, undoParams, redoParams }
-  const nextUndoStack = [...stack.undoStack, newEdit].slice(
-    -DEFAULT_UNDO_STACK_SIZE,
-  )
+  // slice(-0) === slice(0), so a size of 0 must be handled explicitly: it
+  // disables undo rather than unbounding the stack (matches useUndoStack)
+  const nextUndoStack =
+    UNDO_STACK_SIZE > 0
+      ? [...stack.undoStack, newEdit].slice(-UNDO_STACK_SIZE)
+      : []
   undoState.setUndoStack(networkId, nextUndoStack)
   undoState.setRedoStack(networkId, [])
 }

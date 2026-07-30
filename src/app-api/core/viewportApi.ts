@@ -72,7 +72,10 @@ export const viewportApi: ViewportApi = {
       // Default to every node in the network when no ids are given
       const ids =
         nodeIds ??
-        useNetworkStore.getState().networks.get(networkId)?.nodes.map((n) => n.id) ??
+        useNetworkStore
+          .getState()
+          .networks.get(networkId)
+          ?.nodes.map((n) => n.id) ??
         Object.keys(nodeViews)
       const missing: IdType[] = []
       for (const nodeId of ids) {
@@ -92,10 +95,7 @@ export const viewportApi: ViewportApi = {
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      const missingNodes = validateNodesExist(
-        networkId,
-        Object.keys(positions),
-      )
+      const missingNodes = validateNodesExist(networkId, Object.keys(positions))
       if (missingNodes) return missingNodes
 
       // Convert PositionRecord (JSON-serializable) to Map required by store

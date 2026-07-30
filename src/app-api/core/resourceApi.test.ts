@@ -62,8 +62,7 @@ describe('createResourceApi', () => {
 
   beforeEach(() => {
     mockStore = makeMockResourceStore()
-    vi.mocked(useAppResourceStore.getState)
-      .mockReturnValue(mockStore as any)
+    vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
     vi.mocked(useAppStore.getState).mockReturnValue({
       apps: { app1: { status: AppStatus.Active } },
     } as any)
@@ -95,6 +94,8 @@ describe('createResourceApi', () => {
       const api = createResourceApi('app1')
       const a = api.getSupportedSlots()
       const b = api.getSupportedSlots()
+      expect(a.success).toBe(true)
+      expect(b.success).toBe(true)
       if (a.success && b.success) {
         expect(a.data.slots).not.toBe(b.data.slots)
       }
@@ -444,8 +445,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      vi.mocked(useAppResourceStore.getState)
-        .mockReturnValue(mockStore as any)
+      vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
 
       const api = createResourceApi('app1')
       const result = api.getRegisteredResources()
@@ -495,8 +495,7 @@ describe('createResourceApi', () => {
       mockStore.resources = [
         { id: 'P1', appId: 'app1', slot: 'right-panel', component: {} },
       ]
-      vi.mocked(useAppResourceStore.getState)
-        .mockReturnValue(mockStore as any)
+      vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
       vi.mocked(useAppStore.getState).mockReturnValue({
         apps: { app1: { status: AppStatus.Inactive } },
       } as any)
@@ -520,8 +519,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      vi.mocked(useAppResourceStore.getState)
-        .mockReturnValue(mockStore as any)
+      vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
       vi.mocked(useWorkspaceStore.getState).mockReturnValue({
         workspace: { currentNetworkId: '' },
       } as any)
@@ -545,14 +543,8 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      vi.mocked(useAppResourceStore.getState)
-        .mockReturnValue(mockStore as any)
-      vi.mocked(useViewModelStore.getState).mockReturnValue({
-        getViewModel: vi.fn(() => ({
-          selectedNodes: [],
-          selectedEdges: [],
-        })),
-      } as any)
+      vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
+      // Empty selection is the beforeEach default
 
       const api = createResourceApi('app1')
       const result = api.getResourceVisibility('P1')
@@ -573,8 +565,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      vi.mocked(useAppResourceStore.getState)
-        .mockReturnValue(mockStore as any)
+      vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
       vi.mocked(useViewModelStore.getState).mockReturnValue({
         getViewModel: vi.fn(() => ({
           selectedNodes: ['n1'],
@@ -597,8 +588,7 @@ describe('createResourceApi', () => {
           component: {},
         },
       ]
-      vi.mocked(useAppResourceStore.getState)
-        .mockReturnValue(mockStore as any)
+      vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
       // AppStore: active, WorkspaceStore: has network (default mocks)
 
       const api = createResourceApi('app1')
@@ -617,12 +607,8 @@ describe('createResourceApi', () => {
       const r1 = api1.registerPanel({ id: 'P1', component: DummyComponent })
       const r2 = api2.registerPanel({ id: 'P1', component: DummyComponent })
 
-      expect(r1.success && r1.data.resourceId).toBe(
-        'app1::right-panel::P1',
-      )
-      expect(r2.success && r2.data.resourceId).toBe(
-        'app2::right-panel::P1',
-      )
+      expect(r1.success && r1.data.resourceId).toBe('app1::right-panel::P1')
+      expect(r2.success && r2.data.resourceId).toBe('app2::right-panel::P1')
     })
 
     it('unregisterAll only affects the bound appId', () => {

@@ -23,24 +23,26 @@ const mockVisualStyles: Record<string, any> = {}
 
 // Mimics VisualStyleStore.createContinuousMapping: installs a default
 // continuous mapping so callers can read it back via visualStyles.
-const mockCreateContinuousMapping = vi.fn((networkId: string, vpName: string) => {
-  mockVisualStyles[networkId][vpName] = {
-    ...mockVisualStyles[networkId][vpName],
-    mapping: {
-      attribute: 'score',
-      type: 'continuous',
-      min: { value: 0, vpValue: 'defaultMin' },
-      max: { value: 100, vpValue: 'defaultMax' },
-      controlPoints: [
-        { value: 0, vpValue: 'defaultMin' },
-        { value: 50, vpValue: 'defaultMid' },
-        { value: 100, vpValue: 'defaultMax' },
-      ],
-      ltMinVpValue: 'defaultLtMin',
-      gtMaxVpValue: 'defaultGtMax',
-    },
-  }
-})
+const mockCreateContinuousMapping = vi.fn(
+  (networkId: string, vpName: string) => {
+    mockVisualStyles[networkId][vpName] = {
+      ...mockVisualStyles[networkId][vpName],
+      mapping: {
+        attribute: 'score',
+        type: 'continuous',
+        min: { value: 0, vpValue: 'defaultMin' },
+        max: { value: 100, vpValue: 'defaultMax' },
+        controlPoints: [
+          { value: 0, vpValue: 'defaultMin' },
+          { value: 50, vpValue: 'defaultMid' },
+          { value: 100, vpValue: 'defaultMax' },
+        ],
+        ltMinVpValue: 'defaultLtMin',
+        gtMaxVpValue: 'defaultGtMax',
+      },
+    }
+  },
+)
 
 vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
@@ -260,14 +262,26 @@ describe('setDefault', () => {
   it('calls setDefault and returns ok() when network exists', () => {
     setupDefaultFixtures()
 
-    const result = visualStyleApi.setDefault('net1', VPN.NodeBackgroundColor, '#ff0000')
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeBackgroundColor,
+      '#ff0000',
+    )
 
     expect(result.success).toBe(true)
-    expect(mockSetDefault).toHaveBeenCalledWith('net1', VPN.NodeBackgroundColor, '#ff0000')
+    expect(mockSetDefault).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeBackgroundColor,
+      '#ff0000',
+    )
   })
 
   it('returns NetworkNotFound when visual style does not exist', () => {
-    const result = visualStyleApi.setDefault('missing', VPN.NodeBackgroundColor, '#ff0000')
+    const result = visualStyleApi.setDefault(
+      'missing',
+      VPN.NodeBackgroundColor,
+      '#ff0000',
+    )
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -282,7 +296,11 @@ describe('setDefault', () => {
       throw new Error('store error')
     })
 
-    const result = visualStyleApi.setDefault('net1', VPN.NodeBackgroundColor, '#ff0000')
+    const result = visualStyleApi.setDefault(
+      'net1',
+      VPN.NodeBackgroundColor,
+      '#ff0000',
+    )
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -473,7 +491,9 @@ describe('setDefault', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.INVALID_CUSTOM_GRAPHICS_POSITION.code)
+      expect(result.error.code).toBe(
+        StyleCodes.INVALID_CUSTOM_GRAPHICS_POSITION.code,
+      )
     }
   })
 })
@@ -495,7 +515,11 @@ describe('setDefaults', () => {
       [VPN.NodeHeight]: 42,
     })
     expect(result.success).toBe(true)
-    expect(mockSetDefault).toHaveBeenCalledWith('net1', VPN.NodeBackgroundColor, '#ff0000')
+    expect(mockSetDefault).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeBackgroundColor,
+      '#ff0000',
+    )
     expect(mockSetDefault).toHaveBeenCalledWith('net1', VPN.NodeHeight, 42)
     expect(mockSetDefault).toHaveBeenCalledTimes(2)
   })
@@ -614,7 +638,9 @@ describe('setBypass', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN.code)
+      expect(result.error.code).toBe(
+        StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN.code,
+      )
     }
     expect(mockSetBypass).not.toHaveBeenCalled()
   })
@@ -673,7 +699,12 @@ describe('setBypass', () => {
   it('returns InvalidInput when elementIds is empty', () => {
     mockVisualStyles['net1'] = {}
 
-    const result = visualStyleApi.setBypass('net1', VPN.NodeBackgroundColor, [], '#ff0000')
+    const result = visualStyleApi.setBypass(
+      'net1',
+      VPN.NodeBackgroundColor,
+      [],
+      '#ff0000',
+    )
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -726,7 +757,12 @@ describe('setBypasses', () => {
       ['n1', 'n2'],
       '#ff0000',
     )
-    expect(mockSetBypass).toHaveBeenCalledWith('net1', VPN.NodeHeight, ['n1', 'n2'], 40)
+    expect(mockSetBypass).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeHeight,
+      ['n1', 'n2'],
+      40,
+    )
     expect(mockSetBypass).toHaveBeenCalledTimes(2)
   })
 
@@ -784,7 +820,11 @@ describe('deleteBypass', () => {
   it('calls deleteBypass and returns ok() when network exists', () => {
     mockVisualStyles['net1'] = {}
 
-    const result = visualStyleApi.deleteBypass('net1', VPN.NodeBackgroundColor, ['n1'])
+    const result = visualStyleApi.deleteBypass(
+      'net1',
+      VPN.NodeBackgroundColor,
+      ['n1'],
+    )
 
     expect(result.success).toBe(true)
     expect(mockDeleteBypass).toHaveBeenCalledWith(
@@ -795,7 +835,11 @@ describe('deleteBypass', () => {
   })
 
   it('returns NetworkNotFound when visual style does not exist', () => {
-    const result = visualStyleApi.deleteBypass('missing', VPN.NodeBackgroundColor, ['n1'])
+    const result = visualStyleApi.deleteBypass(
+      'missing',
+      VPN.NodeBackgroundColor,
+      ['n1'],
+    )
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -809,7 +853,11 @@ describe('deleteBypass', () => {
 describe('createDiscreteMapping', () => {
   it('calls setMapping and returns ok() when network exists', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5', group: 'node' },
+      [VPN.NodeBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#89D0F5',
+        group: 'node',
+      },
     }
     declareColumns([{ name: 'type', type: 'string' }])
 
@@ -844,7 +892,11 @@ describe('createDiscreteMapping', () => {
 
   it('builds a vpValueMap from string mapping entries when attributeType is string', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#89D0F5', group: 'node' },
+      [VPN.NodeBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#89D0F5',
+        group: 'node',
+      },
     }
     declareColumns([{ name: 'type', type: 'string' }])
 
@@ -921,7 +973,11 @@ describe('createDiscreteMapping', () => {
 
   it('rejects a mapping on an undeclared attribute (CX2 MI1)', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#fff', group: 'node' },
+      [VPN.NodeBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#fff',
+        group: 'node',
+      },
     }
     declareColumns([{ name: 'type', type: 'string' }])
 
@@ -934,14 +990,20 @@ describe('createDiscreteMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED.code)
+      expect(result.error.code).toBe(
+        StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED.code,
+      )
     }
     expect(mockSetMapping).not.toHaveBeenCalled()
   })
 
   it('rejects an attributeType that mismatches the declared column type (CX2 MI2)', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#fff', group: 'node' },
+      [VPN.NodeBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#fff',
+        group: 'node',
+      },
     }
     declareColumns([{ name: 'type', type: 'string' }])
 
@@ -960,7 +1022,11 @@ describe('createDiscreteMapping', () => {
 
   it('rejects a mapping on a network-scoped visual property (CX2 MC1)', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NetworkBackgroundColor]: { type: 'color', defaultValue: '#fff', group: 'network' },
+      [VPN.NetworkBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#fff',
+        group: 'network',
+      },
     }
     declareColumns([{ name: 'type', type: 'string' }])
 
@@ -973,7 +1039,9 @@ describe('createDiscreteMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.NETWORK_SCOPED_MAPPING_FORBIDDEN.code)
+      expect(result.error.code).toBe(
+        StyleCodes.NETWORK_SCOPED_MAPPING_FORBIDDEN.code,
+      )
     }
   })
 })
@@ -1089,7 +1157,11 @@ describe('createContinuousMapping', () => {
 
   it('preserves an explicit inclusive flag on overridden control points', () => {
     mockVisualStyles['net1'] = {
-      [VPN.NodeBackgroundColor]: { type: 'color', defaultValue: '#ffffff', group: 'node' },
+      [VPN.NodeBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#ffffff',
+        group: 'node',
+      },
     }
     declareColumns([{ name: 'score', type: 'double' }])
 
@@ -1168,7 +1240,9 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
+      expect(result.error.code).toBe(
+        StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code,
+      )
     }
     expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
   })
@@ -1192,7 +1266,9 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
+      expect(result.error.code).toBe(
+        StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code,
+      )
     }
   })
 
@@ -1215,7 +1291,9 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
+      expect(result.error.code).toBe(
+        StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code,
+      )
     }
   })
 
@@ -1242,7 +1320,9 @@ describe('createContinuousMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code)
+      expect(result.error.code).toBe(
+        StyleCodes.CONTINUOUS_MAPPING_NOT_NUMERIC.code,
+      )
     }
     expect(mockCreateContinuousMapping).not.toHaveBeenCalled()
   })
@@ -1326,7 +1406,9 @@ describe('createPassthroughMapping', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED.code)
+      expect(result.error.code).toBe(
+        StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED.code,
+      )
     }
     expect(mockCreatePassthroughMapping).not.toHaveBeenCalled()
   })
@@ -1341,11 +1423,17 @@ describe('deleteMapping', () => {
     const result = visualStyleApi.deleteMapping('net1', VPN.NodeBackgroundColor)
 
     expect(result.success).toBe(true)
-    expect(mockRemoveMapping).toHaveBeenCalledWith('net1', VPN.NodeBackgroundColor)
+    expect(mockRemoveMapping).toHaveBeenCalledWith(
+      'net1',
+      VPN.NodeBackgroundColor,
+    )
   })
 
   it('returns NetworkNotFound when visual style does not exist', () => {
-    const result = visualStyleApi.deleteMapping('missing', VPN.NodeBackgroundColor)
+    const result = visualStyleApi.deleteMapping(
+      'missing',
+      VPN.NodeBackgroundColor,
+    )
 
     expect(result.success).toBe(false)
     if (!result.success) {

@@ -39,9 +39,10 @@ export interface CyWebApiType {
   contextMenu: ContextMenuApi
   /**
    * Return the network-scoped domains (element, table, selection,
-   * viewport, visualStyle, export) with `networkId` pre-bound, so callers
-   * omit it on every call. Omit the argument to target the workspace's
-   * current network, resolved at call time.
+   * viewport, visualStyle, export, plus `layout.applyLayout`) with
+   * `networkId` pre-bound, so callers omit it on every call. Omit the
+   * argument to target the workspace's current network, resolved at call
+   * time.
    */
   forNetwork(networkId?: IdType): ScopedCyWebApi
 

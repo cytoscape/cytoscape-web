@@ -175,9 +175,7 @@ function makeCyNode(id: string) {
       )
     },
     outgoers: () => {
-      const outEdges = mockCyEdges.filter(
-        (e: any) => e.source().id() === id,
-      )
+      const outEdges = mockCyEdges.filter((e: any) => e.source().id() === id)
       const outNodeIds = new Set(outEdges.map((e: any) => e.target().id()))
       return makeCyCollection([
         ...outEdges,
@@ -185,9 +183,7 @@ function makeCyNode(id: string) {
       ])
     },
     incomers: () => {
-      const inEdges = mockCyEdges.filter(
-        (e: any) => e.target().id() === id,
-      )
+      const inEdges = mockCyEdges.filter((e: any) => e.target().id() === id)
       const inNodeIds = new Set(inEdges.map((e: any) => e.source().id()))
       return makeCyCollection([
         ...inEdges,
@@ -351,7 +347,10 @@ describe('elementApi', () => {
     })
 
     it('returns e(max+1) when edges exist', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e2' }, { id: 'e5' }]))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e2' }, { id: 'e5' }]),
+      )
       const result = elementApi.generateNextEdgeId('net1')
       expect(result.success && result.data.edgeId).toBe('e6')
     })
@@ -420,7 +419,10 @@ describe('elementApi', () => {
 
   describe('getNodes', () => {
     const setupNodes = (): void => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }]))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }]),
+      )
       mockTables['net1'] = {
         nodeTable: {
           rows: new Map([
@@ -483,7 +485,10 @@ describe('elementApi', () => {
     })
 
     it('returns EdgeNotFound when edge does not exist', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e2', s: 'n1', t: 'n2' }]))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e2', s: 'n1', t: 'n2' }]),
+      )
       const result = elementApi.getEdge('net1', 'e1')
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -492,7 +497,10 @@ describe('elementApi', () => {
     })
 
     it('returns ok with edge data when edge exists', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e1', s: 'n1', t: 'n2' }]))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e1', s: 'n1', t: 'n2' }]),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: {
@@ -684,6 +692,32 @@ describe('elementApi', () => {
       expect(createNodesCore).not.toHaveBeenCalled()
     })
 
+    it('rejects a network-scoped bypass with the dedicated code, as setBypass does', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+      mockVisualStyles['net1'].NETWORK_BACKGROUND_COLOR = {
+        group: 'network',
+        type: 'color',
+        defaultValue: '#ffffff',
+      }
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { NETWORK_BACKGROUND_COLOR: '#ff0000' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(
+          StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN.code,
+        )
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
+    })
+
     it('rejects a bypass value that fails type validation without creating the node', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
       mockTables['net1'] = {
@@ -763,7 +797,10 @@ describe('elementApi', () => {
     })
 
     it('returns ok with edgeId and edge data on success', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -782,7 +819,10 @@ describe('elementApi', () => {
     })
 
     it('rejects an "id" key in the attributes payload (CX2 E6)', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -799,7 +839,10 @@ describe('elementApi', () => {
     })
 
     it('applies bypass props when bypass option is provided', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -819,7 +862,10 @@ describe('elementApi', () => {
     })
 
     it('rejects a node-scoped bypass on edge creation (CX2 BV2)', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -839,7 +885,10 @@ describe('elementApi', () => {
     })
 
     it('does not call setBypass when no bypass option', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -925,7 +974,10 @@ describe('elementApi', () => {
         edgeTable: { rows: new Map(), columns: [] },
       }
 
-      elementApi.createNodes('net1', [{ position: [0, 0] }, { position: [1, 1] }])
+      elementApi.createNodes('net1', [
+        { position: [0, 0] },
+        { position: [1, 1] },
+      ])
 
       expect(mockViewModelActions.exclusiveSelect).toHaveBeenCalledWith(
         'net1',
@@ -994,7 +1046,10 @@ describe('elementApi', () => {
     })
 
     it('returns EdgeNotFound when edge does not exist', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       const result = elementApi.moveEdge('net1', 'e1', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -1265,12 +1320,7 @@ describe('elementApi', () => {
     // Graph: A → B → C, A → D (directed)
     beforeEach(() => {
       resetMocks()
-      const nodes = [
-        { id: 'A' },
-        { id: 'B' },
-        { id: 'C' },
-        { id: 'D' },
-      ]
+      const nodes = [{ id: 'A' }, { id: 'B' }, { id: 'C' }, { id: 'D' }]
       const edges = [
         { id: 'e1', s: 'A', t: 'B' },
         { id: 'e2', s: 'B', t: 'C' },
@@ -1341,7 +1391,12 @@ describe('elementApi', () => {
         if (result.success) {
           expect(result.data.missing).toEqual([])
           expect(result.data.edges).toEqual([
-            { id: 'e1', sourceId: 'A', targetId: 'B', attributes: { interaction: 'pp' } },
+            {
+              id: 'e1',
+              sourceId: 'A',
+              targetId: 'B',
+              attributes: { interaction: 'pp' },
+            },
             { id: 'e2', sourceId: 'B', targetId: 'C', attributes: {} },
             { id: 'e3', sourceId: 'A', targetId: 'D', attributes: {} },
           ])

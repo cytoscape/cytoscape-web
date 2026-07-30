@@ -526,7 +526,7 @@ interface TableApi {
     columnName: string,
   ): ApiResult
 
-  setColumnName(
+  renameColumn(
     networkId: IdType,
     tableType: AppTableType,
     currentName: string,
@@ -1827,7 +1827,7 @@ describe('moveEdge', () => {
 | `getRow(networkId, tableType, elementId)`                                    | Read `TableStore.tables[networkId].[nodeTable\|edgeTable].rows.get(elementId)`         | Same                                                                                        | Row record → `ok({row})` | Same                                                                              |
 | `createColumn(networkId, tableType, columnName, dataType, defaultValue)`     | `TableStore.createColumn(networkId, tableType, columnName, dataType, defaultValue)`    | Pass directly                                                                               | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `deleteColumn(networkId, tableType, columnName)`                             | `TableStore.deleteColumn(networkId, tableType, columnName)`                            | Pass directly                                                                               | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
-| `setColumnName(networkId, tableType, currentName, newName)`                  | `TableStore.setColumnName(networkId, tableType, currentName, newName)`                 | Pass directly                                                                               | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
+| `renameColumn(networkId, tableType, currentName, newName)`                   | `TableStore.setColumnName(networkId, tableType, currentName, newName)`                 | Pass directly                                                                               | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `setValue(networkId, tableType, elementId, column, value)`                   | `TableStore.setValue(networkId, tableType, elementId, column, value)`                  | Pass directly                                                                               | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `setValues(networkId, tableType, cellEdits)`                                 | `TableStore.setValues(networkId, tableType, cellEdits)`                                | Map app API `CellEdit` → store `CellEdit` (`{row→id, column, value}`)                       | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
 | `editRows(networkId, tableType, rows)`                                       | `TableStore.editRows(networkId, tableType, rows)`                                      | Convert app API `Record<IdType, Record<...>>` → store `Map<IdType, Record<...>>` internally | Void → `ok()`            | Table missing → `NetworkNotFound`. Catch → `OperationFailed`                      |
