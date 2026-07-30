@@ -27,7 +27,7 @@ const reload = vi.fn()
 
 beforeEach(() => {
   openDatabaseForStartup.mockReset()
-  deleteDb.mockReset().mockResolvedValue(undefined)
+  deleteDb.mockReset().mockResolvedValue(true)
   reload.mockReset()
   // jsdom's location.reload is not writable; replacing the whole descriptor is.
   Object.defineProperty(window, 'location', {

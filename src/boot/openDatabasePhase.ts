@@ -52,11 +52,17 @@ export const RESET_DATABASE_ACTION_ID = 'reset-database'
 const registerResetAction = (): void => {
   registerBootShellAction(RESET_DATABASE_ACTION_ID, async () => {
     logDb.info('[openDatabasePhase] resetting the local database on request')
-    await deleteDb()
-    // Reload rather than continue: the boot already aborted partway through, so
-    // rerunning it from the top against the fresh database is the honest
-    // recovery.
-    window.location.reload()
+    const success = await deleteDb()
+    
+    if (success) {
+      // Reload rather than continue: the boot already aborted partway through, so
+      // rerunning it from the top against the fresh database is the honest
+      // recovery.
+      window.location.reload()
+    } else {
+      // Throw so the button re-enables and the user can try again
+      throw new Error('database deletion failed')
+    }
   })
 }
 
