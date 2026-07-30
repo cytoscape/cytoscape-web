@@ -9,15 +9,20 @@ import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
-import { ValueType } from '../../../models/TableModel'
+import { Table, ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { MessagePanel } from '../../Messages'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { SubsystemTag } from '../model/HcxMetaTag'
+import {
+  hasUniformEdgeInteraction,
+  MIXED_INTERACTION_WARNING,
+} from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { getHcxMetadata } from '../utils/hierarchyUtil'
 import { CirclePackingPanel } from './CirclePackingLayout/CirclePackingPanel'
@@ -92,6 +97,7 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
   const addRenderer = useRendererStore((state) => state.add)
+  const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
   const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
@@ -102,18 +108,47 @@ export const MainPanel = (): JSX.Element => {
   const checkDataType = useCallback((): void => {
     const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
 
-    if (metadata !== undefined) {
-      setIsHierarchy(true)
-      setMetadata(metadata)
+    if (metadata === undefined) {
+      setIsHierarchy(false)
+      setMetadata(undefined)
+      return
+    }
+
+    setIsHierarchy(true)
+    setMetadata(metadata)
+
+    const edgeTable: Table | undefined = tableRecord?.edgeTable
+    if (edgeTable === undefined) {
+      // Tables have not been loaded yet: decide nothing. This effect re-runs
+      // when the table record arrives.
+      return
+    }
+
+    if (hasUniformEdgeInteraction(edgeTable)) {
       // Add the CP renderer if it does not exist
       if (renderers.circlePacking === undefined) {
         addRenderer(CirclePackingRenderer)
       }
     } else {
-      setIsHierarchy(false)
-      setMetadata(undefined)
+      // This hierarchy also contains non parent-child edges, which the circle
+      // packing layout cannot interpret. Drop the Cell View tab instead of
+      // rendering a wrong or empty diagram (issue #630).
+      logUi.info(
+        `[${MainPanel.name}]: ${MIXED_INTERACTION_WARNING}`,
+        currentNetworkId,
+      )
+      if (renderers.circlePacking !== undefined) {
+        deleteRenderer(renderers.circlePacking.id)
+      }
     }
-  }, [networkSummary, renderers, addRenderer])
+  }, [
+    networkSummary,
+    tableRecord,
+    renderers,
+    addRenderer,
+    deleteRenderer,
+    currentNetworkId,
+  ])
 
   useEffect(() => {
     checkDataType()

@@ -6,7 +6,13 @@ import {
   VisualStyle,
 } from '../../models'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import {
+  hasImageCustomGraphics,
+  IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+  IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+} from '../../models/CxModel/impl/customGraphicsCompat'
 import { CyNetwork } from '../../models/CyNetworkModel'
+import { MessageSeverity } from '../../models/MessageModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import {
@@ -14,6 +20,7 @@ import {
   getNetworkValidationStatus,
   updateNdexNetwork,
 } from '../external-api/ndex'
+import { useMessageStore } from './stores/MessageStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { getVisualStyleSetSnapshot } from './stores/VisualStyleStore'
 
@@ -26,6 +33,7 @@ import { getVisualStyleSetSnapshot } from './stores/VisualStyleStore'
  */
 export const useSaveCyNetworkToNDEx = () => {
   const updateSummary = useNetworkSummaryStore((state) => state.update)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const saveNetworkToNDEx = async (
     accessToken: string,
     networkId: string,
@@ -56,6 +64,18 @@ export const useSaveCyNetworkToNDEx = () => {
       },
     }
     const cx = exportCyNetworkToCx2(cyNetwork, summary)
+
+    // Networks saved to NDEx are routinely opened in Cytoscape Desktop from
+    // there, where custom-graphic images render as "?" — Desktop loads image
+    // bytes from its own pool, not from the network file. Warn, but still save.
+    if (hasImageCustomGraphics(cx)) {
+      addMessage({
+        message: IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+        duration: IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+        severity: MessageSeverity.WARNING,
+      })
+    }
+
     await updateNdexNetwork(networkId, cx, accessToken)
     const summaryIsValid = await getNetworkValidationStatus(
       networkId as string,

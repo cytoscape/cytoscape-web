@@ -213,8 +213,6 @@ export const buildVisualStyleAspects = (
           if (!customGraphicNodeVpsForDefaults.includes(customGraphicSizeVp)) {
             customGraphicNodeVpsForDefaults.push(customGraphicSizeVp)
           }
-          // Also add to mappings list so they appear in mappings export
-          customGraphicNodeVpsForMappings.push(customGraphicSizeVp)
         }
         if (customGraphicPositionVp !== undefined) {
           // Only add to defaults if not already added
@@ -223,8 +221,6 @@ export const buildVisualStyleAspects = (
           ) {
             customGraphicNodeVpsForDefaults.push(customGraphicPositionVp)
           }
-          // Also add to mappings list so they appear in mappings export
-          customGraphicNodeVpsForMappings.push(customGraphicPositionVp)
         }
         customGraphicNodeVpsForMappings.push(customGraphicVp)
       }
@@ -289,18 +285,6 @@ export const buildVisualStyleAspects = (
           // Include properties with mappings
           if (vp.mapping != null) {
             return vpMappingsAccumulator(mappings, vp)
-          }
-          // Include size/position properties as defaults when associated with custom graphics that have mappings
-          if (
-            vp.name.startsWith('nodeImageChartSize') ||
-            vp.name.startsWith('nodeImageChartPosition')
-          ) {
-            const { name, defaultValue } = vp
-            const cxVPName = vpNameToCXName(name)
-            // Add as default value in mappings structure (CX2 format allows defaults in mappings)
-            if (!mappings[cxVPName]) {
-              ;(mappings as any)[cxVPName] = vpToCX(vp.name, defaultValue)
-            }
           }
           return mappings
         },

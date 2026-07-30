@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { logDb } from '../../debug'
 
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { ComponentType } from '../../models/AppModel/ComponentType'
@@ -47,6 +49,7 @@ import {
   clearVisualStyleFromDb,
   closeDb,
   deleteAppFromDb,
+  deleteAppSettingFromDb,
   deleteDb,
   deleteFilterFromDb,
   deleteNetworkFromDb,
@@ -63,6 +66,7 @@ import {
   getAllServiceAppsFromDb,
   getAllStyleTemplatesFromDb,
   getAppFromDb,
+  getAppSettingFromDb,
   getCyNetworkFromDb,
   getDatabaseVersion,
   getDb,
@@ -80,6 +84,7 @@ import {
   getVisualStyleSetFromDb,
   getWorkspaceFromDb,
   initializeDb,
+  putAppSettingToDb,
   putAppToDb,
   putFilterToDb,
   putNetworkSummaryToDb,
@@ -335,7 +340,7 @@ const createServiceAppModel = (url: string): ServiceApp => {
     url,
     name: 'Test Service',
     version: '1.0.0',
-    cyWebAction: [],
+    cyWebActions: [],
     cyWebMenuItem: {
       root: RootMenu.Apps,
       path: [{ name: 'Tools', gravity: 1 }],
@@ -705,6 +710,48 @@ describe('CyDB helper coverage', () => {
     expect(updated.name).toBe('Updated Workspace')
   })
 
+  it('returns the first stored workspace when no id is given and several exist', async () => {
+    // Documents the current (index-0) selection behavior of getWorkspaceFromDb.
+    // See AMBIGUOUS_DB_CODE.md #5: there is a TODO to pick the newest workspace,
+    // but today it returns db.workspace.toArray()[0] (first by primary key).
+    await setupFreshDb()
+
+    await putWorkspaceToDb(createWorkspaceModel('ws-a'))
+    await putWorkspaceToDb(createWorkspaceModel('ws-b'))
+
+    const selected = await getWorkspaceFromDb()
+    expect(selected.id).toBe('ws-a')
+  })
+
+  it('falls back to the first workspace when the requested id is unknown', async () => {
+    // Documents that an unknown id does not create a new workspace nor return
+    // undefined when other workspaces exist - it returns the first one.
+    await setupFreshDb()
+
+    await putWorkspaceToDb(createWorkspaceModel('ws-a'))
+    await putWorkspaceToDb(createWorkspaceModel('ws-b'))
+
+    const selected = await getWorkspaceFromDb('does-not-exist')
+    expect(selected.id).toBe('ws-a')
+  })
+
+  it('supports app setting CRUD and returns undefined for missing keys', async () => {
+    await setupFreshDb()
+
+    await putAppSettingToDb('theme', { mode: 'dark' })
+    expect(await getAppSettingFromDb('theme')).toEqual({ mode: 'dark' })
+
+    // put on an existing key overwrites the stored value
+    await putAppSettingToDb('theme', { mode: 'light' })
+    expect(await getAppSettingFromDb('theme')).toEqual({ mode: 'light' })
+
+    // reading a key that was never written resolves to undefined
+    expect(await getAppSettingFromDb('missing-key')).toBeUndefined()
+
+    await deleteAppSettingFromDb('theme')
+    expect(await getAppSettingFromDb('theme')).toBeUndefined()
+  })
+
   it('handles network summary storage and cleanup', async () => {
     await setupFreshDb()
 
@@ -1005,5 +1052,101 @@ describe('Style library persistence', () => {
     await putStyleTemplateToDb(template)
     await clearStyleLibraryFromDb()
     expect(await getAllStyleTemplatesFromDb()).toHaveLength(0)
+  })
+})
+
+// REVIEW.md round-1 P0: db/validator.ts was a complete validation layer
+// with zero callers — DB reads returned raw `any`. It is now wired into
+// the read path in OBSERVE mode: shape mismatches are logged as warnings
+// but the data is always returned unaltered, so corrupt or old-shape rows
+// can never brick a workspace. Enforcement can be escalated once field
+// warnings are quiet.
+describe('read-path validation (observe mode)', () => {
+  const validationWarnings = (spy: {
+    mock: { calls: unknown[][] }
+  }): string[] =>
+    spy.mock.calls
+      .map((call: unknown[]) => String(call[0]))
+      .filter((message: string) => message.includes('validation'))
+
+  it('warns when a workspace read from the DB fails shape validation', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    // Malformed row: missing name/networkIds/timestamps
+    await db.workspace.put({ id: 'malformed-ws' })
+    const warnSpy = vi.spyOn(logDb, 'warn')
+
+    const ws = await getWorkspaceFromDb('malformed-ws')
+
+    // Observe mode: data is returned unaltered…
+    expect(ws).toBeDefined()
+    expect(ws.id).toBe('malformed-ws')
+    // …but the mismatch is reported
+    expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn for a well-formed workspace', async () => {
+    await setupFreshDb()
+    const workspace = createWorkspaceModel('well-formed-ws')
+    await putWorkspaceToDb(workspace)
+    const warnSpy = vi.spyOn(logDb, 'warn')
+
+    await getWorkspaceFromDb('well-formed-ws')
+
+    expect(validationWarnings(warnSpy)).toEqual([])
+    warnSpy.mockRestore()
+  })
+
+  // REVIEW.md R2-10 (Safari half): mapSerialization.ts documents that
+  // Safari IndexedDB cannot structured-clone Maps, which is why the
+  // table/view serializers exist — but undo stacks were stored with raw
+  // Maps in their params. They are now encoded to tagged plain objects on
+  // write and decoded on read.
+  it('stores undo stacks without raw Map instances and decodes them on read (regression: R2-10)', async () => {
+    await setupFreshDb()
+    await putUndoRedoStackToDb('safari-net', {
+      undoStack: [
+        {
+          undoCommand: 'MOVE_NODES' as any,
+          description: 'move',
+          undoParams: [new Map([['n1', { x: 1, y: 2 }]])],
+          redoParams: [new Map([['n1', { x: 3, y: 4 }]])],
+        },
+      ],
+      redoStack: [],
+    })
+
+    // The RAW stored row must be Safari-safe: no Map instances anywhere
+    const db = await getDb()
+    const rawRow = await db.undoStacks.get({ id: 'safari-net' })
+    const containsMap = (value: any): boolean => {
+      if (value instanceof Map) return true
+      if (Array.isArray(value)) return value.some(containsMap)
+      if (value !== null && typeof value === 'object') {
+        return Object.values(value).some(containsMap)
+      }
+      return false
+    }
+    expect(containsMap(rawRow)).toBe(false)
+
+    // The public read path decodes back to real Maps
+    const row = await getUndoRedoStackFromDb('safari-net')
+    const param = row?.undoRedoStack?.undoStack[0].undoParams[0]
+    expect(param).toBeInstanceOf(Map)
+    expect((param as Map<string, any>).get('n1')).toEqual({ x: 1, y: 2 })
+  })
+
+  it('warns when an undo stack row fails shape validation but still returns it', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await db.undoStacks.put({ id: 'bad-stack', undoRedoStack: 'not a stack' })
+    const warnSpy = vi.spyOn(logDb, 'warn')
+
+    const row = await getUndoRedoStackFromDb('bad-stack')
+
+    expect(row).toBeDefined()
+    expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
+    warnSpy.mockRestore()
   })
 })

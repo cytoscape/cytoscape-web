@@ -5,7 +5,7 @@
  * This cyweb/VisualStyleStore Module Federation export will be removed after 2 release cycles.
  */
 import { current } from 'immer'
-import { create, StateCreator, StoreApi } from 'zustand'
+import { create, StateCreator } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
@@ -42,8 +42,8 @@ import {
   putUndoRedoStackToDb,
   putVisualStyleSetToDb,
 } from '../../db'
+import { persistNetworkSlices } from './persistNetworkSlices'
 import { useUndoStore } from './UndoStore'
-import { useWorkspaceStore } from './WorkspaceStore'
 
 /**
  * Assemble the complete VisualStyleSet of a network from store state.
@@ -151,29 +151,24 @@ const clearUndoHistoryOf = (networkId: IdType): void => {
  * Visual Style State manager based on zustand
  *
  */
-const persist =
-  (config: StateCreator<VisualStyleStore>) =>
-  (
-    set: StoreApi<VisualStyleStore>['setState'],
-    get: StoreApi<VisualStyleStore>['getState'],
-    api: StoreApi<VisualStyleStore>,
-  ) =>
-    config(
-      async (args) => {
-        logStore.info('[VisualStyleStore]: Persisting visual style store')
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-
-        set(args)
-        const updated = assembleStyleSet(get(), currentNetworkId)
-
-        if (updated !== undefined) {
-          await putVisualStyleSetToDb(currentNetworkId, updated).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+const persist = (config: StateCreator<VisualStyleStore>) =>
+  persistNetworkSlices<VisualStyleStore, VisualStyle>(config, {
+    label: 'VisualStyleStore',
+    // The active style's content is what changes on nearly every mutation,
+    // so `visualStyles` is the change signal. Actions that touch only the
+    // named-style metadata (create / rename / delete / switch) call
+    // persistStyleSetOf() themselves.
+    selectSlices: (state) => state.visualStyles,
+    // The row holds the whole named-style set, not just the active style:
+    // assemble it from live state at flush time rather than writing the
+    // passed-in slice on its own.
+    putSlice: (networkId) => {
+      const styleSet = getVisualStyleSetSnapshot(networkId)
+      return styleSet === undefined
+        ? Promise.resolve()
+        : putVisualStyleSetToDb(networkId, styleSet)
+    },
+  })
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
@@ -229,13 +224,9 @@ export const useVisualStyleStore = create(
           }
           // else: keep the existing named-style set — legacy callers
           // (e.g. the renderer) use add() to refresh the active style only
-
-          // Persist a plain snapshot: the draft proxies are revoked as soon
-          // as this producer returns, but the DB write runs asynchronously
-          const assembled = assembleStyleSet(current(state), networkId)
-          if (assembled !== undefined) {
-            void putVisualStyleSetToDb(networkId, assembled)
-          }
+          //
+          // The persist middleware writes the assembled row for the network
+          // whose slice changed, so no explicit put is needed here.
 
           return state
         })

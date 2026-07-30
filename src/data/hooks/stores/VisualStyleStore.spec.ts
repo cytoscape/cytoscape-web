@@ -14,6 +14,7 @@ import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/Vi
 import { DEFAULT_STYLE_NAME } from '../../../models/VisualStyleModel'
 import { createStyleSet } from '../../../models/VisualStyleModel/impl/visualStyleSetImpl'
 import { putUndoRedoStackToDb, putVisualStyleSetToDb } from '../../db'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useUndoStore } from './UndoStore'
 import {
   getVisualStyleSetSnapshot,
@@ -44,6 +45,8 @@ vi.mock('../../db', async (importOriginal) => {
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
     putVisualStyleSetToDb: vi.fn().mockResolvedValue(undefined),
     putUndoRedoStackToDb: vi.fn().mockResolvedValue(undefined),
+    deleteVisualStyleFromDb: vi.fn().mockResolvedValue(undefined),
+    clearVisualStyleFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -1059,9 +1062,9 @@ describe('useVisualStyleStore', () => {
     it('style-set actions should persist the mutated network even when it is not current', () => {
       // The workspace mock's currentNetworkId is 'test-network-1', so
       // 'network-1' here is a NON-current network (like a HierarchyViewer
-      // subnetwork targeted via ui.activeNetworkView). The persist
-      // middleware only covers the current network; the actions must
-      // persist their own target explicitly.
+      // subnetwork targeted via ui.activeNetworkView). Named-style metadata
+      // lives outside the slice the persist middleware watches, so these
+      // actions persist their own target explicitly.
       const { result } = renderHook(() => useVisualStyleStore())
       let publicationId: IdType | undefined
       act(() => {
@@ -1178,6 +1181,41 @@ describe('useVisualStyleStore', () => {
       expect(
         result.current.visualStyles[networkId].nodeBackgroundColor.mapping,
       ).toBeUndefined()
+    })
+  })
+
+  // REVIEW.md R2-2: the persist wrapper used to key the DB write off
+  // workspace.currentNetworkId (mocked here as 'test-network-1') instead of
+  // the network the action actually mutated.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network style even when it is not the current network', () => {
+      const { result } = renderHook(() => useVisualStyleStore())
+
+      act(() => {
+        result.current.add('other-network', createVisualStyle())
+      })
+      flushPendingWrites()
+      vi.mocked(putVisualStyleSetToDb).mockClear()
+
+      act(() => {
+        result.current.setBypass(
+          'other-network',
+          'nodeShape',
+          ['node-1'],
+          'diamond',
+        )
+      })
+      flushPendingWrites()
+
+      expect(putVisualStyleSetToDb).toHaveBeenCalled()
+      const lastCall = vi.mocked(putVisualStyleSetToDb).mock.calls.at(-1)
+      expect(lastCall?.[0]).toBe('other-network')
+      const persisted = lastCall?.[1]
+      expect(
+        persisted?.styles[
+          persisted.activeStyleId
+        ].visualStyle.nodeShape.bypassMap.get('node-1'),
+      ).toBe('diamond')
     })
   })
 })

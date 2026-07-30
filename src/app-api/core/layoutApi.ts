@@ -14,7 +14,7 @@ import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
-import { ApiErrorCode, ApiResult, fail, ok } from '../types/ApiResult'
+import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -107,20 +107,15 @@ export const layoutApi: LayoutApi = {
       // 1. Validate networkId
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
-        return fail(
-          ApiErrorCode.NetworkNotFound,
-          `Network ${networkId} not found`,
-        )
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
 
       // 2–3. Find engine and algorithm
       const found = findEngineAndAlgorithm(algorithmName)
       if (found === undefined) {
         return fail(
-          ApiErrorCode.LayoutEngineNotFound,
-          algorithmName !== undefined
-            ? `No layout engine found for algorithm '${algorithmName}'`
-            : 'No layout engine found for preferred layout',
+          AppCodes.LAYOUT_ENGINE_NOT_FOUND,
+          algorithmName ?? 'preferred layout',
         )
       }
       const { engine, algorithm } = found
@@ -148,7 +143,8 @@ export const layoutApi: LayoutApi = {
 
       // 7. Apply layout — callback-based; wrap in Promise
       return new Promise<ApiResult>((resolve) => {
-        engine.apply(
+        try {
+          const applyResult = engine.apply(
           network.nodes,
           network.edges,
           (positionMap: Map<IdType, [number, number]>) => {
@@ -195,7 +191,7 @@ export const layoutApi: LayoutApi = {
               useLayoutStore.getState().setIsRunning(false)
               resolve(
                 fail(
-                  ApiErrorCode.OperationFailed,
+                  AppCodes.OPERATION_FAILED,
                   `Layout callback error: ${String(callbackError)}`,
                 ),
               )
@@ -203,10 +199,31 @@ export const layoutApi: LayoutApi = {
           },
           algorithm,
         )
-      })
+
+        if (applyResult instanceof Promise) {
+          applyResult.catch((err) => {
+            useLayoutStore.getState().setIsRunning(false)
+            resolve(
+              fail(
+                AppCodes.OPERATION_FAILED,
+                `Layout engine failed to load: ${String(err)}`,
+              ),
+            )
+          })
+        }
+      } catch (syncErr) {
+        useLayoutStore.getState().setIsRunning(false)
+        resolve(
+          fail(
+            AppCodes.OPERATION_FAILED,
+            `Layout engine failed synchronously: ${String(syncErr)}`,
+          ),
+        )
+      }
+    })
     } catch (e) {
       useLayoutStore.getState().setIsRunning(false)
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
@@ -229,7 +246,7 @@ export const layoutApi: LayoutApi = {
       }
       return ok(infos)
     } catch (e) {
-      return fail(ApiErrorCode.OperationFailed, String(e))
+      return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 }

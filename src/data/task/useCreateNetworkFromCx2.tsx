@@ -9,6 +9,8 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
+import { formatValidationErrors } from '../../models/CxModel/impl/formatValidationErrors'
+import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
@@ -71,6 +73,16 @@ export const useCreateNetworkFromCx2 = (): ((
       addToWorkspace = true,
       navigate = true,
     }: CreateNetworkFromCx2Props) => {
+      // This hook is exposed to external apps via Module Federation, so
+      // cxData is external input and must be validated before conversion
+      // (EXTERNAL_INPUT_VALIDATION_POLICY.md; REVIEW.md R2-21)
+      const validation = validateCX2(cxData)
+      if (!validation.isValid) {
+        throw new Error(
+          `CX2 validation failed: ${formatValidationErrors(validation)}`,
+        )
+      }
+
       // Convert CX2 to a fully populated CyNetwork
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {

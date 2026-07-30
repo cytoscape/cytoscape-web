@@ -2,6 +2,7 @@
 // Internal — never exposed via Module Federation.
 // Sets up Zustand subscriptions that bridge store mutations to window CustomEvents.
 
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
@@ -47,6 +48,36 @@ function detectChangedRowIds(curr: Table, prev: Table): IdType[] {
     if (!curr.rows.has(id)) changed.push(id)
   }
   return changed
+}
+
+/**
+ * Returns the column names added and removed between two table snapshots
+ * so apps can distinguish schema changes from row edits. A rename appears
+ * as one added and one removed name.
+ */
+function detectColumnChanges(
+  curr: Table,
+  prev: Table,
+): { addedColumns: string[]; removedColumns: string[] } {
+  const currNames = new Set(curr.columns.map((c) => c.name))
+  const prevNames = new Set(prev.columns.map((c) => c.name))
+  return {
+    addedColumns: [...currNames].filter((name) => !prevNames.has(name)),
+    removedColumns: [...prevNames].filter((name) => !currNames.has(name)),
+  }
+}
+
+/** Returns element IDs present in curr but not prev, and vice versa */
+function diffElementIds(
+  curr: Array<{ id: IdType }>,
+  prev: Array<{ id: IdType }>,
+): { added: IdType[]; removed: IdType[] } {
+  const currSet = new Set(curr.map((el) => el.id))
+  const prevSet = new Set(prev.map((el) => el.id))
+  return {
+    added: [...currSet].filter((id) => !prevSet.has(id)),
+    removed: [...prevSet].filter((id) => !currSet.has(id)),
+  }
 }
 
 // ── Public init function ──────────────────────────────────────────────────────
@@ -121,6 +152,37 @@ export function initEventBus(): void {
     }
   })
 
+  // --- network:changed ---
+  // Fires when nodes/edges are added to or removed from an existing
+  // network. Creation and deletion are excluded — network:created and
+  // network:deleted (workspace subscriptions above) cover those.
+  useNetworkStore.subscribe(
+    (state) => state.networks,
+    (curr, prev) => {
+      for (const [networkId, network] of curr) {
+        const prevNetwork = prev.get(networkId)
+        if (prevNetwork === undefined || prevNetwork === network) continue
+        const nodeDiff = diffElementIds(network.nodes, prevNetwork.nodes)
+        const edgeDiff = diffElementIds(network.edges, prevNetwork.edges)
+        if (
+          nodeDiff.added.length === 0 &&
+          nodeDiff.removed.length === 0 &&
+          edgeDiff.added.length === 0 &&
+          edgeDiff.removed.length === 0
+        ) {
+          continue
+        }
+        dispatchCyWebEvent('network:changed', {
+          networkId,
+          addedNodeIds: nodeDiff.added,
+          removedNodeIds: nodeDiff.removed,
+          addedEdgeIds: edgeDiff.added,
+          removedEdgeIds: edgeDiff.removed,
+        })
+      }
+    },
+  )
+
   // --- data:changed ---
   useTableStore.subscribe(
     (state) => state.tables,
@@ -135,7 +197,17 @@ export function initEventBus(): void {
           const prevTable = tableType === 'node' ? prevTables.nodeTable : prevTables.edgeTable
           if (currTable === prevTable) continue
           const rowIds = detectChangedRowIds(currTable, prevTable)
-          dispatchCyWebEvent('data:changed', { networkId, tableType, rowIds })
+          const { addedColumns, removedColumns } = detectColumnChanges(
+            currTable,
+            prevTable,
+          )
+          dispatchCyWebEvent('data:changed', {
+            networkId,
+            tableType,
+            rowIds,
+            addedColumns,
+            removedColumns,
+          })
         }
       }
     },

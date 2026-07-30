@@ -94,6 +94,7 @@ export const useRegisterNetwork = () => {
         hcxVersion as string,
         summary,
         nodeTable,
+        edgeTable,
       )
 
       if (!validationResult.isValid) {
@@ -111,9 +112,9 @@ export const useRegisterNetwork = () => {
     if (!summary.hasLayout) {
       const totalNetworkElements = network.nodes.length + network.edges.length
       const defaultLayout = getDefaultLayout(
-        summary,
         totalNetworkElements,
         maxNetworkElementsThreshold,
+        isHCX(summary),
       )
 
       if (defaultLayout !== undefined) {

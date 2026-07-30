@@ -1,16 +1,13 @@
-import './MergeDialog.css'
-
-import {
-  ArrowBack as ArrowBackIcon,
-  ArrowDownward as ArrowDownwardIcon,
-  ArrowForward as ArrowForwardIcon,
-  ArrowUpward as ArrowUpwardIcon,
-  ExpandMore as ExpandMoreIcon,
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
-  Info as InfoIcon,
-  Star as StarIcon,
-} from '@mui/icons-material'
+import { styled } from '@mui/material/styles'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import FullscreenIcon from '@mui/icons-material/Fullscreen'
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
+import HelpIcon from '@mui/icons-material/Help'
+import StarIcon from '@mui/icons-material/Star'
 import ReportGmailerrorredIcon from '@mui/icons-material/ReportGmailerrorred'
 import {
   Accordion,
@@ -48,6 +45,7 @@ import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigatio
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
@@ -68,6 +66,10 @@ import {
 } from '../models/DataInterfaceForMerge'
 import { createMergedNetwork } from '../models/Impl/CreateMergedNetwork'
 import { createMatchingTable } from '../models/Impl/MatchingTableImpl'
+import {
+  mergeOpaqueAspects,
+  toOpaqueAspectsArray,
+} from '../utils/mergeOpaqueAspects'
 import useEdgeMatchingTableStore from '../store/edgeMatchingTableStore'
 import useMatchingColumnsStore from '../store/matchingColumnStore'
 import useMergeToolTipStore from '../store/mergeToolTip'
@@ -83,6 +85,56 @@ import {
 import { DifferenceIcon, IntersectionIcon, UnionIcon } from './Icon'
 import { MatchingColumnTable } from './MatchingColumnTable'
 import { MatchingTableComp } from './MatchingTableComp'
+
+
+const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  border: `1px solid ${theme.palette.text.secondary} !important`,
+  '&:first-of-type': {
+    borderRight: 'none',
+  },
+  '&:last-of-type': {
+    borderLeft: 'none',
+  },
+  '&.Mui-selected': {
+    color: theme.palette.primary.contrastText,
+    backgroundColor: theme.palette.primary.main,
+  },
+  '&.Mui-selected:hover': {
+    backgroundColor: theme.palette.primary.main,
+  },
+  '& .MuiSvgIcon-root': {
+    color: theme.palette.text.primary,
+  },
+  '&.Mui-selected .MuiSvgIcon-root': {
+    color: theme.palette.primary.contrastText,
+  },
+}))
+
+const StyledListSubheader = styled(ListSubheader)(({ theme }) => ({
+  backgroundColor: theme.palette.background.subtle,
+  color: theme.palette.text.primary,
+  borderBottom: `1px solid ${theme.palette.divider}`,
+  borderRadius: '4px 4px 0 0',
+}))
+
+const ArrowButton = ({ disabled, children, onClick }: { disabled: boolean; children: React.ReactNode; onClick: () => void; }) => (
+  <Button
+    variant="contained"
+    onClick={onClick}
+    disabled={disabled}
+    size="small"
+    sx={{
+      mt: 1,
+      p: 0.5,
+      minWidth: 36,
+    }}
+  >
+    {children}
+  </Button>
+)
 
 interface MergeDialogProps {
   open: boolean
@@ -197,6 +249,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
     (state) => state.setVisualStyleOptions,
   )
   const addNewNetwork = useNetworkStore((state) => state.add)
+  const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
   const setVisualStyle = useVisualStyleStore((state) => state.add)
   const setViewModel = useViewModelStore((state) => state.add)
   const setTables = useTableStore((state) => state.add)
@@ -401,7 +454,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newName = event.target.value
     setMergedNetworkName(newName)
-    setIsNameDuplicate(existingNetNames.has(newName))
+    setIsNameDuplicate(existingNetNames.has(newName?.trim()))
   }
   // Function to handle switch in the matching table view
   const handleTableViewChange = (
@@ -505,8 +558,19 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           toMergeNetworksList.some((pair) => pair[1] === id),
         ),
       )
+
+      // Merge opaque (non-core) aspects from the source networks (CW-522):
+      // concatenate + dedupe per aspect key.
+      const sourceNetworkIds = toMergeNetworksList.map((i) => i[1])
+      const allOpaqueAspects =
+        useOpaqueAspectStore.getState().opaqueAspects
+      const mergedOpaqueAspects = mergeOpaqueAspects(
+        sourceNetworkIds.map((id) => allOpaqueAspects[id]),
+      )
+      const mergedOpaqueAspectsArray = toOpaqueAspectsArray(mergedOpaqueAspects)
+
       const [newCyNetwork, networkSummary] = await createMergedNetwork(
-        toMergeNetworksList.map((i) => i[1]),
+        sourceNetworkIds,
         newNetworkId,
         mergedNetworkName,
         networkRecords,
@@ -519,6 +583,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         mergeWithinNetwork,
         mergeOnlyNodes,
         strictRemoveMode,
+        mergedOpaqueAspectsArray,
       )
 
       const newSummary = createNetworkSummary({
@@ -535,6 +600,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       setVisualStyle(newNetworkId, newCyNetwork.visualStyle)
       setTables(newNetworkId, newCyNetwork.nodeTable, newCyNetwork.edgeTable)
       setViewModel(newNetworkId, newCyNetwork.networkViews[0])
+      // Persist merged opaque aspects so they survive and are re-exported to CX2
+      // (CW-522).
+      if (mergedOpaqueAspectsArray.length > 0) {
+        addAllOpaqueAspects(newNetworkId, mergedOpaqueAspectsArray)
+      }
       await putNetworkSummaryToDb(newSummary)
       addSummaries({ [newNetworkId]: newSummary })
       // Apply layout to the network
@@ -596,7 +666,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         </Tooltip>
       </Box>
       <DialogContent sx={{ paddingTop: 0 }}>
-        <Box className="toggleButtonGroup">
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
           <ToggleButtonGroup
             data-testid="merge-dialog-operation-type"
             value={mergeOpType}
@@ -604,33 +674,27 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             onChange={handleMergeTypeChange}
             aria-label="text alignment"
           >
-            <ToggleButton
+            <StyledToggleButton
               data-testid="merge-dialog-union-button"
-              className="toggleButton"
-              classes={{ selected: 'selected' }}
               value={MergeType.union}
               aria-label="left aligned"
             >
               <UnionIcon /> Union
-            </ToggleButton>
-            <ToggleButton
+            </StyledToggleButton>
+            <StyledToggleButton
               data-testid="merge-dialog-intersection-button"
-              className="toggleButton"
-              classes={{ selected: 'selected' }}
               value={MergeType.intersection}
               aria-label="centered"
             >
               <IntersectionIcon /> Intersection
-            </ToggleButton>
-            <ToggleButton
+            </StyledToggleButton>
+            <StyledToggleButton
               data-testid="merge-dialog-difference-button"
-              className="toggleButton"
-              classes={{ selected: 'selected' }}
               value={MergeType.difference}
               aria-label="right aligned"
             >
               <DifferenceIcon /> Difference
-            </ToggleButton>
+            </StyledToggleButton>
           </ToggleButtonGroup>
           <Tooltip
             title={
@@ -654,7 +718,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             placement="right"
           >
             <Box>
-              <InfoIcon sx={{ color: 'rgb(0,0,0,0.4)' }} />
+              <HelpIcon sx={{ color: (theme) => theme.palette.text.secondary }} />
             </Box>
           </Tooltip>
         </Box>
@@ -662,14 +726,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         {mergeOpType === MergeType.difference && (
           <FormControl
             component="fieldset"
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              padding: '10px',
+            sx={{
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: 1,
+              mb: 4,
               width: '100%',
             }}
           >
-            <FormLabel component="legend" style={{ marginBottom: '10px' }}>
+            <FormLabel component="legend" sx={{ mx: 1.5, px: 0.5 }}>
               Node Removal Rule
             </FormLabel>
             <RadioGroup
@@ -677,13 +741,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               value={strictRemoveMode.toString()}
               onChange={handleStrictRemoveModeChange}
               name="node-removal-options"
-              style={{ marginLeft: '20px' }}
+              sx={{ ml: 2, pb: 1 }}
             >
               <FormControlLabel
                 value="false" // String value for false
                 control={<Radio />}
                 label="Only remove nodes if all their edges are being subtracted, too"
-                style={{ marginBottom: '5px' }}
               />
               <FormControlLabel
                 value="true" // String value for true
@@ -694,43 +757,62 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </FormControl>
         )}
 
-        <Typography variant="h6" style={{ margin: '10px 0' }}>
-          Merged Network Name:
-        </Typography>
-        <TextField
-          label="Enter merged network name"
-          value={mergedNetworkName}
-          onChange={handleNameChange}
-          fullWidth
-          margin="normal"
-          InputProps={{
-            style: { color: isNameDuplicate ? 'orange' : 'inherit' },
-          }}
-        />
-        {isNameDuplicate && (
-          <Typography sx={{ color: 'orange', ml: 1, mr: 1 }}>
-            Warning: A network with this name already exists in your workspace.
+        <FormControl sx={{ width: '100%' }}>
+          <FormLabel
+            htmlFor="merged-network-name"
+            sx={{ mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}
+          >
+            Merged Network Name:
+          </FormLabel>
+          <TextField
+            id="merged-network-name"
+            placeholder="Enter merged network name"
+            value={mergedNetworkName}
+            onChange={handleNameChange}
+            fullWidth
+            size="small"
+            InputProps={{
+              sx: { color: (theme) => isNameDuplicate ? theme.palette.warning.main : 'inherit' },
+            }}
+          />
+          <Typography
+            component="caption"
+            sx={{
+              color: (theme) => theme.palette.warning.main,
+              textAlign: 'left',
+              fontSize: '0.875rem',
+              ml: 0.5,
+            }}>
+            {isNameDuplicate ? "Warning: A network with this name already exists in your workspace." : "\u00A0"}
           </Typography>
-        )}
+        </FormControl>
 
-        <Typography variant="h6" style={{ margin: '10px 0' }}>
+        <Typography sx={{ mt: 1, mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
           Select Networks to Merge:
         </Typography>
-
-        <Box display="flex" justifyContent="space-between" p={2}>
-          <Paper style={{ width: '42.5%' }}>
-            <ListSubheader className="listSubheader" component="div">
-              Available Networks
-            </ListSubheader>
-            <List className="scrollableList" component="div">
+        <Box display="flex" justifyContent="space-between">
+          <Paper variant="outlined" sx={{ width: '42.5%' }}>
+            <StyledListSubheader>Available Networks</StyledListSubheader>
+            <List dense sx={{ overflow: 'auto', maxHeight: 250 }}>
               {availableNetworksList.map((network, index) => (
                 <ListItem
+                  key={index}
                   button
                   selected={selectedAvailable.includes(network)}
                   onClick={() => handleSelectAvailable(network[1])}
-                  key={index}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: (theme) => theme.palette.action.selected,
+                    },
+                    '&.Mui-selected:hover': {
+                      backgroundColor: (theme) => theme.palette.action.selected,
+                    },
+                  }}
                 >
-                  <ListItemText primary={network[0]} />
+                  <ListItemText
+                    primary={network[0]}
+                    sx={{ color: (theme) => theme.palette.text.secondary }}
+                  />
                 </ListItem>
               ))}
             </List>
@@ -742,37 +824,37 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             justifyContent="center"
             m={1}
           >
-            <Button
-              className="arrowButton"
-              variant="contained"
-              onClick={handleAddNetwork}
+            <ArrowButton
               disabled={selectedAvailable.length === 0}
-              size="small"
+              onClick={handleAddNetwork}
             >
-              <ArrowForwardIcon className="arrowIcon" fontSize="small" />
-            </Button>
-            <Button
-              className="arrowButton"
-              variant="contained"
-              onClick={handleRemoveNetwork}
+              <ArrowForwardIcon fontSize="small" />
+            </ArrowButton>
+            <ArrowButton
               disabled={selectedToMerge.length === 0}
-              sx={{ mt: 1 }}
-              size="small"
+              onClick={handleRemoveNetwork}
             >
-              <ArrowBackIcon className="arrowIcon" fontSize="small" />
-            </Button>
+              <ArrowBackIcon fontSize="small" />
+            </ArrowButton>
           </Box>
-          <Paper style={{ width: '42.5%' }}>
-            <ListSubheader className="listSubheader" component="div">
-              Networks to Merge
-            </ListSubheader>
-            <List className="scrollableList" component="div">
+
+          <Paper variant="outlined" sx={{ width: '42.5%' }}>
+            <StyledListSubheader>Networks to Merge</StyledListSubheader>
+            <List dense sx={{ overflow: 'auto', maxHeight: 250 }}>
               {toMergeNetworksList.map((network, index) => (
                 <ListItem
                   button
                   selected={selectedToMerge.includes(network)}
                   onClick={() => handleSelectToMerge(network[1])}
                   key={index}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: (theme) => theme.palette.action.selected,
+                    },
+                    '&.Mui-selected:hover': {
+                      backgroundColor: (theme) => theme.palette.action.selected,
+                    },
+                  }}
                 >
                   <ListItemText
                     primary={
@@ -786,7 +868,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                           >
                             <StarIcon
                               viewBox="0 1 24 24"
-                              sx={{ color: 'gold' }}
+                              sx={{ color: (theme) => theme.palette.secondary.light }}
                             />
                           </Tooltip>
                         )}
@@ -798,52 +880,55 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                           >
                             <ReportGmailerrorredIcon
                               viewBox="0 0.5 24 24"
-                              sx={{ color: 'orange' }}
+                              sx={{ color: (theme) => theme.palette.warning.main }}
                             />
                           </Tooltip>
                         )}
                       </Box>
                     }
+                    sx={{ color: (theme) => theme.palette.text.secondary }}
                   />
                 </ListItem>
               ))}
             </List>
           </Paper>
+
           <Box
             display="flex"
             flexDirection="column"
             justifyContent="center"
             m={1}
           >
-            <Button
-              className="arrowButton"
-              variant="contained"
+            <ArrowButton
+              disabled={selectedToMerge.length === 0}
               onClick={handleMoveUp}
-              disabled={selectedToMerge.length === 0}
-              size="small"
             >
-              <ArrowUpwardIcon className="arrowIcon" fontSize="small" />
-            </Button>
-            <Button
-              className="arrowButton"
-              variant="contained"
+              <ArrowUpwardIcon fontSize="small" />
+            </ArrowButton>
+            <ArrowButton
+              disabled={selectedToMerge.length === 0}
               onClick={handleMoveDown}
-              disabled={selectedToMerge.length === 0}
-              sx={{ mt: 1 }}
-              size="small"
             >
-              <ArrowDownwardIcon className="arrowIcon" fontSize="small" />
-            </Button>
+              <ArrowDownwardIcon fontSize="small" />
+            </ArrowButton>
           </Box>
         </Box>
 
         {Object.values(nodesDuplication).some((v) => v === true) && (
-          <Box display="flex" alignItems="center" gap={1} sx={{ ml: 1, mr: 1 }}>
+          <Box display="flex" alignItems="flex-start" gap={1} sx={{ ml: 1, mr: 1 }}>
             <ReportGmailerrorredIcon
               viewBox="0 0 24 24"
-              sx={{ color: 'orange' }}
+              sx={{ color: (theme) => theme.palette.warning.main }}
             />
-            <Typography sx={{ color: 'orange' }}>
+            <Typography
+              component="caption"
+              sx={{
+                color: (theme) => theme.palette.warning.main,
+                textAlign: 'left',
+                fontSize: '0.875rem',
+                ml: 0.5,
+              }}
+            >
               Some nodes have duplicate values under the &apos;Matching
               Column&apos;. Hover over the warning icon or check &apos;Advanced
               Options&apos; for details. Enabling &apos;Merge nodes/edges in the
@@ -852,7 +937,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </Box>
         )}
 
-        <Box display="flex" flexDirection="column" justifyContent="left" m={1}>
+        <Box display="flex" flexDirection="column" justifyContent="left" my={4}>
           <FormControlLabel
             control={
               <Checkbox
@@ -884,22 +969,28 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           </Tooltip>
         </Box>
 
-        <Accordion>
+        <Accordion
+          sx={{
+            position: 'unset',
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            borderRadius: 1,
+            boxShadow: 'none',
+          }}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography>Advanced Options</Typography>
           </AccordionSummary>
-          <AccordionDetails>
-            <Typography variant="h6" style={{ margin: '5px 0 10px 0' }}>
-              Matching columns:
-            </Typography>
 
+          <AccordionDetails>
+            <Typography sx={{ mt: 1, mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
+              Matching Columns:
+            </Typography>
             <MatchingColumnTable
               networkRecords={networkRecords}
               toMergeNetworksList={toMergeNetworksList}
               matchingCols={matchingCols}
             />
 
-            <Typography variant="h6" style={{ margin: '10px 0 10px 0' }}>
+            <Typography sx={{ mt: 2, mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
               How to merge columns:
             </Typography>
             {tableView !== null && (
@@ -912,43 +1003,35 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               />
             )}
 
-            <div
-              style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
-            >
-              <Box className="toggleButtonGroup">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }} >
                 <ToggleButtonGroup
                   value={tableView}
                   exclusive
                   onChange={handleTableViewChange}
                   aria-label="text alignment"
                 >
-                  <ToggleButton
-                    className="toggleButton"
-                    classes={{ selected: 'selected' }}
+                  <StyledToggleButton
                     value={TableView.node}
                     aria-label="left aligned"
                   >
                     Node
-                  </ToggleButton>
-                  <ToggleButton
-                    className="toggleButton"
-                    classes={{ selected: 'selected' }}
+                  </StyledToggleButton>
+                  <StyledToggleButton
                     value={TableView.edge}
                     aria-label="centered"
                   >
                     Edge
-                  </ToggleButton>
-                  <ToggleButton
-                    className="toggleButton"
-                    classes={{ selected: 'selected' }}
+                  </StyledToggleButton>
+                  <StyledToggleButton
                     value={TableView.network}
                     aria-label="right aligned"
                   >
                     Network
-                  </ToggleButton>
+                  </StyledToggleButton>
                 </ToggleButtonGroup>
               </Box>
-            </div>
+            </Box>
           </AccordionDetails>
         </Accordion>
       </DialogContent>

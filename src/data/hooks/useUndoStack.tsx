@@ -1,6 +1,7 @@
 import { useCallback, useContext } from 'react'
 
 import { AppConfigContext } from '../../AppConfigContext'
+import { logHistory } from '../../debug'
 import {
   Edge,
   EdgeView,
@@ -99,7 +100,6 @@ export const useUndoStack = () => {
   ) ?? { undoStack: [], redoStack: [] }
 
   const undoStack = undoRedoStack.undoStack
-  const redoStack = undoRedoStack.redoStack
 
   const postEdit = useCallback(
     (
@@ -129,7 +129,12 @@ export const useUndoStack = () => {
 
       const newEdit = { undoCommand, description, undoParams, redoParams }
 
-      const nextUndoStack = [...currentUndoStack, newEdit].slice(-undoStackSize)
+      // slice(-0) === slice(0), so a size of 0 must be handled explicitly:
+      // it disables undo rather than unbounding the stack (REVIEW.md B10)
+      const nextUndoStack =
+        undoStackSize > 0
+          ? [...currentUndoStack, newEdit].slice(-undoStackSize)
+          : []
 
       setUndoStack(currentTargetNetworkId, nextUndoStack)
       setRedoStack(currentTargetNetworkId, [])
@@ -380,22 +385,54 @@ export const useUndoStack = () => {
       },
     }
 
-    const lastEdit = undoStack[undoStack.length - 1]
-    const nextUndoStack = undoStack.slice(0, undoStack.length - 1)
+    // Read the LATEST state at execution time — the render-captured
+    // undoStack/targetNetworkId are stale when undo is invoked twice
+    // before a re-render (REVIEW.md B4; postEdit was already fixed
+    // this way)
+    const latestActiveNetworkViewId =
+      useUiStateStore.getState().ui.activeNetworkView
+    const latestTargetNetworkId =
+      latestActiveNetworkViewId === ''
+        ? useWorkspaceStore.getState().workspace.currentNetworkId
+        : latestActiveNetworkViewId
+    const latestStacks = useUndoStore.getState().undoRedoStacks[
+      latestTargetNetworkId
+    ] ?? { undoStack: [], redoStack: [] }
+    const latestUndoStack = latestStacks.undoStack
+    const latestRedoStack = latestStacks.redoStack
+
+    const lastEdit = latestUndoStack[latestUndoStack.length - 1]
+    const nextUndoStack = latestUndoStack.slice(0, latestUndoStack.length - 1)
     if (lastEdit) {
       const undoCommand = commandMap[lastEdit.undoCommand]
-      undoCommand(lastEdit.undoParams)
-      setRedoStack(targetNetworkId, [...redoStack, lastEdit])
-      setUndoStack(targetNetworkId, nextUndoStack)
+      if (undoCommand === undefined) {
+        // A stack persisted by a different app version can contain a
+        // command this build does not know. Discard the edit so the
+        // stack is not wedged (REVIEW.md B5)
+        logHistory.warn(
+          `[useUndoStack] Discarding edit with unknown undo command: ${String(lastEdit.undoCommand)}`,
+        )
+        setUndoStack(latestTargetNetworkId, nextUndoStack)
+        return
+      }
+      try {
+        undoCommand(lastEdit.undoParams)
+      } catch (e) {
+        // A failing command (e.g. its network no longer exists) must not
+        // escape into the click handler or wedge the stack; pop the edit
+        // and do NOT move it to redo (its state is unknown) (REVIEW.md B5)
+        logHistory.warn('[useUndoStack] Undo command failed; discarding edit:', e)
+        setUndoStack(latestTargetNetworkId, nextUndoStack)
+        return
+      }
+      setRedoStack(latestTargetNetworkId, [...latestRedoStack, lastEdit])
+      setUndoStack(latestTargetNetworkId, nextUndoStack)
     }
   }, [
-    targetNetworkId,
     updateNetworkSummary,
     setValues,
     setCellValue,
     setDefault,
-    undoStack,
-    redoStack,
     setUndoStack,
     setRedoStack,
     setNodePosition,
@@ -651,21 +688,42 @@ export const useUndoStack = () => {
         setMapping(params[0], params[1], params[2])
       },
     }
-    const lastEdit = redoStack[redoStack.length - 1]
-    const nextRedoStack = redoStack.slice(0, redoStack.length - 1)
+    // Same latest-state discipline as undoLastEdit (REVIEW.md B4/B5)
+    const latestActiveNetworkViewId =
+      useUiStateStore.getState().ui.activeNetworkView
+    const latestTargetNetworkId =
+      latestActiveNetworkViewId === ''
+        ? useWorkspaceStore.getState().workspace.currentNetworkId
+        : latestActiveNetworkViewId
+    const latestStacks = useUndoStore.getState().undoRedoStacks[
+      latestTargetNetworkId
+    ] ?? { undoStack: [], redoStack: [] }
+    const latestUndoStack = latestStacks.undoStack
+    const latestRedoStack = latestStacks.redoStack
+
+    const lastEdit = latestRedoStack[latestRedoStack.length - 1]
+    const nextRedoStack = latestRedoStack.slice(0, latestRedoStack.length - 1)
     if (lastEdit) {
       const undoCommand = commandMap[lastEdit.undoCommand]
 
-      if (undoCommand) {
-        undoCommand(lastEdit.redoParams)
-        setRedoStack(targetNetworkId, nextRedoStack)
-        setUndoStack(targetNetworkId, [...undoStack, lastEdit])
+      if (undoCommand === undefined) {
+        logHistory.warn(
+          `[useUndoStack] Discarding edit with unknown redo command: ${String(lastEdit.undoCommand)}`,
+        )
+        setRedoStack(latestTargetNetworkId, nextRedoStack)
+        return
       }
+      try {
+        undoCommand(lastEdit.redoParams)
+      } catch (e) {
+        logHistory.warn('[useUndoStack] Redo command failed; discarding edit:', e)
+        setRedoStack(latestTargetNetworkId, nextRedoStack)
+        return
+      }
+      setRedoStack(latestTargetNetworkId, nextRedoStack)
+      setUndoStack(latestTargetNetworkId, [...latestUndoStack, lastEdit])
     }
   }, [
-    redoStack,
-    undoStack,
-    targetNetworkId,
     updateNetworkSummary,
     setValues,
     setCellValue,
@@ -698,7 +756,18 @@ export const useUndoStack = () => {
     visualStyles,
   ])
 
-  const clearStack = useCallback(() => {}, [])
+  // Clears both stacks for the target network (this was a no-op before —
+  // REVIEW.md B6). deleteStack also removes the persisted row via the
+  // store's removeSlice wiring.
+  const clearStack = useCallback(() => {
+    const latestActiveNetworkViewId =
+      useUiStateStore.getState().ui.activeNetworkView
+    const latestTargetNetworkId =
+      latestActiveNetworkViewId === ''
+        ? useWorkspaceStore.getState().workspace.currentNetworkId
+        : latestActiveNetworkViewId
+    useUndoStore.getState().deleteStack(latestTargetNetworkId)
+  }, [])
 
   return { undoStack, postEdit, undoLastEdit, redoLastEdit, clearStack }
 }

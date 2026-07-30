@@ -2,13 +2,16 @@
 
 ## Status
 
-Accepted
+Accepted. Partially superseded by [ADR 0005](./0005-structured-error-codes.md) —
+the error code/severity shape only (`ApiErrorCode` → domain-grouped catalogs,
+`cx2Code` removed, `severity` added). The discriminated-union structure decided
+here (`ApiResult<T> = ApiSuccess<T> | ApiFailure`) remains in effect, unchanged.
 
 ## Context
 
 The app API layer (`src/app-api/`) introduces a public contract for external apps loaded via Module Federation. External apps call app API hooks that wrap internal store operations. These internal operations can fail for many reasons: invalid network IDs, missing nodes/edges, CX2 validation failures, and unexpected runtime errors.
 
-A consistent error handling pattern is needed across all 8 app API hooks (~30+ operations). The pattern must:
+A consistent error handling pattern is needed across every public app API domain. The pattern must:
 
 - Be safe across Module Federation boundaries (thrown exceptions may not propagate correctly between separately bundled modules)
 - Provide machine-readable error codes for programmatic handling
@@ -29,7 +32,11 @@ interface ApiSuccess<T = void> {
 
 interface ApiFailure {
   readonly success: false
-  readonly error: { readonly code: ApiErrorCode; readonly message: string }
+  readonly error: {
+    readonly code: string
+    readonly severity: 'error' | 'warning'
+    readonly message: string
+  }
 }
 
 type ApiResult<T = void> = ApiSuccess<T> | ApiFailure
@@ -44,7 +51,7 @@ Key sub-decisions:
 - **No `cause` or `details` field** — Internal exceptions are logged via the `debug` logger, not exposed to external apps. The error model stays simple; a `details` field can be added later without breaking changes.
 - **No `Object.freeze()`** — `readonly` provides compile-time safety. Runtime freezing adds overhead with no practical benefit since external apps have no reason to mutate results.
 - **Named functions, not arrow functions** — Better stack traces and hoistable.
-- **`fail()` takes primitives, not `ApiError` object** — Avoids requiring callers to construct an object literal for every failure.
+- **`fail()` takes an `ApiErrorCodeDef` and template arguments** — Domain catalogs own the stable code, severity, and message template; callers supply only message parameters.
 
 ## Rationale
 
@@ -88,7 +95,7 @@ class Result<T, E> {
 interface ApiReturn<T> {
   data?: T
   error?: string
-  errorCode?: ApiErrorCode
+  errorCode?: string
 }
 ```
 
@@ -102,14 +109,14 @@ interface ApiReturn<T> {
 
 **Affected areas:**
 
-- All 8 core function modules (`src/app-api/core/<domain>Api.ts`) return `ApiResult<T>`
-- All 8 React hook wrappers (`use<Domain>Api.ts`) re-expose the same `ApiResult<T>` typed objects
+- All core domain modules (`src/app-api/core/<domain>Api.ts`) return `ApiResult<T>`
+- React hook wrappers re-expose the same `ApiResult<T>` typed objects
 - `window.CyWebApi` global exposes the same core functions — callers use the same `result.success`
   pattern regardless of access path (Module Federation hook or vanilla JS global)
 - Internal hooks (`useCreateNode`, `useCreateEdge`, etc.) already return result-like objects; core
   functions replicate and convert their coordination logic
 - External app developers learn one pattern for all error handling
-- `ApiErrorCode` is a closed set defined by the host — external apps cannot add custom codes
+- Built-in definitions are grouped under `ElementCodes`, `TableCodes`, `StyleCodes`, and `AppCodes`; `ApiError.code` remains a string so new catalog entries can be added without changing the result shape
 
 **Trade-offs:**
 
@@ -119,5 +126,5 @@ interface ApiReturn<T> {
 
 **Related documents:**
 
-- [phase0-shared-types-design.md](../design/module-federation/specifications/phase0-shared-types-design.md) § 3.1 — Full type definitions and helper implementations
-- [app-api-specification.md](../design/module-federation/app-api-specification.md) § 1.3 — Shared result types specification
+- [ADR 0005](0005-structured-error-codes.md) — Current error catalogs and severity model
+- [app-api-specification.md](../specifications/app-api-specification.md) § 1.3 — Shared result types specification

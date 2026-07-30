@@ -73,8 +73,14 @@ declare module 'allotment' {
   export default Allotment
 }
 
-// Constants injected by Vite (see vite.config.ts)
+// Constants injected by Vite (see vite.config.ts).
+//
+// These are the bare-identifier forms, as opposed to the process.env.* forms
+// defined alongside them. They exist so the boot shell can read the version
+// and build time without referencing process.env, which has no shim at the
+// point the pre-React shell chunk runs.
 declare const REACT_APP_VERSION: string
+declare const REACT_APP_BUILD_TIME: string
 
 // global variables for debugging
 interface Window {

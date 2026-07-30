@@ -1,6 +1,6 @@
 # Event Bus Specification
 
-**Rev. 1 (2/21/2026): Keiichiro ONO and Claude Code w/ Sonnet 4.6**
+**Rev. 2 (7/28/2026): aligned with the current event-bus implementation**
 
 Detailed design for the typed event bus. For priorities and roadmap context, see
 [module-federation-design.md § 1.5 and Phase 1 Step 2](../module-federation-design.md). For the
@@ -27,21 +27,23 @@ This model provides three properties no pub/sub library can match:
 1. **Zero-dependency universality** — Both React apps (Module Federation) and Vanilla JS consumers
    (browser extensions, LLM agent bridges, server-side runners) use the identical primitive.
    No bundler, no React, no shared singleton required.
-2. **Module boundary transparency** — `CustomEvent` on `window` is visible across all script
-   contexts on the page, including iframes and browser extension content scripts. A shared object
-   passed through Module Federation would not reach these consumers.
+2. **Module boundary transparency** — `CustomEvent` is visible to consumers
+   observing the same page `window`, regardless of their Module Federation
+   module. A separate iframe window requires an explicit parent-window or
+   `postMessage` bridge.
 3. **Browser DevTools observability** — Custom events appear in the Chrome DevTools Event
    Listeners panel, making event flow debuggable without additional instrumentation.
 
 **Dispatch origins**
 
-| Event category    | Dispatch origin                                                  |
-| ----------------- | ---------------------------------------------------------------- |
-| Network lifecycle | Zustand subscription in `initEventBus.ts` (WorkspaceStore)      |
-| Selection         | Zustand subscription in `initEventBus.ts` (ViewModelStore)      |
-| Layout            | Called directly from `core/layoutApi.ts` (start + completion)   |
-| Style             | Zustand subscription in `initEventBus.ts` (VisualStyleStore)    |
-| Data              | Zustand subscription in `initEventBus.ts` (TableStore)          |
+| Event category    | Dispatch origin                                               |
+| ----------------- | ------------------------------------------------------------- |
+| Network lifecycle | Zustand subscription in `initEventBus.ts` (WorkspaceStore)    |
+| Network topology  | Zustand subscription in `initEventBus.ts` (NetworkStore)      |
+| Selection         | Zustand subscription in `initEventBus.ts` (ViewModelStore)    |
+| Layout            | Called directly from `core/layoutApi.ts` (start + completion) |
+| Style             | Zustand subscription in `initEventBus.ts` (VisualStyleStore)  |
+| Data              | Zustand subscription in `initEventBus.ts` (TableStore)        |
 
 Layout events are an exception to the subscription model: because `applyLayout` is an async
 operation initiated through the app API, `layout:started` and `layout:completed` are dispatched
@@ -83,6 +85,18 @@ export interface CyWebEvents {
   'network:deleted': { networkId: IdType }
 
   /**
+   * Fired when nodes or edges are added to or removed from an existing
+   * network (not for network creation or deletion).
+   */
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
+
+  /**
    * Fired when the active (current) network changes.
    * `previousId` is an empty string if no network was active before.
    */
@@ -103,7 +117,7 @@ export interface CyWebEvents {
 
   /**
    * Fired when a visual style property changes on any network.
-   * `property` is the `VisualPropertyName` string (e.g., `'NODE_BACKGROUND_COLOR'`).
+   * `property` is the `VisualPropertyName` string (e.g., `'nodeBackgroundColor'`).
    * If a mapping or default changes, `property` reflects the affected property name.
    */
   'style:changed': { networkId: IdType; property: string }
@@ -112,7 +126,13 @@ export interface CyWebEvents {
    * Fired when table data is written to a network's node or edge table.
    * `rowIds` is the set of node/edge IDs whose data changed in this write.
    */
-  'data:changed': { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+    addedColumns: string[] // column names created in this change
+    removedColumns: string[] // column names deleted (rename = 1 added + 1 removed)
+  }
 }
 
 /**
@@ -129,11 +149,11 @@ export type CyWebEventMap = {
 
 #### 1.4.1 `network:created`
 
-| Property    | Value                                                          |
-| ----------- | -------------------------------------------------------------- |
-| **Trigger** | A new network is added to the workspace                        |
-| **Source**  | `WorkspaceStore` — subscription on `networkIds` array          |
-| **Detail**  | `{ networkId: IdType }`                                        |
+| Property    | Value                                                 |
+| ----------- | ----------------------------------------------------- |
+| **Trigger** | A new network is added to the workspace               |
+| **Source**  | `WorkspaceStore` — subscription on `networkIds` array |
+| **Detail**  | `{ networkId: IdType }`                               |
 
 **Implementation note:** The subscription compares the previous and current `networkIds` arrays.
 Any ID present in the current array but absent in the previous array produces one
@@ -143,68 +163,81 @@ single store mutation) by emitting one event per created network.
 **Startup suppression:** During initial app load, `WorkspaceStore` hydrates from IndexedDB and
 populates `networkIds` from an empty array. To avoid spurious `network:created` events for
 previously-persisted networks, `initEventBus()` is called **after** store hydration is complete.
-The hydration guard is already enforced by the initialization order in `src/init.tsx` (stores
-hydrate before `initEventBus()` is called).
+The hydration guard is enforced by `src/boot/steps/publishWorkspace.ts`, which
+calls `initEventBus()` only after publishing the hydrated workspace.
 
 #### 1.4.2 `network:deleted`
 
-| Property    | Value                                                          |
-| ----------- | -------------------------------------------------------------- |
-| **Trigger** | A network is removed from the workspace                        |
-| **Source**  | `WorkspaceStore` — subscription on `networkIds` array          |
-| **Detail**  | `{ networkId: IdType }`                                        |
+| Property    | Value                                                 |
+| ----------- | ----------------------------------------------------- |
+| **Trigger** | A network is removed from the workspace               |
+| **Source**  | `WorkspaceStore` — subscription on `networkIds` array |
+| **Detail**  | `{ networkId: IdType }`                               |
 
 **Implementation note:** Symmetric to `network:created`. Any ID present in the previous array but
 absent in the current array produces one `network:deleted` event per ID.
 
-#### 1.4.3 `network:switched`
+#### 1.4.3 `network:changed`
 
-| Property    | Value                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| **Trigger** | The active (current) network changes                                |
-| **Source**  | `WorkspaceStore` — subscription on `currentNetworkId`              |
-| **Detail**  | `{ networkId: IdType; previousId: IdType }`                        |
+| Property    | Value                                                                       |
+| ----------- | --------------------------------------------------------------------------- |
+| **Trigger** | Nodes or edges are added to or removed from an existing network             |
+| **Source**  | `NetworkStore` — subscription on the `networks` map                         |
+| **Detail**  | `{ networkId; addedNodeIds; removedNodeIds; addedEdgeIds; removedEdgeIds }` |
+
+Creation and deletion of whole networks are excluded. An event is emitted only
+when at least one element ID changes; attribute or position-only changes do not
+produce `network:changed`.
+
+#### 1.4.4 `network:switched`
+
+| Property    | Value                                                 |
+| ----------- | ----------------------------------------------------- |
+| **Trigger** | The active (current) network changes                  |
+| **Source**  | `WorkspaceStore` — subscription on `currentNetworkId` |
+| **Detail**  | `{ networkId: IdType; previousId: IdType }`           |
 
 **Guard:** The event is not dispatched if `networkId === previousId`. `previousId` is `''` (empty
 string) when no network was active before (e.g., the workspace was empty and the first network was
 created).
 
-#### 1.4.4 `selection:changed`
+#### 1.4.5 `selection:changed`
 
-| Property    | Value                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| **Trigger** | The selection state of the current network's view changes           |
-| **Source**  | `ViewModelStore` — subscription on selection for `currentNetworkId` |
+| Property    | Value                                                                     |
+| ----------- | ------------------------------------------------------------------------- |
+| **Trigger** | The selection state of the current network's view changes                 |
+| **Source**  | `ViewModelStore` — subscription on selection for `currentNetworkId`       |
 | **Detail**  | `{ networkId: IdType; selectedNodes: IdType[]; selectedEdges: IdType[] }` |
 
-**Implementation note:** The subscription watches `{ selectedNodes, selectedEdges }` for the
-current network view and uses `shallowEqual` to compare array references. A new array reference
-with the same contents does **not** fire the event. `currentNetworkId` is read from
-`WorkspaceStore.getState()` at dispatch time to populate the detail.
+**Implementation note:** The subscription watches the primary view
+(`viewModels[networkId]?.[0]`) and compares the network ID and both selection
+arrays by value. Replacing an array with identical ordered contents does not
+fire the event.
 
 **Re-subscription on network switch:** Because the subscription tracks the current network's view,
 the subscription selector must be re-evaluated when `currentNetworkId` changes. The implementation
 uses a single top-level subscription on the full `ViewModelStore` state, extracting the slice for
 the current network at evaluation time, rather than creating nested subscriptions per network.
 
-#### 1.4.5 `layout:started`
+#### 1.4.6 `layout:started`
 
-| Property    | Value                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| **Trigger** | A layout algorithm begins executing                                 |
-| **Source**  | Dispatched directly from `core/layoutApi.ts` (`applyLayout`)       |
-| **Detail**  | `{ networkId: IdType; algorithm: string }`                         |
+| Property    | Value                                                        |
+| ----------- | ------------------------------------------------------------ |
+| **Trigger** | A layout algorithm begins executing                          |
+| **Source**  | Dispatched directly from `core/layoutApi.ts` (`applyLayout`) |
+| **Detail**  | `{ networkId: IdType; algorithm: string }`                   |
 
 **Implementation note:** `layout:started` is dispatched synchronously at the start of `applyLayout`
 before the layout engine is invoked. `algorithm` matches the layout name string (e.g.,
 `'circular'`, `'force-directed'`). If `applyLayout` returns an error (e.g.,
-`LayoutEngineNotFound`), neither `layout:started` nor `layout:completed` is dispatched.
+`APP4` / `AppCodes.LAYOUT_ENGINE_NOT_FOUND`), neither `layout:started` nor
+`layout:completed` is dispatched.
 
-#### 1.4.6 `layout:completed`
+#### 1.4.7 `layout:completed`
 
-| Property    | Value                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| **Trigger** | A layout algorithm has finished and node positions are committed    |
+| Property    | Value                                                              |
+| ----------- | ------------------------------------------------------------------ |
+| **Trigger** | A layout algorithm has finished and node positions are committed   |
 | **Source**  | Dispatched directly from `core/layoutApi.ts` after layout resolves |
 | **Detail**  | `{ networkId: IdType; algorithm: string }`                         |
 
@@ -213,34 +246,36 @@ are committed. If the layout is cancelled or errors mid-execution, the event is 
 (the cancelled/error path returns an `ApiFailure` without firing the event). `algorithm` is the
 same string as the corresponding `layout:started` event.
 
-#### 1.4.7 `style:changed`
+#### 1.4.8 `style:changed`
 
-| Property    | Value                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| **Trigger** | A visual style property changes on any network                     |
-| **Source**  | `VisualStyleStore` — subscription on the style for each network    |
-| **Detail**  | `{ networkId: IdType; property: string }`                          |
+| Property    | Value                                                           |
+| ----------- | --------------------------------------------------------------- |
+| **Trigger** | A visual style property changes on any network                  |
+| **Source**  | `VisualStyleStore` — subscription on the style for each network |
+| **Detail**  | `{ networkId: IdType; property: string }`                       |
 
 **`property` value:** The `VisualPropertyName` string that changed (e.g.,
-`'NODE_BACKGROUND_COLOR'`, `'EDGE_WIDTH'`). For batch updates that change multiple properties in a
+`'nodeBackgroundColor'`, `'edgeWidth'`). For batch updates that change multiple properties in a
 single store mutation, the event bus emits one event per changed property.
 
 **Throttling:** The event bus does not throttle or debounce `style:changed` by default. If a
 consumer drives an expensive re-render on each event (e.g., a full style inspector rebuild), it
 should apply its own debounce. See [§ 2.3](#23-performance-considerations) for guidance.
 
-#### 1.4.8 `data:changed`
+#### 1.4.9 `data:changed`
 
-| Property    | Value                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| **Trigger** | Attribute data is written to a node or edge table                  |
-| **Source**  | `TableStore` — subscription on table data per network              |
-| **Detail**  | `{ networkId: IdType; tableType: 'node' \| 'edge'; rowIds: IdType[] }` |
+| Property    | Value                                                            |
+| ----------- | ---------------------------------------------------------------- |
+| **Trigger** | Attribute data is written to a node or edge table                |
+| **Source**  | `TableStore` — subscription on table data per network            |
+| **Detail**  | `{ networkId; tableType; rowIds; addedColumns; removedColumns }` |
 
 **`rowIds` semantics:** The set of IDs whose data changed in this write. For bulk operations (e.g.,
 `setValues` updating 500 nodes), all affected IDs are included in a single `data:changed` event.
-Consumers may receive an empty `rowIds` array if a column schema change occurs without row data
-changing (e.g., `createColumn`); this is intentional.
+`addedColumns` and `removedColumns` describe schema changes; a rename appears
+as one name in each array. Column operations may also change row values, so
+consumers should inspect the column arrays before interpreting `rowIds`. An
+empty `rowIds` array denotes a schema-only change.
 
 ### 1.5 `dispatchCyWebEvent` Helper
 
@@ -258,7 +293,9 @@ export function dispatchCyWebEvent<K extends keyof CyWebEvents>(
   type: K,
   detail: CyWebEvents[K],
 ): void {
-  window.dispatchEvent(new CustomEvent(type, { detail }))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(type, { detail }))
+  }
 }
 ```
 
@@ -271,32 +308,34 @@ dispatch sites import and call this helper, ensuring the type constraint is enfo
 // src/app-api/event-bus/initEventBus.ts
 // Internal — never exposed via Module Federation.
 
-import { shallowEqual } from 'zustand/shallow'
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
-import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { dispatchCyWebEvent } from './dispatchCyWebEvent'
 
 export function initEventBus(): void {
   // --- network:created / network:deleted ---
   useWorkspaceStore.subscribe(
-    (state) => state.networkIds,
+    (state) => state.workspace.networkIds,
     (curr, prev) => {
       const prevSet = new Set(prev)
       const currSet = new Set(curr)
       for (const id of currSet) {
-        if (!prevSet.has(id)) dispatchCyWebEvent('network:created', { networkId: id })
+        if (!prevSet.has(id))
+          dispatchCyWebEvent('network:created', { networkId: id })
       }
       for (const id of prevSet) {
-        if (!currSet.has(id)) dispatchCyWebEvent('network:deleted', { networkId: id })
+        if (!currSet.has(id))
+          dispatchCyWebEvent('network:deleted', { networkId: id })
       }
     },
   )
 
   // --- network:switched ---
   useWorkspaceStore.subscribe(
-    (state) => state.currentNetworkId,
+    (state) => state.workspace.currentNetworkId,
     (networkId, previousId) => {
       if (networkId !== previousId) {
         dispatchCyWebEvent('network:switched', { networkId, previousId })
@@ -307,8 +346,8 @@ export function initEventBus(): void {
   // --- selection:changed ---
   useViewModelStore.subscribe(
     (state) => {
-      const networkId = useWorkspaceStore.getState().currentNetworkId
-      const view = state.viewModelMap.get(networkId)
+      const networkId = useWorkspaceStore.getState().workspace.currentNetworkId
+      const view = state.viewModels[networkId]?.[0]
       return {
         networkId,
         selectedNodes: view?.selectedNodes ?? [],
@@ -316,23 +355,52 @@ export function initEventBus(): void {
       }
     },
     ({ networkId, selectedNodes, selectedEdges }) => {
-      dispatchCyWebEvent('selection:changed', { networkId, selectedNodes, selectedEdges })
+      dispatchCyWebEvent('selection:changed', {
+        networkId,
+        selectedNodes,
+        selectedEdges,
+      })
     },
-    { equalityFn: shallowEqual },
+    { equalityFn: selectionEqual },
   )
 
   // --- style:changed ---
-  useVisualStyleStore.subscribe(
-    (state) => state.visualStyles,
+  useVisualStyleStore.subscribe((curr, prev) => {
+    for (const networkId of Object.keys(curr.visualStyles)) {
+      const style = curr.visualStyles[networkId]
+      const prevStyle = prev.visualStyles[networkId]
+      if (prevStyle === style) continue
+      // Emit one event per changed property
+      for (const property of Object.keys(style) as string[]) {
+        if ((style as any)[property] !== (prevStyle as any)?.[property]) {
+          dispatchCyWebEvent('style:changed', { networkId, property })
+        }
+      }
+    }
+  })
+
+  // --- network:changed ---
+  useNetworkStore.subscribe(
+    (state) => state.networks,
     (curr, prev) => {
-      for (const [networkId, style] of curr.entries()) {
-        const prevStyle = prev.get(networkId)
-        if (prevStyle === style) continue
-        // Emit one event per changed property
-        for (const property of Object.keys(style) as string[]) {
-          if ((style as any)[property] !== (prevStyle as any)?.[property]) {
-            dispatchCyWebEvent('style:changed', { networkId, property })
-          }
+      for (const [networkId, network] of curr) {
+        const previous = prev.get(networkId)
+        if (previous === undefined || previous === network) continue
+        const nodeDiff = diffElementIds(network.nodes, previous.nodes)
+        const edgeDiff = diffElementIds(network.edges, previous.edges)
+        if (
+          nodeDiff.added.length > 0 ||
+          nodeDiff.removed.length > 0 ||
+          edgeDiff.added.length > 0 ||
+          edgeDiff.removed.length > 0
+        ) {
+          dispatchCyWebEvent('network:changed', {
+            networkId,
+            addedNodeIds: nodeDiff.added,
+            removedNodeIds: nodeDiff.removed,
+            addedEdgeIds: edgeDiff.added,
+            removedEdgeIds: edgeDiff.removed,
+          })
         }
       }
     },
@@ -342,16 +410,29 @@ export function initEventBus(): void {
   useTableStore.subscribe(
     (state) => state.tables,
     (curr, prev) => {
-      for (const [networkId, tables] of curr.entries()) {
-        const prevTables = prev.get(networkId)
+      for (const networkId of Object.keys(curr)) {
+        const tables = curr[networkId]
+        const prevTables = prev[networkId]
         if (!prevTables) continue
         const tableTypes = ['node', 'edge'] as const
         for (const tableType of tableTypes) {
-          const currTable = tables[tableType]
-          const prevTable = prevTables[tableType]
+          const currTable =
+            tableType === 'node' ? tables.nodeTable : tables.edgeTable
+          const prevTable =
+            tableType === 'node' ? prevTables.nodeTable : prevTables.edgeTable
           if (currTable === prevTable) continue
           const rowIds = detectChangedRowIds(currTable, prevTable)
-          dispatchCyWebEvent('data:changed', { networkId, tableType, rowIds })
+          const { addedColumns, removedColumns } = detectColumnChanges(
+            currTable,
+            prevTable,
+          )
+          dispatchCyWebEvent('data:changed', {
+            networkId,
+            tableType,
+            rowIds,
+            addedColumns,
+            removedColumns,
+          })
         }
       }
     },
@@ -360,8 +441,9 @@ export function initEventBus(): void {
 ```
 
 `layout:started` and `layout:completed` are not set up here — they are dispatched directly from
-`core/layoutApi.ts` via `dispatchCyWebEvent`. See [§ 1.4.5](#145-layoutstarted) and
-[§ 1.4.6](#146-layoutcompleted).
+`core/layoutApi.ts` via `dispatchCyWebEvent`. See [§ 1.4.6](#146-layoutstarted) and
+[§ 1.4.7](#147-layoutcompleted). The comparison helpers are omitted from this
+abridged listing; the source file remains authoritative.
 
 ### 1.7 React Hook — `useCyWebEvent`
 
@@ -450,28 +532,27 @@ function onApiReady(callback) {
 
 onApiReady(() => {
   window.addEventListener('layout:completed', (e) => {
-    console.log('Layout finished for', e.detail.networkId, 'via', e.detail.algorithm)
+    console.log(
+      'Layout finished for',
+      e.detail.networkId,
+      'via',
+      e.detail.algorithm,
+    )
   })
 })
 ```
 
 ### 1.9 Initialization Sequence
 
-The event bus is initialized in `src/init.tsx` as part of the app startup sequence, after all
-stores are hydrated and `window.CyWebApi` is assigned:
+The global API is assigned during bootstrap. The event bus is initialized later
+in `src/boot/steps/publishWorkspace.ts`, after the workspace and summaries have
+been published:
 
 ```typescript
-// src/init.tsx  (relevant excerpt — order matters)
-
-// 1. Stores hydrate from IndexedDB (async, awaited before this point)
-
-// 2. Assign app API to window
-window.CyWebApi = CyWebApi  // assembled from core/ domain objects
-
-// 3. Initialize event bus subscriptions (after stores are hydrated)
+// src/boot/steps/publishWorkspace.ts (abridged; order matters)
+useNetworkSummaryStore.getState().addAll(summaries)
+useWorkspaceStore.getState().set(workspace)
 initEventBus()
-
-// 4. Signal readiness to vanilla JS consumers
 window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 ```
 
@@ -482,20 +563,22 @@ window.dispatchEvent(new CustomEvent('cywebapi:ready'))
 - `cywebapi:ready` must be dispatched **after** both `window.CyWebApi = CyWebApi` and
   `initEventBus()` to guarantee that consumers who react to `cywebapi:ready` can safely call both
   `window.CyWebApi` methods and attach event listeners.
-- `cywebapi:ready` is **not** part of `CyWebEvents` and is not typed in `CyWebEventMap`. It is an
-  internal signaling mechanism only.
+- The host-internal `CyWebEvents` interface contains the nine domain events.
+  The published `@cytoscape-web/api-types` event map additionally types
+  `cywebapi:ready` as a marker event for vanilla consumers; callers must not
+  depend on a detail payload.
 
 ### 1.10 Module Federation Exposure
 
 Only `useCyWebEvent` is exposed via Module Federation. `initEventBus`, `dispatchCyWebEvent`,
 and `CyWebEvents` are internal implementation details.
 
-```javascript
-// webpack.config.js (ModuleFederationPlugin.exposes)
-exposes: {
+```typescript
+// src/app-api/federation/federationExposes.ts
+export const FEDERATION_EXPOSES = {
   './EventBus': './src/app-api/useCyWebEvent',
   // ... other app API entries
-}
+} as const
 ```
 
 React app consumers import as:
@@ -506,9 +589,8 @@ import { useCyWebEvent } from 'cyweb/EventBus'
 
 ### 1.11 TypeScript Global Augmentation for Vanilla JS
 
-Install `@cytoscape-web/api-types` (Phase 0 deliverable, see
-[module-federation-design.md § 1.3](../module-federation-design.md); not yet published —
-`0.1.0-alpha.0` released at the end of Phase 0) and reference it in `tsconfig.json`:
+Install the published `@cytoscape-web/api-types` package and reference it in
+`tsconfig.json`:
 
 ```json
 { "compilerOptions": { "types": ["@cytoscape-web/api-types"] } }
@@ -517,7 +599,7 @@ Install `@cytoscape-web/api-types` (Phase 0 deliverable, see
 The package declares the global augmentation:
 
 ```typescript
-// @cytoscape-web/api-types/global.d.ts
+// packages/api-types/src/index.ts (source entry; emitted to dist/index.d.ts)
 
 import type { CyWebEventMap, CyWebApiType } from '.'
 
@@ -535,7 +617,7 @@ imports in the consuming file:
 ```typescript
 window.addEventListener('selection:changed', (e) => {
   // e.detail: { networkId: string; selectedNodes: string[]; selectedEdges: string[] }
-  const { selectedNodes } = e.detail  // typed
+  const { selectedNodes } = e.detail // typed
 })
 ```
 
@@ -545,20 +627,21 @@ window.addEventListener('selection:changed', (e) => {
 
 ### 2.1 Store Subscription Mapping
 
-| Event              | Store             | Selector                                     | Equality check |
-| ------------------ | ----------------- | -------------------------------------------- | -------------- |
-| `network:created`  | WorkspaceStore    | `state.networkIds`                           | Reference      |
-| `network:deleted`  | WorkspaceStore    | `state.networkIds`                           | Reference      |
-| `network:switched` | WorkspaceStore    | `state.currentNetworkId`                     | `===`          |
-| `selection:changed`| ViewModelStore    | view for `currentNetworkId` (nodes + edges)  | `shallowEqual` |
-| `layout:started`   | —                 | dispatched from `core/layoutApi.ts`          | —              |
-| `layout:completed` | —                 | dispatched from `core/layoutApi.ts`          | —              |
-| `style:changed`    | VisualStyleStore  | `state.visualStyles`                         | Reference      |
-| `data:changed`     | TableStore        | `state.tables`                               | Reference      |
+| Event               | Store            | Selector / source                                       | Equality check              |
+| ------------------- | ---------------- | ------------------------------------------------------- | --------------------------- |
+| `network:created`   | WorkspaceStore   | `state.workspace.networkIds`                            | Reference                   |
+| `network:deleted`   | WorkspaceStore   | `state.workspace.networkIds`                            | Reference                   |
+| `network:changed`   | NetworkStore     | `state.networks`                                        | Reference + ID diff         |
+| `network:switched`  | WorkspaceStore   | `state.workspace.currentNetworkId`                      | `===`                       |
+| `selection:changed` | ViewModelStore   | primary view for the current network                    | Value comparison            |
+| `layout:started`    | —                | dispatched from `core/layoutApi.ts`                     | —                           |
+| `layout:completed`  | —                | dispatched from `core/layoutApi.ts`                     | —                           |
+| `style:changed`     | VisualStyleStore | basic `(curr, prev)` subscription; diffs `visualStyles` | Reference                   |
+| `data:changed`      | TableStore       | `state.tables`                                          | Reference + row/schema diff |
 
-All subscriptions use the two-argument form of `zustand/subscribeWithSelector`:
-`store.subscribe(selector, callback, options?)`. The `subscribeWithSelector` middleware is already
-enabled on all stores.
+Workspace, network, view-model, and table subscriptions use
+`subscribeWithSelector`. `VisualStyleStore` uses Zustand's basic full-state
+subscription because that store does not install `subscribeWithSelector`.
 
 ### 2.2 Edge Cases and Invariants
 
@@ -572,17 +655,18 @@ When the active network changes, `selection:changed` will fire if the newly-acti
 different selection state than the previous one. This is correct behavior — the consumer sees the
 selection for whichever network is currently active.
 
-**`data:changed` with empty `rowIds`**
-A schema change (e.g., `createColumn`) modifies the table structure without changing any row
-values. In this case, `rowIds` will be `[]`. Consumers who only care about value changes may
-guard with `if (rowIds.length > 0)`.
+**`data:changed` schema fields**
+Use `addedColumns` and `removedColumns` to detect schema changes. `rowIds` may
+be empty for a schema-only change, but a column operation that writes or removes
+row values can populate both the schema arrays and `rowIds`.
 
 **`style:changed` during initial style application**
 When a network is first loaded, visual style defaults are applied. These mutations fire
 `style:changed` events. Consumers should not assume that `style:changed` implies a user action.
 
 **`layout:started` / `layout:completed` parity**
-If `applyLayout` fails before dispatching `layout:started` (e.g., `LayoutEngineNotFound`),
+If `applyLayout` fails before dispatching `layout:started` (for example,
+`APP4` / `AppCodes.LAYOUT_ENGINE_NOT_FOUND`),
 neither event is dispatched. If `layout:started` is dispatched and the layout then errors
 mid-execution (rare), `layout:completed` is **not** dispatched. Consumers should not assume
 `layout:completed` always follows `layout:started`.
@@ -606,9 +690,9 @@ useCyWebEvent('style:changed', handleStyleChange)
 do not receive N events for N rows — they receive one event with an array of N IDs. No consumer-
 side batching is needed for bulk operations.
 
-**`selection:changed`** uses `shallowEqual` to prevent re-fires when the same node set is
-re-selected. This is sufficient for typical usage because selection arrays are replaced by
-reference when the selection changes.
+**`selection:changed`** compares the network ID and the ordered contents of both
+selection arrays, preventing re-fires when an equivalent selection snapshot is
+created with new array instances.
 
 ---
 
@@ -628,7 +712,10 @@ it('dispatches network:created when a network is added', () => {
 
   act(() => {
     useWorkspaceStore.setState((s) => ({
-      networkIds: [...s.networkIds, 'new-network-1'],
+      workspace: {
+        ...s.workspace,
+        networkIds: [...s.workspace.networkIds, 'new-network-1'],
+      },
     }))
   })
 
@@ -643,16 +730,17 @@ it('dispatches network:created when a network is added', () => {
 
 **Test cases per event type:**
 
-| Event              | Test cases                                                                        |
-| ------------------ | --------------------------------------------------------------------------------- |
-| `network:created`  | Add one ID; add multiple IDs simultaneously; hydration suppression                |
-| `network:deleted`  | Remove one ID; remove multiple IDs                                                |
-| `network:switched` | ID changes; ID unchanged (no event); `previousId` is `''` on first switch        |
-| `selection:changed`| Nodes change; edges change; same array reference (no event); network switch       |
-| `layout:started`   | (tested in `layoutApi.test.ts` — see § 3.3)                                      |
-| `layout:completed` | (tested in `layoutApi.test.ts` — see § 3.3)                                      |
-| `style:changed`    | Single property changes; multiple properties in one mutation; no-op mutation      |
-| `data:changed`     | Single row changes; bulk change; schema change (empty `rowIds`)                  |
+| Event               | Test cases                                                                              |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| `network:created`   | Add one ID; add multiple IDs simultaneously; hydration suppression                      |
+| `network:deleted`   | Remove one ID; remove multiple IDs                                                      |
+| `network:changed`   | Node/edge additions and removals; attribute-only no-op; new/deleted network suppression |
+| `network:switched`  | ID changes; ID unchanged (no event); `previousId` is `''` on first switch               |
+| `selection:changed` | Nodes change; edges change; equal contents (no event); network switch                   |
+| `layout:started`    | (tested in `layoutApi.test.ts` — see § 3.3)                                             |
+| `layout:completed`  | (tested in `layoutApi.test.ts` — see § 3.3)                                             |
+| `style:changed`     | Single property changes; multiple properties in one mutation; no-op mutation            |
+| `data:changed`      | Single/bulk row changes; added/removed/renamed columns; mixed schema + row change       |
 
 ### 3.2 Hook Tests — `useCyWebEvent`
 
@@ -690,6 +778,7 @@ it('calls handler when matching event is dispatched', () => {
 ```
 
 **Additional hook test cases:**
+
 - Different event types do not cross-fire
 - Handler reference changes cause re-subscription (confirm via call count)
 - `useCallback`-wrapped handler does not re-subscribe on re-render
@@ -706,7 +795,7 @@ it('dispatches layout:started then layout:completed on applyLayout', async () =>
   const spy = jest.spyOn(window, 'dispatchEvent')
   const api = layoutApi
 
-  await api.applyLayout(networkId, 'circular')
+  await api.applyLayout(networkId, { algorithmName: 'circular' })
 
   const calls = spy.mock.calls.map((c) => (c[0] as CustomEvent).type)
   expect(calls).toContain('layout:started')
@@ -718,7 +807,9 @@ it('dispatches layout:started then layout:completed on applyLayout', async () =>
 
 it('dispatches neither layout event when algorithm is not found', async () => {
   const spy = jest.spyOn(window, 'dispatchEvent')
-  await layoutApi.applyLayout(networkId, 'nonexistent-layout')
+  await layoutApi.applyLayout(networkId, {
+    algorithmName: 'nonexistent-layout',
+  })
   const types = spy.mock.calls.map((c) => (c[0] as CustomEvent).type)
   expect(types).not.toContain('layout:started')
   expect(types).not.toContain('layout:completed')
@@ -727,7 +818,7 @@ it('dispatches neither layout event when algorithm is not found', async () => {
 
 ### 3.4 Smoke Test — `cywebapi:ready`
 
-**File:** `src/init.test.ts` (or the existing app initialization test file)
+**File:** `src/boot/steps/runAppShellBoot.test.ts`
 
 ```typescript
 it('dispatches cywebapi:ready after CyWebApi is assigned', () => {

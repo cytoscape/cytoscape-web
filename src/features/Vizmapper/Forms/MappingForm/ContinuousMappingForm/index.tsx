@@ -29,14 +29,14 @@ export function ContinuousMappingForm(props: {
   const edgeTable = tables[props.currentNetworkId]?.edgeTable
   const table = group === VisualPropertyGroup.Node ? nodeTable : edgeTable
 
+  if (m == null) {
+    return <Box></Box>
+  }
+
   const { attribute } = m
   const attributeType = table.columns.find((c) => c.name === attribute)?.type
 
   const { min, max, controlPoints } = m
-
-  if (m == null) {
-    return <Box></Box>
-  }
 
   if (
     attributeType !== ValueTypeName.Double &&
@@ -65,7 +65,7 @@ export function ContinuousMappingForm(props: {
     ) {
       return <ContinuousNumberMappingForm {...props} />
     } else {
-      return <ContinuousDiscreteMappingForm />
+      return <ContinuousDiscreteMappingForm {...props} />
     }
   }
 }

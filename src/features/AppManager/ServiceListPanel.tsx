@@ -1,8 +1,14 @@
 import AddIcon from '@mui/icons-material/Add'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { Box, Button, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import {
+  invalidRootMessage,
+  normalizeServiceAppUrl,
+  resolveRootMenu,
+} from '../../models/AppModel/impl'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ExampleServicePanel } from './ExampleServicePanel'
 import { ServiceList } from './ServiceList'
@@ -19,6 +25,20 @@ export const ServiceListPanel = () => {
   )
 
   const addService = useAppStore((state) => state.addService)
+  const refreshAllServices = useAppStore((state) => state.refreshAllServices)
+
+  const [isRefreshingAll, setIsRefreshingAll] = useState<boolean>(false)
+
+  const hasServiceApps = Object.keys(serviceApps).length > 0
+
+  const handleRefreshAll = async () => {
+    setIsRefreshingAll(true)
+    try {
+      await refreshAllServices()
+    } finally {
+      setIsRefreshingAll(false)
+    }
+  }
 
   const handleClearUrl = () => {
     setNewUrl('')
@@ -26,10 +46,7 @@ export const ServiceListPanel = () => {
   }
 
   const handleAddServiceApp = async () => {
-    let trimmedUrl: string = newUrl.trim()
-    if (trimmedUrl.endsWith('/')) {
-      trimmedUrl = trimmedUrl.slice(0, -1) // Remove the last character if it is '/'
-    }
+    const trimmedUrl: string = normalizeServiceAppUrl(newUrl)
 
     if (trimmedUrl !== '') {
       const serviceApp = serviceApps[trimmedUrl]
@@ -39,7 +56,15 @@ export const ServiceListPanel = () => {
       }
       try {
         await addService(trimmedUrl)
-        setWarningMessage('')
+        // Warn the developer/user when the service requested a menu root that
+        // is not recognized: it is placed under the default (Apps) menu.
+        const added = useAppStore.getState().serviceApps[trimmedUrl]
+        const resolution = resolveRootMenu(added?.cyWebMenuItem?.root)
+        setWarningMessage(
+          added !== undefined && !resolution.valid
+            ? invalidRootMessage(resolution.requested)
+            : '',
+        )
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
         setWarningMessage(
@@ -55,14 +80,27 @@ export const ServiceListPanel = () => {
 
   return (
     <Box>
-      <Typography
-        sx={{ display: 'inline' }}
-        component="span"
-        variant="h6"
-        color="text.primary"
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
-        Service Apps Manager
-      </Typography>
+        <Typography component="span" variant="h6" color="text.primary">
+          Service Apps Manager
+        </Typography>
+        {hasServiceApps && (
+          <Button
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefreshAll}
+            disabled={isRefreshingAll}
+          >
+            {isRefreshingAll ? 'Refreshing...' : 'Refresh all'}
+          </Button>
+        )}
+      </Box>
       {warningMessage && (
         <Typography color="error" variant="body2">
           {warningMessage}

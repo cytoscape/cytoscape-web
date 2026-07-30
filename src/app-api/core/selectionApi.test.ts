@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/selectionApi.test.ts
 // Plain Jest tests for selectionApi core — no renderHook, no React context.
-import { ApiErrorCode } from '../types/ApiResult'
+import { AppCodes } from '../types/ApiResult'
 import { selectionApi } from './selectionApi'
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ describe('exclusiveSelect', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockExclusiveSelect).not.toHaveBeenCalled()
   })
@@ -77,7 +77,7 @@ describe('exclusiveSelect', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.OperationFailed)
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
   })
 })
@@ -101,7 +101,7 @@ describe('additiveSelect', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockAdditiveSelect).not.toHaveBeenCalled()
   })
@@ -126,7 +126,7 @@ describe('additiveUnselect', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockAdditiveUnselect).not.toHaveBeenCalled()
   })
@@ -151,7 +151,7 @@ describe('toggleSelected', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
     expect(mockToggleSelected).not.toHaveBeenCalled()
   })
@@ -193,7 +193,7 @@ describe('getSelection', () => {
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.code).toBe(ApiErrorCode.NetworkNotFound)
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
   })
 })
