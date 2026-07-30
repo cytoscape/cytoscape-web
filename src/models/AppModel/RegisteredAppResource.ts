@@ -104,8 +104,10 @@ export interface RegisteredAppResource {
   readonly onClick?: (apis: unknown) => void | Promise<void>
   /**
    * Optional extra enablement check, called by the host right before the
-   * menu is rendered (a plain function snapshot — mirrors Cytoscape
-   * Desktop's `TaskFactory.isReady()`). Combined with `requires`.
+   * menu is rendered (a plain function snapshot). Combined with `requires`.
+   * Receives the app's per-app API object; typed `unknown` here
+   * (model layer stays free of app-api imports) — the host casts to the real
+   * signature at the call site, same convention as `onClick`.
    */
-  readonly isEnabled?: () => boolean
+  readonly isEnabled?: (apis: unknown) => boolean
 }

@@ -118,7 +118,7 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         group: options.group,
         requires: options.requires,
         onClick: options.onClick as (apis: unknown) => void | Promise<void>,
-        isEnabled: options.isEnabled,
+        isEnabled: options.isEnabled as ((apis: unknown) => boolean) | undefined,
       })
       return ok({ resourceId: `${appId}::apps-menu::${options.id}` })
     } catch (e) {

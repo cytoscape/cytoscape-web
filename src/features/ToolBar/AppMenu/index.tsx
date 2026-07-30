@@ -108,13 +108,12 @@ export const AppMenu = () => {
         // from the host's own stores via getResourceVisibility — the same
         // logic 'right-panel' visibility already uses. `isEnabled` is an
         // extra imperative snapshot check, taken at menu-build time (see the
-        // `open` dependency below), mirroring Cytoscape Desktop's
-        // TaskFactory.isReady() rather than a reactive hook.
+        // `open` dependency below).
         const visibility = createResourceApi(r.appId).getResourceVisibility(r.id)
         let customEnabled = true
         if (typeof r.isEnabled === 'function') {
           try {
-            customEnabled = r.isEnabled()
+            customEnabled = r.isEnabled(perAppApis)
           } catch (e) {
             logApp.error(
               `[AppMenu]: isEnabled() threw for ${r.appId}::apps-menu::${r.id}`,
@@ -197,9 +196,7 @@ export const AppMenu = () => {
     // `open` is intentionally a dep, even though it's unused in the body:
     // isEnabled()/getResourceVisibility() are imperative snapshots, so
     // re-running this on every open re-evaluates enablement fresh each time
-    // the dropdown is shown (mirrors Cytoscape Desktop's
-    // TaskFactory.isReady(), which is likewise checked at menu-build time,
-    // not reactively while the menu is open).
+    // the dropdown is shown (checked at menu-build time, not reactively while the menu is open).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runtimeResources, apps, componentList, handleClose, open])
 

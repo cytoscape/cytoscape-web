@@ -88,7 +88,7 @@ const AppDialogEntry = ({
           </IconButton>
         )}
       </Box>
-      <DialogContent sx={{ pt: 3 }}>
+      <DialogContent sx={{ pt: 1 }}>
         <AppIdProvider value={{ appId: dialog.appId, apis: perAppApis }}>
           <PluginErrorBoundary appId={dialog.appId} slot="dialog">
             <Suspense fallback={null}>

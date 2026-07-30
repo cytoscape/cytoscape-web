@@ -111,14 +111,14 @@ export interface RegisterMenuItemOptions {
   onClick: (apis: AppContextApis) => void | Promise<void>
   /**
    * Optional extra enablement check, called by the host right before the
-   * menu is rendered — a plain function snapshot (mirrors Cytoscape
-   * Desktop's `TaskFactory.isReady()`), not a reactive hook. Combined with
-   * `requires`. Prefer `requires` for the common cases (network loaded,
-   * selection non-empty) since those are evaluated reactively from the
-   * host's own stores; reach for `isEnabled` only for conditions `requires`
-   * can't express.
+   * menu is rendered — a plain function snapshot, not a reactive hook.
+   * Combined with `requires`. Prefer `requires` for the common cases
+   * (network loaded, selection non-empty) since those are evaluated reactively
+   * from the host's own stores; reach for `isEnabled` only for conditions `requires`
+   * can't express — it receives the app's per-app API object so it can
+   * check things like the current network or selection itself.
    */
-  isEnabled?: () => boolean
+  isEnabled?: (apis: AppContextApis) => boolean
 }
 
 /** Entry for batch registration via registerAll(). */
