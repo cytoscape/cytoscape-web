@@ -205,6 +205,71 @@ describe('toPlainObject', () => {
     })
   })
 
+  describe('happy path preserves rich types', () => {
+    it('preserves Maps, Sets and Dates via structuredClone', () => {
+      const obj = {
+        rows: new Map<string, number>([
+          ['a', 1],
+          ['b', 2],
+        ]),
+        tags: new Set(['x', 'y']),
+        created: new Date('2026-01-02T03:04:05Z'),
+      }
+      const cloned = toPlainObject(obj)
+      expect(cloned.rows).toBeInstanceOf(Map)
+      expect(cloned.rows.get('a')).toBe(1)
+      expect(cloned.tags).toBeInstanceOf(Set)
+      expect(cloned.created).toBeInstanceOf(Date)
+      expect(cloned.created.toISOString()).toBe('2026-01-02T03:04:05.000Z')
+    })
+  })
+
+  // REVIEW.md: when structuredClone throws (any function anywhere in the
+  // object graph), the manualDeepCopy fallback silently DEGRADES rich types
+  // rather than erroring. These tests pin that hazard so a fix (or an
+  // explicit error) is observable. Undo-stack params and table rows carry
+  // Maps, so a single stray callback in a persisted object corrupts them.
+  describe('fallback hazards (pins current lossy behavior)', () => {
+    it('a sibling function degrades Maps and Sets to empty objects (known hazard)', () => {
+      const obj = {
+        callback: () => 'not cloneable',
+        rows: new Map([['a', 1]]),
+        tags: new Set(['x']),
+      }
+      const cloned = toPlainObject(obj) as any
+      expect(cloned.callback).toBeUndefined()
+      // Map/Set have no own enumerable properties → become {}
+      expect(cloned.rows).toEqual({})
+      expect(cloned.rows).not.toBeInstanceOf(Map)
+      expect(cloned.tags).toEqual({})
+    })
+
+    it('the fallback drops underscore-prefixed keys even for plain data (known hazard)', () => {
+      const obj = {
+        callback: () => 'force fallback',
+        _meta: { important: true },
+        visible: 1,
+      }
+      const cloned = toPlainObject(obj) as any
+      expect(cloned.visible).toBe(1)
+      expect(cloned._meta).toBeUndefined()
+    })
+
+    it('the fallback replaces shared (non-circular) references with empty objects (known hazard)', () => {
+      const shared = { value: 42 }
+      const obj = {
+        callback: () => 'force fallback',
+        first: shared,
+        second: shared,
+      }
+      const cloned = toPlainObject(obj) as any
+      expect(cloned.first).toEqual({ value: 42 })
+      // Diamond reference: visited-set is never unwound, so the second
+      // occurrence is treated like a cycle and blanked out
+      expect(cloned.second).toEqual({})
+    })
+  })
+
   describe('real-world scenarios', () => {
     it('should clone CyApp-like structure', () => {
       const app = {

@@ -2,7 +2,13 @@ import { CyNDEx } from '@js4cytoscape/ndex-client'
 
 import { logApi } from '../../debug'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
+import {
+  hasImageCustomGraphics,
+  IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+  IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+} from '../../models/CxModel/impl/customGraphicsCompat'
 import { CyNetwork } from '../../models/CyNetworkModel'
+import { IdType } from '../../models/IdType'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Network } from '../../models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
@@ -13,6 +19,13 @@ import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useMessageStore } from './stores/MessageStore'
+import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
+import { useTableStore } from './stores/TableStore'
+import { useUiStateStore } from './stores/UiStateStore'
+import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
 
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -71,6 +84,18 @@ export const useOpenNetworkInCytoscape = () => {
       `Copy of ${exportSummary.name}`,
     )
 
+    // Cytoscape Desktop loads custom-graphic image bytes from its own image pool, not
+    // from the network file — so image custom graphics sent via CX2 appear as "?" in a
+    // fresh Desktop session (for any URL scheme) unless a supporting app repopulates the
+    // pool. Warn, but still send: charts and the rest of the network import fine.
+    if (hasImageCustomGraphics(cx)) {
+      addMessage({
+        message: IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
+        duration: IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
+        severity: MessageSeverity.WARNING,
+      })
+    }
+
     try {
       addMessage({
         message: 'Sending this network to Cytoscape Desktop...',
@@ -105,4 +130,47 @@ export const useOpenNetworkInCytoscape = () => {
   }
 
   return openNetworkInCytoscape
+}
+
+/**
+ * Returns a function that opens a network in Cytoscape Desktop by id, gathering
+ * the network's data from the stores for the caller.
+ *
+ * Only the current network's data is loaded in the stores, so in practice this
+ * can only run for `currentNetworkId`; callers are responsible for offering it
+ * just for that network.
+ */
+export const useOpenNetworkInCytoscapeFromStores = () => {
+  const openNetworkInCytoscape = useOpenNetworkInCytoscape()
+
+  const openNetworkInCytoscapeFromStores = async (
+    networkId: IdType,
+    networkLabel?: string,
+  ): Promise<void> => {
+    const network = useNetworkStore
+      .getState()
+      .networks.get(networkId) as Network
+    const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
+    const summary = useNetworkSummaryStore.getState().summaries[networkId]
+    const table = useTableStore.getState().tables[networkId]
+    const visualStyleOptions =
+      useUiStateStore.getState().ui.visualStyleOptions[networkId]
+    const viewModel = useViewModelStore.getState().getViewModel(networkId)
+    const opaqueAspects =
+      useOpaqueAspectStore.getState().opaqueAspects[networkId]
+
+    await openNetworkInCytoscape(
+      network,
+      visualStyle,
+      summary,
+      table,
+      visualStyleOptions,
+      viewModel,
+      opaqueAspects,
+      new CyNDEx(),
+      networkLabel,
+    )
+  }
+
+  return openNetworkInCytoscapeFromStores
 }

@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useContext, useEffect, useRef } from 'react'
 
+import { AppConfigContext } from '../../AppConfigContext'
 import { logApp } from '../../debug'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
+import {
+  buildCustomParameters,
+  ndexNetworkUrl,
+  sendsNoData,
+} from '../../models/AppModel/impl'
 // TODO: Move these from features to other folders
 import { useRunTask } from '../../features/ServiceApps'
 import { useServiceResultHandlerManager } from '../../features/ServiceApps/resultHandler/serviceResultHandlerManager'
@@ -17,6 +23,7 @@ import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { useAppStore } from './stores/AppStore'
+import { useCredentialStore } from './stores/CredentialStore'
 import { useMessageStore } from './stores/MessageStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
@@ -44,6 +51,10 @@ export const useServiceTaskRunner = (): ((
   // TODO: This need to be changed to include the data builder
   //       And also it should return the correct data type defined in the service app model
   const runTask = useRunTask()
+
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+
+  const getToken = useCredentialStore((state) => state.getToken)
 
   // Data to be used for the service task
   const currentNetworkId: string = useWorkspaceStore(
@@ -119,28 +130,39 @@ export const useServiceTaskRunner = (): ((
         throw new Error(`Service not found for URL: ${url}`)
       }
 
-      if (
-        serviceApp.serviceInputDefinition?.inputNetwork &&
-        networkRef.current === undefined
-      ) {
-        throw new Error('Network not found')
+      // Apps that request no data (type 'none') skip the network/table guards.
+      if (!sendsNoData(serviceApp.serviceInputDefinition)) {
+        if (
+          serviceApp.serviceInputDefinition?.inputNetwork &&
+          networkRef.current === undefined
+        ) {
+          throw new Error('Network not found')
+        }
+
+        if (
+          serviceApp.serviceInputDefinition?.inputColumns &&
+          tableRef.current === undefined
+        ) {
+          throw new Error('Table not found')
+        }
       }
 
-      if (
-        serviceApp.serviceInputDefinition?.inputColumns &&
-        tableRef.current === undefined
-      ) {
-        throw new Error('Table not found')
-      }
+      // Resolve the current network's NDEx URL for auto-filled ndexUUID
+      // parameters; empty when the network is not an NDEx network (CW-620).
+      const currentSummary = summaryRef.current
+      const currentNdexNetworkUrl =
+        currentSummary?.isNdex && currentSummary?.externalId
+          ? ndexNetworkUrl(ndexBaseUrl, currentSummary.externalId)
+          : ''
 
-      const customParameters =
-        serviceApp.parameters?.reduce(
-          (acc, param) => {
-            acc[param.displayName] = param.value ?? param.defaultValue
-            return acc
-          },
-          {} as { [key: string]: string },
-        ) ?? {}
+      // The user's NDEx access token for auto-filled accessToken params;
+      // empty when the user is not signed in (CW-619).
+      const accessToken = (await getToken()) ?? ''
+
+      const customParameters = buildCustomParameters(serviceApp.parameters, {
+        ndexNetworkUrl: currentNdexNetworkUrl,
+        accessToken,
+      })
       // Run the task here..
       const result = await runTask({
         serviceUrl: url,
@@ -199,7 +221,7 @@ export const useServiceTaskRunner = (): ((
         message: result.message,
       } as RunTaskResult
     },
-    [serviceApps, runTask, getHandler, addMessage],
+    [serviceApps, runTask, getHandler, addMessage, ndexBaseUrl, getToken],
   )
 
   return run

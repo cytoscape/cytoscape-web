@@ -4,7 +4,7 @@
  * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
  * This cyweb/VisualStyleStore Module Federation export will be removed after 2 release cycles.
  */
-import { create, StateCreator, StoreApi } from 'zustand'
+import { create, StateCreator } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
@@ -28,36 +28,19 @@ import {
   deleteVisualStyleFromDb,
   putVisualStyleToDb,
 } from '../../db'
-import { useWorkspaceStore } from './WorkspaceStore'
+import { persistNetworkSlices } from './persistNetworkSlices'
 
 /**
  * Visual Style State manager based on zustand
  *
  */
-const persist =
-  (config: StateCreator<VisualStyleStore>) =>
-  (
-    set: StoreApi<VisualStyleStore>['setState'],
-    get: StoreApi<VisualStyleStore>['getState'],
-    api: StoreApi<VisualStyleStore>,
-  ) =>
-    config(
-      async (args) => {
-        logStore.info('[VisualStyleStore]: Persisting visual style store')
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-
-        set(args)
-        const updated = get().visualStyles[currentNetworkId]
-        const deleted = updated === undefined
-
-        if (!deleted) {
-          await putVisualStyleToDb(currentNetworkId, updated).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+const persist = (config: StateCreator<VisualStyleStore>) =>
+  persistNetworkSlices<VisualStyleStore, VisualStyle>(config, {
+    label: 'VisualStyleStore',
+    selectSlices: (state) => state.visualStyles,
+    putSlice: (networkId, visualStyle) =>
+      putVisualStyleToDb(networkId, visualStyle),
+  })
 
 export const useVisualStyleStore = create(
   immer<VisualStyleStore>(
@@ -73,7 +56,6 @@ export const useVisualStyleStore = create(
             )
           }
           state.visualStyles[networkId] = visualStyle
-          void putVisualStyleToDb(networkId, visualStyle)
 
           return state
         })

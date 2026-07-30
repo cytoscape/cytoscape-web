@@ -115,7 +115,7 @@ export const layoutApi: LayoutApi = {
       // 7. Apply layout — callback-based; wrap in Promise
       return new Promise<ApiResult>((resolve) => {
         try {
-          engine.apply(
+          const applyResult = engine.apply(
             network.nodes,
             network.edges,
             (positionMap: Map<IdType, [number, number]>) => {
@@ -171,6 +171,21 @@ export const layoutApi: LayoutApi = {
             },
             algorithm,
           )
+
+          // Async engines (lazily loaded) return a promise; a rejection there
+          // never reaches the callback, so it would otherwise leave isRunning
+          // stuck true and the returned promise pending forever.
+          if (applyResult instanceof Promise) {
+            applyResult.catch((err) => {
+              useLayoutStore.getState().setIsRunning(false)
+              resolve(
+                fail(
+                  AppCodes.OPERATION_FAILED,
+                  `Layout engine failed to load: ${String(err)}`,
+                ),
+              )
+            })
+          }
         } catch (engineError) {
           // engine.apply threw synchronously — the promise executor's throw
           // would otherwise reject and cross the API boundary as an exception

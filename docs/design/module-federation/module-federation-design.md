@@ -1,11 +1,19 @@
 # Module Federation App API Design and Priorities
 
-**Rev. 5 (3/19/2026): Keiichiro ONO and Claude Code w/ Opus 4.6** - Updated Section 1.4 and Phase 4 with runtime app registration design (specification complete)
+**Rev. 6 (7/28/2026): current App API, error catalogs, and federation toolchain reconciled**
+
+- Rev. 5 (3/19/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Updated Section 1.4 and Phase 4 with runtime app registration design (specification complete)
 
 - Rev. 4 (3/14/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Added Phase 2 (App Resource Registration) roadmap
 - Rev. 3 (2/21/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Updated for new Event Bus
 
 Solution proposals for the issues identified in [module-federation-audit.md](module-federation-audit.md).
+
+> Sections 2 and later preserve the original implementation roadmap and phase
+> checklists for traceability. They are not the current API contract. Use
+> [app-api-specification.md](specifications/app-api-specification.md),
+> [Api.md](../../../src/app-api/api_docs/Api.md), and
+> [ErrorCodes.md](../../../src/app-api/api_docs/ErrorCodes.md) for current behavior.
 
 ---
 
@@ -40,7 +48,8 @@ Instead of directly exposing individual internal hooks or raw stores, the app AP
 - Coverage for all critical gaps identified in the audit (element CRUD, layout execution, viewport
   control, CX2 export)
 - **Framework-agnostic access** enabling non-React consumers without duplication
-- An **evergreen versioning strategy** (no version numbers in paths, additive changes only) ensuring long-term backward compatibility
+- Unversioned import paths with SemVer compatibility: prereleases may document
+  breaking changes; stable releases use additive/deprecation-first evolution
 
 Core functions coordinate stores directly via `useXxxStore.getState()`, replicating the logic of
 existing internal hooks (`useCreateNode`, `useCreateEdge`, etc.) without calling them. External apps
@@ -56,7 +65,9 @@ cyweb/LayoutApi       → Layout execution
 cyweb/ViewportApi     → Viewport control
 cyweb/ExportApi       → CX2 export
 cyweb/WorkspaceApi    → Workspace state (current network, network list, rename workspace)
-cyweb/ApiTypes        → Shared types (ApiResult, ApiErrorCode, re-exported model types)
+cyweb/EventBus        → Typed event subscription hook
+cyweb/AppIdContext    → Per-app ID and APIs inside host-rendered resources
+cyweb/ApiTypes        → Shared types, domain error catalogs, re-exported model types
 window.CyWebApi       → Same operations, globally accessible (no Module Federation required)
 ```
 
@@ -67,7 +78,10 @@ have a single, well-designed entry point and are insulated from internal refacto
 
 #### 1.2 Deprecate Raw Store Exposure
 
-The existing 12 raw store exports and 2 legacy task hooks remain available for backward compatibility but are marked `@deprecated`. New external apps should use the app API exclusively. See [app-api-specification.md § 2.4](specifications/app-api-specification.md) for the deprecation timeline.
+The existing raw store exports and legacy task hooks remain available as
+compatibility entries. They are outside the supported App API contract; new
+external apps should use the domain APIs. See
+[app-api-specification.md § 2.4](specifications/app-api-specification.md).
 
 ### P1 (Important — Needed for practical app development)
 
@@ -107,7 +121,12 @@ External apps import all public types from either:
 ```typescript
 // Via Module Federation (React app consumers)
 import type { ApiResult, IdType, Network, Node, Edge } from 'cyweb/ApiTypes'
-import { ApiErrorCode, ValueTypeName, VisualPropertyName } from 'cyweb/ApiTypes'
+import {
+  AppCodes,
+  ElementCodes,
+  ValueTypeName,
+  VisualPropertyName,
+} from 'cyweb/ApiTypes'
 
 // Via npm (vanilla JS / browser extension consumers)
 // npm install @cytoscape-web/api-types@alpha
@@ -127,8 +146,8 @@ Vanilla JS consumers (browser extension developers, LLM agent bridge authors) wh
 Module Federation need TypeScript declarations for `window.CyWebApi`. A lightweight
 `@cytoscape-web/api-types` npm package will publish:
 
-- Ambient declarations for `window.CyWebApi` (all 8 domain API interface types)
-- `ApiResult<T>`, `ApiErrorCode`, and public helper type signatures
+- Ambient declarations for `window.CyWebApi` (all ten domain API interface types)
+- `ApiResult<T>`, domain error catalogs, and public helper type signatures
 - Re-exported public model types (same surface as `cyweb/ApiTypes`)
 
 ```typescript
@@ -149,7 +168,7 @@ is released as `0.1.0-alpha.0` before Phase 1 begins.
 ```
 packages/
 └── api-types/
-    ├── package.json      # name: "@cytoscape-web/api-types", version: "0.1.0-alpha.0"
+    ├── package.json      # name: "@cytoscape-web/api-types"
     ├── tsconfig.json     # re-exports src/app-api/types/ + ambient global declarations
     └── dist/             # generated .d.ts files (gitignored)
 ```
@@ -157,9 +176,9 @@ packages/
 The root `package.json` declares `"workspaces": ["packages/*"]`. A `build:api-types` script
 in the root produces the `dist/` artifacts from the workspace package's build step.
 
-> **Status:** Not yet published. See [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md)
-> for the publication steps. Until published, vanilla JS consumers can declare a minimal ambient
-> type locally (see app-api-specification.md § 2.7).
+> **Status:** Published on npm. The workspace currently prepares
+> `1.0.0-beta.3`; see `packages/api-types/CHANGELOG.md` for prerelease migration
+> notes and publish status.
 
 #### 1.4 Runtime Dynamic App Registration
 
@@ -212,9 +231,10 @@ chosen over a pub/sub library or a React Context approach for three concrete rea
 1. **Zero-dependency universality** — Both React apps (via a thin hook wrapper) and Vanilla JS
    consumers (browser extensions, LLM agent bridges, server-side runners) listen with the same
    `window.addEventListener` call. No bundler, no React, no Module Federation required.
-2. **Module boundary transparency** — `CustomEvent` on `window` is visible across all script
-   contexts on the page, including iframes and browser extension content scripts. A shared singleton
-   object passed through Module Federation would not reach these consumers.
+2. **Module boundary transparency** — `CustomEvent` is visible to consumers
+   observing the same page `window`, regardless of their Module Federation
+   module. A separate iframe window requires an explicit parent-window or
+   `postMessage` bridge.
 3. **Browser DevTools observability** — Custom events appear in the Chrome DevTools Event Listeners
    panel, making it straightforward to debug event flow without additional instrumentation.
 
@@ -225,6 +245,13 @@ chosen over a pub/sub library or a React Context approach for three concrete rea
 interface CyWebEvents {
   'network:created': { networkId: IdType }
   'network:deleted': { networkId: IdType }
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
   'network:switched': { networkId: IdType; previousId: IdType }
   'selection:changed': {
     networkId: IdType
@@ -238,22 +265,24 @@ interface CyWebEvents {
     networkId: IdType
     tableType: 'node' | 'edge'
     rowIds: IdType[]
+    addedColumns: string[]
+    removedColumns: string[]
   }
 }
 ```
 
 **Internal architecture: Zustand subscriptions → `window.dispatchEvent`**
 
-The event bus is initialized once in `src/init.tsx` after stores are ready. It subscribes to each
-relevant Zustand store using `subscribeWithSelector` and dispatches a `CustomEvent` whenever the
-watched state slice changes:
+The event bus is initialized once in `publishWorkspace.ts` after hydration. It
+subscribes to workspace, network, view-model, style, and table state and
+dispatches a `CustomEvent` whenever a watched slice changes:
 
 ```typescript
 // src/app-api/event-bus/initEventBus.ts (internal, not exposed)
 export function initEventBus(): void {
   // Subscribe to workspace network IDs (network:created/network:deleted)
   useWorkspaceStore.subscribe(
-    (state) => state.networkIds,
+    (state) => state.workspace.networkIds,
     (curr, prev) => {
       const prevSet = new Set(prev)
       const currSet = new Set(curr)
@@ -272,7 +301,7 @@ export function initEventBus(): void {
 
   // Subscribe to workspace current network ID (network:switched)
   useWorkspaceStore.subscribe(
-    (state) => state.currentNetworkId,
+    (state) => state.workspace.currentNetworkId,
     (networkId, previousId) => {
       if (networkId !== previousId) {
         dispatchCyWebEvent('network:switched', { networkId, previousId })
@@ -283,13 +312,15 @@ export function initEventBus(): void {
   // Subscribe to selection of the current network view
   useViewModelStore.subscribe(
     (state) => ({
-      networkId: useWorkspaceStore.getState().currentNetworkId,
+      networkId: useWorkspaceStore.getState().workspace.currentNetworkId,
       selectedNodes:
-        state.viewModelMap.get(useWorkspaceStore.getState().currentNetworkId)
-          ?.selectedNodes ?? [],
+        state.viewModels[
+          useWorkspaceStore.getState().workspace.currentNetworkId
+        ]?.[0]?.selectedNodes ?? [],
       selectedEdges:
-        state.viewModelMap.get(useWorkspaceStore.getState().currentNetworkId)
-          ?.selectedEdges ?? [],
+        state.viewModels[
+          useWorkspaceStore.getState().workspace.currentNetworkId
+        ]?.[0]?.selectedEdges ?? [],
     }),
     ({ networkId, selectedNodes, selectedEdges }) => {
       dispatchCyWebEvent('selection:changed', {
@@ -298,24 +329,25 @@ export function initEventBus(): void {
         selectedEdges,
       })
     },
-    { equalityFn: shallowEqual },
+    { equalityFn: selectionEqual },
   )
-  // ... other subscriptions (VisualStyleStore, TableStore)
+  // ... NetworkStore topology, VisualStyleStore, and TableStore subscriptions
 }
 
 function dispatchCyWebEvent<K extends keyof CyWebEvents>(
   type: K,
   detail: CyWebEvents[K],
 ): void {
-  window.dispatchEvent(new CustomEvent(type, { detail }))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(type, { detail }))
+  }
 }
 ```
 
-`initEventBus()` is called in `src/features/AppShell.tsx` after stores hydrate from IndexedDB,
-ensuring that Zustand subscriptions do not fire spurious `network:created` events for
-previously-persisted networks. `window.CyWebApi` is assigned earlier in `src/init.tsx` (before
-React renders), but the event bus and `cywebapi:ready` are deferred to `AppShell`. The function
-is internal and never exposed via Module Federation.
+`initEventBus()` is called from `src/boot/steps/publishWorkspace.ts` after the
+workspace is published, preventing startup events for persisted networks.
+`window.CyWebApi` is assigned earlier during bootstrap; `cywebapi:ready` fires
+after subscriptions are installed. `initEventBus` remains internal.
 
 The store subscription mapping above follows
 [event-bus-specification.md](specifications/event-bus-specification.md), which is the source of
@@ -378,8 +410,9 @@ useCyWebEvent('selection:changed', handleSelection)
 **Usage: Vanilla JS consumers**
 
 Vanilla JS consumers use `window.addEventListener` directly. The recommended pattern is to wait
-for the `cywebapi:ready` event — dispatched by `AppShell.tsx` after both `window.CyWebApi` and
-the event bus are initialized — before attaching listeners:
+for the `cywebapi:ready` event — dispatched by `publishWorkspace.ts` after both
+hydrated workspace state and event subscriptions are available — before
+attaching listeners:
 
 ```javascript
 // Browser extension content script or plain <script> tag
@@ -437,7 +470,7 @@ window.addEventListener('selection:changed', (e) => {
 The augmentation is declared inside the package as:
 
 ```typescript
-// @cytoscape-web/api-types/global.d.ts
+// packages/api-types/src/index.ts (source entry; emitted to dist/index.d.ts)
 declare global {
   interface WindowEventMap extends CyWebEventMap {} // maps each key → CustomEvent<detail>
   interface Window {
@@ -453,11 +486,6 @@ declare global {
 The minimal setup for a new external React app that reacts to selection changes:
 
 ```typescript
-// webpack.config.js (external app)
-new ModuleFederationPlugin({
-  remotes: { cyweb: 'cyweb@http://localhost:5500/remoteEntry.js' },
-})
-
 // SelectionCounter.tsx
 import { useCyWebEvent } from 'cyweb/EventBus'
 import { useState } from 'react'
@@ -542,7 +570,7 @@ interface ResourceApi {
 
 - API reference documentation
 - Third-party app development guide
-- Starter template (including webpack.config.js)
+- Starter template (including `vite.config.ts`)
 - Local development and debugging workflow
 
 #### 1.11 Side-Effect Control Options
@@ -909,18 +937,18 @@ methods via `getInternalNetworkDataStore()`. All methods follow the existing
 
 **New `ElementApi` methods (Group A — thin wrappers):**
 
-| Method | cytoscape.js | Returns |
-|--------|-------------|---------|
-| `getNodeIds(networkId)` | `cy.nodes()` | `{ nodeIds: IdType[] }` |
-| `getEdgeIds(networkId)` | `cy.edges()` | `{ edgeIds: IdType[] }` |
-| `getConnectedEdges(networkId, nodeId)` | `node.connectedEdges()` | `{ edges: EdgeData[] }` |
-| `getConnectedNodes(networkId, nodeId)` | `node.neighborhood().nodes()` | `{ nodeIds: IdType[] }` |
-| `getOutgoers(networkId, nodeId)` | `node.outgoers()` | `{ nodeIds: IdType[], edgeIds: IdType[] }` |
-| `getIncomers(networkId, nodeId)` | `node.incomers()` | `{ nodeIds: IdType[], edgeIds: IdType[] }` |
-| `getSuccessors(networkId, nodeId)` | `node.successors()` | `{ nodeIds: IdType[] }` |
-| `getPredecessors(networkId, nodeId)` | `node.predecessors()` | `{ nodeIds: IdType[] }` |
-| `getRoots(networkId)` | `cy.nodes().roots()` | `{ nodeIds: IdType[] }` |
-| `getLeaves(networkId)` | `cy.nodes().leaves()` | `{ nodeIds: IdType[] }` |
+| Method                                 | cytoscape.js                  | Returns                                    |
+| -------------------------------------- | ----------------------------- | ------------------------------------------ |
+| `getNodeIds(networkId)`                | `cy.nodes()`                  | `{ nodeIds: IdType[] }`                    |
+| `getEdgeIds(networkId)`                | `cy.edges()`                  | `{ edgeIds: IdType[] }`                    |
+| `getConnectedEdges(networkId, nodeId)` | `node.connectedEdges()`       | `{ edges: EdgeData[] }`                    |
+| `getConnectedNodes(networkId, nodeId)` | `node.neighborhood().nodes()` | `{ nodeIds: IdType[] }`                    |
+| `getOutgoers(networkId, nodeId)`       | `node.outgoers()`             | `{ nodeIds: IdType[], edgeIds: IdType[] }` |
+| `getIncomers(networkId, nodeId)`       | `node.incomers()`             | `{ nodeIds: IdType[], edgeIds: IdType[] }` |
+| `getSuccessors(networkId, nodeId)`     | `node.successors()`           | `{ nodeIds: IdType[] }`                    |
+| `getPredecessors(networkId, nodeId)`   | `node.predecessors()`         | `{ nodeIds: IdType[] }`                    |
+| `getRoots(networkId)`                  | `cy.nodes().roots()`          | `{ nodeIds: IdType[] }`                    |
+| `getLeaves(networkId)`                 | `cy.nodes().leaves()`         | `{ nodeIds: IdType[] }`                    |
 
 **Motivation:** External developers building graph-manipulation apps (e.g.,
 pathway expand/collapse) need adjacency queries. The internal cytoscape.js
@@ -977,22 +1005,22 @@ importTableFromTsv(
 
 **Design decisions:**
 
-| Decision | Rationale |
-|----------|-----------|
-| TSV not CSV | Tab separators avoid quoting issues with commas in biological names. Matches Cytoscape Desktop convention |
-| `getTable()` as structured read | Returns typed columns + rows for programmatic use; `exportTableToTsv()` is a string convenience wrapper |
-| `includeTypeHeader` opt-in | Default plain TSV maximizes compatibility with pandas/R. Typed header (`name:string`) enables lossless round-trip |
-| Import matches by key column | Default `id` column; overridable to `name` for human-authored data |
-| On `TableApi` not `ExportApi` | Table I/O is naturally grouped with other table operations. `ExportApi` remains for whole-network formats (CX2) |
-| Edge table includes source/target | When exporting edge table, `source` and `target` columns are always included. This implicitly captures topology |
+| Decision                          | Rationale                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| TSV not CSV                       | Tab separators avoid quoting issues with commas in biological names. Matches Cytoscape Desktop convention         |
+| `getTable()` as structured read   | Returns typed columns + rows for programmatic use; `exportTableToTsv()` is a string convenience wrapper           |
+| `includeTypeHeader` opt-in        | Default plain TSV maximizes compatibility with pandas/R. Typed header (`name:string`) enables lossless round-trip |
+| Import matches by key column      | Default `id` column; overridable to `name` for human-authored data                                                |
+| On `TableApi` not `ExportApi`     | Table I/O is naturally grouped with other table operations. `ExportApi` remains for whole-network formats (CX2)   |
+| Edge table includes source/target | When exporting edge table, `source` and `target` columns are always included. This implicitly captures topology   |
 
 **Existing code to leverage:**
 
-| Existing code | Location | Reuse |
-|---|---|---|
-| `parseSif()`, `validateSif()` | `src/utils/sifUtils.ts` | Pattern reference for text-to-model parsing |
-| `tableApi.getRow()`, `tableApi.editRows()` | `src/app-api/core/tableApi.ts` | Extend with `getTable()` / `importTableFromTsv()` |
-| `inferColumnType()` | `src/data/hooks/stores/TableStore.ts` | Auto-detect types on TSV import when no type header |
+| Existing code                              | Location                              | Reuse                                               |
+| ------------------------------------------ | ------------------------------------- | --------------------------------------------------- |
+| `parseSif()`, `validateSif()`              | `src/utils/sifUtils.ts`               | Pattern reference for text-to-model parsing         |
+| `tableApi.getRow()`, `tableApi.editRows()` | `src/app-api/core/tableApi.ts`        | Extend with `getTable()` / `importTableFromTsv()`   |
+| `inferColumnType()`                        | `src/data/hooks/stores/TableStore.ts` | Auto-detect types on TSV import when no type header |
 
 **Round-trip workflow example:**
 
@@ -1120,28 +1148,28 @@ the remaining items each require their own design document.
 - **Goal**: Make it easy for third-party developers to build, test, and publish Cytoscape Web apps
 - **Checklist**: [implementation-checklist-phase3.md](checklists/implementation-checklist-phase3.md)
 
-| Milestone                            | Deliverables                                                                                                                     |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Step 3.0: App Developer Guide        | Zero-to-deploy walkthrough + Migration Guide (Phase 1→2); update examples root README                                           |
-| Step 3.1: API Reference              | Add `ResourceApi`, `AppIdContext`/`useAppContext()`, `AppContextApis` to Api.md; update error codes, lifecycle, CyWebApi sections |
-| Step 3.2: Enriched Examples           | Expand `hello-world` with ViewportApi, TableApi, ExportApi, ElementApi sections; migrate `network-workflows` to `resources[]`    |
-| Step 3.3: Starter Template Overhaul   | Fix id/name mismatch, add TODO markers, update README                                                                            |
-| Step 3.4: Package Documentation       | `@cytoscape-web/api-types` README fixes, CHANGELOG.md                                                                            |
-| Step 3.5: Cross-cutting Updates       | Update examples CLAUDE.md, rewrite patterns/README.md, clean up stale references                                                 |
-| Step 3.6: Graph Traversal API         | 10 read-only `ElementApi` methods wrapping cytoscape.js core; `network-statistics` non-React example                             |
-| Step 3.7: TSV Table I/O API           | `getTable()`, `exportTableToTsv()`, `importTableFromTsv()` on `TableApi`; enables pandas/R round-trip workflows                 |
+| Milestone                           | Deliverables                                                                                                                      |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Step 3.0: App Developer Guide       | Zero-to-deploy walkthrough + Migration Guide (Phase 1→2); update examples root README                                             |
+| Step 3.1: API Reference             | Add `ResourceApi`, `AppIdContext`/`useAppContext()`, `AppContextApis` to Api.md; update error codes, lifecycle, CyWebApi sections |
+| Step 3.2: Enriched Examples         | Expand `hello-world` with ViewportApi, TableApi, ExportApi, ElementApi sections; migrate `network-workflows` to `resources[]`     |
+| Step 3.3: Starter Template Overhaul | Fix id/name mismatch, add TODO markers, update README                                                                             |
+| Step 3.4: Package Documentation     | `@cytoscape-web/api-types` README fixes, CHANGELOG.md                                                                             |
+| Step 3.5: Cross-cutting Updates     | Update examples CLAUDE.md, rewrite patterns/README.md, clean up stale references                                                  |
+| Step 3.6: Graph Traversal API       | 10 read-only `ElementApi` methods wrapping cytoscape.js core; `network-statistics` non-React example                              |
+| Step 3.7: TSV Table I/O API         | `getTable()`, `exportTableToTsv()`, `importTableFromTsv()` on `TableApi`; enables pandas/R round-trip workflows                   |
 
 **Milestones (checkpoints):**
 
-| Checkpoint                    | Verification                                                                                  |
-| ----------------------------- | --------------------------------------------------------------------------------------------- |
-| Guide published               | A new developer can create a working app from scratch following only the guide                 |
-| Reference complete            | Every public API function has description, parameters, return type, and example                |
+| Checkpoint                    | Verification                                                                                 |
+| ----------------------------- | -------------------------------------------------------------------------------------------- |
+| Guide published               | A new developer can create a working app from scratch following only the guide               |
+| Reference complete            | Every public API function has description, parameters, return type, and example              |
 | Examples comprehensive        | `hello-world` exercises every API domain (all 10 + EventBus + ResourceApi)                   |
 | Template works out-of-the-box | `git clone` → `npm install` → `npm run dev` produces a working panel + menu item in < 5 min  |
 | Graph traversal working       | `getConnectedNodes`, `getRoots`, `getLeaves` etc. pass unit tests; `network-statistics` runs |
 | TSV I/O working               | `exportTableToTsv` → edit → `importTableFromTsv` round-trip preserves data                   |
-| Phase 3 complete              | All docs reviewed; example apps build against published `@cytoscape-web/api-types`            |
+| Phase 3 complete              | All docs reviewed; example apps build against published `@cytoscape-web/api-types`           |
 
 ### Phase 4: Platform Extensibility
 
@@ -1153,17 +1181,17 @@ Replace the build-time static app list with runtime manifest-driven discovery
 and selective loading. Implementation follows a 9-step migration strategy
 (Steps 0–8) where each step is independently verifiable.
 
-| Step | Deliverables |
-|------|-------------|
-| Step 0 | Decouple host build: remove webpack `remotes`, `apps.json` import, top-level await, pre-populated `appRegistry` |
+| Step   | Deliverables                                                                                                      |
+| ------ | ----------------------------------------------------------------------------------------------------------------- |
+| Step 0 | Decouple host build: remove webpack `remotes`, `apps.json` import, top-level await, pre-populated `appRegistry`   |
 | Step 1 | Add types (`AppCatalogEntry`, `AppLoadState`) and store fields (`catalog`, `loadStates`, `manifestUrl`, `remove`) |
-| Step 2 | Implement `parseManifest()` with zod validation/normalization; manifest fetch in `useAppManager` |
-| Step 3 | Extract `loadRemoteApp(id, url)` per-app loader |
-| Step 4 | Selective startup loading — only `AppStatus.Active` apps are fetched |
-| Step 5 | User-initiated in-page activation with rollback on failure |
-| Step 6 | Deactivation cleanup (`cleanupAllForApp` → `unmount()`) |
-| Step 7 | App manager UI: catalog-based rendering, orphan handling, manifest URL controls, custom URL validation |
-| Step 8 | Verify existing rendering (Apps menu, panels) works from loaded apps only |
+| Step 2 | Implement `parseManifest()` with zod validation/normalization; manifest fetch in `useAppManager`                  |
+| Step 3 | Extract `loadRemoteApp(id, url)` per-app loader                                                                   |
+| Step 4 | Selective startup loading — only `AppStatus.Active` apps are fetched                                              |
+| Step 5 | User-initiated in-page activation with rollback on failure                                                        |
+| Step 6 | Deactivation cleanup (`cleanupAllForApp` → `unmount()`)                                                           |
+| Step 7 | App manager UI: catalog-based rendering, orphan handling, manifest URL controls, custom URL validation            |
+| Step 8 | Verify existing rendering (Apps menu, panels) works from loaded apps only                                         |
 
 **Exit criteria:**
 

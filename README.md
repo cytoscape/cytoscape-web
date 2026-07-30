@@ -197,9 +197,45 @@ It usually takes few minutes to reflect changes.
 
 ## Build for production
 
-`export NODE_ENV=production`
+Before building for production, you **must** update `src/assets/config.json` with the
+correct values for your target deployment environment. The `config.json` checked into
+this repository is configured for the NDEx development server (`dev1.ndexbio.org`) and
+**must not** be used as-is for production builds.
 
-`npm run build`
+### Configuring for Different Environments
+
+The runtime configuration is stored in `src/assets/config.json` and is bundled into
+the app at build time. You must update this file before running `npm run build` to
+ensure the deployed app points to the correct servers and endpoints.
+
+Key fields to update for each environment:
+
+| Field | Development | Production (web.cytoscape.org) |
+|---|---|---|
+| `ndexBaseUrl` | `dev1.ndexbio.org` | `www.ndexbio.org` |
+| `keycloakConfig.url` | `https://dev1.ndexbio.org/auth2` | `https://www.ndexbio.org/auth2` |
+| `errorReportEndpoint` | `https://dev1.ndexbio.org/report` | `https://www.ndexbio.org/report` |
+| `googleAnalyticsId` | `""` (empty to disable) | Your production GA measurement ID |
+| `urlBaseName` | `"/"` | Path prefix of your deployment (e.g. `"/"`) |
+
+Reference config files are provided in `src/assets/`:
+- `config.dev.json` — values for the NDEx development server
+- `config-test.txt` — values for the NDEx test server
+
+To build for production:
+
+1. Copy the appropriate reference config or start from the current `config.json`
+2. Update each field to match your production environment (see the table above)
+3. Build the app:
+
+```bash
+npm run build
+```
+
+> **⚠ Important**: If `errorReportEndpoint` points to a different origin than the one
+> where the app is served, that server must allow CORS requests from your app's domain.
+> Using a development endpoint (e.g. `dev1.ndexbio.org`) in a production deployment
+> will cause bug reports to fail with a CORS error.
 
 ## Troubleshooting
 

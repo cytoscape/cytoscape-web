@@ -12,13 +12,16 @@ dist
 dist-ssr
 # Bundle analyzer report (npm run build:analyze)
 /ba/
+# Vitest coverage output (npm run test:coverage)
+/coverage/
 # Module Federation (@module-federation/vite) generated cache/diagnostics
 /.mf/
 *.local
 yarn.lock
 
-# AI agent local settings
-.claude/
+# AI agent settings: shared team rules are tracked, everything else is local
+.claude/*
+!.claude/settings.json
 
 # Editor directories and files
 .vscode/*

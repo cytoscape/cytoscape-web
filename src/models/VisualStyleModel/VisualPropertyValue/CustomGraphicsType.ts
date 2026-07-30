@@ -13,12 +13,40 @@ export type CustomGraphicsTypeType =
 export const CustomGraphicsNameType = {
   PieChart: 'org.cytoscape.PieChart',
   RingChart: 'org.cytoscape.RingChart',
+  // Raster (PNG/JPEG/GIF/BMP) images. Cytoscape Desktop decodes these via ImageIO.
   Image: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+  // Vector images. Cytoscape Desktop uses a SEPARATE custom-graphics factory for SVG;
+  // labeling SVG content as the bitmap class above makes Desktop try to raster-decode
+  // it and render a "?" placeholder instead.
+  SVGImage: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
   None: 'none',
 } as const
 
 export type CustomGraphicsNameType =
   (typeof CustomGraphicsNameType)[keyof typeof CustomGraphicsNameType]
+
+/**
+ * Both the raster and vector classes are "image" custom graphics as far as Cytoscape
+ * Web's model, UI, and render dispatch are concerned. Use this instead of comparing
+ * against `CustomGraphicsNameType.Image` alone, so imported Desktop SVG custom graphics
+ * are recognized too.
+ */
+export const isImageCustomGraphicsName = (name: string): boolean =>
+  name === CustomGraphicsNameType.Image ||
+  name === CustomGraphicsNameType.SVGImage
+
+/**
+ * Decide whether a custom-graphics image URL is SVG (vector) content. Covers inline SVG,
+ * `data:image/svg+xml` URIs, and URLs whose path ends in `.svg`.
+ */
+export const isSvgImageUrl = (url: string): boolean => {
+  const u = url.trim()
+  return (
+    u.startsWith('<svg') ||
+    u.startsWith('data:image/svg+xml') ||
+    /\.svg(\?|#|$)/i.test(u)
+  )
+}
 
 export type JustificationType = 'left' | 'center' | 'right'
 
@@ -38,7 +66,8 @@ export interface CustomGraphicsType {
   properties:
     | PieChartPropertiesType
     | RingChartPropertiesType
-    | NonePropertiesType //| ImagePropertiesType
+    | NonePropertiesType
+    | ImagePropertiesType
 }
 
 export interface PieChartPropertiesType {
@@ -60,9 +89,8 @@ export interface RingChartPropertiesType {
 
 export type NonePropertiesType = Record<string, never>
 
-// TODO
-// export interface ImagePropertiesType {
-//   tag: string
-//   url: string
-//   id: number
-// }
+export interface ImagePropertiesType {
+  url: string
+  tag?: string
+  id?: number
+}

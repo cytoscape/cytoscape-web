@@ -26,14 +26,61 @@ import {
 } from './snapshotValidator'
 
 /**
+ * Snapshot format version (REVIEW.md R2-14).
+ * - (absent / 1): legacy format — raw JSON, Maps exported as {} and Dates
+ *   as bare ISO strings.
+ * - 2: rich values are tagged ({ __cywebType: 'Map' | 'Set' | 'Date', ... })
+ *   so they survive the export → import round-trip. The reviver is
+ *   self-describing, so version-2 importers read legacy snapshots too.
+ */
+export const SNAPSHOT_FORMAT_VERSION = 2
+
+/**
  * Metadata included in database exports for version tracking and validation.
  */
 export interface DatabaseExportMetadata {
   version: number // Database schema version
+  formatVersion?: number // Snapshot format version (absent = legacy 1)
   exportDate: string // ISO timestamp
   exportVersion: string // App version (from package.json)
   buildId?: string // Build ID (git commit hash + commit date)
   buildDate?: string // Build timestamp (ISO string)
+}
+
+const TYPE_TAG = '__cywebType'
+
+// JSON.stringify replacer: tag Maps, Sets and Dates so they survive the
+// round-trip (REVIEW.md R2-6 — raw stringify turned undo-stack Maps into {}
+// and summary Dates into bare strings). Must be a `function`: Date.toJSON
+// runs before the replacer sees the value, so the original is `this[key]`.
+function snapshotReplacer(this: any, key: string, value: any): any {
+  const original = this[key]
+  if (original instanceof Date) {
+    return { [TYPE_TAG]: 'Date', iso: original.toISOString() }
+  }
+  if (original instanceof Map) {
+    return { [TYPE_TAG]: 'Map', entries: Array.from(original.entries()) }
+  }
+  if (original instanceof Set) {
+    return { [TYPE_TAG]: 'Set', values: Array.from(original.values()) }
+  }
+  return value
+}
+
+// JSON.parse reviver for snapshotReplacer's tags. Self-describing: legacy
+// (untagged) snapshots pass through unchanged.
+const snapshotReviver = (key: string, value: any): any => {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    switch (value[TYPE_TAG]) {
+      case 'Date':
+        return new Date(value.iso)
+      case 'Map':
+        return new Map(value.entries)
+      case 'Set':
+        return new Set(value.values)
+    }
+  }
+  return value
 }
 
 /**
@@ -91,18 +138,32 @@ export interface ImportOptions {
    * Default: undefined (import all)
    */
   objectStores?: ObjectStoreNamesType[]
+
+  /**
+   * If true, clear ALL existing app object stores before importing —
+   * true "replace" semantics (previously only the workspace store was
+   * cleared, leaving networks absent from the snapshot orphaned forever;
+   * REVIEW.md R2-8). The clear only happens AFTER the snapshot has been
+   * parsed and validated, so a corrupt file never destroys existing data
+   * (REVIEW.md R2-3).
+   * Default: false
+   */
+  clearExisting?: boolean
 }
 
 /**
- * Exports the entire database as a JSON string (snapshot).
+ * Builds the database snapshot as an in-memory object.
  *
  * All object stores are exported in their current serialized format.
- * The export includes metadata for version tracking.
+ * The result includes metadata for version tracking. Callers that need a
+ * JSON string should use exportDatabaseSnapshot; consumers embedding the
+ * snapshot in a larger structure (e.g. the app-state debug export) can
+ * use this directly to avoid a stringify → parse round-trip (REVIEW.md A6).
  *
- * @returns Promise resolving to JSON string of the database snapshot
+ * @returns Promise resolving to the DatabaseSnapshot object
  * @throws Error if export fails
  */
-export const exportDatabaseSnapshot = async (): Promise<string> => {
+export const buildDatabaseSnapshot = async (): Promise<DatabaseSnapshot> => {
   try {
     const db = await getDb()
     const currentVersion = getDatabaseVersion()
@@ -133,15 +194,27 @@ export const exportDatabaseSnapshot = async (): Promise<string> => {
 
     const metadata: DatabaseExportMetadata = {
       version: currentVersion,
+      formatVersion: SNAPSHOT_FORMAT_VERSION,
       exportDate: new Date().toISOString(),
       exportVersion: appVersion,
       ...(buildId && { buildId }),
       ...(buildTime && { buildDate: buildTime }),
     }
 
-    // Dynamically export all object stores
+    // Export all app object stores. dexie-observable's internal tables
+    // (_changes, _syncNodes, _intercomm, _uncommittedChanges) are
+    // deliberately excluded — they are per-browser change-tracking state,
+    // and importing them into another profile corrupts cross-tab sync
+    // (REVIEW.md R2-7).
+    const appStoreNames = new Set<string>(Object.values(ObjectStoreNames))
     const data: Record<string, any[]> = {}
     for (const table of db.tables) {
+      if (!appStoreNames.has(table.name)) {
+        logDb.info(
+          `[exportDatabaseSnapshot] Skipping internal table: ${table.name}`,
+        )
+        continue
+      }
       try {
         data[table.name] = await table.toArray()
         logDb.info(
@@ -161,11 +234,22 @@ export const exportDatabaseSnapshot = async (): Promise<string> => {
       data: data as DatabaseSnapshot['data'],
     }
 
-    return JSON.stringify(snapshot, null, 2)
+    return snapshot
   } catch (e) {
     logDb.error('[exportDatabaseSnapshot] error:', e)
     throw e
   }
+}
+
+/**
+ * Exports the entire database as a JSON string (snapshot).
+ *
+ * Output is compact (no pretty-printing): indentation roughly doubled the
+ * size and serialization time of large payloads (REVIEW.md A6).
+ */
+export const exportDatabaseSnapshot = async (): Promise<string> => {
+  const snapshot = await buildDatabaseSnapshot()
+  return JSON.stringify(snapshot, snapshotReplacer)
 }
 
 /**
@@ -221,6 +305,7 @@ export const importDatabaseSnapshot = async (
     merge = false,
     skipConflicts = false,
     objectStores = undefined,
+    clearExisting = false,
   } = options
 
   try {
@@ -235,7 +320,7 @@ export const importDatabaseSnapshot = async (
 
     let snapshot: DatabaseSnapshot
     try {
-      snapshot = JSON.parse(snapshotJson)
+      snapshot = JSON.parse(snapshotJson, snapshotReviver)
     } catch (parseError) {
       throw new Error(
         `Invalid JSON format: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`,
@@ -243,7 +328,7 @@ export const importDatabaseSnapshot = async (
     }
 
     // Comprehensive validation
-    const validation = validateSnapshotStructure(snapshot)
+    const validation = validateSnapshotStructure(snapshot, snapshotJson.length)
 
     if (!validation.isValid) {
       logDb.error(
@@ -259,6 +344,24 @@ export const importDatabaseSnapshot = async (
         '[importDatabaseSnapshot] Snapshot validation warnings:',
         validation.warnings,
       )
+    }
+
+    // Only clear existing data once the snapshot is known to be valid —
+    // never before (a corrupt file must not destroy user data). All app
+    // stores are cleared, not just workspace, so "replace" really replaces
+    // (R2-8); dexie-observable internals are left alone.
+    if (clearExisting) {
+      for (const storeName of Object.values(ObjectStoreNames)) {
+        try {
+          await (db as any)[storeName].clear()
+        } catch (clearError) {
+          logDb.warn(
+            `[importDatabaseSnapshot] Failed to clear ${storeName}:`,
+            clearError,
+          )
+        }
+      }
+      logDb.info('[importDatabaseSnapshot] Existing app stores cleared')
     }
 
     const importedCounts: Record<string, number> = {}
@@ -304,13 +407,26 @@ export const importDatabaseSnapshot = async (
       return null
     }
 
-    // Determine which stores to import
-    // If objectStores is specified, use those; otherwise import all stores found in snapshot
-    const storesToImport =
+    // Determine which stores to import.
+    // Only known app object stores are ever imported — legacy snapshots
+    // contain dexie-observable's internal tables (_changes, _syncNodes, …),
+    // and putting another profile's change-log into the local tables
+    // corrupts cross-tab sync (REVIEW.md R2-7).
+    const knownStoreNames = new Set<string>(Object.values(ObjectStoreNames))
+    const requestedStores =
       objectStores ||
       Object.keys(snapshot.data).filter(
         (key) => (snapshot.data as Record<string, any>)[key] !== undefined,
       )
+    const storesToImport = requestedStores.filter((storeName) => {
+      if (knownStoreNames.has(storeName)) {
+        return true
+      }
+      logDb.info(
+        `[importDatabaseSnapshot] Ignoring unknown/internal store: ${storeName}`,
+      )
+      return false
+    })
 
     // Import each object store
     for (const storeName of storesToImport) {
@@ -330,53 +446,60 @@ export const importDatabaseSnapshot = async (
         }
 
         await db.transaction('rw', (db as any)[storeName], async () => {
-          let imported = 0
-          let skipped = 0
-
-          for (const record of records) {
-            try {
-              // Sanitize record to prevent security issues
-              const sanitizedRecord = sanitizeRecord(record)
-
-              // Get primary key for this store
-              const primaryKey = getPrimaryKey(storeName)
-              if (!primaryKey) {
-                errors.push(
-                  `Store ${storeName}: Could not determine primary key. Skipping record.`,
-                )
-                continue
-              }
-
-              // Validate required key exists
-              if (!sanitizedRecord[primaryKey]) {
-                errors.push(
-                  `Store ${storeName}: Record missing required key "${primaryKey}"`,
-                )
-                continue
-              }
-
-              if (merge && skipConflicts) {
-                // Check if record exists
-                const existing = await (db as any)[storeName].get(
-                  sanitizedRecord[primaryKey],
-                )
-                if (existing) {
-                  skipped++
-                  continue
-                }
-              }
-
-              // Put sanitized record (will overwrite if exists, unless merge+skipConflicts)
-              await (db as any)[storeName].put(sanitizedRecord)
-              imported++
-            } catch (recordError) {
-              errors.push(
-                `Store ${storeName}: Failed to import record: ${recordError instanceof Error ? recordError.message : String(recordError)}`,
-              )
-            }
+          // Get primary key for this store
+          const primaryKey = getPrimaryKey(storeName)
+          if (!primaryKey) {
+            errors.push(
+              `Store ${storeName}: Could not determine primary key. Skipping store.`,
+            )
+            importedCounts[storeName] = 0
+            return
           }
 
-          importedCounts[storeName] = imported
+          // Sanitize records (prototype-pollution protection) and drop
+          // records without a primary key
+          const sanitizedRecords: any[] = []
+          for (const record of records) {
+            const sanitizedRecord = sanitizeRecord(record)
+            if (!sanitizedRecord[primaryKey]) {
+              errors.push(
+                `Store ${storeName}: Record missing required key "${primaryKey}"`,
+              )
+              continue
+            }
+            sanitizedRecords.push(sanitizedRecord)
+          }
+
+          // Bulk existence check + bulkPut instead of a per-record
+          // await get()/put() loop (REVIEW.md A6)
+          let recordsToImport = sanitizedRecords
+          let skipped = 0
+          if (merge && skipConflicts) {
+            const keys = sanitizedRecords.map(
+              (record) => record[primaryKey],
+            )
+            const existing = await (db as any)[storeName].bulkGet(keys)
+            recordsToImport = sanitizedRecords.filter(
+              (_record, index) => existing[index] === undefined,
+            )
+            skipped = sanitizedRecords.length - recordsToImport.length
+          }
+
+          try {
+            await (db as any)[storeName].bulkPut(recordsToImport)
+            importedCounts[storeName] = recordsToImport.length
+          } catch (bulkError: any) {
+            // Dexie BulkError carries per-record failures; the rest of
+            // the batch is still written
+            const failureCount = bulkError?.failures
+              ? Object.keys(bulkError.failures).length
+              : recordsToImport.length
+            importedCounts[storeName] = recordsToImport.length - failureCount
+            errors.push(
+              `Store ${storeName}: Failed to import ${failureCount} record(s): ${bulkError instanceof Error ? bulkError.message : String(bulkError)}`,
+            )
+          }
+
           if (merge && skipConflicts) {
             skippedCounts[storeName] = skipped
           }
@@ -434,13 +557,6 @@ export const importDatabaseSnapshotFromFile = async (
       )
     }
 
-    // Delete all workspaces in IndexedDB before importing
-    const db = await getDb()
-    await db.workspace.clear()
-    logDb.info(
-      '[importDatabaseSnapshotFromFile] All workspaces cleared from IndexedDB',
-    )
-
     // Use file.text() if available, otherwise fall back to FileReader for test compatibility
     let text: string
     if (typeof file.text === 'function') {
@@ -454,7 +570,13 @@ export const importDatabaseSnapshotFromFile = async (
         reader.readAsText(file)
       })
     }
-    return await importDatabaseSnapshot(text, options)
+    // Replace semantics ("This will replace all existing data" in the UI):
+    // the clear happens inside importDatabaseSnapshot, only after the
+    // snapshot validates
+    return await importDatabaseSnapshot(text, {
+      ...options,
+      clearExisting: true,
+    })
   } catch (e) {
     logDb.error('[importDatabaseSnapshotFromFile] error:', e)
     throw e

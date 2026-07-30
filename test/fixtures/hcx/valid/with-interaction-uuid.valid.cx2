@@ -40,14 +40,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "attributeDeclarations": [
       {
         "nodes": {
@@ -98,14 +90,13 @@
         "v": {
           "n": "node1",
           "type": "protein",
-          "score": "0.00",
+          "score": 0,
           "HCX::members": [
             25,
             26,
             27,
             28,
-            29,
-            30
+            29
           ]
         }
       },
@@ -116,7 +107,7 @@
         "v": {
           "n": "node2",
           "type": "gene",
-          "score": "0.10",
+          "score": 0.1,
           "HCX::members": [
             31,
             32,
@@ -134,11 +125,10 @@
         "v": {
           "n": "node3",
           "type": "protein",
-          "score": "0.20",
+          "score": 0.2,
           "HCX::members": [
-            31,
-            32,
-            33
+            29,
+            30
           ]
         }
       },
@@ -149,10 +139,13 @@
         "v": {
           "n": "node4",
           "type": "gene",
-          "score": "0.30",
+          "score": 0.3,
           "HCX::members": [
-            31,
-            32
+            40,
+            41,
+            42,
+            43,
+            44
           ]
         }
       },
@@ -163,7 +156,7 @@
         "v": {
           "n": "node5",
           "type": "protein",
-          "score": "0.40",
+          "score": 0.4,
           "HCX::members": [
             49,
             25,
@@ -181,7 +174,7 @@
         "v": {
           "n": "node6",
           "type": "gene",
-          "score": "0.50",
+          "score": 0.5,
           "HCX::members": [
             35,
             36
@@ -195,7 +188,7 @@
         "v": {
           "n": "node7",
           "type": "protein",
-          "score": "0.60",
+          "score": 0.6,
           "HCX::members": [
             36,
             37,
@@ -213,10 +206,11 @@
         "v": {
           "n": "node8",
           "type": "gene",
-          "score": "0.70",
+          "score": 0.7,
           "HCX::members": [
-            39,
-            40
+            46,
+            47,
+            48
           ]
         }
       },
@@ -227,13 +221,10 @@
         "v": {
           "n": "node9",
           "type": "protein",
-          "score": "0.80",
+          "score": 0.8,
           "HCX::members": [
-            40,
             41,
-            42,
-            43,
-            44
+            42
           ]
         }
       },
@@ -244,14 +235,10 @@
         "v": {
           "n": "node10",
           "type": "gene",
-          "score": "0.90",
+          "score": 0.9,
           "HCX::members": [
-            29,
-            30,
-            31,
-            32,
-            33,
-            34
+            43,
+            44
           ]
         }
       },
@@ -262,14 +249,12 @@
         "v": {
           "n": "node11",
           "type": "protein",
-          "score": "1.00",
+          "score": 1,
           "HCX::members": [
-            35,
-            36,
-            37,
-            38,
-            39,
-            40
+            40,
+            41,
+            42,
+            43
           ]
         }
       },
@@ -280,13 +265,10 @@
         "v": {
           "n": "node12",
           "type": "gene",
-          "score": "1.10",
+          "score": 1.1,
           "HCX::members": [
-            30,
-            31,
-            32,
-            33,
-            34
+            47,
+            48
           ]
         }
       },
@@ -297,14 +279,12 @@
         "v": {
           "n": "node13",
           "type": "protein",
-          "score": "1.20",
+          "score": 1.2,
           "HCX::members": [
-            47,
             48,
             49,
             25,
-            26,
-            27
+            26
           ]
         }
       },
@@ -315,12 +295,10 @@
         "v": {
           "n": "node14",
           "type": "gene",
-          "score": "1.30",
+          "score": 1.3,
           "HCX::members": [
-            27,
-            28,
-            29,
-            30
+            26,
+            27
           ]
         }
       },
@@ -331,13 +309,11 @@
         "v": {
           "n": "node15",
           "type": "protein",
-          "score": "1.40",
+          "score": 1.4,
           "HCX::members": [
-            45,
-            46,
-            47,
-            48,
-            49
+            42,
+            43,
+            44
           ]
         }
       },
@@ -348,14 +324,12 @@
         "v": {
           "n": "node16",
           "type": "gene",
-          "score": "1.50",
+          "score": 1.5,
           "HCX::members": [
-            40,
-            41,
-            42,
-            43,
-            44,
-            45
+            35,
+            36,
+            37,
+            38
           ]
         }
       },
@@ -366,10 +340,13 @@
         "v": {
           "n": "node17",
           "type": "protein",
-          "score": "1.60",
+          "score": 1.6,
           "HCX::members": [
+            30,
+            31,
             32,
-            33
+            33,
+            34
           ]
         }
       },
@@ -380,11 +357,14 @@
         "v": {
           "n": "node18",
           "type": "gene",
-          "score": "1.70",
+          "score": 1.7,
           "HCX::members": [
-            26,
             27,
-            28
+            28,
+            29,
+            30,
+            31,
+            32
           ]
         }
       },
@@ -395,10 +375,11 @@
         "v": {
           "n": "node19",
           "type": "protein",
-          "score": "1.80",
+          "score": 1.8,
           "HCX::members": [
-            36,
-            37
+            29,
+            30,
+            31
           ]
         }
       },
@@ -409,11 +390,10 @@
         "v": {
           "n": "node20",
           "type": "gene",
-          "score": "1.90",
+          "score": 1.9,
           "HCX::members": [
-            32,
-            33,
-            34
+            38,
+            39
           ]
         }
       },
@@ -424,7 +404,7 @@
         "v": {
           "n": "node21",
           "type": "protein",
-          "score": "2.00",
+          "score": 2,
           "HCX::members": [
             25,
             26,
@@ -441,7 +421,7 @@
         "v": {
           "n": "node22",
           "type": "gene",
-          "score": "2.10",
+          "score": 2.1,
           "HCX::members": [
             38,
             39,
@@ -456,7 +436,7 @@
         "v": {
           "n": "node23",
           "type": "protein",
-          "score": "2.20",
+          "score": 2.2,
           "HCX::members": [
             38,
             39,
@@ -472,7 +452,7 @@
         "v": {
           "n": "node24",
           "type": "gene",
-          "score": "2.30",
+          "score": 2.3,
           "HCX::members": [
             46,
             47
@@ -486,7 +466,7 @@
         "v": {
           "n": "node25",
           "type": "protein",
-          "score": "2.40",
+          "score": 2.4,
           "HCX::members": [
             47,
             48,
@@ -501,7 +481,7 @@
         "v": {
           "n": "node26",
           "type": "gene",
-          "score": "2.50"
+          "score": 2.5
         }
       },
       {
@@ -511,7 +491,7 @@
         "v": {
           "n": "node27",
           "type": "protein",
-          "score": "2.60"
+          "score": 2.6
         }
       },
       {
@@ -521,7 +501,7 @@
         "v": {
           "n": "node28",
           "type": "gene",
-          "score": "2.70"
+          "score": 2.7
         }
       },
       {
@@ -531,7 +511,7 @@
         "v": {
           "n": "node29",
           "type": "protein",
-          "score": "2.80"
+          "score": 2.8
         }
       },
       {
@@ -541,7 +521,7 @@
         "v": {
           "n": "node30",
           "type": "gene",
-          "score": "2.90"
+          "score": 2.9
         }
       },
       {
@@ -551,7 +531,7 @@
         "v": {
           "n": "node31",
           "type": "protein",
-          "score": "3.00"
+          "score": 3
         }
       },
       {
@@ -561,7 +541,7 @@
         "v": {
           "n": "node32",
           "type": "gene",
-          "score": "3.10"
+          "score": 3.1
         }
       },
       {
@@ -571,7 +551,7 @@
         "v": {
           "n": "node33",
           "type": "protein",
-          "score": "3.20"
+          "score": 3.2
         }
       },
       {
@@ -581,7 +561,7 @@
         "v": {
           "n": "node34",
           "type": "gene",
-          "score": "3.30"
+          "score": 3.3
         }
       },
       {
@@ -591,7 +571,7 @@
         "v": {
           "n": "node35",
           "type": "protein",
-          "score": "3.40"
+          "score": 3.4
         }
       },
       {
@@ -601,7 +581,7 @@
         "v": {
           "n": "node36",
           "type": "gene",
-          "score": "3.50"
+          "score": 3.5
         }
       },
       {
@@ -611,7 +591,7 @@
         "v": {
           "n": "node37",
           "type": "protein",
-          "score": "3.60"
+          "score": 3.6
         }
       },
       {
@@ -621,7 +601,7 @@
         "v": {
           "n": "node38",
           "type": "gene",
-          "score": "3.70"
+          "score": 3.7
         }
       },
       {
@@ -631,7 +611,7 @@
         "v": {
           "n": "node39",
           "type": "protein",
-          "score": "3.80"
+          "score": 3.8
         }
       },
       {
@@ -641,7 +621,7 @@
         "v": {
           "n": "node40",
           "type": "gene",
-          "score": "3.90"
+          "score": 3.9
         }
       },
       {
@@ -651,7 +631,7 @@
         "v": {
           "n": "node41",
           "type": "protein",
-          "score": "4.00"
+          "score": 4
         }
       },
       {
@@ -661,7 +641,7 @@
         "v": {
           "n": "node42",
           "type": "gene",
-          "score": "4.10"
+          "score": 4.1
         }
       },
       {
@@ -671,7 +651,7 @@
         "v": {
           "n": "node43",
           "type": "protein",
-          "score": "4.20"
+          "score": 4.2
         }
       },
       {
@@ -681,7 +661,7 @@
         "v": {
           "n": "node44",
           "type": "gene",
-          "score": "4.30"
+          "score": 4.3
         }
       },
       {
@@ -691,7 +671,7 @@
         "v": {
           "n": "node45",
           "type": "protein",
-          "score": "4.40"
+          "score": 4.4
         }
       },
       {
@@ -701,7 +681,7 @@
         "v": {
           "n": "node46",
           "type": "gene",
-          "score": "4.50"
+          "score": 4.5
         }
       },
       {
@@ -711,7 +691,7 @@
         "v": {
           "n": "node47",
           "type": "protein",
-          "score": "4.60"
+          "score": 4.6
         }
       },
       {
@@ -721,7 +701,7 @@
         "v": {
           "n": "node48",
           "type": "gene",
-          "score": "4.70"
+          "score": 4.7
         }
       },
       {
@@ -731,7 +711,7 @@
         "v": {
           "n": "node49",
           "type": "protein",
-          "score": "4.80"
+          "score": 4.8
         }
       },
       {
@@ -741,7 +721,7 @@
         "v": {
           "n": "node50",
           "type": "gene",
-          "score": "4.90"
+          "score": 4.9
         }
       }
     ]
@@ -754,7 +734,7 @@
         "t": 1,
         "v": {
           "interaction": "interacts",
-          "weight": "0.00"
+          "weight": 0
         }
       },
       {
@@ -763,7 +743,7 @@
         "t": 2,
         "v": {
           "interaction": "binds",
-          "weight": "0.05"
+          "weight": 0.05
         }
       },
       {
@@ -772,7 +752,7 @@
         "t": 3,
         "v": {
           "interaction": "regulates",
-          "weight": "0.10"
+          "weight": 0.1
         }
       },
       {
@@ -781,7 +761,7 @@
         "t": 4,
         "v": {
           "interaction": "activates",
-          "weight": "0.15"
+          "weight": 0.15
         }
       },
       {
@@ -790,7 +770,7 @@
         "t": 5,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.20"
+          "weight": 0.2
         }
       },
       {
@@ -799,7 +779,7 @@
         "t": 6,
         "v": {
           "interaction": "interacts",
-          "weight": "0.25"
+          "weight": 0.25
         }
       },
       {
@@ -808,7 +788,7 @@
         "t": 7,
         "v": {
           "interaction": "binds",
-          "weight": "0.30"
+          "weight": 0.3
         }
       },
       {
@@ -817,7 +797,7 @@
         "t": 8,
         "v": {
           "interaction": "regulates",
-          "weight": "0.35"
+          "weight": 0.35
         }
       },
       {
@@ -826,7 +806,7 @@
         "t": 9,
         "v": {
           "interaction": "activates",
-          "weight": "0.40"
+          "weight": 0.4
         }
       },
       {
@@ -835,7 +815,7 @@
         "t": 10,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.45"
+          "weight": 0.45
         }
       },
       {
@@ -844,7 +824,7 @@
         "t": 11,
         "v": {
           "interaction": "interacts",
-          "weight": "0.50"
+          "weight": 0.5
         }
       },
       {
@@ -853,7 +833,7 @@
         "t": 12,
         "v": {
           "interaction": "binds",
-          "weight": "0.55"
+          "weight": 0.55
         }
       },
       {
@@ -862,7 +842,7 @@
         "t": 13,
         "v": {
           "interaction": "regulates",
-          "weight": "0.60"
+          "weight": 0.6
         }
       },
       {
@@ -871,7 +851,7 @@
         "t": 14,
         "v": {
           "interaction": "activates",
-          "weight": "0.65"
+          "weight": 0.65
         }
       },
       {
@@ -880,7 +860,7 @@
         "t": 15,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.70"
+          "weight": 0.7
         }
       },
       {
@@ -889,7 +869,7 @@
         "t": 16,
         "v": {
           "interaction": "interacts",
-          "weight": "0.75"
+          "weight": 0.75
         }
       },
       {
@@ -898,7 +878,7 @@
         "t": 17,
         "v": {
           "interaction": "binds",
-          "weight": "0.80"
+          "weight": 0.8
         }
       },
       {
@@ -907,7 +887,7 @@
         "t": 18,
         "v": {
           "interaction": "regulates",
-          "weight": "0.85"
+          "weight": 0.85
         }
       },
       {
@@ -916,7 +896,7 @@
         "t": 19,
         "v": {
           "interaction": "activates",
-          "weight": "0.90"
+          "weight": 0.9
         }
       },
       {
@@ -925,7 +905,7 @@
         "t": 20,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.95"
+          "weight": 0.95
         }
       },
       {
@@ -934,7 +914,7 @@
         "t": 21,
         "v": {
           "interaction": "interacts",
-          "weight": "1.00"
+          "weight": 1
         }
       },
       {
@@ -943,7 +923,7 @@
         "t": 22,
         "v": {
           "interaction": "binds",
-          "weight": "1.05"
+          "weight": 1.05
         }
       },
       {
@@ -952,7 +932,7 @@
         "t": 23,
         "v": {
           "interaction": "regulates",
-          "weight": "1.10"
+          "weight": 1.1
         }
       },
       {
@@ -961,7 +941,7 @@
         "t": 24,
         "v": {
           "interaction": "activates",
-          "weight": "1.15"
+          "weight": 1.15
         }
       },
       {
@@ -970,7 +950,7 @@
         "t": 25,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.20"
+          "weight": 1.2
         }
       },
       {
@@ -979,7 +959,7 @@
         "t": 26,
         "v": {
           "interaction": "interacts",
-          "weight": "1.25"
+          "weight": 1.25
         }
       },
       {
@@ -988,7 +968,7 @@
         "t": 27,
         "v": {
           "interaction": "binds",
-          "weight": "1.30"
+          "weight": 1.3
         }
       },
       {
@@ -997,7 +977,7 @@
         "t": 28,
         "v": {
           "interaction": "regulates",
-          "weight": "1.35"
+          "weight": 1.35
         }
       },
       {
@@ -1006,7 +986,7 @@
         "t": 29,
         "v": {
           "interaction": "activates",
-          "weight": "1.40"
+          "weight": 1.4
         }
       },
       {
@@ -1015,7 +995,7 @@
         "t": 30,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.45"
+          "weight": 1.45
         }
       },
       {
@@ -1024,7 +1004,7 @@
         "t": 31,
         "v": {
           "interaction": "interacts",
-          "weight": "1.50"
+          "weight": 1.5
         }
       },
       {
@@ -1033,7 +1013,7 @@
         "t": 32,
         "v": {
           "interaction": "binds",
-          "weight": "1.55"
+          "weight": 1.55
         }
       },
       {
@@ -1042,7 +1022,7 @@
         "t": 33,
         "v": {
           "interaction": "regulates",
-          "weight": "1.60"
+          "weight": 1.6
         }
       },
       {
@@ -1051,7 +1031,7 @@
         "t": 34,
         "v": {
           "interaction": "activates",
-          "weight": "1.65"
+          "weight": 1.65
         }
       },
       {
@@ -1060,7 +1040,7 @@
         "t": 35,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.70"
+          "weight": 1.7
         }
       },
       {
@@ -1069,7 +1049,7 @@
         "t": 36,
         "v": {
           "interaction": "interacts",
-          "weight": "1.75"
+          "weight": 1.75
         }
       },
       {
@@ -1078,7 +1058,7 @@
         "t": 37,
         "v": {
           "interaction": "binds",
-          "weight": "1.80"
+          "weight": 1.8
         }
       },
       {
@@ -1087,7 +1067,7 @@
         "t": 38,
         "v": {
           "interaction": "regulates",
-          "weight": "1.85"
+          "weight": 1.85
         }
       },
       {
@@ -1096,7 +1076,7 @@
         "t": 39,
         "v": {
           "interaction": "activates",
-          "weight": "1.90"
+          "weight": 1.9
         }
       },
       {
@@ -1105,7 +1085,7 @@
         "t": 40,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.95"
+          "weight": 1.95
         }
       },
       {
@@ -1114,7 +1094,7 @@
         "t": 41,
         "v": {
           "interaction": "interacts",
-          "weight": "2.00"
+          "weight": 2
         }
       },
       {
@@ -1123,7 +1103,7 @@
         "t": 42,
         "v": {
           "interaction": "binds",
-          "weight": "2.05"
+          "weight": 2.05
         }
       },
       {
@@ -1132,7 +1112,7 @@
         "t": 43,
         "v": {
           "interaction": "regulates",
-          "weight": "2.10"
+          "weight": 2.1
         }
       },
       {
@@ -1141,7 +1121,7 @@
         "t": 44,
         "v": {
           "interaction": "activates",
-          "weight": "2.15"
+          "weight": 2.15
         }
       },
       {
@@ -1150,7 +1130,7 @@
         "t": 45,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.20"
+          "weight": 2.2
         }
       },
       {
@@ -1159,7 +1139,7 @@
         "t": 46,
         "v": {
           "interaction": "interacts",
-          "weight": "2.25"
+          "weight": 2.25
         }
       },
       {
@@ -1168,7 +1148,7 @@
         "t": 47,
         "v": {
           "interaction": "binds",
-          "weight": "2.30"
+          "weight": 2.3
         }
       },
       {
@@ -1177,7 +1157,7 @@
         "t": 48,
         "v": {
           "interaction": "regulates",
-          "weight": "2.35"
+          "weight": 2.35
         }
       },
       {
@@ -1186,7 +1166,7 @@
         "t": 49,
         "v": {
           "interaction": "activates",
-          "weight": "2.40"
+          "weight": 2.4
         }
       },
       {
@@ -1195,7 +1175,7 @@
         "t": 0,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.45"
+          "weight": 2.45
         }
       },
       {
@@ -1204,7 +1184,7 @@
         "t": 1,
         "v": {
           "interaction": "interacts",
-          "weight": "2.50"
+          "weight": 2.5
         }
       },
       {
@@ -1213,7 +1193,7 @@
         "t": 2,
         "v": {
           "interaction": "binds",
-          "weight": "2.55"
+          "weight": 2.55
         }
       },
       {
@@ -1222,7 +1202,7 @@
         "t": 3,
         "v": {
           "interaction": "regulates",
-          "weight": "2.60"
+          "weight": 2.6
         }
       },
       {
@@ -1231,7 +1211,7 @@
         "t": 4,
         "v": {
           "interaction": "activates",
-          "weight": "2.65"
+          "weight": 2.65
         }
       },
       {
@@ -1240,7 +1220,7 @@
         "t": 5,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.70"
+          "weight": 2.7
         }
       },
       {
@@ -1249,7 +1229,7 @@
         "t": 6,
         "v": {
           "interaction": "interacts",
-          "weight": "2.75"
+          "weight": 2.75
         }
       },
       {
@@ -1258,7 +1238,7 @@
         "t": 7,
         "v": {
           "interaction": "binds",
-          "weight": "2.80"
+          "weight": 2.8
         }
       },
       {
@@ -1267,7 +1247,7 @@
         "t": 8,
         "v": {
           "interaction": "regulates",
-          "weight": "2.85"
+          "weight": 2.85
         }
       },
       {
@@ -1276,7 +1256,7 @@
         "t": 9,
         "v": {
           "interaction": "activates",
-          "weight": "2.90"
+          "weight": 2.9
         }
       },
       {
@@ -1285,7 +1265,7 @@
         "t": 10,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.95"
+          "weight": 2.95
         }
       },
       {
@@ -1294,7 +1274,7 @@
         "t": 11,
         "v": {
           "interaction": "interacts",
-          "weight": "3.00"
+          "weight": 3
         }
       },
       {
@@ -1303,7 +1283,7 @@
         "t": 12,
         "v": {
           "interaction": "binds",
-          "weight": "3.05"
+          "weight": 3.05
         }
       },
       {
@@ -1312,7 +1292,7 @@
         "t": 13,
         "v": {
           "interaction": "regulates",
-          "weight": "3.10"
+          "weight": 3.1
         }
       },
       {
@@ -1321,7 +1301,7 @@
         "t": 14,
         "v": {
           "interaction": "activates",
-          "weight": "3.15"
+          "weight": 3.15
         }
       },
       {
@@ -1330,7 +1310,7 @@
         "t": 15,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.20"
+          "weight": 3.2
         }
       },
       {
@@ -1339,7 +1319,7 @@
         "t": 16,
         "v": {
           "interaction": "interacts",
-          "weight": "3.25"
+          "weight": 3.25
         }
       },
       {
@@ -1348,7 +1328,7 @@
         "t": 17,
         "v": {
           "interaction": "binds",
-          "weight": "3.30"
+          "weight": 3.3
         }
       },
       {
@@ -1357,7 +1337,7 @@
         "t": 18,
         "v": {
           "interaction": "regulates",
-          "weight": "3.35"
+          "weight": 3.35
         }
       },
       {
@@ -1366,7 +1346,7 @@
         "t": 19,
         "v": {
           "interaction": "activates",
-          "weight": "3.40"
+          "weight": 3.4
         }
       },
       {
@@ -1375,7 +1355,7 @@
         "t": 20,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.45"
+          "weight": 3.45
         }
       },
       {
@@ -1384,7 +1364,7 @@
         "t": 21,
         "v": {
           "interaction": "interacts",
-          "weight": "3.50"
+          "weight": 3.5
         }
       },
       {
@@ -1393,7 +1373,7 @@
         "t": 22,
         "v": {
           "interaction": "binds",
-          "weight": "3.55"
+          "weight": 3.55
         }
       },
       {
@@ -1402,7 +1382,7 @@
         "t": 23,
         "v": {
           "interaction": "regulates",
-          "weight": "3.60"
+          "weight": 3.6
         }
       },
       {
@@ -1411,7 +1391,7 @@
         "t": 24,
         "v": {
           "interaction": "activates",
-          "weight": "3.65"
+          "weight": 3.65
         }
       },
       {
@@ -1420,7 +1400,7 @@
         "t": 25,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.70"
+          "weight": 3.7
         }
       },
       {
@@ -1429,7 +1409,7 @@
         "t": 26,
         "v": {
           "interaction": "interacts",
-          "weight": "3.75"
+          "weight": 3.75
         }
       },
       {
@@ -1438,7 +1418,7 @@
         "t": 27,
         "v": {
           "interaction": "binds",
-          "weight": "3.80"
+          "weight": 3.8
         }
       },
       {
@@ -1447,7 +1427,7 @@
         "t": 28,
         "v": {
           "interaction": "regulates",
-          "weight": "3.85"
+          "weight": 3.85
         }
       },
       {
@@ -1456,7 +1436,7 @@
         "t": 29,
         "v": {
           "interaction": "activates",
-          "weight": "3.90"
+          "weight": 3.9
         }
       },
       {
@@ -1465,7 +1445,7 @@
         "t": 30,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.95"
+          "weight": 3.95
         }
       },
       {
@@ -1474,7 +1454,7 @@
         "t": 31,
         "v": {
           "interaction": "interacts",
-          "weight": "4.00"
+          "weight": 4
         }
       },
       {
@@ -1483,7 +1463,7 @@
         "t": 32,
         "v": {
           "interaction": "binds",
-          "weight": "4.05"
+          "weight": 4.05
         }
       },
       {
@@ -1492,7 +1472,7 @@
         "t": 33,
         "v": {
           "interaction": "regulates",
-          "weight": "4.10"
+          "weight": 4.1
         }
       },
       {
@@ -1501,7 +1481,7 @@
         "t": 34,
         "v": {
           "interaction": "activates",
-          "weight": "4.15"
+          "weight": 4.15
         }
       },
       {
@@ -1510,7 +1490,7 @@
         "t": 35,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.20"
+          "weight": 4.2
         }
       },
       {
@@ -1519,7 +1499,7 @@
         "t": 36,
         "v": {
           "interaction": "interacts",
-          "weight": "4.25"
+          "weight": 4.25
         }
       },
       {
@@ -1528,7 +1508,7 @@
         "t": 37,
         "v": {
           "interaction": "binds",
-          "weight": "4.30"
+          "weight": 4.3
         }
       },
       {
@@ -1537,7 +1517,7 @@
         "t": 38,
         "v": {
           "interaction": "regulates",
-          "weight": "4.35"
+          "weight": 4.35
         }
       },
       {
@@ -1546,7 +1526,7 @@
         "t": 39,
         "v": {
           "interaction": "activates",
-          "weight": "4.40"
+          "weight": 4.4
         }
       },
       {
@@ -1555,7 +1535,7 @@
         "t": 40,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.45"
+          "weight": 4.45
         }
       },
       {
@@ -1564,7 +1544,7 @@
         "t": 41,
         "v": {
           "interaction": "interacts",
-          "weight": "4.50"
+          "weight": 4.5
         }
       },
       {
@@ -1573,7 +1553,7 @@
         "t": 42,
         "v": {
           "interaction": "binds",
-          "weight": "4.55"
+          "weight": 4.55
         }
       },
       {
@@ -1582,7 +1562,7 @@
         "t": 43,
         "v": {
           "interaction": "regulates",
-          "weight": "4.60"
+          "weight": 4.6
         }
       },
       {
@@ -1591,7 +1571,7 @@
         "t": 44,
         "v": {
           "interaction": "activates",
-          "weight": "4.65"
+          "weight": 4.65
         }
       },
       {
@@ -1600,7 +1580,7 @@
         "t": 45,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.70"
+          "weight": 4.7
         }
       },
       {
@@ -1609,7 +1589,7 @@
         "t": 46,
         "v": {
           "interaction": "interacts",
-          "weight": "4.75"
+          "weight": 4.75
         }
       },
       {
@@ -1618,7 +1598,7 @@
         "t": 47,
         "v": {
           "interaction": "binds",
-          "weight": "4.80"
+          "weight": 4.8
         }
       },
       {
@@ -1627,7 +1607,7 @@
         "t": 48,
         "v": {
           "interaction": "regulates",
-          "weight": "4.85"
+          "weight": 4.85
         }
       },
       {
@@ -1636,7 +1616,7 @@
         "t": 49,
         "v": {
           "interaction": "activates",
-          "weight": "4.90"
+          "weight": 4.9
         }
       },
       {
@@ -1645,8 +1625,16 @@
         "t": 0,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.95"
+          "weight": 4.95
         }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

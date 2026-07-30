@@ -80,7 +80,7 @@ Feature/
 
 Key feature modules:
 
-- `AppShell` — Main container, initialization, URL parameter processing
+- `AppShell` — Main container (toolbar + routed content). Startup itself lives in `src/boot/steps/`
 - `NetworkPanel/CyjsRenderer` — Cytoscape.js rendering engine
 - `Vizmapper` — Visual style mapping interface
 - `TableBrowser` — Node/edge data table browsing
@@ -111,7 +111,7 @@ export { NetworkFn as default }
 ### Zustand Store Patterns
 
 - **Middleware Stack:** All stores use Immer middleware. Persisted stores with subscriptions use: `create(subscribeWithSelector(immer<StoreType>(persist((set, get) => ({ ... })))))`
-- **`enableMapSet()` (CRITICAL):** Must be called before Immer can handle Map/Set. Already done in `src/init.tsx` (app) and `vitest-setup.ts` (tests). **If you create a new standalone test entry point, you MUST include this call or tests will fail with cryptic errors.**
+- **`enableMapSet()` (CRITICAL):** Must be called before Immer can handle Map/Set. Already done in `src/boot/bootstrap.tsx` (app) and `vitest-setup.ts` (tests). **If you create a new standalone test entry point, you MUST include this call or tests will fail with cryptic errors.**
 - **IndexedDB Persistence:** Stores use a custom `persist` wrapper that auto-saves to IndexedDB. Before saving, proxy objects must be converted with `toPlainObject()` from `src/data/db/serialization/`. Specialized serializers exist: `serializeTable`, `serializeVisualStyle`, `serializeNetworkView` for Map-based data.
 - **Cross-Store Communication:** Inside store actions, access other stores via `useXxxStore.getState()` — not hooks. Hooks are for React components only.
 
@@ -197,6 +197,22 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 - `npm run test:e2e` - Run Playwright end-to-end tests (all browsers)
 - `npm run test:e2e:chromium` - Run Playwright end-to-end tests (Chromium only; used by `npm test`)
 
+**Agents must not run the whole e2e suite locally.** Full-suite runs are flaky under
+worker contention and take minutes to tell you little, so `.claude/settings.json`
+denies `npm test`, `npm run test:e2e`, `npm run test:e2e:chromium`, and a bare
+`npx playwright test` — CI owns the full suite. Running the **one or few specs that
+cover the change in hand** is fine and encouraged:
+`npx playwright test <spec-name> --project=chromium`. Keep the scope to the change;
+`npm run test:unit` and `npm run lint` remain the local gates for everything else.
+
+**Port 5500 must be free before an e2e run.** Playwright builds the app and serves
+it with `vite preview` on 5500 — the port Keycloak's client registration expects —
+and checks the port before starting, so a dev server there fails the run with
+"already used". **Agents:** check for a listener on 5500 first and, if it is a dev
+server the user started, ask before stopping it; never kill it silently. Use
+`E2E_DEV=1` to run against an existing dev server instead, at the cost of a
+flakier suite. See `test/playwright/README.md`.
+
 **Code Quality:**
 
 - `npm run lint` - Lint TypeScript/JavaScript files in src/
@@ -247,7 +263,8 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 | `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                           |
 | `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                         |
 | `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                                 |
-| `src/init.tsx`            | App initialization (calls `enableMapSet()`, sets up logging)                                                                                                                                        |
+| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                                          |
+| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                                       |
 
 **Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
 
@@ -268,6 +285,7 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 Read these before working in related areas:
 
+- `docs/specifications/STARTUP_SPECIFICATION.md` — boot phase contract, failure policy, timing milestones
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
@@ -279,13 +297,14 @@ Read these before working in related areas:
 - `docs/prompts/playwright-test-healer.md` — Fixing broken E2E tests
 - `docs/prompts/code-quality-for-testing-behaviour.md` — Adding `data-testid`, documentation, linting
 - `docs/prompts/code-quality-testing-refactoring.md` — Extracting hooks, adding unit tests
+- `src/boot/boot_docs/boot.md` — startup directory map and design reasoning
 - `src/app-api/CLAUDE.md` — App API architecture, two-layer pattern, event bus
 
 ---
 
 ## 7. Special Considerations
 
-- **`enableMapSet()`** — Must be called before Immer can handle Map/Set. Already done in `src/init.tsx` and `vitest-setup.ts`. **If you create a new standalone test entry point, include it.**
+- **`enableMapSet()`** — Must be called before Immer can handle Map/Set. Already done in `src/boot/bootstrap.tsx` and `vitest-setup.ts`. **If you create a new standalone test entry point, include it.**
 - **`zod`** — Available as a dependency for runtime validation.
 - **`validateCX2()`** — Required for all external CX2 data before processing.
 - **NDEx Dev Server** — `config.json` points to `dev1.ndexbio.org` by default.

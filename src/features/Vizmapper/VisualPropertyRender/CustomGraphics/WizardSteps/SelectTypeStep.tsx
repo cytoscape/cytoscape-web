@@ -1,24 +1,33 @@
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
+import ImageIcon from '@mui/icons-material/Image'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import { Alert,Box, Typography } from '@mui/material'
 import * as React from 'react'
 
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { AUTHORABLE_CUSTOM_GRAPHIC_KINDS } from '../utils/constants'
 
 export type CustomGraphicKind =
   | typeof CustomGraphicsNameType.PieChart
   | typeof CustomGraphicsNameType.RingChart
+  | typeof CustomGraphicsNameType.Image
 
 interface SelectTypeStepProps {
   selectedKind: CustomGraphicKind
   onKindChange: (kind: CustomGraphicKind) => void
   hasNumericProperties?: boolean
+  /**
+   * Kinds to offer. Defaults to the authorable set, which excludes Image —
+   * callers editing a value that is already an image must pass it explicitly.
+   */
+  availableKinds?: readonly CustomGraphicKind[]
 }
 
 export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
   selectedKind,
   onKindChange,
   hasNumericProperties = true,
+  availableKinds = AUTHORABLE_CUSTOM_GRAPHIC_KINDS,
 }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -39,27 +48,25 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
           justifyContent: 'space-around',
           alignItems: 'center',
           py: 4,
-          opacity: hasNumericProperties ? 1 : 0.5,
-          pointerEvents: hasNumericProperties ? 'auto' : 'none',
         }}
       >
-        {(
-          [
-            CustomGraphicsNameType.PieChart,
-            CustomGraphicsNameType.RingChart,
-          ] as const
-        ).map((k) => {
+        {availableKinds.map((k) => {
           const selected = selectedKind === k
           const Icon =
             k === CustomGraphicsNameType.PieChart
               ? PieChartIcon
-              : DonutLargeIcon
+              : k === CustomGraphicsNameType.RingChart
+                ? DonutLargeIcon
+                : ImageIcon
+          
+          const isDisabled = k !== CustomGraphicsNameType.Image && !hasNumericProperties
+
           return (
             <Box
               key={k}
-              onClick={() => hasNumericProperties && onKindChange(k)}
+              onClick={() => !isDisabled && onKindChange(k)}
               sx={{
-                cursor: hasNumericProperties ? 'pointer' : 'not-allowed',
+                cursor: !isDisabled ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -68,7 +75,8 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
                 border: selected ? 2 : 1,
                 borderColor: selected ? 'primary.main' : 'grey.300',
                 bgcolor: selected ? 'action.selected' : 'transparent',
-                '&:hover': hasNumericProperties ? { opacity: 0.8 } : {},
+                opacity: isDisabled ? 0.5 : 1,
+                '&:hover': !isDisabled ? { opacity: 0.8 } : {},
               }}
             >
               <Box
@@ -87,7 +95,9 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
               <Typography fontSize="1rem">
                 {k === CustomGraphicsNameType.PieChart
                   ? 'Pie Chart'
-                  : 'Donut Chart'}
+                  : k === CustomGraphicsNameType.RingChart
+                    ? 'Donut Chart'
+                    : 'Image URL'}
               </Typography>
             </Box>
           )

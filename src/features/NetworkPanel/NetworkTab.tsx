@@ -4,6 +4,7 @@ import { MouseEvent, ReactElement } from 'react'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { FloatingToolBar } from '../FloatingToolBar'
+import { FloatingLayoutToolsPanel } from '../LayoutTools/FloatingLayoutToolsPanel'
 
 interface NetworkTabProps {
   network: Network
@@ -41,9 +42,15 @@ export const NetworkTab = ({
         height: '100%',
         width: '100%',
         backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
-        border: (theme) =>  isActive ? `3px solid ${theme.palette.secondary.main}` : '0px solid transparent',
+        border: (theme) =>
+          isActive
+            ? `3px solid ${theme.palette.secondary.main}`
+            : '0px solid transparent',
         // Adjust the hidden bottom border to be 4px
-        borderBottom: (theme) => isActive ? `4px solid ${theme.palette.secondary.main}` : '4px solid transparent',
+        borderBottom: (theme) =>
+          isActive
+            ? `4px solid ${theme.palette.secondary.main}`
+            : '4px solid transparent',
         // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
@@ -60,14 +67,15 @@ export const NetworkTab = ({
           const isMenu = target.closest('[role="menu"]') !== null
           const isMenuItem = target.closest('[role="menuitem"]') !== null
           const isDialog = target.closest('[role="dialog"]') !== null
-          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
-                                 target.closest('.MuiDialog-root button') !== null
-          
+          const isDialogButton =
+            target.closest('[role="dialog"] button') !== null ||
+            target.closest('.MuiDialog-root button') !== null
+
           // Never intercept menu, menu item, or dialog clicks
           if (isMenu || isMenuItem || isDialog || isDialogButton) {
             return
           }
-          
+
           if (!isActive) {
             event.stopPropagation()
             handleClick?.()
@@ -80,14 +88,15 @@ export const NetworkTab = ({
           const isMenu = target.closest('[role="menu"]') !== null
           const isMenuItem = target.closest('[role="menuitem"]') !== null
           const isDialog = target.closest('[role="dialog"]') !== null
-          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
-                                 target.closest('.MuiDialog-root button') !== null
-          
+          const isDialogButton =
+            target.closest('[role="dialog"] button') !== null ||
+            target.closest('.MuiDialog-root button') !== null
+
           // Never intercept menu, menu item, or dialog clicks
           if (isMenu || isMenuItem || isDialog || isDialogButton) {
             return
           }
-          
+
           if (!isActive) {
             event.stopPropagation()
             return
@@ -98,6 +107,7 @@ export const NetworkTab = ({
         {rendererComponent}
       </Box>
       <FloatingToolBar rendererId={renderer.id} />
+      <FloatingLayoutToolsPanel />
     </Box>
   )
 }

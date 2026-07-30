@@ -5,6 +5,7 @@ import { IdType } from '../../../models/IdType'
 import NetworkFn from '../../../models/NetworkModel'
 import { EdgeView,NetworkView, NodeView } from '../../../models/ViewModel'
 import { createViewModel } from '../../../models/ViewModel/impl/viewModelImpl'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useViewModelStore } from './ViewModelStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
@@ -201,7 +202,11 @@ describe('useViewModelStore', () => {
       expect(viewModel).toBeUndefined()
     })
 
-    it('should return view model by viewModelId', () => {
+    // REVIEW.md round-2 P2: getViewModel used to match on `view.id` — the
+    // NETWORK id, identical for every view of the network — so a specific
+    // secondary view could never be addressed. It must match on `viewId`.
+    // (This spec previously ASSERTED the broken behavior.)
+    it('should return the specific view matching the given viewId', () => {
       const { result } = renderHook(() => useViewModelStore())
       const networkId: IdType = 'network-1'
       const networkView1 = createTestNetworkView('network-1', 'network-1-nodeLink-1')
@@ -212,11 +217,12 @@ describe('useViewModelStore', () => {
         result.current.add(networkId, networkView2)
       })
 
-      // getViewModel uses 'id' not 'viewId' for matching
-      const viewModel = result.current.getViewModel(networkId, 'network-1')
+      const viewModel = result.current.getViewModel(
+        networkId,
+        'network-1-nodeLink-2',
+      )
       expect(viewModel).toBeDefined()
-      // Both views have the same id ('network-1'), so it returns the first one
-      expect(viewModel?.id).toBe('network-1')
+      expect(viewModel?.viewId).toBe('network-1-nodeLink-2')
     })
 
     it('should return undefined if viewModelId not found', () => {
@@ -828,6 +834,67 @@ describe('useViewModelStore', () => {
         result.current.deleteObjects(networkId, ['n3'])
       })
       expect(result.current.viewModels[networkId][0].nodeViews['n3']).toBeUndefined()
+    })
+  })
+
+  // REVIEW.md R2-2: the persist wrapper used to key the DB write off
+  // workspace.currentNetworkId (mocked here as 'test-network-1') instead of
+  // the network the action actually mutated — e.g. positions computed for a
+  // network the user had already switched away from were never persisted.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network views even when it is not the current network', async () => {
+      const { putNetworkViewsToDb } = await import('../../db')
+      const { result } = renderHook(() => useViewModelStore())
+      const networkView = createTestNetworkView('other-network')
+
+      act(() => {
+        result.current.add('other-network', networkView)
+      })
+      flushPendingWrites()
+      vi.mocked(putNetworkViewsToDb).mockClear()
+
+      act(() => {
+        result.current.exclusiveSelect('other-network', ['n1'], [])
+      })
+      flushPendingWrites()
+
+      expect(putNetworkViewsToDb).toHaveBeenCalled()
+      const lastCall = vi.mocked(putNetworkViewsToDb).mock.calls.at(-1)
+      expect(lastCall?.[0]).toBe('other-network')
+      expect(lastCall?.[1][0].selectedNodes).toEqual(['n1'])
+    })
+
+    it('never writes circlePacking views to the DB (stated storage policy)', async () => {
+      const { putNetworkViewsToDb } = await import('../../db')
+      const { result } = renderHook(() => useViewModelStore())
+      const primary = createTestNetworkView('net-cp', 'net-cp-nodeLink-1')
+      const circlePacking = createTestNetworkView(
+        'net-cp',
+        'net-cp-circlePacking-1',
+      )
+      ;(circlePacking as any).type = 'circlePacking'
+
+      act(() => {
+        result.current.add('net-cp', primary)
+        result.current.add('net-cp', circlePacking)
+      })
+      flushPendingWrites()
+      vi.mocked(putNetworkViewsToDb).mockClear()
+
+      act(() => {
+        result.current.exclusiveSelect('net-cp', ['n1'], [])
+      })
+      flushPendingWrites()
+
+      const persistedLists = vi
+        .mocked(putNetworkViewsToDb)
+        .mock.calls.map((call) => call[1])
+      expect(persistedLists.length).toBeGreaterThan(0)
+      for (const views of persistedLists) {
+        expect(
+          views.every((view: any) => view.type !== 'circlePacking'),
+        ).toBe(true)
+      }
     })
   })
 })

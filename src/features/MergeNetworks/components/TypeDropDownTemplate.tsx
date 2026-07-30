@@ -1,6 +1,7 @@
 import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
 import React from 'react'
 
+import { ValueTypeNameChip } from '../../../components/ValueTypeNameChip'
 import { ValueTypeName } from '../../../models/TableModel'
 import { TableView } from '../models/DataInterfaceForMerge'
 import { MatchingTableRow } from '../models/MatchingTable'
@@ -26,7 +27,7 @@ export const TypeDropDownTemplate = React.memo(
         .map((pair) => rowData.typeRecord[pair[1]]),
     )
     const typeOptions = getAllConvertiableTypes(typeLst).map((type) => ({
-      label: type,
+      type,
       value: type,
     }))
     // Call every store hook unconditionally (Rules of Hooks), then pick the
@@ -56,13 +57,18 @@ export const TypeDropDownTemplate = React.memo(
         <Select
           data-testid={`merge-type-dropdown-${rowData.id}`}
           labelId={`select-label-${rowData.id}-type`}
+          size="small"
           value={rowData.type}
           onChange={(e) => onDropDownChange(e, rowData)}
           style={{ minWidth: 100, maxWidth: 200 }}
         >
           {typeOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
-              {option.label}
+              <ValueTypeNameChip
+                type={option.type}
+                variant="chip-and-text"
+                showTooltip={false}
+              />
             </MenuItem>
           ))}
         </Select>

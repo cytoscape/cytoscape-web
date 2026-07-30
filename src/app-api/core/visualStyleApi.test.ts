@@ -991,7 +991,7 @@ describe('createContinuousMapping', () => {
       'net1',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'score',
         attributeValues: [0, 50, 100],
         attributeType: 'double',
@@ -1002,7 +1002,7 @@ describe('createContinuousMapping', () => {
     expect(mockCreateContinuousMapping).toHaveBeenCalledWith(
       'net1',
       VPN.NodeHeight,
-      'double',
+      'number',
       'score',
       [0, 50, 100],
       'double',
@@ -1014,7 +1014,7 @@ describe('createContinuousMapping', () => {
       'missing',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'score',
         attributeValues: [],
         attributeType: 'double',
@@ -1035,7 +1035,7 @@ describe('createContinuousMapping', () => {
     declareColumns([{ name: 'score', type: 'double' }])
 
     visualStyleApi.createContinuousMapping('net1', VPN.NodeHeight, {
-      vpType: 'double',
+      vpType: 'number',
       attribute: 'score',
       attributeValues: [0, 50, 100],
       attributeType: 'double',
@@ -1069,7 +1069,7 @@ describe('createContinuousMapping', () => {
     ]
 
     visualStyleApi.createContinuousMapping('net1', VPN.NodeHeight, {
-      vpType: 'double',
+      vpType: 'number',
       attribute: 'score',
       attributeValues: [0, 50, 100],
       attributeType: 'double',
@@ -1126,7 +1126,7 @@ describe('createContinuousMapping', () => {
     declareColumns([{ name: 'score', type: 'double' }])
 
     visualStyleApi.createContinuousMapping('net1', VPN.NodeHeight, {
-      vpType: 'double',
+      vpType: 'number',
       attribute: 'score',
       attributeValues: [0, 50, 100],
       attributeType: 'double',
@@ -1159,7 +1159,7 @@ describe('createContinuousMapping', () => {
       'net1',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'score',
         attributeValues: ['low', 'high'] as any,
         attributeType: 'double',
@@ -1183,7 +1183,7 @@ describe('createContinuousMapping', () => {
       'net1',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'score',
         attributeValues: [0, NaN, Infinity],
         attributeType: 'double',
@@ -1206,7 +1206,7 @@ describe('createContinuousMapping', () => {
       'net1',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'score',
         attributeValues: [],
         attributeType: 'double',
@@ -1229,7 +1229,7 @@ describe('createContinuousMapping', () => {
       'net1',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'score',
         attributeValues: [0, 100],
         attributeType: 'double',
@@ -1257,7 +1257,7 @@ describe('createContinuousMapping', () => {
       'net1',
       VPN.NodeHeight,
       {
-        vpType: 'double',
+        vpType: 'number',
         attribute: 'label',
         attributeValues: ['a', 'b'],
         attributeType: 'string',

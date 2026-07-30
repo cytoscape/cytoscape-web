@@ -1,7 +1,7 @@
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload'
 import { ReactElement, useContext } from 'react'
 
-import { KeycloakContext } from '../../../init/keycloak'
+import { KeycloakContext } from '@/boot/keycloak'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 

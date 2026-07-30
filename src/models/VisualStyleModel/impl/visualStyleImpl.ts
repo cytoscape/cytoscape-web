@@ -13,6 +13,7 @@ import {
   VisualStyle,
 } from '..'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { getDiscreteVpValues } from './discreteVpValues'
 
 /**
  * Set the default value for a visual property
@@ -420,7 +421,44 @@ export const createContinuousMapping = (
     }
   }
 
-  // Return unchanged if vpType is not Color or Number
+  // CW-569: discrete-valued visual properties (edge line type, node shape, etc.)
+  // get a step-function continuous mapping seeded with a few distinct values.
+  const discreteValues = getDiscreteVpValues(vpType)
+  if (discreteValues.length > 0) {
+    const minValue = attributeValues[0] as number
+    const maxValue = attributeValues[attributeValues.length - 1] as number
+    const midValue = (minValue + maxValue) / 2
+
+    const lowVp = discreteValues[0]
+    const midVp = discreteValues[Math.floor(discreteValues.length / 2)]
+    const highVp = discreteValues[discreteValues.length - 1]
+
+    const continuousMapping: ContinuousMappingFunction = {
+      attribute: attributeName,
+      type: MappingFunctionType.Continuous,
+      min: { value: minValue, vpValue: lowVp, inclusive: false },
+      max: { value: maxValue, vpValue: highVp, inclusive: false },
+      controlPoints: [
+        { value: minValue, vpValue: lowVp },
+        { value: midValue, vpValue: midVp },
+        { value: maxValue, vpValue: highVp },
+      ],
+      visualPropertyType: type,
+      defaultValue,
+      ltMinVpValue: lowVp,
+      gtMaxVpValue: highVp,
+    }
+
+    return {
+      ...visualStyle,
+      [vpName]: {
+        ...visualProperty,
+        mapping: continuousMapping,
+      },
+    }
+  }
+
+  // Return unchanged if the vpType does not support a continuous mapping
   return visualStyle
 }
 

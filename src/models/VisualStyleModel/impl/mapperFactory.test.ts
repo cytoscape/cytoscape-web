@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ValueTypeName } from '../../TableModel'
 import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
+import { Mapper } from '../VisualMappingFunction/Mapper'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import {
   createContinuousMapper,
@@ -101,6 +102,33 @@ describe('MapperFactory', () => {
       expect(mapper(true)).toBe('#FF0000')
       expect(mapper(false)).toBe('#00FF00')
     })
+
+    // CW-659: a discrete mapping keyed on a list attribute (e.g. list_of_string)
+    // must key off the first element of the list, matching Cytoscape Desktop.
+    it('should use the first element of a list attribute value', () => {
+      const vpValueMap = new Map<string, string>([
+        ['pp', 'diamond'],
+        ['pd', 'ellipse'],
+      ])
+
+      const mapping: DiscreteMappingFunction = {
+        type: MappingFunctionType.Discrete,
+        attribute: 'Interactor Type',
+        vpValueMap,
+        visualPropertyType: VisualPropertyValueTypeName.NodeShape,
+        defaultValue: 'rectangle',
+        attributeType: ValueTypeName.ListString,
+      }
+
+      const mapper = createDiscreteMapper(mapping)
+
+      expect(mapper(['pp', 'pd'])).toBe('diamond')
+      expect(mapper(['pd'])).toBe('ellipse')
+      // Unmapped first element falls back to the default
+      expect(mapper(['unknown', 'pp'])).toBe('rectangle')
+      // Empty list falls back to the default
+      expect(mapper([])).toBe('rectangle')
+    })
   })
 
   describe('createPassthroughMapper', () => {
@@ -167,6 +195,145 @@ describe('MapperFactory', () => {
       // Should normalize string boolean values
       expect(mapper('true')).toBe('element')
       expect(mapper('false')).toBe('none')
+    })
+
+    describe('CustomGraphic Passthrough', () => {
+      let mapping: PassthroughMappingFunction
+      let mapper: Mapper
+
+      beforeEach(() => {
+        mapping = {
+          type: MappingFunctionType.Passthrough,
+          attribute: 'image',
+          visualPropertyType: VisualPropertyValueTypeName.CustomGraphic,
+          defaultValue: { type: 'none', name: 'none', properties: {} } as any,
+          attributeType: ValueTypeName.String,
+        }
+        mapper = createPassthroughMapper(mapping)
+      })
+
+      it('should parse HTTP/HTTPS URLs to images', () => {
+        const url1 = 'https://example.com/img.png'
+        const url2 = 'http://example.com/img.png'
+        expect(mapper(url1)).toMatchObject({ type: 'image', properties: { url: url1 } })
+        expect(mapper(url2)).toMatchObject({ type: 'image', properties: { url: url2 } })
+      })
+
+      it('should parse data URIs to images', () => {
+        const dataUri = 'data:image/png;base64,iVBOR...'
+        expect(mapper(dataUri)).toMatchObject({ type: 'image', properties: { url: dataUri } })
+      })
+
+      it('should parse raw SVGs to images with data URI', () => {
+        const svg = '<svg><rect/></svg>'
+        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent(svg)
+        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+      })
+
+      it('should parse SVGs with leading whitespace', () => {
+        const svg = '  <svg><rect/></svg>  '
+        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent('<svg><rect/></svg>')
+        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+      })
+
+      it('should reject file: URLs and return default', () => {
+        const result = mapper('file:/Users/foo/img.png')
+        expect(result).toEqual(mapping.defaultValue)
+      })
+
+      it('should reject blob: URLs and return default', () => {
+        const result = mapper('blob:http://localhost/abc-123')
+        expect(result).toEqual(mapping.defaultValue)
+      })
+
+      it('should parse valid pie JSON to pie chart', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"]}'
+        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.PieChart', properties: { cy_dataColumns: ["a"] } })
+      })
+
+      it('should parse valid ring JSON to ring chart', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"],"cy_holeSize":0.4}'
+        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.RingChart', properties: { cy_holeSize: 0.4 } })
+      })
+
+      it('should return default for malformed JSON', () => {
+        expect(mapper('{ broken json')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for valid JSON but wrong shape', () => {
+        expect(mapper('{"foo":"bar"}')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for empty string', () => {
+        expect(mapper('')).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for null/undefined', () => {
+        expect(mapper(null as any)).toEqual(mapping.defaultValue)
+        expect(mapper(undefined as any)).toEqual(mapping.defaultValue)
+      })
+
+      it('should return default for unrecognized strings', () => {
+        expect(mapper('not-a-url')).toEqual(mapping.defaultValue)
+      })
+
+      // Cytoscape Desktop uses a different custom-graphics factory for vector (SVG)
+      // vs. raster images. The mapper must pick the right class from the content so
+      // the graphic round-trips to Desktop instead of rendering as a "?" placeholder.
+      it('should label raster URLs as the bitmap image class', () => {
+        expect(mapper('https://example.com/img.png')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        })
+        expect(mapper('data:image/png;base64,iVBOR...')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        })
+      })
+
+      it('should label SVG content as the SVG image class', () => {
+        expect(mapper('<svg><rect/></svg>')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+        expect(mapper('https://example.com/icon.svg')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+        expect(mapper('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')).toMatchObject({
+          name: 'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+        })
+      })
+    })
+
+    // CW-517: passthrough mappings on node shape / edge line type authored in
+    // Desktop use non-canonical value casing; the mapper should reconcile them.
+    it('should normalize node shape passthrough values', () => {
+      const mapping: PassthroughMappingFunction = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'shape',
+        visualPropertyType: VisualPropertyValueTypeName.NodeShape,
+        defaultValue: 'rectangle',
+        attributeType: ValueTypeName.String,
+      }
+
+      const mapper = createPassthroughMapper(mapping)
+
+      expect(mapper('Diamond')).toBe('diamond')
+      expect(mapper('Round Rectangle')).toBe('round-rectangle')
+      expect(mapper('ellipse')).toBe('ellipse')
+    })
+
+    it('should normalize edge line type passthrough values', () => {
+      const mapping: PassthroughMappingFunction = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'lineStyle',
+        visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+        defaultValue: 'solid',
+        attributeType: ValueTypeName.String,
+      }
+
+      const mapper = createPassthroughMapper(mapping)
+
+      expect(mapper('Dashed')).toBe('dashed')
+      expect(mapper('DOTTED')).toBe('dotted')
+      expect(mapper('EQUAL_DASH')).toBe('dashed')
     })
   })
 
@@ -266,6 +433,79 @@ describe('MapperFactory', () => {
       expect(mapper(-10)).toBe(5)
       // Test with value above max
       expect(mapper(150)).toBe(50)
+    })
+
+    // CW-569: continuous mappings on discrete-valued VPs (e.g. edge line type)
+    // must apply a step function instead of returning the default value.
+    it('applies a step function for discrete-valued visual properties', () => {
+      const mapping: ContinuousMappingFunction = {
+        type: MappingFunctionType.Continuous,
+        attribute: 'weight',
+        visualPropertyType: VisualPropertyValueTypeName.EdgeLine,
+        defaultValue: 'solid',
+        attributeType: ValueTypeName.Double,
+        min: { value: 0, vpValue: 'solid', inclusive: false },
+        max: { value: 100, vpValue: 'dashed', inclusive: false },
+        controlPoints: [
+          { value: 0, vpValue: 'solid' },
+          { value: 50, vpValue: 'dotted' },
+          { value: 100, vpValue: 'dashed' },
+        ],
+        ltMinVpValue: 'solid',
+        gtMaxVpValue: 'dashed',
+      }
+
+      const mapper = createContinuousMapper(mapping)
+
+      expect(mapper(0)).toBe('solid')
+      expect(mapper(25)).toBe('solid') // below the 50 threshold
+      expect(mapper(50)).toBe('dotted') // reaches the 50 threshold
+      expect(mapper(75)).toBe('dotted') // between 50 and 100
+      expect(mapper(100)).toBe('dashed')
+      // out of range uses lt/gt values
+      expect(mapper(-5)).toBe('solid')
+      expect(mapper(200)).toBe('dashed')
+    })
+  })
+
+  // REVIEW.md R2-20 (mapper half): `attrValue !== undefined` let null
+  // through — `null < min` coerces null to 0, returning ltMinVpValue
+  // instead of the default; NaN fell through every comparison into the d3
+  // scale, which returned undefined as a "visual property value".
+  describe('continuous mapper missing-value handling (regression: R2-20)', () => {
+    const mapping: ContinuousMappingFunction = {
+      type: MappingFunctionType.Continuous,
+      attribute: 'score',
+      visualPropertyType: VisualPropertyValueTypeName.Number,
+      defaultValue: 99,
+      attributeType: ValueTypeName.Double,
+      min: { value: 10, vpValue: 1, inclusive: true },
+      max: { value: 100, vpValue: 50, inclusive: true },
+      controlPoints: [{ value: 50, vpValue: 25 }],
+      ltMinVpValue: 1,
+      gtMaxVpValue: 50,
+    }
+
+    it('maps null to the default value, not ltMinVpValue', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper(null as any)).toBe(99)
+    })
+
+    it('maps NaN to the default value, never undefined', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper(NaN)).toBe(99)
+    })
+
+    it('maps a non-numeric string to the default value', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper('not a number')).toBe(99)
+    })
+
+    it('still maps in-range and out-of-range numbers normally', () => {
+      const mapper = createContinuousMapper(mapping)
+      expect(mapper(50)).toBe(25)
+      expect(mapper(0)).toBe(1)
+      expect(mapper(200)).toBe(50)
     })
   })
 })

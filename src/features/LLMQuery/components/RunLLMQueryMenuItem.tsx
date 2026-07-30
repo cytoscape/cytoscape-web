@@ -1,5 +1,5 @@
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
-import { ReactElement } from 'react'
+import { ReactElement, ReactNode } from 'react'
 
 import { fetchGeneNamesFromIds } from '../../../data/external-api/ndex'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
@@ -22,6 +22,7 @@ import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
 import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { useLLMQueryStore } from '../store'
+import { HcxDisabledTooltip } from './HcxDisabledTooltip'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
@@ -177,13 +178,15 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
     setLoading(false)
   }
 
-  let tooltipTitle = ''
+  let tooltipTitle: ReactNode = ''
   if (disabled) {
-    tooltipTitle = loading
-      ? 'Generating response...'
-      : LLMApiKey === ''
-        ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
-        : 'LLM query is only available for HCX networks'
+    tooltipTitle = loading ? (
+      'Generating response...'
+    ) : LLMApiKey === '' ? (
+      'Enter your OpenAI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
+    ) : (
+      <HcxDisabledTooltip />
+    )
   }
 
   return (

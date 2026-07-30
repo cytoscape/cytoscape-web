@@ -4,11 +4,10 @@
  * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
  * This cyweb/ViewModelStore Module Federation export will be removed after 2 release cycles.
  */
-import { create, StateCreator, StoreApi } from 'zustand'
+import { create, StateCreator } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
-import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { ViewModelStore } from '../../../models/StoreModel/ViewModelStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
@@ -17,40 +16,27 @@ import {
   clearNetworkViewsFromDb,
   deleteNetworkViewsFromDb,
   putNetworkViewsToDb,
-  putNetworkViewToDb,
 } from '../../db'
-import { useWorkspaceStore } from './WorkspaceStore'
+import { persistNetworkSlices } from './persistNetworkSlices'
 
 // Re-export for compatibility
 export const DEF_VIEW_TYPE = ViewModelImpl.DEF_VIEW_TYPE
 export const getNetworkViewId = ViewModelImpl.getNetworkViewId
 
-const persist =
-  (config: StateCreator<ViewModelStore>) =>
-  (
-    set: StoreApi<ViewModelStore>['setState'],
-    get: StoreApi<ViewModelStore>['getState'],
-    api: StoreApi<ViewModelStore>,
-  ) =>
-    config(
-      async (args) => {
-        logStore.info('[ViewModelStore]: Persisting view model store')
-        const last = get()
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-        set(args)
-        const updated: NetworkView[] | undefined =
-          get().viewModels[currentNetworkId]
-        const deleted: boolean = updated === undefined
-        const lastModel: NetworkView[] | undefined =
-          last.viewModels[currentNetworkId]
-        if (!deleted && lastModel !== undefined) {
-          void putNetworkViewsToDb(currentNetworkId, updated).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+const persist = (config: StateCreator<ViewModelStore>) =>
+  persistNetworkSlices<ViewModelStore, NetworkView[]>(config, {
+    label: 'ViewModelStore',
+    selectSlices: (state) => state.viewModels,
+    putSlice: (networkId, views) => {
+      // Store only default view types (node-link diagram); circlePacking
+      // views are derived and must never reach IndexedDB
+      const persistable = views.filter((view) => view.type !== 'circlePacking')
+      if (persistable.length === 0) {
+        return Promise.resolve()
+      }
+      return putNetworkViewsToDb(networkId, persistable)
+    },
+  })
 
 export const useViewModelStore = create(
   subscribeWithSelector(
@@ -105,11 +91,6 @@ export const useViewModelStore = create(
               state.viewModels[networkId] = [networkView]
             }
 
-            const viewType = networkView.type
-            if (viewType !== 'circlePacking') {
-              // Store only default view type (node-link diagram) only.
-              void putNetworkViewToDb(networkId, networkView).then(() => {})
-            }
             return state
           })
         },
@@ -127,7 +108,10 @@ export const useViewModelStore = create(
             // return the first view model if no ID is given
             return viewList[0]
           }
-          return viewList.find((view) => view.id === viewModelId)
+          // Match on viewId: view.id is the NETWORK id, identical for every
+          // view of the network, so matching on it could never address a
+          // specific secondary view (REVIEW.md round-2 P2)
+          return viewList.find((view) => view.viewId === viewModelId)
         },
 
         exclusiveSelect: (

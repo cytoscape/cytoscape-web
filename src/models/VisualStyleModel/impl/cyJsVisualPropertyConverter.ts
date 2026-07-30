@@ -1,3 +1,4 @@
+import { logModel } from '../../../debug'
 import { VisualPropertyName } from '..'
 import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './customGraphicsImpl'
 import {
@@ -104,7 +105,7 @@ export const getPieBackgroundColorCyJsProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.info(
       `[cyJsVisualPropertyConverter] getPieBackgroundColorCyJsProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -118,7 +119,7 @@ export const getPieBackgroundSizeCyJsProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.info(
       `[cyJsVisualPropertyConverter] getPieBackgroundSizeCyJsProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }

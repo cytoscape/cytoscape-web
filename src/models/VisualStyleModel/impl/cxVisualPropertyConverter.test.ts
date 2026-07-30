@@ -56,6 +56,41 @@ describe('cxVisualPropertyConverter', () => {
 
       expect(result).toBe(100)
     })
+
+    it('should export custom-graphic sizes as floating-point strings for Desktop', () => {
+      // Desktop's CX2 importer casts NODE_CUSTOMGRAPHICS_SIZE to Double; a JSON integer
+      // (50) throws ClassCastException, so we emit "50.0".
+      expect(vpToCX('nodeImageChartSize1', 50)).toBe('50.0')
+    })
+
+    it('should label raster image custom graphics as the bitmap class', () => {
+      const cg = {
+        type: 'image',
+        name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        properties: { url: 'https://example.com/pic.png' },
+      }
+      const result = vpToCX('nodeImageChart1', cg as any) as any
+      expect(result.name).toBe(
+        'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+      )
+      expect(result.properties.tag).toBe('bitmap image')
+      expect(typeof result.properties.id).toBe('number')
+    })
+
+    it('should label SVG image custom graphics as the SVG class', () => {
+      // Even when the stored name is the bitmap class, SVG URL content must be
+      // re-labeled to the SVG factory or Desktop draws a "?" placeholder.
+      const cg = {
+        type: 'image',
+        name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        properties: { url: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E' },
+      }
+      const result = vpToCX('nodeImageChart1', cg as any) as any
+      expect(result.name).toBe(
+        'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+      )
+      expect(result.properties.tag).toBe('vector image')
+    })
   })
 
   describe('convertPassthroughMappingToCX', () => {

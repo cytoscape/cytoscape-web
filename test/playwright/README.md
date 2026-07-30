@@ -62,13 +62,24 @@ await page.locator('[data-id="main-save-button"]').click()
 
 ### Prerequisites
 
-1. Ensure the development server is running:
+None. Playwright starts what it needs: it builds the app and serves it with
+`vite preview` on `http://localhost:5500`, and serves the Module Federation
+fixture remote on `http://localhost:4191`.
 
-   ```bash
-   npm run dev
-   ```
+Because of that, **port 5500 must be free**: if you have a dev server running
+there, the run fails with "already used" rather than silently testing whatever
+that server happens to be serving.
 
-2. The server should be available at `http://localhost:5500`
+To run against the dev server instead of a build — HMR, unminified code, readable
+stack traces, and a server on 5500 reused as-is — set `E2E_DEV`:
+
+```bash
+E2E_DEV=1 npx playwright test --project=chromium
+```
+
+Note that the dev server makes the suite noticeably flakier: the app is served
+as thousands of unbundled modules, and parallel workers all cold-booting it at
+once can push the app past the first assertion's timeout.
 
 ### Run All Tests
 

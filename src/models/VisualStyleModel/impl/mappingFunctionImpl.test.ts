@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { ValueTypeName } from '../../TableModel'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { Column } from '../../TableModel'
 import {
+  resolveMappingColumnChange,
+  supportsContinuousMapping,
   typesCanBeMapped,
   validMappingsForVP,
 } from './mappingFunctionImpl'
@@ -39,17 +42,25 @@ describe('MappingFunctionImpl', () => {
       expect(result.length).toBe(2)
     })
 
-    it('should return discrete and passthrough for node shape visual properties', () => {
+    // CW-569: node shape and edge line type now support continuous mappings.
+    it('should return all mapping types for node shape visual properties', () => {
       const result = validMappingsForVP(VisualPropertyValueTypeName.NodeShape)
 
       expect(result).toContain(MappingFunctionType.Discrete)
       expect(result).toContain(MappingFunctionType.Passthrough)
-      expect(result).not.toContain(MappingFunctionType.Continuous)
-      expect(result.length).toBe(2)
+      expect(result).toContain(MappingFunctionType.Continuous)
     })
 
-    it('should return discrete and passthrough for edge line visual properties', () => {
+    it('should return all mapping types for edge line visual properties', () => {
       const result = validMappingsForVP(VisualPropertyValueTypeName.EdgeLine)
+
+      expect(result).toContain(MappingFunctionType.Discrete)
+      expect(result).toContain(MappingFunctionType.Passthrough)
+      expect(result).toContain(MappingFunctionType.Continuous)
+    })
+
+    it('should return only discrete and passthrough for string visual properties', () => {
+      const result = validMappingsForVP(VisualPropertyValueTypeName.String)
 
       expect(result).toContain(MappingFunctionType.Discrete)
       expect(result).toContain(MappingFunctionType.Passthrough)
@@ -153,6 +164,90 @@ describe('MappingFunctionImpl', () => {
       ).toBe(false)
     })
 
+    // REVIEW.md R2-22: valueType2BaseType wrote the 'boolean' key twice
+    // (ValueTypeName.Boolean and VisualPropertyValueTypeName.Boolean are the
+    // same string), and the second write set it to 'string'. That made ANY
+    // single-value column passthrough-mappable onto boolean visual
+    // properties. The missing `as const` on VisualPropertyValueTypeName
+    // widened the enum type to string, so the Record type could not catch
+    // the duplicate or the missing keys.
+    it('allows passthrough from a boolean column to a boolean visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.Boolean,
+          VisualPropertyValueTypeName.Boolean,
+        ),
+      ).toBe(true)
+    })
+
+    it('rejects passthrough from a number column to a boolean visual property (regression: R2-22)', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.Integer,
+          VisualPropertyValueTypeName.Boolean,
+        ),
+      ).toBe(false)
+    })
+
+    it('rejects passthrough from a string column to a boolean visual property (regression: R2-22)', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.Boolean,
+        ),
+      ).toBe(false)
+    })
+
+    // Image custom graphics are authored ONLY through this passthrough path —
+    // the Vizmapper wizard deliberately offers no image option, because
+    // Cytoscape Desktop cannot render CX2-carried images. Keeping this `true`
+    // is therefore a product decision; a merge that silently flips
+    // valueType2BaseType[CustomGraphic] to null removes the feature.
+    // See docs/design/custom-graphics-image/custom-graphics-image-passthrough.md
+    it('allows passthrough from a string column to a custom graphic visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.CustomGraphic,
+        ),
+      ).toBe(true)
+    })
+
+    // Numeric and boolean columns reach the `singleStringType` rule (their base
+    // type and the custom-graphic base type are both 'string'), but they cannot
+    // hold an image URL or chart JSON, so the mapping must not be offered.
+    it.each([
+      ValueTypeName.Double,
+      ValueTypeName.Integer,
+      ValueTypeName.Long,
+      ValueTypeName.Boolean,
+    ])(
+      'rejects passthrough from a %s column to a custom graphic visual property',
+      (valueTypeName) => {
+        expect(
+          typesCanBeMapped(
+            MappingFunctionType.Passthrough,
+            valueTypeName,
+            VisualPropertyValueTypeName.CustomGraphic,
+          ),
+        ).toBe(false)
+      },
+    )
+
+    it('rejects passthrough from a list column to a custom graphic visual property', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Passthrough,
+          ValueTypeName.ListString,
+          VisualPropertyValueTypeName.CustomGraphic,
+        ),
+      ).toBe(false)
+    })
+
     it('should allow discrete mapping for any types', () => {
       expect(
         typesCanBeMapped(
@@ -177,5 +272,128 @@ describe('MappingFunctionImpl', () => {
       ).toBe(true)
     })
   })
-})
 
+  // CW-569: continuous mappings are allowed on discrete-valued VPs (edge line
+  // type, node shape, etc.) as long as the attribute is numeric.
+  describe('continuous mapping on discrete visual properties', () => {
+    it('supportsContinuousMapping includes discrete-valued VP types', () => {
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.Number),
+      ).toBe(true)
+      expect(supportsContinuousMapping(VisualPropertyValueTypeName.Color)).toBe(
+        true,
+      )
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.EdgeLine),
+      ).toBe(true)
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.NodeShape),
+      ).toBe(true)
+      expect(
+        supportsContinuousMapping(VisualPropertyValueTypeName.String),
+      ).toBe(false)
+    })
+
+    it('validMappingsForVP offers continuous for edge line type', () => {
+      expect(
+        validMappingsForVP(VisualPropertyValueTypeName.EdgeLine),
+      ).toContain(MappingFunctionType.Continuous)
+    })
+
+    it('typesCanBeMapped allows continuous edge line on a numeric attribute', () => {
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Continuous,
+          ValueTypeName.Double,
+          VisualPropertyValueTypeName.EdgeLine,
+        ),
+      ).toBe(true)
+      // still requires a numeric attribute
+      expect(
+        typesCanBeMapped(
+          MappingFunctionType.Continuous,
+          ValueTypeName.String,
+          VisualPropertyValueTypeName.EdgeLine,
+        ),
+      ).toBe(false)
+    })
+  })
+
+  // CW-616 / CW-651: choosing an attribute for a mapping must resolve the type
+  // from the newly selected attribute (not the previously selected one), or a
+  // mapping created from a blank state silently reverts.
+  describe('resolveMappingColumnChange', () => {
+    const columns: Column[] = [
+      { name: 'name', type: ValueTypeName.String },
+      { name: 'score', type: ValueTypeName.Double },
+    ]
+
+    it('creates a passthrough mapping from a blank state', () => {
+      const change = resolveMappingColumnChange(
+        columns,
+        'name',
+        MappingFunctionType.Passthrough,
+        VisualPropertyValueTypeName.String,
+      )
+      expect(change).toEqual({
+        kind: 'create',
+        attributeType: ValueTypeName.String,
+        mappingType: MappingFunctionType.Passthrough,
+      })
+    })
+
+    it('creates a continuous mapping for a compatible numeric attribute', () => {
+      const change = resolveMappingColumnChange(
+        columns,
+        'score',
+        MappingFunctionType.Continuous,
+        VisualPropertyValueTypeName.Number,
+      )
+      expect(change).toEqual({
+        kind: 'create',
+        attributeType: ValueTypeName.Double,
+        mappingType: MappingFunctionType.Continuous,
+      })
+    })
+
+    it('removes the mapping when the attribute type is incompatible', () => {
+      const change = resolveMappingColumnChange(
+        columns,
+        'name',
+        MappingFunctionType.Continuous,
+        VisualPropertyValueTypeName.Number,
+      )
+      expect(change).toEqual({ kind: 'remove' })
+    })
+
+    it('clears when there is no mapping type or no attribute', () => {
+      expect(
+        resolveMappingColumnChange(
+          columns,
+          'name',
+          '',
+          VisualPropertyValueTypeName.String,
+        ),
+      ).toEqual({ kind: 'clear' })
+      expect(
+        resolveMappingColumnChange(
+          columns,
+          '',
+          MappingFunctionType.Passthrough,
+          VisualPropertyValueTypeName.String,
+        ),
+      ).toEqual({ kind: 'clear' })
+    })
+
+    it('clears when the attribute is not in the table', () => {
+      expect(
+        resolveMappingColumnChange(
+          columns,
+          'missing',
+          MappingFunctionType.Passthrough,
+          VisualPropertyValueTypeName.String,
+        ),
+      ).toEqual({ kind: 'clear' })
+    })
+  })
+})

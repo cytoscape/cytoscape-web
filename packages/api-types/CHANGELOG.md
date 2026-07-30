@@ -85,13 +85,24 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ## 1.0.0-beta.3 (2026-07-16)
 
+### Added
+
+- `ElementApi.getEdges(networkId)` — read all edge IDs and endpoints in one
+  call without an additional `getEdge()` round-trip per edge
+- `NetworkApi.createNetworkFromNodeList(...)` — create an induced or explicit
+  subnetwork from a node subset while preserving IDs, attributes, columns, and
+  node positions
+- `TableApi.getColumns(networkId, tableType)` — read table schema without
+  materializing table rows
+- `network:changed` event with added/removed node and edge IDs
+
 ### Changed — BREAKING
 
 - **`ApiErrorCode` (flat enum) removed.** Replaced by domain-grouped code
   catalogs — `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` — each
   a `Record<string, { code, severity, message }>` mirroring a
-  diagnostic-style error model. `ApiError` gains a `severity: 'error' |
-  'warning'` field; `ApiError.cx2Code` (an interim field from a prior
+  diagnostic-style error model. `ApiError` gains a `severity` field whose
+  value is `error` or `warning`; `ApiError.cx2Code` (an interim field from a prior
   beta) is removed now that the primary `code` carries the precise
   identity directly.
 - Codes that enforce a CX2 validation requirement now use the CX2 code
@@ -101,26 +112,61 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 - `fail()` signature changed: `fail(codeDef, ...templateArgs)` replaces
   `fail(code, message, cx2Code?)`. External apps constructing `ApiError`
   values directly (uncommon) must update to the new shape.
+- Boundary validation now rejects invalid element attributes, table schemas and
+  values, visual style values, bypass targets/scopes, and mapping
+  sources/bounds that earlier prereleases could accept.
+- `NetworkApi.deleteNetwork()` now uses the shared network-deletion
+  orchestrator. `DeleteNetworkOptions.navigate` remains in the type for source
+  compatibility but no longer changes behavior: deleting the current network
+  always repairs `currentNetworkId`, while deleting a non-current network does
+  not switch networks.
 
 **Old → new code mapping** (old `ApiErrorCode` member → new catalog entry):
 
-| Old | New |
-| --- | --- |
-| `NetworkNotFound` (`NETWORK_NOT_FOUND`) | `AppCodes.NETWORK_NOT_FOUND` (`APP1`) |
-| `NodeNotFound` (`NODE_NOT_FOUND`) | `ElementCodes.NODE_NOT_FOUND` (`GL1`) |
-| `EdgeNotFound` (`EDGE_NOT_FOUND`) | `ElementCodes.EDGE_NOT_FOUND` (`GL2`) |
-| `ElementNotFound` (`ELEMENT_NOT_FOUND`) | removed — bypass-target checks now return `StyleCodes.BYPASS_TARGET_NOT_FOUND` (`BV1`) directly |
-| `InvalidInput` (`INVALID_INPUT`) | `AppCodes.INVALID_INPUT` (`APP9`) for the residual generic case; many call sites now return a precise code instead (`FK1`, `FK2`, `A6`, `A8`, `A1`, `AC6`, `BV1`, `BV2`, `BV5`, `MC1`, `MI1`, `MI2`, `MI3`, `V7`, `VP1`–`VP10`, `N3`, `E6`) |
-| `InvalidCx2` (`INVALID_CX2`) | `AppCodes.INVALID_CX2` (`APP8`) |
-| `OperationFailed` (`OPERATION_FAILED`) | `AppCodes.OPERATION_FAILED` (`APP3`) |
-| `LayoutEngineNotFound` (`LAYOUT_ENGINE_NOT_FOUND`) | `AppCodes.LAYOUT_ENGINE_NOT_FOUND` (`APP4`) |
-| `FunctionNotAvailable` (`FUNCTION_NOT_AVAILABLE`) | `AppCodes.FUNCTION_NOT_AVAILABLE` (`APP5`) |
-| `NoCurrentNetwork` (`NO_CURRENT_NETWORK`) | `AppCodes.NO_CURRENT_NETWORK` (`APP2`) |
-| `ContextMenuItemNotFound` (`CONTEXT_MENU_ITEM_NOT_FOUND`) | `AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND` (`APP6`) |
-| `ResourceNotFound` (`RESOURCE_NOT_FOUND`) | `AppCodes.RESOURCE_NOT_FOUND` (`APP7`) |
+| Old                                                       | New                                                                                                                                                                                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NetworkNotFound` (`NETWORK_NOT_FOUND`)                   | `AppCodes.NETWORK_NOT_FOUND` (`APP1`)                                                                                                                                                                                                       |
+| `NodeNotFound` (`NODE_NOT_FOUND`)                         | `ElementCodes.NODE_NOT_FOUND` (`GL1`)                                                                                                                                                                                                       |
+| `EdgeNotFound` (`EDGE_NOT_FOUND`)                         | `ElementCodes.EDGE_NOT_FOUND` (`GL2`)                                                                                                                                                                                                       |
+| `ElementNotFound` (`ELEMENT_NOT_FOUND`)                   | removed — bypass-target checks now return `StyleCodes.BYPASS_TARGET_NOT_FOUND` (`BV1`) directly                                                                                                                                             |
+| `InvalidInput` (`INVALID_INPUT`)                          | `AppCodes.INVALID_INPUT` (`APP9`) for the residual generic case; many call sites now return a precise code instead (`FK1`, `FK2`, `A6`, `A8`, `A1`, `AC6`, `BV1`, `BV2`, `BV5`, `MC1`, `MI1`, `MI2`, `MI3`, `V7`, `VP1`–`VP10`, `N3`, `E6`) |
+| `InvalidCx2` (`INVALID_CX2`)                              | `AppCodes.INVALID_CX2` (`APP8`)                                                                                                                                                                                                             |
+| `OperationFailed` (`OPERATION_FAILED`)                    | `AppCodes.OPERATION_FAILED` (`APP3`)                                                                                                                                                                                                        |
+| `LayoutEngineNotFound` (`LAYOUT_ENGINE_NOT_FOUND`)        | `AppCodes.LAYOUT_ENGINE_NOT_FOUND` (`APP4`)                                                                                                                                                                                                 |
+| `FunctionNotAvailable` (`FUNCTION_NOT_AVAILABLE`)         | `AppCodes.FUNCTION_NOT_AVAILABLE` (`APP5`)                                                                                                                                                                                                  |
+| `NoCurrentNetwork` (`NO_CURRENT_NETWORK`)                 | `AppCodes.NO_CURRENT_NETWORK` (`APP2`)                                                                                                                                                                                                      |
+| `ContextMenuItemNotFound` (`CONTEXT_MENU_ITEM_NOT_FOUND`) | `AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND` (`APP6`)                                                                                                                                                                                             |
+| `ResourceNotFound` (`RESOURCE_NOT_FOUND`)                 | `AppCodes.RESOURCE_NOT_FOUND` (`APP7`)                                                                                                                                                                                                      |
 
-See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/new-app-api/src/app-api/api_docs/ErrorCodes.md)
+See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/ErrorCodes.md)
 for the full catalog, one entry per code.
+
+### Changed
+
+- `ElementApi.createNode()` and `createEdge()` now return the complete created
+  element data in addition to its ID. `deleteNodes()` and `deleteEdges()` now
+  return the complete deleted element data in addition to deletion counts.
+- `TableApi.importTableFromTsv()` now returns `skippedRows`, listing TSV key
+  values that did not match an element in the target network.
+- `data:changed` event details now include required `addedColumns` and
+  `removedColumns` arrays. A rename is reported as one removed and one added
+  column.
+- `VisualStyleApi.createDiscreteMapping()` accepts an optional mapping-entry
+  record. `createContinuousMapping()` accepts optional `controlPoints`,
+  `ltMinVpValue`, and `gtMaxVpValue` arguments.
+
+### Fixed
+
+- TSV imports merge cells into existing rows instead of replacing unrelated
+  attributes, use batched `setValues()` updates, and report unmatched keys
+- Table column creation, deletion, and rename stay synchronized with Table
+  Browser display configuration; mapping sources follow renames and mappings
+  referencing deleted columns are removed
+- Network deletion consistently clears related network, table, view, style,
+  summary, undo, filter, opaque-aspect, validation, and per-network UI state
+- Layout engine dynamic-import failures, synchronous throws, and callback
+  failures resolve as `ApiFailure` and reset the layout-running state
+- Discrete mapping creation commits mapping entries synchronously
 
 ## 1.0.0-beta.2 (2026-03-18)
 
@@ -130,6 +176,13 @@ for the full catalog, one entry per code.
 - `exportTableToTsv(networkId, tableType, options?)` — serialize table to TSV string
 - `importTableFromTsv(networkId, tableType, tsvText, options?)` — parse TSV and write to table
 - New types: `ColumnInfo`, `GetTableOptions`, `ExportTableToTsvOptions`, `ImportTableFromTsvOptions`
+
+## 1.0.0-beta.1 (2026-03-17)
+
+### Changed
+
+- Republished the beta milestone with version and documentation alignment; no
+  additional public API change from `1.0.0-beta.0`
 
 ## 1.0.0-beta.0 (2026-03-17)
 
@@ -144,7 +197,7 @@ for the full catalog, one entry per code.
 
 - Version bumped from `0.1.0-alpha.4` to `1.0.0-beta.0` (pre-beta milestone)
 
-## 0.1.0-alpha.4 (2026-03-16)
+## 0.1.0-alpha.4 (2026-03-15)
 
 ### Added — Phase 2 (App Resource Registration)
 
@@ -179,7 +232,7 @@ for the full catalog, one entry per code.
 
 - Updated `AppContext` with `CyAppWithLifecycle` type
 
-## 0.1.0-alpha.2 (2026-03-11)
+## 0.1.0-alpha.2 (2026-03-12)
 
 ### Added — Phase 1f (Event Bus)
 
@@ -192,9 +245,9 @@ for the full catalog, one entry per code.
 
 ### Added — Phase 1a–1e (Domain APIs)
 
-- 10 domain API interfaces: `ElementApi`, `NetworkApi`, `SelectionApi`,
+- 9 domain API interfaces: `ElementApi`, `NetworkApi`, `SelectionApi`,
   `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`,
-  `WorkspaceApi`, and `CyWebApiType` (composite)
+  and `WorkspaceApi`, plus `CyWebApiType` (composite)
 - `ApiResult<T>`, `ApiSuccess<T>`, `ApiFailure`, `ApiError`, `ApiErrorCode`,
   `ok()`, `fail()` utility types and functions
 - `AppContext`, `CyAppWithLifecycle` types
@@ -203,7 +256,7 @@ for the full catalog, one entry per code.
 - `cyweb/*` module declarations for all Module Federation remotes
 - `Window.CyWebApi` ambient augmentation
 
-## 0.1.0-alpha.0 (2026-03-09)
+## 0.1.0-alpha.0 (2026-02-26)
 
 ### Added
 

@@ -47,8 +47,17 @@ jobs:
 
       - uses: ./.github/actions/setup-node-dependencies
 
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
 
   integration-tests:
     name: Integration Tests (${{ matrix.browser }})

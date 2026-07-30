@@ -4,14 +4,28 @@ import React from 'react'
 
 
 // A button that displays a number input value, the user can click this button to open up a dropdown form that allows the user to input a number and cancel/confirm
+//
+// CW-591: `displayMultiplier`/`suffix`/`displayDecimals` let a caller show the
+// value in a different unit than it is stored in (e.g. opacity is stored as
+// 0-1 but shown/edited as 0-100%). The value/onConfirm/min/max props always use
+// the underlying (stored) unit; only the display and the in-popover editor are
+// scaled.
 export function ExpandableNumberInput(props: {
   value: number
   onConfirm: (value: number) => void
   min?: number
   max?: number
   disabled?: boolean
+  displayMultiplier?: number
+  suffix?: string
+  displayDecimals?: number
 }): React.ReactElement {
   const { value, onConfirm } = props
+  const displayMultiplier = props.displayMultiplier ?? 1
+  const suffix = props.suffix ?? ''
+  const displayDecimals = props.displayDecimals ?? 2
+  const toDisplay = (v: number): number => v * displayMultiplier
+  const fromDisplay = (v: number): number => v / displayMultiplier
   const [localValue, setLocalValue] = React.useState<number>(value as number)
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
   
@@ -89,7 +103,7 @@ export function ExpandableNumberInput(props: {
             alignItems: 'center',
           }}
         >
-          {value.toFixed(2)}
+          {`${toDisplay(value).toFixed(displayDecimals)}${suffix}`}
         </Box>
       </ButtonBase>
 
@@ -108,15 +122,16 @@ export function ExpandableNumberInput(props: {
       >
         <NumberInput
           error={errorMsg(localValue)}
-          min={props.min}
-          max={props.max}
-          value={localValue as number}
+          min={props.min != null ? toDisplay(props.min) : undefined}
+          max={props.max != null ? toDisplay(props.max) : undefined}
+          suffix={suffix}
+          value={toDisplay(localValue)}
           // decimalScale={2}
           onChange={(newValue) => {
             if (typeof newValue === 'string') {
               setLocalValue(0)
             } else {
-              setLocalValue(newValue)
+              setLocalValue(fromDisplay(newValue))
             }
           }}
         />
