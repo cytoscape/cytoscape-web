@@ -24,6 +24,7 @@ import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useStylePreviewSample } from './preview/useStylePreviewSample'
+import { styleFingerprint } from './styleFingerprint'
 import { copiedStyleName } from './styleNaming'
 import { StyleTile, StyleTileAction } from './StyleTile'
 
@@ -218,13 +219,45 @@ export const StylePickerDialog = (
     }))
   }, [styleSet, activeVisualStyle])
 
+  /**
+   * Fingerprints of everything this network already owns.
+   *
+   * Copying is a copy, not a reference, so once a style has been pulled in from
+   * network B it sits in this network forever — and B's picker then lists this
+   * network's copy beside B's original, identical in every respect. Without this
+   * the list grows a duplicate for every copy ever made.
+   */
+  const localFingerprints = useMemo(
+    () =>
+      new Set(
+        localEntries
+          .map((entry) =>
+            entry.visualStyle === undefined
+              ? undefined
+              : styleFingerprint(entry.visualStyle),
+          )
+          .filter((value): value is string => value !== undefined),
+      ),
+    [localEntries],
+  )
+
   const visibleLocal = localEntries.filter((entry) =>
     matches(entry.name, query),
   )
   // Matches the network name as well as the style name: the network is what the
   // tile leads with, so it is what a reader will type.
-  const visibleForeign = foreign.filter(
+  const matchingForeign = foreign.filter(
     (entry) => matches(entry.name, query) || matches(entry.networkName, query),
+  )
+  // An entry is only judged a duplicate once its content has loaded; until then
+  // it stays visible with a spinner.
+  const duplicateForeign = matchingForeign.filter(
+    (entry) =>
+      entry.visualStyle !== undefined &&
+      localFingerprints.has(styleFingerprint(entry.visualStyle)),
+  )
+  const visibleForeign = matchingForeign.filter(
+    (entry) => !duplicateForeign.includes(entry),
   )
   const visibleTemplates = Object.values(templates).filter((template) =>
     matches(template.name, query),
@@ -358,6 +391,21 @@ export const StylePickerDialog = (
             data-testid="style-picker-no-matches"
           >
             No styles match &ldquo;{query}&rdquo;.
+          </Typography>
+        )}
+
+        {duplicateForeign.length > 0 && (
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', display: 'block', mt: 1 }}
+            data-testid="style-picker-duplicates-note"
+          >
+            {/* Said out loud rather than silently filtered: a list that quietly
+                drops entries reads as a bug the first time someone counts. */}
+            {duplicateForeign.length} style
+            {duplicateForeign.length === 1 ? '' : 's'} from other networks{' '}
+            {duplicateForeign.length === 1 ? 'is' : 'are'} hidden because this
+            network already has an identical copy.
           </Typography>
         )}
 

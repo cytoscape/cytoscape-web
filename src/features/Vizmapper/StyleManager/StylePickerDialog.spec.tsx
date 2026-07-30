@@ -145,7 +145,11 @@ describe('StylePickerDialog', () => {
   })
 
   describe('other networks', () => {
+    // Deliberately NOT a pristine createVisualStyle(): this network's own
+    // "Default" is pristine too, and two pristine styles are byte-identical, so
+    // the duplicate suppression below would (correctly) hide it.
     const foreignStyle = createVisualStyle()
+    foreignStyle.nodeBackgroundColor.defaultValue = '#123456' as any
 
     beforeEach(() => {
       act(() => {
@@ -258,6 +262,51 @@ describe('StylePickerDialog', () => {
         'galFiltered',
         foreignStyle,
       )
+    })
+
+    it('hides a foreign style this network already has an identical copy of', async () => {
+      // Copying is a copy, not a reference, so a style pulled in from another
+      // network stays forever -- and that network's picker would then list this
+      // network's identical copy beside its own original.
+      const shared = createVisualStyle()
+      act(() => {
+        useVisualStyleStore
+          .getState()
+          .importStyle(NETWORK_ID, 'Copied Earlier', shared)
+      })
+      getVisualStyleSetFromDb.mockResolvedValue({
+        activeStyleId: 'foreign-style',
+        styles: {
+          'foreign-style': {
+            id: 'foreign-style',
+            name: 'Big Labels',
+            visualStyle: shared,
+          },
+        },
+      })
+      renderDialog()
+      const testId = `style-picker-foreign-${OTHER_NETWORK_ID}-foreign-style`
+
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('style-picker-duplicates-note'),
+        ).toBeDefined(),
+      )
+      expect(screen.queryByTestId(testId)).toBeNull()
+      // Reported, not silently filtered.
+      expect(
+        screen.getByTestId('style-picker-duplicates-note').textContent,
+      ).toContain('1 style')
+    })
+
+    it('keeps a foreign style whose content differs', async () => {
+      renderDialog()
+      const testId = `style-picker-foreign-${OTHER_NETWORK_ID}-foreign-style`
+
+      await waitFor(() =>
+        expect(screen.getByTestId(`${testId}-thumbnail`)).toBeDefined(),
+      )
+      expect(screen.queryByTestId('style-picker-duplicates-note')).toBeNull()
     })
 
     it('does nothing when clicked before its content has loaded', async () => {

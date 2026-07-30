@@ -239,6 +239,29 @@ Provenance is therefore carried by the copy's **name**, not by a stored field �
 recording an origin on `NamedVisualStyle` would mean a model, persistence and CX2
 change for information the name already conveys.
 
+### Duplicate suppression
+
+Copying is a copy, not a reference, so a style pulled from network B lives in the
+current network permanently — and B's own picker then lists that copy beside B's
+original, identical in every respect. Left alone, the list grows a duplicate for
+every copy ever made, which is the failure mode of a workspace-wide listing built
+on copy-on-assign.
+
+`styleFingerprint` (`StyleManager/styleFingerprint.ts`) hides a foreign style when
+the current network already holds byte-identical content, and the picker states
+how many it hid rather than filtering silently. Notes:
+
+- Fingerprints go through `serializeVisualStyle`, not `JSON.stringify` directly:
+  bypasses and discrete mappings are Maps and would stringify to `{}`, making
+  styles that differ only in their mappings look identical.
+- It detects **copies**, not semantic equivalence. Two styles built separately to
+  look alike may serialize in different key order and both stay visible. That is
+  the safer bias: a false "these are the same" hides a style the user still needs.
+- Two untouched networks both carrying a pristine default style **are** identical
+  and one will be hidden. This is intended — copying it would change nothing.
+- Cached in a `WeakMap` keyed by the style object, so an edited style is a natural
+  miss and reappears once it genuinely differs.
+
 ### Thumbnails
 
 `StyleManager/preview/` renders each thumbnail through the **same pipeline as the
