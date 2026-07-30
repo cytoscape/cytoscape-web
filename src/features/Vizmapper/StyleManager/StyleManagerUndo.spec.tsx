@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
@@ -158,5 +159,116 @@ describe('StyleManager undo, end to end through the Edit menu', () => {
     fireEvent.click(screen.getByTestId('fake-undo'))
 
     expect(activeStyleId()).toBe(defaultId)
+  })
+
+  describe('copying a style in from the library or another network', () => {
+    const template = createVisualStyle()
+    template.nodeBackgroundColor.defaultValue = '#abcdef' as any
+
+    beforeEach(() => {
+      act(() => {
+        useStyleLibraryStore.setState({
+          templates: {
+            'tpl-1': { id: 'tpl-1', name: 'Metallic', visualStyle: template },
+          },
+        })
+      })
+    })
+
+    const copyInViaPicker = (): void => {
+      fireEvent.click(screen.getByTestId('style-manager-picker-button'))
+      fireEvent.click(screen.getByTestId('style-picker-library-tpl-1'))
+    }
+
+    it('leaves Undo usable, not greyed out', () => {
+      // The reported bug: copying a style in changes what the network looks like
+      // just as much as switching does, so Undo has to be reachable afterwards.
+      render(
+        <>
+          <StyleManager networkId={NETWORK_ID} />
+          <FakeEditMenu />
+        </>,
+      )
+
+      copyInViaPicker()
+
+      expect(screen.getByTestId('fake-undo').hasAttribute('disabled')).toBe(
+        false,
+      )
+      expect(screen.getByTestId('fake-undo').textContent).toBe(
+        'Switch style to "Metallic"',
+      )
+    })
+
+    it('describes the de-duplicated name a second copy actually got', () => {
+      render(
+        <>
+          <StyleManager networkId={NETWORK_ID} />
+          <FakeEditMenu />
+        </>,
+      )
+
+      copyInViaPicker()
+      copyInViaPicker()
+
+      // importStyle de-duplicates, so the description has to say "Metallic 2" —
+      // the name the user sees in the list — not the source's name.
+      expect(screen.getByTestId('fake-undo').textContent).toBe(
+        'Switch style to "Metallic 2"',
+      )
+    })
+
+    it('reverts to the style that was active before the copy', () => {
+      render(
+        <>
+          <StyleManager networkId={NETWORK_ID} />
+          <FakeEditMenu />
+        </>,
+      )
+
+      copyInViaPicker()
+      const copiedId = activeStyleId()
+      expect(copiedId).not.toBe(defaultId)
+
+      fireEvent.click(screen.getByTestId('fake-undo'))
+
+      expect(activeStyleId()).toBe(defaultId)
+    })
+
+    it('redoes back to the copied style', () => {
+      render(
+        <>
+          <StyleManager networkId={NETWORK_ID} />
+          <FakeEditMenu />
+        </>,
+      )
+
+      copyInViaPicker()
+      const copiedId = activeStyleId()
+      fireEvent.click(screen.getByTestId('fake-undo'))
+      fireEvent.click(screen.getByTestId('fake-redo'))
+
+      expect(activeStyleId()).toBe(copiedId)
+    })
+
+    it('keeps the copied style in the set after undo', () => {
+      // Undo reverts the visible change -- which style is active -- and leaves
+      // the copy in the list. Deleting it on undo would need the style's whole
+      // content on the undo stack to redo, and the stack is persisted.
+      render(
+        <>
+          <StyleManager networkId={NETWORK_ID} />
+          <FakeEditMenu />
+        </>,
+      )
+
+      copyInViaPicker()
+      fireEvent.click(screen.getByTestId('fake-undo'))
+
+      const names = Object.values(
+        useVisualStyleStore.getState().styleSets[NETWORK_ID].styles,
+      ).map((entry) => entry.name)
+      expect(names).toContain('Metallic')
+    })
   })
 })

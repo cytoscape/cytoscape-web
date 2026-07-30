@@ -143,12 +143,34 @@ export const StyleManager = (props: {
   const handleCopyIn = (name: string, visualStyle: VisualStyle): void => {
     // Copy-on-assign: the source style (another network's, or a library
     // template) is never referenced, so editing this copy cannot reach back.
+    const previousStyleId = activeStyleId
     const newId = importStyle(networkId, name, visualStyle)
     if (newId !== undefined) {
-      // Deliberately NOT posted as an undoable edit: creating a style is not
-      // undoable, so an undo that only reverted the switch would leave the new
-      // style behind and read as a no-op.
-      switchStyle(networkId, newId)
+      if (switchStyle(networkId, newId)) {
+        // Undoable, like any other switch. Copying a style in changes how the
+        // network looks just as much as switching does, so leaving Undo greyed
+        // out afterwards reads as undo being broken.
+        //
+        // Only the SWITCH is recorded, not the import: undo reverts which style
+        // is active and leaves the copy in the list. Deleting it on undo would
+        // mean carrying the style's whole content in redoParams so redo could
+        // recreate it, and the undo stack is persisted to IndexedDB — a stack of
+        // 30kB styles is not something to put there. The leftover style is inert
+        // until selected, and deletable.
+        postEdit(
+          UndoCommandType.SWITCH_STYLE,
+          // The STORED name, read fresh: importStyle de-duplicates, so a second
+          // copy from the same source is "X 2" and the description has to match
+          // what the user sees in the list.
+          `Switch style to "${
+            useVisualStyleStore.getState().styleSets[networkId]?.styles[newId]
+              ?.name ?? name
+          }"`,
+          [networkId, previousStyleId],
+          [networkId, newId],
+          networkId,
+        )
+      }
       markModified()
     }
     closeDialog()

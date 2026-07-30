@@ -72,6 +72,15 @@ The undo command map calls `switchStyle` and **throws** when it returns false, s
 an unreplayable switch is discarded by the runner rather than silently moving to
 the redo stack as though it had worked.
 
+**Copying a style in is undoable too**, and records the same `SWITCH_STYLE`
+command. Copying changes how the network looks exactly as much as switching does,
+so leaving Undo greyed out afterwards reads as undo being broken. Only the
+**switch** is recorded, not the import: undo reverts which style is active and
+leaves the copy in the list. Deleting it on undo would mean carrying the style's
+whole content in `redoParams` so redo could recreate it, and the undo stack is
+persisted to IndexedDB — a stack of 30kB styles does not belong there. The
+leftover style is inert until selected, and deletable.
+
 Callers pass the mutated network explicitly as `postEdit`'s optional last
 argument. `postEdit` otherwise infers the target from live store state, while a
 component's own target network is often `useEffect`-derived — for one render
