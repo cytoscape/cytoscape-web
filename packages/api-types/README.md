@@ -238,6 +238,72 @@ window.addEventListener('cywebapi:ready', () => {
 | `cyweb/AppIdContext`   | `useAppContext()` — per-app context for plugin components |
 | `cyweb/ApiTypes`       | Re-exports all types from this package                    |
 
+## Releasing a new API bundle (core developers)
+
+The host implementation and this package are one public contract. Release them
+from the same `development` commit after the runtime behavior, exported types,
+tests, and documentation have been aligned.
+
+1. **Align the contract.** Update the framework-agnostic implementation and
+   hook wrappers in `src/app-api/`, the public declarations in
+   `src/app-api/types/`, and the exports in `packages/api-types/src/index.ts`.
+   Update `mf-declarations.d.ts` when a `cyweb/*` exposure changes. Add or update
+   tests, `src/app-api/api_docs/`, the App API specifications, and an ADR when a
+   design decision changes. Document breaking changes and consumer migrations.
+2. **Prepare the release before merging.** Bump the version in this package and
+   the root lockfile, move the new `CHANGELOG.md` entry from `Unreleased` to its
+   release date, and update any version-specific notes in this README. These
+   changes belong in the same pull request as the API change.
+3. **Verify the bundle.** From the repository root, run:
+
+   ```bash
+   npm run lint
+   npm run test:unit
+   npm run build:api-types
+   cd packages/api-types
+   npm pack --dry-run
+   ```
+
+   Confirm that the tarball contains `dist/index.d.ts`,
+   `dist/mf-declarations.d.ts`, `README.md`, `CHANGELOG.md`, and `package.json`.
+
+4. **Merge and tag the exact merge commit.** Merge the pull request into
+   `development`, fetch the updated branch, and identify that pull request's
+   merge commit. Do not tag a later `development` HEAD that includes unrelated
+   changes. The tag format is `api-types-v<version>`:
+
+   ```bash
+   git fetch origin development
+   git tag -a api-types-v1.0.0-beta.4 MERGE_COMMIT_SHA \
+     -m "Release @cytoscape-web/api-types 1.0.0-beta.4"
+   git push origin refs/tags/api-types-v1.0.0-beta.4
+   ```
+
+5. **Publish the tagged content.** Use a clean checkout of the tagged commit,
+   authenticate with npm, rebuild once, and publish from this directory. The
+   active beta stream currently uses the `latest` dist-tag; use another tag only
+   when the team has agreed to change that policy.
+
+   ```bash
+   npm whoami
+   npm run build
+   npm publish --access public --tag latest
+   ```
+
+6. **Verify both registries.** Confirm the remote tag target, published version,
+   dist-tag, and tarball checksum:
+
+   ```bash
+   git ls-remote --tags origin 'refs/tags/api-types-v1.0.0-beta.4*'
+   npm view @cytoscape-web/api-types dist-tags
+   npm view @cytoscape-web/api-types@1.0.0-beta.4 \
+     version dist.shasum dist.integrity
+   ```
+
+npm versions are immutable. If the published bundle is wrong, prepare and
+release the next version; do not try to overwrite the existing version or move
+its Git tag to different content.
+
 ## Documentation
 
 - [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/app-api-specification.md) — Full API reference
