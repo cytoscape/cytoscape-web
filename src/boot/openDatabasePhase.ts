@@ -1,9 +1,12 @@
+import { deleteDb } from '../data/db'
 import {
   openDatabaseForStartup,
   type DbOpenResult,
 } from '../data/db/startupOpen'
+import { logDb } from '../debug'
 import { registerBootErrorClassifier } from './bootError'
 import { BootPhase } from './bootPhases'
+import { registerBootShellAction } from './shell/bootShellActions'
 import type { BootShellError } from './shell/bootShellMarkup'
 
 // The DATABASE phase: open IndexedDB explicitly, and turn a failure into
@@ -24,26 +27,67 @@ class DbOpenError extends Error {
   }
 }
 
+export const RESET_DATABASE_ACTION_ID = 'reset-database'
+
+/**
+ * Wires up the recovery behind the error shell's button.
+ *
+ * This is the same recovery the error page offers ("Reset Workspace and Reload
+ * Cytoscape", src/features/Error.tsx) — deliberately the same wording, because
+ * it is the same destructive operation reached through a different door.
+ *
+ * That button cannot be reused directly: it is MUI plus react-router plus store
+ * hooks, and this failure aborts the boot before React mounts. What is shared is
+ * the primitive underneath it — deleteDb(), which the error page reaches through
+ * WorkspaceStore.resetWorkspace().
+ *
+ * Still gated behind arm-then-confirm: destroying the local workspace is
+ * unrecoverable, and this shell is too early to have the app's
+ * ConfirmationDialog available.
+ *
+ * Called on the failure path rather than at module scope: registering installs a
+ * document-level click listener, and a boot that opens the database fine should
+ * not pay for a button it will never paint.
+ */
+const registerResetAction = (): void => {
+  registerBootShellAction(RESET_DATABASE_ACTION_ID, async () => {
+    logDb.info('[openDatabasePhase] resetting the local database on request')
+    const success = await deleteDb()
+    
+    if (success) {
+      // Reload rather than continue: the boot already aborted partway through, so
+      // rerunning it from the top against the fresh database is the honest
+      // recovery.
+      window.location.reload()
+    } else {
+      // Throw so the button re-enables and the user can try again
+      throw new Error('database deletion failed')
+    }
+  })
+}
+
 const describe = (
   result: Exclude<DbOpenResult, { kind: 'ok' }>,
 ): BootShellError =>
   result.kind === 'schema-too-new'
     ? {
         title: 'This browser has a newer Cytoscape Web database',
-        message:
-          `Your browser stores a Cytoscape Web database at version ${result.onDiskVersion ?? 'unknown'}, ` +
-          `but this build expects version ${result.expectedVersion}. This happens when two ` +
-          'versions of Cytoscape Web are served from the same address — most often a local dev ' +
-          'server switched between branches, or a deployment rolled back to an earlier build.',
-        // Instructions, not a button: clearing the database destroys the whole
-        // local workspace, and a mis-click here is unrecoverable.
-        //
-        // The port tip only helps a developer, but a developer is who almost
-        // always sees this — an end user reaches it only through a rollback.
-        detail:
-          'Clear the "cyweb-db" database in DevTools > Application > IndexedDB to start fresh; ' +
-          "this permanently deletes this browser's local workspace. When running locally, " +
-          'serving the other build on a different port gives it its own database instead.',
+        // One sentence, and it is the instruction. There is exactly one way out
+        // of this state, so explaining how the state arose (two builds on one
+        // address, a switched branch, a rollback) only buries the thing to do.
+        // The button below is the answer; its confirm step spells out the cost.
+        message: 'Reset your local workspace to continue.',
+        // Not prose — the diagnostic, and the first thing anyone debugging this
+        // asks for. One short line in the detail style.
+        detail: `Stored version ${result.onDiskVersion ?? 'unknown'}; this build expects ${result.expectedVersion}.`,
+        action: {
+          id: RESET_DATABASE_ACTION_ID,
+          label: 'Reset Workspace and Reload Cytoscape',
+          confirmLabel: 'Confirm — permanently delete',
+          confirmMessage:
+            "This permanently deletes this browser's local workspace, including every network " +
+            'in it. Networks saved to NDEx are not affected.',
+        },
       }
     : {
         title: 'Cytoscape Web cannot access local storage',
@@ -64,6 +108,11 @@ registerBootErrorClassifier(BootPhase.DATABASE, (cause) =>
 export const openDatabasePhase = async (): Promise<void> => {
   const result = await openDatabaseForStartup()
   if (result.kind !== 'ok') {
+    // Before the throw, so the handler exists by the time the error shell is
+    // painted and the reader can reach the button.
+    if (result.kind === 'schema-too-new') {
+      registerResetAction()
+    }
     throw new DbOpenError(result)
   }
 }

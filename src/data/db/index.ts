@@ -232,20 +232,46 @@ export const closeDb = async (): Promise<void> => {
  * - This should create the completely new DB with no data.
  *
  */
-export const deleteDb = async (): Promise<void> => {
-  try {
-    if (db) {
-      db.close()
-      logDb.info('[DeleteDB] DB is closed')
-    }
-    await Dexie.delete(DB_NAME)
-    logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
-    db = new CyDB(DB_NAME)
-    await db.open()
-    logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
-  } catch (err) {
-    logDb.error('[DeleteDB] Failed to reset DB', err)
+let deletePromise: Promise<boolean> | null = null
+
+export const deleteDb = async (): Promise<boolean> => {
+  if (deletePromise !== null) {
+    return deletePromise
   }
+
+  deletePromise = (async () => {
+    try {
+      if (db) {
+        db.close()
+        logDb.info('[DeleteDB] DB is closed')
+      }
+      
+      // Dexie.delete hangs if another tab holds the connection. Enforce a timeout
+      // so we can report the failure instead of deadlocking.
+      const deleted = await Promise.race([
+        Dexie.delete(DB_NAME).then(() => true),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000)),
+      ])
+
+      if (!deleted) {
+        logDb.error(`[DeleteDB] Failed to delete ${DB_NAME}: blocked or timed out`)
+        return false
+      }
+
+      logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
+      db = new CyDB(DB_NAME)
+      await db.open()
+      logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
+      return true
+    } catch (err) {
+      logDb.error('[DeleteDB] Failed to reset DB', err)
+      return false
+    } finally {
+      deletePromise = null
+    }
+  })()
+
+  return deletePromise
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
