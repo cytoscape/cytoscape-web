@@ -1,5 +1,6 @@
 import { fetchNdexSummaries } from '@/data/external-api/ndex'
 import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
+import { logStartup } from '@/debug'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
 
 /**
@@ -30,10 +31,30 @@ export const resolveDeepLink = async (
     return
   }
 
-  const token = await useCredentialStore.getState().getToken()
-  const summary = (await fetchNdexSummaries(networkIdParam, token))?.[0]
+  let summary
+  try {
+    const token = await useCredentialStore.getState().getToken()
+    summary = (await fetchNdexSummaries(networkIdParam, token))?.[0]
+  } catch (error) {
+    // Caught rather than left to the phase runner: a thrown error (network
+    // hiccup, CORS, private/deleted network, NDEx outage) must still tell the
+    // user which address failed, instead of silently stranding them on an
+    // unrelated local network (CW-514).
+    draft.deepLinkFailed = true
+    draft.errors.push(
+      `Unable to import network ${networkIdParam} from ${ctx.pathname}. ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    )
+    logStartup.warn(
+      `[boot]: failed to fetch NDEx summary for ${networkIdParam}`,
+      error,
+    )
+    return
+  }
 
   if (summary === undefined) {
+    draft.deepLinkFailed = true
     draft.errors.push(
       `Unable to import network ${networkIdParam} from ${ctx.pathname}. ${networkIdParam} does not exist in NDEx`,
     )

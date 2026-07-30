@@ -112,8 +112,12 @@ describe('useNetworkSummaryStore', () => {
         result.current.addAll(summaries)
       })
 
-      expect(result.current.summaries['network-1']).toEqual(summaries['network-1'])
-      expect(result.current.summaries['network-2']).toEqual(summaries['network-2'])
+      expect(result.current.summaries['network-1']).toEqual(
+        summaries['network-1'],
+      )
+      expect(result.current.summaries['network-2']).toEqual(
+        summaries['network-2'],
+      )
     })
 
     it('should merge with existing summaries', () => {
@@ -231,4 +235,3 @@ describe('useNetworkSummaryStore', () => {
     })
   })
 })
-

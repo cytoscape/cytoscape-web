@@ -279,9 +279,10 @@ const WorkspaceSchema = z.object({
   options: z.unknown().optional(),
 })
 
-const TimestampSchema = z.object({
-  id: z.string(),
-  timestamp: z.number(),
+/** Row shape of the `viewSelections` store (added in DB v11). */
+const ViewSelectionSchema = z.object({
+  selectedNodes: z.array(IdTypeSchema),
+  selectedEdges: z.array(IdTypeSchema),
 })
 
 const DiscreteFilterDetailsSchema = z.object({
@@ -444,8 +445,10 @@ const NetworkViewSchema = z.object({
   id: IdTypeSchema,
   nodeViews: z.record(NodeViewSchema),
   edgeViews: z.record(EdgeViewSchema),
-  selectedNodes: z.array(IdTypeSchema),
-  selectedEdges: z.array(IdTypeSchema),
+  // Optional from v11: selection moved to the `viewSelections` store, so rows
+  // written since then carry none. Pre-v11 rows still have it inline.
+  selectedNodes: z.array(IdTypeSchema).optional(),
+  selectedEdges: z.array(IdTypeSchema).optional(),
   type: z.string().optional(),
   viewId: IdTypeSchema.optional(),
   values: ViewValuesSchema,
@@ -468,8 +471,9 @@ const NetworkViewWithRecordsSchema = z.object({
   id: IdTypeSchema,
   nodeViews: z.record(NodeViewWithRecordsSchema),
   edgeViews: z.record(EdgeViewWithRecordsSchema),
-  selectedNodes: z.array(IdTypeSchema),
-  selectedEdges: z.array(IdTypeSchema),
+  // Optional from v11 — see NetworkViewSchema
+  selectedNodes: z.array(IdTypeSchema).optional(),
+  selectedEdges: z.array(IdTypeSchema).optional(),
   type: z.string().optional(),
   viewId: IdTypeSchema.optional(),
   values: MapEntriesSchema,
@@ -506,8 +510,11 @@ export const validateUiState = (value: unknown): Ui =>
 export const validateStoredUiState = (value: unknown) =>
   UiStateStoredSchema.parse(value) as Ui & { id: string }
 
-export const validateTimestampEntry = (value: unknown) =>
-  TimestampSchema.parse(value) as { id: string; timestamp: number }
+export const validateViewSelection = (value: unknown) =>
+  ViewSelectionSchema.parse(value) as {
+    selectedNodes: string[]
+    selectedEdges: string[]
+  }
 
 export const validateFilterConfig = (value: unknown): FilterConfig =>
   FilterConfigSchema.parse(value) as FilterConfig

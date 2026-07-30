@@ -15,46 +15,48 @@ import type { ResourceSlot } from '../../../models/AppModel/RegisteredAppResourc
 import type { AppResourceStoreModel } from '../../../models/StoreModel/AppResourceStoreModel'
 import { registerAppCleanup } from './AppCleanupRegistry'
 
-export const useAppResourceStore = create<AppResourceStoreModel>((set, get) => ({
-  resources: [],
+export const useAppResourceStore = create<AppResourceStoreModel>(
+  (set, get) => ({
+    resources: [],
 
-  upsertResource(resource: RegisteredAppResource) {
-    set((state) => {
-      const idx = state.resources.findIndex(
-        (r) =>
-          r.appId === resource.appId &&
-          r.slot === resource.slot &&
-          r.id === resource.id,
+    upsertResource(resource: RegisteredAppResource) {
+      set((state) => {
+        const idx = state.resources.findIndex(
+          (r) =>
+            r.appId === resource.appId &&
+            r.slot === resource.slot &&
+            r.id === resource.id,
+        )
+        if (idx >= 0) {
+          const updated = [...state.resources]
+          updated[idx] = resource
+          return { resources: updated }
+        }
+        return { resources: [...state.resources, resource] }
+      })
+    },
+
+    removeResource(appId: string, slot: ResourceSlot, id: string) {
+      set((state) => ({
+        resources: state.resources.filter(
+          (r) => !(r.appId === appId && r.slot === slot && r.id === id),
+        ),
+      }))
+    },
+
+    hasResource(appId: string, slot: ResourceSlot, id: string): boolean {
+      return get().resources.some(
+        (r) => r.appId === appId && r.slot === slot && r.id === id,
       )
-      if (idx >= 0) {
-        const updated = [...state.resources]
-        updated[idx] = resource
-        return { resources: updated }
-      }
-      return { resources: [...state.resources, resource] }
-    })
-  },
+    },
 
-  removeResource(appId: string, slot: ResourceSlot, id: string) {
-    set((state) => ({
-      resources: state.resources.filter(
-        (r) => !(r.appId === appId && r.slot === slot && r.id === id),
-      ),
-    }))
-  },
-
-  hasResource(appId: string, slot: ResourceSlot, id: string): boolean {
-    return get().resources.some(
-      (r) => r.appId === appId && r.slot === slot && r.id === id,
-    )
-  },
-
-  removeAllByAppId(appId: string) {
-    set((state) => ({
-      resources: state.resources.filter((r) => r.appId !== appId),
-    }))
-  },
-}))
+    removeAllByAppId(appId: string) {
+      set((state) => ({
+        resources: state.resources.filter((r) => r.appId !== appId),
+      }))
+    },
+  }),
+)
 
 // Register cleanup so appLifecycle.ts can clean up app resources
 // for a disabled/unmounted app via cleanupAllForApp(appId).

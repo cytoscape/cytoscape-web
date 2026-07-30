@@ -18,7 +18,6 @@ import {
   validateServiceAppArray,
   validateStoredUiState,
   validateTable,
-  validateTimestampEntry,
   validateUiState,
   validateUndoRedoStack,
   validateUndoRedoStackDb,
@@ -343,7 +342,9 @@ describe('db validator - FilterConfig', () => {
 
   it('accepts a numeric-range filter config', () => {
     const config = { ...validFilterConfig(), range: { min: 0, max: 100 } }
-    expect(validateFilterConfig(config)).toMatchObject({ name: 'status-filter' })
+    expect(validateFilterConfig(config)).toMatchObject({
+      name: 'status-filter',
+    })
   })
 
   it('rejects a filter config with an invalid range shape', () => {
@@ -400,16 +401,7 @@ describe('db validator - UndoRedoStack', () => {
   })
 })
 
-describe('db validator - Timestamp & UiState', () => {
-  it('accepts a timestamp entry and rejects a non-numeric timestamp', () => {
-    expect(validateTimestampEntry({ id: 'timestamp', timestamp: 123 })).toEqual(
-      { id: 'timestamp', timestamp: 123 },
-    )
-    expect(() =>
-      validateTimestampEntry({ id: 'timestamp', timestamp: 'now' }),
-    ).toThrow()
-  })
-
+describe('db validator - UiState', () => {
   it('accepts a well-formed stored UI state', () => {
     expect(validateStoredUiState(validStoredUiState())).toMatchObject({
       id: 'uistate',

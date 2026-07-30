@@ -1,10 +1,20 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { getTabId, resetTabIdForTesting } from '@/data/tabState/tabId'
 import { initializeTabManager } from './tabManager'
 
+// Minting and uniqueness are `tabId`'s contract and are covered in
+// tabId.test.ts; this file covers what boot promises an external app: the id it
+// returns is the one published on window.name.
 const CYWEB_TAB_ID = /^cyweb-\d+-[a-z0-9]{1,6}$/
 
+beforeEach(() => {
+  resetTabIdForTesting()
+  window.name = ''
+})
+
 afterEach(() => {
+  resetTabIdForTesting()
   window.name = ''
 })
 
@@ -29,17 +39,37 @@ describe('initializeTabManager', () => {
     expect(initializeTabManager()).toMatch(CYWEB_TAB_ID)
   })
 
-  it('gives every tab a distinct id', () => {
-    // The id used to be `cyweb-${Date.now()}` with no suffix, so tabs
-    // initializing within the same millisecond — a session restore reopening
-    // several at once — shared a window.name, and window.open(url, tabId)
-    // could focus the wrong one. This loop runs well inside one millisecond.
-    const ids = new Set<string>()
-    for (let i = 0; i < 50; i++) {
-      window.name = ''
-      ids.add(initializeTabManager())
-    }
+  it('seeds a fresh tab name from the sync id', () => {
+    // Not a required invariant — just where the initial unique string comes from.
+    expect(initializeTabManager()).toBe(getTabId())
+  })
 
-    expect(ids.size).toBe(50)
+  it('leaves the sync id alone when window.name was set by someone else', () => {
+    // The whole point of the split: cross-tab sync must not inherit a value any
+    // script on the page can write. A reused or foreign window.name changes what
+    // an external app can focus, and nothing about what the DB stamps.
+    window.name = 'cyweb-someone-elses-handle'
+    const syncId = getTabId()
+
+    expect(initializeTabManager()).toBe('cyweb-someone-elses-handle')
+    expect(getTabId()).toBe(syncId)
+  })
+
+  it('still returns an id when window.name cannot be written', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, 'name')
+    Object.defineProperty(window, 'name', {
+      configurable: true,
+      get: () => {
+        throw new Error('blocked')
+      },
+    })
+
+    try {
+      expect(initializeTabManager()).toBe(getTabId())
+    } finally {
+      if (descriptor !== undefined) {
+        Object.defineProperty(window, 'name', descriptor)
+      }
+    }
   })
 })

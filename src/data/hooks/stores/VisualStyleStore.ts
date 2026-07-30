@@ -42,6 +42,7 @@ import {
   putUndoRedoStackToDb,
   putVisualStyleSetToDb,
 } from '../../db'
+import { isHydrating } from './hydrationContext'
 import { persistNetworkSlices } from './persistNetworkSlices'
 import { useUndoStore } from './UndoStore'
 
@@ -688,11 +689,22 @@ export const useVisualStyleStore = create(
         set((state) => {
           delete state.visualStyles[networkId]
           delete state.styleSets[networkId]
-          void deleteVisualStyleFromDb(networkId).then(() => {
-            logStore.info(
-              `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
-            )
-          })
+          // Skip during cross-tab hydration: the peer tab already deleted this
+          // row, so re-deleting it locally only mints another change record.
+          if (!isHydrating()) {
+            void deleteVisualStyleFromDb(networkId)
+              .then(() => {
+                logStore.info(
+                  `[${useVisualStyleStore.name}]: Deleted visual style from db: ${networkId}`,
+                )
+              })
+              .catch((e) => {
+                logStore.error(
+                  `[${useVisualStyleStore.name}]: Failed to delete visual style from db: ${networkId}`,
+                  e,
+                )
+              })
+          }
           return state
         })
       },
@@ -700,17 +712,19 @@ export const useVisualStyleStore = create(
         set((state) => {
           state.visualStyles = {}
           state.styleSets = {}
-          clearVisualStyleFromDb()
-            .then(() => {
-              logStore.info(
-                `[${useVisualStyleStore.name}]: Deleted all visual styles from db`,
-              )
-            })
-            .catch((err) => {
-              logStore.error(
-                `[${useVisualStyleStore.name}]: Error clearing visual styles from db: ${err}`,
-              )
-            })
+          if (!isHydrating()) {
+            clearVisualStyleFromDb()
+              .then(() => {
+                logStore.info(
+                  `[${useVisualStyleStore.name}]: Deleted all visual styles from db`,
+                )
+              })
+              .catch((err) => {
+                logStore.error(
+                  `[${useVisualStyleStore.name}]: Error clearing visual styles from db: ${err}`,
+                )
+              })
+          }
 
           return state
         })

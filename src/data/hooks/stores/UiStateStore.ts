@@ -19,8 +19,29 @@ import {
   TableDisplayConfiguration,
   VisualStyleOptions,
 } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import {
+  saveTabViewState,
+  withoutTabViewState,
+} from '@/data/tabState/tabViewState'
 import { putUiStateToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
+
+/**
+ * Persist UI state, splitting it by ownership.
+ *
+ * Per-tab view state (panels, active tab indices, transient dialogs) goes to
+ * this tab's sessionStorage; only genuinely shared fields — column widths,
+ * visual style options, custom tab names — reach the IndexedDB row that all
+ * tabs read. See `src/data/tabState/tabViewState.ts` for why the split lives here
+ * rather than in the cross-tab hydration path.
+ */
+const persistUiState = (ui: Ui) => {
+  saveTabViewState(ui)
+  if (!isHydrating()) {
+    void putUiStateToDb(toPlainObject(withoutTabViewState(ui)))
+  }
+}
 
 export const DEFAULT_UI_STATE = {
   panels: {
@@ -56,7 +77,7 @@ export const useUiStateStore = create(
       set((state) => {
         state.ui = ui
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(ui))
+        persistUiState(ui)
         return state
       })
     },
@@ -130,7 +151,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -148,7 +169,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -163,7 +184,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -178,7 +199,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -196,7 +217,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -219,7 +240,7 @@ export const useUiStateStore = create(
         const nextUi = UiImpl.deleteNetworkUiState(state.ui, networkId)
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -235,7 +256,7 @@ export const useUiStateStore = create(
         }
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state

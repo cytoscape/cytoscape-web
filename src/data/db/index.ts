@@ -3,6 +3,7 @@ import 'dexie-observable'
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
+import { getTabId } from '@/data/tabState/tabId'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -42,6 +43,7 @@ import {
   validateStoredUiState,
   validateTable,
   validateUndoRedoStackDb,
+  validateViewSelection,
   validateVisualStyle,
   validateWorkspace,
 } from './validator'
@@ -61,7 +63,12 @@ export const DB_NAME: string = 'cyweb-db'
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-export const currentVersion: number = 10
+// v10 adds the `cyStyleLibrary` store (workspace-level visual style templates).
+// v11 adds the `viewSelections` store (node/edge selection moved out of the
+// `cyNetworkViews` row — see ViewModelStore). It is a separate version rather
+// than an edit to v10 because v10 already shipped to branch deploys, and Dexie
+// will not re-run a version whose number a client already has on disk.
+export const currentVersion: number = 11
 
 /**
  * Predefined object store names.
@@ -78,7 +85,6 @@ export const ObjectStoreNames = {
   CyVisualStyles: 'cyVisualStyles',
   CyNetworkViews: 'cyNetworkViews',
   UiState: 'uiState',
-  Timestamp: 'timestamp',
   Filters: 'filters',
   Apps: 'apps',
 
@@ -95,6 +101,9 @@ export const ObjectStoreNames = {
 
   // From v10: workspace-level visual style template library
   StyleLibrary: 'cyStyleLibrary',
+
+  // From v11
+  ViewSelections: 'viewSelections',
 } as const
 
 // The type derived from the names of object stores
@@ -115,7 +124,7 @@ const Keys = {
   [ObjectStoreNames.CyVisualStyles]: 'id',
   [ObjectStoreNames.CyNetworkViews]: 'id',
   [ObjectStoreNames.UiState]: 'id',
-  [ObjectStoreNames.Timestamp]: 'id',
+  timestamp: null, // explicit drop from v9 -> v10
   [ObjectStoreNames.Filters]: 'id',
   [ObjectStoreNames.Apps]: 'id',
 
@@ -128,7 +137,53 @@ const Keys = {
   [ObjectStoreNames.AppSettings]: 'key',
 
   [ObjectStoreNames.StyleLibrary]: 'id',
+
+  [ObjectStoreNames.ViewSelections]: 'id',
 } as const
+
+/**
+ * Tag every transaction with the id of the tab that opened it.
+ *
+ * dexie-observable copies `trans.source` onto each row it appends to its
+ * `_changes` table, and `db.on('changes')` fires in EVERY tab for EVERY change
+ * — own writes included, because `readChanges()` replays all `_changes` rows
+ * above that tab's own revision. Without an origin marker a tab cannot tell its
+ * own echo from a peer's edit, and re-applying its own write clobbers local
+ * state (the cross-tab selection desync).
+ *
+ * Stamping here rather than at each of the ~34 write helpers means a write
+ * helper added later is tagged by construction; the failure mode of forgetting
+ * one is a re-emergent echo loop, which is exactly the bug that is hard to
+ * trace back to its cause.
+ *
+ * `_createTransaction` is a Dexie internal, and `source` is typed by
+ * dexie-observable (`dexie-observable/api.d.ts`) rather than Dexie itself,
+ * hence the casts. This is the same hook dexie-observable overrides
+ * (dexie-observable.js:60-75), so a Dexie change that moved it would break the
+ * addon first and louder. `db.test.ts` asserts `_changes` rows carry the tab
+ * id, so a silent regression fails the suite instead of shipping. If the hook
+ * ever stops firing, every change reads as foreign and behavior degrades to
+ * self-hydration — wasteful, but not corrupting.
+ */
+const stampTransactionSource = (database: Dexie): void => {
+  const target = database as any
+  const createTransaction = target._createTransaction
+  if (typeof createTransaction !== 'function') {
+    logDb.warn(
+      '[stampTransactionSource] Dexie._createTransaction is unavailable; cross-tab changes will not carry an origin tab id',
+    )
+    return
+  }
+
+  target._createTransaction = function (...args: unknown[]) {
+    const trans = createTransaction.apply(this, args)
+    // Never overwrite an explicit source (e.g. a future sync addon).
+    if (trans !== undefined && trans !== null && trans.source === undefined) {
+      trans.source = getTabId()
+    }
+    return trans
+  }
+}
 
 /**
  * DB will be initialized to the current version.
@@ -141,7 +196,6 @@ class CyDB extends Dexie {
   [ObjectStoreNames.Summaries]!: DxTable<any>;
   [ObjectStoreNames.CyNetworkViews]!: DxTable<any>;
   [ObjectStoreNames.UiState]!: DxTable<any>;
-  [ObjectStoreNames.Timestamp]!: DxTable<any>;
   [ObjectStoreNames.Filters]!: DxTable<any>;
   [ObjectStoreNames.Apps]!: DxTable<CyApp>;
 
@@ -157,11 +211,17 @@ class CyDB extends Dexie {
   [ObjectStoreNames.AppSettings]!: DxTable<any>;
 
   // From v10
-  [ObjectStoreNames.StyleLibrary]!: DxTable<any>
+  [ObjectStoreNames.StyleLibrary]!: DxTable<any>;
+
+  // From v11
+  [ObjectStoreNames.ViewSelections]!: DxTable<any>
+
 
   constructor(dbName: string) {
     super(dbName)
     this.version(currentVersion).stores(Keys)
+
+    stampTransactionSource(this)
 
     // Register upgrade functions before open(); Dexie decides at open time
     // which ones the on-disk version needs
@@ -231,6 +291,45 @@ export const initializeDb = async (): Promise<void> => {
   registerDebugTool('db', db)
 }
 
+/**
+ * Verify at runtime that {@link stampTransactionSource}'s hook is still firing.
+ *
+ * `db.test.ts` asserts the same property, but a unit test only protects a build
+ * someone remembered to run the suite against. This makes the regression visible
+ * in the field: if a Dexie upgrade moves `_createTransaction`, cross-tab sync
+ * silently degrades to every tab hydrating its own writes, and nothing else in
+ * the app would say so.
+ *
+ * Uses a READ transaction on purpose — it writes no rows and creates no
+ * `_changes` records, so the check itself cannot perturb what it is checking.
+ *
+ * Never throws: a failed self-check means degraded sync, not an unusable app.
+ */
+export const verifyTransactionSourceStamp = async (): Promise<boolean> => {
+  try {
+    const expected = getTabId()
+    const observed = await db.transaction(
+      'r',
+      db.workspace,
+      async () => (Dexie.currentTransaction as any)?.source,
+    )
+
+    if (observed === expected) {
+      return true
+    }
+
+    logDb.error(
+      `[verifyTransactionSourceStamp] Dexie transactions are not carrying this tab's origin id ` +
+        `(expected "${expected}", saw "${String(observed)}"). Cross-tab sync will treat this tab's ` +
+        'own writes as foreign and re-hydrate them. See stampTransactionSource in src/data/db/index.ts.',
+    )
+    return false
+  } catch (err) {
+    logDb.error('[verifyTransactionSourceStamp] Self-check failed to run', err)
+    return false
+  }
+}
+
 export const getDatabaseVersion = (): number => {
   return db.verno
 }
@@ -244,25 +343,145 @@ export const closeDb = async (): Promise<void> => {
 }
 
 /**
- * Delete the current DB and create a new one
+ * What actually happened in {@link deleteDb}.
  *
- * - This should create the completely new DB with no data.
- *
+ * A single boolean used to cover all of these, which meant "the delete failed
+ * and your data is intact" and "your data is gone but I could not reopen the
+ * database" were reported identically — and the caller guessed wrong about
+ * which one it had. Only `deleted` is safe to treat as a completed reset.
  */
-export const deleteDb = async (): Promise<void> => {
+export type DeleteDbOutcome =
+  /** Destroyed, and a fresh empty database is open and ready. */
+  | 'deleted'
+  /** Nothing was destroyed. The previous data is intact and the DB is open. */
+  | 'delete-failed'
+  /**
+   * The delete did not finish within {@link DELETE_TIMEOUT_MS} — another
+   * connection is holding the database open. IndexedDB keeps the request
+   * queued, so it may still complete at any moment: the data must be treated
+   * as gone, and this tab has no usable connection.
+   */
+  | 'delete-blocked'
+  /**
+   * The database is gone (or in an unknown state) and no usable connection
+   * remains. Callers must not keep in-memory state that could be written back.
+   */
+  | 'reopen-failed'
+
+/**
+ * How long to wait for `deleteDatabase` before giving up on it.
+ *
+ * IndexedDB will not delete a database that still has open connections: it
+ * fires `blocked` and waits — with no timeout of its own — until every
+ * connection closes. `src/data/db/lifecycle.ts` asks the other tabs to let go
+ * first, but that handshake is best-effort by design (there is no tab census),
+ * so this is the backstop that keeps a wedged peer from hanging the reset
+ * forever with no way out for the user.
+ */
+export const DELETE_TIMEOUT_MS = 5000
+
+/**
+ * Delete the database, bounded in time, reporting whether it was blocked.
+ *
+ * `Dexie.delete()` is not used because it builds its own throwaway instance,
+ * which leaves no way to subscribe to `blocked`. Same work, one observable
+ * instance.
+ */
+const deleteDatabaseBounded = async (
+  timeoutMs: number,
+): Promise<'deleted' | 'blocked'> => {
+  // `addons: []` keeps dexie-observable off the throwaway deleter instance;
+  // this is what Dexie's own static `delete()` does.
+  const deleter = new Dexie(DB_NAME, { addons: [] })
+  deleter.on('blocked', () => {
+    logDb.warn(
+      `[DeleteDB] ${DB_NAME} delete is blocked: another connection still has ` +
+        'it open. Waiting for it to close.',
+    )
+  })
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deletion = deleter.delete().then((): 'deleted' => 'deleted')
+
+  // A rejection here propagates to the caller through the race, which is also
+  // what keeps it handled.
+  const result = await Promise.race([
+    deletion,
+    new Promise<'blocked'>((resolve) => {
+      timer = setTimeout(() => resolve('blocked'), timeoutMs)
+    }),
+  ])
+  clearTimeout(timer)
+
+  if (result === 'blocked') {
+    // The request stays queued in IndexedDB after we stop waiting for it, so
+    // its eventual settlement must not surface as an unhandled rejection.
+    void deletion.catch((err) => {
+      logDb.error('[DeleteDB] The queued delete request later failed', err)
+    })
+  }
+
+  return result
+}
+
+/** Point the module-level `db` at a fresh, open instance. */
+const reopenDb = async (): Promise<boolean> => {
+  try {
+    db = new CyDB(DB_NAME)
+    await db.open()
+    logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
+    return true
+  } catch (err) {
+    logDb.error(`[DeleteDB] Failed to reopen ${DB_NAME}`, err)
+    return false
+  }
+}
+
+/**
+ * Delete the current DB and create a new one.
+ *
+ * Never throws: existing callers (workspace import, tests) await this without a
+ * try/catch. Callers that must not proceed on failure check the outcome — see
+ * {@link DeleteDbOutcome}, and note that three of the four values mean "do not
+ * treat this as a completed reset".
+ */
+export const deleteDb = async (
+  options: { timeoutMs?: number } = {},
+): Promise<DeleteDbOutcome> => {
+  const timeoutMs = options.timeoutMs ?? DELETE_TIMEOUT_MS
+
   try {
     if (db) {
       db.close()
       logDb.info('[DeleteDB] DB is closed')
     }
-    await Dexie.delete(DB_NAME)
-    logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
-    db = new CyDB(DB_NAME)
-    await db.open()
-    logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
   } catch (err) {
-    logDb.error('[DeleteDB] Failed to reset DB', err)
+    logDb.warn('[DeleteDB] Failed to close the database before deleting', err)
   }
+
+  let result: 'deleted' | 'blocked'
+  try {
+    result = await deleteDatabaseBounded(timeoutMs)
+  } catch (err) {
+    logDb.error('[DeleteDB] Failed to delete DB', err)
+    // Nothing was destroyed, but `db.close()` above set Dexie's `autoOpen` to
+    // false and a sticky DatabaseClosed error, so without this the tab would
+    // keep its data on disk and be unable to read or write any of it.
+    return (await reopenDb()) ? 'delete-failed' : 'reopen-failed'
+  }
+
+  if (result === 'blocked') {
+    // Deliberately not reopened: an open() issued now queues behind the
+    // still-pending delete, so it would block for as long as the peer does.
+    logDb.error(
+      `[DeleteDB] ${DB_NAME} was not deleted within ${timeoutMs}ms — another ` +
+        'tab is holding it open. The delete is still queued.',
+    )
+    return 'delete-blocked'
+  }
+
+  logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
+  return (await reopenDb()) ? 'deleted' : 'reopen-failed'
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
@@ -436,7 +655,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       // TODO: pick the newest one in production
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
-      return observeValidation(`workspace ${lastWs.id}`, lastWs, validateWorkspace)
+      return observeValidation(
+        `workspace ${lastWs.id}`,
+        lastWs,
+        validateWorkspace,
+      )
     }
   }
 
@@ -472,7 +695,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       const allWS: Workspace[] = await db.workspace.toArray()
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning workspace:', lastWs)
-      return observeValidation(`workspace ${lastWs.id}`, lastWs, validateWorkspace)
+      return observeValidation(
+        `workspace ${lastWs.id}`,
+        lastWs,
+        validateWorkspace,
+      )
     }
   }
 }
@@ -858,7 +1085,70 @@ export const clearStyleLibraryFromDb = async (): Promise<void> => {
  * @returns NetworkView[] | undefined
  *
  **/
-export const getNetworkViewsFromDb = async (
+/**
+ * Node/edge selection for one network.
+ *
+ * Stored apart from `cyNetworkViews` (v11). Selection is the highest-frequency
+ * thing a user changes, and while it lived inside the view row every click
+ * rewrote the whole view model — node positions included — and made every other
+ * tab replace its view model on hydration. Splitting it means a click writes a
+ * couple of id arrays, and the view row it no longer touches stays
+ * byte-identical, so dexie-observable records no change for it at all.
+ */
+export interface ViewSelection {
+  selectedNodes: IdType[]
+  selectedEdges: IdType[]
+}
+
+export const getViewSelectionFromDb = async (
+  id: IdType,
+): Promise<ViewSelection | undefined> => {
+  const entry = await db.viewSelections.get({ id })
+  if (entry === undefined) {
+    return undefined
+  }
+  return observeValidation(
+    `view selection ${id}`,
+    { selectedNodes: entry.selectedNodes, selectedEdges: entry.selectedEdges },
+    validateViewSelection,
+  )
+}
+
+export const putViewSelectionToDb = async (
+  id: IdType,
+  selection: ViewSelection,
+): Promise<void> => {
+  try {
+    await db.viewSelections.put({
+      id,
+      selectedNodes: [...selection.selectedNodes],
+      selectedEdges: [...selection.selectedEdges],
+    })
+  } catch (e) {
+    logDb.error('[putViewSelectionToDb] error:', e, id)
+    throw e
+  }
+}
+
+export const deleteViewSelectionFromDb = async (id: IdType): Promise<void> => {
+  await db.viewSelections.delete(id)
+}
+
+export const clearViewSelectionsFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.viewSelections, async () => {
+    await db.viewSelections.clear()
+  })
+}
+
+/**
+ * Read a network's views, with selection merged back in from `viewSelections`.
+ *
+ * Merging here rather than at each call site keeps `NetworkView` whole for
+ * consumers, so the v11 split is invisible above the DB layer. Rows written
+ * before v11 still carry their own selection; it is used when no selection row
+ * exists yet.
+ */
+const readNetworkViewsRow = async (
   id: IdType,
 ): Promise<NetworkView[] | undefined> => {
   const entry = await db.cyNetworkViews.get({ id })
@@ -868,7 +1158,61 @@ export const getNetworkViewsFromDb = async (
       deserializeNetworkView(v),
       validateNetworkView,
     ),
-  ) as NetworkView[]
+  ) as NetworkView[] | undefined
+}
+
+export const getNetworkViewsFromDb = async (
+  id: IdType,
+): Promise<NetworkView[] | undefined> => {
+  const views = await readNetworkViewsRow(id)
+  if (views === undefined) {
+    return undefined
+  }
+
+  let storedSelection = await getViewSelectionFromDb(id)
+
+  if (storedSelection === undefined) {
+    // Pre-v11 row: selection is still inline. Reading it is not enough — the
+    // inline copy is the ONLY copy, and the next write of this row strips it
+    // (`withoutSelection` in ViewModelStore), so a node move or a layout would
+    // silently discard the user's selection. Move it to its new home now.
+    //
+    // A lazy back-fill rather than a Dexie upgrade function on purpose: an
+    // upgrade would have to read every `cyNetworkViews` row at open time, and it
+    // buys nothing. A view row is only ever rewritten for a network whose slice
+    // is in the store, which means a network the user opened, which means this
+    // read already ran for it. The loss window is exactly this call.
+    const inline: ViewSelection = {
+      selectedNodes: views[0]?.selectedNodes ?? [],
+      selectedEdges: views[0]?.selectedEdges ?? [],
+    }
+    storedSelection = inline
+
+    // Only when there is something to preserve: writing an empty row for every
+    // legacy network would mint a change record each peer tab then hydrates.
+    if (inline.selectedNodes.length > 0 || inline.selectedEdges.length > 0) {
+      try {
+        await putViewSelectionToDb(id, inline)
+        logDb.info(
+          `[getNetworkViewsFromDb] Migrated inline selection for ${id} to viewSelections (v11)`,
+        )
+      } catch (e) {
+        // Non-fatal: the caller still gets the selection this time round, and
+        // the next read retries. Failing the network load over it would be worse.
+        logDb.warn(
+          `[getNetworkViewsFromDb] Failed to back-fill selection for ${id}`,
+          e,
+        )
+      }
+    }
+  }
+
+  const selection = storedSelection
+  return views.map((view) => ({
+    ...view,
+    selectedNodes: selection.selectedNodes,
+    selectedEdges: selection.selectedEdges,
+  }))
 }
 /**
  * Add a new network view to the DB
@@ -889,7 +1233,7 @@ export const putNetworkViewToDb = async (
         )
         return
       }
-      const viewList = await getNetworkViewsFromDb(id)
+      const viewList = await readNetworkViewsRow(id)
       if (viewList !== undefined) {
         // Add only if the view does not exist
         let found = false
@@ -964,6 +1308,7 @@ export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.delete(id)
   })
+  await deleteViewSelectionFromDb(id)
 }
 
 /**
@@ -973,6 +1318,7 @@ export const clearNetworkViewsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.cyNetworkViews, async () => {
     await db.cyNetworkViews.clear()
   })
+  await clearViewSelectionsFromDb()
 }
 
 // UI State
@@ -1001,27 +1347,6 @@ export const deleteUiStateFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.uiState, async () => {
     await db.uiState.delete(DEFAULT_UI_STATE_ID)
   })
-}
-
-export const DEFAULT_TIMESTAMP_ID = 'timestamp'
-export const getTimestampFromDb = async (): Promise<number | undefined> => {
-  const ts = await db.timestamp.get({ id: DEFAULT_TIMESTAMP_ID })
-  if (ts !== undefined) {
-    return ts.timestamp
-  } else {
-    return undefined
-  }
-}
-
-export const putTimestampToDb = async (ts: number): Promise<void> => {
-  try {
-    await db.transaction('rw', db.timestamp, async () => {
-      await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
-    })
-  } catch (e) {
-    logDb.error('[putTimestampToDb] error:', e, ts)
-    throw e
-  }
 }
 
 /**

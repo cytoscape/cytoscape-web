@@ -5,6 +5,10 @@ import {
   DEFAULT_UI_STATE,
   useUiStateStore,
 } from '@/data/hooks/stores/UiStateStore'
+import {
+  applyTabViewState,
+  getTabViewState,
+} from '@/data/tabState/tabViewState'
 import type { Ui } from '@/models/UiModel'
 import { Panel } from '@/models/UiModel/Panel'
 import { PanelState } from '@/models/UiModel/PanelState'
@@ -16,17 +20,26 @@ const isPanelState = (value: string): value is PanelState =>
   PANEL_STATES.has(value)
 
 /**
- * Overlays the URL's panel and table-browser parameters on the persisted UI
- * state, returning a fresh object.
+ * Overlays this tab's remembered view state and then the URL's panel and
+ * table-browser parameters on the persisted UI state, returning a fresh object.
  *
- * Pure and exported so the shareable-URL semantics can be tested directly.
- * Never mutates `dbUiState` — the record from IndexedDB is frozen.
+ * Panels and the active tab indices are per-tab view state, kept in this tab's
+ * sessionStorage rather than in the shared `uiState` row, so opening a second
+ * tab does not inherit the first tab's layout (see `tabViewState.ts`).
+ * Precedence: URL search param > this tab's remembered state > default.
+ *
+ * Pure apart from the sessionStorage read, and exported so the shareable-URL
+ * semantics can be tested directly. Never mutates `dbUiState` — the record from
+ * IndexedDB is frozen.
  */
 export const mergeUiStateWithSearchParams = (
   dbUiState: Ui | undefined,
   search: URLSearchParams,
 ): Ui => {
-  const uiState = cloneDeep(dbUiState ?? { ...DEFAULT_UI_STATE })
+  const uiState = applyTabViewState(
+    cloneDeep(dbUiState ?? { ...DEFAULT_UI_STATE }),
+    getTabViewState(),
+  )
 
   for (const panel of [Panel.LEFT, Panel.RIGHT, Panel.BOTTOM]) {
     // Validated, not cast: these come from ?left=/?right=/?bottom= and an
@@ -76,5 +89,5 @@ export const loadWorkspaceState = async (
     .getState()
     .setUi(mergeUiStateWithSearchParams(dbUiState, search))
 
-  return { workspace, summaries, errors: [] }
+  return { workspace, summaries, errors: [], deepLinkFailed: false }
 }

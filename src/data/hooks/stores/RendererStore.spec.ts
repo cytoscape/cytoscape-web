@@ -212,4 +212,3 @@ describe('useRendererStore', () => {
     })
   })
 })
-

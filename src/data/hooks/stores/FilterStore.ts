@@ -13,6 +13,8 @@ import { NumberRange } from '../../../models/PropertyModel/NumberRange'
 import { ValueType } from '../../../models/TableModel'
 import { deleteFilterFromDb, putFilterToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
+
 /**
  * The store for both search and filter.
  *
@@ -143,18 +145,20 @@ export const useFilterStore = create(
         const newState = FilterStoreImpl.addFilterConfig(state, filter)
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
-        putFilterToDb(plainFilter)
-          .then(() => {
-            logStore.info(
-              `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
-            )
-          })
-          .catch((e) => {
-            logStore.error(
-              `[${useFilterStore.name}]: Failed to store the new filter to db: ${filter.name}`,
-              e,
-            )
-          })
+        if (!isHydrating()) {
+          putFilterToDb(plainFilter)
+            .then(() => {
+              logStore.info(
+                `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
+              )
+            })
+            .catch((e) => {
+              logStore.error(
+                `[${useFilterStore.name}]: Failed to store the new filter to db: ${filter.name}`,
+                e,
+              )
+            })
+        }
         state.filterConfigs = newState.filterConfigs
         return state
       })
@@ -172,7 +176,9 @@ export const useFilterStore = create(
         const newState = FilterStoreImpl.updateFilterConfig(state, name, filter)
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
-        putFilterToDb(plainFilter)
+        if (!isHydrating()) {
+          putFilterToDb(plainFilter)
+        }
         state.filterConfigs = newState.filterConfigs
         return state
       })
@@ -187,18 +193,20 @@ export const useFilterStore = create(
         if (newFilter) {
           // Convert Immer proxy to plain object before saving
           const plainFilter = toPlainObject(newFilter)
-          putFilterToDb(plainFilter)
-            .then(() => {
-              logStore.info(
-                `[${useFilterStore.name}]: Range updated in db: ${name}`,
-              )
-            })
-            .catch((e) => {
-              logStore.error(
-                `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
-                e,
-              )
-            })
+          if (!isHydrating()) {
+            putFilterToDb(plainFilter)
+              .then(() => {
+                logStore.info(
+                  `[${useFilterStore.name}]: Range updated in db: ${name}`,
+                )
+              })
+              .catch((e) => {
+                logStore.error(
+                  `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
+                  e,
+                )
+              })
+          }
         }
         state.filterConfigs = newState.filterConfigs
         return state

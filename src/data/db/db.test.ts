@@ -1,4 +1,7 @@
+import Dexie from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { getTabId } from '@/data/tabState/tabId'
 
 import { logDb } from '../../debug'
 
@@ -77,9 +80,9 @@ import {
   getNetworkViewsFromDb,
   getOpaqueAspectsFromDb,
   getTablesFromDb,
-  getTimestampFromDb,
   getUiStateFromDb,
   getUndoRedoStackFromDb,
+  getViewSelectionFromDb,
   getVisualStyleFromDb,
   getStyleSetMetadataFromDb,
   getVisualStyleSetFromDb,
@@ -97,13 +100,14 @@ import {
   putServiceAppToDb,
   putStyleTemplateToDb,
   putTablesToDb,
-  putTimestampToDb,
   putUiStateToDb,
   putUndoRedoStackToDb,
+  putViewSelectionToDb,
   putVisualStyleSetToDb,
   putVisualStyleToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
+  verifyTransactionSourceStamp,
 } from './index'
 import {
   deserializeNetworkView,
@@ -824,15 +828,6 @@ describe('CyDB helper coverage', () => {
     expect(await getUiStateFromDb()).toBeUndefined()
   })
 
-  it('stores timestamps', async () => {
-    await setupFreshDb()
-
-    expect(await getTimestampFromDb()).toBeUndefined()
-
-    await putTimestampToDb(123456789)
-    expect(await getTimestampFromDb()).toBe(123456789)
-  })
-
   it('persists filter configurations with map values intact', async () => {
     await setupFreshDb()
 
@@ -1230,5 +1225,240 @@ describe('read-path validation (observe mode)', () => {
     expect(row).toBeDefined()
     expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
     warnSpy.mockRestore()
+  })
+})
+
+/**
+ * Guard for the cross-tab origin tag (see `stampTransactionSource` in index.ts).
+ *
+ * Cross-tab sync ignores changes whose `source` equals this tab's id. If the
+ * `_createTransaction` override ever stops firing — e.g. a Dexie upgrade
+ * renames the internal — every change would read as foreign and each tab would
+ * re-hydrate its own writes, silently reintroducing the echo loop. These tests
+ * make that failure loud.
+ */
+describe('cross-tab change origin tagging', () => {
+  it('stamps this tab id onto _changes rows written through the db helpers', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    await putNetworkSummaryToDb(createTestSummary('origin-net'))
+
+    const changes = await (db as any)._changes.toArray()
+    const summaryChanges = changes.filter((c: any) => c.table === 'summaries')
+
+    expect(summaryChanges.length).toBeGreaterThan(0)
+    for (const change of summaryChanges) {
+      expect(change.source).toBe(getTabId())
+    }
+  })
+
+  it('does not overwrite a source set explicitly by the caller', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    await db.transaction('rw', db.summaries, async () => {
+      ;(Dexie.currentTransaction as any).source = 'explicit-source'
+      await db.summaries.put({ ...createTestSummary('explicit-net') })
+    })
+
+    const changes = await (db as any)._changes.toArray()
+    const row = changes.find(
+      (c: any) => c.table === 'summaries' && c.key === 'explicit-net',
+    )
+
+    expect(row?.source).toBe('explicit-source')
+  })
+
+  it('self-check reports the stamp as present', async () => {
+    await setupFreshDb()
+
+    // The runtime counterpart of the two tests above: `openDatabaseForStartup`
+    // calls this on every boot so a broken hook is visible in the field, not
+    // just in CI.
+    await expect(verifyTransactionSourceStamp()).resolves.toBe(true)
+  })
+
+  it('self-check reports failure when the hook stops firing', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    // Simulate the regression: restore an unpatched _createTransaction.
+    const patched = (db as any)._createTransaction
+    ;(db as any)._createTransaction = function (...args: unknown[]) {
+      const trans = patched.apply(this, args)
+      trans.source = undefined
+      return trans
+    }
+
+    try {
+      await expect(verifyTransactionSourceStamp()).resolves.toBe(false)
+    } finally {
+      ;(db as any)._createTransaction = patched
+    }
+  })
+})
+
+/**
+ * DB v11 moved node/edge selection out of the `cyNetworkViews` row into its own
+ * `viewSelections` store. Two properties matter: rows written before v11 must
+ * still surface their inline selection, and a selection change must not disturb
+ * the view row (an identical row produces no dexie-observable change record,
+ * which is what stops a click in one tab from replacing every other tab's view
+ * model).
+ */
+describe('view selection storage (DB v11)', () => {
+  it('round-trips a selection through its own store', async () => {
+    await setupFreshDb()
+
+    expect(await getViewSelectionFromDb('sel-net')).toBeUndefined()
+
+    await putViewSelectionToDb('sel-net', {
+      selectedNodes: ['n1', 'n2'],
+      selectedEdges: ['e1'],
+    })
+
+    expect(await getViewSelectionFromDb('sel-net')).toEqual({
+      selectedNodes: ['n1', 'n2'],
+      selectedEdges: ['e1'],
+    })
+  })
+
+  it('merges the stored selection into the views it reads', async () => {
+    await setupFreshDb()
+    const view = createNetworkView('merge-net-nodeLink-1', 'red')
+    await putNetworkViewsToDb('merge-net', [
+      { ...view, selectedNodes: [], selectedEdges: [] },
+    ])
+    await putViewSelectionToDb('merge-net', {
+      selectedNodes: ['n1'],
+      selectedEdges: ['e1'],
+    })
+
+    const views = await getNetworkViewsFromDb('merge-net')
+
+    expect(views?.[0].selectedNodes).toEqual(['n1'])
+    expect(views?.[0].selectedEdges).toEqual(['e1'])
+  })
+
+  it('falls back to inline selection for rows written before v11', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('legacy-net-nodeLink-1', 'blue')
+    // Write the row the way v10 did: selection inline, no viewSelections row.
+    await db.cyNetworkViews.put({
+      id: 'legacy-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: ['legacy-n1'],
+          selectedEdges: [],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    const views = await getNetworkViewsFromDb('legacy-net')
+
+    expect(views?.[0].selectedNodes).toEqual(['legacy-n1'])
+  })
+
+  it('back-fills a pre-v11 inline selection so a later view write cannot erase it', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('backfill-net-nodeLink-1', 'blue')
+    // A v10 row: selection inline, no viewSelections row.
+    await db.cyNetworkViews.put({
+      id: 'backfill-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: ['keep-n1'],
+          selectedEdges: ['keep-e1'],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    // Loading the network reads it, which is the moment the selection must be
+    // moved to its new home.
+    await getNetworkViewsFromDb('backfill-net')
+    expect(await getViewSelectionFromDb('backfill-net')).toEqual({
+      selectedNodes: ['keep-n1'],
+      selectedEdges: ['keep-e1'],
+    })
+
+    // Now any non-selection edit (a node move, a layout) rewrites the view row
+    // with selection stripped — `withoutSelection` in ViewModelStore. Without
+    // the back-fill above, the inline copy was the ONLY copy and this erased it.
+    await putNetworkViewsToDb('backfill-net', [
+      { ...view, selectedNodes: [], selectedEdges: [] },
+    ])
+
+    const reloaded = await getNetworkViewsFromDb('backfill-net')
+    expect(reloaded?.[0].selectedNodes).toEqual(['keep-n1'])
+    expect(reloaded?.[0].selectedEdges).toEqual(['keep-e1'])
+  })
+
+  it('does not create a selection row for a legacy view with no selection', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('empty-sel-net-nodeLink-1', 'blue')
+    await db.cyNetworkViews.put({
+      id: 'empty-sel-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: [],
+          selectedEdges: [],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    await getNetworkViewsFromDb('empty-sel-net')
+
+    // Nothing to preserve, so nothing is written — reading a network must not
+    // mint a change record every other tab then hydrates.
+    expect(await getViewSelectionFromDb('empty-sel-net')).toBeUndefined()
+  })
+
+  it('drops the selection row when the network views are deleted', async () => {
+    await setupFreshDb()
+    await putViewSelectionToDb('gone-net', {
+      selectedNodes: ['n1'],
+      selectedEdges: [],
+    })
+
+    await deleteNetworkViewsFromDb('gone-net')
+
+    expect(await getViewSelectionFromDb('gone-net')).toBeUndefined()
+  })
+
+  it('writes no change record when only the selection changes', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('quiet-net-nodeLink-1', 'green')
+    const persistable = [{ ...view, selectedNodes: [], selectedEdges: [] }]
+
+    await putNetworkViewsToDb('quiet-net', persistable)
+    const before = (await (db as any)._changes.toArray()).filter(
+      (c: any) => c.table === 'cyNetworkViews',
+    ).length
+
+    // Re-persisting the same views (what a selection-only change produces, now
+    // that selection is stripped) must be a no-op at the change-log level.
+    await putNetworkViewsToDb('quiet-net', persistable)
+    const after = (await (db as any)._changes.toArray()).filter(
+      (c: any) => c.table === 'cyNetworkViews',
+    ).length
+
+    expect(after).toBe(before)
   })
 })

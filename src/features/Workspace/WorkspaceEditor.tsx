@@ -31,6 +31,7 @@ import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchy
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
+import { setTabNetworkId } from '@/data/tabState/tabNetwork'
 import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
@@ -92,7 +93,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   }, [])
 
   // Indicates if a network failed to load
-  const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
+  const [failedToLoad, setFailedToLoad] = useState<string>('')
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
   const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
     (state) => state.setShow,
@@ -330,7 +331,14 @@ const WorkSpaceEditor = (): JSX.Element => {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
-      setFailedToLoad(true)
+      // Show the message but not raw internals: `String(error)` can surface
+      // stack-ish text, internal URLs, or response bodies. The detail is logged
+      // just above for anyone debugging.
+      setFailedToLoad(
+        error instanceof Error && error.message !== ''
+          ? error.message
+          : 'Unknown error',
+      )
     }
   }
 
@@ -362,7 +370,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
 
       isLoadingRef.current = true
-      setFailedToLoad(false)
+      setFailedToLoad('')
       logUi.info(
         `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${networkIdFromParams}`,
       )
@@ -371,6 +379,9 @@ const WorkSpaceEditor = (): JSX.Element => {
         .then(() => {
           // Handle the case where the back/forward button is pressed
           setCurrentNetworkId(networkIdFromParams)
+          // Remember this tab's active network so a cross-tab reload restores it
+          // even if the URL loses its network segment (CW-722).
+          setTabNetworkId(networkIdFromParams)
           // Synchronize activeNetworkView with currentNetworkId
           if (networkIdFromParams === '') {
             setActiveNetworkView('')
