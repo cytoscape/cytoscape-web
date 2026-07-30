@@ -23,6 +23,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { VisualStyle } from '../../../models/VisualStyleModel'
+import { PRESET_VISUAL_STYLES } from '../../../models/VisualStyleModel/impl/presetVisualStyles'
 import { useStylePreviewSample } from './preview/useStylePreviewSample'
 import { styleFingerprint } from './styleFingerprint'
 import { copiedStyleName } from './styleNaming'
@@ -262,6 +263,14 @@ export const StylePickerDialog = (
   const visibleTemplates = Object.values(templates).filter((template) =>
     matches(template.name, query),
   )
+  // Deliberately NOT de-duplicated against this network's styles, unlike the
+  // foreign section. That list grows without bound as copies accumulate; this one
+  // is a fixed catalogue, and an entry vanishing from it because you happen to
+  // have applied it once reads as the catalogue being broken.
+  const visiblePresets = PRESET_VISUAL_STYLES.filter(
+    (preset) =>
+      matches(preset.name, query) || matches(preset.description, query),
+  )
 
   const localActions = (entry: {
     id: IdType
@@ -280,7 +289,8 @@ export const StylePickerDialog = (
   const nothingMatches =
     visibleLocal.length === 0 &&
     visibleForeign.length === 0 &&
-    visibleTemplates.length === 0
+    visibleTemplates.length === 0 &&
+    visiblePresets.length === 0
 
   return (
     <Dialog
@@ -379,6 +389,27 @@ export const StylePickerDialog = (
                 selected={false}
                 onClick={() => onCopyIn(template.name, template.visualStyle)}
                 testId={`style-picker-library-${template.id}`}
+              />
+            ))}
+          </Section>
+        )}
+
+        {visiblePresets.length > 0 && (
+          <Section
+            title="General Styles"
+            hint="Click to copy into this network"
+            testId="style-picker-section-presets"
+          >
+            {visiblePresets.map((preset) => (
+              <StyleTile
+                key={preset.id}
+                name={preset.name}
+                provenance={preset.description}
+                visualStyle={preset.visualStyle}
+                sample={sample}
+                selected={false}
+                onClick={() => onCopyIn(preset.name, preset.visualStyle)}
+                testId={`style-picker-preset-${preset.id}`}
               />
             ))}
           </Section>

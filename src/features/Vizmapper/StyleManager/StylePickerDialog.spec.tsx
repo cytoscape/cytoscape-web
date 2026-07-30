@@ -6,6 +6,7 @@ import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibrarySto
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
+import { PRESET_VISUAL_STYLES } from '../../../models/VisualStyleModel/impl/presetVisualStyles'
 import { createVisualStyle } from '../../../models/VisualStyleModel/impl/visualStyleFnImpl'
 import { StylePickerDialog } from './StylePickerDialog'
 
@@ -142,6 +143,73 @@ describe('StylePickerDialog', () => {
 
     expect(handlers.onCopyIn).toHaveBeenCalledWith('Metallic', template)
     expect(handlers.onSwitch).not.toHaveBeenCalled()
+  })
+
+  describe('general styles', () => {
+    it('always offers the shipped catalogue', () => {
+      // The point of the section: on a fresh workspace the only other option is
+      // the single "Default" the current network arrived with.
+      renderDialog()
+
+      expect(screen.getByTestId('style-picker-section-presets')).toBeDefined()
+      PRESET_VISUAL_STYLES.forEach((preset) => {
+        expect(
+          screen.getByTestId(`style-picker-preset-${preset.id}`),
+        ).toBeDefined()
+      })
+    })
+
+    it('copies a preset in rather than switching', () => {
+      const preset = PRESET_VISUAL_STYLES[0]
+      const handlers = renderDialog()
+
+      fireEvent.click(screen.getByTestId(`style-picker-preset-${preset.id}`))
+
+      expect(handlers.onCopyIn).toHaveBeenCalledWith(
+        preset.name,
+        preset.visualStyle,
+      )
+      expect(handlers.onSwitch).not.toHaveBeenCalled()
+    })
+
+    it('matches a preset on its description as well as its name', () => {
+      renderDialog()
+
+      fireEvent.change(screen.getByTestId('style-picker-search'), {
+        target: { value: 'projector' },
+      })
+
+      expect(
+        screen.getByTestId('style-picker-preset-preset-high-contrast'),
+      ).toBeDefined()
+      expect(screen.queryByTestId('style-picker-no-matches')).toBeNull()
+    })
+
+    it('stays complete after a preset has been applied', () => {
+      // NOT de-duplicated against this network's styles, unlike the foreign
+      // section: a fixed catalogue losing entries as you use them reads as broken.
+      const preset = PRESET_VISUAL_STYLES[0]
+      act(() => {
+        useVisualStyleStore
+          .getState()
+          .importStyle(NETWORK_ID, preset.name, preset.visualStyle)
+      })
+      renderDialog()
+
+      expect(
+        screen.getByTestId(`style-picker-preset-${preset.id}`),
+      ).toBeDefined()
+    })
+
+    it('offers no management actions on a preset tile', () => {
+      // They are code, not user data: nothing to rename or delete.
+      const preset = PRESET_VISUAL_STYLES[0]
+      renderDialog()
+
+      expect(
+        screen.queryByTestId(`style-picker-preset-${preset.id}-menu-button`),
+      ).toBeNull()
+    })
   })
 
   describe('other networks', () => {

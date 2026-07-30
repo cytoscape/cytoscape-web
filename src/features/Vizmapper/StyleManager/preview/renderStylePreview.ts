@@ -201,9 +201,15 @@ export const renderStylePreview = async (
       output: 'base64uri',
       maxWidth: PREVIEW_WIDTH,
       maxHeight: PREVIEW_HEIGHT,
-      // Opaque white: node fills are frequently white or transparent, and on a
-      // transparent thumbnail those styles read as an empty tile.
-      bg: '#ffffff',
+      // The style's OWN background, because networkBackgroundColor never reaches
+      // the cyjs stylesheet — NetworkPanel applies it as container CSS, so a
+      // hardcoded white here would render every dark style on white and lie
+      // about what the canvas will look like. Always a concrete colour, never
+      // transparent: a white or unfilled node on a transparent thumbnail reads
+      // as an empty tile.
+      bg:
+        (previewStyle.networkBackgroundColor?.defaultValue as string) ??
+        '#ffffff',
     })
 
     putInCache(visualStyle, sample.key, dataUrl)
