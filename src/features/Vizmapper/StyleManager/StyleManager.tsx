@@ -1,7 +1,9 @@
 import MoreVertIcon from '@mui/icons-material/MoreVert'
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import {
   Box,
   Button,
+  ButtonBase,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,19 +14,24 @@ import {
   ListItemText,
   Menu,
   MenuItem,
-  Select,
   Tooltip,
+  Typography,
 } from '@mui/material'
 import { useState } from 'react'
 
 import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
-import { StyleTemplate } from '../../../models/VisualStyleModel'
+import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { StyleTemplate, VisualStyle } from '../../../models/VisualStyleModel'
+import { useStylePreviewSample } from './preview/useStylePreviewSample'
+import { useStyleThumbnail } from './preview/useStyleThumbnail'
 import { StyleLibraryDialog } from './StyleLibraryDialog'
 import { StyleNameDialog } from './StyleNameDialog'
+import { StylePickerDialog } from './StylePickerDialog'
 
 type DialogKind =
   | 'none'
@@ -33,13 +40,18 @@ type DialogKind =
   | 'delete'
   | 'saveToLibrary'
   | 'library'
+  | 'picker'
 
 /**
  * Style selector + management menu shown at the top of the Vizmapper panel.
  *
- * Lets the user switch between a network's named styles and
- * create / duplicate / rename / delete them, plus exchange styles with the
- * workspace-level style library (copy-on-assign in both directions).
+ * The selector is a button showing the active style's thumbnail and name; it
+ * opens StylePickerDialog, a grid of previews covering this network's styles,
+ * other networks' styles, and the library. It replaced a plain name dropdown,
+ * in which no style could be told apart from any other without applying it.
+ *
+ * The MoreVert menu keeps create / duplicate / rename / delete and the library
+ * exchange (copy-on-assign in both directions).
  */
 export const StyleManager = (props: {
   networkId: IdType
@@ -63,12 +75,20 @@ export const StyleManager = (props: {
     (state) => state.setNetworkModified,
   )
 
+  const { postEdit } = useUndoStack()
+  const sample = useStylePreviewSample(networkId)
+
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
   const [dialog, setDialog] = useState<DialogKind>('none')
+  // Which style the tile menu acted on; the dialogs below are shared with the
+  // MoreVert menu, which always targets the active style.
+  const [targetStyleId, setTargetStyleId] = useState<IdType | undefined>()
 
   const entries = Object.values(styleSet?.styles ?? {})
   const activeStyleId = styleSet?.activeStyleId ?? ''
   const activeEntry = styleSet?.styles[activeStyleId]
+
+  const activeThumbnail = useStyleThumbnail(activeVisualStyle, sample)
 
   if (styleSet === undefined || activeEntry === undefined) {
     return <></>
@@ -80,13 +100,58 @@ export const StyleManager = (props: {
 
   const closeMenu = (): void => setMenuAnchor(null)
 
+  // The style the shared rename/delete dialogs act on: whatever a tile menu
+  // picked, else the active style (the MoreVert menu's target).
+  const effectiveTargetId = targetStyleId ?? activeStyleId
+  const effectiveTargetEntry = styleSet.styles[effectiveTargetId] ?? activeEntry
+
+  const openDialogFor = (kind: DialogKind, styleId?: IdType): void => {
+    setTargetStyleId(styleId)
+    setDialog(kind)
+  }
+
+  const closeDialog = (): void => {
+    setDialog('none')
+    setTargetStyleId(undefined)
+  }
+
   const handleSwitch = (styleId: IdType): void => {
     if (styleId === activeStyleId) {
       return
     }
-    switchStyle(networkId, styleId)
+    const previousStyleId = activeStyleId
+    if (!switchStyle(networkId, styleId)) {
+      return
+    }
     markModified()
+    // Recorded as an undoable edit rather than clearing the history, which is
+    // what switchStyle used to do. Undoing this restores the previous style
+    // BEFORE any older edit replays, so those edits land on the style they were
+    // recorded under. Only the ids travel on the stack — never style content.
+    postEdit(
+      UndoCommandType.SWITCH_STYLE,
+      `Switch style to "${styleSet.styles[styleId]?.name ?? styleId}"`,
+      [networkId, previousStyleId],
+      [networkId, styleId],
+      // Explicit: this is the network the switch actually mutated, which is not
+      // necessarily the one postEdit would infer on this render.
+      networkId,
+    )
     logUi.info(`[StyleManager]: Switched to style ${styleId}`, { networkId })
+  }
+
+  const handleCopyIn = (name: string, visualStyle: VisualStyle): void => {
+    // Copy-on-assign: the source style (another network's, or a library
+    // template) is never referenced, so editing this copy cannot reach back.
+    const newId = importStyle(networkId, name, visualStyle)
+    if (newId !== undefined) {
+      // Deliberately NOT posted as an undoable edit: creating a style is not
+      // undoable, so an undo that only reverted the switch would leave the new
+      // style behind and read as a no-op.
+      switchStyle(networkId, newId)
+      markModified()
+    }
+    closeDialog()
   }
 
   const handleCreate = (name: string): void => {
@@ -97,22 +162,22 @@ export const StyleManager = (props: {
     }
   }
 
-  const handleDuplicate = (): void => {
-    const newId = duplicateStyle(networkId, activeStyleId)
+  const handleDuplicate = (styleId: IdType = activeStyleId): void => {
+    const newId = duplicateStyle(networkId, styleId)
     if (newId !== undefined) {
       markModified()
     }
   }
 
   const handleRename = (name: string): void => {
-    renameStyle(networkId, activeStyleId, name)
+    renameStyle(networkId, effectiveTargetId, name)
     markModified()
   }
 
   const handleDelete = (): void => {
-    deleteStyle(networkId, activeStyleId)
+    deleteStyle(networkId, effectiveTargetId)
     markModified()
-    setDialog('none')
+    closeDialog()
   }
 
   const handleSaveToLibrary = (name: string): void => {
@@ -122,12 +187,7 @@ export const StyleManager = (props: {
   }
 
   const handleApplyTemplate = (template: StyleTemplate): void => {
-    const newId = importStyle(networkId, template.name, template.visualStyle)
-    if (newId !== undefined) {
-      switchStyle(networkId, newId)
-      markModified()
-    }
-    setDialog('none')
+    handleCopyIn(template.name, template.visualStyle)
   }
 
   return (
@@ -143,24 +203,64 @@ export const StyleManager = (props: {
           `2px solid ${theme.palette.background.default}`,
       }}
     >
-      <Select
-        size="small"
-        value={activeStyleId}
-        onChange={(e) => handleSwitch(e.target.value)}
-        sx={{ flexGrow: 1, minWidth: 0, height: 30, fontSize: 13 }}
-        data-testid="style-manager-select"
-        inputProps={{ 'data-testid': 'style-manager-select-input' }}
-      >
-        {entries.map((entry) => (
-          <MenuItem
-            key={entry.id}
-            value={entry.id}
-            data-testid={`style-manager-option-${entry.id}`}
+      <Tooltip title={`${activeEntry.name} — click to browse styles`}>
+        <ButtonBase
+          onClick={() => openDialogFor('picker')}
+          data-testid="style-manager-picker-button"
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            height: 30,
+            px: 0.5,
+            gap: 0.75,
+            justifyContent: 'flex-start',
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            borderRadius: 1,
+            '&:hover': { borderColor: 'primary.main' },
+          }}
+        >
+          {/* The live style, visible without opening anything. */}
+          <Box
+            sx={{
+              width: 34,
+              height: 22,
+              flexShrink: 0,
+              borderRadius: 0.5,
+              backgroundColor: '#f5f5f5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
           >
-            {entry.name}
-          </MenuItem>
-        ))}
-      </Select>
+            {activeThumbnail !== undefined && (
+              <Box
+                component="img"
+                src={activeThumbnail}
+                alt=""
+                data-testid="style-manager-active-thumbnail"
+                sx={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
+              />
+            )}
+          </Box>
+          <Typography
+            variant="body2"
+            data-testid="style-manager-active-name"
+            sx={{
+              fontSize: 13,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {activeEntry.name}
+          </Typography>
+          <UnfoldMoreIcon
+            fontSize="small"
+            sx={{ ml: 'auto', color: 'action.active' }}
+          />
+        </ButtonBase>
+      </Tooltip>
       <Tooltip title="Manage styles">
         <IconButton
           size="small"
@@ -230,21 +330,35 @@ export const StyleManager = (props: {
         </MenuItem>
       </Menu>
 
+      <StylePickerDialog
+        open={dialog === 'picker'}
+        networkId={networkId}
+        onClose={closeDialog}
+        onSwitch={(styleId) => {
+          handleSwitch(styleId)
+          closeDialog()
+        }}
+        onCopyIn={handleCopyIn}
+        onRename={(styleId) => openDialogFor('rename', styleId)}
+        onDuplicate={(styleId) => handleDuplicate(styleId)}
+        onDelete={(styleId) => openDialogFor('delete', styleId)}
+      />
+
       <StyleNameDialog
         open={dialog === 'create'}
         title="New Style"
         confirmLabel="Create"
         initialName="New Style"
         onConfirm={handleCreate}
-        onClose={() => setDialog('none')}
+        onClose={closeDialog}
       />
       <StyleNameDialog
         open={dialog === 'rename'}
         title="Rename Style"
         confirmLabel="Rename"
-        initialName={activeEntry.name}
+        initialName={effectiveTargetEntry.name}
         onConfirm={handleRename}
-        onClose={() => setDialog('none')}
+        onClose={closeDialog}
       />
       <StyleNameDialog
         open={dialog === 'saveToLibrary'}
@@ -252,23 +366,23 @@ export const StyleManager = (props: {
         confirmLabel="Save"
         initialName={activeEntry.name}
         onConfirm={handleSaveToLibrary}
-        onClose={() => setDialog('none')}
+        onClose={closeDialog}
       />
       <Dialog
         open={dialog === 'delete'}
-        onClose={() => setDialog('none')}
+        onClose={closeDialog}
         data-testid="style-manager-delete-dialog"
       >
         <DialogTitle>Delete Style</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Delete the style &ldquo;{activeEntry.name}&rdquo;? This cannot be
-            undone.
+            Delete the style &ldquo;{effectiveTargetEntry.name}&rdquo;? This
+            cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setDialog('none')}
+            onClick={closeDialog}
             data-testid="style-manager-delete-cancel-button"
           >
             Cancel
@@ -286,7 +400,7 @@ export const StyleManager = (props: {
       <StyleLibraryDialog
         open={dialog === 'library'}
         onApply={handleApplyTemplate}
-        onClose={() => setDialog('none')}
+        onClose={closeDialog}
       />
     </Box>
   )

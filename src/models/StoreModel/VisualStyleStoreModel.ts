@@ -156,9 +156,16 @@ export interface VisualStyleAction {
  * Actions for managing a network's set of named styles.
  */
 export interface StyleSetAction {
-  /** Make another named style the active one. Clears the network's
-   * undo/redo history (recorded edits reference the previous style). */
-  switchStyle: (networkId: IdType, styleId: IdType) => void
+  /**
+   * Make another named style the active one.
+   *
+   * Returns true when the active style actually changed, false when the
+   * network or the target style is unknown or it was already active. Callers
+   * that record the switch as an undoable edit need to know: replaying a
+   * switch onto a deleted style must fail loudly rather than look like it
+   * worked (see UndoCommandType.SWITCH_STYLE in useUndoStack.tsx).
+   */
+  switchStyle: (networkId: IdType, styleId: IdType) => boolean
   /** Create a new named style as a copy of the current ACTIVE style.
    * Returns the new style id, or undefined if the network is unknown. */
   createStyle: (networkId: IdType, name?: string) => IdType | undefined

@@ -767,7 +767,12 @@ describe('useVisualStyleStore', () => {
       ).toBe('diamond')
     })
 
-    it('switchStyle should clear the undo/redo history of the network', () => {
+    it('switchStyle should PRESERVE the undo/redo history of the network', () => {
+      // This used to clear the history, because edits recorded under the old
+      // style would be replayed onto the new one. The switch is now itself an
+      // undoable edit, so undoing past it restores the previous style first and
+      // the stack stays consistent. Clearing here would also destroy the very
+      // edit the caller pushes for the switch.
       const { result } = renderHook(() => useVisualStyleStore())
       const { result: undoResult } = renderHook(() => useUndoStore())
       let publicationId: IdType | undefined
@@ -795,7 +800,74 @@ describe('useVisualStyleStore', () => {
       })
       expect(
         undoResult.current.undoRedoStacks[networkId].undoStack,
+      ).toHaveLength(1)
+    })
+
+    it('deleteStyle should clear the undo/redo history of the network', () => {
+      // A SWITCH_STYLE edit referencing a deleted style cannot be replayed, and
+      // dropping only that edit would leave older ones applying to whichever
+      // style happened to be active. Cleared for ANY delete, not just the
+      // active style's.
+      const { result } = renderHook(() => useVisualStyleStore())
+      const { result: undoResult } = renderHook(() => useUndoStore())
+      let publicationId: IdType | undefined
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        publicationId = result.current.createStyle(networkId, 'Publication')
+        undoResult.current.addStack(networkId, {
+          undoStack: [
+            {
+              undoCommand: 'SWITCH_STYLE' as any,
+              description: 'test',
+              undoParams: [],
+              redoParams: [],
+            },
+          ],
+          redoStack: [],
+        })
+      })
+
+      act(() => {
+        // The INACTIVE style: 'Publication' was created but never switched to.
+        result.current.deleteStyle(networkId, publicationId as IdType)
+      })
+      expect(
+        undoResult.current.undoRedoStacks[networkId].undoStack,
       ).toHaveLength(0)
+    })
+
+    it('switchStyle should report whether it switched', () => {
+      // The undo command map relies on this: replaying a switch onto a deleted
+      // style has to fail loudly rather than look like it worked.
+      const { result } = renderHook(() => useVisualStyleStore())
+      let toUnknownStyle: boolean | undefined
+      let toUnknownNetwork: boolean | undefined
+      let toAlreadyActive: boolean | undefined
+      let toReal: boolean | undefined
+      let publicationId: IdType | undefined
+
+      act(() => {
+        result.current.add(networkId, createVisualStyle())
+        publicationId = result.current.createStyle(networkId, 'Publication')
+      })
+      // Read after the act: result.current is the last RENDERED state, so
+      // styleSets is still undefined inside the act above.
+      const activeId = result.current.styleSets[networkId].activeStyleId
+
+      act(() => {
+        toUnknownStyle = result.current.switchStyle(
+          networkId,
+          'nonexistent-style',
+        )
+        toUnknownNetwork = result.current.switchStyle('nonexistent-network', 'x')
+        toAlreadyActive = result.current.switchStyle(networkId, activeId)
+        toReal = result.current.switchStyle(networkId, publicationId as IdType)
+      })
+
+      expect(toUnknownStyle).toBe(false)
+      expect(toUnknownNetwork).toBe(false)
+      expect(toAlreadyActive).toBe(false)
+      expect(toReal).toBe(true)
     })
 
     it('switchStyle should ignore unknown styles and unknown networks', () => {
@@ -1091,8 +1163,26 @@ describe('useVisualStyleStore', () => {
           .mocked(putVisualStyleSetToDb)
           .mock.calls.some(([id]) => id === networkId),
       ).toBe(true)
-      // The cleared undo history is persisted for the same network too —
-      // a stale on-disk stack would corrupt the new style after a reload
+      // Switching no longer touches the undo history, so nothing should be
+      // written for it here. deleteStyle is what clears (and persists) now.
+      expect(
+        vi
+          .mocked(putUndoRedoStackToDb)
+          .mock.calls.some(([id]) => id === networkId),
+      ).toBe(false)
+
+      const persistedSet = vi
+        .mocked(putVisualStyleSetToDb)
+        .mock.calls.find(([id]) => id === networkId)?.[1]
+      expect(persistedSet?.activeStyleId).toBe(publicationId)
+
+      // ...and the clear that deleteStyle does perform reaches the DB for the
+      // non-current network too: a stale on-disk stack would resurrect edits
+      // referencing a style that no longer exists after a reload.
+      vi.mocked(putUndoRedoStackToDb).mockClear()
+      act(() => {
+        result.current.deleteStyle(networkId, publicationId as IdType)
+      })
       expect(
         vi
           .mocked(putUndoRedoStackToDb)
@@ -1100,11 +1190,6 @@ describe('useVisualStyleStore', () => {
             ([id, stack]) => id === networkId && stack.undoStack.length === 0,
           ),
       ).toBe(true)
-
-      const persistedSet = vi
-        .mocked(putVisualStyleSetToDb)
-        .mock.calls.find(([id]) => id === networkId)?.[1]
-      expect(persistedSet?.activeStyleId).toBe(publicationId)
     })
 
     it('createStyleSet helper output should be accepted by add', () => {

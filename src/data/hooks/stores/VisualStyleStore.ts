@@ -265,10 +265,16 @@ export const useVisualStyleStore = create(
         })
         if (switched) {
           persistStyleSetOf(networkId)
-          // Undo entries recorded so far reference the previous style; keeping
-          // them would corrupt the newly activated style when undone.
-          clearUndoHistoryOf(networkId)
         }
+        // The undo history is deliberately NOT cleared here.
+        //
+        // It used to be, because edits recorded under the old style would be
+        // replayed onto the new one. The switch is now itself an undoable edit
+        // (UndoCommandType.SWITCH_STYLE), so undoing past it restores the
+        // previous style FIRST and older edits land on the style they were
+        // recorded under — the stack is self-consistent. Clearing here would
+        // also wipe the very edit the caller is about to push.
+        return switched
       },
 
       createStyle: (networkId: IdType, name?: string) => {
@@ -381,7 +387,6 @@ export const useVisualStyleStore = create(
 
       deleteStyle: (networkId: IdType, styleId: IdType) => {
         let deleted = false
-        let deletedActive = false
         set((state) => {
           const setState = state.styleSets[networkId]
           if (
@@ -412,7 +417,6 @@ export const useVisualStyleStore = create(
             state.visualStyles[networkId] = next.visualStyle
             next.visualStyle = undefined
             setState.activeStyleId = nextId
-            deletedActive = true
           }
           delete setState.styles[styleId]
           deleted = true
@@ -420,8 +424,12 @@ export const useVisualStyleStore = create(
         })
         if (deleted) {
           persistStyleSetOf(networkId)
-        }
-        if (deletedActive) {
+          // Cleared for ANY delete, not just the active one (which is why
+          // deletedActive is no longer the condition): a SWITCH_STYLE edit
+          // pointing at a style that no longer exists cannot be replayed, and
+          // dropping only that edit would leave the older ones landing on
+          // whichever style happened to be active. This is the one genuinely
+          // unrecoverable case, and delete is rare and confirmation-gated.
           clearUndoHistoryOf(networkId)
         }
       },

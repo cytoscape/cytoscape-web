@@ -81,7 +81,9 @@ import {
   getUiStateFromDb,
   getUndoRedoStackFromDb,
   getVisualStyleFromDb,
+  getStyleSetMetadataFromDb,
   getVisualStyleSetFromDb,
+  LEGACY_STYLE_ID,
   getWorkspaceFromDb,
   initializeDb,
   putAppSettingToDb,
@@ -1019,6 +1021,86 @@ describe('Visual style sets (multiple styles per network)', () => {
     const entries = Object.values(stored?.styles ?? {})
     expect(entries).toHaveLength(1)
     expect(entries[0].name).toBe('Default')
+  })
+
+  describe('getStyleSetMetadataFromDb', () => {
+    it('lists names for several networks in one read', async () => {
+      await setupFreshDb()
+      await putVisualStyleSetToDb('net-1', createTwoStyleSet())
+      await putVisualStyleSetToDb('net-2', createTwoStyleSet())
+
+      const metadata = await getStyleSetMetadataFromDb(['net-1', 'net-2'])
+
+      expect(metadata).toHaveLength(2)
+      expect(metadata[0].networkId).toBe('net-1')
+      expect(metadata[0].activeStyleId).toBe('style-a')
+      expect(metadata[0].styles.map((s) => s.name).sort()).toEqual([
+        'Main',
+        'Publication',
+      ])
+    })
+
+    it('omits networks with no style row rather than erroring', async () => {
+      // A network never opened has no row: its style lives only in the CX2 on
+      // the server. Callers use the absence to tell "no styles" from "not local".
+      await setupFreshDb()
+      await putVisualStyleSetToDb('net-1', createTwoStyleSet())
+
+      const metadata = await getStyleSetMetadataFromDb([
+        'net-1',
+        'never-opened',
+      ])
+
+      expect(metadata.map((m) => m.networkId)).toEqual(['net-1'])
+    })
+
+    it('reports a legacy row as a single Default style with the sentinel id', async () => {
+      await setupFreshDb()
+      const db = await getDb()
+      await db.cyVisualStyles.put({
+        id: 'legacy-meta-network',
+        visualStyle: serializeVisualStyle(createVisualStyleModel()),
+      })
+
+      const metadata = await getStyleSetMetadataFromDb(['legacy-meta-network'])
+
+      expect(metadata[0].styles).toEqual([
+        { id: LEGACY_STYLE_ID, name: 'Default' },
+      ])
+      // Entry id and active id agree, so "find by id, else use the active
+      // style" resolves correctly even though the real uuid is minted per read.
+      expect(metadata[0].activeStyleId).toBe(LEGACY_STYLE_ID)
+    })
+
+    it('does not deserialize style content', async () => {
+      // The whole point of this reader: names come straight out of the row, so
+      // a row whose serialized style is garbage still lists correctly. If this
+      // starts failing, the cheap path has grown a parse step.
+      await setupFreshDb()
+      const db = await getDb()
+      await db.cyVisualStyles.put({
+        id: 'unparseable-network',
+        activeStyleId: 'style-x',
+        styles: {
+          'style-x': {
+            id: 'style-x',
+            name: 'Still Listed',
+            visualStyle: 'not a serialized style at all' as any,
+          },
+        },
+      })
+
+      const metadata = await getStyleSetMetadataFromDb(['unparseable-network'])
+
+      expect(metadata[0].styles).toEqual([
+        { id: 'style-x', name: 'Still Listed' },
+      ])
+    })
+
+    it('short-circuits on an empty id list', async () => {
+      await setupFreshDb()
+      expect(await getStyleSetMetadataFromDb([])).toEqual([])
+    })
   })
 })
 

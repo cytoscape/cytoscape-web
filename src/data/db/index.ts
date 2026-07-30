@@ -24,6 +24,7 @@ import {
   createStyleSet,
   isValidStyleSet,
 } from '../../models/VisualStyleModel/impl/visualStyleSetImpl'
+import { DEFAULT_STYLE_NAME } from '../../models/VisualStyleModel/VisualStyleSet'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../../models/WorkspaceModel'
 import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
@@ -628,6 +629,85 @@ export const getVisualStyleSetFromDb = async (
     )
     return undefined
   }
+}
+
+/**
+ * Stand-in style id for a legacy (pre-v10) row.
+ *
+ * Such a row stores a bare style with no id of its own, and
+ * getVisualStyleSetFromDb mints a FRESH uuid for it on every read — so there is
+ * no id a metadata listing could hand back that would still resolve later.
+ * Metadata reports this sentinel as both the entry id and the activeStyleId,
+ * which makes "look the style up by id, falling back to the set's active style"
+ * the correct resolution strategy for every row shape.
+ */
+export const LEGACY_STYLE_ID = 'legacy-default-style'
+
+/**
+ * Just the names of a network's named styles — no style content.
+ */
+export interface StyleSetMetadata {
+  networkId: IdType
+  activeStyleId: IdType
+  styles: Array<{ id: IdType; name: string }>
+}
+
+/**
+ * List the named styles of several networks WITHOUT deserializing any of them.
+ *
+ * The style picker shows every workspace network's styles, but only the current
+ * network's styles are in memory — the rest are only ever loaded when their
+ * network is opened. This is the cheap read that fills the gap.
+ *
+ * Cheap because a stored style's `name` is a plain string sitting in the row, so
+ * this skips both `deserializeVisualStyle` and the zod `validateVisualStyle`
+ * pass that `rowToVisualStyleSet` performs — the two expensive halves of reading
+ * a style row. Deserialization is deferred to whoever actually needs content
+ * (`getVisualStyleSetFromDb`), i.e. rendering a thumbnail or applying a style.
+ *
+ * One `bulkGet` for all ids, in a single IndexedDB transaction (same shape as
+ * getNetworkSummariesFromDb). Note that IndexedDB cannot project columns, so the
+ * rows still arrive whole; the saving is in not parsing them, not in transfer.
+ *
+ * Networks with no row — never opened, so their style exists only in the CX2 on
+ * the server — are simply absent from the result rather than reported as an
+ * error. Callers use that to distinguish "no styles here" from "not local yet".
+ */
+export const getStyleSetMetadataFromDb = async (
+  ids: IdType[],
+): Promise<StyleSetMetadata[]> => {
+  if (ids.length === 0) {
+    return []
+  }
+  const rows = await db.cyVisualStyles.bulkGet(ids)
+  const metadata: StyleSetMetadata[] = []
+
+  rows.forEach((row: VisualStyleWithId | VisualStyleSetRow | undefined, i) => {
+    if (row === undefined) {
+      return
+    }
+    if (isLegacyVisualStyleRow(row)) {
+      // Pre-v10 rows hold a single unnamed style; getVisualStyleSetFromDb
+      // presents it as "Default" and so must this, or the picker would show a
+      // different name than the one that appears after the row is rewritten.
+      metadata.push({
+        networkId: ids[i],
+        activeStyleId: LEGACY_STYLE_ID,
+        styles: [{ id: LEGACY_STYLE_ID, name: DEFAULT_STYLE_NAME }],
+      })
+      return
+    }
+    metadata.push({
+      networkId: ids[i],
+      activeStyleId: row.activeStyleId,
+      styles: Object.values(row.styles).map((namedStyle) => ({
+        id: namedStyle.id,
+        name: namedStyle.name,
+      })),
+    })
+  })
+
+  return metadata
 }
 
 /**

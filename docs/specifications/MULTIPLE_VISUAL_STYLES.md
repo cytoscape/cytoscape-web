@@ -37,12 +37,47 @@ Key actions (`StyleSetAction` in
 `src/models/StoreModel/VisualStyleStoreModel.ts`):
 
 - `switchStyle(networkId, styleId)` — parks the working copy under the old
-  active entry, promotes the target's content to the working copy, and
-  **clears the network's undo/redo history** (recorded edits reference the
-  previous style and would corrupt the new one when undone).
+  active entry and promotes the target's content to the working copy. Returns
+  whether it switched. **Preserves the undo/redo history**; see below.
 - `createStyle` / `duplicateStyle` / `renameStyle` / `deleteStyle` /
   `importStyle` — names are de-duplicated ("X" → "X 2"); the last style of a
   network cannot be deleted; deleting the active style activates another.
+  `deleteStyle` **clears the network's undo/redo history** (any style, not just
+  the active one).
+
+### Switching is an undoable edit
+
+A recorded edit names a visual property and a network, never a style, so
+replaying one applies it to whatever style is active at the time. Switching used
+to clear the undo history for that reason.
+
+Instead, the switch itself is recorded as `UndoCommandType.SWITCH_STYLE` with
+`undoParams: [networkId, previousStyleId]` and `redoParams: [networkId,
+nextStyleId]` — ids only, never style content, so the stack stays small and
+serializes cleanly. Undoing past a switch therefore restores the previous style
+**before** older edits replay, and each edit lands on the style it was recorded
+under. The regression test for this is in `useUndoStack.test.tsx` ("restores the
+style before undoing edits recorded under it").
+
+Two consequences:
+
+- `switchStyle` must not clear the history — it would destroy the very edit the
+  caller pushes for the switch.
+- `deleteStyle` must clear it, for **any** style: a `SWITCH_STYLE` edit naming a
+  deleted style cannot be replayed, and dropping just that edit would leave the
+  older ones landing on whichever style happened to be active. This is the one
+  irrecoverable case, and delete is rare and confirmation-gated.
+
+The undo command map calls `switchStyle` and **throws** when it returns false, so
+an unreplayable switch is discarded by the runner rather than silently moving to
+the redo stack as though it had worked.
+
+Callers pass the mutated network explicitly as `postEdit`'s optional last
+argument. `postEdit` otherwise infers the target from live store state, while a
+component's own target network is often `useEffect`-derived — for one render
+after the focus changes the two disagree, and the edit would be filed against a
+network it never touched.
+
 - `add(networkId, visualStyle, styleSet?)` — registers styles on network
   load. With no `styleSet`, an existing set is PRESERVED and only the working
   copy is replaced (the renderer re-calls `add` after each render pass), or a
@@ -54,14 +89,15 @@ Key actions (`StyleSetAction` in
 the set to produce the full model-layer `VisualStyleSet` for persistence and
 export.
 
-Persistence note: the store's persist middleware only writes the CURRENT
-network's row, but the Vizmapper can target a non-current network
-(`ui.activeNetworkView`, e.g. a HierarchyViewer subnetwork) — so every
-style-set action explicitly persists the network it mutated, and undo-stack
-clears are persisted for that network too. (Plain visual-property edits on
-non-current networks remain covered only by the current-network middleware —
-pre-existing behavior, unchanged; HierarchyViewer subnetworks are ephemeral
-query results with no NDEx save path.)
+Persistence note: the store's `persistNetworkSlices` middleware diffs slices per
+network, so it writes whichever network's style actually changed — including a
+non-current one, which the Vizmapper can target via `ui.activeNetworkView` (e.g.
+a HierarchyViewer subnetwork). Named-style **metadata** (create / rename / delete
+/ switch) lives outside the slice the middleware watches, so those actions call
+`persistStyleSetOf()` for the network they mutated; `deleteStyle` persists its
+undo-stack clear the same way. The middleware assembles the whole style set at
+flush time rather than writing the changed slice alone, so a row never loses its
+inactive styles.
 
 The style library lives in `useStyleLibraryStore`
 (`src/data/hooks/stores/StyleLibraryStore.ts`): write-through persistence per
@@ -150,7 +186,70 @@ per-style, matching current behavior.
 
 ## 5. UI
 
-`src/features/Vizmapper/StyleManager/` — a selector row at the top of the
-Vizmapper panel: switch active style; menu with New (copy of current) /
-Duplicate / Rename / Delete; Save Style to Library / Apply Style from
-Library (library dialog). All operations mark the network modified.
+`src/features/Vizmapper/StyleManager/` — a row at the top of the Vizmapper
+panel showing the active style's **thumbnail and name**, plus a management menu
+(New (copy of current) / Duplicate / Rename / Delete; Save Style to Library /
+Apply Style from Library). All operations mark the network modified.
+
+Clicking the row opens **`StylePickerDialog`**, a modal grid of style previews in
+three sections. The sections exist because a style belongs to one network and
+moving one across networks copies it (§1) — they are what tell the user whether a
+click switches or copies:
+
+| Section        | Source                                  | A click…                    |
+| -------------- | --------------------------------------- | --------------------------- |
+| This Network   | `styleSets[networkId]`                  | switches (undoable)         |
+| Other Networks | `getStyleSetMetadataFromDb` (IndexedDB) | copies in via `importStyle` |
+| Library        | `useStyleLibraryStore`                  | copies in via `importStyle` |
+
+Cytoscape Desktop pools every style into one flat list instead; it can only do
+that because its styles are session-global and shared live.
+
+Also: a search field filtering all sections, per-tile Rename / Duplicate /
+Delete, and selection shown by both a ring and a check badge (never colour
+alone).
+
+### Thumbnails
+
+`StyleManager/preview/` renders each thumbnail through the **same pipeline as the
+canvas** — `applyVisualStyle` → `addCyElements` → `createCyjsDataMapper` →
+`applyViewModel` → `cy.png()` — so a preview cannot drift from what the network
+will actually look like.
+
+- **Drawn on a sample of the network being viewed** (`sampleFromNetwork`, ~8
+  nodes, reusing existing view positions so no layout runs), not on a fixed
+  two-node graph. A two-node graph has no attribute values, so mapping-driven
+  styles would all collapse to their defaults and become indistinguishable.
+  Styles from other networks and from the library are previewed on that same
+  sample, which is what applying them _here_ would look like.
+  `syntheticSample()` is the Source → Target fallback when no network is loaded.
+- **Bypasses are stripped** (`stripBypasses`): they key off one network's element
+  ids.
+- **One offscreen cytoscape instance** for the whole app, with renders serialized
+  through a queue — not one instance per tile.
+- **Cache is a `WeakMap<VisualStyle, …>`.** The store's Immer middleware hands
+  out a fresh object on every mutation, so an edited style is automatically a
+  miss and an unedited one a hit, with no hashing and no stale thumbnails.
+- Tiles render lazily under an `IntersectionObserver`.
+
+Note for tests: jsdom cannot rasterize a canvas, so component specs mock
+`preview/renderStylePreview`. `previewSample.ts` is pure and tested directly.
+
+### Querying other networks' styles
+
+Only the current network's styles are in memory — summaries load for every
+workspace network at boot, but style sets are registered only when a network is
+opened. `getStyleSetMetadataFromDb(ids)` (`src/data/db/index.ts`) fills the gap
+with **one `bulkGet`** returning names only: a stored style's `name` is a plain
+string in the row, so this skips both `deserializeVisualStyle` and the zod
+validation pass. Content is deserialized later, per network, by the existing
+`getVisualStyleSetFromDb`.
+
+- A legacy (pre-v10) row has no style id of its own — `getVisualStyleSetFromDb`
+  mints a fresh uuid per read — so metadata reports `LEGACY_STYLE_ID` as both the
+  entry id and the active id. Resolve content by looking a style up by id and
+  **falling back to the set's active style**, which is correct for every row
+  shape.
+- A network never opened has **no row**, so it is absent from the result and the
+  picker reports the count rather than silently omitting it. Its styles exist
+  only in the CX2 on the server.
