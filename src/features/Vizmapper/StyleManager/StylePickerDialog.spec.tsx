@@ -175,18 +175,33 @@ describe('StylePickerDialog', () => {
       })
     })
 
-    it('lists them with the owning network as provenance', async () => {
+    it('leads with the network, not the style name', async () => {
+      // Almost every network's style is called "Default", so the network is the
+      // only part that identifies it. The style name stays as the secondary line
+      // so two styles from one network remain distinguishable.
       renderDialog()
 
       const testId = `style-picker-foreign-${OTHER_NETWORK_ID}-foreign-style`
       await waitFor(() => expect(screen.getByTestId(testId)).toBeDefined())
       expect(screen.getByTestId(`${testId}-name`).textContent).toBe(
-        'Big Labels',
-      )
-      // Which network it came from, since the name alone does not say.
-      expect(screen.getByTestId(`${testId}-provenance`).textContent).toBe(
         'galFiltered',
       )
+      expect(screen.getByTestId(`${testId}-provenance`).textContent).toBe(
+        'Big Labels',
+      )
+    })
+
+    it('finds a style by its network name', async () => {
+      renderDialog()
+      const testId = `style-picker-foreign-${OTHER_NETWORK_ID}-foreign-style`
+      await waitFor(() => expect(screen.getByTestId(testId)).toBeDefined())
+
+      fireEvent.change(screen.getByTestId('style-picker-search'), {
+        target: { value: 'galfil' },
+      })
+
+      // The network is what the tile leads with, so it is what a reader types.
+      expect(screen.getByTestId(testId)).toBeDefined()
     })
 
     it('queries only the OTHER networks, never the current one', async () => {
@@ -209,6 +224,40 @@ describe('StylePickerDialog', () => {
 
       expect(handlers.onCopyIn).toHaveBeenCalledWith('Big Labels', foreignStyle)
       expect(handlers.onSwitch).not.toHaveBeenCalled()
+    })
+
+    it('names a copy after its network when the style name says nothing', async () => {
+      // Without this the copy arrives as another anonymous "Default 2" and every
+      // trace of where it came from is gone.
+      getStyleSetMetadataFromDb.mockResolvedValue([
+        {
+          networkId: OTHER_NETWORK_ID,
+          activeStyleId: 'foreign-style',
+          styles: [{ id: 'foreign-style', name: 'Default' }],
+        },
+      ])
+      getVisualStyleSetFromDb.mockResolvedValue({
+        activeStyleId: 'foreign-style',
+        styles: {
+          'foreign-style': {
+            id: 'foreign-style',
+            name: 'Default',
+            visualStyle: foreignStyle,
+          },
+        },
+      })
+      const handlers = renderDialog()
+      const testId = `style-picker-foreign-${OTHER_NETWORK_ID}-foreign-style`
+
+      await waitFor(() =>
+        expect(screen.getByTestId(`${testId}-thumbnail`)).toBeDefined(),
+      )
+      fireEvent.click(screen.getByTestId(testId))
+
+      expect(handlers.onCopyIn).toHaveBeenCalledWith(
+        'galFiltered',
+        foreignStyle,
+      )
     })
 
     it('does nothing when clicked before its content has loaded', async () => {

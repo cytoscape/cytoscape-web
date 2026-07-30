@@ -24,6 +24,7 @@ import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { useStylePreviewSample } from './preview/useStylePreviewSample'
+import { copiedStyleName } from './styleNaming'
 import { StyleTile, StyleTileAction } from './StyleTile'
 
 export interface StylePickerDialogProps {
@@ -220,7 +221,11 @@ export const StylePickerDialog = (
   const visibleLocal = localEntries.filter((entry) =>
     matches(entry.name, query),
   )
-  const visibleForeign = foreign.filter((entry) => matches(entry.name, query))
+  // Matches the network name as well as the style name: the network is what the
+  // tile leads with, so it is what a reader will type.
+  const visibleForeign = foreign.filter(
+    (entry) => matches(entry.name, query) || matches(entry.networkName, query),
+  )
   const visibleTemplates = Object.values(templates).filter((template) =>
     matches(template.name, query),
   )
@@ -302,14 +307,22 @@ export const StylePickerDialog = (
             {visibleForeign.map((entry) => (
               <StyleTile
                 key={`${entry.networkId}:${entry.styleId}`}
-                name={entry.name}
+                // Network first, style name second — the reverse of what reads
+                // naturally, because almost every network's style is called
+                // "Default" and the network is the only part that identifies it.
+                // The style name stays as the secondary line so two styles from
+                // one network ("Default", "Default 2") remain distinguishable.
+                name={entry.networkName}
+                provenance={entry.name}
                 visualStyle={entry.visualStyle}
                 sample={sample}
                 selected={false}
-                provenance={entry.networkName}
                 onClick={() => {
                   if (entry.visualStyle !== undefined) {
-                    onCopyIn(entry.name, entry.visualStyle)
+                    onCopyIn(
+                      copiedStyleName(entry.name, entry.networkName),
+                      entry.visualStyle,
+                    )
                   }
                 }}
                 testId={`style-picker-foreign-${entry.networkId}-${entry.styleId}`}

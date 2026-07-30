@@ -209,6 +209,36 @@ Also: a search field filtering all sections, per-tile Rename / Duplicate /
 Delete, and selection shown by both a ring and a check badge (never colour
 alone).
 
+### Naming: "Default" is a non-name
+
+A CX2 network expressing one style in the standard aspects registers it as
+`DEFAULT_STYLE_NAME`, so in a workspace of ten networks **every** network owns a
+style called "Default". The name then identifies nothing, and the picker — which
+shows many networks side by side — is where that becomes a problem.
+
+Stored names are deliberately left alone: §4's exporter omits the
+`cyWebVisualStyles` aspect precisely when a network has a single style named
+"Default", so renaming on load would force that aspect into every document for no
+gain. `StyleManager/styleNaming.ts` resolves names at display and copy time
+instead.
+
+- **Other Networks tiles lead with the network name**, with the style name as the
+  secondary line. Reversed from what reads naturally, because the network is the
+  identifying half. Keeping the style name as the subtitle is what stops two
+  styles from one network ("Default", "Default 2") collapsing into two identical
+  tiles. Search matches either line.
+- **A copy takes its source's name when its own says nothing**
+  (`copiedStyleName`). A copy of "Big Labels" stays "Big Labels"; a copy of
+  "Default" from `Zhang18_27559151` becomes `Zhang18_27559151`. Otherwise the
+  copy arrives as yet another anonymous "Default 2" and every trace of its origin
+  is lost on arrival. `importStyle` still de-duplicates, so two copies from one
+  network become "X" and "X 2". This matches what Cytoscape Desktop's style names
+  look like in practice ("galFiltered Style", "CV_DMV_systems_map").
+
+Provenance is therefore carried by the copy's **name**, not by a stored field —
+recording an origin on `NamedVisualStyle` would mean a model, persistence and CX2
+change for information the name already conveys.
+
 ### Thumbnails
 
 `StyleManager/preview/` renders each thumbnail through the **same pipeline as the
