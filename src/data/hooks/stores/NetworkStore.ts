@@ -22,6 +22,7 @@ import {
   putNetworkToDb,
 } from '../../db'
 import { cancelWrite, scheduleWrite } from './persistenceScheduler'
+import { isHydrating } from './hydrationContext'
 
 /**
  * Persist one network to IndexedDB, keyed by the network that was actually
@@ -35,6 +36,7 @@ import { cancelWrite, scheduleWrite } from './persistenceScheduler'
  * plain data (id, nodes, edges), so no toPlainObject conversion is needed.
  */
 const persistNetwork = (networkId: IdType): void => {
+  if (isHydrating()) return
   scheduleWrite(`NetworkStore:${networkId}`, 'NetworkStore', () => {
     const network = useNetworkStore.getState().networks.get(networkId)
     if (network === undefined) {
@@ -254,13 +256,15 @@ export const useNetworkStore = create(
 
           const newState = NetworkStoreImpl.add(state, network)
           state.networks = newState.networks
-          void putNetworkToDb(network)
-            .then(() => {
-              logStore.info(`New network has been added to DB: ${network.id}`)
-            })
-            .catch((err) => {
-              logStore.error(`Failed adding network to DB: ${err}`)
-            })
+          if (!isHydrating()) {
+            void putNetworkToDb(network)
+              .then(() => {
+                logStore.info(`New network has been added to DB: ${network.id}`)
+              })
+              .catch((err) => {
+                logStore.error(`Failed adding network to DB: ${err}`)
+              })
+          }
           return state
         }),
       delete: (networkId: IdType) =>
@@ -269,11 +273,13 @@ export const useNetworkStore = create(
           state.networks = newState.networks
           // A stale pending put must never resurrect the deleted row
           cancelWrite(`NetworkStore:${networkId}`)
-          void deleteNetworkFromDb(networkId).then(() => {
-            logStore.info(
-              `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
-            )
-          })
+          if (!isHydrating()) {
+            void deleteNetworkFromDb(networkId).then(() => {
+              logStore.info(
+                `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
+              )
+            })
+          }
           return state
         }),
       deleteAll: () =>
@@ -282,17 +288,19 @@ export const useNetworkStore = create(
             cancelWrite(`NetworkStore:${networkId}`)
           }
           const newState = NetworkStoreImpl.deleteAll(state)
-          clearNetworksFromDb()
-            .then(() => {
-              logStore.info(
-                `[${useNetworkStore.name}]: Deleted all networks from db`,
-              )
-            })
-            .catch((err) => {
-              logStore.error(
-                `[${useNetworkStore.name}]: Error clearing all networks from db: ${err}`,
-              )
-            })
+          if (!isHydrating()) {
+            clearNetworksFromDb()
+              .then(() => {
+                logStore.info(
+                  `[${useNetworkStore.name}]: Deleted all networks from db`,
+                )
+              })
+              .catch((err) => {
+                logStore.error(
+                  `[${useNetworkStore.name}]: Error clearing all networks from db: ${err}`,
+                )
+              })
+          }
           state.networks = newState.networks
           return state
         }),

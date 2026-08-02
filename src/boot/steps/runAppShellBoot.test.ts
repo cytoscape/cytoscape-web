@@ -212,6 +212,50 @@ describe('runAppShellBoot: deep links and imports', () => {
   })
 })
 
+describe('runAppShellBoot: per-tab network resolution', () => {
+  afterEach(() => {
+    window.sessionStorage.clear()
+  })
+
+  it('prefers this tab’s remembered network over the shared workspace field', async () => {
+    // The shared workspace row says net-1, but this tab was last showing net-2:
+    // another tab must not be able to swap this one's network (CW-722).
+    getWorkspaceFromDb.mockResolvedValue({
+      ...WORKSPACE,
+      currentNetworkId: 'net-1',
+      networkIds: ['net-1', 'net-2'],
+    })
+    window.sessionStorage.setItem('cyweb.tab.networkId', 'net-2')
+
+    const ctx = makeContext()
+    await runAppShellBoot(ctx)
+
+    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+      'net-2',
+    )
+    expect(ctx.navigate).toHaveBeenCalledWith(
+      { pathname: '/ws-1/networks/net-2', search: '' },
+      { replace: true },
+    )
+  })
+
+  it('keeps an unresolvable deep-linked id so the error names the requested network', async () => {
+    // Redirecting to an unrelated local network instead would leave the user
+    // reading an error about an address they never typed (CW-514).
+    fetchNdexSummaries.mockRejectedValue(new Error('NDEx unreachable'))
+    const ctx = makeContext({
+      networkIdParam: 'missing-net',
+      pathname: '/ws-1/networks/missing-net',
+    })
+
+    await runAppShellBoot(ctx)
+
+    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+      'missing-net',
+    )
+  })
+})
+
 describe('runAppShellBoot: install intents', () => {
   it('returns service-app URLs for confirmation rather than adding them', async () => {
     const ctx = makeContext({

@@ -1,9 +1,9 @@
-import { deleteDb } from '../data/db'
+import { deleteDb } from '@/data/db'
 import {
   openDatabaseForStartup,
   type DbOpenResult,
-} from '../data/db/startupOpen'
-import { logDb } from '../debug'
+} from '@/data/db/startupOpen'
+import { logDb } from '@/debug'
 import { registerBootErrorClassifier } from './bootError'
 import { BootPhase } from './bootPhases'
 import { registerBootShellAction } from './shell/bootShellActions'
@@ -52,17 +52,20 @@ export const RESET_DATABASE_ACTION_ID = 'reset-database'
 const registerResetAction = (): void => {
   registerBootShellAction(RESET_DATABASE_ACTION_ID, async () => {
     logDb.info('[openDatabasePhase] resetting the local database on request')
-    const success = await deleteDb()
-    
-    if (success) {
-      // Reload rather than continue: the boot already aborted partway through, so
-      // rerunning it from the top against the fresh database is the honest
-      // recovery.
-      window.location.reload()
-    } else {
-      // Throw so the button re-enables and the user can try again
-      throw new Error('database deletion failed')
+    const outcome = await deleteDb()
+
+    // 'delete-failed' is the only outcome that leaves the data intact and the
+    // connection usable, so it is the only one worth retrying. Throwing
+    // re-enables the button (bootShellActions catches it) and leaves the reader
+    // on the same error shell rather than reloading into it again.
+    if (outcome === 'delete-failed') {
+      throw new Error(`database deletion failed: ${outcome}`)
     }
+
+    // 'deleted', 'delete-blocked' and 'reopen-failed' all mean the data must be
+    // treated as gone. Reload rather than continue: the boot already aborted
+    // partway through, so rerunning it from the top is the honest recovery.
+    window.location.reload()
   })
 }
 

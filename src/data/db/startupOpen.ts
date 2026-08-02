@@ -1,7 +1,12 @@
 import Dexie from 'dexie'
 
 import { logDb } from '../../debug'
-import { currentVersion, DB_NAME, initializeDb } from './index'
+import {
+  currentVersion,
+  DB_NAME,
+  initializeDb,
+  verifyTransactionSourceStamp,
+} from './index'
 
 // Opens the database explicitly at startup and classifies why it failed.
 //
@@ -57,6 +62,9 @@ const readOnDiskVersion = async (): Promise<number | undefined> => {
 export const openDatabaseForStartup = async (): Promise<DbOpenResult> => {
   try {
     await initializeDb()
+    // Not awaited into the result: a missing origin stamp degrades cross-tab
+    // sync but leaves the app fully usable, so it must not gate startup.
+    void verifyTransactionSourceStamp()
     return { kind: 'ok' }
   } catch (e) {
     // Compare by name, not instanceof: Dexie builds its error names by

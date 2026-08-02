@@ -1,5 +1,7 @@
 import { lazy, ReactElement, Suspense, useEffect, useState } from 'react'
 
+import { useBootState } from '../../boot/shell/useBootState'
+import { isWorkspaceHydrated } from '../../boot/workspaceHydrated'
 import { logUi } from '../../debug'
 import { useOnboardingStore } from './store/OnboardingStore'
 import { DEFAULT_TOUR_ID } from './tours/registry'
@@ -14,16 +16,20 @@ const TourRunner = lazy(async () => ({
   default: (await import('./TourRunner')).TourRunner,
 }))
 
-/** Event dispatched by AppShell once stores are hydrated and the app is ready. */
+/** Event dispatched by `publishWorkspace` once the workspace is in the stores. */
 const APP_READY_EVENT = 'cywebapi:ready'
-/** Fallback delay if the ready event is missed, so first-run still surfaces. */
-const READY_FALLBACK_MS = 8000
 
 /**
- * App-wide onboarding host. Mounted once at the App root (beside the
- * multi-tab / cookie notices). Shows the first-run Welcome dialog after the
- * app is ready, and mounts the lazily-loaded tour runner only while a tour is
- * active.
+ * App-wide onboarding host. Mounted once inside the App's error boundary (beside
+ * the cookie notice). Shows the first-run Welcome dialog after the app is ready,
+ * and mounts the lazily-loaded tour runner only while a tour is active.
+ *
+ * Readiness is read two ways on purpose. `isWorkspaceHydrated()` covers the case
+ * where `publishWorkspace` already ran before this mounted — the event is a
+ * one-shot and is gone by then — and the listener covers the usual ordering.
+ * There is deliberately NO timeout fallback: the previous 8s timer could not
+ * distinguish "the event already fired" from "the boot died", so a failed boot
+ * got a welcome dialog on top of its error screen.
  */
 export const OnboardingHost = (): ReactElement => {
   const hasSeenWelcome = useOnboardingStore((state) => state.hasSeenWelcome)
@@ -31,11 +37,15 @@ export const OnboardingHost = (): ReactElement => {
   const startTour = useOnboardingStore((state) => state.startTour)
   const markWelcomeSeen = useOnboardingStore((state) => state.markWelcomeSeen)
 
-  const [appReady, setAppReady] = useState(false)
+  // Terminal boot failures are surfaced by the boot shell; onboarding an app
+  // that never opened is worse than not onboarding at all.
+  const { error: bootError } = useBootState()
+
+  const [appReady, setAppReady] = useState(isWorkspaceHydrated)
 
   useEffect(() => {
-    if (hasSeenWelcome) {
-      // Nothing to wait for — user has already been onboarded.
+    if (hasSeenWelcome || appReady) {
+      // Nothing to wait for — already onboarded, or hydration already observed.
       return
     }
 
@@ -45,15 +55,14 @@ export const OnboardingHost = (): ReactElement => {
     }
 
     window.addEventListener(APP_READY_EVENT, onReady, { once: true })
-    const fallback = window.setTimeout(onReady, READY_FALLBACK_MS)
 
     return () => {
       window.removeEventListener(APP_READY_EVENT, onReady)
-      window.clearTimeout(fallback)
     }
-  }, [hasSeenWelcome])
+  }, [hasSeenWelcome, appReady])
 
-  const showWelcome = appReady && !hasSeenWelcome && activeTour == null
+  const showWelcome =
+    appReady && bootError === undefined && !hasSeenWelcome && activeTour == null
 
   return (
     <>

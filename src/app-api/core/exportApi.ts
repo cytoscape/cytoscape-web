@@ -7,7 +7,10 @@ import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummarySt
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from '../../data/hooks/stores/VisualStyleStore'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 import { CyNetwork } from '../../models/CyNetworkModel/CyNetwork'
@@ -71,6 +74,7 @@ export const exportApi: ExportApi = {
         nodeTable: tableRecord.nodeTable,
         edgeTable: tableRecord.edgeTable,
         visualStyle,
+        visualStyleSet: getVisualStyleSetSnapshot(networkId),
         networkViews: [viewModel],
         otherAspects: opaqueAspect !== undefined ? [opaqueAspect] : undefined,
         undoRedoStack: { undoStack: [], redoStack: [] },

@@ -12,8 +12,17 @@
  * window.name. A native application cannot target a named browser window at
  * all, so this could not serve a Desktop-to-Web handoff even in principle.
  *
- * Not related to cross-tab data sync either: that is dexie-observable's
- * `db.on('changes')`, wired up in SyncTabs.tsx.
+ * This module is the ONLY `window.name` consumer. Cross-tab data sync used to
+ * share it, which coupled two unrelated contracts to one script-writable global:
+ * anything on the page overwriting `window.name` silently changed the tab's sync
+ * identity, and "Duplicate tab" copies it, so two live tabs shared one id. Sync
+ * now uses a non-persisted per-document id (`./tabId`), and the two failure modes
+ * are independent — losing `window.name` costs an external app its saved handle
+ * and nothing else.
+ *
+ * The initial name is seeded from `getTabId()` purely because it is a
+ * ready-made unique string; the two values are not required to stay equal, and
+ * after a reload they will not be.
  *
  * History: this module used to maintain an `activeTabs` Set fed by six
  * BroadcastChannel message types (created/active/alive/inactive/closed/reload).
@@ -24,40 +33,37 @@
  */
 
 import { logStartup } from '@/debug'
-
-const CYWEB_PREFIX = 'cyweb'
+import { CYWEB_TAB_PREFIX, getTabId } from '@/data/tabState/tabId'
 
 /**
- * Returns this tab's id, reusing the existing one across reloads.
+ * Returns this tab's addressable name, reusing the existing one across reloads.
  *
- * `window.name` survives reloads and same-tab navigations, so a tab keeps its
- * identity — an external app's saved handle stays valid.
- */
-/**
- * `Date.now()` alone collides when several tabs initialize in the same
- * millisecond — a session restore reopening a window full of them — and a
- * shared id means `window.open(url, tabId)` focuses whichever one the browser
- * picks. The random suffix fixes that.
+ * `window.name` survives reloads and same-tab navigations, so a tab keeps the
+ * handle an external app saved. A name this app did not set is not reused — it
+ * belongs to whatever wrote it.
  *
- * Deliberately not `crypto.randomUUID()`: that is only defined in a secure
- * context, so it throws when the app is served over plain HTTP — reaching a
- * dev server by LAN IP from another machine, for instance. This works
- * everywhere.
+ * Degrades to the raw id if `window` is unreachable or refuses the write (a
+ * hardened browsing context can); the focus contract is then unavailable, which
+ * is a lost convenience rather than a failure.
  */
-const mintTabId = (): string =>
-  `${CYWEB_PREFIX}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-
 export const initializeTabManager = (): string => {
-  const windowName = window.name
-  const tabId =
-    windowName && windowName.startsWith(`${CYWEB_PREFIX}-`)
-      ? windowName
-      : mintTabId()
+  const fallback = getTabId()
+  let tabName = fallback
 
-  window.name = tabId
+  try {
+    const existing = window.name
+    tabName = existing.startsWith(`${CYWEB_TAB_PREFIX}-`) ? existing : fallback
+    window.name = tabName
+  } catch (e) {
+    logStartup.info(
+      '[boot]: window.name is unavailable; this tab cannot be focused by name',
+      e,
+    )
+  }
+
   logStartup.info(
-    `[boot]: tab id ${tabId} (use as the window.open target to focus this tab)`,
+    `[boot]: tab name ${tabName} (use as the window.open target to focus this tab)`,
   )
 
-  return tabId
+  return tabName
 }

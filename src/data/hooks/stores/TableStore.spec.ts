@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
-import { Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+import {
+  Column,
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../../../models/TableModel'
 import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
 import { flushPendingWrites } from './persistenceScheduler'
 import { useTableStore } from './TableStore'
@@ -219,9 +224,7 @@ describe('useTableStore', () => {
     it('should apply value to specific elements', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -232,13 +235,9 @@ describe('useTableStore', () => {
 
       act(() => {
         result.current.add(networkId, nodeTable, edgeTable)
-        result.current.applyValueToElements(
-          networkId,
-          'node',
-          'score',
-          100,
-          ['n1'],
-        )
+        result.current.applyValueToElements(networkId, 'node', 'score', 100, [
+          'n1',
+        ])
       })
 
       const updatedTable = result.current.tables[networkId].nodeTable
@@ -249,9 +248,7 @@ describe('useTableStore', () => {
     it('should apply value to all elements when elementIds is undefined', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -307,9 +304,7 @@ describe('useTableStore', () => {
     it('should delete column from all rows', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'col1', type: ValueTypeName.String },
-      ]
+      const columns: Column[] = [{ name: 'col1', type: ValueTypeName.String }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -333,9 +328,7 @@ describe('useTableStore', () => {
     it('should create a new column at the beginning', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'col1', type: ValueTypeName.String },
-      ]
+      const columns: Column[] = [{ name: 'col1', type: ValueTypeName.String }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -386,9 +379,7 @@ describe('useTableStore', () => {
     it('should set a value for a specific cell', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -430,9 +421,7 @@ describe('useTableStore', () => {
     it('should set multiple cell values', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -459,9 +448,7 @@ describe('useTableStore', () => {
     it('should return all unique values in a column', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -491,9 +478,7 @@ describe('useTableStore', () => {
     it('should duplicate a column', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'col1', type: ValueTypeName.String },
-      ]
+      const columns: Column[] = [{ name: 'col1', type: ValueTypeName.String }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -720,13 +705,9 @@ describe('useTableStore', () => {
 
       act(() => {
         // Apply value to elements
-        result.current.applyValueToElements(
-          networkId,
-          'node',
-          'newCol',
-          200,
-          ['n2'],
-        )
+        result.current.applyValueToElements(networkId, 'node', 'newCol', 200, [
+          'n2',
+        ])
       })
 
       act(() => {
@@ -787,7 +768,11 @@ describe('useTableStore', () => {
       const other = createTestTableRecord('other-network')
 
       act(() => {
-        result.current.add('test-network-1', current.nodeTable, current.edgeTable)
+        result.current.add(
+          'test-network-1',
+          current.nodeTable,
+          current.edgeTable,
+        )
         result.current.add('other-network', other.nodeTable, other.edgeTable)
       })
       flushPendingWrites()
@@ -846,4 +831,3 @@ describe('useTableStore', () => {
     })
   })
 })
-

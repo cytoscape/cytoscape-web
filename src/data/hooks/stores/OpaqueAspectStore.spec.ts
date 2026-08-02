@@ -190,7 +190,9 @@ describe('useOpaqueAspectStore', () => {
         result.current.deleteSingleAspect(networkId, 'aspect-1')
       })
 
-      expect(result.current.opaqueAspects[networkId]['aspect-1']).toBeUndefined()
+      expect(
+        result.current.opaqueAspects[networkId]['aspect-1'],
+      ).toBeUndefined()
       expect(result.current.opaqueAspects[networkId]['aspect-2']).toEqual([
         { id: 2 },
       ])
@@ -353,4 +355,3 @@ describe('useOpaqueAspectStore', () => {
     })
   })
 })
-

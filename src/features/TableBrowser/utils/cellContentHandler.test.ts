@@ -1,8 +1,11 @@
 import { GridCellKind, Item } from '@glideapps/glide-data-grid'
+import { createTheme } from '@mui/material/styles'
 import { describe, expect, it } from 'vitest'
 
 import { ValueTypeName } from '../../../models/TableModel'
 import { getCellKind, handleGetCellContent } from './cellContentHandler'
+
+const theme = createTheme()
 
 describe('cellContentHandler', () => {
   describe('getCellKind', () => {
@@ -28,6 +31,7 @@ describe('cellContentHandler', () => {
         cell: [0, 1] as Item, // Row index 1 does not exist
         rows: mockRows,
         allColumns: [{ id: 'name', type: ValueTypeName.String }],
+        theme,
       })
       expect(result.kind).toBe(GridCellKind.Text)
       expect((result as any).displayData).toBe('')
@@ -44,12 +48,17 @@ describe('cellContentHandler', () => {
         cell: [0, 0] as Item,
         rows: mockRows,
         allColumns: [mockVirtualColumn],
+        theme,
       })
-      
+
       expect(result.kind).toBe(GridCellKind.Text)
       expect((result as any).displayData).toBe('node-1')
       expect((result as any).readonly).toBe(true)
       expect((result as any).allowOverlay).toBe(false)
+      expect((result as any).themeOverride).toEqual({
+        bgCell: theme.palette.background.default,
+        textDark: theme.palette.text.disabled,
+      })
     })
 
     it('formats numbers correctly', () => {
@@ -57,6 +66,7 @@ describe('cellContentHandler', () => {
         cell: [0, 0] as Item,
         rows: mockRows,
         allColumns: [{ id: 'score', type: ValueTypeName.Double }],
+        theme,
       })
       
       expect(result.kind).toBe(GridCellKind.Number)
@@ -70,6 +80,7 @@ describe('cellContentHandler', () => {
         cell: [0, 0] as Item,
         rows: mockRows,
         allColumns: [{ id: 'active', type: ValueTypeName.Boolean }],
+        theme,
       })
       
       expect(result.kind).toBe(GridCellKind.Boolean)
@@ -83,6 +94,7 @@ describe('cellContentHandler', () => {
         cell: [0, 0] as Item,
         rows: mockUriRow,
         allColumns: [{ id: 'link', type: ValueTypeName.String }],
+        theme,
       })
       
       expect(result.kind).toBe(GridCellKind.Uri)

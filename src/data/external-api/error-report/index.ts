@@ -86,7 +86,9 @@ const getBuildId = (): string | undefined => {
   return `${gitCommit.substring(0, 7)}-${formatDateForHash(lastCommitTime)}`
 }
 
-const getMemoryInfo = (): CrashReportData['environment']['memory'] | undefined => {
+const getMemoryInfo = ():
+  | CrashReportData['environment']['memory']
+  | undefined => {
   const anyPerformance = performance as unknown as {
     memory?: {
       jsHeapSizeLimit: number
@@ -120,7 +122,9 @@ export const createCrashReportPayload = (params: {
   const buildId = getBuildId()
   const buildDate = process.env.REACT_APP_BUILD_TIME
 
-  const summaryNetworkPart = params.networkId ? ` (network=${params.networkId})` : ''
+  const summaryNetworkPart = params.networkId
+    ? ` (network=${params.networkId})`
+    : ''
   const summary = `[Crash] ${params.error.message}${summaryNetworkPart}`
 
   return {
@@ -161,11 +165,15 @@ export const createCrashReportPayload = (params: {
   }
 }
 
-export const sendErrorReport = async (payload: ErrorReportPayload): Promise<void> => {
+export const sendErrorReport = async (
+  payload: ErrorReportPayload,
+): Promise<void> => {
   const endpoint = appConfig.errorReportEndpoint
 
   if (!endpoint || endpoint === '') {
-    logDb.warn('[sendErrorReport] Error report endpoint not configured, skipping')
+    logDb.warn(
+      '[sendErrorReport] Error report endpoint not configured, skipping',
+    )
     return
   }
 
@@ -238,7 +246,9 @@ export const exportPartialSnapshotForNetwork = async (
     try {
       const workspaces = await db.workspace.toArray()
       data[ObjectStoreNames.Workspace] = workspaces.filter(
-        (ws) => ws.networkIds?.includes(networkId) || ws.currentNetworkId === networkId,
+        (ws) =>
+          ws.networkIds?.includes(networkId) ||
+          ws.currentNetworkId === networkId,
       )
     } catch (error) {
       logDb.warn(
@@ -321,18 +331,6 @@ export const exportPartialSnapshotForNetwork = async (
       data[ObjectStoreNames.UiState] = []
     }
 
-    // Export timestamp
-    try {
-      const timestamp = await db.timestamp.get({ id: networkId })
-      data[ObjectStoreNames.Timestamp] = timestamp ? [timestamp] : []
-    } catch (error) {
-      logDb.warn(
-        `[exportPartialSnapshotForNetwork] Failed to export timestamp:`,
-        error,
-      )
-      data[ObjectStoreNames.Timestamp] = []
-    }
-
     // Export filters (may be network-specific)
     try {
       const filters = await db.filters.toArray()
@@ -350,7 +348,9 @@ export const exportPartialSnapshotForNetwork = async (
     // Export opaque aspects
     try {
       const opaqueAspects = await db.opaqueAspects.get({ id: networkId })
-      data[ObjectStoreNames.OpaqueAspects] = opaqueAspects ? [opaqueAspects] : []
+      data[ObjectStoreNames.OpaqueAspects] = opaqueAspects
+        ? [opaqueAspects]
+        : []
     } catch (error) {
       logDb.warn(
         `[exportPartialSnapshotForNetwork] Failed to export opaque aspects:`,
@@ -406,4 +406,3 @@ export const exportPartialSnapshotForNetwork = async (
     throw e
   }
 }
-

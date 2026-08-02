@@ -1,4 +1,5 @@
 import { GridCell, GridCellKind, Item } from '@glideapps/glide-data-grid'
+import type { Theme } from '@mui/material'
 
 import { ValueTypeName } from '../../../models/TableModel'
 import { isListType, valueDisplay } from '../../../models/TableModel/impl/valueTypeImpl'
@@ -22,14 +23,16 @@ export const getCellKind = (type: ValueTypeName): GridCellKind => {
 
 export interface HandleGetCellContentArgs {
   cell: Item
-  rows: any[] | undefined
-  allColumns: any[] | undefined
+  rows?: any[]
+  allColumns?: any[]
+  theme: Theme
 }
 
 export const handleGetCellContent = ({
   cell,
   rows,
   allColumns,
+  theme,
 }: HandleGetCellContentArgs): GridCell => {
   const [columnIndex, rowIndex] = cell
   const dataRow = rows?.[rowIndex]
@@ -43,7 +46,8 @@ export const handleGetCellContent = ({
     return {
       cursor: 'not-allowed',
       themeOverride: {
-        bgCell: '#D9D9D9',
+        bgCell: theme.palette.background.default,
+        textDark: theme.palette.text.disabled,
       },
       allowOverlay: false, // Virtual columns are read-only
       readonly: true,

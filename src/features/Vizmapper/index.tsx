@@ -24,6 +24,7 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { MappingForm } from './Forms/MappingForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
+import { StyleManager } from './StyleManager'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -262,6 +263,9 @@ export default function VizmapperView(props: {
         height: '100%',
       }}
     >
+      {/* key resets menu/dialog state when the user switches networks, so an
+          open dialog can never act on a different network's style */}
+      <StyleManager key={props.networkId} networkId={props.networkId} />
       <Tabs
         data-testid="vizmapper-tabs"
         value={currentTabIndex}
@@ -334,7 +338,7 @@ export default function VizmapperView(props: {
             sx={{
               ml: 1,
               overflow: 'scroll',
-              height: props.height - 162, // we want to only scroll the vp list instead of the whole allotment
+              height: props.height - 202, // we want to only scroll the vp list instead of the whole allotment
               // height has to be computed based on allotment size to allow overflow scroll
               // height is passed as a prop but this could be pulled from a uiState store instead in the future
             }}
@@ -350,7 +354,7 @@ export default function VizmapperView(props: {
               ml: 1,
               pt: 1,
               overflow: 'scroll',
-              height: props.height - 162,
+              height: props.height - 202,
             }}
           >
             {edgeVps}
@@ -364,7 +368,7 @@ export default function VizmapperView(props: {
               ml: 1,
               pt: 1,
               overflow: 'scroll',
-              height: props.height - 162,
+              height: props.height - 202,
             }}
           >
             {networkVps}

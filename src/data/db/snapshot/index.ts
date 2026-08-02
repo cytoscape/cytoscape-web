@@ -106,12 +106,14 @@ export interface DatabaseSnapshot {
     [ObjectStoreNames.CyVisualStyles]?: any[]
     [ObjectStoreNames.CyNetworkViews]?: any[]
     [ObjectStoreNames.UiState]?: any[]
-    [ObjectStoreNames.Timestamp]?: any[]
+    [ObjectStoreNames.ViewSelections]?: any[]
     [ObjectStoreNames.Filters]?: any[]
     [ObjectStoreNames.Apps]?: CyApp[]
     [ObjectStoreNames.ServiceApps]?: ServiceApp[]
     [ObjectStoreNames.OpaqueAspects]?: any[]
     [ObjectStoreNames.UndoStacks]?: any[]
+    [ObjectStoreNames.StyleLibrary]?: any[]
+    [ObjectStoreNames.AppSettings]?: any[]
   }
 }
 
@@ -378,12 +380,14 @@ export const importDatabaseSnapshot = async (
       [ObjectStoreNames.CyVisualStyles]: 'id',
       [ObjectStoreNames.CyNetworkViews]: 'id',
       [ObjectStoreNames.UiState]: 'id',
-      [ObjectStoreNames.Timestamp]: 'id',
+      [ObjectStoreNames.ViewSelections]: 'id',
       [ObjectStoreNames.Filters]: 'id',
       [ObjectStoreNames.Apps]: 'id',
       [ObjectStoreNames.ServiceApps]: 'url',
       [ObjectStoreNames.OpaqueAspects]: 'id',
       [ObjectStoreNames.UndoStacks]: 'id',
+      [ObjectStoreNames.StyleLibrary]: 'id',
+      [ObjectStoreNames.AppSettings]: 'key',
     }
 
     // Helper function to get primary key for a store
@@ -475,9 +479,7 @@ export const importDatabaseSnapshot = async (
           let recordsToImport = sanitizedRecords
           let skipped = 0
           if (merge && skipConflicts) {
-            const keys = sanitizedRecords.map(
-              (record) => record[primaryKey],
-            )
+            const keys = sanitizedRecords.map((record) => record[primaryKey])
             const existing = await (db as any)[storeName].bulkGet(keys)
             recordsToImport = sanitizedRecords.filter(
               (_record, index) => existing[index] === undefined,

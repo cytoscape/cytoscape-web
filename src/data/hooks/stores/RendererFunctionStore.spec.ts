@@ -61,12 +61,17 @@ describe('useRendererFunctionStore', () => {
       const mockFn = createMockFunction('test')
 
       act(() => {
-        result.current.setFunction(rendererName, functionName, mockFn, networkId)
+        result.current.setFunction(
+          rendererName,
+          functionName,
+          mockFn,
+          networkId,
+        )
       })
 
-      expect(
-        result.current.rendererFunctionsByNetworkId.has(networkId),
-      ).toBe(true)
+      expect(result.current.rendererFunctionsByNetworkId.has(networkId)).toBe(
+        true,
+      )
       expect(
         result.current.rendererFunctionsByNetworkId
           .get(networkId)
@@ -83,7 +88,12 @@ describe('useRendererFunctionStore', () => {
       const mockFn = createMockFunction('test')
 
       act(() => {
-        result.current.setFunction(rendererName, functionName, mockFn, networkId)
+        result.current.setFunction(
+          rendererName,
+          functionName,
+          mockFn,
+          networkId,
+        )
       })
 
       // Should be in both places
@@ -147,10 +157,7 @@ describe('useRendererFunctionStore', () => {
         result.current.setFunction(rendererName, functionName, mockFn)
       })
 
-      const retrievedFn = result.current.getFunction(
-        rendererName,
-        functionName,
-      )
+      const retrievedFn = result.current.getFunction(rendererName, functionName)
 
       expect(retrievedFn).toBe(mockFn)
     })
@@ -163,7 +170,12 @@ describe('useRendererFunctionStore', () => {
       const mockFn = createMockFunction('test')
 
       act(() => {
-        result.current.setFunction(rendererName, functionName, mockFn, networkId)
+        result.current.setFunction(
+          rendererName,
+          functionName,
+          mockFn,
+          networkId,
+        )
       })
 
       const retrievedFn = result.current.getFunction(
@@ -265,4 +277,3 @@ describe('useRendererFunctionStore', () => {
     })
   })
 })
-

@@ -9,6 +9,7 @@ export * from './VisualPropertyValue'
 export * from './VisualPropertyValueTypeName'
 export * from './VisualStyle'
 export * from './VisualStyleFn'
+export * from './VisualStyleSet'
 export {
   collectVisualStyleWarnings,
   type VisualStyleWarning,

@@ -18,10 +18,10 @@ import {
   validateServiceAppArray,
   validateStoredUiState,
   validateTable,
-  validateTimestampEntry,
   validateUiState,
   validateUndoRedoStack,
   validateUndoRedoStackDb,
+  validateViewSelection,
   validateVisualStyle,
   validateWorkspace,
   validateWorkspaceArray,
@@ -343,7 +343,9 @@ describe('db validator - FilterConfig', () => {
 
   it('accepts a numeric-range filter config', () => {
     const config = { ...validFilterConfig(), range: { min: 0, max: 100 } }
-    expect(validateFilterConfig(config)).toMatchObject({ name: 'status-filter' })
+    expect(validateFilterConfig(config)).toMatchObject({
+      name: 'status-filter',
+    })
   })
 
   it('rejects a filter config with an invalid range shape', () => {
@@ -400,16 +402,43 @@ describe('db validator - UndoRedoStack', () => {
   })
 })
 
-describe('db validator - Timestamp & UiState', () => {
-  it('accepts a timestamp entry and rejects a non-numeric timestamp', () => {
-    expect(validateTimestampEntry({ id: 'timestamp', timestamp: 123 })).toEqual(
-      { id: 'timestamp', timestamp: 123 },
-    )
+describe('db validator - ViewSelection', () => {
+  it('accepts a row with no selection at all', () => {
+    // The common case since DB v11: a network is open with nothing selected,
+    // and that row still has to round-trip.
+    expect(
+      validateViewSelection({ selectedNodes: [], selectedEdges: [] }),
+    ).toEqual({ selectedNodes: [], selectedEdges: [] })
+  })
+
+  it('accepts populated node and edge selections', () => {
+    expect(
+      validateViewSelection({
+        selectedNodes: ['n1', 'n2'],
+        selectedEdges: ['e1'],
+      }),
+    ).toEqual({ selectedNodes: ['n1', 'n2'], selectedEdges: ['e1'] })
+  })
+
+  it('rejects a non-string element id', () => {
     expect(() =>
-      validateTimestampEntry({ id: 'timestamp', timestamp: 'now' }),
+      validateViewSelection({ selectedNodes: [1], selectedEdges: [] }),
     ).toThrow()
   })
 
+  it('rejects an empty element id', () => {
+    expect(() =>
+      validateViewSelection({ selectedNodes: [''], selectedEdges: [] }),
+    ).toThrow()
+  })
+
+  it('rejects a row missing either array', () => {
+    expect(() => validateViewSelection({ selectedNodes: [] })).toThrow()
+    expect(() => validateViewSelection({ selectedEdges: [] })).toThrow()
+  })
+})
+
+describe('db validator - UiState', () => {
   it('accepts a well-formed stored UI state', () => {
     expect(validateStoredUiState(validStoredUiState())).toMatchObject({
       id: 'uistate',

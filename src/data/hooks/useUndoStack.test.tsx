@@ -7,7 +7,9 @@ import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { TableType } from '../../models/StoreModel/TableStoreModel'
 import { createTable } from '../../models/TableModel/impl/inMemoryTable'
 import { ValueTypeName } from '../../models/TableModel'
+import { createVisualStyle } from '../../models/VisualStyleModel/impl/visualStyleFnImpl'
 import { useTableStore } from './stores/TableStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useUndoStore } from './stores/UndoStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
@@ -254,5 +256,142 @@ describe('useUndoStack', () => {
     expect(
       useUndoStore.getState().undoRedoStacks[NETWORK_ID],
     ).toBeUndefined()
+  })
+
+  describe('SWITCH_STYLE', () => {
+    // Two named styles on NETWORK_ID: the original ("Default") plus a copy.
+    // Returns both ids with the original still active.
+    const seedTwoStyles = (): { defaultId: string; copyId: string } => {
+      let copyId: string | undefined
+      act(() => {
+        useVisualStyleStore.getState().add(NETWORK_ID, createVisualStyle())
+        copyId = useVisualStyleStore
+          .getState()
+          .createStyle(NETWORK_ID, 'Publication')
+      })
+      const styleSet = useVisualStyleStore.getState().styleSets[NETWORK_ID]
+      return { defaultId: styleSet.activeStyleId, copyId: copyId as string }
+    }
+
+    const activeStyleId = (): string =>
+      useVisualStyleStore.getState().styleSets[NETWORK_ID].activeStyleId
+
+    const nodeShape = (): unknown =>
+      useVisualStyleStore.getState().visualStyles[NETWORK_ID].nodeShape
+        .defaultValue
+
+    beforeEach(() => {
+      act(() => {
+        useVisualStyleStore.getState().deleteAll()
+      })
+    })
+
+    it('undo returns to the previous style and redo goes forward again', () => {
+      const { result } = renderHook(() => useUndoStack(), {
+        wrapper: makeWrapper(10),
+      })
+      const { defaultId, copyId } = seedTwoStyles()
+
+      act(() => {
+        useVisualStyleStore.getState().switchStyle(NETWORK_ID, copyId)
+        result.current.postEdit(
+          UndoCommandType.SWITCH_STYLE,
+          'Switch style to "Publication"',
+          [NETWORK_ID, defaultId],
+          [NETWORK_ID, copyId],
+        )
+      })
+      expect(activeStyleId()).toBe(copyId)
+
+      act(() => {
+        result.current.undoLastEdit()
+      })
+      expect(activeStyleId()).toBe(defaultId)
+
+      act(() => {
+        result.current.redoLastEdit()
+      })
+      expect(activeStyleId()).toBe(copyId)
+    })
+
+    // The load-bearing case, and the reason switchStyle no longer clears the
+    // undo history: an edit recorded under style A must still undo against A
+    // after the user has switched to B. The switch reverts FIRST, which puts A
+    // back in place before the older edit replays.
+    it('restores the style before undoing edits recorded under it', () => {
+      const { result } = renderHook(() => useUndoStack(), {
+        wrapper: makeWrapper(10),
+      })
+      const { defaultId, copyId } = seedTwoStyles()
+
+      // 1. Edit a visual property while "Default" is active, recorded as undoable
+      act(() => {
+        useVisualStyleStore.getState().setDefault(NETWORK_ID, 'nodeShape', 'diamond')
+        result.current.postEdit(
+          UndoCommandType.SET_DEFAULT_VP_VALUE,
+          'set node shape',
+          [NETWORK_ID, 'nodeShape', 'ellipse'],
+          [NETWORK_ID, 'nodeShape', 'diamond'],
+        )
+      })
+      expect(nodeShape()).toBe('diamond')
+
+      // 2. Switch to the other style
+      act(() => {
+        useVisualStyleStore.getState().switchStyle(NETWORK_ID, copyId)
+        result.current.postEdit(
+          UndoCommandType.SWITCH_STYLE,
+          'Switch style to "Publication"',
+          [NETWORK_ID, defaultId],
+          [NETWORK_ID, copyId],
+        )
+      })
+      expect(activeStyleId()).toBe(copyId)
+
+      // 3. First undo reverts the SWITCH, not the visual property edit
+      act(() => {
+        result.current.undoLastEdit()
+      })
+      expect(activeStyleId()).toBe(defaultId)
+      expect(nodeShape()).toBe('diamond')
+
+      // 4. Second undo now lands on the style the edit was recorded under
+      act(() => {
+        result.current.undoLastEdit()
+      })
+      expect(activeStyleId()).toBe(defaultId)
+      expect(nodeShape()).toBe('ellipse')
+    })
+
+    it('discards the edit when the target style no longer exists', () => {
+      // switchStyle only warns on an unknown style, so without the explicit
+      // throw in the command map the edit would move to the redo stack as
+      // though the switch had happened.
+      const { result } = renderHook(() => useUndoStack(), {
+        wrapper: makeWrapper(10),
+      })
+      seedTwoStyles()
+
+      act(() => {
+        useUndoStore.getState().setUndoStack(NETWORK_ID, [
+          {
+            undoCommand: UndoCommandType.SWITCH_STYLE,
+            description: 'Switch style to "Gone"',
+            undoParams: [NETWORK_ID, 'deleted-style-id'],
+            redoParams: [NETWORK_ID, 'deleted-style-id'],
+          },
+        ])
+      })
+
+      act(() => {
+        result.current.undoLastEdit()
+      })
+
+      const stacks = useUndoStore.getState().undoRedoStacks[NETWORK_ID]
+      expect(stacks.undoStack).toHaveLength(0)
+      // Not moved to redo: its outcome is unknown, so replaying it forward
+      // would be a guess.
+      expect(stacks.redoStack).toHaveLength(0)
+    })
   })
 })
