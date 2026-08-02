@@ -13,7 +13,7 @@
  * `localStorage`/IndexedDB) for the case where the URL carries no network id.
  */
 
-const TAB_NETWORK_KEY = 'cyweb.tab.networkId'
+import { TAB_NETWORK_KEY } from './storageKeys'
 
 const isMemberId = (
   id: string | null | undefined,

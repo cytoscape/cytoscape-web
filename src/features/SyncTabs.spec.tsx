@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { closeDb, getDb } from '../data/db'
-import { useMessageStore } from '../data/hooks/stores/MessageStore'
-import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { getTabId } from '@/data/tabState/tabId'
 import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
 import {

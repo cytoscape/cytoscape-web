@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test'
 
-import { TAB_VIEW_STATE_KEY } from '../../src/data/tabState/tabViewState'
+import { TAB_VIEW_STATE_KEY } from '../../src/data/tabState/storageKeys'
 import { Panel } from '../../src/models/UiModel/Panel'
 import { PanelState } from '../../src/models/UiModel/PanelState'
 import { expect, test } from './fixtures'

@@ -20,9 +20,11 @@ import { logUi } from '@/debug'
 import { Panel } from '@/models/UiModel/Panel'
 import { PanelState } from '@/models/UiModel/PanelState'
 import { Ui } from '@/models/UiModel'
+import { TAB_VIEW_STATE_KEY } from './storageKeys'
 
-/** Exported so tests reference the key rather than repeating the literal. */
-export const TAB_VIEW_STATE_KEY = 'cyweb.tab.viewState'
+// Re-exported for the existing unit-test import path. The constant itself lives
+// in `storageKeys.ts` because Playwright cannot load this module — see there.
+export { TAB_VIEW_STATE_KEY }
 
 /** The slice of `Ui` that belongs to this tab alone. */
 export interface TabViewState {
