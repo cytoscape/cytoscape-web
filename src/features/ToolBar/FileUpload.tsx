@@ -127,6 +127,7 @@ export function FileUpload(props: FileUploadProps) {
           nodeTable,
           edgeTable,
           visualStyle,
+          visualStyleSet,
           networkViews,
           visualStyleOptions,
           otherAspects,
@@ -163,7 +164,7 @@ export function FileUpload(props: FileUploadProps) {
         setVisualStyleOptions(localUuid, visualStyleOptions)
         addNetworkToWorkspace(localUuid)
         addNewNetwork(network)
-        setVisualStyle(localUuid, visualStyle)
+        setVisualStyle(localUuid, visualStyle, visualStyleSet)
         setTables(localUuid, nodeTable, edgeTable)
         setViewModel(localUuid, networkViews[0])
         addSummary(localUuid, summary)

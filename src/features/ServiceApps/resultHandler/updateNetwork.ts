@@ -122,6 +122,11 @@ export const useUpdateNetwork = (): (({
         })
         setVisualStyleOptions(networkId, visualStyleOptions)
         setTables(networkId, nodeTable, edgeTable)
+        // Deliberately no style set: this updates a network the user already
+        // owns. A service returns plain CX2, so its set is a single "Default"
+        // built from the standard aspects, and passing it would delete the
+        // user's named styles. Omitting it keeps the existing set and replaces
+        // only the active style's content — see MULTIPLE_VISUAL_STYLES.md §2.
         setVisualStyle(networkId, visualStyle)
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(networkId, otherAspects, true)
