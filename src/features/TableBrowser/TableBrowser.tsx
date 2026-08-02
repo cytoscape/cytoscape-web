@@ -17,6 +17,7 @@ import {
 import Box from '@mui/material/Box'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
+import { useTheme } from '@mui/material/styles'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
@@ -78,6 +79,7 @@ export default function TableBrowser(props: {
   setHeight: (height: number) => void
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
+  const theme = useTheme()
   const { width } = useWindowSize()
   const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
@@ -236,9 +238,9 @@ export default function TableBrowser(props: {
 
   const getContent = React.useCallback(
     (cell: Item): GridCell => {
-      return handleGetCellContent({ cell, rows, allColumns })
+      return handleGetCellContent({ cell, rows, allColumns, theme })
     },
-    [rows, allColumns],
+    [rows, allColumns, theme],
   )
 
 

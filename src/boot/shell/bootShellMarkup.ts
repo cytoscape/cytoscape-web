@@ -512,7 +512,7 @@ const errorActionHtml = (action: BootShellErrorAction): string => `
         )}" ${BOOT_SHELL_ARMED_LABEL_ATTR}="${escapeAttr(
           action.confirmLabel,
         )}">${escapeHtml(action.label)}</button>
-        <p class="boot-shell-error-action-confirm" hidden>${escapeHtml(
+        <p class="${BOOT_SHELL_ACTION_CONFIRM_CLASS}" hidden>${escapeHtml(
           action.confirmMessage,
         )}</p>
       </div>`

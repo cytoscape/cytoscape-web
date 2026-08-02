@@ -14,7 +14,6 @@ export const useDataEditorTheme = () => {
       fgIconHeader: theme.palette.background.default,
       bgCell: theme.palette.background.paper,
       bgCellMedium: theme.palette.background.paper,
-      bgCellLight: theme.palette.background.paper,
       accentColor: theme.palette.primary.main,
       accentLight: theme.palette.action.selected,
       textDark: theme.palette.text.secondary,

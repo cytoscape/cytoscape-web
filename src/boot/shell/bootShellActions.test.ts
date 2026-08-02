@@ -99,13 +99,17 @@ describe('boot shell recovery actions', () => {
   })
 
   it('ignores clicks for an id with no registered handler', () => {
+    // Register an unrelated action to attach the document-level listener.
+    registerBootShellAction('some-other-id', vi.fn())
     const button = paintWithAction()
 
-    // Arms regardless of registration, but must not throw on the run click.
+    // The click returns before arming because no handler is registered for
+    // this button's action id.
     expect(() => {
       button.click()
       button.click()
     }).not.toThrow()
+    expect(button.classList.contains('boot-shell-error-button-armed')).toBe(false)
   })
 
   it('survives a repaint of the shell', () => {

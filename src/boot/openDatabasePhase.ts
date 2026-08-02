@@ -52,10 +52,19 @@ export const RESET_DATABASE_ACTION_ID = 'reset-database'
 const registerResetAction = (): void => {
   registerBootShellAction(RESET_DATABASE_ACTION_ID, async () => {
     logDb.info('[openDatabasePhase] resetting the local database on request')
-    await deleteDb()
-    // Reload rather than continue: the boot already aborted partway through, so
-    // rerunning it from the top against the fresh database is the honest
-    // recovery.
+    const outcome = await deleteDb()
+
+    // 'delete-failed' is the only outcome that leaves the data intact and the
+    // connection usable, so it is the only one worth retrying. Throwing
+    // re-enables the button (bootShellActions catches it) and leaves the reader
+    // on the same error shell rather than reloading into it again.
+    if (outcome === 'delete-failed') {
+      throw new Error(`database deletion failed: ${outcome}`)
+    }
+
+    // 'deleted', 'delete-blocked' and 'reopen-failed' all mean the data must be
+    // treated as gone. Reload rather than continue: the boot already aborted
+    // partway through, so rerunning it from the top is the honest recovery.
     window.location.reload()
   })
 }
