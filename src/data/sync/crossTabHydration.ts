@@ -23,6 +23,10 @@ import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { logUi } from '@/debug'
+import {
+  reportHydrationBatchFailure,
+  reportHydrationBatchSuccess,
+} from './crossTabSyncHealth'
 import type { NetworkView } from '@/models/ViewModel'
 
 /**
@@ -56,6 +60,15 @@ export interface CrossTabChange {
  * {@link hydrateFromCrossTabChange} for why.
  */
 type ApplyTask = () => void
+
+/**
+ * Whether a batch got anything applied.
+ *
+ * `'ok'` covers partial success and a batch with genuinely nothing to do.
+ * `'failed'` means nothing landed: every read threw, every apply threw, the
+ * batch was abandoned, or it rejected outright.
+ */
+type BatchOutcome = 'ok' | 'failed'
 
 /** Ordered id-list equality. Selection arrays are built deterministically. */
 const sameIds = (
@@ -372,13 +385,15 @@ const prepareChange = async (
 const applyBatch = async (
   changes: CrossTabChange[],
   guard: { abandoned: boolean } = { abandoned: false },
-): Promise<void> => {
+): Promise<BatchOutcome> => {
   // --- Phase 1: fetch (async, unsuppressed) ---
+  let readErrors = 0
   const prepared = await Promise.all(
     dedupeChanges(changes).map(async (change) => {
       try {
         return await prepareChange(change)
       } catch (err) {
+        readErrors += 1
         logUi.error(
           `[Hydration] Failed to read ${change.table} for key ${String(
             change.key,
@@ -392,7 +407,11 @@ const applyBatch = async (
 
   const tasks = prepared.filter((task): task is ApplyTask => task !== null)
   if (tasks.length === 0) {
-    return
+    // No tasks has two causes that must not be confused. Every read threw —
+    // the tab is not syncing, and reporting 'ok' here is how a wholly broken
+    // tab used to look healthy. Or `prepareChange` legitimately returned null
+    // for all of them (unknown table, row already gone), which is a no-op.
+    return readErrors > 0 ? 'failed' : 'ok'
   }
 
   // The queue gave up on this batch and moved on, so a later batch may already
@@ -402,23 +421,32 @@ const applyBatch = async (
     logUi.warn(
       `[Hydration] Dropping ${tasks.length} apply task(s) from an abandoned batch`,
     )
-    return
+    // The timeout that abandoned this batch already reported it, and the race
+    // below discarded this return value the moment it fired.
+    return 'failed'
   }
 
   // --- Phase 2: apply (synchronous, suppressed) ---
   setHydrating(true)
+  let applyErrors = 0
   try {
     for (const task of tasks) {
       try {
         task()
       } catch (err) {
         // One bad row must not abandon the rest of the batch.
+        applyErrors += 1
         logUi.error('[Hydration] Failed to apply a cross-tab change', err)
       }
     }
   } finally {
     setHydrating(false)
   }
+
+  // Partial success counts as success: the tab is still receiving its peers'
+  // changes, and one row that will not apply is not a reason to tell the user
+  // sync is down.
+  return applyErrors === tasks.length ? 'failed' : 'ok'
 }
 
 /**
@@ -467,24 +495,35 @@ export const hydrateFromCrossTabChange = async (
   hydrationQueue = hydrationQueue.then(async () => {
     const guard = { abandoned: false }
     let timer: ReturnType<typeof setTimeout> | undefined
+    let outcome: BatchOutcome = 'failed'
     try {
-      await Promise.race([
+      outcome = await Promise.race([
         applyBatch(changes, guard),
-        new Promise<void>((resolve) => {
+        new Promise<BatchOutcome>((resolve) => {
           timer = setTimeout(() => {
             guard.abandoned = true
             logUi.error(
               `[Hydration] A batch did not finish within ${HYDRATION_BATCH_TIMEOUT_MS}ms; ` +
                 'giving up on it so later changes still hydrate',
             )
-            resolve()
+            resolve('failed')
           }, HYDRATION_BATCH_TIMEOUT_MS)
         }),
       ])
     } catch (err) {
       logUi.error('[Hydration] Batch failed', err)
+      outcome = 'failed'
     } finally {
       clearTimeout(timer)
+    }
+
+    // One report per batch, whichever way it ended. The threshold in
+    // crossTabSyncHealth decides whether the user hears about it — a single
+    // failure never does.
+    if (outcome === 'failed') {
+      reportHydrationBatchFailure()
+    } else {
+      reportHydrationBatchSuccess()
     }
   })
   return hydrationQueue

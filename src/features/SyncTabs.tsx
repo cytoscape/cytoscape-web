@@ -3,14 +3,20 @@ import { ReactElement, useEffect } from 'react'
 import { useHref } from 'react-router-dom'
 
 import { getDb } from '../data/db'
+import { useMessageStore } from '../data/hooks/stores/MessageStore'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../debug'
+import { MessageSeverity } from '../models/MessageModel'
 import { getTabId } from '@/data/tabState/tabId'
 import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
 import {
   isCrossTabSyncReady,
   onCrossTabSyncReady,
 } from '@/data/sync/crossTabSyncGate'
+import {
+  onCrossTabSyncFailed,
+  reportSyncListenerFailure,
+} from '@/data/sync/crossTabSyncHealth'
 import {
   DATABASE_DELETED,
   handleDatabaseDeleted,
@@ -102,6 +108,8 @@ const isRelevantToThisTab = (change: IDatabaseChange): boolean => {
  * database it refers to is gone.
  */
 export const SyncTabsAction = (): ReactElement => {
+  const addMessage = useMessageStore((state) => state.addMessage)
+
   useEffect(() => {
     // The listener is attached after an await, so an unmount that happens
     // before getDb() resolves must prevent the subscription entirely —
@@ -169,12 +177,16 @@ export const SyncTabsAction = (): ReactElement => {
       dbInstance.on('changes', changesListener)
     }
 
-    initDbListener().catch((e) =>
+    initDbListener().catch((e) => {
       logUi.error(
         `[${SyncTabsAction.name}]: Failed to initialize db listener`,
         e,
-      ),
-    )
+      )
+      // Nothing retries this, so the tab is non-syncing for its whole life.
+      // Reported rather than only logged: the user cannot tell a tab that is
+      // not listening from a sibling tab that has made no changes.
+      reportSyncListenerFailure()
+    })
 
     return () => {
       cancelled = true
@@ -211,6 +223,25 @@ export const SyncTabsAction = (): ReactElement => {
       channel.close()
     }
   }, [rootHref])
+
+  useEffect(() => {
+    // The copy lives here, not in `crossTabSyncHealth`: that module is in the
+    // data layer and must not own user-facing text.
+    //
+    // `persistent`, because this is a condition rather than an event. A stale
+    // tab stays stale, and a warning that auto-hides after five seconds tells
+    // nobody anything. The only fix is a reload, so the message says so.
+    return onCrossTabSyncFailed(() => {
+      addMessage({
+        message:
+          'This tab is no longer receiving changes made in your other ' +
+          'Cytoscape Web tabs. Reload it to reconnect — otherwise edits you ' +
+          'make here may overwrite theirs.',
+        severity: MessageSeverity.WARNING,
+        persistent: true,
+      })
+    })
+  }, [addMessage])
 
   return <></>
 }

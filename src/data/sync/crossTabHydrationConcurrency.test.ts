@@ -49,6 +49,11 @@ import {
   hydrateFromCrossTabChange,
   HYDRATION_BATCH_TIMEOUT_MS,
 } from '@/data/sync/crossTabHydration'
+import {
+  CONSECUTIVE_BATCH_FAILURE_THRESHOLD,
+  onCrossTabSyncFailed,
+  resetCrossTabSyncHealthForTesting,
+} from '@/data/sync/crossTabSyncHealth'
 
 // Static imports: a dynamic import() inside a test body charges module load
 // time to the 1s per-test timeout, which tips over under full-suite load.
@@ -61,6 +66,7 @@ const summaryFixture = (name: string): any => ({
 describe('cross-tab hydration: concurrent local writes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetCrossTabSyncHealthForTesting()
   })
 
   it('persists a local edit made while a hydration is awaiting IndexedDB', async () => {
@@ -235,5 +241,77 @@ describe('cross-tab hydration: concurrent local writes', () => {
 
     // Cleared only if uiState ran against the pre-hydration (empty) networkIds.
     expect(useUiStateStore.getState().ui.activeNetworkView).toBe('net-9')
+  })
+
+  describe('telling the user sync has stopped', () => {
+    it('says nothing about a single failed batch', async () => {
+      const onFailed = vi.fn()
+      onCrossTabSyncFailed(onFailed)
+      getNetworkSummaryFromDb.mockRejectedValue(new Error('read failed'))
+
+      await hydrateFromCrossTabChange([
+        { type: 2, table: 'summaries', key: 'net-1' },
+      ])
+
+      expect(onFailed).not.toHaveBeenCalled()
+    })
+
+    it('reports once every read in a run of batches throws', async () => {
+      const onFailed = vi.fn()
+      onCrossTabSyncFailed(onFailed)
+      getNetworkSummaryFromDb.mockRejectedValue(new Error('read failed'))
+
+      for (let i = 0; i < CONSECUTIVE_BATCH_FAILURE_THRESHOLD; i += 1) {
+        await hydrateFromCrossTabChange([
+          { type: 2, table: 'summaries', key: `net-${i}` },
+        ])
+      }
+
+      // A batch whose every read threw applies nothing, which used to return
+      // normally and so read as a healthy batch.
+      expect(onFailed).toHaveBeenCalledTimes(1)
+      expect(onFailed).toHaveBeenCalledWith('hydration')
+    })
+
+    it('treats a batch with nothing to apply as healthy', async () => {
+      const onFailed = vi.fn()
+      onCrossTabSyncFailed(onFailed)
+      // Row is simply gone — prepareChange returns null without throwing.
+      getNetworkSummaryFromDb.mockResolvedValue(undefined)
+
+      for (let i = 0; i < CONSECUTIVE_BATCH_FAILURE_THRESHOLD + 2; i += 1) {
+        await hydrateFromCrossTabChange([
+          { type: 2, table: 'summaries', key: `net-${i}` },
+        ])
+      }
+
+      expect(onFailed).not.toHaveBeenCalled()
+    })
+
+    it('a successful batch clears the streak', async () => {
+      const onFailed = vi.fn()
+      onCrossTabSyncFailed(onFailed)
+
+      getNetworkSummaryFromDb.mockRejectedValue(new Error('read failed'))
+      for (let i = 0; i < CONSECUTIVE_BATCH_FAILURE_THRESHOLD - 1; i += 1) {
+        await hydrateFromCrossTabChange([
+          { type: 2, table: 'summaries', key: `net-${i}` },
+        ])
+      }
+
+      getNetworkSummaryFromDb.mockResolvedValue(summaryFixture('recovered'))
+      await hydrateFromCrossTabChange([
+        { type: 2, table: 'summaries', key: 'net-ok' },
+      ])
+
+      getNetworkSummaryFromDb.mockRejectedValue(new Error('read failed'))
+      for (let i = 0; i < CONSECUTIVE_BATCH_FAILURE_THRESHOLD - 1; i += 1) {
+        await hydrateFromCrossTabChange([
+          { type: 2, table: 'summaries', key: `net-again-${i}` },
+        ])
+      }
+
+      expect(onFailed).not.toHaveBeenCalled()
+    })
   })
 })

@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { closeDb, getDb } from '../data/db'
+import { useMessageStore } from '../data/hooks/stores/MessageStore'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { getTabId } from '@/data/tabState/tabId'
 import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
@@ -11,6 +12,10 @@ import {
   markCrossTabSyncReady,
   resetCrossTabSyncGateForTesting,
 } from '@/data/sync/crossTabSyncGate'
+import {
+  reportSyncListenerFailure,
+  resetCrossTabSyncHealthForTesting,
+} from '@/data/sync/crossTabSyncHealth'
 import {
   DATABASE_DELETED,
   DATABASE_DELETED_ACK,
@@ -56,6 +61,8 @@ describe('SyncTabs', () => {
     // Most tests exercise steady state; the gate has its own tests below.
     resetCrossTabSyncGateForTesting()
     markCrossTabSyncReady()
+    resetCrossTabSyncHealthForTesting()
+    useMessageStore.getState().resetMessages()
 
     const dbOn = vi.fn(
       (_event: string, listener?: (changes: any[]) => void) => {
@@ -334,6 +341,60 @@ describe('SyncTabs', () => {
 
       expect(closeDb).not.toHaveBeenCalled()
       expect(window.location.assign).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('telling the user sync has stopped', () => {
+    it('warns when the change listener never attaches', async () => {
+      // Nothing retries this, so the tab is non-syncing for its whole life and
+      // has no other way to say so.
+      vi.mocked(getDb).mockRejectedValue(new Error('db unavailable'))
+
+      render(<SyncTabsAction />)
+
+      await vi.waitFor(() =>
+        expect(useMessageStore.getState().messages).toHaveLength(1),
+      )
+      const [message] = useMessageStore.getState().messages
+      expect(message.severity).toBe('warning')
+      // A condition, not an event: it must not auto-hide.
+      expect(message.persistent).toBe(true)
+      expect(message.message).toContain('Reload')
+    })
+
+    it('says nothing while sync is working', async () => {
+      render(<SyncTabsAction />)
+      await emitChanges([
+        {
+          type: 2,
+          table: 'summaries',
+          key: CURRENT_NETWORK,
+          source: OTHER_TAB,
+        },
+      ])
+
+      expect(useMessageStore.getState().messages).toHaveLength(0)
+    })
+
+    it('surfaces a hydration failure reported while mounted', async () => {
+      render(<SyncTabsAction />)
+      await vi.waitFor(() => expect(getDb).toHaveBeenCalled())
+
+      reportSyncListenerFailure()
+
+      await vi.waitFor(() =>
+        expect(useMessageStore.getState().messages).toHaveLength(1),
+      )
+    })
+
+    it('stops listening once unmounted', async () => {
+      const { unmount } = render(<SyncTabsAction />)
+      await vi.waitFor(() => expect(getDb).toHaveBeenCalled())
+      unmount()
+
+      reportSyncListenerFailure()
+
+      expect(useMessageStore.getState().messages).toHaveLength(0)
     })
   })
 })
