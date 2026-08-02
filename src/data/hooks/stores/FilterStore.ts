@@ -146,7 +146,7 @@ export const useFilterStore = create(
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
         if (!isHydrating()) {
-          putFilterToDb(plainFilter)
+          void putFilterToDb(plainFilter)
             .then(() => {
               logStore.info(
                 `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
@@ -166,7 +166,17 @@ export const useFilterStore = create(
     deleteFilterConfig: (name: string) => {
       set((state) => {
         const newState = FilterStoreImpl.deleteFilterConfig(state, name)
-        deleteFilterFromDb(name)
+        // Guarded like every other write here: during hydration this store is
+        // being filled FROM the database, and deleting the row back out would
+        // mint a change record every peer tab then hydrates in turn.
+        if (!isHydrating()) {
+          void deleteFilterFromDb(name).catch((e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to delete the filter from db: ${name}`,
+              e,
+            )
+          })
+        }
         state.filterConfigs = newState.filterConfigs
         return state
       })
@@ -177,7 +187,12 @@ export const useFilterStore = create(
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
         if (!isHydrating()) {
-          putFilterToDb(plainFilter)
+          void putFilterToDb(plainFilter).catch((e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to update the filter in db: ${name}`,
+              e,
+            )
+          })
         }
         state.filterConfigs = newState.filterConfigs
         return state

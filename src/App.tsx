@@ -126,10 +126,15 @@ export const App = (): React.ReactElement => {
           <RouterProvider router={router} />
         </div>
         {/*
-          Inside the boundary: a crash in the tour runner (react-joyride walking
-          a DOM that moved under it) must be caught, not escape to a blank page.
+          Its own boundary, with a null fallback. A crash in the tour runner
+          (react-joyride walking a DOM that moved under it) must be caught, but
+          the outer boundary would swap the whole app — router included — for
+          the error page. The tour is an overlay: dropping just the overlay
+          leaves the user where they were.
         */}
-        <OnboardingHost />
+        <ErrorBoundary fallback={null}>
+          <OnboardingHost />
+        </ErrorBoundary>
       </ErrorBoundary>
       <CookieConsentWidget />
     </CssVarsProvider>

@@ -113,9 +113,18 @@ export const useUndoStack = () => {
    */
   const switchStyleOrThrow = useCallback(
     (networkId: IdType, styleId: IdType) => {
-      if (!switchStyle(networkId, styleId)) {
-        throw new Error(`Cannot switch network ${networkId} to style ${styleId}`)
+      if (switchStyle(networkId, styleId)) {
+        return
       }
+      // switchStyle also returns false for a no-op — the target style is
+      // already active. That is the state the edit asked for, so treating it as
+      // a failure discarded a perfectly replayable edit (and, with it, every
+      // older edit behind it in the stack).
+      const styleSet = useVisualStyleStore.getState().styleSets[networkId]
+      if (styleSet?.activeStyleId === styleId) {
+        return
+      }
+      throw new Error(`Cannot switch network ${networkId} to style ${styleId}`)
     },
     [switchStyle],
   )
@@ -455,7 +464,10 @@ export const useUndoStack = () => {
         // A failing command (e.g. its network no longer exists) must not
         // escape into the click handler or wedge the stack; pop the edit
         // and do NOT move it to redo (its state is unknown) (REVIEW.md B5)
-        logHistory.warn('[useUndoStack] Undo command failed; discarding edit:', e)
+        logHistory.warn(
+          '[useUndoStack] Undo command failed; discarding edit:',
+          e,
+        )
         setUndoStack(latestTargetNetworkId, nextUndoStack)
         return
       }
@@ -754,7 +766,10 @@ export const useUndoStack = () => {
       try {
         undoCommand(lastEdit.redoParams)
       } catch (e) {
-        logHistory.warn('[useUndoStack] Redo command failed; discarding edit:', e)
+        logHistory.warn(
+          '[useUndoStack] Redo command failed; discarding edit:',
+          e,
+        )
         setRedoStack(latestTargetNetworkId, nextRedoStack)
         return
       }

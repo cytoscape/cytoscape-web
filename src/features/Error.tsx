@@ -6,7 +6,6 @@ import {
   Snackbar,
   Typography,
 } from '@mui/material'
-import debounce from 'lodash/debounce'
 import {
   ReactElement,
   useCallback,
@@ -17,7 +16,6 @@ import {
 } from 'react'
 import {
   isRouteErrorResponse,
-  useHref,
   useLocation,
   useNavigate,
   useRouteError,
@@ -33,6 +31,10 @@ import {
   exportPartialSnapshotForNetwork,
   sendErrorReport,
 } from '../data/external-api/error-report'
+import {
+  type ResetWorkspaceResult,
+  useResetWorkspace,
+} from '../data/hooks/useResetWorkspace'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 import { logDb } from '../debug'
@@ -41,10 +43,6 @@ export const Error = (): ReactElement => {
   const error: any = useRouteError()
   const navigate = useNavigate()
   const location = useLocation()
-  // Root path with the router basename applied, so a deployment under a
-  // sub-path does not reload to the wrong origin root.
-  const rootHref = useHref('/')
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -54,7 +52,7 @@ export const Error = (): ReactElement => {
   const [isSendingReport, setIsSendingReport] = useState(false)
   const [reportSent, setReportSent] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const [isResetting, setIsResetting] = useState(false)
+  const { reset, isResetting } = useResetWorkspace()
   const [resetError, setResetError] = useState<string | null>(null)
   const hasReportedRef = useRef(false)
 
@@ -223,33 +221,14 @@ export const Error = (): ReactElement => {
    * modes report rather than leaving a dead button.
    */
   const handleReset = (): void => {
-    setIsResetting(true)
     setResetError(null)
-    resetWorkspace()
-      .then((outcome) => {
-        if (outcome.status === 'failed') {
-          setIsResetting(false)
-          setResetError(outcome.reason)
-          return
-        }
-
-        if (outcome.status === 'reload-required') {
-          // No usable database connection remains — reload straight away
-          // instead of waiting out the debounce.
-          window.location.assign(rootHref)
-          return
-        }
-
-        debounce(() => {
-          navigate('/')
-          navigate(0)
-        }, 1500)()
-      })
-      .catch((e) => {
-        logDb.error('[Error] Workspace reset threw', e)
-        setIsResetting(false)
-        setResetError('The reset failed unexpectedly. Please try again.')
-      })
+    void reset().then((result: ResetWorkspaceResult) => {
+      // Only 'failed' leaves the user here; the other two are already
+      // navigating away, so there is nothing to render for them.
+      if (result.status === 'failed') {
+        setResetError(result.reason)
+      }
+    })
   }
 
   const handleCloseSnackbar = (): void => {

@@ -1,13 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
-import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
-import { PRESET_VISUAL_STYLES } from '../../../models/VisualStyleModel/impl/presetVisualStyles'
-import { createVisualStyle } from '../../../models/VisualStyleModel/impl/visualStyleFnImpl'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { IdType } from '@/models/IdType'
+import { PRESET_VISUAL_STYLES } from '@/models/VisualStyleModel/impl/presetVisualStyles'
+import { createVisualStyle } from '@/models/VisualStyleModel/impl/visualStyleFnImpl'
 import { StylePickerDialog } from './StylePickerDialog'
 
 // jsdom cannot rasterize a canvas, so the real renderer is stubbed; the tiles'
@@ -24,8 +24,8 @@ const { getStyleSetMetadataFromDb, getVisualStyleSetFromDb } = vi.hoisted(
   }),
 )
 
-vi.mock('../../../data/db', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../data/db')>()
+vi.mock('@/data/db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/db')>()
   const mocked: Record<string, any> = { ...actual }
   for (const key of Object.keys(actual)) {
     if (

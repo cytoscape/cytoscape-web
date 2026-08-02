@@ -19,14 +19,14 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
-import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { useUndoStack } from '../../../data/hooks/useUndoStack'
-import { logUi } from '../../../debug'
-import { IdType } from '../../../models/IdType'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { StyleTemplate, VisualStyle } from '../../../models/VisualStyleModel'
+import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { useUndoStack } from '@/data/hooks/useUndoStack'
+import { logUi } from '@/debug'
+import { IdType } from '@/models/IdType'
+import { UndoCommandType } from '@/models/StoreModel/UndoStoreModel'
+import { StyleTemplate, VisualStyle } from '@/models/VisualStyleModel'
 import { useStylePreviewSample } from './preview/useStylePreviewSample'
 import { useStyleThumbnail } from './preview/useStyleThumbnail'
 import { StyleLibraryDialog } from './StyleLibraryDialog'
@@ -88,7 +88,10 @@ export const StyleManager = (props: {
   const activeStyleId = styleSet?.activeStyleId ?? ''
   const activeEntry = styleSet?.styles[activeStyleId]
 
-  const activeThumbnail = useStyleThumbnail(activeVisualStyle, sample)
+  const { dataUrl: activeThumbnail } = useStyleThumbnail(
+    activeVisualStyle,
+    sample,
+  )
 
   if (styleSet === undefined || activeEntry === undefined) {
     return <></>
@@ -177,9 +180,29 @@ export const StyleManager = (props: {
   }
 
   const handleCreate = (name: string): void => {
+    const previousStyleId = activeStyleId
     const newId = createStyle(networkId, name)
     if (newId !== undefined) {
-      switchStyle(networkId, newId)
+      if (switchStyle(networkId, newId)) {
+        // Recorded like handleSwitch and handleCopyIn. Creating a style makes it
+        // active, which changes how the network looks; without this the switch
+        // is the one style change Undo cannot reverse.
+        //
+        // Only the SWITCH is recorded, not the creation: undo reverts which
+        // style is active and leaves the new (empty) style in the list, for the
+        // same reason as handleCopyIn.
+        postEdit(
+          UndoCommandType.SWITCH_STYLE,
+          // The STORED name, read fresh: createStyle de-duplicates.
+          `Switch style to "${
+            useVisualStyleStore.getState().styleSets[networkId]?.styles[newId]
+              ?.name ?? name
+          }"`,
+          [networkId, previousStyleId],
+          [networkId, newId],
+          networkId,
+        )
+      }
       markModified()
     }
   }
@@ -293,7 +316,11 @@ export const StyleManager = (props: {
           <MoreVertIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <Menu anchorEl={menuAnchor} open={menuAnchor !== null} onClose={closeMenu}>
+      <Menu
+        anchorEl={menuAnchor}
+        open={menuAnchor !== null}
+        onClose={closeMenu}
+      >
         <MenuItem
           onClick={() => {
             closeMenu()

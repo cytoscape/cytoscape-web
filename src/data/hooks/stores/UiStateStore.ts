@@ -7,6 +7,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { UiStateStore } from '../../../models/StoreModel/UiStateStoreModel'
@@ -39,7 +40,9 @@ import { isHydrating } from './hydrationContext'
 const persistUiState = (ui: Ui) => {
   saveTabViewState(ui)
   if (!isHydrating()) {
-    void putUiStateToDb(toPlainObject(withoutTabViewState(ui)))
+    void putUiStateToDb(toPlainObject(withoutTabViewState(ui))).catch((e) => {
+      logStore.error('[UiStateStore]: Failed to persist UI state', e)
+    })
   }
 }
 

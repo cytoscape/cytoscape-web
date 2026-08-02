@@ -1,12 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { IdType } from '../../../models/IdType'
-import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
-import { createVisualStyle } from '../../../models/VisualStyleModel/impl/visualStyleFnImpl'
+import { useUndoStore } from '@/data/hooks/stores/UndoStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { IdType } from '@/models/IdType'
+import { UndoCommandType } from '@/models/StoreModel/UndoStoreModel'
+import { createVisualStyle } from '@/models/VisualStyleModel/impl/visualStyleFnImpl'
 import { StyleManager } from './StyleManager'
 
 // jsdom has no canvas, so the real renderer cannot rasterize — and spinning up
@@ -20,8 +20,18 @@ const NETWORK_ID: IdType = 'style-manager-network'
 
 describe('StyleManager', () => {
   beforeEach(() => {
+    // Workspace and undo state are module-level singletons too: without these
+    // a test's posted edits and networkModified flags leak into the next one.
     act(() => {
       useVisualStyleStore.getState().deleteAll()
+      useUndoStore.getState().deleteAllStacks()
+      useWorkspaceStore.setState({
+        workspace: {
+          ...useWorkspaceStore.getState().workspace,
+          currentNetworkId: NETWORK_ID,
+          networkModified: {},
+        },
+      })
       useVisualStyleStore.getState().add(NETWORK_ID, createVisualStyle())
     })
   })
@@ -94,9 +104,7 @@ describe('StyleManager', () => {
     render(<StyleManager networkId={NETWORK_ID} />)
     fireEvent.click(screen.getByTestId('style-manager-menu-button'))
     fireEvent.click(screen.getByTestId('style-manager-delete-menu-item'))
-    fireEvent.click(
-      screen.getByTestId('style-manager-delete-confirm-button'),
-    )
+    fireEvent.click(screen.getByTestId('style-manager-delete-confirm-button'))
 
     const setState = useVisualStyleStore.getState().styleSets[NETWORK_ID]
     const names = Object.values(setState.styles).map((entry) => entry.name)

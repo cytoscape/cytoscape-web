@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   IconButton,
   List,
@@ -15,9 +16,9 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 
-import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
-import { IdType } from '../../../models/IdType'
-import { StyleTemplate } from '../../../models/VisualStyleModel'
+import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
+import { IdType } from '@/models/IdType'
+import { StyleTemplate } from '@/models/VisualStyleModel'
 import { StyleNameDialog } from './StyleNameDialog'
 
 interface StyleLibraryDialogProps {
@@ -43,6 +44,7 @@ export const StyleLibraryDialog = (
   const deleteTemplate = useStyleLibraryStore((state) => state.deleteTemplate)
 
   const [renameTargetId, setRenameTargetId] = useState<IdType | undefined>()
+  const [deleteTargetId, setDeleteTargetId] = useState<IdType | undefined>()
 
   useEffect(() => {
     if (open) {
@@ -53,6 +55,8 @@ export const StyleLibraryDialog = (
   const templateList = Object.values(templates)
   const renameTarget =
     renameTargetId !== undefined ? templates[renameTargetId] : undefined
+  const deleteTarget =
+    deleteTargetId !== undefined ? templates[deleteTargetId] : undefined
 
   return (
     <>
@@ -102,7 +106,7 @@ export const StyleLibraryDialog = (
                       <Tooltip title="Delete">
                         <IconButton
                           size="small"
-                          onClick={() => deleteTemplate(template.id)}
+                          onClick={() => setDeleteTargetId(template.id)}
                           data-testid={`style-library-delete-button-${template.id}`}
                         >
                           <DeleteIcon fontSize="small" />
@@ -135,6 +139,46 @@ export const StyleLibraryDialog = (
         }}
         onClose={() => setRenameTargetId(undefined)}
       />
+      {/*
+        Confirmation-gated like network style deletion in StyleManager.tsx. A
+        library template is workspace-level and there is no undo for it, so a
+        misplaced click on a hover-revealed icon destroyed it outright.
+      */}
+      <Dialog
+        open={deleteTarget !== undefined}
+        onClose={() => setDeleteTargetId(undefined)}
+        data-testid="style-library-delete-dialog"
+      >
+        <DialogTitle>Delete Library Style</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Delete the library style &ldquo;{deleteTarget?.name}&rdquo;? This
+            cannot be undone. Networks already using a copy of it are not
+            affected.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteTargetId(undefined)}
+            data-testid="style-library-delete-cancel-button"
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              if (deleteTargetId !== undefined) {
+                deleteTemplate(deleteTargetId)
+              }
+              setDeleteTargetId(undefined)
+            }}
+            data-testid="style-library-delete-confirm-button"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

@@ -1,5 +1,8 @@
 import { type Page } from '@playwright/test'
 
+import { TAB_VIEW_STATE_KEY } from '../../src/data/tabState/tabViewState'
+import { Panel } from '../../src/models/UiModel/Panel'
+import { PanelState } from '../../src/models/UiModel/PanelState'
 import { expect, test } from './fixtures'
 
 /**
@@ -17,6 +20,45 @@ import { expect, test } from './fixtures'
  */
 
 type ReadyWindow = { __cywebReady?: boolean }
+
+/**
+ * The slice of `window.CyWebApi` these tests drive.
+ *
+ * One declaration for all four `page.evaluate` helpers below. The alternative —
+ * an inline shape in some and `(window as any)` in others — meant a renamed API
+ * method failed at runtime, mid-poll, instead of at build time.
+ *
+ * `page.evaluate` callbacks are serialized to the browser, so this type must
+ * stay a plain structural shape with no imports behind it.
+ */
+type CyWebApiWindow = {
+  CyWebApi?: {
+    network: {
+      createNetworkFromEdgeList: (props: {
+        name: string
+        edgeList: Array<[string, string, string?]>
+        addToWorkspace?: boolean
+      }) => { success: boolean; data?: { networkId: string } }
+    }
+    workspace: {
+      getNetworkList: () => {
+        success: boolean
+        data?: Array<{ name: string; networkId: string }>
+      }
+    }
+    selection: {
+      getSelection: (networkId: string) => {
+        success: boolean
+        data?: { selectedNodes?: string[]; selectedEdges?: string[] }
+      }
+      exclusiveSelect: (
+        networkId: string,
+        nodeIds: string[],
+        edgeIds: string[],
+      ) => { success: boolean }
+    }
+  }
+}
 
 const gotoReady = async (page: Page): Promise<void> => {
   await page.addInitScript(() => {
@@ -40,19 +82,7 @@ const gotoReady = async (page: Page): Promise<void> => {
 /** Creates a network and returns its id, so tests never guess by index. */
 const seedNetwork = async (page: Page, name: string): Promise<string> => {
   const result = await page.evaluate((networkName) => {
-    const api = (
-      window as unknown as {
-        CyWebApi?: {
-          network: {
-            createNetworkFromEdgeList: (props: {
-              name: string
-              edgeList: Array<[string, string, string?]>
-              addToWorkspace?: boolean
-            }) => { success: boolean; data?: { networkId: string } }
-          }
-        }
-      }
-    ).CyWebApi
+    const api = (window as unknown as CyWebApiWindow).CyWebApi
     return api?.network.createNetworkFromEdgeList({
       name: networkName,
       edgeList: [['a', 'b']],
@@ -69,18 +99,7 @@ const seedNetwork = async (page: Page, name: string): Promise<string> => {
 /** Network names this tab currently has in its workspace, read from the store. */
 const workspaceNetworkNames = async (page: Page): Promise<string[]> =>
   await page.evaluate(() => {
-    const api = (
-      window as unknown as {
-        CyWebApi?: {
-          workspace: {
-            getNetworkList: () => {
-              success: boolean
-              data?: Array<{ name: string; networkId: string }>
-            }
-          }
-        }
-      }
-    ).CyWebApi
+    const api = (window as unknown as CyWebApiWindow).CyWebApi
     const result = api?.workspace.getNetworkList()
     return (result?.data ?? []).map((n) => String(n.name))
   })
@@ -139,27 +158,36 @@ test.describe('cross-tab synchronization', () => {
     await gotoReady(tabA)
     await gotoReady(tabB)
 
+    // Constants, not repeated literals: a rename of the storage key or of a
+    // PanelState member now fails the build here instead of quietly making the
+    // assertions below read 'unset' forever.
     const panelState = async (page: Page): Promise<string> =>
       await page.evaluate(
-        () =>
-          JSON.parse(
-            window.sessionStorage.getItem('cyweb.tab.viewState') ?? '{}',
-          )?.panels?.left ?? 'unset',
+        ({ key, panel }) =>
+          JSON.parse(window.sessionStorage.getItem(key) ?? '{}')?.panels?.[
+            panel
+          ] ?? 'unset',
+        { key: TAB_VIEW_STATE_KEY, panel: Panel.LEFT },
       )
 
     // Collapse the left panel in tab A only.
-    await tabA.evaluate(() => {
-      const stored = JSON.parse(
-        window.sessionStorage.getItem('cyweb.tab.viewState') ?? '{}',
-      )
-      window.sessionStorage.setItem(
-        'cyweb.tab.viewState',
-        JSON.stringify({
-          ...stored,
-          panels: { ...stored.panels, left: 'closed' },
-        }),
-      )
-    })
+    await tabA.evaluate(
+      ({ key, panel, closed }) => {
+        const stored = JSON.parse(window.sessionStorage.getItem(key) ?? '{}')
+        window.sessionStorage.setItem(
+          key,
+          JSON.stringify({
+            ...stored,
+            panels: { ...stored.panels, [panel]: closed },
+          }),
+        )
+      },
+      {
+        key: TAB_VIEW_STATE_KEY,
+        panel: Panel.LEFT,
+        closed: PanelState.CLOSED,
+      },
+    )
 
     // Force a shared-row write from tab A, which tab B will hydrate.
     await seedNetwork(tabA, 'Panel Isolation')
@@ -170,8 +198,8 @@ test.describe('cross-tab synchronization', () => {
     // Panel state is per-tab sessionStorage, so hydration must not carry it.
     // Asserting tab B's exact value (not merely "not closed") keeps this from
     // passing vacuously if tab B never stored view state at all.
-    expect(await panelState(tabA)).toBe('closed')
-    expect(await panelState(tabB)).toBe('open')
+    expect(await panelState(tabA)).toBe(PanelState.CLOSED)
+    expect(await panelState(tabB)).toBe(PanelState.OPEN)
 
     await tabA.close()
     await tabB.close()
@@ -202,7 +230,7 @@ test.describe('cross-tab synchronization', () => {
         async () =>
           await tabB.evaluate(
             ({ id }) => {
-              const api = (window as any).CyWebApi
+              const api = (window as unknown as CyWebApiWindow).CyWebApi
               return api?.selection?.getSelection(id)?.success === true
             },
             { id: networkId },
@@ -213,7 +241,7 @@ test.describe('cross-tab synchronization', () => {
 
     const selected = await tabA.evaluate(
       ({ id }) => {
-        const api = (window as any).CyWebApi
+        const api = (window as unknown as CyWebApiWindow).CyWebApi
         return api?.selection?.exclusiveSelect(id, ['a'], [])
       },
       { id: networkId },
@@ -227,7 +255,7 @@ test.describe('cross-tab synchronization', () => {
         async () =>
           await tabB.evaluate(
             ({ id }) => {
-              const api = (window as any).CyWebApi
+              const api = (window as unknown as CyWebApiWindow).CyWebApi
               const result = api?.selection?.getSelection(id)
               return result?.data?.selectedNodes ?? []
             },

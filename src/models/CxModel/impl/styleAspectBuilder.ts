@@ -51,10 +51,17 @@ export interface VisualStyleCx2Aspects {
   edgeBypasses: Array<{ id: number; v: Record<string, any> }>
 }
 
-const vpNameToCXName = (vpName: VisualPropertyName): string => {
-  const converter = cxVisualPropertyConverter[vpName]
-  return converter.cxVPName
-}
+/**
+ * The CX2 name for a visual property, or undefined when no converter is
+ * registered for it.
+ *
+ * Returns undefined rather than dereferencing: `cxVisualPropertyConverter` is a
+ * plain record, so a property this build does not know about (a newer style, a
+ * plugin's) threw here and aborted the whole export. Callers skip the unknown
+ * property and keep exporting the rest.
+ */
+const vpNameToCXName = (vpName: VisualPropertyName): string | undefined =>
+  cxVisualPropertyConverter[vpName]?.cxVPName
 
 /**
  * Convert one VisualStyle into the three CX2 style aspects.
@@ -75,6 +82,9 @@ export const buildVisualStyleAspects = (
   ): { [key: CXVPName]: CXVisualPropertyValue } => {
     const { name, defaultValue } = vp
     const cxVPName = vpNameToCXName(name)
+    if (cxVPName === undefined) {
+      return defaults
+    }
     defaults[cxVPName] = vpToCX(vp.name, defaultValue)
     return defaults
   }
@@ -88,6 +98,9 @@ export const buildVisualStyleAspects = (
   ): { [key: CXVPName]: CXVisualMappingFunction<CXVisualPropertyValue> } => {
     const { name, mapping } = vp
     const cxVPName = vpNameToCXName(name)
+    if (cxVPName === undefined) {
+      return mappings
+    }
     const attributeName = mapping?.attribute
     // whether attributeName is in nodeTable or edgeTable
     let isNameInTable = false
@@ -142,6 +155,9 @@ export const buildVisualStyleAspects = (
   ): { [key: IdType]: { [key: CXVPName]: CXVisualPropertyValue } } => {
     const { name, bypassMap } = vp
     const cxVPName = vpNameToCXName(name)
+    if (cxVPName === undefined) {
+      return bypasses
+    }
     bypassMap.forEach((value, id) => {
       if (bypasses[id] == null) {
         bypasses[id] = {}
@@ -327,7 +343,7 @@ export const buildVisualStyleAspects = (
         if (bypassesMap[id]) {
           if (customGraphicSizeVp) {
             const cxVPName = vpNameToCXName(customGraphicSizeVp.name)
-            if (!bypassesMap[id][cxVPName]) {
+            if (cxVPName !== undefined && !bypassesMap[id][cxVPName]) {
               bypassesMap[id][cxVPName] = vpToCX(
                 customGraphicSizeVp.name,
                 customGraphicSizeVp.defaultValue,
@@ -336,7 +352,7 @@ export const buildVisualStyleAspects = (
           }
           if (customGraphicPositionVp) {
             const cxVPName = vpNameToCXName(customGraphicPositionVp.name)
-            if (!bypassesMap[id][cxVPName]) {
+            if (cxVPName !== undefined && !bypassesMap[id][cxVPName]) {
               bypassesMap[id][cxVPName] = vpToCX(
                 customGraphicPositionVp.name,
                 customGraphicPositionVp.defaultValue,

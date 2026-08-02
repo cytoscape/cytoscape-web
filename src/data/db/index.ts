@@ -216,7 +216,6 @@ class CyDB extends Dexie {
   // From v11
   [ObjectStoreNames.ViewSelections]!: DxTable<any>
 
-
   constructor(dbName: string) {
     super(dbName)
     this.version(currentVersion).stores(Keys)
@@ -393,12 +392,13 @@ const deleteDatabaseBounded = async (
   // `addons: []` keeps dexie-observable off the throwaway deleter instance;
   // this is what Dexie's own static `delete()` does.
   const deleter = new Dexie(DB_NAME, { addons: [] })
-  deleter.on('blocked', () => {
+  const onBlocked = (): void => {
     logDb.warn(
       `[DeleteDB] ${DB_NAME} delete is blocked: another connection still has ` +
         'it open. Waiting for it to close.',
     )
-  })
+  }
+  deleter.on('blocked', onBlocked)
 
   let timer: ReturnType<typeof setTimeout> | undefined
   const deletion = deleter.delete().then((): 'deleted' => 'deleted')
@@ -419,6 +419,11 @@ const deleteDatabaseBounded = async (
     void deletion.catch((err) => {
       logDb.error('[DeleteDB] The queued delete request later failed', err)
     })
+    // Nothing reads this instance again, and its `blocked` handler would keep
+    // logging for as long as the peer holds on. Detach and close it; the queued
+    // delete request lives in IndexedDB, not in the Dexie object.
+    deleter.on('blocked').unsubscribe(onBlocked)
+    deleter.close()
   }
 
   return result
@@ -993,21 +998,27 @@ export const putVisualStyleToDb = async (
   visualStyle: VisualStyle,
 ): Promise<void> => {
   try {
-    const existing = await getVisualStyleSetFromDb(id)
-    const styleSet: VisualStyleSet =
-      existing === undefined
-        ? createStyleSet(visualStyle)
-        : {
-            ...existing,
-            styles: {
-              ...existing.styles,
-              [existing.activeStyleId]: {
-                ...existing.styles[existing.activeStyleId],
-                visualStyle,
+    // One transaction across the read and the write: without it a concurrent
+    // writer can land between them and have its named styles overwritten by
+    // the set built from the stale read. Dexie reuses the parent transaction
+    // for the two nested calls, both of which touch only `cyVisualStyles`.
+    await db.transaction('rw', db.cyVisualStyles, async () => {
+      const existing = await getVisualStyleSetFromDb(id)
+      const styleSet: VisualStyleSet =
+        existing === undefined
+          ? createStyleSet(visualStyle)
+          : {
+              ...existing,
+              styles: {
+                ...existing.styles,
+                [existing.activeStyleId]: {
+                  ...existing.styles[existing.activeStyleId],
+                  visualStyle,
+                },
               },
-            },
-          }
-    await putVisualStyleSetToDb(id, styleSet)
+            }
+      await putVisualStyleSetToDb(id, styleSet)
+    })
   } catch (e) {
     logDb.error('[putVisualStyleToDb] error:', e, id, visualStyle)
     throw e
@@ -1305,20 +1316,23 @@ export const putNetworkViewsToDb = async (
  * Delete all network views from the DB for the given network ID
  */
 export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
-  await db.transaction('rw', db.cyNetworkViews, async () => {
+  // Both stores in one transaction: since DB v11 the view and its selection are
+  // two rows describing one thing, and a crash between two transactions would
+  // leave the selection row orphaned.
+  await db.transaction('rw', db.cyNetworkViews, db.viewSelections, async () => {
     await db.cyNetworkViews.delete(id)
+    await db.viewSelections.delete(id)
   })
-  await deleteViewSelectionFromDb(id)
 }
 
 /**
  * Delete all network views from the DB for the given network ID
  */
 export const clearNetworkViewsFromDb = async (): Promise<void> => {
-  await db.transaction('rw', db.cyNetworkViews, async () => {
+  await db.transaction('rw', db.cyNetworkViews, db.viewSelections, async () => {
     await db.cyNetworkViews.clear()
+    await db.viewSelections.clear()
   })
-  await clearViewSelectionsFromDb()
 }
 
 // UI State
@@ -1649,10 +1663,11 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
     const tables = await getTablesFromDb(id)
-    const networkViewsEntry = await db.cyNetworkViews.get({ id })
-    const networkViews: NetworkView[] | undefined = networkViewsEntry
-      ? networkViewsEntry.views.map((v: any) => deserializeNetworkView(v))
-      : undefined
+    // Through getNetworkViewsFromDb, not a raw row read: since DB v11 selection
+    // lives in `viewSelections`, and only that helper merges it back in. Reading
+    // the row directly restored every network with an empty selection.
+    const networkViews: NetworkView[] | undefined =
+      await getNetworkViewsFromDb(id)
     const visualStyleSet = await getVisualStyleSetFromDb(id)
     const visualStyle =
       visualStyleSet?.styles[visualStyleSet.activeStyleId]?.visualStyle

@@ -18,16 +18,22 @@ import {
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+const STORE_LABEL = 'NetworkSummaryStore'
+
 export const useNetworkSummaryStore = create(
   immer<NetworkSummaryStore>((set, get) => ({
     summaries: {},
     add: (networkId: IdType, summary: NetworkSummary) => {
       set((state) => {
         state.summaries[networkId] = summary
-        if (!isHydrating()) {
-          putNetworkSummaryToDb(summary)
-        }
       })
+      if (!isHydrating()) {
+        void putNetworkSummaryToDb(toPlainObject(summary)).catch((err) => {
+          logStore.error(
+            `[${STORE_LABEL}]: Failed to save summary ${networkId}: ${err}`,
+          )
+        })
+      }
     },
     addAll: (summaries: Record<IdType, NetworkSummary>) => {
       set((state) => {
@@ -42,7 +48,11 @@ export const useNetworkSummaryStore = create(
       // Convert Immer proxy to plain object before saving
       const updatedSummary = toPlainObject({ ...summary, ...summaryUpdate })
       if (!isHydrating()) {
-        void putNetworkSummaryToDb(updatedSummary)
+        void putNetworkSummaryToDb(updatedSummary).catch((err) => {
+          logStore.error(
+            `[${STORE_LABEL}]: Failed to update summary ${networkId}: ${err}`,
+          )
+        })
       }
       set((state) => {
         const draftSummary = state.summaries[networkId]
@@ -54,38 +64,30 @@ export const useNetworkSummaryStore = create(
     delete: (networkId: IdType) => {
       set((state) => {
         delete state.summaries[networkId]
-        if (!isHydrating()) {
-          void deleteNetworkSummaryFromDb(networkId)
-            .then(() => {
-              logStore.info(
-                `[${useNetworkSummaryStore.name}]: Summary deleted: ${networkId}`,
-              )
-            })
-            .catch((err) => {
-              logStore.error(
-                `[${useNetworkSummaryStore.name}]: Error deleting summary: ${err}`,
-              )
-            })
-        }
       })
+      if (!isHydrating()) {
+        void deleteNetworkSummaryFromDb(networkId)
+          .then(() => {
+            logStore.info(`[${STORE_LABEL}]: Summary deleted: ${networkId}`)
+          })
+          .catch((err) => {
+            logStore.error(`[${STORE_LABEL}]: Error deleting summary: ${err}`)
+          })
+      }
     },
     deleteAll: () => {
       set((state) => {
         state.summaries = {}
-        if (!isHydrating()) {
-          clearNetworkSummaryFromDb()
-            .then((val) => {
-              logStore.info(
-                `[${useNetworkSummaryStore.name}]: Summary cleared: ${val}`,
-              )
-            })
-            .catch((err) => {
-              logStore.error(
-                `[${useNetworkSummaryStore.name}]: Failed to clear Summary: ${err}`,
-              )
-            })
-        }
       })
+      if (!isHydrating()) {
+        void clearNetworkSummaryFromDb()
+          .then((val) => {
+            logStore.info(`[${STORE_LABEL}]: Summary cleared: ${val}`)
+          })
+          .catch((err) => {
+            logStore.error(`[${STORE_LABEL}]: Failed to clear Summary: ${err}`)
+          })
+      }
     },
   })),
 )

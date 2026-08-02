@@ -1,3 +1,4 @@
+import BrokenImageIcon from '@mui/icons-material/BrokenImage'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
@@ -11,7 +12,7 @@ import {
 } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 
-import { VisualStyle } from '../../../models/VisualStyleModel'
+import { VisualStyle } from '@/models/VisualStyleModel'
 import { PreviewSample } from './preview/previewSample'
 import { useStyleThumbnail } from './preview/useStyleThumbnail'
 
@@ -96,7 +97,11 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
   // Gated on visibility: a grid of tiles should not render thumbnails nobody
   // has scrolled to.
-  const thumbnail = useStyleThumbnail(visualStyle, sample, hasBeenVisible)
+  const { dataUrl: thumbnail, failed: thumbnailFailed } = useStyleThumbnail(
+    visualStyle,
+    sample,
+    hasBeenVisible,
+  )
 
   return (
     <Box
@@ -107,6 +112,12 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
       aria-selected={selected}
       tabIndex={0}
       onKeyDown={(e) => {
+        // Only when the option itself has focus. Enter on the menu IconButton
+        // inside fires that button AND bubbles here, so without this guard
+        // opening the menu also applied the style.
+        if (e.target !== e.currentTarget) {
+          return
+        }
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
           onClick()
@@ -143,9 +154,7 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
           backgroundPosition: '0 0, 8px 8px',
         }}
       >
-        {thumbnail === undefined ? (
-          <CircularProgress size={20} data-testid={`${testId}-loading`} />
-        ) : (
+        {thumbnail !== undefined ? (
           <Box
             component="img"
             src={thumbnail}
@@ -153,6 +162,17 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
             data-testid={`${testId}-thumbnail`}
             sx={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
           />
+        ) : thumbnailFailed ? (
+          // A spinner here would never stop: the render already gave up. The
+          // tile stays selectable — only its preview is missing.
+          <BrokenImageIcon
+            fontSize="small"
+            color="disabled"
+            data-testid={`${testId}-preview-failed`}
+            titleAccess="Preview unavailable"
+          />
+        ) : (
+          <CircularProgress size={20} data-testid={`${testId}-loading`} />
         )}
       </Box>
 
@@ -178,6 +198,9 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
           <IconButton
             className="style-tile-menu"
             size="small"
+            // Icon-only, so it has no text to name it: screen readers announced
+            // it as an unlabelled button.
+            aria-label={`Actions for style "${name}"`}
             data-testid={`${testId}-menu-button`}
             onClick={(e) => {
               // Or the tile's own onClick would apply the style as a side

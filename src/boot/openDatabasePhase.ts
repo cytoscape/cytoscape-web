@@ -1,9 +1,9 @@
-import { deleteDb } from '../data/db'
+import { deleteDb } from '@/data/db'
 import {
   openDatabaseForStartup,
   type DbOpenResult,
-} from '../data/db/startupOpen'
-import { logDb } from '../debug'
+} from '@/data/db/startupOpen'
+import { logDb } from '@/debug'
 import { registerBootErrorClassifier } from './bootError'
 import { BootPhase } from './bootPhases'
 import { registerBootShellAction } from './shell/bootShellActions'

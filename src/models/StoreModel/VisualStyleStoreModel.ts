@@ -167,7 +167,8 @@ export interface StyleSetAction {
    */
   switchStyle: (networkId: IdType, styleId: IdType) => boolean
   /** Create a new named style as a copy of the current ACTIVE style.
-   * Returns the new style id, or undefined if the network is unknown. */
+   * Returns the new style id, or undefined if the network is unknown or its
+   * style set already holds MAX_STYLES_PER_NETWORK styles. */
   createStyle: (networkId: IdType, name?: string) => IdType | undefined
   /** Duplicate any named style ("Copy of <name>").
    * Returns the new style id, or undefined on failure. */
@@ -178,7 +179,10 @@ export interface StyleSetAction {
    * deleting the active style activates another one. */
   deleteStyle: (networkId: IdType, styleId: IdType) => void
   /** Add a deep copy of an external style (e.g. a library template) as a
-   * new named style. Returns the new style id, or undefined on failure. */
+   * new named style. Bypasses are stripped: they are keyed by the SOURCE
+   * network's element ids. Returns the new style id, or undefined if the
+   * network is unknown or its style set already holds
+   * MAX_STYLES_PER_NETWORK styles. */
   importStyle: (
     networkId: IdType,
     name: string,

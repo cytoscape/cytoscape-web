@@ -1,14 +1,14 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
-import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
-import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { useUndoStack } from '../../../data/hooks/useUndoStack'
-import { IdType } from '../../../models/IdType'
-import { createVisualStyle } from '../../../models/VisualStyleModel/impl/visualStyleFnImpl'
+import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
+import { useUndoStore } from '@/data/hooks/stores/UndoStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { useUndoStack } from '@/data/hooks/useUndoStack'
+import { IdType } from '@/models/IdType'
+import { createVisualStyle } from '@/models/VisualStyleModel/impl/visualStyleFnImpl'
 import { StyleManager } from './StyleManager'
 
 vi.mock('./preview/renderStylePreview', () => ({

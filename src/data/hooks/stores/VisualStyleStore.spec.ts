@@ -63,6 +63,9 @@ vi.mock('./WorkspaceStore', () => ({
 
 describe('useVisualStyleStore', () => {
   beforeEach(() => {
+    // Database mock calls accumulate across tests otherwise, so a `toHaveBeen
+    // Called` assertion can pass on a previous test's write.
+    vi.clearAllMocks()
     // Reset store to initial state before each test
     const { result } = renderHook(() => useVisualStyleStore())
     act(() => {
@@ -859,7 +862,10 @@ describe('useVisualStyleStore', () => {
           networkId,
           'nonexistent-style',
         )
-        toUnknownNetwork = result.current.switchStyle('nonexistent-network', 'x')
+        toUnknownNetwork = result.current.switchStyle(
+          'nonexistent-network',
+          'x',
+        )
         toAlreadyActive = result.current.switchStyle(networkId, activeId)
         toReal = result.current.switchStyle(networkId, publicationId as IdType)
       })

@@ -18,6 +18,7 @@ import { EdgeArrowShapeType } from '../VisualPropertyValue/EdgeArrowShapeType'
 import { EdgeLineType } from '../VisualPropertyValue/EdgeLineType'
 import { NodeShapeType } from '../VisualPropertyValue/NodeShapeType'
 import { VisualPropertyName } from '../VisualPropertyName'
+import { VisualPropertyValueType } from '../VisualPropertyValue'
 import { VisualStyle } from '../VisualStyle'
 import { createVisualStyle } from './visualStyleFnImpl'
 
@@ -30,7 +31,14 @@ export interface PresetVisualStyle {
   visualStyle: VisualStyle
 }
 
-type Overrides = Partial<Record<VisualPropertyName, unknown>>
+/**
+ * Each visual property mapped to ITS value type, not `unknown`. `unknown` let
+ * every preset literal below pass unchecked — a colour written where a number
+ * belongs compiled fine and produced a broken style at render time.
+ */
+type Overrides = {
+  [K in VisualPropertyName]?: VisualPropertyValueType
+}
 
 const build = (overrides: Overrides): VisualStyle => {
   const visualStyle = createVisualStyle()

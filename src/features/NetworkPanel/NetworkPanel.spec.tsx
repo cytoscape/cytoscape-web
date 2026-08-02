@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
-import { useTableStore } from '../../data/hooks/stores/TableStore'
-import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
-import { IdType } from '../../models/IdType'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
+import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
+import { useTableStore } from '@/data/hooks/stores/TableStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { IdType } from '@/models/IdType'
+import { ValueTypeName } from '@/models/TableModel/ValueTypeName'
 import NetworkPanel from './NetworkPanel'
 
 // The renderers registry decides which child NetworkPanel mounts. A stub keeps
@@ -18,7 +18,7 @@ vi.mock('./NetworkTabs', () => ({
   NetworkTabs: () => <div data-testid="network-tabs-stub" />,
 }))
 
-vi.mock('../../data/db', () => ({
+vi.mock('@/data/db', () => ({
   putNetworkToDb: vi.fn().mockResolvedValue(undefined),
   putTablesToDb: vi.fn().mockResolvedValue(undefined),
   putVisualStyleToDb: vi.fn().mockResolvedValue(undefined),

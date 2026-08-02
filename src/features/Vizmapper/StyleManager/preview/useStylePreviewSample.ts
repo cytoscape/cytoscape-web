@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 
-import { useNetworkStore } from '../../../../data/hooks/stores/NetworkStore'
-import { useTableStore } from '../../../../data/hooks/stores/TableStore'
-import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
-import { IdType } from '../../../../models/IdType'
+import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
+import { useTableStore } from '@/data/hooks/stores/TableStore'
+import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
+import { IdType } from '@/models/IdType'
 import {
   PreviewSample,
   sampleFromNetwork,

@@ -21,6 +21,7 @@ import {
   validateUiState,
   validateUndoRedoStack,
   validateUndoRedoStackDb,
+  validateViewSelection,
   validateVisualStyle,
   validateWorkspace,
   validateWorkspaceArray,
@@ -398,6 +399,42 @@ describe('db validator - UndoRedoStack', () => {
         redoStack: [],
       }),
     ).toThrow()
+  })
+})
+
+describe('db validator - ViewSelection', () => {
+  it('accepts a row with no selection at all', () => {
+    // The common case since DB v11: a network is open with nothing selected,
+    // and that row still has to round-trip.
+    expect(
+      validateViewSelection({ selectedNodes: [], selectedEdges: [] }),
+    ).toEqual({ selectedNodes: [], selectedEdges: [] })
+  })
+
+  it('accepts populated node and edge selections', () => {
+    expect(
+      validateViewSelection({
+        selectedNodes: ['n1', 'n2'],
+        selectedEdges: ['e1'],
+      }),
+    ).toEqual({ selectedNodes: ['n1', 'n2'], selectedEdges: ['e1'] })
+  })
+
+  it('rejects a non-string element id', () => {
+    expect(() =>
+      validateViewSelection({ selectedNodes: [1], selectedEdges: [] }),
+    ).toThrow()
+  })
+
+  it('rejects an empty element id', () => {
+    expect(() =>
+      validateViewSelection({ selectedNodes: [''], selectedEdges: [] }),
+    ).toThrow()
+  })
+
+  it('rejects a row missing either array', () => {
+    expect(() => validateViewSelection({ selectedNodes: [] })).toThrow()
+    expect(() => validateViewSelection({ selectedEdges: [] })).toThrow()
   })
 })
 

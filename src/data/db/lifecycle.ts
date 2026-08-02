@@ -106,8 +106,15 @@ export const announceDatabaseReset = async (): Promise<() => void> => {
   }
 }
 
-export const isOwnResetAnnouncement = (data: any): boolean =>
-  data?.tabId !== undefined && String(data.tabId) === getTabId()
+export const isOwnResetAnnouncement = (data: unknown): boolean => {
+  // `unknown`, not `any`: this reads a BroadcastChannel payload, which any
+  // same-origin page can post. Narrowing here is the check.
+  if (typeof data !== 'object' || data === null) {
+    return false
+  }
+  const { tabId } = data as { tabId?: unknown }
+  return tabId !== undefined && String(tabId) === getTabId()
+}
 
 /**
  * Handle another tab deleting the database: release our connection, acknowledge,

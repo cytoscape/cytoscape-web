@@ -21,7 +21,15 @@ vi.mock('../../db', async (importOriginal) => {
 
 describe('useStyleLibraryStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    // Reset, then re-establish the defaults. clearAllMocks alone leaves a
+    // mockResolvedValue/mockRejectedValue set by one hydrate() test in place
+    // for every later one; reset alone strips the resolved values the store's
+    // `.catch()` chains need.
+    vi.resetAllMocks()
+    dbMocks.getAllStyleTemplatesFromDb.mockResolvedValue([])
+    dbMocks.putStyleTemplateToDb.mockResolvedValue(undefined)
+    dbMocks.deleteStyleTemplateFromDb.mockResolvedValue(undefined)
+    dbMocks.clearStyleLibraryFromDb.mockResolvedValue(undefined)
     const { result } = renderHook(() => useStyleLibraryStore())
     act(() => {
       result.current.deleteAllTemplates()

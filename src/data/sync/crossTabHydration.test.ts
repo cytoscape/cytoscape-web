@@ -4,14 +4,19 @@ import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
 
+// Writes resolve rather than returning undefined: production code chains
+// `.catch()` onto them, and a bare `vi.fn()` makes that a TypeError — a mock
+// defect that reads as a production bug. Deliberately not derived from the real
+// module via `importOriginal`: that loads Dexie, which costs more than the 1s
+// per-test timeout allows.
 vi.mock('@/data/db', () => ({
   getWorkspaceFromDb: vi.fn(),
   getUiStateFromDb: vi.fn(),
   getVisualStyleSetFromDb: vi.fn(),
-  putUiStateToDb: vi.fn(),
-  putWorkspaceToDb: vi.fn(),
-  putVisualStyleSetToDb: vi.fn(),
-  putUndoRedoStackToDb: vi.fn(),
+  putUiStateToDb: vi.fn().mockResolvedValue(undefined),
+  putWorkspaceToDb: vi.fn().mockResolvedValue(undefined),
+  putVisualStyleSetToDb: vi.fn().mockResolvedValue(undefined),
+  putUndoRedoStackToDb: vi.fn().mockResolvedValue(undefined),
 }))
 
 import {

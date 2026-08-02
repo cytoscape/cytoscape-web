@@ -12,18 +12,15 @@ import {
 } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
-import {
-  getStyleSetMetadataFromDb,
-  getVisualStyleSetFromDb,
-} from '../../../data/db'
-import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
-import { useStyleLibraryStore } from '../../../data/hooks/stores/StyleLibraryStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { logUi } from '../../../debug'
-import { IdType } from '../../../models/IdType'
-import { VisualStyle } from '../../../models/VisualStyleModel'
-import { PRESET_VISUAL_STYLES } from '../../../models/VisualStyleModel/impl/presetVisualStyles'
+import { getStyleSetMetadataFromDb, getVisualStyleSetFromDb } from '@/data/db'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
+import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import { logUi } from '@/debug'
+import { IdType } from '@/models/IdType'
+import { VisualStyle } from '@/models/VisualStyleModel'
+import { PRESET_VISUAL_STYLES } from '@/models/VisualStyleModel/impl/presetVisualStyles'
 import { useStylePreviewSample } from './preview/useStylePreviewSample'
 import { styleFingerprint } from './styleFingerprint'
 import { copiedStyleName } from './styleNaming'
@@ -44,11 +41,15 @@ export interface StylePickerDialogProps {
 
 interface ForeignStyle {
   networkId: IdType
-  networkName: string
   styleId: IdType
   name: string
   /** Filled in once the network's row has been deserialized. */
   visualStyle?: VisualStyle
+}
+
+/** A ForeignStyle with its network's display name resolved at render time. */
+interface NamedForeignStyle extends ForeignStyle {
+  networkName: string
 }
 
 const matches = (name: string, query: string): boolean =>
@@ -155,7 +156,6 @@ export const StylePickerDialog = (
       const entries: ForeignStyle[] = metadata.flatMap((meta) =>
         meta.styles.map((style) => ({
           networkId: meta.networkId,
-          networkName: summaries[meta.networkId]?.name ?? meta.networkId,
           styleId: style.id,
           name: style.name,
         })),
@@ -201,7 +201,22 @@ export const StylePickerDialog = (
     return () => {
       active = false
     }
-  }, [open, networkId, networkIds, summaries])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `summaries` is
+    // read only for display names, which are resolved at render below. Listing
+    // it here re-ran the whole IndexedDB metadata-and-style load every time any
+    // network summary changed.
+  }, [open, networkId, networkIds])
+
+  // Names resolved here rather than captured in the effect, so a summary
+  // arriving late updates the label without re-reading IndexedDB.
+  const namedForeign: NamedForeignStyle[] = useMemo(
+    () =>
+      foreign.map((entry) => ({
+        ...entry,
+        networkName: summaries[entry.networkId]?.name ?? entry.networkId,
+      })),
+    [foreign, summaries],
+  )
 
   const localEntries = useMemo(() => {
     if (styleSet === undefined) {
@@ -247,7 +262,7 @@ export const StylePickerDialog = (
   )
   // Matches the network name as well as the style name: the network is what the
   // tile leads with, so it is what a reader will type.
-  const matchingForeign = foreign.filter(
+  const matchingForeign = namedForeign.filter(
     (entry) => matches(entry.name, query) || matches(entry.networkName, query),
   )
   // An entry is only judged a duplicate once its content has loaded; until then

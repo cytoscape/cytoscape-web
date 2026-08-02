@@ -21,7 +21,8 @@ import { Panel } from '@/models/UiModel/Panel'
 import { PanelState } from '@/models/UiModel/PanelState'
 import { Ui } from '@/models/UiModel'
 
-const TAB_VIEW_STATE_KEY = 'cyweb.tab.viewState'
+/** Exported so tests reference the key rather than repeating the literal. */
+export const TAB_VIEW_STATE_KEY = 'cyweb.tab.viewState'
 
 /** The slice of `Ui` that belongs to this tab alone. */
 export interface TabViewState {
@@ -41,6 +42,19 @@ export const DEFAULT_TAB_VIEW_STATE: TabViewState = {
   networkBrowserPanelActiveTabIndex: 0,
   networkViewActiveTabIndex: 0,
 }
+
+/**
+ * A fresh copy of the defaults, including a fresh `panels` object.
+ *
+ * Every fallback path goes through this. Returning DEFAULT_TAB_VIEW_STATE
+ * itself hands the caller the shared module-level object — and `panels` is
+ * nested, so a caller that mutated one panel changed the defaults for every
+ * later reader in the tab.
+ */
+const defaultTabViewState = (): TabViewState => ({
+  ...DEFAULT_TAB_VIEW_STATE,
+  panels: { ...DEFAULT_TAB_VIEW_STATE.panels },
+})
 
 const PANEL_STATES: readonly PanelState[] = Object.values(PanelState)
 
@@ -62,7 +76,7 @@ const asTabIndex = (value: unknown, fallback: number): number =>
 const parseTabViewState = (raw: string): TabViewState => {
   const parsed = JSON.parse(raw) as Partial<TabViewState> | null
   if (parsed === null || typeof parsed !== 'object') {
-    return DEFAULT_TAB_VIEW_STATE
+    return defaultTabViewState()
   }
 
   const panels: Partial<Ui['panels']> = parsed.panels ?? {}
@@ -81,12 +95,18 @@ const parseTabViewState = (raw: string): TabViewState => {
         DEFAULT_TAB_VIEW_STATE.panels[Panel.BOTTOM],
       ),
     },
-    tableActiveTabIndex: asTabIndex(parsed.tableActiveTabIndex, 0),
+    tableActiveTabIndex: asTabIndex(
+      parsed.tableActiveTabIndex,
+      DEFAULT_TAB_VIEW_STATE.tableActiveTabIndex,
+    ),
     networkBrowserPanelActiveTabIndex: asTabIndex(
       parsed.networkBrowserPanelActiveTabIndex,
-      0,
+      DEFAULT_TAB_VIEW_STATE.networkBrowserPanelActiveTabIndex,
     ),
-    networkViewActiveTabIndex: asTabIndex(parsed.networkViewActiveTabIndex, 0),
+    networkViewActiveTabIndex: asTabIndex(
+      parsed.networkViewActiveTabIndex,
+      DEFAULT_TAB_VIEW_STATE.networkViewActiveTabIndex,
+    ),
   }
 }
 
@@ -95,14 +115,14 @@ export const getTabViewState = (): TabViewState => {
   try {
     const raw = window.sessionStorage.getItem(TAB_VIEW_STATE_KEY)
     if (raw === null || raw === '') {
-      return DEFAULT_TAB_VIEW_STATE
+      return defaultTabViewState()
     }
     return parseTabViewState(raw)
   } catch (e) {
     // sessionStorage can be unavailable (privacy mode, sandboxed iframe), and
     // a malformed blob must not break startup.
     logUi.warn('[tabViewState] Falling back to default view state', e)
-    return DEFAULT_TAB_VIEW_STATE
+    return defaultTabViewState()
   }
 }
 
@@ -122,8 +142,11 @@ export const saveTabViewState = (ui: Ui): void => {
       TAB_VIEW_STATE_KEY,
       JSON.stringify(toTabViewState(ui)),
     )
-  } catch {
-    // Degrade gracefully — this is a convenience, not a source of truth.
+  } catch (e) {
+    // Degrade gracefully — this is a convenience, not a source of truth. Logged
+    // like the read path: a silent write failure means panels quietly stop
+    // surviving reload, with nothing in the console to explain it.
+    logUi.warn('[tabViewState] Failed to save view state', e)
   }
 }
 

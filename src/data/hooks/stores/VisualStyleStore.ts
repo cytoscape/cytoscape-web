@@ -29,6 +29,7 @@ import {
 import * as VisualStyleImpl from '../../../models/VisualStyleModel/impl/visualStyleImpl'
 import {
   cloneVisualStyle,
+  stripBypasses,
   createStyleId,
   createStyleSet,
   isValidStyleSet,
@@ -192,6 +193,17 @@ export const useVisualStyleStore = create(
           // The visualStyle parameter is authoritative for the active
           // content (converters guarantee it matches the set's active entry)
           state.visualStyles[networkId] = visualStyle
+
+          if (styleSet !== undefined && !isValidStyleSet(styleSet)) {
+            // Silently falling back hid malformed CX2 imports: the network
+            // loaded with a single default style and nothing said why.
+            logStore.warn(
+              `[${useVisualStyleStore.name}]: Rejected an invalid style set for network ${networkId}` +
+                ` (activeStyleId=${String(styleSet.activeStyleId)},` +
+                ` styleIds=[${Object.keys(styleSet.styles ?? {}).join(', ')}]);` +
+                ' falling back to a single default style',
+            )
+          }
 
           if (styleSet !== undefined && isValidStyleSet(styleSet)) {
             state.styleSets[networkId] = {
@@ -462,7 +474,11 @@ export const useVisualStyleStore = create(
           setState.styles[newId] = {
             id: newId,
             name: uniqueStyleName(name, existingNames),
-            visualStyle: cloneVisualStyle(visualStyle),
+            // stripBypasses, not just clone: bypasses are keyed by the SOURCE
+            // network's node and edge ids, which name nothing in this network.
+            // Carrying them over applied arbitrary overrides to whichever
+            // elements happened to share an id.
+            visualStyle: cloneVisualStyle(stripBypasses(visualStyle)),
           }
           return state
         })

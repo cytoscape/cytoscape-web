@@ -44,6 +44,14 @@ describe('buildShareUrl (CW-514)', () => {
     expect(url.startsWith('https://')).toBe(true)
   })
 
+  it('keeps a networkId containing slashes as one segment', () => {
+    // Slash-collapse runs over the base path, so an unencoded 'a//b' would come
+    // back as 'a/b' — a different id, in a link the user then shares.
+    expect(buildShareUrl(origin, '/', 'a//b/c', '')).toBe(
+      'https://web-stage.cytoscape.org/0/networks/a%2F%2Fb%2Fc',
+    )
+  })
+
   it('throws on a malformed origin so the caller can report instead of copying garbage', () => {
     expect(() => buildShareUrl('not-a-url', '/', netId, '')).toThrow()
   })

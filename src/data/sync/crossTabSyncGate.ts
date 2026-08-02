@@ -12,6 +12,8 @@
  * leave the tab stale until the next unrelated edit.
  */
 
+import { logStore } from '@/debug'
+
 let ready = false
 const waiters = new Set<() => void>()
 
@@ -45,8 +47,14 @@ export const markCrossTabSyncReady = (): void => {
   ready = true
   const pending = [...waiters]
   waiters.clear()
+  // Each waiter in its own try: they are independent subscribers, and one that
+  // throws must not swallow the release of every waiter registered after it.
   pending.forEach((callback) => {
-    callback()
+    try {
+      callback()
+    } catch (e) {
+      logStore.error('[crossTabSyncGate] A sync-ready waiter threw', e)
+    }
   })
 }
 

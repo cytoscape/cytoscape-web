@@ -15,10 +15,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * phase, so the flag is never held across an `await` and the window closes.
  */
 
-const putNetworkSummaryToDb = vi.fn()
+const putNetworkSummaryToDb = vi.fn().mockResolvedValue(undefined)
 const getNetworkSummaryFromDb = vi.fn()
 const getWorkspaceFromDb = vi.fn()
+const getUiStateFromDb = vi.fn()
 
+// Writes resolve rather than returning undefined: production code chains
+// `.catch()` onto them. Deliberately not derived via `importOriginal` — that
+// loads Dexie, which costs more than the 1s per-test timeout allows.
 vi.mock('@/data/db', () => ({
   getFilterFromDb: vi.fn(),
   getNetworkFromDb: vi.fn(),
@@ -26,17 +30,21 @@ vi.mock('@/data/db', () => ({
   getNetworkViewsFromDb: vi.fn(),
   getOpaqueAspectsFromDb: vi.fn(),
   getTablesFromDb: vi.fn(),
-  getUiStateFromDb: vi.fn(),
+  getUiStateFromDb: (...args: any[]) => getUiStateFromDb(...args),
   getUndoRedoStackFromDb: vi.fn(),
   getViewSelectionFromDb: vi.fn(),
   getVisualStyleSetFromDb: vi.fn(),
   getWorkspaceFromDb: (...args: any[]) => getWorkspaceFromDb(...args),
   putNetworkSummaryToDb: (...args: any[]) => putNetworkSummaryToDb(...args),
-  clearNetworkSummaryFromDb: vi.fn(),
-  deleteNetworkSummaryFromDb: vi.fn(),
+  putUiStateToDb: vi.fn().mockResolvedValue(undefined),
+  putWorkspaceToDb: vi.fn().mockResolvedValue(undefined),
+  clearNetworkSummaryFromDb: vi.fn().mockResolvedValue(undefined),
+  deleteNetworkSummaryFromDb: vi.fn().mockResolvedValue(undefined),
 }))
 
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import {
   hydrateFromCrossTabChange,
   HYDRATION_BATCH_TIMEOUT_MS,
@@ -191,5 +199,41 @@ describe('cross-tab hydration: concurrent local writes', () => {
     ])
 
     expect(getNetworkSummaryFromDb).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies workspace before uiState however the batch is ordered', async () => {
+    // Dedupe keeps a row at its FIRST insertion position, so revision order
+    // alone would apply uiState first here — and uiState hydration reads
+    // `workspace.networkIds` to decide whether this tab's activeNetworkView
+    // still exists.
+    useWorkspaceStore.getState().set({
+      ...useWorkspaceStore.getState().workspace,
+      networkIds: [],
+    })
+    useUiStateStore.getState().setActiveNetworkView('net-9')
+
+    getWorkspaceFromDb.mockResolvedValue({
+      id: 'ws-1',
+      name: 'ws',
+      networkIds: ['net-9'],
+      currentNetworkId: '',
+      networkModified: {},
+      creationTime: 0,
+      localModificationTime: 0,
+    })
+    getUiStateFromDb.mockResolvedValue({
+      visualStyleOptions: {},
+      customNetworkTabName: {},
+      tableUi: { columnUiState: {} },
+    })
+
+    await hydrateFromCrossTabChange([
+      { type: 2, table: 'uiState', key: 'uistate' },
+      { type: 2, table: 'workspace', key: 'ws-1' },
+      { type: 2, table: 'uiState', key: 'uistate' },
+    ])
+
+    // Cleared only if uiState ran against the pre-hydration (empty) networkIds.
+    expect(useUiStateStore.getState().ui.activeNetworkView).toBe('net-9')
   })
 })

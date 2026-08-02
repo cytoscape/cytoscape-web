@@ -37,7 +37,34 @@ export const getNetworkViewId = ViewModelImpl.getNetworkViewId
  * change for it and peers hydrate only the two id arrays.
  *
  * Reuses the shared 300ms write coalescer, so a burst of clicks is one write.
+ *
+ * See {@link selectionOnlySet} for the other half: suppressing the generic
+ * view-row write these actions would otherwise trigger.
  */
+
+/**
+ * True while one of the four selection actions is running its `set`.
+ *
+ * The selection actions mutate `viewModels`, so the generic `persistNetworkSlices`
+ * middleware below sees a new slice reference and schedules a full
+ * `putNetworkViewsToDb` — node positions and all. `withoutSelection` makes that
+ * row byte-identical, so no peer tab hydrates it, but the write still happens on
+ * every click. This flag turns it off; `persistSelection` covers these actions.
+ *
+ * Safe as a module-level flag because Zustand `set` is synchronous: it is only
+ * ever true inside the try block below, never across an await.
+ */
+let selectionOnlySet = false
+
+const setSelection = (mutate: () => void): void => {
+  selectionOnlySet = true
+  try {
+    mutate()
+  } finally {
+    selectionOnlySet = false
+  }
+}
+
 const persistSelection = (networkId: IdType): void => {
   if (isHydrating()) {
     return
@@ -83,6 +110,7 @@ const persist = (config: StateCreator<ViewModelStore>) =>
       }
       return putNetworkViewsToDb(networkId, persistable)
     },
+    skipPersist: () => selectionOnlySet,
   })
 
 export const useViewModelStore = create(
@@ -170,69 +198,81 @@ export const useViewModelStore = create(
           selectedNodes: IdType[],
           selectedEdges: IdType[],
         ) => {
-          set((state) => {
-            const viewList: NetworkView[] | undefined =
-              state.viewModels[networkId]
-            if (viewList === undefined) {
-              return state
-            }
+          setSelection(() => {
+            set((state) => {
+              const viewList: NetworkView[] | undefined =
+                state.viewModels[networkId]
+              if (viewList === undefined) {
+                return state
+              }
 
-            state.viewModels[networkId] = viewList.map((view: NetworkView) =>
-              ViewModelImpl.exclusiveSelect(view, selectedNodes, selectedEdges),
-            )
-            return state
+              state.viewModels[networkId] = viewList.map((view: NetworkView) =>
+                ViewModelImpl.exclusiveSelect(
+                  view,
+                  selectedNodes,
+                  selectedEdges,
+                ),
+              )
+              return state
+            })
           })
           persistSelection(networkId)
         },
         toggleSelected: (networkId: IdType, eles: IdType[]) => {
-          set((state) => {
-            const viewList: NetworkView[] | undefined =
-              state.viewModels[networkId]
-            if (viewList === undefined) {
-              return state
-            }
+          setSelection(() => {
+            set((state) => {
+              const viewList: NetworkView[] | undefined =
+                state.viewModels[networkId]
+              if (viewList === undefined) {
+                return state
+              }
 
-            state.viewModels[networkId] = viewList.map(
-              (networkView: NetworkView) =>
-                ViewModelImpl.toggleSelected(networkView, eles),
-            )
-            return state
+              state.viewModels[networkId] = viewList.map(
+                (networkView: NetworkView) =>
+                  ViewModelImpl.toggleSelected(networkView, eles),
+              )
+              return state
+            })
           })
           persistSelection(networkId)
         },
 
         // select elements without unselecing anything else
         additiveSelect: (networkId: IdType, eles: IdType[]) => {
-          set((state) => {
-            const viewList: NetworkView[] | undefined =
-              state.viewModels[networkId]
-            if (viewList === undefined) {
-              return state
-            }
+          setSelection(() => {
+            set((state) => {
+              const viewList: NetworkView[] | undefined =
+                state.viewModels[networkId]
+              if (viewList === undefined) {
+                return state
+              }
 
-            state.viewModels[networkId] = viewList.map(
-              (networkView: NetworkView) =>
-                ViewModelImpl.additiveSelect(networkView, eles),
-            )
-            return state
+              state.viewModels[networkId] = viewList.map(
+                (networkView: NetworkView) =>
+                  ViewModelImpl.additiveSelect(networkView, eles),
+              )
+              return state
+            })
           })
           persistSelection(networkId)
         },
 
         // unselect elements without selecting anything else
         additiveUnselect: (networkId: IdType, eles: IdType[]) => {
-          set((state) => {
-            const viewList: NetworkView[] | undefined =
-              state.viewModels[networkId]
-            if (viewList === undefined) {
-              return state
-            }
+          setSelection(() => {
+            set((state) => {
+              const viewList: NetworkView[] | undefined =
+                state.viewModels[networkId]
+              if (viewList === undefined) {
+                return state
+              }
 
-            state.viewModels[networkId] = viewList.map(
-              (networkView: NetworkView) =>
-                ViewModelImpl.additiveUnselect(networkView, eles),
-            )
-            return state
+              state.viewModels[networkId] = viewList.map(
+                (networkView: NetworkView) =>
+                  ViewModelImpl.additiveUnselect(networkView, eles),
+              )
+              return state
+            })
           })
           persistSelection(networkId)
         },

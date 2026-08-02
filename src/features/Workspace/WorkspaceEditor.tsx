@@ -225,8 +225,13 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Loads a network by ID and populates all related stores
    * Handles network data, visual styles, tables, views, validation, and layout
    * @param networkId - The ID of the network to load
+   * @returns true when the network loaded; false when it failed. Failures are
+   *   reported through `setFailedToLoad` rather than thrown, so the caller has
+   *   no other way to tell the two apart.
    */
-  const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
+  const loadCurrentNetworkById = async (
+    networkId: IdType,
+  ): Promise<boolean> => {
     try {
       // Cached summaries/content resolve immediately; the loaders only wait
       // for the auth token when they actually fetch from NDEx (cache miss).
@@ -339,7 +344,9 @@ const WorkSpaceEditor = (): JSX.Element => {
           ? error.message
           : 'Unknown error',
       )
+      return false
     }
+    return true
   }
 
   const params = useParams()
@@ -376,9 +383,15 @@ const WorkSpaceEditor = (): JSX.Element => {
       )
 
       loadCurrentNetworkById(networkIdFromParams)
-        .then(() => {
+        .then((loaded) => {
           // Handle the case where the back/forward button is pressed
           setCurrentNetworkId(networkIdFromParams)
+          if (!loaded) {
+            // Only on success. This is the network a cross-tab reload restores,
+            // and recording one that just failed to load makes the failure
+            // survive the reload (CW-722).
+            return
+          }
           // Remember this tab's active network so a cross-tab reload restores it
           // even if the URL loses its network segment (CW-722).
           setTabNetworkId(networkIdFromParams)

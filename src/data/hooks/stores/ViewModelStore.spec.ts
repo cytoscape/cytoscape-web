@@ -1182,14 +1182,46 @@ describe('useViewModelStore', () => {
       act(() => {
         result.current.exclusiveSelect('sel-net', ['n1'], [])
       })
+      // A selection alone writes no view row, so mutate the view too: this
+      // asserts the row that DOES get written carries no selection.
+      act(() => {
+        result.current.setNodePosition('sel-net', 'n1', [10, 20])
+      })
       flushPendingWrites()
 
-      for (const call of vi.mocked(putNetworkViewsToDb).mock.calls) {
+      const calls = vi.mocked(putNetworkViewsToDb).mock.calls
+      expect(calls.length).toBeGreaterThan(0)
+      for (const call of calls) {
         for (const view of call[1]) {
           expect(view.selectedNodes).toEqual([])
           expect(view.selectedEdges).toEqual([])
         }
       }
+    })
+
+    it('writes only the selection row when a selection action runs', async () => {
+      const { putNetworkViewsToDb, putViewSelectionToDb } = await import(
+        '../../db'
+      )
+      const { result } = renderHook(() => useViewModelStore())
+
+      act(() => {
+        result.current.add('sel-only', createTestNetworkView('sel-only'))
+      })
+      // Drain the add's own view write before measuring the selection.
+      flushPendingWrites()
+      vi.mocked(putNetworkViewsToDb).mockClear()
+      vi.mocked(putViewSelectionToDb).mockClear()
+
+      act(() => {
+        result.current.exclusiveSelect('sel-only', ['n1'], [])
+      })
+      flushPendingWrites()
+
+      expect(putViewSelectionToDb).toHaveBeenCalledTimes(1)
+      // The whole point of the separate selection row: a click must not rewrite
+      // the view row (node positions and all) on every selection change.
+      expect(putNetworkViewsToDb).not.toHaveBeenCalled()
     })
 
     it('never writes circlePacking views to the DB (stated storage policy)', async () => {
@@ -1210,7 +1242,9 @@ describe('useViewModelStore', () => {
       vi.mocked(putNetworkViewsToDb).mockClear()
 
       act(() => {
-        result.current.exclusiveSelect('net-cp', ['n1'], [])
+        // A view mutation, not a selection: selection has its own row and is
+        // deliberately excluded from the view write (see `skipPersist`).
+        result.current.setNodePosition('net-cp', 'n1', [10, 20])
       })
       flushPendingWrites()
 

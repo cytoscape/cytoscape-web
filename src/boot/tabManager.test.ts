@@ -69,6 +69,11 @@ describe('initializeTabManager', () => {
     } finally {
       if (descriptor !== undefined) {
         Object.defineProperty(window, 'name', descriptor)
+      } else {
+        // No original descriptor: the throwing getter installed above is the
+        // only one there is, and leaving it breaks every later test in the
+        // worker that touches window.name.
+        delete (window as any).name
       }
     }
   })

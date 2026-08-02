@@ -49,7 +49,10 @@ export const buildShareUrl = (
   // Throws TypeError on a malformed origin — the caller catches and reports.
   const url = new URL(origin)
   const base = normalizeBaseName(baseName)
-  url.pathname = `${base}/0/networks/${networkId}`.replace(/\/{2,}/g, '/')
+  // Encoded, so a networkId containing '/' stays ONE path segment. Without it
+  // the collapse below rewrites 'a//b' to 'a/b', silently changing the id.
+  url.pathname = `${base}/0/networks`.replace(/\/{2,}/g, '/')
+  url.pathname += `/${encodeURIComponent(networkId)}`
   url.search = query
   return url.toString()
 }

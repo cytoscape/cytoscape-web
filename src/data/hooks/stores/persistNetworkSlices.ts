@@ -33,6 +33,14 @@ export interface NetworkSlicePersistOptions<S, V> {
   putSlice: (networkId: IdType, slice: V) => Promise<unknown>
   /** Optional: removes one network's row when its slice is deleted */
   removeSlice?: (networkId: IdType) => Promise<unknown>
+  /**
+   * Optional: return true to skip persistence for the `set` in flight.
+   *
+   * For changes the store persists itself, through a narrower row. Without it
+   * the generic path here still writes the whole slice, which is exactly the
+   * cost the narrower row exists to avoid.
+   */
+  skipPersist?: () => boolean
 }
 
 export const persistNetworkSlices =
@@ -47,7 +55,7 @@ export const persistNetworkSlices =
         const before = options.selectSlices(get())
         set(args, replace)
 
-        if (isHydrating()) {
+        if (isHydrating() || options.skipPersist?.() === true) {
           return
         }
 

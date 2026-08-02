@@ -1,4 +1,5 @@
 import { render as rtlRender } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -32,7 +33,7 @@ const CURRENT_NETWORK = 'net-current'
 
 // SyncTabs resolves the base-path-aware root href via useHref, so it needs a
 // router context.
-const render = (ui: React.ReactElement) =>
+const render = (ui: ReactElement) =>
   rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
 
 describe('SyncTabs', () => {
@@ -88,10 +89,10 @@ describe('SyncTabs', () => {
       },
     })
 
-    Object.defineProperty(window, 'location', {
-      value: { reload: vi.fn(), assign: vi.fn(), href: '' },
-      writable: true,
-    })
+    // vi.stubGlobal, not Object.defineProperty: the afterEach below calls
+    // vi.unstubAllGlobals(), which restores the real location. A raw
+    // defineProperty leaks the stub into every later test file in the worker.
+    vi.stubGlobal('location', { reload: vi.fn(), assign: vi.fn(), href: '' })
   })
 
   afterEach(() => {

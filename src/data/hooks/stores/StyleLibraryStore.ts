@@ -25,6 +25,13 @@ import {
  * IndexedDB table immediately; `hydrate()` loads the table once on first
  * use (e.g. when the library UI opens).
  */
+/**
+ * Log prefix. A literal, not `useStyleLibraryStore.name`: that reads the name
+ * of the value `create()` returns, which is not this identifier and is empty
+ * under minification.
+ */
+const STORE_LABEL = 'StyleLibraryStore'
+
 export const useStyleLibraryStore = create(
   immer<StyleLibraryStore>((set, get) => ({
     templates: {},
@@ -47,41 +54,47 @@ export const useStyleLibraryStore = create(
         })
       } catch (e) {
         logStore.error(
-          `[${useStyleLibraryStore.name}]: Failed to hydrate style library: ${e}`,
+          `[${STORE_LABEL}]: Failed to hydrate style library: ${e}`,
         )
       }
     },
 
     addTemplate: (name: string, visualStyle: VisualStyle): IdType => {
       const id = createStyleId()
+      let created: StyleTemplate | undefined
       set((state) => {
         const existingNames = Object.values(state.templates).map(
           (template) => template.name,
         )
-        const template: StyleTemplate = {
+        created = {
           id,
           name: uniqueStyleName(name, existingNames),
           // stripBypasses also deep-copies, so the template can never be
           // mutated through the source style (or vice versa)
           visualStyle: stripBypasses(visualStyle),
         }
-        state.templates[id] = template
-        void putStyleTemplateToDb(template).catch((e) => {
-          logStore.error(
-            `[${useStyleLibraryStore.name}]: Failed to persist template ${id}: ${e}`,
-          )
-        })
+        state.templates[id] = created
         return state
       })
+      // Outside the recipe: an Immer producer must be pure, and a write issued
+      // from inside one runs before the draft is finalized.
+      if (created !== undefined) {
+        void putStyleTemplateToDb(created).catch((e) => {
+          logStore.error(
+            `[${STORE_LABEL}]: Failed to persist template ${id}: ${e}`,
+          )
+        })
+      }
       return id
     },
 
     renameTemplate: (id: IdType, name: string) => {
+      let persisted: StyleTemplate | undefined
       set((state) => {
         const entry = state.templates[id]
         if (entry === undefined) {
           logStore.warn(
-            `[${useStyleLibraryStore.name}]: Cannot rename unknown template ${id}`,
+            `[${STORE_LABEL}]: Cannot rename unknown template ${id}`,
           )
           return state
         }
@@ -93,36 +106,37 @@ export const useStyleLibraryStore = create(
           name: uniqueStyleName(name, siblingNames),
         }
         state.templates[id] = renamed
-        void putStyleTemplateToDb(renamed).catch((e) => {
-          logStore.error(
-            `[${useStyleLibraryStore.name}]: Failed to persist template ${id}: ${e}`,
-          )
-        })
+        persisted = renamed
         return state
       })
+      if (persisted !== undefined) {
+        void putStyleTemplateToDb(persisted).catch((e) => {
+          logStore.error(
+            `[${STORE_LABEL}]: Failed to persist template ${id}: ${e}`,
+          )
+        })
+      }
     },
 
     deleteTemplate: (id: IdType) => {
       set((state) => {
         delete state.templates[id]
-        void deleteStyleTemplateFromDb(id).catch((e) => {
-          logStore.error(
-            `[${useStyleLibraryStore.name}]: Failed to delete template ${id}: ${e}`,
-          )
-        })
         return state
+      })
+      void deleteStyleTemplateFromDb(id).catch((e) => {
+        logStore.error(
+          `[${STORE_LABEL}]: Failed to delete template ${id}: ${e}`,
+        )
       })
     },
 
     deleteAllTemplates: () => {
       set((state) => {
         state.templates = {}
-        void clearStyleLibraryFromDb().catch((e) => {
-          logStore.error(
-            `[${useStyleLibraryStore.name}]: Failed to clear style library: ${e}`,
-          )
-        })
         return state
+      })
+      void clearStyleLibraryFromDb().catch((e) => {
+        logStore.error(`[${STORE_LABEL}]: Failed to clear style library: ${e}`)
       })
     },
   })),

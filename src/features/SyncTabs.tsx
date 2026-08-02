@@ -34,6 +34,25 @@ const WORKSPACE_WIDE_TABLES = new Set([
 ])
 
 /**
+ * Tables whose primary key IS a network id, so a change to one is relevant only
+ * when this tab is showing that network.
+ *
+ * Listed explicitly rather than inferred as "everything not workspace-wide": a
+ * table added later with some other key shape would silently be compared
+ * against `currentNetworkId` and hydrate — or not — for the wrong reason. Every
+ * name here has a matching case in `prepareChange`.
+ */
+const NETWORK_KEYED_TABLES = new Set([
+  'cyNetworks',
+  'cyTables',
+  'cyVisualStyles',
+  'cyNetworkViews',
+  'viewSelections',
+  'opaqueAspects',
+  'undoStacks',
+])
+
+/**
  * Should this tab apply a given change?
  *
  * Per-network tables are only hydrated for the network this tab is displaying.
@@ -49,6 +68,12 @@ const WORKSPACE_WIDE_TABLES = new Set([
 const isRelevantToThisTab = (change: IDatabaseChange): boolean => {
   if (WORKSPACE_WIDE_TABLES.has(change.table)) {
     return true
+  }
+  if (!NETWORK_KEYED_TABLES.has(change.table)) {
+    // Not classified above, so nothing here knows what its key means. Treating
+    // it as network-keyed would compare an unrelated key against the current
+    // network id, which is a coin toss; hydration has no case for it anyway.
+    return false
   }
   const { currentNetworkId } = useWorkspaceStore.getState().workspace
   return change.key === currentNetworkId
@@ -86,9 +111,15 @@ export const SyncTabsAction = (): ReactElement => {
     let dbInstance: any = null
 
     // Changes seen before app-shell initialization finishes. Held rather than
-    // dropped so a change written after init's read still lands; hydration
-    // dedupes by row, so a long buffer collapses to one read per row.
-    let buffered: IDatabaseChange[] = []
+    // dropped so a change written after init's read still lands.
+    //
+    // A Map keyed by table+key rather than an array: initialization can take
+    // seconds, and a peer dragging a node during it produces a change every
+    // 300ms. Hydration dedupes by row too, but only after this buffer has held
+    // every one of them — unbounded growth in the one window where the tab is
+    // already under load. Insertion order is preserved, and re-setting an
+    // existing key keeps its position, so release order is unchanged.
+    let buffered = new Map<string, IDatabaseChange>()
 
     const hydrate = (changes: IDatabaseChange[]): void => {
       const relevant = changes.filter(isRelevantToThisTab)
@@ -98,11 +129,11 @@ export const SyncTabsAction = (): ReactElement => {
     }
 
     const releaseBuffer = (): void => {
-      if (buffered.length === 0) {
+      if (buffered.size === 0) {
         return
       }
-      const pending = buffered
-      buffered = []
+      const pending = [...buffered.values()]
+      buffered = new Map()
       hydrate(pending)
     }
 
@@ -118,7 +149,9 @@ export const SyncTabsAction = (): ReactElement => {
       }
 
       if (!isCrossTabSyncReady()) {
-        buffered.push(...foreign)
+        for (const change of foreign) {
+          buffered.set(`${change.table}:${String(change.key)}`, change)
+        }
         return
       }
 

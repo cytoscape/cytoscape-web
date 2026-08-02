@@ -72,6 +72,21 @@ const selectionView = (views: readonly NetworkView[] | undefined) =>
   views?.find((v) => v.type !== 'circlePacking') ?? views?.[0]
 
 /**
+ * Tables that must be applied before others, most-depended-on first.
+ *
+ * Only the dependencies belong here; everything else sorts after them and keeps
+ * its revision order. `uiState` hydration reads `workspace.networkIds` to decide
+ * whether this tab's `activeNetworkView` still exists, so a workspace change in
+ * the same batch has to land first.
+ */
+const TABLE_ORDER: readonly string[] = ['workspace']
+
+const tablePriority = (table: string): number => {
+  const index = TABLE_ORDER.indexOf(table)
+  return index === -1 ? TABLE_ORDER.length : index
+}
+
+/**
  * Collapse a change batch to one entry per row, keeping the last.
  *
  * dexie-observable delivers every revision it has replayed, so a batch
@@ -81,16 +96,21 @@ const selectionView = (views: readonly NetworkView[] | undefined) =>
  * final state of each row matters, since every case below reads the row's
  * current value rather than applying a delta.
  *
- * Insertion order is revision order, and `Map` preserves it, so the resulting
- * apply order still respects cross-table dependencies (e.g. `workspace` before
- * `uiState`, whose hydration reads `workspace.networkIds`).
+ * Cross-table dependencies are imposed by {@link TABLE_ORDER}, not by revision
+ * order: `Map` keeps a key at its FIRST insertion position, so a batch of
+ * [uiState, workspace, uiState] deduped to revision order still applies uiState
+ * before workspace.
  */
 const dedupeChanges = (changes: CrossTabChange[]): CrossTabChange[] => {
   const latestByRow = new Map<string, CrossTabChange>()
   for (const change of changes) {
     latestByRow.set(`${change.table}:${String(change.key)}`, change)
   }
-  return [...latestByRow.values()]
+  // Stable sort, so revision order still decides between two changes of equal
+  // priority — which is every table not named in TABLE_ORDER.
+  return [...latestByRow.values()].sort(
+    (a, b) => tablePriority(a.table) - tablePriority(b.table),
+  )
 }
 
 /**

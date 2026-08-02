@@ -79,13 +79,19 @@ describe('PRESET_VISUAL_STYLES', () => {
     expect(new Set(fingerprints).size).toBe(fingerprints.length)
   })
 
-  it('hands out stable object identities', () => {
+  it('hands out stable object identities', async () => {
     // The thumbnail cache is a WeakMap keyed by the style object. Rebuilding
     // these per access would miss every time and re-rasterize the catalogue on
     // every repaint.
-    expect(PRESET_VISUAL_STYLES[0].visualStyle).toBe(
-      PRESET_VISUAL_STYLES[0].visualStyle,
-    )
+    //
+    // Reading one property twice proves nothing — it is the same read. The
+    // array has to survive a second module access with its entries intact.
+    const again = (await import('./presetVisualStyles')).PRESET_VISUAL_STYLES
+    expect(again).toBe(PRESET_VISUAL_STYLES)
+    again.forEach((preset, i) => {
+      expect(preset).toBe(PRESET_VISUAL_STYLES[i])
+      expect(preset.visualStyle).toBe(PRESET_VISUAL_STYLES[i].visualStyle)
+    })
   })
 
   it('survives a consumer cloning and mutating the copy', () => {

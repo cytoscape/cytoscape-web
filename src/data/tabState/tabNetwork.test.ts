@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getTabNetworkId,
@@ -57,6 +57,55 @@ describe('getTabNetworkId / setTabNetworkId', () => {
     setTabNetworkId('A')
     setTabNetworkId('')
     expect(getTabNetworkId()).toBe(undefined)
+  })
+
+  it('degrades quietly when sessionStorage throws', () => {
+    // Privacy mode and sandboxed iframes both make this throw. It is a backstop
+    // for the URL, so losing it must never surface to the user.
+    const original = Object.getOwnPropertyDescriptor(window, 'sessionStorage')
+    Object.defineProperty(window, 'sessionStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('SecurityError')
+      },
+    })
+
+    try {
+      expect(getTabNetworkId()).toBe(undefined)
+      expect(() => setTabNetworkId('A')).not.toThrow()
+      expect(() => setTabNetworkId('')).not.toThrow()
+    } finally {
+      if (original !== undefined) {
+        Object.defineProperty(window, 'sessionStorage', original)
+      } else {
+        delete (window as any).sessionStorage
+      }
+    }
+  })
+
+  it('degrades quietly when the storage methods themselves throw', () => {
+    // A quota-exceeded setItem is the common form: the getter works, the write
+    // does not.
+    const store = window.sessionStorage
+    const getItem = vi.spyOn(store, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError')
+    })
+    const setItem = vi.spyOn(store, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    const removeItem = vi.spyOn(store, 'removeItem').mockImplementation(() => {
+      throw new Error('SecurityError')
+    })
+
+    try {
+      expect(getTabNetworkId()).toBe(undefined)
+      expect(() => setTabNetworkId('A')).not.toThrow()
+      expect(() => setTabNetworkId('')).not.toThrow()
+    } finally {
+      getItem.mockRestore()
+      setItem.mockRestore()
+      removeItem.mockRestore()
+    }
   })
 })
 

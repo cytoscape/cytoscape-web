@@ -4,14 +4,11 @@ import '@mantine/dropzone/styles.css'
 
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
-import debounce from 'lodash/debounce'
 import { MenuItem } from 'primereact/menuitem'
 import { useCallback, useState } from 'react'
-import { useHref, useNavigate } from 'react-router-dom'
 
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
-import { logUi } from '../../../debug'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
@@ -113,11 +110,7 @@ export const DataMenu = () => {
     setOpenDeleteAllNetworksDialog(false)
   }
 
-  const navigate = useNavigate()
-  // Root path with the router basename applied, so a deployment under a
-  // sub-path does not reload to the wrong origin root.
-  const rootHref = useHref('/')
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
+  const { reset } = useResetWorkspace()
 
   const handleDeleteAllNetworks = (): void => {
     handleCloseDeleteAllNetworksDialog()
@@ -141,35 +134,20 @@ export const DataMenu = () => {
    * the database open left `Dexie.delete` waiting indefinitely.
    */
   const handleResetLocalWorkspace = (): void => {
-    resetWorkspace()
-      .then((outcome) => {
-        if (outcome.status === 'failed') {
-          alert(`Failed to reset workspace. ${outcome.reason}`)
-          return
-        }
-
-        if (outcome.status === 'reload-required') {
-          // The stores still hold the old workspace and there is no usable
-          // database connection, so reload immediately rather than debouncing.
-          alert(`${outcome.reason} Reloading Cytoscape Web.`)
-          window.location.assign(rootHref)
-          return
-        }
-
-        // For safety: debounce the navigation to prevent any potential timing issues
-        debounce(() => {
-          navigate('/')
-          navigate(0)
-        }, 1500)()
-      })
-      .catch((error) => {
+    // useResetWorkspace owns the outcome branching and the navigation; this
+    // handler only reports, and `alert()` is the reporting channel here because
+    // the dialog has already closed and the menu has nowhere to render a
+    // message.
+    void reset().then((result) => {
+      if (result.status === 'failed') {
         handleCloseResetLocalWorkspaceDialog()
-        logUi.error(
-          `[${ResetLocalWorkspaceMenuItem.name}]:[${handleResetLocalWorkspace.name}] Failed to reset workspace`,
-          error,
-        )
-        alert('Failed to reset workspace. Please try again.')
-      })
+        alert(`Failed to reset workspace. ${result.reason}`)
+        return
+      }
+      if (result.status === 'reloading') {
+        alert(`${result.reason} Reloading Cytoscape Web.`)
+      }
+    })
   }
 
   const menuItems: MenuItem[] = [

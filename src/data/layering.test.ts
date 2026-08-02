@@ -31,6 +31,13 @@ const collect = (dir: string, out: string[] = []): string[] => {
   return out
 }
 
+/**
+ * Forward slashes whatever the platform separator is, matching the sibling
+ * `styleSetRegistration.test.ts`. BASELINE and the `data/hooks/stores/` prefix
+ * check below are written with `/`, so on Windows every edge would miss.
+ */
+const toPosix = (p: string): string => p.split('\\').join('/')
+
 /** Matches `from '<spec>'`, `import '<spec>'` and `import('<spec>')`. */
 const SPECIFIER = /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g
 
@@ -41,7 +48,7 @@ const resolveWithinSrc = (fromFile: string, spec: string): string | null => {
   }
   if (spec.startsWith('.')) {
     const abs = join(fromFile, '..', spec)
-    const rel = relative(SRC, abs)
+    const rel = toPosix(relative(SRC, abs))
     return rel.startsWith('..') ? null : rel
   }
   return null // bare package specifier
@@ -81,23 +88,29 @@ const BASELINE = new Set([
 ])
 
 /** Every `src/data` → `src/features` edge, as `<importer> -> <resolved target>`. */
-const featureImports = (): string[] => {
+const findFeatureImports = (files: readonly string[]): string[] => {
   const found: string[] = []
-  for (const file of collect(DATA)) {
+  for (const file of files) {
     const content = readFileSync(file, 'utf8')
     for (const match of content.matchAll(SPECIFIER)) {
       const target = resolveWithinSrc(file, match[1])
       if (target?.startsWith('features/') === true) {
-        found.push(`${relative(SRC, file)} -> ${target}`)
+        found.push(`${toPosix(relative(SRC, file))} -> ${target}`)
       }
     }
   }
   return found
 }
 
+// Scanned once at module scope, like styleSetRegistration.test.ts: the four
+// tests below all read the same tree, and re-walking it per test was four
+// full-directory reads for one answer.
+const DATA_FILES = collect(DATA)
+const FEATURE_IMPORTS = findFeatureImports(DATA_FILES)
+
 describe('layering: src/data must not depend on src/features', () => {
   it('adds no new imports from features/ beyond the recorded baseline', () => {
-    const offenders = featureImports().filter((edge) => !BASELINE.has(edge))
+    const offenders = FEATURE_IMPORTS.filter((edge) => !BASELINE.has(edge))
 
     expect(offenders).toEqual([])
   })
@@ -105,7 +118,7 @@ describe('layering: src/data must not depend on src/features', () => {
   it('keeps the baseline honest — no stale entries', () => {
     // A fixed violation must be removed from BASELINE, or the list quietly
     // becomes permission for edges nobody is actually adding.
-    const live = new Set(featureImports())
+    const live = new Set(FEATURE_IMPORTS)
     const stale = [...BASELINE].filter((edge) => !live.has(edge))
 
     expect(stale).toEqual([])
@@ -115,7 +128,7 @@ describe('layering: src/data must not depend on src/features', () => {
     // The part this guard exists to protect: stores are what everything above
     // them consumes, so an inverted dependency there is the expensive kind.
     // `useAppManager` is a composed hook that happens to live in stores/.
-    const storeOffenders = featureImports().filter(
+    const storeOffenders = FEATURE_IMPORTS.filter(
       (edge) =>
         edge.startsWith('data/hooks/stores/') &&
         !edge.startsWith('data/hooks/stores/useAppManager'),
@@ -129,6 +142,6 @@ describe('layering: src/data must not depend on src/features', () => {
 
   it('scans a meaningful number of files', () => {
     // Guards the guard: a broken glob would make the assertion above vacuous.
-    expect(collect(DATA).length).toBeGreaterThan(50)
+    expect(DATA_FILES.length).toBeGreaterThan(50)
   })
 })

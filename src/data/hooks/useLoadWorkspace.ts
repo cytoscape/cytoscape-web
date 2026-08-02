@@ -11,6 +11,7 @@ import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { Workspace } from '../../models/WorkspaceModel'
 import {
   deleteDb,
+  type DeleteDbOutcome,
   deleteServiceAppFromDb,
   getAllAppsFromDb,
   getAllServiceAppsFromDb,
@@ -18,6 +19,7 @@ import {
   putServiceAppToDb,
   putWorkspaceToDb,
 } from '../db'
+import { announceDatabaseReset } from '../db/lifecycle'
 import { serviceFetcher } from './stores/AppStore'
 
 /**
@@ -75,7 +77,19 @@ export const useLoadWorkspace = (
     try {
       // Step 1: Clear the database
       logDb.info('[loadWorkspace] Clearing database')
-      const outcome = await deleteDb()
+      // Same handshake resetWorkspace uses: other tabs hold this database open,
+      // and IndexedDB will not delete one with live connections. Without it an
+      // import with a second tab open reliably returns 'delete-blocked' and
+      // fails below.
+      const releasePeers = await announceDatabaseReset()
+      let outcome: DeleteDbOutcome
+      try {
+        outcome = await deleteDb()
+      } finally {
+        // Peers have already closed and are waiting; release them either way so
+        // they reload instead of stalling until their own timeout.
+        releasePeers()
+      }
       if (outcome !== 'deleted') {
         // Writing the imported workspace now would either land in a database
         // whose delete is still queued (it would be destroyed underneath us) or
