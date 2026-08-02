@@ -17,7 +17,10 @@ import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useViewModelStore } from './stores/ViewModelStore'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from './stores/VisualStyleStore'
 
 /**
  * Returns a function that downloads a network as a CX2 file.
@@ -52,6 +55,7 @@ export const useDownloadNetworkFile = () => {
       nodeTable: table.nodeTable,
       edgeTable: table.edgeTable,
       visualStyle,
+      visualStyleSet: getVisualStyleSetSnapshot(networkId),
       networkViews: [viewModel],
       visualStyleOptions,
       otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,

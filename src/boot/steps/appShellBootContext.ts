@@ -46,6 +46,12 @@ export interface WorkspaceDraft {
   summaries: Record<IdType, NetworkSummary>
   /** Import/deep-link failures, surfaced as one message at publish time. */
   errors: string[]
+  /**
+   * True when a `:networkId` in the URL could not be resolved. The requested id
+   * is then kept as the current network so the error message explains an
+   * address the user recognizes (CW-514) — see `resolveInitialNetworkId`.
+   */
+  deepLinkFailed: boolean
 }
 
 export const hasSearchParams = (search: URLSearchParams): boolean =>

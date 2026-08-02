@@ -7,6 +7,24 @@ export interface WorkspaceState {
   workspace: Workspace
 }
 
+/**
+ * Outcome of {@link WorkspaceActions.resetWorkspace}.
+ *
+ * The reset destroys the whole IndexedDB database, which can fail in ways that
+ * need different handling, so callers get a status rather than a bare promise:
+ *
+ * - `reset` — the database is gone, a fresh one is open, the store is empty.
+ * - `failed` — nothing was destroyed and the workspace is untouched. Tell the
+ *   user; there is nothing else to do.
+ * - `reload-required` — the data is gone (or its fate is unknown) and this tab
+ *   has no usable database connection. The in-memory workspace must not be
+ *   written back, so the caller must reload rather than carry on.
+ */
+export type WorkspaceResetOutcome =
+  | { status: 'reset' }
+  | { status: 'failed'; reason: string }
+  | { status: 'reload-required'; reason: string }
+
 export interface WorkspaceActions {
   // Set current workspace for this session
   set: (workspace: Workspace) => void
@@ -30,7 +48,7 @@ export interface WorkspaceActions {
   deleteAllNetworks: () => void
 
   // Remove all networks from the workspace and reset the workspace
-  resetWorkspace: () => Promise<void>
+  resetWorkspace: () => Promise<WorkspaceResetOutcome>
 
   // Change modified flag for a network
   setNetworkModified: (networkId: IdType, isModified: boolean) => void

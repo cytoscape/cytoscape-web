@@ -307,7 +307,10 @@ describe('useAppStore', () => {
       })
 
       const addedServiceApp = result.current.serviceApps[url]
-      if (addedServiceApp?.parameters && addedServiceApp.parameters.length > 0) {
+      if (
+        addedServiceApp?.parameters &&
+        addedServiceApp.parameters.length > 0
+      ) {
         act(() => {
           result.current.updateServiceParameter(url, 'param1', 'new-value')
         })
@@ -402,4 +405,3 @@ describe('useAppStore', () => {
     })
   })
 })
-

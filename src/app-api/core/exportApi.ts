@@ -7,7 +7,10 @@ import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummarySt
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from '../../data/hooks/stores/VisualStyleStore'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl/exporter'
 import { CyNetwork } from '../../models/CyNetworkModel/CyNetwork'
 import { IdType } from '../../models/IdType'
@@ -69,16 +72,13 @@ export const exportApi: ExportApi = {
         nodeTable: tableRecord.nodeTable,
         edgeTable: tableRecord.edgeTable,
         visualStyle,
+        visualStyleSet: getVisualStyleSetSnapshot(networkId),
         networkViews: [viewModel],
         otherAspects: opaqueAspect !== undefined ? [opaqueAspect] : undefined,
         undoRedoStack: { undoStack: [], redoStack: [] },
       }
 
-      const cx2 = exportCyNetworkToCx2(
-        cyNetwork,
-        summary,
-        options.networkName,
-      )
+      const cx2 = exportCyNetworkToCx2(cyNetwork, summary, options.networkName)
       return ok(cx2)
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

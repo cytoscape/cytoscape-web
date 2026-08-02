@@ -43,7 +43,7 @@ The flow:
 
 - `stores/*`: Applies decoded URL state to domain/UI stores
 - `features/*`: Features consume the hook to navigate without hand-coding URLs
-- `init/tabManager.ts`: Coordinates multi-tab/session behavior as needed
+- `boot/tabManager.ts`: Coordinates multi-tab/session behavior as needed
 
 ## Design Decisions
 

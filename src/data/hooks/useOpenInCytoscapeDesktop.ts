@@ -25,7 +25,10 @@ import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useViewModelStore } from './stores/ViewModelStore'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from './stores/VisualStyleStore'
 
 export const useOpenNetworkInCytoscape = () => {
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -70,6 +73,7 @@ export const useOpenNetworkInCytoscape = () => {
       nodeTable: table.nodeTable,
       edgeTable: table.edgeTable,
       visualStyle,
+      visualStyleSet: getVisualStyleSetSnapshot(network.id),
       networkViews: [viewModel],
       visualStyleOptions,
       otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,

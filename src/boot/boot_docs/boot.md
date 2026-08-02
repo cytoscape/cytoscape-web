@@ -21,6 +21,7 @@ this document is the map of the directory and the reasoning behind its shape.
 | `metrics/`                                           | User Timing marks and the dev boot report.                           |
 | `steps/`                                             | The AppShell half of the boot, one file per step.                    |
 | `keycloak.ts`, `tabManager.ts`, `googleAnalytics.ts` | Integrations the boot sets up.                                       |
+| `tabId.ts`                                           | This tab's id. Lazy — the DB layer stamps it on every transaction.   |
 | `AppBootstrap.tsx`                                   | First React component; swaps in the email-verification modal.        |
 
 ## Sequence
@@ -44,8 +45,8 @@ index.html
                                      ├─ phase WORKSPACE   workspace + summaries + UI state
                                      ├─ phase DEEP_LINK   :networkId not in workspace
                                      ├─ phase IMPORTS     ?import=<url>
-                                     ├─ phase PUBLISH     stores, event bus, cywebapi:ready
-                                     │                                    [workspace-hydrated]
+                                     ├─ phase PUBLISH     per-tab network, stores, event bus,
+                                     │                   cywebapi:ready  [workspace-hydrated]
                                      ├─ phase INTENTS     ?installApp= / ?addserviceapp=
                                      └─ phase ROUTE       restore URL state, navigate, strip params
                                           └─ <WorkspaceEditor/>          [workspace-editor-mounted]

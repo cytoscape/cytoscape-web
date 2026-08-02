@@ -15,8 +15,10 @@ import { IdType } from '../../../models/IdType'
 import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
 import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
+import { announceDatabaseReset } from '@/data/db/lifecycle'
 import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -28,6 +30,33 @@ const EMPTY_WORKSPACE: Workspace = {
   localModificationTime: new Date(),
   currentNetworkId: '',
 }
+
+/**
+ * Blank `currentNetworkId` before the workspace goes to IndexedDB.
+ *
+ * Which network a tab is looking at is per-tab view state — every tab has its
+ * own address bar — but it was being written to the single shared workspace row,
+ * so tabs overwrote each other's navigation. Hydration used to mask the field on
+ * read, which was not enough: the next local workspace mutation wrote this tab's
+ * value straight back into the shared row.
+ *
+ * The per-tab sources of truth are the URL and the sessionStorage backstop in
+ * `src/data/tabState/tabNetwork.ts`; the field is kept in the in-memory store (lots
+ * of code reads it) but is no longer shared. Blanked rather than omitted so the
+ * row still satisfies `validateWorkspace`.
+ */
+const withoutTabNetworkId = (workspace: Workspace): Workspace => ({
+  ...workspace,
+  currentNetworkId: '',
+})
+
+/**
+ * Compare two workspace rows ignoring `localModificationTime`, which changes on
+ * every mutation and would defeat the no-op check.
+ */
+const isSameSharedWorkspace = (a: Workspace, b: Workspace): boolean =>
+  JSON.stringify({ ...a, localModificationTime: 0 }) ===
+  JSON.stringify({ ...b, localModificationTime: 0 })
 
 const persist =
   (config: StateCreator<WorkspaceStore>) =>
@@ -42,11 +71,31 @@ const persist =
         const lastWorkspace = get().workspace
         set(args)
         const newWorkspace = get().workspace
-        // const deleted = updated === undefined
-        if (lastWorkspace !== newWorkspace && newWorkspace.id !== '') {
+        if (
+          !isHydrating() &&
+          lastWorkspace !== newWorkspace &&
+          newWorkspace.id !== ''
+        ) {
           // Convert Immer proxy to plain object before saving
-          const plainWorkspace = toPlainObject(newWorkspace)
-          void putWorkspaceToDb(plainWorkspace).then(() => {})
+          const plainWorkspace = toPlainObject(
+            withoutTabNetworkId(newWorkspace),
+          )
+          // Switching networks changes only per-tab state, so it leaves the
+          // shared row byte-identical — skip the write rather than mint a
+          // change record every other tab would then hydrate.
+          if (
+            !isSameSharedWorkspace(
+              plainWorkspace,
+              toPlainObject(withoutTabNetworkId(lastWorkspace)),
+            )
+          ) {
+            void putWorkspaceToDb(plainWorkspace).catch((e) => {
+              logStore.error(
+                `[${useWorkspaceStore.name}]: Failed to persist workspace`,
+                e,
+              )
+            })
+          }
         }
       },
       get,
@@ -121,7 +170,39 @@ export const useWorkspaceStore = create(
           })
         },
         resetWorkspace: async () => {
-          await deleteDb()
+          // Other tabs hold the database open, and IndexedDB will not delete a
+          // database with live connections. Ask them to let go and wait for the
+          // acknowledgements before deleting; release them afterwards so their
+          // reload lands on the freshly created database rather than racing the
+          // delete and re-creating the old workspace.
+          const releasePeers = await announceDatabaseReset()
+          const outcome = await deleteDb()
+
+          // Release the peers either way: they have already closed their
+          // connections and are waiting, so signalling lets them reload
+          // promptly instead of stalling until their timeout.
+          releasePeers()
+
+          if (outcome === 'delete-failed') {
+            // Nothing was destroyed and the connection was restored. Resetting
+            // the store to EMPTY_WORKSPACE here would show the user an empty
+            // workspace while their data is still on disk, and the next write
+            // would persist that fiction.
+            logStore.error(
+              `[${useWorkspaceStore.name}]: Workspace reset aborted — the database could not be deleted`,
+            )
+            return {
+              status: 'failed',
+              reason: 'The database could not be deleted. Nothing was changed.',
+            }
+          }
+
+          // Every remaining outcome means the data is gone or on its way out
+          // (`delete-blocked` leaves the request queued in IndexedDB, so it can
+          // land at any moment). Clearing the store is therefore the honest
+          // thing to do — keeping the workspace would let the next mutation
+          // re-persist it into the fresh database, which is exactly the ghost
+          // workspace the reset handshake exists to prevent.
           logStore.info(
             `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
           )
@@ -132,6 +213,22 @@ export const useWorkspaceStore = create(
             state.workspace = EMPTY_WORKSPACE
             return state
           })
+
+          if (outcome === 'deleted') {
+            return { status: 'reset' }
+          }
+
+          // No usable connection remains, and the other stores still hold this
+          // workspace's networks, tables and views. Only a reload can stop them
+          // from being written back.
+          const reason =
+            outcome === 'delete-blocked'
+              ? 'Another tab is still holding the database open, so the reset could not be confirmed.'
+              : 'The workspace was cleared but the database could not be reopened.'
+          logStore.error(
+            `[${useWorkspaceStore.name}]: Workspace reset needs a reload (${outcome})`,
+          )
+          return { status: 'reload-required', reason }
         },
 
         setNetworkModified: (networkId: IdType, isModified: boolean) => {

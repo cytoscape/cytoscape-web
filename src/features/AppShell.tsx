@@ -18,6 +18,7 @@ import { logStartup } from '../debug'
 import { MessageSeverity } from '../models/MessageModel'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
 import { ConfirmationDialog } from './ConfirmationDialog'
+import { markCrossTabSyncReady } from '@/data/sync/crossTabSyncGate'
 import { SyncTabsAction } from './SyncTabs'
 import { ToolBar } from './ToolBar'
 
@@ -86,6 +87,12 @@ const AppShell = (): ReactElement => {
           duration: 8000,
           severity: MessageSeverity.ERROR,
         })
+      })
+      // Cross-tab hydration stays gated until the boot settles, so a peer tab's
+      // change cannot race the workspace load. `finally` rather than `then` — a
+      // failed boot must not disable sync for the rest of the session.
+      .finally(() => {
+        markCrossTabSyncReady()
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])

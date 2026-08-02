@@ -7,6 +7,7 @@ The Vizmapper feature provides a visual style editor for customizing the appeara
 ## Architecture
 
 The Vizmapper is organized around visual properties, which are grouped into three categories:
+
 - **Node Visual Properties**: Control node appearance (size, color, shape, border, etc.)
 - **Edge Visual Properties**: Control edge appearance (width, color, style, arrows, etc.)
 - **Network Visual Properties**: Control network-level appearance (background color, etc.)
@@ -14,18 +15,21 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 ## Component Structure
 
 ### Main Component
+
 - **index.tsx**: The main Vizmapper component
   - Manages tab state (Nodes/Edges/Network)
   - Renders visual property views for each category
   - Handles custom graphics support
 
 ### Visual Property View
+
 - **VisualPropertyView**: Individual visual property editor
   - Displays three forms: Default Value, Mapping, and Bypass
   - Handles disabled states (e.g., when node size is locked)
   - Shows tooltips for disabled properties
 
 ### Form Components
+
 - **DefaultValueForm**: Sets the default value for a visual property
   - Supports different input types based on property value type
   - Color pickers for color properties
@@ -43,7 +47,23 @@ The Vizmapper is organized around visual properties, which are grouped into thre
   - Supports selection-based bypasses
   - Can target specific node/edge IDs
 
+### Style Manager (multiple visual styles)
+
+- **StyleManager/StyleManager.tsx**: Selector row rendered above the tabs
+  - Dropdown to switch the network's active named style
+  - Menu: New Style (copy of current), Duplicate, Rename, Delete,
+    Save Style to Library, Apply Style from Library
+  - Every operation marks the network as modified
+  - Switching styles clears the network's undo/redo history (recorded edits
+    reference the previous style)
+- **StyleManager/StyleNameDialog.tsx**: Name prompt shared by create/rename/save
+- **StyleManager/StyleLibraryDialog.tsx**: Workspace-level style library browser;
+  applying a template copies it into the network's style set (copy-on-assign)
+- See `docs/specifications/MULTIPLE_VISUAL_STYLES.md` for the full model,
+  IndexedDB, and CX2/NDEx persistence design
+
 ### Supporting Components
+
 - **VisualStyleIcons.tsx**: Icons for different mapping function types
 - **VisualPropertyRender/**: Components for rendering visual property controls
 - **Forms/VisualPropertyViewBox.tsx**: Container components for form sections
@@ -51,22 +71,26 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 ## Behavior
 
 ### Visual Property Editing
+
 - Each visual property has three editing modes:
   1. **Default Value**: The base value applied to all elements
   2. **Mapping**: Data-driven mapping from table columns to visual values
   3. **Bypass**: Exception rules that override defaults/mappings
 
 ### Mapping Functions
+
 - **Passthrough**: Directly uses table column values as visual property values
 - **Discrete Mapping**: Maps specific table values to specific visual values (e.g., "Type A" → red, "Type B" → blue)
 - **Continuous Mapping**: Maps numeric ranges to visual scales (e.g., expression 0-100 → color gradient)
 
 ### Custom Graphics
+
 - Supports custom node graphics (images, charts) with associated size properties
 - Only the first valid custom graphic is displayed in the editor
 - Custom graphics require special handling for size properties
 
 ### Disabled States
+
 - Some properties can be disabled based on other settings:
   - Node width disabled when node size is locked
   - Arrow colors disabled when "Edge color to arrows" is enabled
@@ -82,21 +106,25 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 ## Design Decisions
 
 ### Three-Form Layout
+
 - The Default/Mapping/Bypass layout provides clear separation of concerns
 - Users can combine all three approaches for complex styling
 - The horizontal layout with rotated labels saves vertical space
 
 ### Mapping Function Types
+
 - Passthrough, Discrete, and Continuous cover most use cases
 - Each type has specific UI optimized for its use case
 - Type selection is based on data type compatibility
 
 ### Custom Graphics Support
+
 - Custom graphics are handled separately from standard properties
 - Only one custom graphic is shown at a time to avoid UI clutter
 - Size properties for custom graphics are automatically managed
 
 ### Disabled Property Handling
+
 - Disabled properties show empty boxes instead of hiding completely
 - Tooltips explain why properties are disabled
 - This prevents confusion about missing functionality
@@ -109,4 +137,3 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 - Export/import visual style configurations
 - Support for animation properties
 - Custom property definitions
-
