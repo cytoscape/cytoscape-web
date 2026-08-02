@@ -41,9 +41,9 @@ type CyWebApiWindow = {
       }) => { success: boolean; data?: { networkId: string } }
     }
     workspace: {
-      getNetworkList: () => {
+      getNetworks: () => {
         success: boolean
-        data?: Array<{ name: string; networkId: string }>
+        data?: { networks?: Array<{ name: string; networkId: string }> }
       }
     }
     selection: {
@@ -100,8 +100,8 @@ const seedNetwork = async (page: Page, name: string): Promise<string> => {
 const workspaceNetworkNames = async (page: Page): Promise<string[]> =>
   await page.evaluate(() => {
     const api = (window as unknown as CyWebApiWindow).CyWebApi
-    const result = api?.workspace.getNetworkList()
-    return (result?.data ?? []).map((n) => String(n.name))
+    const result = api?.workspace.getNetworks()
+    return (result?.data?.networks ?? []).map((n) => String(n.name))
   })
 
 test.describe('cross-tab synchronization', () => {
