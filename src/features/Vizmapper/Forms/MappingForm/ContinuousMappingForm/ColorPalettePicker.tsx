@@ -160,83 +160,112 @@ export function ColorPalettePicker({
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
-        <ToggleButtonGroup
-          value={colorPalette}
-          onChange={handleColorPalette}
-          orientation="horizontal"
-          exclusive
-          fullWidth={true}
+        {/*
+          The Popover Paper is `overflow-x: hidden` with a
+          `max-width: calc(100% - 32px)` clamp, so the palette strip has to
+          scroll itself. Without this container the palettes past the viewport
+          edge are clipped and unreachable below ~760px of width (#653).
+        */}
+        <Box
+          data-testid="palette-strip"
+          sx={{
+            display: 'flex',
+            maxWidth: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            px: 1,
+            // Slim the track down on the platforms that reserve space for a
+            // scrollbar. macOS uses overlay scrollbars, so there it only shows
+            // up during the gesture.
+            '&::-webkit-scrollbar': { height: 8 },
+            '&::-webkit-scrollbar-thumb': {
+              borderRadius: 4,
+              backgroundColor: 'action.disabled',
+            },
+          }}
         >
-          {Object.entries(PALETTES)
-            .filter(([, palette]) => {
-              // Show palettes matching the selected category (CW-460).
-              return palette.metadata.category === category
-            })
-            .map(([paletteId, palette]) => {
-              const isColorBlindUnsafe =
-                palette.metadata.colorBlindSafe === false
-              if (isColorBlindUnsafe && isColorBlindChecked) {
-                return null
-              }
-              const colors = getPaletteGradientColors(paletteId)
-              if (!colors) return null
+          <ToggleButtonGroup
+            value={colorPalette}
+            onChange={handleColorPalette}
+            orientation="horizontal"
+            exclusive
+            size="small"
+            sx={{ flexShrink: 0, '& .MuiToggleButton-root': { flexShrink: 0 } }}
+          >
+            {Object.entries(PALETTES)
+              .filter(([, palette]) => {
+                // Show palettes matching the selected category (CW-460).
+                return palette.metadata.category === category
+              })
+              .map(([paletteId, palette]) => {
+                const isColorBlindUnsafe =
+                  palette.metadata.colorBlindSafe === false
+                if (isColorBlindUnsafe && isColorBlindChecked) {
+                  return null
+                }
+                const colors = getPaletteGradientColors(paletteId)
+                if (!colors) return null
 
-              return (
-                <ToggleButton
-                  key={paletteId}
-                  value={paletteId}
-                  aria-label={palette.metadata.name}
-                  onClick={() => {
-                    setMinPalette(colors.min)
-                    setMiddlePalette(colors.middle)
-                    setMaxPalette(colors.max)
-                    setTextPalette(colors.name)
-                  }}
-                >
-                  <Tooltip
-                    title={
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 'bold', mb: 0.5 }}
-                        >
-                          {palette.metadata.name}
-                        </Typography>
-                        {palette.metadata.description && (
-                          <Typography
-                            variant="caption"
-                            sx={{ display: 'block', mb: 0.5 }}
-                          >
-                            {palette.metadata.description}
-                          </Typography>
-                        )}
-                        <Typography variant="caption" sx={{ display: 'block' }}>
-                          Category: {palette.metadata.category}
-                        </Typography>
-                        {palette.metadata.colorBlindSafe !== false && (
-                          <Typography
-                            variant="caption"
-                            sx={{ display: 'block', color: 'success.main' }}
-                          >
-                            Colorblind-safe
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                    placement="right"
+                return (
+                  <ToggleButton
+                    key={paletteId}
+                    value={paletteId}
+                    aria-label={palette.metadata.name}
+                    onClick={() => {
+                      setMinPalette(colors.min)
+                      setMiddlePalette(colors.middle)
+                      setMaxPalette(colors.max)
+                      setTextPalette(colors.name)
+                    }}
                   >
-                    <PalettePreview
-                      palette={palette}
-                      width={15}
-                      height={150}
-                      orientation="vertical"
-                      showMetadata={false}
-                    />
-                  </Tooltip>
-                </ToggleButton>
-              )
-            })}
-        </ToggleButtonGroup>
+                    <Tooltip
+                      title={
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 'bold', mb: 0.5 }}
+                          >
+                            {palette.metadata.name}
+                          </Typography>
+                          {palette.metadata.description && (
+                            <Typography
+                              variant="caption"
+                              sx={{ display: 'block', mb: 0.5 }}
+                            >
+                              {palette.metadata.description}
+                            </Typography>
+                          )}
+                          <Typography
+                            variant="caption"
+                            sx={{ display: 'block' }}
+                          >
+                            Category: {palette.metadata.category}
+                          </Typography>
+                          {palette.metadata.colorBlindSafe !== false && (
+                            <Typography
+                              variant="caption"
+                              sx={{ display: 'block', color: 'success.main' }}
+                            >
+                              Colorblind-safe
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                      placement="right"
+                    >
+                      <PalettePreview
+                        palette={palette}
+                        width={15}
+                        height={150}
+                        orientation="vertical"
+                        showMetadata={false}
+                      />
+                    </Tooltip>
+                  </ToggleButton>
+                )
+              })}
+          </ToggleButtonGroup>
+        </Box>
 
         <Paper
           sx={{
@@ -289,11 +318,7 @@ export function ColorPalettePicker({
           >
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirm}
-            size="small"
-          >
+          <Button variant="contained" onClick={handleConfirm} size="small">
             Confirm
           </Button>
         </Paper>

@@ -246,9 +246,12 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
         }}
         PaperProps={{
           sx: {
-            maxWidth: 500,
+            // Clamp to the viewport the way MUI's own Popover Paper does; a
+            // flat 500x600 pushes the Paper off-screen on a phone (#653).
             width: 500,
+            maxWidth: 'calc(100% - 32px)',
             height: 600,
+            maxHeight: 'calc(100% - 32px)',
             overflow: 'hidden',
           },
         }}
@@ -321,9 +324,12 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
         }}
         PaperProps={{
           sx: {
-            maxWidth: 500,
+            // Clamp to the viewport the way MUI's own Popover Paper does; a
+            // flat 500x600 pushes the Paper off-screen on a phone (#653).
             width: 500,
+            maxWidth: 'calc(100% - 32px)',
             height: 600,
+            maxHeight: 'calc(100% - 32px)',
             overflow: 'hidden',
           },
         }}
