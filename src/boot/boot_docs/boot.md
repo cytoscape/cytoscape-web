@@ -47,7 +47,7 @@ index.html
                                      ├─ phase IMPORTS     ?import=<url>
                                      ├─ phase PUBLISH     per-tab network, stores, event bus,
                                      │                   cywebapi:ready  [workspace-hydrated]
-                                     ├─ phase INTENTS     ?installApp= / ?addserviceapp=
+                                     ├─ phase INTENTS     ?installApp= (fetch + classify)
                                      └─ phase ROUTE       restore URL state, navigate, strip params
                                           └─ <WorkspaceEditor/>          [workspace-editor-mounted]
                                                                           → publishBootReport()

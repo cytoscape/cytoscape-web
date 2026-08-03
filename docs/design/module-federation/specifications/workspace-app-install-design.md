@@ -330,11 +330,34 @@ uninstallApp(id: string): Promise<void>
 
 The App Store **Install** button links/redirects to Cytoscape Web with an
 install intent. To avoid embedding large metadata in the URL, the parameter
-carries a **pointer to a single-entry manifest**, not the entry itself:
+carries a **pointer to app metadata**, not the metadata itself:
 
 ```text
 https://web.cytoscape.org/?installApp=https%3A%2F%2Fapps.cytoscape.org%2Fweb%2Fhello%2Fmanifest.json
 ```
+
+`?installApp=` installs **both app kinds** and is **repeatable** (cytoscape-web
+#639). It replaced `?addserviceapp=`, which is removed. `runInstallIntents`
+fetches each URL and `classifyInstallPayload` resolves what is behind it:
+
+| | React app | Service app |
+| --- | --- | --- |
+| Payload | array, or a single entry object, with a valid `url` | object with `cyWebActions` / `cyWebMenuItem` / `serviceInputDefinition` |
+| Validated by | `parseManifest()` | `ServiceMetadataSchema` |
+| Origin gate | `appInstallAllowedOrigins` (§9) | none |
+| Installed by | `installApp(entry, { activate: true })` | `AppStore.addService(url)` |
+
+An optional `type` field (`client` / `service`, the `AppType` enum) overrides the
+structural check when the App Store starts emitting it. It is not required:
+making it so would break every manifest already published.
+
+**Nothing installs inside the boot phase.** The URL comes from an arbitrary link,
+so `INTENTS` only resolves the apps and returns them as `PendingAppInstall[]`.
+`AppShell` names each one — kind, version, author, description, source URL — in
+`AppInstallConfirmationDialog`, and installs on confirm. Failures are isolated
+per URL: one dead host does not lose the others. A React app from a
+non-allow-listed origin is rejected before the dialog, so the user is never asked
+about an install that cannot happen.
 
 `AppShell` (which already uses `useSearchParams`) consumes it:
 
@@ -343,18 +366,28 @@ sequenceDiagram
     participant Store as App Store
     participant Browser
     participant Shell as AppShell
+    participant User
     participant Mgr as useAppManager
     participant WS as WorkspaceStore
 
-    Store->>Browser: Open /?installApp=#lt;manifestUrl#gt;
+    Store->>Browser: Open /?installApp=#lt;url#gt;
     Browser->>Shell: Initial load (search params)
-    Shell->>Shell: Read installApp param
-    Shell->>Mgr: fetch + parseManifest(manifestUrl) → entry
-    Mgr->>Mgr: validate + origin allow-list + version check
-    Mgr->>WS: installApp(entry) → workspace.installedApps (persist)
-    Mgr->>Mgr: merge into catalog, optionally activateApp(id)
-    Shell->>Browser: Remove installApp from URL (history-clean)
+    Shell->>Shell: INTENTS: fetch each installApp URL
+    Shell->>Shell: classifyInstallPayload → client | service
+    Shell->>Shell: client: reject non-allow-listed origin (§9)
+    Shell->>Browser: ROUTE: remove installApp from URL (history-clean)
+    Shell->>User: Confirmation dialog naming every resolved app
+    User->>Shell: Install
+    Shell->>Mgr: installApp(entry, {activate:true}) per React app
+    Mgr->>Mgr: origin allow-list + version check
+    Mgr->>WS: workspace.installedApps (persist)
+    Mgr->>Mgr: merge into catalog, activateApp(id)
+    Shell->>Shell: addService(url) per service app
 ```
+
+The dialog therefore appears **after** the params are stripped: install moved out
+of the boot phase, and the workspace-hydration precondition (§8.3) still holds
+because `PUBLISH` runs before `INTENTS`.
 
 Per the routing spec, the search parameter is consumed on initial load and then
 removed from the URL. Install must be idempotent (re-running the same intent
@@ -475,6 +508,28 @@ remote URLs, so both must pass the same gate:
 
 These complement, and do not replace, the App Store's managed-CDN immutability
 and human review (see [app-store-design.md](./app-store-design.md) §15).
+
+### 9.1 Service apps are gated differently
+
+Steps 1–4 apply to React apps only. A service app never executes code in the
+host — it receives data over HTTP and returns results — so the service-app
+ecosystem is deliberately open to any origin, and an allow-list would break every
+existing service link. Its gates are:
+
+1. **Schema validation** — `ServiceMetadataSchema`
+   (`src/models/AppModel/serviceMetadataSchema.ts`), enforced in
+   `AppStore.serviceFetcher` and so on every path that registers or refreshes a
+   service app. Deliberately lenient: the service-app spec ships with the
+   Cytoscape Web paper and gains fields independently of this repo, so unknown
+   keys pass through, and `author`/`citation` accept `null` because endpoints
+   send it.
+2. **User confirmation** — the only gate on the origin. Since #639 a React app
+   is confirmed as well, so the dialog is common to both; the allow-list is what
+   remains asymmetric.
+
+`looksLikeServiceMetadata` (a service marker *plus* schema validity) is stricter
+than the registration schema, and only classification uses it. Requiring a marker
+to register would reject service apps that work today.
 
 ---
 

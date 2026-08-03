@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 import {
   Outlet,
   useNavigate,
@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 
+import { AppConfigContext } from '../AppConfigContext'
 import { markBoot } from '../boot/metrics/bootMarks'
 import { BootShell } from '../boot/shell/BootShell'
 import { runAppShellBoot } from '../boot/steps/runAppShellBoot'
@@ -15,9 +16,12 @@ import { useMessageStore } from '../data/hooks/stores/MessageStore'
 import { useAppManager } from '../data/hooks/stores/useAppManager'
 import { useLoadNetworkSummaries } from '../data/hooks/useLoadNetworkSummaries'
 import { logStartup } from '../debug'
+import { AppType } from '../models/AppModel/AppType'
+import type { PendingAppInstall } from '../models/AppModel/PendingAppInstall'
+import { pendingInstallName } from '../models/AppModel/PendingAppInstall'
 import { MessageSeverity } from '../models/MessageModel'
+import { AppInstallConfirmationDialog } from './AppManager/AppInstallConfirmationDialog'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
-import { ConfirmationDialog } from './ConfirmationDialog'
 import { markCrossTabSyncReady } from '@/data/sync/crossTabSyncGate'
 import { SyncTabsAction } from './SyncTabs'
 import { ToolBar } from './ToolBar'
@@ -27,7 +31,7 @@ import { ToolBar } from './ToolBar'
  *
  * Startup itself lives in src/boot/steps/ — this component owns only the
  * React-side concerns (the mount-time URL snapshot, the run-once guard, and
- * the service-app confirmation prompt) and delegates the rest to
+ * the app-install confirmation prompt) and delegates the rest to
  * runAppShellBoot.
  */
 const AppShell = (): ReactElement => {
@@ -36,12 +40,15 @@ const AppShell = (): ReactElement => {
   const navigate = useNavigate()
   const [search] = useSearchParams()
   const loadNetworkSummaries = useLoadNetworkSummaries()
+  const { appInstallAllowedOrigins } = useContext(AppConfigContext)
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const addService = useAppStore((state) => state.addService)
 
-  // Service-app URLs requested via ?addserviceapp=, awaiting user confirmation.
-  const [serviceAppsToAdd, setServiceAppsToAdd] = useState<string[]>([])
+  // Apps requested via ?installApp=, awaiting user confirmation.
+  const [pendingAppInstalls, setPendingAppInstalls] = useState<
+    PendingAppInstall[]
+  >([])
 
   const initialized = useRef(false)
 
@@ -66,11 +73,11 @@ const AppShell = (): ReactElement => {
       pathname: window.location.pathname,
       navigate,
       loadNetworkSummaries,
-      installApp: appManagerCommands.installApp,
+      appInstallAllowedOrigins,
     })
-      .then(({ serviceAppUrlsNeedingConfirmation }) => {
-        if (serviceAppUrlsNeedingConfirmation.length > 0) {
-          setServiceAppsToAdd(serviceAppUrlsNeedingConfirmation)
+      .then(({ pendingAppInstalls: pending }) => {
+        if (pending.length > 0) {
+          setPendingAppInstalls(pending)
         }
       })
       // runAppShellBoot isolates its own phases, so reaching here means the
@@ -97,28 +104,42 @@ const AppShell = (): ReactElement => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])
 
-  const handleConfirmAddServiceApps = (): void => {
-    const urls = serviceAppsToAdd
-    setServiceAppsToAdd([])
+  // Installs every confirmed app in turn. Sequential and individually caught: a
+  // link may carry several apps, and one bad endpoint must not abandon the rest.
+  const handleConfirmAppInstalls = (): void => {
+    const confirmed = pendingAppInstalls
+    setPendingAppInstalls([])
     void (async () => {
-      for (const url of urls) {
+      for (const pending of confirmed) {
+        const name = pendingInstallName(pending)
         try {
-          await addService(url)
+          if (pending.type === AppType.Client) {
+            // An install intent implies activation (§7.3). The §9 gate inside
+            // installApp still applies and surfaces its own messages.
+            await appManagerCommands.installApp(pending.entry, {
+              activate: true,
+            })
+          } else {
+            // Refetches the endpoint the boot already read. Deliberate:
+            // addService owns the ServiceApp shape and its persistence, and the
+            // boot's copy exists only to name the app in the dialog.
+            await addService(pending.url)
+          }
           addMessage({
-            message: `Added service app: ${url}`,
+            message: `Added ${name}`,
             duration: 4000,
             severity: MessageSeverity.SUCCESS,
           })
         } catch (error) {
           addMessage({
-            message: `Failed to add service app from ${url}: ${
+            message: `Failed to add ${name} from ${pending.url}: ${
               error instanceof Error ? error.message : 'unknown error'
             }`,
             duration: 5000,
             severity: MessageSeverity.ERROR,
           })
           logStartup.warn(
-            `[AppShell]: addserviceapp intent failed for ${url}`,
+            `[AppShell]: installApp intent failed for ${pending.url}`,
             error,
           )
         }
@@ -161,21 +182,10 @@ const AppShell = (): ReactElement => {
         </Box>
         <SyncTabsAction />
       </Box>
-      <ConfirmationDialog
-        open={serviceAppsToAdd.length > 0}
-        setOpen={(open) => {
-          if (!open) {
-            setServiceAppsToAdd([])
-          }
-        }}
-        title="Add service app?"
-        message={`This link wants to add the following service app${
-          serviceAppsToAdd.length > 1 ? 's' : ''
-        } to Cytoscape Web:\n\n${serviceAppsToAdd.join(
-          '\n',
-        )}\n\nOnly add service apps from sources you trust.`}
-        buttonTitle="Add"
-        onConfirm={handleConfirmAddServiceApps}
+      <AppInstallConfirmationDialog
+        pending={pendingAppInstalls}
+        onConfirm={handleConfirmAppInstalls}
+        onCancel={() => setPendingAppInstalls([])}
       />
     </AppManagerCommandsProvider>
   )

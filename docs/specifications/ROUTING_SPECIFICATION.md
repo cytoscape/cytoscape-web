@@ -198,10 +198,15 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 **App install intents**:
 
-- `installApp`: URL of a single-entry app manifest to install (App Store intent)
-- `addserviceapp`: URL(s) of external service-app endpoint(s) to register. May
-  be repeated to add multiple. Because the URL comes from an arbitrary link,
-  the app prompts the user to confirm before adding (CW-521).
+- `installApp`: URL of an app to install. May be repeated to install several.
+  Each URL is fetched and its payload decides which kind of app it is: an array
+  (or single-entry object) with a `url` is a React app manifest; an object with
+  `cyWebActions` / `cyWebMenuItem` / `serviceInputDefinition` is service-app
+  metadata. An optional `type` field (`client` / `service`) overrides the
+  structural check. Because the URL comes from an arbitrary link, the app names
+  every resolved app in a confirmation dialog before installing any of them. A
+  React app must additionally come from an `appInstallAllowedOrigins` origin;
+  service apps may come from any origin.
 
 **Behavior**:
 
