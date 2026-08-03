@@ -10,7 +10,7 @@ import { AppSource } from '../../../models/AppModel/InstalledApp'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
-import { ServiceMetadata } from '../../../models/AppModel/ServiceMetadata'
+import { parseServiceMetadata } from '../../../models/AppModel/serviceMetadataSchema'
 import { AppStore } from '../../../models/StoreModel/AppStoreModel'
 import * as AppStoreImpl from '../../../models/StoreModel/impl/appStoreImpl'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
@@ -38,7 +38,14 @@ export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
     throw new Error('Failed to fetch the service metadata.')
   }
 
-  const metadata: ServiceMetadata = await response.json()
+  // The endpoint is user-supplied, so the payload is external input: validate it
+  // rather than casting. Without this, a malformed response registers as a
+  // service app and fails later, deep in the menu or the input dialog.
+  const metadata = parseServiceMetadata(await response.json())
+  if (metadata === undefined) {
+    throw new Error('The response is not valid service app metadata.')
+  }
+
   const serviceApp: ServiceApp = {
     url,
     ...metadata,

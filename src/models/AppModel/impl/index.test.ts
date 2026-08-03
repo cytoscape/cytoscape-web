@@ -13,7 +13,6 @@ import {
   normalizeServiceAppUrl,
   resolveParameterValue,
   sendsNoData,
-  serviceAppUrlsToAdd,
   shouldShowServiceDescription,
   validateParameter,
 } from './index'
@@ -38,29 +37,11 @@ describe('AppModel impl', () => {
     })
   })
 
-  describe('serviceAppUrlsToAdd', () => {
-    it('returns normalized, new, de-duplicated urls', () => {
-      const existing = { 'https://x/a': {} }
-      const requested = [
-        'https://x/a/', // already installed (after normalization)
-        ' https://x/b ', // new, needs normalization
-        'https://x/b', // duplicate of the above
-        '   ', // empty
-      ]
-      expect(serviceAppUrlsToAdd(requested, existing)).toEqual(['https://x/b'])
-    })
-
-    it('returns an empty array when nothing is new', () => {
-      expect(serviceAppUrlsToAdd([], {})).toEqual([])
-      expect(
-        serviceAppUrlsToAdd(['https://x/a'], { 'https://x/a': {} }),
-      ).toEqual([])
-    })
-  })
-
   describe('columnTypeMatchesFilter', () => {
     it('matches every column when the filter is absent or empty', () => {
-      expect(columnTypeMatchesFilter(ValueTypeName.String, undefined)).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.String, undefined)).toBe(
+        true,
+      )
       expect(columnTypeMatchesFilter(ValueTypeName.String, null)).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Long, '')).toBe(true)
     })
@@ -76,8 +57,12 @@ describe('AppModel impl', () => {
     it('matches the number alias for any numeric type', () => {
       expect(columnTypeMatchesFilter(ValueTypeName.Long, 'number')).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Double, 'number')).toBe(true)
-      expect(columnTypeMatchesFilter(ValueTypeName.Integer, 'number')).toBe(true)
-      expect(columnTypeMatchesFilter(ValueTypeName.String, 'number')).toBe(false)
+      expect(columnTypeMatchesFilter(ValueTypeName.Integer, 'number')).toBe(
+        true,
+      )
+      expect(columnTypeMatchesFilter(ValueTypeName.String, 'number')).toBe(
+        false,
+      )
     })
 
     it('matches the list alias for any list type', () => {
@@ -89,9 +74,9 @@ describe('AppModel impl', () => {
     })
 
     it('matches wholenumber only for integer columns', () => {
-      expect(columnTypeMatchesFilter(ValueTypeName.Integer, 'wholenumber')).toBe(
-        true,
-      )
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Integer, 'wholenumber'),
+      ).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Long, 'wholenumber')).toBe(
         false,
       )
@@ -128,7 +113,9 @@ describe('AppModel impl', () => {
     it('resolves ndexUUID params from the context url', () => {
       const param = makeParam('net', ParameterUiType.NdexUuid)
       expect(
-        resolveParameterValue(param, { ndexNetworkUrl: 'https://x/v3/networks/1' }),
+        resolveParameterValue(param, {
+          ndexNetworkUrl: 'https://x/v3/networks/1',
+        }),
       ).toBe('https://x/v3/networks/1')
     })
 
@@ -172,7 +159,9 @@ describe('AppModel impl', () => {
         makeParam('networkUrl', ParameterUiType.NdexUuid),
       ]
       expect(
-        buildCustomParameters(params, { ndexNetworkUrl: 'https://x/v3/networks/1' }),
+        buildCustomParameters(params, {
+          ndexNetworkUrl: 'https://x/v3/networks/1',
+        }),
       ).toEqual({
         updatedBy: 'demo',
         networkUrl: 'https://x/v3/networks/1',

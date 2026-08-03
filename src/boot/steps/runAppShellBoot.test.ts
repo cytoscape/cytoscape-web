@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAppStore } from '@/data/hooks/stores/AppStore'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { resetBootStateForTesting } from '../bootState'
@@ -45,6 +47,41 @@ const WORKSPACE = {
   networkModified: {},
 }
 
+const ALLOWED_ORIGIN = 'https://apps.example.com'
+
+/** A single-entry React app manifest, as the App Store serves it: an array. */
+const REACT_MANIFEST = [
+  {
+    id: 'mcodeweb',
+    name: 'MCODE Web',
+    version: '0.1.0',
+    url: `${ALLOWED_ORIGIN}/web/mcodeweb/0.1.0/remoteEntry.js`,
+    author: 'Bader Lab',
+  },
+]
+
+/** Service-app metadata, as an endpoint serves it: a bare object, no `url`. */
+const SERVICE_METADATA = {
+  name: 'Update tables example',
+  version: '0.9.0',
+  cyWebActions: ['updateTables'],
+  author: null,
+  citation: null,
+  parameters: [],
+}
+
+/** Resolves each URL to its own payload, so concurrent fetches cannot swap. */
+const stubFetchByUrl = (payloads: Record<string, unknown>): void => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) =>
+      payloads[url] === undefined
+        ? { ok: false, status: 404 }
+        : { ok: true, status: 200, json: async () => payloads[url] },
+    ),
+  )
+}
+
 const makeContext = (
   overrides: Partial<AppShellBootContext> = {},
 ): AppShellBootContext => ({
@@ -53,7 +90,7 @@ const makeContext = (
   pathname: '/',
   navigate: vi.fn(),
   loadNetworkSummaries: vi.fn().mockResolvedValue({}),
-  installApp: vi.fn().mockResolvedValue(undefined),
+  appInstallAllowedOrigins: [ALLOWED_ORIGIN],
   ...overrides,
 })
 
@@ -257,16 +294,148 @@ describe('runAppShellBoot: per-tab network resolution', () => {
 })
 
 describe('runAppShellBoot: install intents', () => {
-  it('returns service-app URLs for confirmation rather than adding them', async () => {
+  const MANIFEST_URL = `${ALLOWED_ORIGIN}/web/mcodeweb/manifest.json`
+  const SERVICE_URL = 'https://svc.example.com/service'
+
+  beforeEach(() => {
+    useMessageStore.getState().resetMessages()
+  })
+
+  afterEach(() => {
+    useAppStore.setState({ serviceApps: {} })
+  })
+
+  const messages = (): string[] =>
+    useMessageStore.getState().messages.map((m) => m.message)
+
+  it('classifies an array manifest as a React app without installing it', async () => {
+    stubFetchByUrl({ [MANIFEST_URL]: REACT_MANIFEST })
     const ctx = makeContext({
-      search: new URLSearchParams('addserviceapp=https://svc.example.com'),
+      search: new URLSearchParams({ installApp: MANIFEST_URL }),
     })
 
     const result = await runAppShellBoot(ctx)
 
-    expect(result.serviceAppUrlsNeedingConfirmation).toEqual([
-      'https://svc.example.com',
+    expect(result.pendingAppInstalls).toHaveLength(1)
+    const pending = result.pendingAppInstalls[0]
+    expect(pending.type).toBe('client')
+    if (pending.type === 'client') {
+      expect(pending.entry.id).toBe('mcodeweb')
+      expect(pending.entry.name).toBe('MCODE Web')
+    }
+    // Nothing may be installed before the user has seen the dialog.
+    expect(useWorkspaceStore.getState().workspace.installedApps ?? []).toEqual(
+      [],
+    )
+  })
+
+  it('classifies service metadata as a service app and carries it for display', async () => {
+    stubFetchByUrl({ [SERVICE_URL]: SERVICE_METADATA })
+    const ctx = makeContext({
+      search: new URLSearchParams({ installApp: SERVICE_URL }),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls).toHaveLength(1)
+    const pending = result.pendingAppInstalls[0]
+    expect(pending.type).toBe('service')
+    if (pending.type === 'service') {
+      expect(pending.metadata.name).toBe('Update tables example')
+    }
+    // Registration happens on confirm, not here.
+    expect(useAppStore.getState().serviceApps).toEqual({})
+  })
+
+  it('routes a repeated installApp with one of each kind, preserving order', async () => {
+    stubFetchByUrl({
+      [MANIFEST_URL]: REACT_MANIFEST,
+      [SERVICE_URL]: SERVICE_METADATA,
+    })
+    const ctx = makeContext({
+      search: new URLSearchParams(
+        `installApp=${MANIFEST_URL}&installApp=${SERVICE_URL}`,
+      ),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls.map((item) => item.type)).toEqual([
+      'client',
+      'service',
     ])
+  })
+
+  it('rejects a React app whose bundle is not from an allowed origin', async () => {
+    stubFetchByUrl({
+      [MANIFEST_URL]: [
+        {
+          ...REACT_MANIFEST[0],
+          url: 'https://evil.example.com/remoteEntry.js',
+        },
+      ],
+    })
+    const ctx = makeContext({
+      search: new URLSearchParams({ installApp: MANIFEST_URL }),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls).toEqual([])
+    expect(ctx.navigate).toHaveBeenCalled()
+  })
+
+  it('says so instead of silently doing nothing when already installed', async () => {
+    // Skipping in silence made an App Store link look broken: no dialog, no
+    // message, no way to tell a working link from a dead one.
+    useAppStore.setState({
+      serviceApps: { [SERVICE_URL]: { url: SERVICE_URL } as never },
+    })
+    stubFetchByUrl({ [SERVICE_URL]: SERVICE_METADATA })
+    const ctx = makeContext({
+      search: new URLSearchParams({ installApp: SERVICE_URL }),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls).toEqual([])
+    expect(messages()).toContain('Already installed: Update tables example')
+  })
+
+  it('rejects a relative or non-http URL without fetching it', async () => {
+    // A relative value would otherwise resolve against Cytoscape Web's own
+    // origin and fetch something the link never named.
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeContext({
+      search: new URLSearchParams(
+        'installApp=/api/internal&installApp=file:///etc/passwd',
+      ),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(result.pendingAppInstalls).toEqual([])
+    expect(messages()).toHaveLength(2)
+    expect(ctx.navigate).toHaveBeenCalled()
+  })
+
+  it('lists an app once when two manifest URLs resolve to the same entry', async () => {
+    const mirror = `${ALLOWED_ORIGIN}/mirror/manifest.json`
+    stubFetchByUrl({
+      [MANIFEST_URL]: REACT_MANIFEST,
+      [mirror]: REACT_MANIFEST,
+    })
+    const ctx = makeContext({
+      search: new URLSearchParams(
+        `installApp=${MANIFEST_URL}&installApp=${mirror}`,
+      ),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls).toHaveLength(1)
   })
 
   it('does not block the boot when an install intent fails', async () => {
@@ -280,6 +449,18 @@ describe('runAppShellBoot: install intents', () => {
 
     await runAppShellBoot(ctx)
 
+    expect(ctx.navigate).toHaveBeenCalled()
+  })
+
+  it('keeps booting when the payload is neither a manifest nor service metadata', async () => {
+    stubFetchByUrl({ [MANIFEST_URL]: { hello: 'world' } })
+    const ctx = makeContext({
+      search: new URLSearchParams({ installApp: MANIFEST_URL }),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls).toEqual([])
     expect(ctx.navigate).toHaveBeenCalled()
   })
 })

@@ -40,9 +40,11 @@ The App Store redirects or links to Cytoscape Web with an install parameter, suc
 `?installApp=https%3A%2F%2Fapps.cytoscape.org%2Fweb%2Fhello%2Fmanifest.json`
 
 (The parameter name `installApp` is the canonical one adopted by
-[workspace-app-install-design.md](./workspace-app-install-design.md) §7.2.)
+[workspace-app-install-design.md](./workspace-app-install-design.md) §7.2. It is
+repeatable, and installs service apps as well as React apps — the fetched payload
+decides which. It replaced `?addserviceapp=`, which is removed.)
 
-Cytoscape Web consumes the parameter during startup or route initialization, validates the app entry, adds it to the in-memory catalog, and then removes the parameter from the URL.
+Cytoscape Web consumes the parameter during startup, fetches and validates each URL, asks the user to confirm what will be installed, and removes the parameter from the URL. Confirming then installs by kind: a React app is added to `workspace.installedApps` and merged into the in-memory catalog, while a service app is registered through `AppStore.addService(url)`.
 
 ### Pros
 

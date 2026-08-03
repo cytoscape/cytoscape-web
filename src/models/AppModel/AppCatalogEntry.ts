@@ -1,3 +1,5 @@
+import type { AppType } from './AppType'
+
 /**
  * Represents a single app entry from the manifest catalog.
  * Used to display available apps and resolve remote entry URLs.
@@ -5,6 +7,12 @@
 export interface AppCatalogEntry {
   /** Module Federation scope name */
   id: string
+  /**
+   * Which kind of app this entry describes. Optional: the App Store does not
+   * emit it yet, and `?installApp=` payloads are classified structurally when
+   * it is absent (see classifyInstallPayload). When present it wins.
+   */
+  type?: AppType
   /** Human-readable display name (falls back to id) */
   name?: string
   /** Full remote entry URL */

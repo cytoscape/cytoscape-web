@@ -2,16 +2,17 @@ import { z } from 'zod'
 
 import { logApp } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppType } from '../../../models/AppModel/AppType'
 
 const JS_IDENTIFIER_PATTERN = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
 
 const AppManifestEntrySchema = z
   .object({
-    id: z
-      .string()
-      .regex(JS_IDENTIFIER_PATTERN)
-      .optional(),
+    id: z.string().regex(JS_IDENTIFIER_PATTERN).optional(),
     name: z.string().min(1).optional(),
+    // Optional hint from the App Store. Absent today, so payload classification
+    // falls back to structure — see classifyInstallPayload.
+    type: z.enum([AppType.Service, AppType.Client]).optional(),
     url: z.string().url(),
     author: z.string().min(1).optional().default('unknown'),
     description: z.string().optional(),
@@ -39,7 +40,9 @@ export const AppManifestSchema = z.array(AppManifestEntrySchema)
  */
 export function parseManifest(data: unknown): AppCatalogEntry[] {
   if (!Array.isArray(data)) {
-    logApp.warn('[parseManifest]: Manifest is not an array, returning empty catalog')
+    logApp.warn(
+      '[parseManifest]: Manifest is not an array, returning empty catalog',
+    )
     return []
   }
 
@@ -61,7 +64,10 @@ export function parseManifest(data: unknown): AppCatalogEntry[] {
     // Resolve id: prefer explicit id, fall back to name
     let id = parsed.id
     if (id === undefined) {
-      if (parsed.name !== undefined && JS_IDENTIFIER_PATTERN.test(parsed.name)) {
+      if (
+        parsed.name !== undefined &&
+        JS_IDENTIFIER_PATTERN.test(parsed.name)
+      ) {
         id = parsed.name
       } else {
         logApp.warn(
@@ -84,8 +90,11 @@ export function parseManifest(data: unknown): AppCatalogEntry[] {
       id,
       url: parsed.url,
       author: parsed.author,
+      ...(parsed.type !== undefined && { type: parsed.type }),
       ...(parsed.name !== undefined && { name: parsed.name }),
-      ...(parsed.description !== undefined && { description: parsed.description }),
+      ...(parsed.description !== undefined && {
+        description: parsed.description,
+      }),
       ...(parsed.version !== undefined && { version: parsed.version }),
       ...(parsed.tags !== undefined && { tags: parsed.tags }),
       ...(parsed.icon !== undefined && { icon: parsed.icon }),
@@ -94,7 +103,9 @@ export function parseManifest(data: unknown): AppCatalogEntry[] {
       ...(parsed.compatibleHostVersions !== undefined && {
         compatibleHostVersions: parsed.compatibleHostVersions,
       }),
-      ...(parsed.dependencies !== undefined && { dependencies: parsed.dependencies }),
+      ...(parsed.dependencies !== undefined && {
+        dependencies: parsed.dependencies,
+      }),
     }
 
     entries.push(entry)

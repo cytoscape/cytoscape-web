@@ -20,7 +20,7 @@ export const BootPhase = {
   IMPORTS: 'imports',
   /** Publish to the stores, start the event bus, fire cywebapi:ready. */
   PUBLISH: 'publish',
-  /** `?installApp=` / `?addserviceapp=` intents. */
+  /** `?installApp=` intents: fetch and classify, then hand to AppShell. */
   INTENTS: 'intents',
   /** Restore UI state from the URL, then navigate and strip the params. */
   ROUTE: 'route',

@@ -3,6 +3,7 @@ import {
   getTabNetworkId,
   resolveInitialNetworkId,
 } from '@/data/tabState/tabNetwork'
+import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { createWorkspace } from '@/models/WorkspaceModel/impl/workspaceImpl'
 import { BootPhase } from '../bootPhases'
 import { runPhase } from '../runBoot'
@@ -29,8 +30,8 @@ import { runUrlImports } from './runUrlImports'
 // the address bar, so a reload reproduced the same failure.
 
 export interface AppShellBootResult {
-  /** Service-app URLs the user must confirm before they are added. */
-  serviceAppUrlsNeedingConfirmation: string[]
+  /** Apps the URL asked to install, resolved but awaiting user confirmation. */
+  pendingAppInstalls: PendingAppInstall[]
 }
 
 const emptyWorkspaceDraft = (): WorkspaceDraft => ({
@@ -98,8 +99,6 @@ export const runAppShellBoot = async (
   })
 
   return {
-    serviceAppUrlsNeedingConfirmation: intents.ok
-      ? intents.value.serviceAppUrlsNeedingConfirmation
-      : [],
+    pendingAppInstalls: intents.ok ? intents.value.pendingAppInstalls : [],
   }
 }
