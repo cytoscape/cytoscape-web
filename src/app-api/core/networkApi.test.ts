@@ -209,17 +209,14 @@ const mockHcxActions = {
   }),
 }
 
-vi.mock(
-  '../../features/HierarchyViewer/store/HcxValidatorStore',
-  () => ({
-    useHcxValidatorStore: {
-      getState: vi.fn(() => ({
-        ...mockHcxActions,
-        validationResults: mockValidationResults,
-      })),
-    },
-  }),
-)
+vi.mock('../../features/HierarchyViewer/store/HcxValidatorStore', () => ({
+  useHcxValidatorStore: {
+    getState: vi.fn(() => ({
+      ...mockHcxActions,
+      validationResults: mockValidationResults,
+    })),
+  },
+}))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -267,7 +264,10 @@ describe('networkApi', () => {
   // ── createNetworkFromEdgeList ─────────────────────────────────────────────
 
   describe('createNetworkFromEdgeList', () => {
-    const edgeList: Array<[string, string]> = [['A', 'B'], ['B', 'C']]
+    const edgeList: Array<[string, string]> = [
+      ['A', 'B'],
+      ['B', 'C'],
+    ]
 
     it('returns ok with networkId and cyNetwork on success', () => {
       const result = networkApi.createNetworkFromEdgeList({
@@ -292,7 +292,9 @@ describe('networkApi', () => {
 
     it('creates passthrough mapping for node labels', () => {
       networkApi.createNetworkFromEdgeList({ name: 'Net', edgeList })
-      expect(mockVisualStyleActions.createPassthroughMapping).toHaveBeenCalledWith(
+      expect(
+        mockVisualStyleActions.createPassthroughMapping,
+      ).toHaveBeenCalledWith(
         'test-uuid',
         expect.any(String), // VisualPropertyName.NodeLabel
         'name',
@@ -300,22 +302,24 @@ describe('networkApi', () => {
       )
     })
 
-    it('does NOT add to workspace by default (addToWorkspace=false)', () => {
+    it('adds to workspace by default (addToWorkspace defaults to true)', () => {
       networkApi.createNetworkFromEdgeList({ name: 'Net', edgeList })
-      expect(mockWorkspaceActions.addNetworkIds).not.toHaveBeenCalled()
-      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
-    })
-
-    it('adds to workspace when addToWorkspace=true', () => {
-      networkApi.createNetworkFromEdgeList({
-        name: 'Net',
-        edgeList,
-        addToWorkspace: true,
-      })
-      expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith('test-uuid')
+      expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith(
+        'test-uuid',
+      )
       expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
         'test-uuid',
       )
+    })
+
+    it('skips the workspace when addToWorkspace=false', () => {
+      networkApi.createNetworkFromEdgeList({
+        name: 'Net',
+        edgeList,
+        addToWorkspace: false,
+      })
+      expect(mockWorkspaceActions.addNetworkIds).not.toHaveBeenCalled()
+      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
     it('returns fail(InvalidInput) when name is empty', () => {
@@ -402,7 +406,9 @@ describe('networkApi', () => {
 
     it('adds to workspace and sets current network by default', () => {
       networkApi.createNetworkFromCx2({ cxData: fakeCx2 as any })
-      expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith('test-uuid')
+      expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith(
+        'test-uuid',
+      )
       expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
         'test-uuid',
       )
@@ -551,7 +557,10 @@ describe('networkApi', () => {
     it('rejects nodeIds that do not exist in the source (CX2 GL1)', () => {
       setupSourceNetwork()
 
-      const result = networkApi.createNetworkFromNodeList('src', ['n1', 'ghost'])
+      const result = networkApi.createNetworkFromNodeList('src', [
+        'n1',
+        'ghost',
+      ])
 
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -617,12 +626,10 @@ describe('networkApi', () => {
       }
     })
 
-    it('adds to workspace when requested', () => {
+    it('adds to workspace by default', () => {
       setupSourceNetwork()
 
-      networkApi.createNetworkFromNodeList('src', ['n1'], undefined, {
-        addToWorkspace: true,
-      })
+      networkApi.createNetworkFromNodeList('src', ['n1'])
 
       expect(mockWorkspaceActions.addNetworkIds).toHaveBeenCalledWith(
         'test-uuid',
@@ -630,6 +637,16 @@ describe('networkApi', () => {
       expect(mockWorkspaceActions.setCurrentNetworkId).toHaveBeenCalledWith(
         'test-uuid',
       )
+    })
+
+    it('skips the workspace when addToWorkspace=false', () => {
+      setupSourceNetwork()
+
+      networkApi.createNetworkFromNodeList('src', ['n1'], undefined, {
+        addToWorkspace: false,
+      })
+
+      expect(mockWorkspaceActions.addNetworkIds).not.toHaveBeenCalled()
     })
   })
 
@@ -655,7 +672,9 @@ describe('networkApi', () => {
       expect(mockTableActions.delete).toHaveBeenCalledWith('net1')
       expect(mockOpaqueAspectActions.delete).toHaveBeenCalledWith('net1')
       expect(mockUndoActions.deleteStack).toHaveBeenCalledWith('net1')
-      expect(mockWorkspaceActions.deleteNetworkModifiedStatus).toHaveBeenCalledWith('net1')
+      expect(
+        mockWorkspaceActions.deleteNetworkModifiedStatus,
+      ).toHaveBeenCalledWith('net1')
       expect(mockWorkspaceActions.deleteNetwork).toHaveBeenCalledWith('net1')
     })
 
@@ -768,7 +787,9 @@ describe('networkApi', () => {
       expect(mockTableActions.deleteAll).toHaveBeenCalled()
       expect(mockOpaqueAspectActions.deleteAll).toHaveBeenCalled()
       expect(mockUndoActions.deleteAllStacks).toHaveBeenCalled()
-      expect(mockWorkspaceActions.deleteAllNetworkModifiedStatuses).toHaveBeenCalled()
+      expect(
+        mockWorkspaceActions.deleteAllNetworkModifiedStatuses,
+      ).toHaveBeenCalled()
       expect(mockHcxActions.deleteAllValidationResults).toHaveBeenCalled()
       expect(mockWorkspaceActions.deleteAllNetworks).toHaveBeenCalled()
     })

@@ -28,9 +28,10 @@ src/app-api/
 │   ├── exportApi.ts
 │   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
-│   └── index.ts                 ← Assembles CyWebApi object; assigned to window.CyWebApi
+│   ├── scopedApi.ts            ← forNetwork(id?): network-scoped domains with networkId pre-bound
+│   └── index.ts                 ← Assembles CyWebApi object (incl. forNetwork); assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
-│   ├── CyWebEvents.ts           ← CyWebEvents interface (8 event types + detail shapes)
+│   ├── CyWebEvents.ts           ← CyWebEvents interface (9 event types + detail shapes)
 │   ├── dispatchCyWebEvent.ts    ← Generic dispatch helper — sole place new CustomEvent() is called
 │   └── initEventBus.ts          ← Zustand subscribeWithSelector → window.dispatchEvent
 ├── useElementApi.ts             ← React Hook: returns elementApi (thin wrapper)
@@ -42,6 +43,7 @@ src/app-api/
 ├── useViewportApi.ts
 ├── useExportApi.ts
 ├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
+├── useScopedApi.ts              ← React Hook: forNetwork(id?) memoized per networkId
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
@@ -151,13 +153,21 @@ All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/d
 
 ## Event Bus Pattern
 
-### `CyWebEvents` interface (8 types)
+### `CyWebEvents` interface (9 types)
 
 ```typescript
 // src/app-api/event-bus/CyWebEvents.ts
 export interface CyWebEvents {
   'network:created': { networkId: IdType }
   'network:deleted': { networkId: IdType }
+  // Fired when nodes/edges are added to or removed from an existing network
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
   'network:switched': { networkId: IdType; previousId: IdType }
   'selection:changed': {
     networkId: IdType
@@ -171,6 +181,8 @@ export interface CyWebEvents {
     networkId: IdType
     tableType: 'node' | 'edge'
     rowIds: IdType[]
+    addedColumns: string[]
+    removedColumns: string[]
   }
 }
 ```
@@ -329,6 +341,7 @@ export const FEDERATION_EXPOSES = {
   './ViewportApi':     './src/app-api/useViewportApi.ts',
   './ExportApi':       './src/app-api/useExportApi.ts',
   './WorkspaceApi':    './src/app-api/useWorkspaceApi.ts',
+  './ScopedApi':       './src/app-api/useScopedApi.ts',
   './AppIdContext':    './src/app-api/AppIdContext.tsx',
   './EventBus':        './src/app-api/useCyWebEvent.ts',
   // Note: window.CyWebApi is NOT a Module Federation expose —

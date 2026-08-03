@@ -51,6 +51,12 @@ declare module 'cyweb/ExportApi' {
   export function useExportApi(): import('./index').ExportApi
 }
 
+declare module 'cyweb/ScopedApi' {
+  export function useScopedApi(
+    networkId?: string,
+  ): import('./index').ScopedCyWebApi
+}
+
 declare module 'cyweb/EventBus' {
   export function useCyWebEvent<K extends keyof import('./index').CyWebEvents>(
     eventType: K,

@@ -216,6 +216,7 @@ export const useDeleteEdges = () => {
           ],
           // Redo: delete the edges again
           [networkId, result.deletedEdgeIds],
+          networkId,
         )
       }
 

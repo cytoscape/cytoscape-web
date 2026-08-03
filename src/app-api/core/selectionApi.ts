@@ -14,15 +14,37 @@ export interface SelectionState {
 }
 
 export interface SelectionApi {
+  /** Replace the selection with exactly these nodes and edges. */
   exclusiveSelect(
     networkId: IdType,
     nodeIds: IdType[],
     edgeIds: IdType[],
   ): ApiResult
 
-  additiveSelect(networkId: IdType, ids: IdType[]): ApiResult
-  additiveUnselect(networkId: IdType, ids: IdType[]): ApiResult
-  toggleSelected(networkId: IdType, ids: IdType[]): ApiResult
+  /** Add these nodes and edges to the current selection. */
+  additiveSelect(
+    networkId: IdType,
+    nodeIds: IdType[],
+    edgeIds: IdType[],
+  ): ApiResult
+
+  /** Remove these nodes and edges from the current selection. */
+  additiveDeselect(
+    networkId: IdType,
+    nodeIds: IdType[],
+    edgeIds: IdType[],
+  ): ApiResult
+
+  /** Flip the selected state of these nodes and edges. */
+  toggleSelected(
+    networkId: IdType,
+    nodeIds: IdType[],
+    edgeIds: IdType[],
+  ): ApiResult
+
+  /** Clear the entire selection. */
+  clearSelection(networkId: IdType): ApiResult
+
   getSelection(networkId: IdType): ApiResult<SelectionState>
 }
 
@@ -42,39 +64,59 @@ export const selectionApi: SelectionApi = {
     }
   },
 
-  additiveSelect(networkId, ids): ApiResult {
+  additiveSelect(networkId, nodeIds, edgeIds): ApiResult {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      useViewModelStore.getState().additiveSelect(networkId, ids)
+      // The store's additiveSelect takes a merged id array
+      useViewModelStore
+        .getState()
+        .additiveSelect(networkId, [...nodeIds, ...edgeIds])
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
-  additiveUnselect(networkId, ids): ApiResult {
+  additiveDeselect(networkId, nodeIds, edgeIds): ApiResult {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      useViewModelStore.getState().additiveUnselect(networkId, ids)
+      useViewModelStore
+        .getState()
+        .additiveUnselect(networkId, [...nodeIds, ...edgeIds])
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
-  toggleSelected(networkId, ids): ApiResult {
+  toggleSelected(networkId, nodeIds, edgeIds): ApiResult {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      useViewModelStore.getState().toggleSelected(networkId, ids)
+      useViewModelStore
+        .getState()
+        .toggleSelected(networkId, [...nodeIds, ...edgeIds])
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  clearSelection(networkId): ApiResult {
+    try {
+      const viewModel = useViewModelStore.getState().getViewModel(networkId)
+      if (viewModel === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      useViewModelStore.getState().exclusiveSelect(networkId, [], [])
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

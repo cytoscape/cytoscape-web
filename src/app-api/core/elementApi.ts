@@ -5,11 +5,8 @@
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
-import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import {
   createEdgesCore,
   type CreateEdgesParams,
@@ -22,7 +19,6 @@ import {
 } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { getInternalNetworkDataStore } from '../../models/NetworkModel/impl/networkImpl'
-import { TableType } from '../../models/StoreModel/TableStoreModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { ValueType } from '../../models/TableModel'
 import { AttributeName } from '../../models/TableModel/AttributeName'
@@ -30,12 +26,18 @@ import { VisualPropertyName } from '../../models/VisualStyleModel/VisualProperty
 import { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
 import {
   AppCodes,
+  ApiFailure,
   ApiResult,
   ElementCodes,
   fail,
   ok,
+  StyleCodes,
 } from '../types/ApiResult'
-import { validateNoIdAttribute } from './validation'
+import { corePostEdit } from './undo'
+import {
+  validateNoIdAttribute,
+  validateVisualPropertyValue,
+} from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
@@ -66,18 +68,65 @@ export interface CreateEdgeOptions {
   autoSelect?: boolean
 }
 
+/** One node to create in a createNodes() batch. */
+export interface NodeSpec {
+  position: [number, number, number?]
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** One edge to create in a createEdges() batch. */
+export interface EdgeSpec {
+  sourceNodeId: IdType
+  targetNodeId: IdType
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** Options for the batch create operations. */
+export interface BatchCreateOptions {
+  /** Select the created elements after creation. @default true */
+  autoSelect?: boolean
+}
+
 export interface ElementApi {
   // --- Read ---
+  /** Read one node's attributes and position; fails if it does not exist. */
   getNode(networkId: IdType, nodeId: IdType): ApiResult<NodeData>
+
+  /** Read one edge's endpoints and attributes; fails if it does not exist. */
   getEdge(networkId: IdType, edgeId: IdType): ApiResult<EdgeData>
 
+  /**
+   * Batch-read nodes with their attributes and positions. When `nodeIds`
+   * is omitted, every node in the network is returned. Ids that do not
+   * exist are reported in `missing` rather than failing the whole call.
+   */
+  getNodes(
+    networkId: IdType,
+    nodeIds?: IdType[],
+  ): ApiResult<{
+    nodes: Array<{ id: IdType } & NodeData>
+    missing: IdType[]
+  }>
+
   // --- Create ---
+  /**
+   * Create a single node at `position`. `options.attributes` seed its row,
+   * `options.bypass` applies validated visual-property bypasses, and
+   * `options.autoSelect` (default true) selects it. Records one undo entry.
+   */
   createNode(
     networkId: IdType,
     position: [number, number, number?],
     options?: CreateNodeOptions,
   ): ApiResult<{ nodeId: IdType; node: NodeData }>
 
+  /**
+   * Create a single edge between two existing nodes. Fails if either
+   * endpoint does not exist. Same options as createNode. Records one undo
+   * entry.
+   */
   createEdge(
     networkId: IdType,
     sourceNodeId: IdType,
@@ -85,7 +134,34 @@ export interface ElementApi {
     options?: CreateEdgeOptions,
   ): ApiResult<{ edgeId: IdType; edge: EdgeData }>
 
+  /**
+   * Create many nodes in one operation that records a single undo entry
+   * (undoing removes them all at once). Each spec carries its own
+   * position, attributes, and bypasses. Validation is all-or-nothing:
+   * if any spec is invalid, no node is created.
+   */
+  createNodes(
+    networkId: IdType,
+    nodes: NodeSpec[],
+    options?: BatchCreateOptions,
+  ): ApiResult<{ nodes: Array<{ nodeId: IdType; node: NodeData }> }>
+
+  /**
+   * Create many edges in one operation that records a single undo entry.
+   * Validation is all-or-nothing: if any endpoint is missing or any
+   * bypass invalid, no edge is created.
+   */
+  createEdges(
+    networkId: IdType,
+    edges: EdgeSpec[],
+    options?: BatchCreateOptions,
+  ): ApiResult<{ edges: Array<{ edgeId: IdType; edge: EdgeData }> }>
+
   // --- Update ---
+  /**
+   * Re-point an existing edge to new source/target nodes (both must
+   * exist). Records one undo entry.
+   */
   moveEdge(
     networkId: IdType,
     edgeId: IdType,
@@ -94,6 +170,11 @@ export interface ElementApi {
   ): ApiResult
 
   // --- Delete ---
+  /**
+   * Delete nodes (and their incident edges). Ids that don't exist are
+   * reported in `missing` rather than failing the call; the operation
+   * fails only when none of the ids exist.
+   */
   deleteNodes(
     networkId: IdType,
     nodeIds: IdType[],
@@ -102,18 +183,29 @@ export interface ElementApi {
     deletedEdgeCount: number
     deletedNodes: Array<{ id: IdType } & NodeData>
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    /** Requested node ids that did not exist. */
+    missing: IdType[]
   }>
 
+  /**
+   * Delete edges. Ids that don't exist are reported in `missing` rather
+   * than failing the call; the operation fails only when none exist.
+   */
   deleteEdges(
     networkId: IdType,
     edgeIds: IdType[],
   ): ApiResult<{
     deletedEdgeCount: number
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    /** Requested edge ids that did not exist. */
+    missing: IdType[]
   }>
 
-  generateNextNodeId(networkId: IdType): IdType
-  generateNextEdgeId(networkId: IdType): IdType
+  /** Return the id the next created node in this network will receive. */
+  generateNextNodeId(networkId: IdType): ApiResult<{ nodeId: IdType }>
+
+  /** Return the id the next created edge in this network will receive. */
+  generateNextEdgeId(networkId: IdType): ApiResult<{ edgeId: IdType }>
 
   // --- Graph Traversal (read-only, cytoscape.js core wrappers) ---
 
@@ -124,19 +216,27 @@ export interface ElementApi {
   getEdgeIds(networkId: IdType): ApiResult<{ edgeIds: IdType[] }>
 
   /**
-   * Return all edges with their source and target node IDs in a single
-   * call, so apps can build the network topology without one getEdge()
-   * round-trip per edge.
+   * Batch-read edges with source/target and attributes in a single call,
+   * so apps can build topology without one getEdge() round-trip per edge.
+   * When `edgeIds` is omitted, every edge is returned; unknown ids are
+   * reported in `missing` (symmetric with getNodes).
    */
-  getEdges(networkId: IdType): ApiResult<{
-    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  getEdges(
+    networkId: IdType,
+    edgeIds?: IdType[],
+  ): ApiResult<{
+    edges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }>
 
-  /** Return all edges connected to a node (both incoming and outgoing). */
+  /**
+   * Return all edges connected to a node (both incoming and outgoing).
+   * Each edge carries its `id` so results can be selected or deleted.
+   */
   getConnectedEdges(
     networkId: IdType,
     nodeId: IdType,
-  ): ApiResult<{ edges: EdgeData[] }>
+  ): ApiResult<{ edges: Array<{ id: IdType } & EdgeData> }>
 
   /** Return all nodes directly connected to a node (undirected neighborhood). */
   getConnectedNodes(
@@ -177,36 +277,73 @@ export interface ElementApi {
 
 // ── Private helpers ──────────────────────────────────────────────────────────
 
-const DEFAULT_UNDO_STACK_SIZE = 20
-
 /**
- * Framework-agnostic postEdit — replicates useUndoStack's postEdit
- * using store .getState() calls instead of React context.
+ * Validate create-time bypass options with the same rules setBypass
+ * enforces: the visual property must exist, must match the scope of the
+ * element being created, and the value must match the property's type.
+ * Runs BEFORE the element is created so a bad bypass never leaves a
+ * half-created element behind.
  */
-function corePostEdit(
-  undoCommand: UndoCommandType,
-  description: string,
-  undoParams: any[],
-  redoParams: any[],
-): void {
-  const uiState = useUiStateStore.getState()
-  const workspaceState = useWorkspaceStore.getState()
-  const activeNetworkViewId = uiState.ui.activeNetworkView
-  const currentNetworkId = workspaceState.workspace.currentNetworkId
-  const targetNetworkId =
-    activeNetworkViewId === '' ? currentNetworkId : activeNetworkViewId
-
-  const undoState = useUndoStore.getState()
-  const stack = undoState.undoRedoStacks[targetNetworkId] ?? {
-    undoStack: [],
-    redoStack: [],
+function validateCreateTimeBypass(
+  networkId: IdType,
+  group: 'node' | 'edge',
+  bypass:
+    | Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+    | undefined,
+): ApiFailure | undefined {
+  if (bypass === undefined) return undefined
+  const style = useVisualStyleStore.getState().visualStyles[networkId]
+  if (style === undefined) {
+    return fail(
+      AppCodes.INVALID_INPUT,
+      `Network ${networkId} has no visual style to apply bypasses to`,
+    )
   }
-  const newEdit = { undoCommand, description, undoParams, redoParams }
-  const nextUndoStack = [...stack.undoStack, newEdit].slice(
-    -DEFAULT_UNDO_STACK_SIZE,
-  )
-  undoState.setUndoStack(targetNetworkId, nextUndoStack)
-  undoState.setRedoStack(targetNetworkId, [])
+  const bypassEntries = Object.entries(bypass) as Array<
+    [VisualPropertyName, VisualPropertyValueType]
+  >
+  for (const [vpName, vpValue] of bypassEntries) {
+    const visualProperty = style[vpName]
+    if (visualProperty === undefined) {
+      return fail(AppCodes.INVALID_INPUT, `Unknown visual property ${vpName}`)
+    }
+    // Network-scoped properties can never be bypassed on an element, so
+    // they get the dedicated code rather than the generic scope mismatch
+    // (same distinction visualStyleApi.setBypass draws)
+    if (visualProperty.group === 'network') {
+      return fail(StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN, vpName)
+    }
+    if (visualProperty.group !== group) {
+      return fail(
+        StyleCodes.BYPASS_SCOPE_MISMATCH,
+        visualProperty.group,
+        `the newly created ${group}`,
+      )
+    }
+    const invalidValue = validateVisualPropertyValue(
+      vpName,
+      visualProperty.type,
+      vpValue,
+    )
+    if (invalidValue) return invalidValue
+  }
+  return undefined
+}
+
+/** Highest numeric node id currently in the network (-1 when none). */
+function maxNumericNodeId(network: { nodes: Array<{ id: IdType }> }): number {
+  const ids = network.nodes
+    .map((n) => parseInt(n.id))
+    .filter((id) => !isNaN(id))
+  return ids.length > 0 ? Math.max(...ids) : -1
+}
+
+/** Highest numeric edge id (edges are 'e'-prefixed; -1 when none). */
+function maxNumericEdgeId(network: { edges: Array<{ id: IdType }> }): number {
+  const ids = network.edges
+    .map((e) => parseInt(e.id.startsWith('e') ? e.id.slice(1) : e.id))
+    .filter((id) => !isNaN(id))
+  return ids.length > 0 ? Math.max(...ids) : -1
 }
 
 /**
@@ -296,6 +433,54 @@ export const elementApi: ElementApi = {
     }
   },
 
+  getNodes(
+    networkId,
+    nodeIds,
+  ): ApiResult<{
+    nodes: Array<{ id: IdType } & NodeData>
+    missing: IdType[]
+  }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const viewModel = useViewModelStore.getState().getViewModel(networkId)
+      const readNode = (id: IdType): { id: IdType } & NodeData => {
+        const row = tableRecord?.nodeTable?.rows?.get(id) ?? {}
+        const nodeView = viewModel?.nodeViews?.[id]
+        const position: [number, number, number?] = nodeView
+          ? nodeView.z !== undefined
+            ? [nodeView.x, nodeView.y, nodeView.z]
+            : [nodeView.x, nodeView.y]
+          : [0, 0]
+        return {
+          id,
+          attributes: row as Record<AttributeName, ValueType>,
+          position,
+        }
+      }
+
+      if (nodeIds === undefined) {
+        return ok({
+          nodes: network.nodes.map((n) => readNode(n.id)),
+          missing: [],
+        })
+      }
+      const present = new Set(network.nodes.map((n) => n.id))
+      const nodes: Array<{ id: IdType } & NodeData> = []
+      const missing: IdType[] = []
+      for (const id of nodeIds) {
+        if (present.has(id)) nodes.push(readNode(id))
+        else missing.push(id)
+      }
+      return ok({ nodes, missing })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
   getEdge(networkId, edgeId): ApiResult<EdgeData> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
@@ -338,12 +523,15 @@ export const elementApi: ElementApi = {
       )
       if (invalidAttributes) return invalidAttributes
 
+      const invalidBypass = validateCreateTimeBypass(
+        networkId,
+        'node',
+        options?.bypass,
+      )
+      if (invalidBypass) return invalidBypass
+
       // Generate unique ID (replicate useCreateNode.generateNextNodeId)
-      const existingIds = network.nodes
-        .map((n) => parseInt(n.id))
-        .filter((id) => !isNaN(id))
-      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-      const newNodeId = `${maxId + 1}`
+      const newNodeId = `${maxNumericNodeId(network) + 1}`
 
       // Prepare attributes with defaults
       const attributes: Record<AttributeName, ValueType> = {
@@ -385,6 +573,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.CREATE_NODES,
         `Create Node ${newNodeId}`,
         [networkId, [newNodeId]],
@@ -416,6 +605,13 @@ export const elementApi: ElementApi = {
       )
       if (invalidAttributes) return invalidAttributes
 
+      const invalidBypass = validateCreateTimeBypass(
+        networkId,
+        'edge',
+        options?.bypass,
+      )
+      if (invalidBypass) return invalidBypass
+
       const sourceNode = network.nodes.find((n) => n.id === sourceNodeId)
       if (!sourceNode) {
         return fail(ElementCodes.NODE_NOT_FOUND, sourceNodeId)
@@ -427,14 +623,7 @@ export const elementApi: ElementApi = {
       }
 
       // Generate unique edge ID (replicate useCreateEdge.generateNextEdgeId)
-      const existingIds = network.edges
-        .map((e) => {
-          const id = e.id.startsWith('e') ? e.id.slice(1) : e.id
-          return parseInt(id)
-        })
-        .filter((id) => !isNaN(id))
-      const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-      const newEdgeId = `e${maxId + 1}`
+      const newEdgeId = `e${maxNumericEdgeId(network) + 1}`
 
       // Prepare attributes with defaults
       const attributes: Record<AttributeName, ValueType> = {
@@ -477,6 +666,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.CREATE_EDGES,
         `Create Edge ${newEdgeId}`,
         [networkId, [newEdgeId]],
@@ -491,6 +681,195 @@ export const elementApi: ElementApi = {
           attributes,
         },
       })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  createNodes(
+    networkId,
+    nodes,
+    options,
+  ): ApiResult<{ nodes: Array<{ nodeId: IdType; node: NodeData }> }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      if (nodes.length === 0) return ok({ nodes: [] })
+
+      // Validate everything up front — batch creation is all-or-nothing
+      for (const spec of nodes) {
+        const invalidAttributes = validateNoIdAttribute(spec.attributes, 'node')
+        if (invalidAttributes) return invalidAttributes
+        const invalidBypass = validateCreateTimeBypass(
+          networkId,
+          'node',
+          spec.bypass,
+        )
+        if (invalidBypass) return invalidBypass
+      }
+
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const hasNameColumn =
+        tableRecord?.nodeTable?.columns.some((col) => col.name === 'name') ??
+        false
+      const setBypass = useVisualStyleStore.getState().setBypass
+
+      let nextId = maxNumericNodeId(network) + 1
+      const created: Array<{ nodeId: IdType; node: NodeData }> = []
+      const redoSpecs: Array<{
+        nodeId: IdType
+        position: [number, number, number?]
+        attributes: Record<AttributeName, ValueType>
+      }> = []
+
+      for (const spec of nodes) {
+        const nodeId = `${nextId++}`
+        const attributes: Record<AttributeName, ValueType> = {
+          ...spec.attributes,
+        }
+        if (hasNameColumn && !attributes.name) {
+          attributes.name = `Node ${nodeId}`
+        }
+        // Rebuild actions each iteration so createNodesCore's summary
+        // count reads the network state after prior additions.
+        createNodesCore(
+          { networkId, nodeIds: [nodeId], position: spec.position, attributes },
+          buildNodeStoreActions(),
+        )
+        if (spec.bypass) {
+          for (const [vpName, vpValue] of Object.entries(spec.bypass) as Array<
+            [VisualPropertyName, VisualPropertyValueType]
+          >) {
+            setBypass(networkId, vpName, [nodeId], vpValue)
+          }
+        }
+        created.push({ nodeId, node: { attributes, position: spec.position } })
+        redoSpecs.push({ nodeId, position: spec.position, attributes })
+      }
+
+      const newNodeIds = created.map((c) => c.nodeId)
+      if (options?.autoSelect !== false) {
+        useViewModelStore.getState().exclusiveSelect(networkId, newNodeIds, [])
+      }
+
+      corePostEdit(
+        networkId,
+        UndoCommandType.CREATE_NODES_BATCH,
+        `Create ${newNodeIds.length} Node${newNodeIds.length === 1 ? '' : 's'}`,
+        [networkId, newNodeIds],
+        [networkId, redoSpecs],
+      )
+
+      return ok({ nodes: created })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  createEdges(
+    networkId,
+    edges,
+    options,
+  ): ApiResult<{ edges: Array<{ edgeId: IdType; edge: EdgeData }> }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      if (edges.length === 0) return ok({ edges: [] })
+
+      // Validate every spec up front — batch creation is all-or-nothing
+      const nodeIdSet = new Set(network.nodes.map((n) => n.id))
+      for (const spec of edges) {
+        const invalidAttributes = validateNoIdAttribute(spec.attributes, 'edge')
+        if (invalidAttributes) return invalidAttributes
+        if (!nodeIdSet.has(spec.sourceNodeId)) {
+          return fail(ElementCodes.NODE_NOT_FOUND, spec.sourceNodeId)
+        }
+        if (!nodeIdSet.has(spec.targetNodeId)) {
+          return fail(ElementCodes.NODE_NOT_FOUND, spec.targetNodeId)
+        }
+        const invalidBypass = validateCreateTimeBypass(
+          networkId,
+          'edge',
+          spec.bypass,
+        )
+        if (invalidBypass) return invalidBypass
+      }
+
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const hasNameColumn =
+        tableRecord?.edgeTable?.columns.some((col) => col.name === 'name') ??
+        false
+      const setBypass = useVisualStyleStore.getState().setBypass
+
+      let nextId = maxNumericEdgeId(network) + 1
+      const created: Array<{ edgeId: IdType; edge: EdgeData }> = []
+      const redoSpecs: Array<{
+        edgeId: IdType
+        sourceId: IdType
+        targetId: IdType
+        attributes: Record<AttributeName, ValueType>
+      }> = []
+
+      for (const spec of edges) {
+        const edgeId = `e${nextId++}`
+        const attributes: Record<AttributeName, ValueType> = {
+          ...spec.attributes,
+        }
+        if (hasNameColumn && !attributes.name) {
+          attributes.name = `${spec.sourceNodeId} (interacts with) ${spec.targetNodeId}`
+        }
+        // Rebuild actions each iteration so the summary count is fresh.
+        createEdgesCore(
+          {
+            networkId,
+            edgeIds: [edgeId],
+            sourceId: spec.sourceNodeId,
+            targetId: spec.targetNodeId,
+            attributes,
+          },
+          buildEdgeStoreActions(),
+        )
+        if (spec.bypass) {
+          for (const [vpName, vpValue] of Object.entries(spec.bypass) as Array<
+            [VisualPropertyName, VisualPropertyValueType]
+          >) {
+            setBypass(networkId, vpName, [edgeId], vpValue)
+          }
+        }
+        created.push({
+          edgeId,
+          edge: {
+            sourceId: spec.sourceNodeId,
+            targetId: spec.targetNodeId,
+            attributes,
+          },
+        })
+        redoSpecs.push({
+          edgeId,
+          sourceId: spec.sourceNodeId,
+          targetId: spec.targetNodeId,
+          attributes,
+        })
+      }
+
+      const newEdgeIds = created.map((c) => c.edgeId)
+      if (options?.autoSelect !== false) {
+        useViewModelStore.getState().exclusiveSelect(networkId, [], newEdgeIds)
+      }
+
+      corePostEdit(
+        networkId,
+        UndoCommandType.CREATE_EDGES_BATCH,
+        `Create ${newEdgeIds.length} Edge${newEdgeIds.length === 1 ? '' : 's'}`,
+        [networkId, newEdgeIds],
+        [networkId, redoSpecs],
+      )
+
+      return ok({ edges: created })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -522,25 +901,14 @@ export const elementApi: ElementApi = {
         .getState()
         .moveEdge(networkId, edgeId, newSourceId, newTargetId)
 
-      // Update source/target columns in edge table if they exist
-      const tables = useTableStore.getState().tables[networkId]
-      if (tables !== undefined) {
-        const edgeTable = tables.edgeTable
-        const row = edgeTable?.rows?.get(edgeId)
-        if (row !== undefined) {
-          const updatedRow = new Map<IdType, Record<AttributeName, ValueType>>()
-          updatedRow.set(edgeId, {
-            ...row,
-            source: newSourceId,
-            target: newTargetId,
-          })
-          useTableStore
-            .getState()
-            .editRows(networkId, TableType.EDGE, updatedRow)
-        }
-      }
+      // source/target are derived from the network model everywhere they
+      // are read (getTable/getColumns/getValue/exporter), so they must NOT
+      // be written into the edge row here: that write is never read back
+      // and the MOVE_EDGES undo handler does not revert it, which would
+      // leave the row holding stale endpoints after an undo.
 
       corePostEdit(
+        networkId,
         UndoCommandType.MOVE_EDGES,
         `Move edge ${edgeId}`,
         [networkId, edgeId, oldSourceId, oldTargetId],
@@ -549,7 +917,10 @@ export const elementApi: ElementApi = {
 
       return ok()
     } catch (e) {
-      return fail(AppCodes.OPERATION_FAILED, `Failed to move edge: ${String(e)}`)
+      return fail(
+        AppCodes.OPERATION_FAILED,
+        `Failed to move edge: ${String(e)}`,
+      )
     }
   },
 
@@ -561,6 +932,7 @@ export const elementApi: ElementApi = {
     deletedEdgeCount: number
     deletedNodes: Array<{ id: IdType } & NodeData>
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
@@ -580,6 +952,8 @@ export const elementApi: ElementApi = {
       }
 
       const existingNodeIds = nodesToDelete.map((node) => node.id)
+      const existingSet = new Set(existingNodeIds)
+      const missing = nodeIds.filter((id) => !existingSet.has(id))
 
       // Capture visual style bypasses before deletion
       const visualStyles = useVisualStyleStore.getState().visualStyles
@@ -647,6 +1021,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.DELETE_NODES,
         `Delete ${existingNodeIds.length} Node${existingNodeIds.length === 1 ? '' : 's'}`,
         [
@@ -695,6 +1070,7 @@ export const elementApi: ElementApi = {
         deletedEdgeCount: result.deletedEdges.length,
         deletedNodes,
         deletedEdges: deletedEdgesData,
+        missing,
       })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -707,6 +1083,7 @@ export const elementApi: ElementApi = {
   ): ApiResult<{
     deletedEdgeCount: number
     deletedEdges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
@@ -726,6 +1103,8 @@ export const elementApi: ElementApi = {
       }
 
       const existingEdgeIds = edgesToDelete.map((edge) => edge.id)
+      const existingEdgeSet = new Set(existingEdgeIds)
+      const missing = edgeIds.filter((id) => !existingEdgeSet.has(id))
 
       // Capture visual style bypasses before deletion
       const visualStyles = useVisualStyleStore.getState().visualStyles
@@ -780,6 +1159,7 @@ export const elementApi: ElementApi = {
       }
 
       corePostEdit(
+        networkId,
         UndoCommandType.DELETE_EDGES,
         `Delete ${result.deletedEdgeIds.length} Edge${result.deletedEdgeIds.length === 1 ? '' : 's'}`,
         [
@@ -807,33 +1187,31 @@ export const elementApi: ElementApi = {
       return ok({
         deletedEdgeCount: result.deletedEdgeIds.length,
         deletedEdges: deletedEdgesData,
+        missing,
       })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
-  generateNextNodeId(networkId): IdType {
-    const network = useNetworkStore.getState().networks.get(networkId)
-    if (!network) return '0'
-    const existingIds = network.nodes
-      .map((n) => parseInt(n.id))
-      .filter((id) => !isNaN(id))
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-    return `${maxId + 1}`
+  generateNextNodeId(networkId): ApiResult<{ nodeId: IdType }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      return ok({ nodeId: `${maxNumericNodeId(network) + 1}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
   },
 
-  generateNextEdgeId(networkId): IdType {
-    const network = useNetworkStore.getState().networks.get(networkId)
-    if (!network) return 'e0'
-    const existingIds = network.edges
-      .map((e) => {
-        const id = e.id.startsWith('e') ? e.id.slice(1) : e.id
-        return parseInt(id)
-      })
-      .filter((id) => !isNaN(id))
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : -1
-    return `e${maxId + 1}`
+  generateNextEdgeId(networkId): ApiResult<{ edgeId: IdType }> {
+    try {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      return ok({ edgeId: `e${maxNumericEdgeId(network) + 1}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
   },
 
   // ── Graph Traversal ──────────────────────────────────────────────────────
@@ -862,21 +1240,45 @@ export const elementApi: ElementApi = {
     }
   },
 
-  getEdges(networkId): ApiResult<{
-    edges: Array<{ id: IdType; sourceId: IdType; targetId: IdType }>
+  getEdges(
+    networkId,
+    edgeIds,
+  ): ApiResult<{
+    edges: Array<{ id: IdType } & EdgeData>
+    missing: IdType[]
   }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      return ok({
-        edges: network.edges.map((e) => ({
-          id: e.id,
-          sourceId: e.s,
-          targetId: e.t,
-        })),
+      const tableRecord = useTableStore.getState().tables[networkId]
+      const readEdge = (e: {
+        id: IdType
+        s: IdType
+        t: IdType
+      }): { id: IdType } & EdgeData => ({
+        id: e.id,
+        sourceId: e.s,
+        targetId: e.t,
+        attributes: (tableRecord?.edgeTable?.rows?.get(e.id) ?? {}) as Record<
+          AttributeName,
+          ValueType
+        >,
       })
+
+      if (edgeIds === undefined) {
+        return ok({ edges: network.edges.map(readEdge), missing: [] })
+      }
+      const byId = new Map(network.edges.map((e) => [e.id, e]))
+      const edges: Array<{ id: IdType } & EdgeData> = []
+      const missing: IdType[] = []
+      for (const id of edgeIds) {
+        const edge = byId.get(id)
+        if (edge !== undefined) edges.push(readEdge(edge))
+        else missing.push(id)
+      }
+      return ok({ edges, missing })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -885,7 +1287,7 @@ export const elementApi: ElementApi = {
   getConnectedEdges(
     networkId,
     nodeId,
-  ): ApiResult<{ edges: EdgeData[] }> {
+  ): ApiResult<{ edges: Array<{ id: IdType } & EdgeData> }> {
     try {
       const network = useNetworkStore.getState().networks.get(networkId)
       if (network === undefined) {
@@ -897,15 +1299,18 @@ export const elementApi: ElementApi = {
         return fail(ElementCodes.NODE_NOT_FOUND, nodeId)
       }
       const tableRecord = useTableStore.getState().tables[networkId]
-      const edges: EdgeData[] = cyNode.connectedEdges().map((cyEdge: any) => {
-        const edgeId = cyEdge.id()
-        const row = tableRecord?.edgeTable?.rows?.get(edgeId) ?? {}
-        return {
-          sourceId: cyEdge.source().id() as IdType,
-          targetId: cyEdge.target().id() as IdType,
-          attributes: row as Record<AttributeName, ValueType>,
-        }
-      })
+      const edges: Array<{ id: IdType } & EdgeData> = cyNode
+        .connectedEdges()
+        .map((cyEdge: any) => {
+          const edgeId = cyEdge.id() as IdType
+          const row = tableRecord?.edgeTable?.rows?.get(edgeId) ?? {}
+          return {
+            id: edgeId,
+            sourceId: cyEdge.source().id() as IdType,
+            targetId: cyEdge.target().id() as IdType,
+            attributes: row as Record<AttributeName, ValueType>,
+          }
+        })
       return ok({ edges })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

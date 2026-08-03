@@ -1,3 +1,4 @@
+import { markReady } from '@/app-api/core/ready'
 import { initEventBus } from '@/app-api/event-bus/initEventBus'
 import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
@@ -42,4 +43,8 @@ export const publishWorkspace = (draft: WorkspaceDraft): void => {
   // gone by then (see `workspaceHydrated.ts`).
   markWorkspaceHydrated()
   window.dispatchEvent(new CustomEvent('cywebapi:ready'))
+  // Resolve any CyWebApi.whenReady() promises (idempotent). ready.ts also
+  // listens for the event above, but calling directly keeps readiness correct
+  // for hosts where that listener never installed (non-DOM environments).
+  markReady()
 }

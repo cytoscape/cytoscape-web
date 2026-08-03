@@ -6,6 +6,7 @@
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../debug'
 import { AppStatus } from '../../models/AppModel/AppStatus'
@@ -22,6 +23,17 @@ import type {
 } from '../types/AppResourceTypes'
 
 const SUPPORTED_SLOTS: ResourceSlot[] = ['right-panel', 'apps-menu']
+
+/** True when the current network's view has at least one selected element. */
+function hasSelection(): boolean {
+  const { currentNetworkId } = useWorkspaceStore.getState().workspace
+  if (!currentNetworkId) return false
+  const viewModel = useViewModelStore.getState().getViewModel(currentNetworkId)
+  if (viewModel === undefined) return false
+  return (
+    viewModel.selectedNodes.length > 0 || viewModel.selectedEdges.length > 0
+  )
+}
 
 /**
  * Check if a value is a valid React component type.
@@ -42,7 +54,7 @@ function isValidComponent(value: unknown): boolean {
  */
 export const createResourceApi = (appId: string): ResourceApi => ({
   getSupportedSlots() {
-    return [...SUPPORTED_SLOTS]
+    return ok({ slots: [...SUPPORTED_SLOTS] })
   },
 
   // ── Individual Registration (upsert semantics) ──────────────────
@@ -189,56 +201,67 @@ export const createResourceApi = (appId: string): ResourceApi => ({
 
   // ── Introspection ───────────────────────────────────────────────
 
-  getRegisteredResources(): RegisteredResourceInfo[] {
-    return useAppResourceStore
-      .getState()
-      .resources.filter((r) => r.appId === appId)
-      .map(
-        (r): RegisteredResourceInfo => ({
-          resourceId: `${r.appId}::${r.slot}::${r.id}`,
-          slot: r.slot as ResourceSlot,
-          id: r.id,
-          title: r.title,
-          order: r.order,
-          requires: r.requires,
-        }),
-      )
+  getRegisteredResources(): ApiResult<{
+    resources: RegisteredResourceInfo[]
+  }> {
+    try {
+      const resources = useAppResourceStore
+        .getState()
+        .resources.filter((r) => r.appId === appId)
+        .map(
+          (r): RegisteredResourceInfo => ({
+            resourceId: `${r.appId}::${r.slot}::${r.id}`,
+            slot: r.slot as ResourceSlot,
+            id: r.id,
+            title: r.title,
+            order: r.order,
+            requires: r.requires,
+          }),
+        )
+      return ok({ resources })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
   },
 
-  getResourceVisibility(id): ResourceVisibilityResult {
-    const store = useAppResourceStore.getState()
-    const resource = store.resources.find(
-      (r: RegisteredAppResource) => r.appId === appId && r.id === id,
-    )
-    if (!resource) return { registered: false, visible: false }
+  getResourceVisibility(id): ApiResult<ResourceVisibilityResult> {
+    try {
+      const store = useAppResourceStore.getState()
+      const resource = store.resources.find(
+        (r: RegisteredAppResource) => r.appId === appId && r.id === id,
+      )
+      if (!resource) return ok({ registered: false, visible: false })
 
-    // 1. Check app-active state
-    const appStatus = useAppStore.getState().apps[appId]?.status
-    if (appStatus !== AppStatus.Active) {
-      return {
-        registered: true,
-        visible: false,
-        hiddenReason: 'app-inactive',
+      // 1. Check app-active state
+      const appStatus = useAppStore.getState().apps[appId]?.status
+      if (appStatus !== AppStatus.Active) {
+        return ok({
+          registered: true,
+          visible: false,
+          hiddenReason: 'app-inactive',
+        })
       }
-    }
 
-    // 2. Evaluate visibility rules
-    const { workspace } = useWorkspaceStore.getState()
-    if (resource.requires?.network && !workspace.currentNetworkId) {
-      return {
-        registered: true,
-        visible: false,
-        hiddenReason: 'requires-network',
+      // 2. Evaluate visibility rules
+      const { workspace } = useWorkspaceStore.getState()
+      if (resource.requires?.network && !workspace.currentNetworkId) {
+        return ok({
+          registered: true,
+          visible: false,
+          hiddenReason: 'requires-network',
+        })
       }
-    }
-    if (resource.requires?.selection) {
-      return {
-        registered: true,
-        visible: false,
-        hiddenReason: 'requires-selection',
+      if (resource.requires?.selection && !hasSelection()) {
+        return ok({
+          registered: true,
+          visible: false,
+          hiddenReason: 'requires-selection',
+        })
       }
-    }
 
-    return { registered: true, visible: true }
+      return ok({ registered: true, visible: true })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
   },
 })

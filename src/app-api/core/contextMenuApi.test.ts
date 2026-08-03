@@ -145,6 +145,37 @@ describe('createContextMenuApi (per-app factory)', () => {
       expect(result.error.code).toBe(AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND.code)
     }
   })
+
+  it('cannot remove an item owned by another app', () => {
+    const app1 = createContextMenuApi('app1')
+    const app2 = createContextMenuApi('app2')
+    const created = app1.addContextMenuItem({ label: 'A', handler: vi.fn() })
+    if (!created.success) throw new Error('setup failed')
+
+    // app2 knows app1's itemId but must not be able to remove it
+    const result = app2.removeContextMenuItem(created.data.itemId)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND.code)
+    }
+    expect(mockItems).toHaveLength(1)
+    expect(mockContextMenuItemActions.removeItem).not.toHaveBeenCalled()
+  })
+
+  it('cannot remove an anonymous item via the per-app factory', () => {
+    const app1 = createContextMenuApi('app1')
+    const created = contextMenuApi.addContextMenuItem({
+      label: 'Anon',
+      handler: vi.fn(),
+    })
+    if (!created.success) throw new Error('setup failed')
+
+    const result = app1.removeContextMenuItem(created.data.itemId)
+
+    expect(result.success).toBe(false)
+    expect(mockItems).toHaveLength(1)
+  })
 })
 
 // ── Tests: contextMenuApi (anonymous singleton) ──────────────────────────────
@@ -181,6 +212,28 @@ describe('contextMenuApi (anonymous singleton)', () => {
     if (!result.success) {
       expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
     }
+  })
+
+  it('removes its own anonymous items', () => {
+    const created = contextMenuApi.addContextMenuItem({
+      label: 'Anon',
+      handler: vi.fn(),
+    })
+    if (!created.success) throw new Error('setup failed')
+
+    const result = contextMenuApi.removeContextMenuItem(created.data.itemId)
+    expect(result.success).toBe(true)
+    expect(mockItems).toHaveLength(0)
+  })
+
+  it('cannot remove an app-owned item', () => {
+    const app1 = createContextMenuApi('app1')
+    const created = app1.addContextMenuItem({ label: 'A', handler: vi.fn() })
+    if (!created.success) throw new Error('setup failed')
+
+    const result = contextMenuApi.removeContextMenuItem(created.data.itemId)
+    expect(result.success).toBe(false)
+    expect(mockItems).toHaveLength(1)
   })
 })
 

@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // src/app-api/core/elementApi.test.ts
 // Plain Jest tests for elementApi core — no renderHook, no React context.
 import {
+  createEdgesCore,
   createNodesCore,
   deleteEdgesCore,
   deleteNodesCore,
 } from '../../models/CyNetworkModel'
-import { AppCodes, ElementCodes } from '../types/ApiResult'
+import { AppCodes, ElementCodes, StyleCodes } from '../types/ApiResult'
 import { elementApi } from './elementApi'
 
 // ── Mock stores ──────────────────────────────────────────────────────────────
@@ -174,9 +175,7 @@ function makeCyNode(id: string) {
       )
     },
     outgoers: () => {
-      const outEdges = mockCyEdges.filter(
-        (e: any) => e.source().id() === id,
-      )
+      const outEdges = mockCyEdges.filter((e: any) => e.source().id() === id)
       const outNodeIds = new Set(outEdges.map((e: any) => e.target().id()))
       return makeCyCollection([
         ...outEdges,
@@ -184,9 +183,7 @@ function makeCyNode(id: string) {
       ])
     },
     incomers: () => {
-      const inEdges = mockCyEdges.filter(
-        (e: any) => e.target().id() === id,
-      )
+      const inEdges = mockCyEdges.filter((e: any) => e.target().id() === id)
       const inNodeIds = new Set(inEdges.map((e: any) => e.source().id()))
       return makeCyCollection([
         ...inEdges,
@@ -292,6 +289,15 @@ function resetMocks() {
   vi.clearAllMocks()
 }
 
+/** Visual style with one node- and one edge-scoped property, for bypass tests */
+function setMockStyle(networkId: string) {
+  mockVisualStyles[networkId] = {
+    NODE_FILL_COLOR: { group: 'node', type: 'color', defaultValue: '#ffffff' },
+    NODE_LABEL: { group: 'node', type: 'string', defaultValue: '' },
+    EDGE_LINE_COLOR: { group: 'edge', type: 'color', defaultValue: '#000000' },
+  }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('elementApi', () => {
@@ -302,36 +308,51 @@ describe('elementApi', () => {
   // ── generateNextNodeId ────────────────────────────────────────────────────
 
   describe('generateNextNodeId', () => {
-    it('returns "0" when network does not exist', () => {
-      expect(elementApi.generateNextNodeId('missing')).toBe('0')
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.generateNextNodeId('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
     })
 
     it('returns "0" when network has no nodes', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
-      expect(elementApi.generateNextNodeId('net1')).toBe('0')
+      const result = elementApi.generateNextNodeId('net1')
+      expect(result.success && result.data.nodeId).toBe('0')
     })
 
     it('returns max+1 when nodes exist', () => {
       mockNetworks.set('net1', makeNetwork('net1', [{ id: '3' }, { id: '7' }]))
-      expect(elementApi.generateNextNodeId('net1')).toBe('8')
+      const result = elementApi.generateNextNodeId('net1')
+      expect(result.success && result.data.nodeId).toBe('8')
     })
   })
 
   // ── generateNextEdgeId ────────────────────────────────────────────────────
 
   describe('generateNextEdgeId', () => {
-    it('returns "e0" when network does not exist', () => {
-      expect(elementApi.generateNextEdgeId('missing')).toBe('e0')
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.generateNextEdgeId('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
     })
 
     it('returns "e0" when network has no edges', () => {
       mockNetworks.set('net1', makeNetwork('net1', [], []))
-      expect(elementApi.generateNextEdgeId('net1')).toBe('e0')
+      const result = elementApi.generateNextEdgeId('net1')
+      expect(result.success && result.data.edgeId).toBe('e0')
     })
 
     it('returns e(max+1) when edges exist', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e2' }, { id: 'e5' }]))
-      expect(elementApi.generateNextEdgeId('net1')).toBe('e6')
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e2' }, { id: 'e5' }]),
+      )
+      const result = elementApi.generateNextEdgeId('net1')
+      expect(result.success && result.data.edgeId).toBe('e6')
     })
   })
 
@@ -394,6 +415,64 @@ describe('elementApi', () => {
     })
   })
 
+  // ── getNodes ──────────────────────────────────────────────────────────────
+
+  describe('getNodes', () => {
+    const setupNodes = (): void => {
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }]),
+      )
+      mockTables['net1'] = {
+        nodeTable: {
+          rows: new Map([
+            ['n1', { name: 'Alice' }],
+            ['n2', { name: 'Bob' }],
+          ]),
+          columns: [],
+        },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      mockViewModelActions.getViewModel.mockReturnValue({
+        nodeViews: {
+          n1: { id: 'n1', x: 1, y: 2 },
+          n2: { id: 'n2', x: 3, y: 4 },
+        },
+      })
+    }
+
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.getNodes('missing')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
+    })
+
+    it('returns every node with id, attributes, and position when ids omitted', () => {
+      setupNodes()
+      const result = elementApi.getNodes('net1')
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.missing).toEqual([])
+        expect(result.data.nodes).toEqual([
+          { id: 'n1', attributes: { name: 'Alice' }, position: [1, 2] },
+          { id: 'n2', attributes: { name: 'Bob' }, position: [3, 4] },
+        ])
+      }
+    })
+
+    it('returns only requested ids and reports missing ones', () => {
+      setupNodes()
+      const result = elementApi.getNodes('net1', ['n2', 'ghost'])
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.nodes.map((n) => n.id)).toEqual(['n2'])
+        expect(result.data.missing).toEqual(['ghost'])
+      }
+    })
+  })
+
   // ── getEdge ───────────────────────────────────────────────────────────────
 
   describe('getEdge', () => {
@@ -406,7 +485,10 @@ describe('elementApi', () => {
     })
 
     it('returns EdgeNotFound when edge does not exist', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e2', s: 'n1', t: 'n2' }]))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e2', s: 'n1', t: 'n2' }]),
+      )
       const result = elementApi.getEdge('net1', 'e1')
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -415,7 +497,10 @@ describe('elementApi', () => {
     })
 
     it('returns ok with edge data when edge exists', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [], [{ id: 'e1', s: 'n1', t: 'n2' }]))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e1', s: 'n1', t: 'n2' }]),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: {
@@ -517,6 +602,24 @@ describe('elementApi', () => {
       expect(mockUndoActions.setUndoStack).toHaveBeenCalled()
     })
 
+    it('records undo on the stack of the mutated network, not the current one', () => {
+      // WorkspaceStore mock reports currentNetworkId 'net1'; mutate 'net2'.
+      // Regression: the undo entry must land on net2's stack, otherwise a
+      // later undo on net1 would replay net2's inverse operation.
+      mockNetworks.set('net2', makeNetwork('net2', [], []))
+      mockTables['net2'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNode('net2', [0, 0])
+      expect(mockUndoActions.setUndoStack).toHaveBeenCalledWith(
+        'net2',
+        expect.any(Array),
+      )
+      expect(mockUndoActions.setRedoStack).toHaveBeenCalledWith('net2', [])
+    })
+
     it('never passes skipUndo: true to internal stores', () => {
       // createNodesCore is called without any skipUndo parameter
       mockNetworks.set('net1', makeNetwork('net1', [], []))
@@ -536,6 +639,7 @@ describe('elementApi', () => {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
       }
+      setMockStyle('net1')
 
       elementApi.createNode('net1', [0, 0], {
         bypass: { NODE_FILL_COLOR: '#ff0000' } as any,
@@ -547,6 +651,90 @@ describe('elementApi', () => {
         ['0'],
         '#ff0000',
       )
+    })
+
+    it('rejects a bypass for an unknown visual property without creating the node', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { NOT_A_REAL_VP: '#ff0000' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
+      expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
+    })
+
+    it('rejects an edge-scoped bypass on node creation (CX2 BV2)', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { EDGE_LINE_COLOR: '#00ff00' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
+    })
+
+    it('rejects a network-scoped bypass with the dedicated code, as setBypass does', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+      mockVisualStyles['net1'].NETWORK_BACKGROUND_COLOR = {
+        group: 'network',
+        type: 'color',
+        defaultValue: '#ffffff',
+      }
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { NETWORK_BACKGROUND_COLOR: '#ff0000' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(
+          StyleCodes.NETWORK_SCOPED_BYPASS_FORBIDDEN.code,
+        )
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
+    })
+
+    it('rejects a bypass value that fails type validation without creating the node', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNode('net1', [0, 0], {
+        bypass: { NODE_FILL_COLOR: 'not-a-color' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(StyleCodes.INVALID_COLOR.code)
+      }
+      expect(createNodesCore).not.toHaveBeenCalled()
     })
 
     it('does not call setBypass when no bypass option', () => {
@@ -566,6 +754,7 @@ describe('elementApi', () => {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
       }
+      setMockStyle('net1')
 
       elementApi.createNode('net1', [0, 0], {
         bypass: {
@@ -608,7 +797,10 @@ describe('elementApi', () => {
     })
 
     it('returns ok with edgeId and edge data on success', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -627,7 +819,10 @@ describe('elementApi', () => {
     })
 
     it('rejects an "id" key in the attributes payload (CX2 E6)', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -644,11 +839,15 @@ describe('elementApi', () => {
     })
 
     it('applies bypass props when bypass option is provided', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
       }
+      setMockStyle('net1')
 
       elementApi.createEdge('net1', 'n1', 'n2', {
         bypass: { EDGE_LINE_COLOR: '#00ff00' } as any,
@@ -662,8 +861,34 @@ describe('elementApi', () => {
       )
     })
 
+    it('rejects a node-scoped bypass on edge creation (CX2 BV2)', () => {
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createEdge('net1', 'n1', 'n2', {
+        bypass: { NODE_FILL_COLOR: '#ff0000' } as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(StyleCodes.BYPASS_SCOPE_MISMATCH.code)
+      }
+      expect(createEdgesCore).not.toHaveBeenCalled()
+      expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
+    })
+
     it('does not call setBypass when no bypass option', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       mockTables['net1'] = {
         nodeTable: { rows: new Map(), columns: [] },
         edgeTable: { rows: new Map(), columns: [] },
@@ -671,6 +896,141 @@ describe('elementApi', () => {
 
       elementApi.createEdge('net1', 'n1', 'n2')
       expect(mockVisualStyleActions.setBypass).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── createNodes (batch) ─────────────────────────────────────────────────────
+
+  describe('createNodes', () => {
+    it('returns NetworkNotFound when network does not exist', () => {
+      const result = elementApi.createNodes('missing', [{ position: [0, 0] }])
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+      }
+    })
+
+    it('creates several nodes with sequential ids and distinct positions', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: '4' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createNodes('net1', [
+        { position: [10, 20] },
+        { position: [30, 40] },
+      ])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.nodes.map((n) => n.nodeId)).toEqual(['5', '6'])
+        expect(result.data.nodes[0].node.position).toEqual([10, 20])
+        expect(result.data.nodes[1].node.position).toEqual([30, 40])
+      }
+    })
+
+    it('records a single batch undo entry covering all created nodes', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNodes('net1', [
+        { position: [0, 0] },
+        { position: [1, 1] },
+        { position: [2, 2] },
+      ])
+
+      expect(mockUndoActions.setUndoStack).toHaveBeenCalledTimes(1)
+      const stack = mockUndoActions.setUndoStack.mock.calls[0][1]
+      expect(stack[0].undoCommand).toBe('CREATE_NODES_BATCH')
+      expect(stack[0].undoParams).toEqual(['net1', ['0', '1', '2']])
+    })
+
+    it('creates nothing when any spec has an invalid bypass', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+      setMockStyle('net1')
+
+      const result = elementApi.createNodes('net1', [
+        { position: [0, 0] },
+        { position: [1, 1], bypass: { EDGE_LINE_COLOR: '#fff' } as any },
+      ])
+
+      expect(result.success).toBe(false)
+      expect(createNodesCore).not.toHaveBeenCalled()
+      expect(mockUndoActions.setUndoStack).not.toHaveBeenCalled()
+    })
+
+    it('selects all created nodes by default', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNodes('net1', [
+        { position: [0, 0] },
+        { position: [1, 1] },
+      ])
+
+      expect(mockViewModelActions.exclusiveSelect).toHaveBeenCalledWith(
+        'net1',
+        ['0', '1'],
+        [],
+      )
+    })
+  })
+
+  // ── createEdges (batch) ─────────────────────────────────────────────────────
+
+  describe('createEdges', () => {
+    it('creates several edges with a single batch undo entry', () => {
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }], []),
+      )
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createEdges('net1', [
+        { sourceNodeId: 'n1', targetNodeId: 'n2' },
+        { sourceNodeId: 'n2', targetNodeId: 'n3' },
+      ])
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.edges.map((e) => e.edgeId)).toEqual(['e0', 'e1'])
+      }
+      expect(mockUndoActions.setUndoStack).toHaveBeenCalledTimes(1)
+      const stack = mockUndoActions.setUndoStack.mock.calls[0][1]
+      expect(stack[0].undoCommand).toBe('CREATE_EDGES_BATCH')
+    })
+
+    it('creates nothing when any endpoint is missing', () => {
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }], []))
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      const result = elementApi.createEdges('net1', [
+        { sourceNodeId: 'n1', targetNodeId: 'ghost' },
+      ])
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
+      }
+      expect(createEdgesCore).not.toHaveBeenCalled()
+      expect(mockUndoActions.setUndoStack).not.toHaveBeenCalled()
     })
   })
 
@@ -686,7 +1046,10 @@ describe('elementApi', () => {
     })
 
     it('returns EdgeNotFound when edge does not exist', () => {
-      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []))
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [{ id: 'n1' }, { id: 'n2' }], []),
+      )
       const result = elementApi.moveEdge('net1', 'e1', 'n1', 'n2')
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -742,6 +1105,31 @@ describe('elementApi', () => {
       )
     })
 
+    it('does not write source/target into the edge row (derived from topology)', () => {
+      mockNetworks.set(
+        'net1',
+        makeNetwork(
+          'net1',
+          [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      mockTables['net1'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map([['e1', {}]]), columns: [] },
+      }
+      mockNetworkActions.moveEdge.mockReturnValue({
+        oldSourceId: 'n1',
+        oldTargetId: 'n2',
+      })
+
+      elementApi.moveEdge('net1', 'e1', 'n1', 'n3')
+
+      // No row write — source/target come from the network model, and an
+      // unreverted row write would go stale after undo
+      expect(mockTableActions.editRows).not.toHaveBeenCalled()
+    })
+
     it('records undo with correct params', () => {
       mockNetworks.set(
         'net1',
@@ -791,6 +1179,24 @@ describe('elementApi', () => {
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(result.error.code).toBe(ElementCodes.NODE_NOT_FOUND.code)
+      }
+    })
+
+    it('deletes existing nodes and reports non-existent ids in missing', () => {
+      vi.mocked(deleteNodesCore).mockReturnValue({
+        deletedNodeIds: ['n1'],
+        deletedEdges: [],
+        deletedNodeViews: [],
+        deletedEdgeViews: [],
+        deletedNodeRows: new Map(),
+        deletedEdgeRows: new Map(),
+      })
+      mockNetworks.set('net1', makeNetwork('net1', [{ id: 'n1' }], []))
+
+      const result = elementApi.deleteNodes('net1', ['n1', 'ghost'])
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.missing).toEqual(['ghost'])
       }
     })
 
@@ -888,6 +1294,24 @@ describe('elementApi', () => {
         ])
       }
     })
+
+    it('deletes existing edges and reports non-existent ids in missing', () => {
+      vi.mocked(deleteEdgesCore).mockReturnValue({
+        deletedEdgeIds: ['e1'],
+        deletedEdgeViews: [],
+        deletedEdgeRows: new Map(),
+      })
+      mockNetworks.set(
+        'net1',
+        makeNetwork('net1', [], [{ id: 'e1', s: 'n1', t: 'n2' }]),
+      )
+
+      const result = elementApi.deleteEdges('net1', ['e1', 'ghost'])
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.missing).toEqual(['ghost'])
+      }
+    })
   })
 
   // ── Graph Traversal ──────────────────────────────────────────────────────
@@ -896,12 +1320,7 @@ describe('elementApi', () => {
     // Graph: A → B → C, A → D (directed)
     beforeEach(() => {
       resetMocks()
-      const nodes = [
-        { id: 'A' },
-        { id: 'B' },
-        { id: 'C' },
-        { id: 'D' },
-      ]
+      const nodes = [{ id: 'A' }, { id: 'B' }, { id: 'C' }, { id: 'D' }]
       const edges = [
         { id: 'e1', s: 'A', t: 'B' },
         { id: 'e2', s: 'B', t: 'C' },
@@ -959,15 +1378,37 @@ describe('elementApi', () => {
     })
 
     describe('getEdges', () => {
-      it('returns all edges with source and target IDs in one call', () => {
+      it('returns all edges with source, target, and attributes in one call', () => {
+        mockTables['net1'] = {
+          nodeTable: { rows: new Map(), columns: [] },
+          edgeTable: {
+            rows: new Map([['e1', { interaction: 'pp' }]]),
+            columns: [],
+          },
+        }
         const result = elementApi.getEdges('net1')
         expect(result.success).toBe(true)
         if (result.success) {
+          expect(result.data.missing).toEqual([])
           expect(result.data.edges).toEqual([
-            { id: 'e1', sourceId: 'A', targetId: 'B' },
-            { id: 'e2', sourceId: 'B', targetId: 'C' },
-            { id: 'e3', sourceId: 'A', targetId: 'D' },
+            {
+              id: 'e1',
+              sourceId: 'A',
+              targetId: 'B',
+              attributes: { interaction: 'pp' },
+            },
+            { id: 'e2', sourceId: 'B', targetId: 'C', attributes: {} },
+            { id: 'e3', sourceId: 'A', targetId: 'D', attributes: {} },
           ])
+        }
+      })
+
+      it('returns only requested edges and reports missing ones', () => {
+        const result = elementApi.getEdges('net1', ['e2', 'ghost'])
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.edges.map((e) => e.id)).toEqual(['e2'])
+          expect(result.data.missing).toEqual(['ghost'])
         }
       })
 
@@ -1001,6 +1442,15 @@ describe('elementApi', () => {
           ])
           expect(edgeSourceTargets).toContainEqual(['A', 'B'])
           expect(edgeSourceTargets).toContainEqual(['A', 'D'])
+        }
+      })
+
+      it('includes the edge id so results can be selected or deleted', () => {
+        const result = elementApi.getConnectedEdges('net1', 'A')
+        expect(result.success).toBe(true)
+        if (result.success) {
+          const ids = result.data.edges.map((e) => e.id).sort()
+          expect(ids).toEqual(['e1', 'e3'])
         }
       })
 

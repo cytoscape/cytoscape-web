@@ -2,7 +2,90 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
-## 1.0.0-beta.3 (Unreleased)
+## 1.0.0-beta.4 (2026-07-19)
+
+### Added
+
+- **Readiness promise.** `CyWebApi.whenReady()` resolves with the API once
+  startup completes (immediately if already ready); `CyWebApi.isReady()`
+  returns the current boolean. Wraps the one-shot `cywebapi:ready` event.
+- **Scoped current-network API.** `CyWebApi.forNetwork(networkId?)` returns
+  the network-scoped domains (`element`, `table`, `selection`, `viewport`,
+  `visualStyle`, `export`) with `networkId` pre-bound, so it need not be
+  passed on every call. `layout` is included but carries only its
+  network-scoped method, `applyLayout`; read the available algorithms from
+  the top-level `layout.getAvailableLayouts()`. Omit the argument to target
+  the current network, resolved at call time. New type `ScopedCyWebApi`.
+- **Visual Style read API.** `VisualStyleApi` was previously write-only; it
+  now exposes `getVisualProperties`, `getDefault`, `getBypass`,
+  `getBypasses`, and `getMapping` (all returning `ApiResult`).
+- **`VisualStyleApi.setDefaults(networkId, defaults)`** applies many
+  visual-property defaults in one all-or-nothing validated call.
+- **`VisualStyleApi.setBypasses(networkId, elementIds, bypasses)`** applies
+  many visual-property bypasses to a set of elements in one all-or-nothing
+  validated call.
+- **Batch element creation.** `ElementApi.createNodes(networkId, specs)` and
+  `createEdges(networkId, specs)` create many elements in one operation that
+  records a single undo entry. New types `NodeSpec`, `EdgeSpec`,
+  `BatchCreateOptions`.
+- **`ElementApi.getNodes(networkId, nodeIds?)`** — batch node read; unknown
+  ids are reported in `missing` instead of failing the call.
+- **`SelectionApi.clearSelection(networkId)`** convenience.
+- **`TableApi` id round-tripping.** `getTable` and `exportTableToTsv` include
+  the element id by default (new `includeId` option); an exported node TSV
+  now round-trips through `importTableFromTsv` with no manual id handling.
+  `importTableFromTsv` gained a `skippedCells` result field.
+- **`AppCodes.COLUMN_NOT_FOUND` (`APP10`).**
+
+### Changed — BREAKING
+
+- `SelectionApi.additiveSelect` / `additiveDeselect` / `toggleSelected` now
+  take `(networkId, nodeIds, edgeIds)` — separate arrays — instead of a
+  single merged `ids` array. `additiveUnselect` is renamed
+  `additiveDeselect`.
+- `VisualStyleApi.removeMapping` is renamed `deleteMapping`.
+- `VisualStyleApi.createContinuousMapping(networkId, vpName, options)`
+  replaces the nine-argument positional form
+  (`CreateContinuousMappingOptions`).
+- `TableApi.setColumnName` is renamed `renameColumn`.
+- `ExportApi.exportToCx2` now returns the canonical `Cx2` model type instead
+  of a loose `any[]` alias.
+- `ElementApi.generateNextNodeId` / `generateNextEdgeId` now return
+  `ApiResult<{ nodeId }>` / `ApiResult<{ edgeId }>` instead of a bare string.
+- `ElementApi.getConnectedEdges` results now include each edge's `id`.
+- `NetworkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` now
+  default `addToWorkspace` to `true` (matching `createNetworkFromCx2`).
+- `ResourceApi.getSupportedSlots` / `getRegisteredResources` /
+  `getResourceVisibility` now return `ApiResult` instead of raw values.
+- `WorkspaceApi.getNetworkList` is renamed `getNetworks` and returns
+  `{ networks }`; `LayoutApi.getAvailableLayouts` returns `{ layouts }` —
+  collection getters now uniformly wrap their result in a named object.
+- `ViewportApi.getNodePositions` takes an optional `nodeIds` (all nodes when
+  omitted) and returns `{ positions, missing }`.
+- `ElementApi.getEdges` carries attributes, accepts an optional `edgeIds`
+  filter, and returns `{ edges, missing }`.
+- `ElementApi.deleteNodes` / `deleteEdges` results gained a `missing` field
+  listing requested ids that did not exist.
+
+### Fixed
+
+- Context menu removal is now scoped to the owning app — one app can no
+  longer remove another app's item by guessing its id.
+- `useCyWebEvent` no longer re-registers its window listener when a fresh
+  inline handler is passed each render (handler held in a ref).
+
+- Create-time `options.bypass` on `createNode` / `createEdge` is now
+  validated (property existence, node/edge scope, value type) before the
+  element is created.
+- `tableApi.deleteColumn` / `renameColumn` / `getValue` now report
+  `COLUMN_NOT_FOUND` for a missing column instead of silently succeeding.
+- `createColumn` validates its default value against the declared type.
+- `importTableFromTsv` no longer coerces unparseable numeric/boolean cells
+  to `0` / `false` — they are skipped and reported.
+- The "always returns `ApiResult`, never throws" contract now holds across
+  the whole surface.
+
+## 1.0.0-beta.3 (2026-07-16)
 
 ### Added
 
