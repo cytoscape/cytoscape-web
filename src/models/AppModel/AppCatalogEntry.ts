@@ -1,4 +1,4 @@
-import { AppType } from './AppType'
+import type { AppType } from './AppType'
 
 /**
  * Represents a single app entry from the manifest catalog.

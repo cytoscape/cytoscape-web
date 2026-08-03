@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AppType } from '@/models/AppModel/AppType'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
+import { RootMenu } from '@/models/AppModel/RootMenu'
+import { ServiceAppAction } from '@/models/AppModel/ServiceAppAction'
 import { AppInstallConfirmationDialog } from './AppInstallConfirmationDialog'
 
 const REACT_APP: PendingAppInstall = {
@@ -24,11 +26,11 @@ const SERVICE_APP: PendingAppInstall = {
     name: 'Update tables example',
     version: '0.9.0',
     description: "Adds a new column, named 'test_col' by default.",
-    // Endpoints really do send null here.
-    author: null as unknown as string,
-    citation: null as unknown as string,
-    cyWebActions: ['updateTables'],
-    cyWebMenuItem: { root: 'Tools', path: [] } as never,
+    // Endpoints really do send null here — ServiceMetadata allows it.
+    author: null,
+    citation: null,
+    cyWebActions: [ServiceAppAction.UpdateTables],
+    cyWebMenuItem: { root: RootMenu.Tools, path: [] },
     parameters: [],
   },
 }

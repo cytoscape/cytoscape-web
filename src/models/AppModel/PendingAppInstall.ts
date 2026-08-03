@@ -1,5 +1,5 @@
 import type { AppCatalogEntry } from './AppCatalogEntry'
-import type { AppType } from './AppType'
+import { AppType } from './AppType'
 import type { ServiceMetadata } from './ServiceMetadata'
 
 /**
@@ -15,20 +15,20 @@ import type { ServiceMetadata } from './ServiceMetadata'
  */
 export type PendingAppInstall =
   | {
-      type: typeof AppType.Client
+      readonly type: typeof AppType.Client
       /** The manifest URL the link supplied. */
-      url: string
-      entry: AppCatalogEntry
+      readonly url: string
+      readonly entry: AppCatalogEntry
     }
   | {
-      type: typeof AppType.Service
+      readonly type: typeof AppType.Service
       /** The service endpoint, normalized by `normalizeServiceAppUrl`. */
-      url: string
-      metadata: ServiceMetadata
+      readonly url: string
+      readonly metadata: ServiceMetadata
     }
 
 /** Human-readable label for a pending install, for dialogs and messages. */
 export const pendingInstallName = (pending: PendingAppInstall): string =>
-  pending.type === 'client'
+  pending.type === AppType.Client
     ? (pending.entry.name ?? pending.entry.id)
     : pending.metadata.name

@@ -9,7 +9,7 @@ import type { ServiceMetadata } from './ServiceMetadata'
  *
  * - `ServiceMetadataSchema` answers "is this a usable service app?" and gates
  *   registration (`serviceFetcher`).
- * - `looksLikeServiceMetadata` answers "is this a service app rather than a
+ * - `serviceMetadataIfMarked` answers "is this a service app rather than a
  *   React app manifest?" and gates classification of an `?installApp=` payload.
  *
  * The second is strictly narrower, and the difference matters: service apps in
@@ -83,22 +83,28 @@ export const parseServiceMetadata = (
 }
 
 /**
- * True when a payload is service-app metadata rather than a React app manifest.
+ * Parse a payload only if it is service-app metadata rather than a React app
+ * manifest: valid metadata *plus* at least one field only a service app
+ * declares. Returns undefined otherwise.
  *
- * Valid metadata plus at least one field only a service app declares. A React
- * manifest entry has none of these, and would in any case fail the schema's
- * `name` requirement far less reliably than this — `parseManifest` accepts
- * entries with no `name` at all.
+ * Stricter than `parseServiceMetadata`, and used only to tell the two payload
+ * shapes apart. Requiring a marker to *register* would reject service apps that
+ * work today — see the note above.
+ *
+ * Returns the metadata rather than a boolean so the caller does not have to
+ * parse a second time to get at it.
  */
-export const looksLikeServiceMetadata = (data: unknown): boolean => {
-  const metadata = parseServiceMetadata(data)
-  if (metadata === undefined) {
-    return false
+export const serviceMetadataIfMarked = (
+  data: unknown,
+): ServiceMetadata | undefined => {
+  if (typeof data !== 'object' || data === null) {
+    return undefined
   }
   const raw = data as Record<string, unknown>
-  return (
+  const marked =
     raw.cyWebActions !== undefined ||
     raw.cyWebMenuItem !== undefined ||
     raw.serviceInputDefinition !== undefined
-  )
+
+  return marked ? parseServiceMetadata(data) : undefined
 }

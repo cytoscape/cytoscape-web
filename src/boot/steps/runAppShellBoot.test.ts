@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppStore } from '@/data/hooks/stores/AppStore'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { resetBootStateForTesting } from '../bootState'
@@ -296,9 +297,16 @@ describe('runAppShellBoot: install intents', () => {
   const MANIFEST_URL = `${ALLOWED_ORIGIN}/web/mcodeweb/manifest.json`
   const SERVICE_URL = 'https://svc.example.com/service'
 
+  beforeEach(() => {
+    useMessageStore.getState().resetMessages()
+  })
+
   afterEach(() => {
     useAppStore.setState({ serviceApps: {} })
   })
+
+  const messages = (): string[] =>
+    useMessageStore.getState().messages.map((m) => m.message)
 
   it('classifies an array manifest as a React app without installing it', async () => {
     stubFetchByUrl({ [MANIFEST_URL]: REACT_MANIFEST })
@@ -377,7 +385,9 @@ describe('runAppShellBoot: install intents', () => {
     expect(ctx.navigate).toHaveBeenCalled()
   })
 
-  it('drops a service app that is already registered', async () => {
+  it('says so instead of silently doing nothing when already installed', async () => {
+    // Skipping in silence made an App Store link look broken: no dialog, no
+    // message, no way to tell a working link from a dead one.
     useAppStore.setState({
       serviceApps: { [SERVICE_URL]: { url: SERVICE_URL } as never },
     })
@@ -389,6 +399,43 @@ describe('runAppShellBoot: install intents', () => {
     const result = await runAppShellBoot(ctx)
 
     expect(result.pendingAppInstalls).toEqual([])
+    expect(messages()).toContain('Already installed: Update tables example')
+  })
+
+  it('rejects a relative or non-http URL without fetching it', async () => {
+    // A relative value would otherwise resolve against Cytoscape Web's own
+    // origin and fetch something the link never named.
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const ctx = makeContext({
+      search: new URLSearchParams(
+        'installApp=/api/internal&installApp=file:///etc/passwd',
+      ),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(result.pendingAppInstalls).toEqual([])
+    expect(messages()).toHaveLength(2)
+    expect(ctx.navigate).toHaveBeenCalled()
+  })
+
+  it('lists an app once when two manifest URLs resolve to the same entry', async () => {
+    const mirror = `${ALLOWED_ORIGIN}/mirror/manifest.json`
+    stubFetchByUrl({
+      [MANIFEST_URL]: REACT_MANIFEST,
+      [mirror]: REACT_MANIFEST,
+    })
+    const ctx = makeContext({
+      search: new URLSearchParams(
+        `installApp=${MANIFEST_URL}&installApp=${mirror}`,
+      ),
+    })
+
+    const result = await runAppShellBoot(ctx)
+
+    expect(result.pendingAppInstalls).toHaveLength(1)
   })
 
   it('does not block the boot when an install intent fails', async () => {

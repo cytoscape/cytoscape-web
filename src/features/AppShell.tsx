@@ -16,11 +16,10 @@ import { useMessageStore } from '../data/hooks/stores/MessageStore'
 import { useAppManager } from '../data/hooks/stores/useAppManager'
 import { useLoadNetworkSummaries } from '../data/hooks/useLoadNetworkSummaries'
 import { logStartup } from '../debug'
-import { AppType } from '../models/AppModel/AppType'
 import type { PendingAppInstall } from '../models/AppModel/PendingAppInstall'
-import { pendingInstallName } from '../models/AppModel/PendingAppInstall'
 import { MessageSeverity } from '../models/MessageModel'
 import { AppInstallConfirmationDialog } from './AppManager/AppInstallConfirmationDialog'
+import { installConfirmedApps } from './AppManager/install/installConfirmedApps'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
 import { markCrossTabSyncReady } from '@/data/sync/crossTabSyncGate'
 import { SyncTabsAction } from './SyncTabs'
@@ -104,47 +103,18 @@ const AppShell = (): ReactElement => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ref-guarded run-once init; snapshots URL state by design
   }, [])
 
-  // Installs every confirmed app in turn. Sequential and individually caught: a
-  // link may carry several apps, and one bad endpoint must not abandon the rest.
   const handleConfirmAppInstalls = (): void => {
     const confirmed = pendingAppInstalls
+    // Cleared before the awaits so the dialog closes on the click, not when the
+    // last install settles.
     setPendingAppInstalls([])
-    void (async () => {
-      for (const pending of confirmed) {
-        const name = pendingInstallName(pending)
-        try {
-          if (pending.type === AppType.Client) {
-            // An install intent implies activation (§7.3). The §9 gate inside
-            // installApp still applies and surfaces its own messages.
-            await appManagerCommands.installApp(pending.entry, {
-              activate: true,
-            })
-          } else {
-            // Refetches the endpoint the boot already read. Deliberate:
-            // addService owns the ServiceApp shape and its persistence, and the
-            // boot's copy exists only to name the app in the dialog.
-            await addService(pending.url)
-          }
-          addMessage({
-            message: `Added ${name}`,
-            duration: 4000,
-            severity: MessageSeverity.SUCCESS,
-          })
-        } catch (error) {
-          addMessage({
-            message: `Failed to add ${name} from ${pending.url}: ${
-              error instanceof Error ? error.message : 'unknown error'
-            }`,
-            duration: 5000,
-            severity: MessageSeverity.ERROR,
-          })
-          logStartup.warn(
-            `[AppShell]: installApp intent failed for ${pending.url}`,
-            error,
-          )
-        }
-      }
-    })()
+    void installConfirmedApps(confirmed, {
+      installApp: appManagerCommands.installApp,
+      addService,
+      addMessage,
+      warn: (message, error) =>
+        logStartup.warn(`[AppShell]: ${message}`, error),
+    })
   }
 
   return (

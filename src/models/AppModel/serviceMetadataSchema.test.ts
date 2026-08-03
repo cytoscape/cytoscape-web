@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  looksLikeServiceMetadata,
   parseServiceMetadata,
+  serviceMetadataIfMarked,
 } from './serviceMetadataSchema'
 
 describe('parseServiceMetadata', () => {
@@ -53,33 +53,40 @@ describe('parseServiceMetadata', () => {
   })
 })
 
-describe('looksLikeServiceMetadata', () => {
+describe('serviceMetadataIfMarked', () => {
   it.each(['cyWebActions', 'cyWebMenuItem', 'serviceInputDefinition'])(
-    'is true when %s is present',
+    'parses when %s is present',
     (marker) => {
-      expect(
-        looksLikeServiceMetadata({
-          name: 'Service A',
-          parameters: [],
-          [marker]: marker === 'cyWebActions' ? [] : {},
-        }),
-      ).toBe(true)
+      const metadata = serviceMetadataIfMarked({
+        name: 'Service A',
+        parameters: [],
+        [marker]: marker === 'cyWebActions' ? [] : {},
+      })
+
+      expect(metadata?.name).toBe('Service A')
     },
   )
 
-  it('is false for valid metadata with no service marker', () => {
+  it('returns undefined for valid metadata with no service marker', () => {
     expect(
-      looksLikeServiceMetadata({ name: 'Service A', parameters: [] }),
-    ).toBe(false)
+      serviceMetadataIfMarked({ name: 'Service A', parameters: [] }),
+    ).toBeUndefined()
   })
 
-  it('is false for a React app manifest entry', () => {
+  it('returns undefined for a React app manifest entry', () => {
     expect(
-      looksLikeServiceMetadata({
+      serviceMetadataIfMarked({
         id: 'mcodeweb',
         name: 'MCODE Web',
         url: 'https://apps.cytoscape.org/web/mcodeweb/remoteEntry.js',
       }),
-    ).toBe(false)
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when a marked payload fails the schema', () => {
+    // Marked but unusable: the marker alone must not get it registered.
+    expect(
+      serviceMetadataIfMarked({ cyWebActions: ['updateTables'] }),
+    ).toBeUndefined()
   })
 })

@@ -19,7 +19,9 @@ export interface ServiceMetadata {
   serviceInputDefinition?: ServiceInputDefinition
   cyWebActions: ServiceAppAction[]
   cyWebMenuItem: CyWebMenuItem
-  author: string
-  citation:string
+  // Nullable because endpoints send null rather than omitting them — the live
+  // cytocontainer example service does exactly that for both.
+  author: string | null
+  citation: string | null
   parameters: ServiceAppParameter[]
 }

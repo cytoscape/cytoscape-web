@@ -336,9 +336,10 @@ carries a **pointer to app metadata**, not the metadata itself:
 https://web.cytoscape.org/?installApp=https%3A%2F%2Fapps.cytoscape.org%2Fweb%2Fhello%2Fmanifest.json
 ```
 
-`?installApp=` installs **both app kinds** and is **repeatable** (cytoscape-web
-#639). It replaced `?addserviceapp=`, which is removed. `runInstallIntents`
-fetches each URL and `classifyInstallPayload` resolves what is behind it:
+`?installApp=` installs **both app kinds** and is **repeatable**
+(cytoscape-web `#639`). It replaced `?addserviceapp=`, which is removed.
+`runInstallIntents` fetches each URL and `classifyInstallPayload` resolves what
+is behind it:
 
 | | React app | Service app |
 | --- | --- | --- |

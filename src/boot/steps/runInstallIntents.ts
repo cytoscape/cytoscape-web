@@ -3,6 +3,7 @@ import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { logStartup } from '@/debug'
 import { AppType } from '@/models/AppModel/AppType'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
+import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
 import { normalizeServiceAppUrl } from '@/models/AppModel/impl'
 import { MessageSeverity } from '@/models/MessageModel'
 import { classifyInstallPayload } from '@/features/AppManager/install/classifyInstallPayload'
@@ -45,8 +46,19 @@ const resolveInstallUrl = async (
 ): Promise<PendingAppInstall | undefined> => {
   let payload: unknown
   try {
-    const response = await fetch(url, {
+    // The value is whatever the link put in the query string, so check it is an
+    // absolute http(s) URL before requesting it. A relative value would
+    // otherwise resolve against Cytoscape Web's own origin and fetch something
+    // the link never named.
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error(`unsupported URL scheme "${parsed.protocol}"`)
+    }
+    const response = await fetch(parsed.href, {
       signal: AbortSignal.timeout(INSTALL_FETCH_TIMEOUT_MS),
+      // No ambient session credentials: the URL is untrusted, and app metadata
+      // is public by definition.
+      credentials: 'omit',
     })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
@@ -120,22 +132,46 @@ export const runInstallIntents = async (
   const { serviceApps } = useAppStore.getState()
   const seen = new Set<string>()
   const pendingAppInstalls: PendingAppInstall[] = []
+  const alreadyInstalled: string[] = []
 
   for (const pending of resolved) {
-    if (pending === undefined || seen.has(pending.url)) {
+    if (pending === undefined) {
       continue
     }
-    // Already-registered service apps are dropped silently, as ?addserviceapp=
-    // did. React apps are never dropped: installApp is an upsert, so a repeated
-    // intent is how a version update arrives.
+    // Keyed on what the payload resolved to, not the URL that served it: two
+    // manifest URLs can describe the same app id, and listing it twice would
+    // both read as a duplicate in the dialog and install it twice.
+    const identity =
+      pending.type === AppType.Client
+        ? `${AppType.Client}:${pending.entry.id}`
+        : `${AppType.Service}:${pending.url}`
+    if (seen.has(identity)) {
+      continue
+    }
+    seen.add(identity)
+    // An already-registered service app is not installed again: re-registering
+    // overwrites the stored ServiceApp and discards the parameter values the
+    // user set on it. React apps are never dropped — installApp is an upsert, so
+    // a repeated intent is how a version update arrives.
     if (
       pending.type === AppType.Service &&
       serviceApps[pending.url] !== undefined
     ) {
+      alreadyInstalled.push(pendingInstallName(pending))
       continue
     }
-    seen.add(pending.url)
     pendingAppInstalls.push(pending)
+  }
+
+  // Say so rather than doing nothing. Skipping in silence makes an App Store
+  // link look broken: no dialog opens, no message appears, and the user has no
+  // way to tell a working link from a dead one.
+  if (alreadyInstalled.length > 0) {
+    useMessageStore.getState().addMessage({
+      message: `Already installed: ${alreadyInstalled.join(', ')}`,
+      duration: 4000,
+      severity: MessageSeverity.INFO,
+    })
   }
 
   return { pendingAppInstalls }

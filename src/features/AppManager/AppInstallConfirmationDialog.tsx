@@ -13,9 +13,9 @@ import {
   Typography,
 } from '@mui/material'
 
-import { AppType } from '../../models/AppModel/AppType'
-import type { PendingAppInstall } from '../../models/AppModel/PendingAppInstall'
-import { pendingInstallName } from '../../models/AppModel/PendingAppInstall'
+import { AppType } from '@/models/AppModel/AppType'
+import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
+import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
 
 interface AppInstallConfirmationDialogProps {
   /** Apps the URL asked to install. The dialog is hidden when empty. */

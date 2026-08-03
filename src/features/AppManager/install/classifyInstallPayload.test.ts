@@ -119,6 +119,17 @@ describe('classifyInstallPayload', () => {
     expect(result?.type).toBe('client')
   })
 
+  it('ignores type inside an array, which stays a React manifest', () => {
+    // Documented limitation: a service classification must carry metadata, and a
+    // manifest entry carries only a url. Honoring type: 'service' here would
+    // need a second fetch, which this function cannot do.
+    const result = classifyInstallPayload([
+      { ...REACT_MANIFEST_ENTRY, type: 'service' },
+    ])
+
+    expect(result?.type).toBe('client')
+  })
+
   it('rejects a manifest entry with no valid url', () => {
     const { url: _url, ...withoutUrl } = REACT_MANIFEST_ENTRY
 

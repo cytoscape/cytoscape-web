@@ -12,7 +12,7 @@ export { RootMenu } from './RootMenu'
 export type { ServiceApp } from './ServiceApp'
 export type { ServiceMetadata } from './ServiceMetadata'
 export {
-  looksLikeServiceMetadata,
   parseServiceMetadata,
+  serviceMetadataIfMarked,
   ServiceMetadataSchema,
 } from './serviceMetadataSchema'

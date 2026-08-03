@@ -397,8 +397,11 @@ const ServiceAppSchema = z.object({
   serviceInputDefinition: ServiceInputDefinitionSchema.optional(),
   cyWebActions: z.array(ServiceAppActionSchema),
   cyWebMenuItem: CyWebMenuItemSchema,
-  author: z.string(),
-  citation: z.string(),
+  // Nullable: endpoints send null rather than omitting these. Requiring a string
+  // rejected a snapshot containing the cytocontainer example service, which
+  // sends null for both.
+  author: z.string().nullish(),
+  citation: z.string().nullish(),
   parameters: z.array(ServiceAppParameterSchema),
 })
 

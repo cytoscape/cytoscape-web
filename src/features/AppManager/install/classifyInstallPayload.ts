@@ -1,10 +1,10 @@
-import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
-import { AppType } from '../../../models/AppModel/AppType'
+import type { AppCatalogEntry } from '@/models/AppModel/AppCatalogEntry'
+import { AppType } from '@/models/AppModel/AppType'
 import {
-  looksLikeServiceMetadata,
   parseServiceMetadata,
-} from '../../../models/AppModel/serviceMetadataSchema'
-import { ServiceMetadata } from '../../../models/AppModel/ServiceMetadata'
+  serviceMetadataIfMarked,
+} from '@/models/AppModel/serviceMetadataSchema'
+import type { ServiceMetadata } from '@/models/AppModel/ServiceMetadata'
 import { parseSingleEntryManifest } from './installGate'
 
 /**
@@ -35,8 +35,8 @@ export type ClassifiedInstallPayload =
  *
  * 1. An array is a manifest. This is the only shape the App Store serves today,
  *    so existing `?installApp=` links keep their exact behavior.
- * 2. An explicit `type` field wins over structure. Optional, because making it
- *    required would break every manifest already published on
+ * 2. On a bare object, an explicit `type` field wins over structure. Optional,
+ *    because making it required would break every manifest already published on
  *    apps-stage.cytoscape.org until the App Store republishes them.
  * 3. A service marker (`cyWebActions` / `cyWebMenuItem` /
  *    `serviceInputDefinition`) means service.
@@ -45,6 +45,12 @@ export type ClassifiedInstallPayload =
  *
  * Rules 2-4 handle a bare object rather than an array because a manifest may be
  * served either way (the React example in cytoscape-web#639 is a single object).
+ *
+ * `type` is deliberately not consulted inside an array. A service
+ * classification has to carry metadata, and a manifest entry carries only a
+ * `url` — resolving `type: 'service'` there would mean fetching that URL, which
+ * this function cannot do. If the App Store ever lists service apps in a
+ * manifest, that fetch belongs in the caller, not here.
  */
 export const classifyInstallPayload = (
   data: unknown,
@@ -72,10 +78,9 @@ export const classifyInstallPayload = (
     return entry === undefined ? undefined : { type: AppType.Client, entry }
   }
 
-  if (looksLikeServiceMetadata(data)) {
-    // Guaranteed to parse: looksLikeServiceMetadata already ran the schema.
-    const metadata = parseServiceMetadata(data) as ServiceMetadata
-    return { type: AppType.Service, metadata }
+  const marked = serviceMetadataIfMarked(data)
+  if (marked !== undefined) {
+    return { type: AppType.Service, metadata: marked }
   }
 
   const entry = parseSingleEntryManifest([data])
