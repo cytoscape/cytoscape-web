@@ -2,13 +2,20 @@ import { Box, Button, Tab, Tabs } from '@mui/material'
 import React from 'react'
 import { ChromePicker, CompactPicker, SwatchesPicker } from 'react-color'
 
-import {
-  CompactCustomColors,
-  DivergingCustomColors,
-  SequentialCustomColors,
-  VirdisCustomColors,
-} from '../../../models/VisualStyleModel/impl/colorUtils'
-import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
+import { getPaletteSwatchGroups } from '@/models/VisualStyleModel/impl/colorPalettes'
+import { CompactCustomColors } from '@/models/VisualStyleModel/impl/colorUtils'
+import { ColorType } from '@/models/VisualStyleModel/VisualPropertyValue'
+
+/**
+ * The swatch grids come from the palette table, grouped by `metadata.category`
+ * — the same taxonomy the palette pickers use. Reading the raw colorUtils
+ * arrays instead left this picker with its own idea of what "diverging" means.
+ */
+const SWATCH_GROUPS = {
+  sequential: getPaletteSwatchGroups('sequential'),
+  diverging: getPaletteSwatchGroups('diverging'),
+  viridis: getPaletteSwatchGroups('viridis'),
+} as const
 
 export function ColorPicker(props: {
   currentValue: ColorType | null
@@ -86,7 +93,7 @@ export function ColorPicker(props: {
             // @types/react-color types `width` as a number; the style hook
             // takes the same value and accepts a CSS string.
             styles={{ default: { picker: { width: 'min(945px, 100%)' } } }}
-            colors={SequentialCustomColors}
+            colors={SWATCH_GROUPS.sequential}
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
@@ -98,7 +105,7 @@ export function ColorPicker(props: {
             // @types/react-color types `width` as a number; the style hook
             // takes the same value and accepts a CSS string.
             styles={{ default: { picker: { width: 'min(600px, 100%)' } } }}
-            colors={DivergingCustomColors}
+            colors={SWATCH_GROUPS.diverging}
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
@@ -110,7 +117,7 @@ export function ColorPicker(props: {
             // @types/react-color types `width` as a number; the style hook
             // takes the same value and accepts a CSS string.
             styles={{ default: { picker: { width: 'min(231px, 100%)' } } }}
-            colors={VirdisCustomColors}
+            colors={SWATCH_GROUPS.viridis}
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
