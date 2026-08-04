@@ -29,12 +29,19 @@ export function ColorPicker(props: {
   }, [currentValue])
 
   return (
-    <Box>
+    // A definite width, so the pickers below can size themselves as a
+    // percentage of it. The popover Paper is shrink-to-fit and clips at
+    // `overflow-x: hidden`, so anything wider than the viewport is
+    // unreachable (#653).
+    <Box sx={{ width: 'min(1000px, calc(100vw - 64px))' }}>
       <Tabs
         data-testid="color-picker-tabs"
         value={activeTab}
         onChange={(event, newValue) => setActiveTab(newValue)}
         aria-label="Tab panel"
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
       >
         <Tab
           data-testid="color-picker-sequential-tab"
@@ -69,11 +76,16 @@ export function ColorPicker(props: {
           justifyContent: 'center',
           p: 1,
           height: 275,
+          // The swatch grids are sized as a percentage of this box; letting
+          // flex shrink them below that would re-clip the last column.
+          '& > *': { flexShrink: 0 },
         }}
       >
         {activeTab === 0 && (
           <SwatchesPicker
-            width={945}
+            // @types/react-color types `width` as a number; the style hook
+            // takes the same value and accepts a CSS string.
+            styles={{ default: { picker: { width: 'min(945px, 100%)' } } }}
             colors={SequentialCustomColors}
             color={localColorValue}
             onChange={(color: any) => {
@@ -83,7 +95,9 @@ export function ColorPicker(props: {
         )}
         {activeTab === 1 && (
           <SwatchesPicker
-            width={600}
+            // @types/react-color types `width` as a number; the style hook
+            // takes the same value and accepts a CSS string.
+            styles={{ default: { picker: { width: 'min(600px, 100%)' } } }}
             colors={DivergingCustomColors}
             color={localColorValue}
             onChange={(color: any) => {
@@ -93,7 +107,9 @@ export function ColorPicker(props: {
         )}
         {activeTab === 2 && (
           <SwatchesPicker
-            width={231}
+            // @types/react-color types `width` as a number; the style hook
+            // takes the same value and accepts a CSS string.
+            styles={{ default: { picker: { width: 'min(231px, 100%)' } } }}
             colors={VirdisCustomColors}
             color={localColorValue}
             onChange={(color: any) => {
@@ -119,7 +135,9 @@ export function ColorPicker(props: {
           />
         )}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="color-picker-cancel-button"
           variant="outlined"
