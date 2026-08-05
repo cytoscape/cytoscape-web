@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 
 import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
@@ -17,7 +17,14 @@ import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
 import { createResourceApi } from '../../../app-api/core/resourceApi'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
-import { ViewerPanel } from '../../HierarchyViewer/components'
+// Lazy, directly from MainPanel (not the barrel): the hierarchy viewer pulls
+// d3-hierarchy/-selection/-zoom and react-query, which would otherwise ship
+// with the eager workspace chunk.
+const ViewerPanel = lazy(() =>
+  import('../../HierarchyViewer/components/MainPanel').then((m) => ({
+    default: m.MainPanel,
+  })),
+)
 import { TabPanel } from './TabPanel'
 
 // ── Builtin panel identity ───────────────────────────────────────
@@ -165,7 +172,9 @@ export function renderPanelContents(
       </AppIdProvider>
     ) : (
       // Built-in panel (no AppIdProvider needed)
-      <PanelComponent />
+      <Suspense>
+        <PanelComponent />
+      </Suspense>
     )
 
     return (

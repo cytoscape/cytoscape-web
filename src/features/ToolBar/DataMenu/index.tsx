@@ -5,7 +5,7 @@ import '@mantine/dropzone/styles.css'
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
 import { MenuItem } from 'primereact/menuitem'
-import { useCallback, useState } from 'react'
+import { lazy, Suspense, useCallback, useState } from 'react'
 
 import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
@@ -14,7 +14,12 @@ import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
-import { FileUpload } from '../FileUpload'
+
+// Lazy: FileUpload wraps the Mantine dropzone/modals stack, which would
+// otherwise ship with the eager toolbar chunk. Mounted after first open only.
+const FileUpload = lazy(() =>
+  import('../FileUpload').then((m) => ({ default: m.FileUpload })),
+)
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { DuplicateNetworkMenuItem } from './DuplicateNetworkMenuItem'
@@ -38,6 +43,9 @@ export const DataMenu = () => {
   const [openNdexDialog, setOpenNdexDialog] = useState(false)
   const [openWorkspaceDialog, setOpenWorkspaceDialog] = useState(false)
   const [openFileUpload, setOpenFileUpload] = useState(false)
+  // Mount latch for the lazy FileUpload dialog: stays true after the first
+  // open so the close animation still plays and reopening is instant.
+  const [hasOpenedFileUpload, setHasOpenedFileUpload] = useState(false)
   const [openDeleteNetworkDialog, setOpenDeleteNetworkDialog] = useState(false)
   const [openDeleteAllNetworksDialog, setOpenDeleteAllNetworksDialog] =
     useState(false)
@@ -79,6 +87,7 @@ export const DataMenu = () => {
   // File upload handlers
   const handleOpenFileUpload = (): void => {
     handleClose()
+    setHasOpenedFileUpload(true)
     setOpenFileUpload(true)
   }
   const handleCloseFileUpload = (): void => {
@@ -252,7 +261,14 @@ export const DataMenu = () => {
         open={openWorkspaceDialog}
         handleClose={handleCloseWorkspaceDialog}
       />
-      <FileUpload show={openFileUpload} handleClose={handleCloseFileUpload} />
+      {hasOpenedFileUpload && (
+        <Suspense fallback={null}>
+          <FileUpload
+            show={openFileUpload}
+            handleClose={handleCloseFileUpload}
+          />
+        </Suspense>
+      )}
       <ConfirmationDialog
         title="Remove Current Network"
         message="Do you really want to delete this network?"

@@ -3,11 +3,11 @@ import { useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import {
-  LLMQueryOptionsDialog,
-  LLMQueryOptionsMenuItem,
-  RunLLMQueryMenuItem,
-} from '../../LLMQuery/components'
+// Direct file imports: the components barrel would pull LLMQueryResultPanel
+// (and its query stack) into this eager menu chunk.
+import { LLMQueryOptionsDialog } from '../../LLMQuery/components/LLMQueryOptionsDialog'
+import { LLMQueryOptionsMenuItem } from '../../LLMQuery/components/LLMQueryOptionsMenuItem'
+import { RunLLMQueryMenuItem } from '../../LLMQuery/components/RunLLMQueryMenuItem'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 
