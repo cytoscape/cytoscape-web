@@ -17,11 +17,17 @@ import { expect, test } from './fixtures'
 
 const FIXTURE_MANIFEST_URL = 'http://localhost:4191/manifest.json'
 
-// The host redirects `/` to `/<workspaceId>/networks`, so the URL is an
+// The host redirects `/` to `<base>/<workspaceId>/networks`, so the URL is an
 // independent source for the id the remote should have received.
+//
+// Anchored on the `networks` segment rather than on position: under a based
+// deployment the path is `/cytoscape/<workspaceId>/networks`, and taking the
+// first segment would yield `cytoscape`. That is invisible at the default base
+// of `/` and wrong on the `/cytoscape/` staging host.
 const workspaceIdFromUrl = (url: string): string => {
-  const [, id] = new URL(url).pathname.split('/')
-  return id ?? ''
+  const segments = new URL(url).pathname.split('/').filter((s) => s !== '')
+  const networksAt = segments.indexOf('networks')
+  return networksAt > 0 ? segments[networksAt - 1] : ''
 }
 
 test.describe('host loads a real federated remote', () => {

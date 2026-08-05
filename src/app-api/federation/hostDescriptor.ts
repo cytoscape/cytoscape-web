@@ -11,6 +11,7 @@
 // federationExposes.ts, this file stays free of React and Vite-plugin imports
 // so it is trivially importable from a Vitest unit test and cheap enough to sit
 // in the boot chunk.
+import { ensureTrailingSlash } from '../../utils/baseUrl'
 import { FEDERATION_FILENAME, FEDERATION_NAME } from './federationExposes'
 
 /**
@@ -51,7 +52,17 @@ declare global {
  * expression tests only itself. `urlBaseName` is '/' in production today, so an
  * end-to-end run proves nothing about the based-deployment case this covers.
  *
- * @param base     Vite's resolved base (`import.meta.env.BASE_URL`), e.g. '/' or '/cytoscape/'
+ * `base` is normalized rather than trusted. Vite does **not** guarantee a
+ * trailing slash on `import.meta.env.BASE_URL` — measured: with
+ * `base: '/cytoscape'`, the built bundle inlines exactly `"/cytoscape"`, even
+ * though Vite adds the slash when it joins asset paths itself. Concatenating
+ * that would yield `/cytoscaperemoteEntry.js`. `vite.config.ts` currently calls
+ * `ensureTrailingSlash(config.urlBaseName)`, so the bad input cannot reach here
+ * today — but that is one call site away from being the whole defence, and this
+ * failure is invisible on a root deployment while being fatal on a based one
+ * (e.g. the `/cytoscape/` staging host).
+ *
+ * @param base     Vite's resolved base (`import.meta.env.BASE_URL`), with or without a trailing slash
  * @param href     The page URL to resolve against (`window.location.href`)
  * @param filename The federation entry filename (FEDERATION_FILENAME)
  */
@@ -59,7 +70,7 @@ export const buildHostRemoteEntryUrl = (
   base: string,
   href: string,
   filename: string,
-): string => new URL(`${base}${filename}`, href).href
+): string => new URL(`${ensureTrailingSlash(base)}${filename}`, href).href
 
 /**
  * Installs the descriptor on `target` as a frozen, non-writable,

@@ -28,6 +28,16 @@ describe('buildHostRemoteEntryUrl', () => {
     ).toBe('https://h/cytoscape/remoteEntry.js')
   })
 
+  it('normalizes a base with no trailing slash', () => {
+    // Vite does NOT guarantee one: measured, `base: '/cytoscape'` inlines
+    // exactly "/cytoscape" into import.meta.env.BASE_URL. Concatenating that
+    // would produce '/cytoscaperemoteEntry.js' — a URL that 404s on a based
+    // deployment and cannot occur on a root one, so nothing else would catch it.
+    expect(buildHostRemoteEntryUrl('/cytoscape', 'https://h/y/z', FILENAME)).toBe(
+      'https://h/cytoscape/remoteEntry.js',
+    )
+  })
+
   it('produces an absolute URL from a relative page href', () => {
     // A remote resolves this URL from its own origin, so a relative result
     // would silently point at the REMOTE's server instead of the host's.

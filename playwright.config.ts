@@ -26,7 +26,11 @@ const useDevServer = process.env.E2E_DEV === '1';
 //
 // When set, no webServer is started: there is nothing local to serve, and
 // waiting out a production build to check a remote URL is pure cost.
-const externalHostUrl = process.env.CYWEB_HOST_URL;
+//
+// `|| undefined` rather than the raw value: an empty CYWEB_HOST_URL= would
+// otherwise give baseURL '' (invalid) while still starting the local server,
+// because '' is falsy for the webServer branch but not nullish for `??`.
+const externalHostUrl = process.env.CYWEB_HOST_URL || undefined;
 
 export default defineConfig({
 	testDir: './test/playwright',
