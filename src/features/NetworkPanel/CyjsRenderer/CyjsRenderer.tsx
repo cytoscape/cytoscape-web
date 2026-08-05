@@ -8,7 +8,7 @@ import Cytoscape, {
   Position,
   SingularElementArgument,
 } from 'cytoscape'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
