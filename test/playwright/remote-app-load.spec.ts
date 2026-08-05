@@ -8,8 +8,27 @@ import { expect, test } from './fixtures'
 // → loadRemoteApp → mount(). The remote renders a React (hooks) marker, which
 // also demonstrates the shared-React singleton wiring works across two
 // independently-built bundles.
+//
+// It also covers the REVERSE direction: the fixture imports `cyweb/WorkspaceApi`
+// and renders the host's workspaceId. That import can only resolve if the
+// fixture's runtime plugin read window.__CYWEB_HOST__ and rewrote its `cyweb`
+// remote entry — the fixture compiles in an unloadable sentinel, so a resolver
+// that never ran fails the load outright.
 
 const FIXTURE_MANIFEST_URL = 'http://localhost:4191/manifest.json'
+
+// The host redirects `/` to `<base>/<workspaceId>/networks`, so the URL is an
+// independent source for the id the remote should have received.
+//
+// Anchored on the `networks` segment rather than on position: under a based
+// deployment the path is `/cytoscape/<workspaceId>/networks`, and taking the
+// first segment would yield `cytoscape`. That is invisible at the default base
+// of `/` and wrong on the `/cytoscape/` staging host.
+const workspaceIdFromUrl = (url: string): string => {
+  const segments = new URL(url).pathname.split('/').filter((s) => s !== '')
+  const networksAt = segments.indexOf('networks')
+  return networksAt > 0 ? segments[networksAt - 1] : ''
+}
 
 test.describe('host loads a real federated remote', () => {
   test('registers, activates, and renders the remote app', async ({ page }) => {
@@ -48,6 +67,16 @@ test.describe('host loads a real federated remote', () => {
     )
     expect(typeof remoteReactVersion).toBe('string')
     expect(remoteReactVersion).toMatch(/^\d+\./)
+
+    // Remote → host: the fixture called cyweb/WorkspaceApi and rendered what it
+    // got back. Asserted against the id in the URL rather than "is non-empty" —
+    // an empty render, an error branch, or a mis-shaped cyweb.d.ts (which
+    // yields `undefined`) would all satisfy a looser check.
+    const expectedWorkspaceId = workspaceIdFromUrl(page.url())
+    expect(expectedWorkspaceId).not.toBe('')
+    await expect(
+      page.locator('[data-testid="remote-host-workspace-id"]'),
+    ).toHaveText(expectedWorkspaceId)
   })
 
   test('host renders a remote hooks component (single shared React)', async ({
@@ -71,9 +100,9 @@ test.describe('host loads a real federated remote', () => {
     const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
     await expect(toggle).toBeVisible({ timeout: 15_000 })
     await toggle.click()
-    await expect(
-      page.locator('[data-testid="remote-app-marker"]'),
-    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible(
+      { timeout: 15_000 },
+    )
 
     // On mount the remote registered an 'apps-menu' resource whose component
     // calls a React hook. The host renders it inside its OWN React tree — which
@@ -84,9 +113,9 @@ test.describe('host loads a real federated remote', () => {
     await expect(
       page.locator('[data-testid="remote-menu-marker"]'),
     ).toBeVisible({ timeout: 10_000 })
-    await expect(
-      page.locator('[data-testid="remote-menu-marker"]'),
-    ).toHaveText('single-react-ok')
+    await expect(page.locator('[data-testid="remote-menu-marker"]')).toHaveText(
+      'single-react-ok',
+    )
     expect(hookErrors).toEqual([])
   })
 })

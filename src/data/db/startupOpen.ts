@@ -20,10 +20,10 @@ import {
 // open a database at a version below the one on disk, and currentVersion has
 // moved seven times so far.
 //
-// It needs two builds on one *origin* (scheme + host + port). Netlify's branch
-// deploys are therefore safe — <branch>--incredible-meringue-aa83b1.netlify.app
-// gives each branch its own hostname and so its own IndexedDB. What is not safe
-// is localhost:5500, which is a single origin for every branch you check out:
+// It needs two builds on one *origin* (scheme + host + port). Any preview
+// scheme that gives each branch its own hostname is therefore safe: a distinct
+// origin means a distinct IndexedDB. What is not safe is localhost:5500, a
+// single origin for every branch you check out:
 // run a branch whose schema is ahead, switch back, and the app cannot open the
 // database it left behind. Rarer but worse, a production rollback past a
 // version bump does the same to every user who booted the newer build.

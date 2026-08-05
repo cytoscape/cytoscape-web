@@ -38,6 +38,12 @@ jobs:
       - name: Run build
         run: npm run build
 
+      # Must stay in THIS job, right after the build: the verifier reads dist/,
+      # and dist/ does not survive a job boundary. A separate verify job would
+      # silently verify nothing.
+      - name: Verify Module Federation build output
+        run: npm run verify:federation
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

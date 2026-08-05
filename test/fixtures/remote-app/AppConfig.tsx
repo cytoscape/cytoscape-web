@@ -6,10 +6,17 @@
 // container.init(shareScope), container.get('./AppConfig'), and invokes the
 // default-exported CyApp's mount() lifecycle.
 //
-// Self-contained — it does NOT import host types, so the fixture builds without
-// pulling in the host source tree.
+// Self-contained apart from the ONE federated import below — it does not pull
+// in the host source tree; `cyweb/WorkspaceApi` is declared locally in
+// cyweb.d.ts and resolved at runtime through the federation runtime.
 import { useState, version as reactVersion } from 'react'
 import { createRoot } from 'react-dom/client'
+
+// A RUNTIME import, not `import type`. A type-only import is erased at build
+// time and would exercise nothing: this is the only thing in the suite that
+// makes the remote consume a host API, which is the direction the runtime host
+// resolution (mfRuntimePlugin.ts) exists to make work.
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 
 // Rendered by the remote into its OWN React root (mount). Proves the federated
 // bundle loaded and its React works — independent of host↔remote sharing.
@@ -18,9 +25,19 @@ function Marker(): JSX.Element {
   ;(
     window as unknown as { __remoteReactVersion?: string }
   ).__remoteReactVersion = reactVersion
+
+  // Call the host API and render its result. The VALUE is what the E2E asserts
+  // — an element that merely exists would also appear if this rendered the
+  // empty string, which is what a mis-shaped cyweb.d.ts produces.
+  const info = useWorkspaceApi().getWorkspaceInfo()
+  const workspaceId = info.success
+    ? info.data.workspaceId
+    : `ERROR:${info.error.code}`
+
   return (
     <div data-testid="remote-app-marker">
       remote app mounted: {reactWorks} (react {reactVersion})
+      <span data-testid="remote-host-workspace-id">{workspaceId}</span>
     </div>
   )
 }

@@ -16,6 +16,22 @@ import { defineConfig, devices } from '@playwright/test';
 // stack traces while debugging a spec.
 const useDevServer = process.env.E2E_DEV === '1';
 
+// Point the suite at an already-deployed host instead of a local build. Only
+// host-descriptor.spec.ts is meaningful this way -- it asserts the federation
+// descriptor contract against whatever is actually serving -- and it is how the
+// contract is checked against production (a Phase 2 exit criterion of the
+// app-examples Vite migration) and against any staging deployment:
+//
+//   CYWEB_HOST_URL=https://web.cytoscape.org npx playwright test host-descriptor --project=chromium
+//
+// When set, no webServer is started: there is nothing local to serve, and
+// waiting out a production build to check a remote URL is pure cost.
+//
+// `|| undefined` rather than the raw value: an empty CYWEB_HOST_URL= would
+// otherwise give baseURL '' (invalid) while still starting the local server,
+// because '' is falsy for the webServer branch but not nullish for `??`.
+const externalHostUrl = process.env.CYWEB_HOST_URL || undefined;
+
 export default defineConfig({
 	testDir: './test/playwright',
 	fullyParallel: true,
@@ -35,7 +51,7 @@ export default defineConfig({
 	// two, where the machine is slower and a rerun is cheaper than a red build.
 	retries: process.env.CI ? 2 : 1,
 	use: {
-		baseURL: 'http://localhost:5500',
+		baseURL: externalHostUrl ?? 'http://localhost:5500',
 		headless: true,
 		trace: 'on-first-retry',
 		video: 'retain-on-failure',
@@ -55,7 +71,8 @@ export default defineConfig({
 			use: { ...devices['Desktop Safari'] }
 		}
 	],
-	webServer: [
+	// Empty when targeting an external host: there is nothing local to serve.
+	webServer: externalHostUrl ? [] : [
 		{
 			// `vite preview` serves build.outDir at the configured base ('/'), so the
 			// baseURL above is unchanged either way.

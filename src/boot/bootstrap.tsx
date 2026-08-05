@@ -5,6 +5,7 @@ import React from 'react'
 import * as ReactDOM from 'react-dom/client'
 
 import { AppConfigContext } from '../AppConfigContext'
+import { publishHostDescriptor } from '../app-api/federation/hostDescriptor'
 import appConfig from '../assets/config.json'
 import { initializeDebug, logStartup } from '../debug'
 import ErrorBoundary from '../features/ErrorBoundary'
@@ -23,6 +24,14 @@ import { initializeTabManager } from './tabManager'
 // Boot entry point. Deliberately thin: it wires phases together and renders.
 // The phases themselves live in their own modules, and runPhase gives each one
 // timing and error handling — see boot_docs/boot.md for the full sequence.
+
+// Publish the host descriptor a federated app's Module Federation runtime reads
+// to find this host's remoteEntry.js. Assigned SYNCHRONOUSLY at boot-chunk
+// evaluation: a remote's beforeInit hook is synchronous and must never lose a
+// race with this. Deliberately NOT part of window.CyWebApi below — that object
+// arrives from an async import() and its consumers are gated behind
+// cywebapi:ready, which is far too late and the wrong shape for a sync hook.
+publishHostDescriptor(window, import.meta.env.BASE_URL, window.location.href)
 
 // Assign CyWebApi to window for external consumers (browser extensions, LLM
 // agents). Loaded asynchronously — it pulls in the store/data layer, which
