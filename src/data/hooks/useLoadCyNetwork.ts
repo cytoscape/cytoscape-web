@@ -4,6 +4,7 @@ import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
+import { takePrefetchedCyNetwork } from '../prefetch/networkPrefetch'
 import { useCredentialStore } from './stores/CredentialStore'
 
 /**
@@ -26,6 +27,13 @@ export const useLoadCyNetwork = () => {
     try {
       // First, check the local cache
       try {
+        // Boot may have started this exact read at PUBLISH time; consuming it
+        // here saves re-deserializing a large network. Falls through to a
+        // fresh read (and the NDEx path below) on any miss or failure.
+        const prefetched = takePrefetchedCyNetwork(networkId)
+        if (prefetched !== undefined) {
+          return await prefetched
+        }
         const cyNetwork = await getCyNetworkFromDb(networkId)
         return cyNetwork
       } catch {

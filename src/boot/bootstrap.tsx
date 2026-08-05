@@ -20,6 +20,7 @@ import { isBootAborted, runPhase } from './runBoot'
 import { repaintBootShell } from './shell/showBootShell'
 import { startAuthentication } from './startAuthentication'
 import { initializeTabManager } from './tabManager'
+import { runOnIdle } from '../utils/idlePrefetch'
 
 // Boot entry point. Deliberately thin: it wires phases together and renders.
 // The phases themselves live in their own modules, and runPhase gives each one
@@ -58,22 +59,31 @@ const initializeApp = async (): Promise<void> => {
     enableMapSet() // lets immer work with Map and Set
     initializeDebug()
 
-    // Independently guarded rather than inlined above. Both touch APIs a
-    // hardened browsing context can refuse — window.name and analytics
-    // storage — and neither is a prerequisite for the other or for the app, so
-    // one being blocked must not take the other down with it. RUNTIME as a
-    // whole is non-fatal, but that isolation stops at the phase boundary.
+    // Independently guarded rather than inlined above: it touches an API a
+    // hardened browsing context can refuse — window.name — and it is not a
+    // prerequisite for the app, so being blocked must not abort the phase.
     try {
       initializeTabManager()
     } catch (cause) {
       logStartup.warn('[boot]: tab identity unavailable', cause)
     }
+  })
 
-    try {
-      initializeGoogleAnalytics()
-    } catch (cause) {
-      logStartup.warn('[boot]: analytics initialization failed', cause)
-    }
+  const { keycloak, handleVerify, handleCancel, checkUserVerification } =
+    initializeKeycloak()
+
+  // Started before the database gate on purpose: the silent-SSO check is
+  // network-bound while the database open is disk-bound, so the two overlap.
+  // Not awaited — the app renders optimistically over the SSO check.
+  // CredentialStore's auth gate — not ordering — is what keeps a logged-in
+  // user's startup fetches from going out anonymously. The check runs in a
+  // hidden iframe and never navigates the top-level page, so if the database
+  // gate below aborts the boot, an in-flight check is harmless under the
+  // error shell.
+  const authResolution = startAuthentication({
+    keycloak,
+    checkUserVerification,
+    urlBaseName: appConfig.urlBaseName,
   })
 
   // The gate. A dead database is the one failure the app cannot render over —
@@ -85,18 +95,6 @@ const initializeApp = async (): Promise<void> => {
     repaintBootShell({ error: getBootState().error })
     return
   }
-
-  const { keycloak, handleVerify, handleCancel, checkUserVerification } =
-    initializeKeycloak()
-
-  // Started, not awaited: the app renders optimistically over the SSO check.
-  // CredentialStore's auth gate — not ordering — is what keeps a logged-in
-  // user's startup fetches from going out anonymously.
-  const authResolution = startAuthentication({
-    keycloak,
-    checkUserVerification,
-    urlBaseName: appConfig.urlBaseName,
-  })
 
   root.render(
     <AppConfigContext.Provider value={appConfig}>
@@ -115,6 +113,18 @@ const initializeApp = async (): Promise<void> => {
   )
 
   markBoot('react-render')
+
+  // Analytics is pure overhead for startup: deferred to idle time so the gtag
+  // script never competes with the boot-critical chunks or the SSO iframe for
+  // the connection. Guarded because analytics storage can be refused by a
+  // hardened browsing context, and that must not take anything down with it.
+  runOnIdle(() => {
+    try {
+      initializeGoogleAnalytics()
+    } catch (cause) {
+      logStartup.warn('[boot]: analytics initialization failed', cause)
+    }
+  })
 }
 
 void initializeApp()
