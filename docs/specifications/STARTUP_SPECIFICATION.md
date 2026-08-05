@@ -186,13 +186,19 @@ these.
 
 | Milestone                  | ms   |
 | -------------------------- | ---- |
-| first contentful paint     | 264  |
-| `shell-painted`            | 247  |
-| `init-exec`                | 1630 |
-| `react-render`             | 1645 |
-| `app-shell-mounted`        | 3194 |
-| `workspace-hydrated`       | 3224 |
-| `workspace-editor-mounted` | 4148 |
+| first contentful paint     | 268  |
+| `shell-painted`            | 250  |
+| `init-exec`                | 1369 |
+| `react-render`             | 1382 |
+| `auth-settled`             | 1372 |
+| `app-shell-mounted`        | 3228 |
+| `workspace-hydrated`       | 3244 |
+| `workspace-editor-mounted` | 4159 |
+
+Recorded after the #603 load-performance series (empty workspace; the
+cold-load JS transfer for the same scenario was 1164 KB, down from 1292 KB
+before the series, with cytoscape and the feature chunks off the pre-render
+path).
 
 The gap from `shell-painted` to `init-exec` is the Module Federation shared
 chunk downloading; that is the cost the boot shell exists to cover, not a
