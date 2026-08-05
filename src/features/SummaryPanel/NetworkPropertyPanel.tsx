@@ -23,7 +23,14 @@ import {
   Typography,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { lazy, ReactElement, Suspense, useContext, useState } from 'react'
+import {
+  lazy,
+  ReactElement,
+  Suspense,
+  useContext,
+  useRef,
+  useState,
+} from 'react'
 
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
@@ -85,6 +92,16 @@ export const NetworkPropertyPanel = ({
   const [editNetworkSummaryAnchorEl, setEditNetworkSummaryAnchorEl] = useState<
     HTMLButtonElement | undefined
   >(undefined)
+
+  // The editor is lazy (tiptap stack), but an unconditional mount makes
+  // React.lazy fetch it on every cold load with a populated workspace — one
+  // fetch per network row. Mount only after the first open; the ref write
+  // during render is safe because the anchor flipping is itself what triggers
+  // the re-render that reads it.
+  const hasOpenedSummaryEditorRef = useRef<boolean>(false)
+  if (editNetworkSummaryAnchorEl !== undefined) {
+    hasOpenedSummaryEditorRef.current = true
+  }
 
   // Anchor of the overflow ("...") menu holding the save / edit / delete actions
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLButtonElement | null>(
@@ -593,25 +610,27 @@ export const NetworkPropertyPanel = ({
             <HcxValidationButtonGroup id={id} />
           </Box>
         </Box>
-        <Suspense
-          fallback={
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minHeight="0"
-              height="20px"
-            >
-              <CircularProgress size={16} />
-            </Box>
-          }
-        >
-          <NetworkPropertyEditor
-            networkId={summary.externalId}
-            anchorEl={editNetworkSummaryAnchorEl}
-            onClose={hideEditNetworkSummaryForm}
-          />
-        </Suspense>
+        {hasOpenedSummaryEditorRef.current && (
+          <Suspense
+            fallback={
+              <Box
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                minHeight="0"
+                height="20px"
+              >
+                <CircularProgress size={16} />
+              </Box>
+            }
+          >
+            <NetworkPropertyEditor
+              networkId={summary.externalId}
+              anchorEl={editNetworkSummaryAnchorEl}
+              onClose={hideEditNetworkSummaryForm}
+            />
+          </Suspense>
+        )}
         <ConfirmationDialog
           title="Remove Network From Workspace"
           message={`Do you really want to delete the network "${summary.name}"?`}

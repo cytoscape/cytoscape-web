@@ -187,18 +187,25 @@ these.
 | Milestone                  | ms   |
 | -------------------------- | ---- |
 | first contentful paint     | 268  |
-| `shell-painted`            | 250  |
-| `init-exec`                | 1369 |
-| `react-render`             | 1382 |
-| `auth-settled`             | 1372 |
-| `app-shell-mounted`        | 3228 |
-| `workspace-hydrated`       | 3244 |
-| `workspace-editor-mounted` | 4159 |
+| `shell-painted`            | 252  |
+| `init-exec`                | 1370 |
+| `react-render`             | 1383 |
+| `auth-settled`             | 1374 |
+| `app-shell-mounted`        | 3233 |
+| `workspace-hydrated`       | 3250 |
+| `workspace-editor-mounted` | 3700 |
 
 Recorded after the #603 load-performance series (empty workspace; the
-cold-load JS transfer for the same scenario was 1164 KB, down from 1292 KB
+cold-load JS transfer for the same scenario was 973 KB, down from 1292 KB
 before the series, with cytoscape and the feature chunks off the pre-render
-path).
+path and the table-loader form chunks no longer fetched at cold load).
+
+One negative result worth keeping: injecting `modulepreload`/`prefetch`
+hints for the App/AppShell/WorkspaceEditor chunk closures was measured and
+rejected. Bandwidth, not discovery latency, binds this path — equal-priority
+preloads starved the chunks that gate `init-exec`/`auth-settled` (both
+regressed to ~2.8 s), and low-priority prefetch was slower everywhere.
+Re-measure before reintroducing hints.
 
 The gap from `shell-painted` to `init-exec` is the Module Federation shared
 chunk downloading; that is the cost the boot shell exists to cover, not a

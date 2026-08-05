@@ -51,10 +51,13 @@ const NetworkPropertyEditor = (
 
   const editor = useEditor({
     onUpdate: ({ editor }) => {
-      setLocalSummaryState({
-        ...localSummaryState,
+      // Functional update on purpose: this callback is bound when the editor
+      // is created, so spreading a captured `localSummaryState` here would
+      // silently revert any field (e.g. the name) edited after that render.
+      setLocalSummaryState((previous) => ({
+        ...previous,
         description: editor.getHTML(),
-      })
+      }))
     },
     extensions: [
       StarterKit,
@@ -68,11 +71,17 @@ const NetworkPropertyEditor = (
     content: removePTags(localSummaryState.description ?? ''),
   })
 
+  // Sync the draft from the store only when the popover opens. Keying this on
+  // `summary` clobbered in-progress edits: any background summary update while
+  // the editor is open (layout completion setting hasLayout, a cross-tab
+  // echo) replaced the user's draft with the store copy mid-typing.
   useEffect(() => {
-    setLocalSummaryState(summary)
-    editor?.commands?.setContent(removePTags(summary.description ?? ''))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summary])
+    if (open) {
+      setLocalSummaryState(summary)
+      editor?.commands?.setContent(removePTags(summary.description ?? ''))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resync only on open/close, not on background summary changes
+  }, [open])
 
   return (
     <Popover
