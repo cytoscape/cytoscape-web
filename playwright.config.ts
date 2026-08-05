@@ -20,7 +20,7 @@ const useDevServer = process.env.E2E_DEV === '1';
 // host-descriptor.spec.ts is meaningful this way -- it asserts the federation
 // descriptor contract against whatever is actually serving -- and it is how the
 // contract is checked against production (a Phase 2 exit criterion of the
-// app-examples Vite migration) and against Netlify branch previews:
+// app-examples Vite migration) and against any staging deployment:
 //
 //   CYWEB_HOST_URL=https://web.cytoscape.org npx playwright test host-descriptor --project=chromium
 //

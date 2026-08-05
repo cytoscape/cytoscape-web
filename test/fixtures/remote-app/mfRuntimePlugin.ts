@@ -9,7 +9,7 @@
 // The host publishes its own remoteEntry.js URL on `window.__CYWEB_HOST__`
 // during boot (src/app-api/federation/hostDescriptor.ts); this replaces the
 // compiled-in placeholder with it. Effect: one build of an app works against
-// any Cytoscape Web deployment — production, a Netlify branch preview, or a
+// any Cytoscape Web deployment — production, a staging instance, or a
 // local host on any port.
 
 import { CYWEB_HOST_REQUIRED } from './cywebHostSentinel'

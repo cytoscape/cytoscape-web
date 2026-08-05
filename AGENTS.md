@@ -185,7 +185,6 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 - `npm install` - Install dependencies
 - `npm run dev` - Start dev server (opens browser at localhost:5500)
 - `npm run build` - Build for production
-- `npm run build:netlify` - Build for Netlify deployment
 - `npm run build:analyze` - Build with a Rollup visualizer report
 - `npm run build:api-types` - Build the `@cytoscape-web/api-types` package
 - `npm run clean` - Remove dist folder
@@ -311,5 +310,4 @@ Read these before working in related areas:
 - **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
 - **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.
 - **Keycloak Auth** — SSO authentication with `silent-check-sso.html` for silent token refresh.
-- **Netlify Auto-Deploy** — All branches auto-deploy to `<branch>--incredible-meringue-aa83b1.netlify.app`.
 - **Branch Workflow** — `development` (default) → `master` (release) → GitHub release → Zenodo DOI.

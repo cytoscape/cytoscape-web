@@ -186,15 +186,6 @@ Available project names are `chromium`, `firefox`, and `webkit` (matching `playw
 
 No Windows-specific setup is required. Build metadata (git commit, timestamps) is computed automatically inside `vite.config.ts`, and scripts that set environment variables use `cross-env`, so `npm run dev`, `npm run build`, and the test commands work the same on Windows, macOS, and Linux.
 
-## Deploy on Netlify
-
-All branches will have deploy previews automatically once changes pushed to github. The url is:
-`branch name`--incredible-meringue-aa83b1.netlify.app
-
-For example, if the branch is development, the url is <https:development--incredible-meringue-aa83b1.netlify.app>
-
-It usually takes few minutes to reflect changes.
-
 ## Build for production
 
 Before building for production, you **must** update `src/assets/config.json` with the
