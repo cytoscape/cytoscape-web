@@ -1,4 +1,4 @@
-import type { DataTableValue } from 'primereact/datatable'
+import type { ParsedRow as DataTableValue } from '../ParsedRow'
 
 import { ValueType,ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'

@@ -1,4 +1,4 @@
-import { MenuItem } from 'primereact/menuitem'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'

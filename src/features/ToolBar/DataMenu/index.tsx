@@ -1,6 +1,6 @@
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
-import { MenuItem } from 'primereact/menuitem'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { lazy, Suspense, useCallback, useState } from 'react'
 
 import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'

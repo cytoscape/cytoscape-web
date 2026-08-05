@@ -1,4 +1,4 @@
-import type { DataTableValue } from 'primereact/datatable'
+import type { ParsedRow as DataTableValue } from '../ParsedRow'
 import { v4 as uuidv4 } from 'uuid'
 
 import { CyNetwork } from '../../../../models/CyNetworkModel'

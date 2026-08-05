@@ -1,4 +1,4 @@
-import { DataTableValue } from 'primereact/datatable'
+import type { ParsedRow as DataTableValue } from '../model/ParsedRow'
 import { describe, expect, it } from 'vitest'
 
 import { Column,Table } from '../../../models/TableModel'
