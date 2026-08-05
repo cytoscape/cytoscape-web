@@ -1,5 +1,11 @@
-import { MantineProvider, NumberInput } from '@mantine/core'
-import { Box, Button,ButtonBase, Popover } from '@mui/material'
+import {
+  Box,
+  Button,
+  ButtonBase,
+  InputAdornment,
+  Popover,
+  TextField,
+} from '@mui/material'
 import React from 'react'
 
 
@@ -78,7 +84,7 @@ export function ExpandableNumberInput(props: {
   }
 
   return (
-    <MantineProvider>
+    <>
       <ButtonBase
         disabled={props.disabled}
         onClick={(e) => showPopover(e)}
@@ -120,19 +126,28 @@ export function ExpandableNumberInput(props: {
           horizontal: 'center',
         }}
       >
-        <NumberInput
-          error={errorMsg(localValue)}
-          min={props.min != null ? toDisplay(props.min) : undefined}
-          max={props.max != null ? toDisplay(props.max) : undefined}
-          suffix={suffix}
+        <TextField
+          type="number"
+          size="small"
+          error={errorMsg(localValue) !== null}
+          helperText={errorMsg(localValue)}
           value={toDisplay(localValue)}
-          // decimalScale={2}
-          onChange={(newValue) => {
-            if (typeof newValue === 'string') {
-              setLocalValue(0)
-            } else {
-              setLocalValue(fromDisplay(newValue))
-            }
+          inputProps={{
+            min: props.min != null ? toDisplay(props.min) : undefined,
+            max: props.max != null ? toDisplay(props.max) : undefined,
+          }}
+          InputProps={
+            suffix !== ''
+              ? {
+                  endAdornment: (
+                    <InputAdornment position="end">{suffix}</InputAdornment>
+                  ),
+                }
+              : undefined
+          }
+          onChange={(e) => {
+            const parsed = Number.parseFloat(e.target.value)
+            setLocalValue(Number.isNaN(parsed) ? 0 : fromDisplay(parsed))
           }}
         />
         <Box
@@ -164,6 +179,6 @@ export function ExpandableNumberInput(props: {
           </Button>
         </Box>
       </Popover>
-    </MantineProvider>
+    </>
   )
 }

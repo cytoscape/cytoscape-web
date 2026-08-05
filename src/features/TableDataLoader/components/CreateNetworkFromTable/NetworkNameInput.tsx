@@ -1,4 +1,4 @@
-import { TextInput } from '@mantine/core'
+import { TextField } from '@mui/material'
 import debounce from 'lodash/debounce'
 import { useState } from 'react'
 
@@ -15,8 +15,9 @@ export const NetworkNameInput = () => {
   }, 500)
 
   return (
-    <TextInput
+    <TextField
       data-testid="create-network-from-table-name-input"
+      size="small"
       value={value}
       onChange={(event) => {
         setValue(event.currentTarget.value)

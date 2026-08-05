@@ -1,4 +1,4 @@
-import { Button, Tooltip } from '@mantine/core'
+import { Button, ButtonGroup, Tooltip } from '@mui/material'
 import { IconBan, IconFileText, IconKey } from '@tabler/icons-react'
 
 import { ColumnAppendType } from '../../model/ColumnAppendType'
@@ -14,13 +14,22 @@ export const columnAppendIconMap = {
   [ColumnAppendType.NotImported]: <IconBan size={20} color="gray" />,
 }
 
+const compactButtonSx = {
+  minWidth: 0,
+  px: 0.75,
+  py: 0.25,
+  color: 'text.primary',
+  borderColor: 'divider',
+  textTransform: 'none',
+} as const
+
 export function ColumnAppendTypeRender(props: { value: ColumnAppendType }) {
   return (
     <Button
-      justify="flex-start"
-      size="compact-xs"
-      leftSection={columnAppendIconMap[props.value]}
-      variant="default"
+      size="small"
+      variant="outlined"
+      startIcon={columnAppendIconMap[props.value]}
+      sx={{ ...compactButtonSx, justifyContent: 'flex-start' }}
     >
       {columnAppendType2Label[props.value]}
     </Button>
@@ -37,23 +46,28 @@ export function ColumnAppendForm(props: ColumnAppendFormProps) {
   const { value, onChange, validValues } = props
 
   return (
-    <Button.Group>
+    <ButtonGroup size="small" variant="outlined">
       {Object.values(ColumnAppendType).map((v) => {
         return (
-          <Tooltip key={v} label={columnAppendType2Label[v]}>
-            <Button
-              style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
-              disabled={!validValues.includes(v)}
-              onClick={() => onChange(v)}
-              bg={v === value ? '#D6D6D6' : 'white'}
-              justify="flex-start"
-              size="compact-xs"
-              leftSection={columnAppendIconMap[v]}
-              variant="default"
-            ></Button>
+          <Tooltip key={v} title={columnAppendType2Label[v]}>
+            <span>
+              <Button
+                sx={{
+                  ...compactButtonSx,
+                  opacity: !validValues.includes(v) ? 0.2 : 1,
+                  backgroundColor: v === value ? '#D6D6D6' : 'transparent',
+                }}
+                disabled={!validValues.includes(v)}
+                onClick={() => onChange(v)}
+                variant="outlined"
+                size="small"
+              >
+                {columnAppendIconMap[v]}
+              </Button>
+            </span>
           </Tooltip>
         )
       })}
-    </Button.Group>
+    </ButtonGroup>
   )
 }

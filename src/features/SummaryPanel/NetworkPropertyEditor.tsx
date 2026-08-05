@@ -1,7 +1,3 @@
-import '@mantine/tiptap/styles.css'
-
-import { MantineProvider } from '@mantine/core'
-import { Link, RichTextEditor } from '@mantine/tiptap'
 import {
   Box,
   Button,
@@ -11,6 +7,7 @@ import {
   Typography,
 } from '@mui/material'
 import Highlight from '@tiptap/extension-highlight'
+import Link from '@tiptap/extension-link'
 import SubScript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import TextAlign from '@tiptap/extension-text-align'
@@ -26,6 +23,7 @@ import { useUndoStack } from '../../data/hooks/useUndoStack'
 import { IdType } from '../../models'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { removePTags } from '../../utils/removePTags'
+import { DescriptionEditor } from './DescriptionEditor'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 interface NetworkPropertyEditorProps {
@@ -62,7 +60,9 @@ const NetworkPropertyEditor = (
     extensions: [
       StarterKit,
       Underline,
-      Link,
+      // openOnClick false so clicking a link keeps editing instead of
+      // navigating (matches the behavior of the former Mantine preset).
+      Link.configure({ openOnClick: false }),
       Superscript,
       SubScript,
       Highlight,
@@ -152,75 +152,14 @@ const NetworkPropertyEditor = (
           <Typography gutterBottom sx={{ mt: 2 }}>
             Description:
           </Typography>
-          <MantineProvider>
-            <style>
-              {`
-                .mantine-RichTextEditor-toolbar {
-                  padding-top: 0 !important;
-                  padding-bottom: 0 !important;
-                }
-              `}
-            </style>
-            <Box
-              sx={{
-                height: 290,
-                overflow: 'hidden',
-              }}
-            >
-              <RichTextEditor
-                editor={editor}
-                style={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <RichTextEditor.Toolbar>
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Bold />
-                    <RichTextEditor.Italic />
-                    <RichTextEditor.Underline />
-                    <RichTextEditor.Strikethrough />
-                    <RichTextEditor.ClearFormatting />
-                    <RichTextEditor.Highlight />
-                    <RichTextEditor.Code />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.H1 />
-                    <RichTextEditor.H2 />
-                    <RichTextEditor.H3 />
-                    <RichTextEditor.H4 />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Blockquote />
-                    <RichTextEditor.Hr />
-                    <RichTextEditor.BulletList />
-                    <RichTextEditor.OrderedList />
-                    <RichTextEditor.Subscript />
-                    <RichTextEditor.Superscript />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Link />
-                    <RichTextEditor.Unlink />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.AlignLeft />
-                    <RichTextEditor.AlignCenter />
-                    <RichTextEditor.AlignJustify />
-                    <RichTextEditor.AlignRight />
-                  </RichTextEditor.ControlsGroup>
-                </RichTextEditor.Toolbar>
-
-                <RichTextEditor.Content
-                  style={{ flex: 1, overflowY: 'auto' }}
-                />
-              </RichTextEditor>
-            </Box>
-          </MantineProvider>
+          <Box
+            sx={{
+              height: 290,
+              overflow: 'hidden',
+            }}
+          >
+            <DescriptionEditor editor={editor} />
+          </Box>
 
           <NdexNetworkPropertyTable
             networkProperties={localSummaryState.properties}

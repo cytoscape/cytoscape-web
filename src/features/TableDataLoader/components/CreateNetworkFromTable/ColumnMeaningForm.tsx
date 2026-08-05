@@ -1,4 +1,4 @@
-import { Button, Tooltip } from '@mantine/core'
+import { Button, ButtonGroup, Tooltip } from '@mui/material'
 import {
   IconBan,
   IconCircle,
@@ -36,17 +36,23 @@ export const columnMeaningIconMap = {
   [ColumnAssignmentType.NotImported]: <IconBan size={20} color="gray" />,
 }
 
+const compactButtonSx = {
+  minWidth: 0,
+  px: 0.75,
+  py: 0.25,
+  color: 'text.primary',
+  borderColor: 'divider',
+  textTransform: 'none',
+} as const
+
 export function ColumnAssignmentTypeRenderCompact(props: {
   value: ColumnAssignmentType
 }) {
   return (
-    <Tooltip label={columnAssingmentType2Label[props.value]}>
-      <Button
-        justify="flex-start"
-        size="compact-xs"
-        leftSection={columnMeaningIconMap[props.value]}
-        variant="default"
-      ></Button>
+    <Tooltip title={columnAssingmentType2Label[props.value]}>
+      <Button size="small" variant="outlined" sx={compactButtonSx}>
+        {columnMeaningIconMap[props.value]}
+      </Button>
     </Tooltip>
   )
 }
@@ -55,24 +61,29 @@ export function ColumnAssignmentTypeForm(props: ColumnMeaningFormProps) {
   const { value, onChange, validValues } = props
 
   return (
-    <Button.Group>
+    <ButtonGroup size="small" variant="outlined">
       {Object.values(ColumnAssignmentType).map((v) => {
         return (
-          <Tooltip zIndex={2001} key={v} label={columnAssingmentType2Label[v]}>
-            <Button
-              style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
-              disabled={!validValues.includes(v)}
-              onClick={() => onChange(v)}
-              bg={v === value ? '#D6D6D6' : 'white'}
-              justify="flex-start"
-              size="compact-xs"
-              leftSection={columnMeaningIconMap[v]}
-              variant="default"
-            ></Button>
+          <Tooltip key={v} title={columnAssingmentType2Label[v]}>
+            <span>
+              <Button
+                sx={{
+                  ...compactButtonSx,
+                  opacity: !validValues.includes(v) ? 0.2 : 1,
+                  backgroundColor: v === value ? '#D6D6D6' : 'transparent',
+                }}
+                disabled={!validValues.includes(v)}
+                onClick={() => onChange(v)}
+                variant="outlined"
+                size="small"
+              >
+                {columnMeaningIconMap[v]}
+              </Button>
+            </span>
           </Tooltip>
         )
       })}
-    </Button.Group>
+    </ButtonGroup>
   )
 }
 
@@ -81,10 +92,10 @@ export function ColumnAssignmentTypeRender(props: {
 }) {
   return (
     <Button
-      justify="flex-start"
-      size="compact-xs"
-      leftSection={columnMeaningIconMap[props.value]}
-      variant="default"
+      size="small"
+      variant="outlined"
+      startIcon={columnMeaningIconMap[props.value]}
+      sx={{ ...compactButtonSx, justifyContent: 'flex-start' }}
     >
       {columnAssingmentType2Label[props.value]}
     </Button>

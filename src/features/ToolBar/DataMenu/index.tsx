@@ -1,7 +1,3 @@
-import '@mantine/core/styles.css'
-import '@mantine/notifications/styles.css'
-import '@mantine/dropzone/styles.css'
-
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
 import { MenuItem } from 'primereact/menuitem'
