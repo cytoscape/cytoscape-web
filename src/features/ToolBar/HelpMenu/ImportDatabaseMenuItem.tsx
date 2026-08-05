@@ -1,7 +1,6 @@
 import UploadIcon from '@mui/icons-material/Upload'
 import { ReactElement, useState } from 'react'
 
-import { importDatabaseSnapshotFromFile } from '../../../data/db'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -29,6 +28,11 @@ export const ImportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement =
     }
 
     try {
+      // Loaded on demand: the snapshot module is heavy and this menu item is
+      // eager via the ToolBar, so a static import would put it on cold load.
+      const { importDatabaseSnapshotFromFile } = await import(
+        '../../../data/db/snapshot'
+      )
       const result = await importDatabaseSnapshotFromFile(file, {
         merge: false, // Replace existing data
       })

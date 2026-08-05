@@ -9,7 +9,10 @@ import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { IdType } from '../../models/IdType'
-import NetworkFn, { Edge, Network, Node } from '../../models/NetworkModel'
+// Type-only: the NetworkModel implementation is built on cytoscape.js, and a
+// value import here would put cytoscape on the boot-critical DATABASE phase.
+// The one implementation call site loads it dynamically (getNetworkFromDb).
+import type { Edge, Network, Node } from '../../models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
@@ -528,6 +531,7 @@ export const getNetworkFromDb = async (
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
     observeValidation(`network ${id}`, network, validateNetwork)
+    const { default: NetworkFn } = await import('../../models/NetworkModel')
     return NetworkFn.networkModelToImplNetwork(network)
   }
 }
@@ -1724,26 +1728,7 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   }
 }
 
-// ============================================================================
-// Database Snapshot (Import/Export)
-// Re-exported from ./snapshot module
-// ============================================================================
-
-export {
-  type DatabaseExportMetadata,
-  type DatabaseSnapshot,
-  exportDatabaseSnapshot,
-  exportDatabaseSnapshotToFile,
-  importDatabaseSnapshot,
-  importDatabaseSnapshotFromFile,
-  type ImportOptions,
-  type ImportResult,
-} from './snapshot'
-
-// Application state export (includes database + store states)
-export {
-  type ApplicationState,
-  exportApplicationState,
-  exportApplicationStateToFile,
-  manualExportAppState,
-} from './snapshot/exportApplicationState'
+// Database snapshot import/export lives in ./snapshot and is deliberately NOT
+// re-exported here: this module is on the boot-critical DATABASE phase, and a
+// re-export would drag the whole snapshot graph into the pre-render bundle.
+// Import from '@/data/db/snapshot' (dynamically, where possible) instead.

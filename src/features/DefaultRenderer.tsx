@@ -1,7 +1,19 @@
+import { lazy, Suspense } from 'react'
+
 import { Network } from '../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../models/RendererModel/impl/defaultRenderer'
 import { Renderer } from '../models/RendererModel/Renderer'
-import { CyjsRenderer } from './NetworkPanel/CyjsRenderer/CyjsRenderer'
+
+// Loaded lazily so this module stays light: RendererStore imports it at store
+// creation to seed `renderers`, which would otherwise drag cytoscape and the
+// whole CyjsRenderer graph into the pre-render boot path. Module scope so the
+// component identity is stable across getComponent calls — a per-call lazy()
+// would remount the canvas on every render.
+const CyjsRendererLazy = lazy(() =>
+  import('./NetworkPanel/CyjsRenderer/CyjsRenderer').then((m) => ({
+    default: m.CyjsRenderer,
+  })),
+)
 
 /**
  * Default renderer for node-link diagrams based on Cytoscape.js
@@ -16,5 +28,9 @@ export const DefaultRenderer: Renderer = {
     initialSize?: { w: number; h: number },
     visible?: boolean,
     hasTab?: boolean,
-  ) => <CyjsRenderer network={networkData} hasTab={hasTab} />,
+  ) => (
+    <Suspense fallback={null}>
+      <CyjsRendererLazy network={networkData} hasTab={hasTab} />
+    </Suspense>
+  ),
 }

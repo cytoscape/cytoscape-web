@@ -49,7 +49,15 @@ import { CytoscapeDesktopPermissionDialog } from '../CytoscapeDesktopPermissionD
 import { useFeatureAvailability } from '../FeatureAvailability'
 import { useCopyShareableNetworkUrl } from '../FloatingToolBar/useCopyShareableNetworkUrl'
 import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validation/HcxValidationErrorButtonGroup'
-import { ExportImage } from '../ToolBar/DataMenu/ExportNetworkToImage/ExportImage'
+
+// Lazy: a static import would pull the export-form graph into the eager
+// SummaryPanel chunk. Mounted only after the first open (see the latch below)
+// so cold loads never fetch it.
+const ExportImage = lazy(() =>
+  import('../ToolBar/DataMenu/ExportNetworkToImage/ExportImage').then((m) => ({
+    default: m.ExportImage,
+  })),
+)
 
 interface NetworkPropertyPanelProps {
   summary: NetworkSummary
@@ -141,6 +149,10 @@ export const NetworkPropertyPanel = ({
   const desktopNotice = useCytoscapeDesktopPermissionNotice()
   const featureAvailability = useFeatureAvailability()
   const [openExportImage, setOpenExportImage] = useState<boolean>(false)
+  // Mount latch for the lazy ExportImage dialog: stays true after the first
+  // open so the close animation still plays and reopening is instant.
+  const [hasOpenedExportImage, setHasOpenedExportImage] =
+    useState<boolean>(false)
 
   const rowActions = getRowActionStates({
     isCurrentNetwork: id === currentNetworkId,
@@ -422,6 +434,7 @@ export const NetworkPropertyPanel = ({
         onClick={(e) => {
           e.stopPropagation()
           closeMenu()
+          setHasOpenedExportImage(true)
           setOpenExportImage(true)
         }}
       >
@@ -618,10 +631,14 @@ export const NetworkPropertyPanel = ({
         onConfirm={desktopNotice.onConfirm}
         onCancel={desktopNotice.onCancel}
       />
-      <ExportImage
-        open={openExportImage}
-        handleClose={() => setOpenExportImage(false)}
-      />
+      {hasOpenedExportImage && (
+        <Suspense fallback={null}>
+          <ExportImage
+            open={openExportImage}
+            handleClose={() => setOpenExportImage(false)}
+          />
+        </Suspense>
+      )}
     </>
   )
 }

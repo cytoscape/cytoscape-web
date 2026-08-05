@@ -9,7 +9,7 @@ import {
   FilterWidgetType,
 } from '@/models/FilterModel'
 import { FilterUrlParams } from '@/models/FilterModel/FilterUrlParams'
-import { GraphObjectType } from '@/models/NetworkModel'
+import { GraphObjectType } from '@/models/NetworkModel/GraphObjectType'
 import type { IdType } from '@/models/IdType'
 import type { AppShellBootContext } from './appShellBootContext'
 

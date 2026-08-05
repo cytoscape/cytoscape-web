@@ -12,9 +12,11 @@ import { Edge as CxEdge } from '../../Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../Cx2/CoreAspects/Node'
 import * as cxUtil from '../extractor'
 
-// cy.js does not allow nodes and edges to have the same ids
-// when converting cx ids to cy ids, we add a prefix to edges
-export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
+// The id-translation helpers live in a cytoscape-free leaf module so
+// boot-critical consumers can use them without this converter's impl graph.
+import { translateCXEdgeId } from '../../../NetworkModel/impl/edgeIds'
+
+export { translateCXEdgeId }
 
 /**
  * Create a network from a CX2 object
