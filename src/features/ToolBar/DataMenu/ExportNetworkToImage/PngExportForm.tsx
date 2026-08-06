@@ -32,6 +32,7 @@ const NumberField = (props: {
   value: number
   min: number
   max: number
+  step?: number
   onChange: (value: string | number) => void
 }): JSX.Element => (
   <TextField
@@ -39,8 +40,15 @@ const NumberField = (props: {
     size="small"
     label={props.label}
     value={props.value}
-    inputProps={{ min: props.min, max: props.max }}
-    onChange={(e) => props.onChange(e.target.value)}
+    inputProps={{ min: props.min, max: props.max, step: props.step ?? 1 }}
+    onChange={(e) => {
+      // A cleared field emits '' which Number() reads as 0, collapsing the
+      // size and zoom; keep the previous value until a number is typed.
+      if (e.target.value === '') {
+        return
+      }
+      props.onChange(e.target.value)
+    }}
     sx={{ width: 110, mr: 1.25 }}
   />
 )
@@ -289,6 +297,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
                 <NumberField
                   min={0}
                   max={maxWidthInches}
+                  step={0.01}
                   value={widthInches}
                   onChange={handleWidthInchesChange}
                   label="Width (inches)"
@@ -296,6 +305,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
                 <NumberField
                   min={0}
                   max={maxHeightInches}
+                  step={0.01}
                   value={heightInches}
                   onChange={handleHeightInchesChange}
                   label="Height (inches)"

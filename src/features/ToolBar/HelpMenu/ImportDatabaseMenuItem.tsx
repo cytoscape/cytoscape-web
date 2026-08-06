@@ -8,8 +8,8 @@ import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-// Lazy: the upload dialog wraps the Mantine dropzone/modals stack, which
-// would otherwise ship with the eager toolbar chunk.
+// Lazy: the upload dialog pulls in the dropzone/dialog stack, which would
+// otherwise ship with the eager toolbar chunk.
 const DatabaseSnapshotFileUpload = lazy(() =>
   import('../DatabaseSnapshotFileUpload').then((m) => ({
     default: m.DatabaseSnapshotFileUpload,

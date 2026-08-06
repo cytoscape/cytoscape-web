@@ -423,6 +423,14 @@ export function FileUpload(props: FileUploadProps) {
             message: `File ${file.name} is not a supported type.`,
           }
         }
+        // Enforce the limit the hint below promises: the whole file is read
+        // into memory and parsed on the main thread.
+        if (file.size > 5 * 1024 * 1024) {
+          return {
+            code: 'file-too-large',
+            message: `File ${file.name} exceeds the maximum size of 5MB.`,
+          }
+        }
         return null
       }}
       onDrop={onFileDrop}

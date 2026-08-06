@@ -1,4 +1,4 @@
-import { IdType } from '../../IdType'
+import { IdType } from '@/models/IdType'
 
 // Edge-id helpers, kept in their own leaf module: networkImpl is built on
 // cytoscape.js, and boot-critical code (view-model deserialization) needs

@@ -16,6 +16,7 @@ import {
 } from '../../store/joinTableToNetworkStore'
 
 const SUPPORTED_EXTENSIONS = ['csv', 'txt', 'tsv']
+const MAX_FILE_SIZE_MB = 5
 
 export function TableUpload() {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
@@ -96,6 +97,14 @@ export function TableUpload() {
             return {
               code: 'file-invalid-type',
               message: `File ${file.name} is not a supported type.`,
+            }
+          }
+          // Enforce the limit the hint below promises: the whole file is read
+          // into memory and parsed synchronously on the main thread.
+          if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            return {
+              code: 'file-too-large',
+              message: `File ${file.name} exceeds the maximum size of ${MAX_FILE_SIZE_MB}MB.`,
             }
           }
           return null

@@ -100,11 +100,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   // The two table-loader forms are lazy, but mounting them unconditionally
-  // made React.lazy fetch their chunks (90+ KB gz of Mantine + primereact
-  // datatable) on every cold load. Mount only after the first open — latched
-  // via refs so the Mantine close animation still plays and reopening is
-  // instant. Ref writes during render are safe here: the store flag flipping
-  // is itself what triggers the re-render that reads them.
+  // made React.lazy fetch their chunks (the whole table-import wizard) on
+  // every cold load. Mount only after the first open — latched via refs so
+  // the dialog close animation still plays and reopening is instant. Ref
+  // writes during render are safe here: the store flag flipping is itself
+  // what triggers the re-render that reads them.
   const isJoinFormOpen = useJoinTableToNetworkStore((state) => state.show)
   const isCreateFormOpen = useCreateNetworkFromTableStore(
     (state) => state.show,

@@ -1,6 +1,6 @@
 import { logUi } from '../../../debug'
 import { IdType } from '../../IdType'
-import type { Edge, Network, Node } from '../../NetworkModel'
+import type { Edge, Network, Node } from '@/models/NetworkModel'
 import { AttributeName, Table, ValueType } from '../../TableModel'
 import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import {

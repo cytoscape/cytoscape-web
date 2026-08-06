@@ -555,7 +555,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
           <Tooltip
             title={
               submitDisabled
-                ? "All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
+                ? 'All row values must be valid for their corresponding data type. One column must be assigned as a source or target node.'
                 : ''
             }
           >

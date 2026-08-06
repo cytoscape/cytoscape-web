@@ -14,7 +14,7 @@ import * as cxUtil from '../extractor'
 
 // The id-translation helpers live in a cytoscape-free leaf module so
 // boot-critical consumers can use them without this converter's impl graph.
-import { translateCXEdgeId } from '../../../NetworkModel/impl/edgeIds'
+import { translateCXEdgeId } from '@/models/NetworkModel/impl/edgeIds'
 
 export { translateCXEdgeId }
 

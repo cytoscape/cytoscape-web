@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { Edge, Node } from '../../../NetworkModel'
+import { Edge, Node } from '@/models/NetworkModel'
 import { G6Algorithms } from './Algorithms/g6Algorithms'
 import { runAntvLayout } from './runAntvLayout'
 

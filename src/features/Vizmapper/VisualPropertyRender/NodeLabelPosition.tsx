@@ -98,7 +98,7 @@ export function NodeLabelPositionPicker(props: {
         <TextField
           type="number"
           size="small"
-          inputProps={{ step: 1 }}
+          inputProps={{ step: 1, 'aria-label': 'Label X offset' }}
           value={localValue.MARGIN_X}
           onChange={(e) => {
             const parsed = Number.parseInt(e.target.value, 10)
@@ -115,7 +115,7 @@ export function NodeLabelPositionPicker(props: {
         <TextField
           type="number"
           size="small"
-          inputProps={{ step: 1 }}
+          inputProps={{ step: 1, 'aria-label': 'Label Y offset' }}
           value={localValue.MARGIN_Y}
           onChange={(e) => {
             const parsed = Number.parseInt(e.target.value, 10)

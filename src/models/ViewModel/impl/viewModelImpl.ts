@@ -1,9 +1,9 @@
 import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
-import { translateCXEdgeId } from '../../NetworkModel/impl/edgeIds'
+import { translateCXEdgeId } from '@/models/NetworkModel/impl/edgeIds'
 import { IdType } from '../../IdType'
-import type { Network } from '../../NetworkModel'
-import { isEdgeId } from '../../NetworkModel/impl/edgeIds'
+import type { Network } from '@/models/NetworkModel'
+import { isEdgeId } from '@/models/NetworkModel/impl/edgeIds'
 import { VisualPropertyValueType } from '../../VisualStyleModel'
 import {
   EdgeVisualPropertyName,

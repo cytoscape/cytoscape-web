@@ -20,7 +20,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { MouseEvent, ReactNode, useState } from 'react'
+import { KeyboardEvent, MouseEvent, ReactNode, useState } from 'react'
 
 /** Row shape produced by Papa.parse with headers. */
 export type ParsedRow = Record<string, any>
@@ -63,10 +63,20 @@ export function ColumnHeaderEditor(props: {
   return (
     <>
       <Box
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit column ${name}`}
         sx={{ minWidth: 200, cursor: 'pointer' }}
         onClick={(event: MouseEvent<HTMLElement>) => {
           onOpen()
           setAnchorEl(event.currentTarget)
+        }}
+        onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onOpen()
+            setAnchorEl(event.currentTarget)
+          }
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center">
@@ -309,7 +319,11 @@ export function AdvancedParseSettings(props: {
               value={state.skipNLines}
               onChange={(event) => {
                 const parsed = Number.parseInt(event.target.value, 10)
-                state.setSkipNLines(Number.isNaN(parsed) ? 0 : parsed)
+                // Clamp: a negative skip would make slice() take rows from
+                // the END of the file instead of skipping none.
+                state.setSkipNLines(
+                  Number.isNaN(parsed) ? 0 : Math.max(0, parsed),
+                )
               }}
               sx={{ mt: 1, display: 'block' }}
             />

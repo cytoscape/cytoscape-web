@@ -11,8 +11,9 @@ import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/Joi
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 
-// Lazy: FileUpload wraps the Mantine dropzone/modals stack, which would
-// otherwise ship with the eager toolbar chunk. Mounted after first open only.
+// Lazy: FileUpload pulls in the import pipeline (CX2/SIF parsing and the
+// dropzone/dialog stack), which would otherwise ship with the eager toolbar
+// chunk. Mounted after first open only.
 const FileUpload = lazy(() =>
   import('../FileUpload').then((m) => ({ default: m.FileUpload })),
 )

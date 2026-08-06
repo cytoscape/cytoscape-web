@@ -135,6 +135,7 @@ export function ExpandableNumberInput(props: {
           inputProps={{
             min: props.min != null ? toDisplay(props.min) : undefined,
             max: props.max != null ? toDisplay(props.max) : undefined,
+            'aria-label': 'Numeric value',
           }}
           InputProps={
             suffix !== ''

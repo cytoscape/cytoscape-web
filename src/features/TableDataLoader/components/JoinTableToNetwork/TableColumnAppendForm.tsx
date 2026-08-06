@@ -557,7 +557,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
 
       {loading ? (
         <InfoAlert>
-          Creating network. Large networks may take up to a few minutes...
+          Joining table data. Large tables may take up to a few minutes...
         </InfoAlert>
       ) : null}
 
@@ -591,7 +591,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
           <Tooltip
             title={
               submitDisabled
-                ? "All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
+                ? 'All row values must be valid for their corresponding data type. One column must be assigned as the key column.'
                 : ''
             }
           >

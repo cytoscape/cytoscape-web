@@ -64,10 +64,23 @@ function MenuLevel({
           )
         }
 
+        const activateRow = (target: HTMLElement): void => {
+          if (item.disabled === true) {
+            return
+          }
+          if (hasChildren) {
+            setOpenSubmenu({ index, anchorEl: target })
+            return
+          }
+          item.command?.()
+        }
+
         const row = (
           <Box
             key={index}
             role="menuitem"
+            tabIndex={item.disabled === true ? -1 : 0}
+            aria-disabled={item.disabled === true ? true : undefined}
             aria-haspopup={hasChildren ? 'menu' : undefined}
             style={item.style}
             sx={{
@@ -95,14 +108,13 @@ function MenuLevel({
               )
             }}
             onClick={(event: React.MouseEvent<HTMLElement>) => {
-              if (item.disabled === true) {
-                return
+              activateRow(event.currentTarget)
+            }}
+            onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                activateRow(event.currentTarget)
               }
-              if (hasChildren) {
-                setOpenSubmenu({ index, anchorEl: event.currentTarget })
-                return
-              }
-              item.command?.()
             }}
           >
             {item.icon !== undefined ? (
@@ -246,6 +258,8 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
       <span>
         <Box
           data-testid={dataTestId}
+          tabIndex={disabled ? -1 : 0}
+          aria-disabled={disabled ? true : undefined}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -260,6 +274,12 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
           onClick={() => {
             if (!disabled && onClick) {
               onClick()
+            }
+          }}
+          onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+            if ((event.key === 'Enter' || event.key === ' ') && !disabled) {
+              event.preventDefault()
+              onClick?.()
             }
           }}
         >

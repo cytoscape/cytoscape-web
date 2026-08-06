@@ -28,7 +28,17 @@ const compactButtonSx = {
   textTransform: 'none',
 } as const
 
+// 'space' and 'tab' are display labels; the stored delimiter must be the
+// actual character because parseValue() feeds it to String.split() directly.
 const DELIMITER_SUGGESTIONS = ['|', ':', '\\', '/', ',', 'space', 'tab']
+const DELIMITER_LABEL_TO_VALUE: Record<string, DelimiterType> = {
+  space: DelimiterType.Space,
+  tab: DelimiterType.Tab,
+}
+const DELIMITER_VALUE_TO_LABEL: Record<string, string> = {
+  [DelimiterType.Space]: 'space',
+  [DelimiterType.Tab]: 'tab',
+}
 
 function TypeButtonGroup(props: {
   types: ValueTypeName[]
@@ -87,9 +97,12 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
         disabled={!value?.startsWith('list_')}
         size="small"
         sx={{ width: 250, mt: 1.5 }}
-        value={props.delimiter ?? '|'}
+        value={DELIMITER_VALUE_TO_LABEL[props.delimiter ?? '|'] ?? props.delimiter ?? '|'}
         onInputChange={(_, newValue) =>
-          props.onChange(value, newValue as DelimiterType)
+          props.onChange(
+            value,
+            DELIMITER_LABEL_TO_VALUE[newValue] ?? (newValue as DelimiterType),
+          )
         }
         options={DELIMITER_SUGGESTIONS}
         renderInput={(params) => (

@@ -5,8 +5,8 @@ import { DagreLayout } from '@antv/layout/es/layout/dagre.js'
 import { GForceLayout } from '@antv/layout/es/layout/gForce.js'
 import { RadialLayout } from '@antv/layout/es/layout/radial/index.js'
 
-import { IdType } from '../../../IdType'
-import { Edge, Node } from '../../../NetworkModel'
+import { IdType } from '@/models/IdType'
+import { Edge, Node } from '@/models/NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 
 // Parity with the previous G6-based implementation, which laid out into a
