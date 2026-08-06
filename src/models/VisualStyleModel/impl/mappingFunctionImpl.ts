@@ -30,11 +30,19 @@ const valueType2BaseType: Record<
   [VisualPropertyValueTypeName.Visibility]: 'string',
   [VisualPropertyValueTypeName.Number]: 'number',
   // null (not 'string') keeps current behavior: no generic
-  // single-value → color/customGraphic passthrough. Whether a string
-  // column should be passthrough-mappable to a color VP is an open
-  // product question (see REVIEW.md R2-22 status).
+  // single-value → color passthrough. Whether a string column should be
+  // passthrough-mappable to a color VP is an open product question (see
+  // REVIEW.md R2-22 status).
   [VisualPropertyValueTypeName.Color]: null,
-  [VisualPropertyValueTypeName.CustomGraphic]: null,
+  // 'string' (not null) deliberately enables string column → custom graphic
+  // passthrough, which is how image custom graphics are authored: the Vizmapper
+  // has no image authoring UI (the wizard offers pie/donut only) because
+  // Cytoscape Desktop cannot render CX2-carried images at all — it loads
+  // custom-graphic bytes from its own session image pool and never fetches
+  // properties.url. Flipping this to null would remove the Passthrough option
+  // for nodeImageChart* VPs entirely — a product decision, not a formatting one.
+  // See docs/design/custom-graphics-image/custom-graphics-image-passthrough.md
+  [VisualPropertyValueTypeName.CustomGraphic]: 'string',
   [VisualPropertyValueTypeName.CustomGraphicPosition]: null,
   [VisualPropertyValueTypeName.NodeLabelPosition]: null,
 }
@@ -85,6 +93,14 @@ export const typesCanBeMapped = (
     const singleStringType =
       isSingleValue &&
       valueType2BaseType[vpValueTypeName] === VisualPropertyValueTypeName.String /// any single value type can be mapped to a string
+    // Custom graphics are the exception to the rule above: their base type is
+    // 'string' only because the value they carry is an image URL / chart JSON
+    // string. A numeric or boolean column can never hold either, so offering
+    // the mapping for those columns produces a mapping that silently falls back
+    // to the VP default at render time (see mapperFactory's string parsing).
+    if (vpValueTypeName === VisualPropertyValueTypeName.CustomGraphic) {
+      return valueTypeName === ValueTypeName.String
+    }
     return typesMatch || singleStringType
   }
 
@@ -104,7 +120,11 @@ export const typesCanBeMapped = (
 }
 
 export type MappingColumnChange =
-  | { kind: 'create'; attributeType: ValueTypeName; mappingType: MappingFunctionType }
+  | {
+      kind: 'create'
+      attributeType: ValueTypeName
+      mappingType: MappingFunctionType
+    }
   | { kind: 'remove' }
   | { kind: 'clear' }
 
@@ -129,9 +149,7 @@ export const resolveMappingColumnChange = (
   mappingType: MappingFunctionType | '',
   vpValueTypeName: VisualPropertyValueTypeName,
 ): MappingColumnChange => {
-  const nextAttributeType = columns.find(
-    (c) => c.name === nextAttribute,
-  )?.type
+  const nextAttributeType = columns.find((c) => c.name === nextAttribute)?.type
 
   if (mappingType === '' || nextAttribute === '' || nextAttributeType == null) {
     return { kind: 'clear' }

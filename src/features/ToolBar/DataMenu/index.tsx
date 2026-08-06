@@ -4,14 +4,11 @@ import '@mantine/dropzone/styles.css'
 
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
-import debounce from 'lodash/debounce'
 import { MenuItem } from 'primereact/menuitem'
 import { useCallback, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
-import { logUi } from '../../../debug'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
@@ -113,8 +110,7 @@ export const DataMenu = () => {
     setOpenDeleteAllNetworksDialog(false)
   }
 
-  const navigate = useNavigate()
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
+  const { reset } = useResetWorkspace()
 
   const handleDeleteAllNetworks = (): void => {
     handleCloseDeleteAllNetworksDialog()
@@ -130,25 +126,28 @@ export const DataMenu = () => {
     setOpenResetLocalWorkspaceDialog(false)
   }
 
+  /**
+   * `ConfirmationDialog` has already closed itself by the time this runs, so
+   * every path from here has to end in something the user can see: previously a
+   * reset that could not complete simply did nothing — no navigation, no error,
+   * and (before `deleteDb` was bounded) no end either, because a peer tab holding
+   * the database open left `Dexie.delete` waiting indefinitely.
+   */
   const handleResetLocalWorkspace = (): void => {
-    resetWorkspace()
-      .then(() => {
+    // useResetWorkspace owns the outcome branching and the navigation; this
+    // handler only reports, and `alert()` is the reporting channel here because
+    // the dialog has already closed and the menu has nowhere to render a
+    // message.
+    void reset().then((result) => {
+      if (result.status === 'failed') {
         handleCloseResetLocalWorkspaceDialog()
-      })
-      .then(() => {
-        // For safety: debounce the navigation to prevent any potential timing issues
-        debounce(() => {
-          navigate('/')
-          navigate(0)
-        }, 1500)()
-      })
-      .catch((error) => {
-        logUi.error(
-          `[${ResetLocalWorkspaceMenuItem.name}]:[${handleResetLocalWorkspace.name}] Failed to reset workspace`,
-          error,
-        )
-        alert('Failed to reset workspace. Please try again.')
-      })
+        alert(`Failed to reset workspace. ${result.reason}`)
+        return
+      }
+      if (result.status === 'reloading') {
+        alert(`${result.reason} Reloading Cytoscape Web.`)
+      }
+    })
   }
 
   const menuItems: MenuItem[] = [

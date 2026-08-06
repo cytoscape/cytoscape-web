@@ -200,6 +200,7 @@ export const useCreateNode = () => {
           [networkId, [newNodeId]],
           // Redo: recreate the node
           [networkId, [newNodeId], position, attributes],
+          networkId,
         )
       }
 

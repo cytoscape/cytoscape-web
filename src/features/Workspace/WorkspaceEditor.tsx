@@ -31,6 +31,7 @@ import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchy
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
+import { setTabNetworkId } from '@/data/tabState/tabNetwork'
 import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
@@ -92,7 +93,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   }, [])
 
   // Indicates if a network failed to load
-  const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
+  const [failedToLoad, setFailedToLoad] = useState<string>('')
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
   const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
     (state) => state.setShow,
@@ -224,8 +225,13 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Loads a network by ID and populates all related stores
    * Handles network data, visual styles, tables, views, validation, and layout
    * @param networkId - The ID of the network to load
+   * @returns true when the network loaded; false when it failed. Failures are
+   *   reported through `setFailedToLoad` rather than thrown, so the caller has
+   *   no other way to tell the two apart.
    */
-  const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
+  const loadCurrentNetworkById = async (
+    networkId: IdType,
+  ): Promise<boolean> => {
     try {
       // Cached summaries/content resolve immediately; the loaders only wait
       // for the auth token when they actually fetch from NDEx (cache miss).
@@ -237,6 +243,7 @@ const WorkSpaceEditor = (): JSX.Element => {
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
         visualStyleOptions,
         otherAspects,
@@ -245,7 +252,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       setVisualStyleOptions(networkId, visualStyleOptions)
       addNewNetwork(network)
-      addVisualStyle(networkId, visualStyle)
+      addVisualStyle(networkId, visualStyle, visualStyleSet)
       addTable(networkId, nodeTable, edgeTable)
       addViewModel(networkId, networkViews[0])
       if (otherAspects !== undefined) {
@@ -329,8 +336,17 @@ const WorkSpaceEditor = (): JSX.Element => {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
-      setFailedToLoad(true)
+      // Show the message but not raw internals: `String(error)` can surface
+      // stack-ish text, internal URLs, or response bodies. The detail is logged
+      // just above for anyone debugging.
+      setFailedToLoad(
+        error instanceof Error && error.message !== ''
+          ? error.message
+          : 'Unknown error',
+      )
+      return false
     }
+    return true
   }
 
   const params = useParams()
@@ -361,15 +377,24 @@ const WorkSpaceEditor = (): JSX.Element => {
       }
 
       isLoadingRef.current = true
-      setFailedToLoad(false)
+      setFailedToLoad('')
       logUi.info(
         `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${networkIdFromParams}`,
       )
 
       loadCurrentNetworkById(networkIdFromParams)
-        .then(() => {
+        .then((loaded) => {
           // Handle the case where the back/forward button is pressed
           setCurrentNetworkId(networkIdFromParams)
+          if (!loaded) {
+            // Only on success. This is the network a cross-tab reload restores,
+            // and recording one that just failed to load makes the failure
+            // survive the reload (CW-722).
+            return
+          }
+          // Remember this tab's active network so a cross-tab reload restores it
+          // even if the URL loses its network segment (CW-722).
+          setTabNetworkId(networkIdFromParams)
           // Synchronize activeNetworkView with currentNetworkId
           if (networkIdFromParams === '') {
             setActiveNetworkView('')

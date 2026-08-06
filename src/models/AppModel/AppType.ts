@@ -15,3 +15,5 @@ export const AppType = {
   Service: 'service' as const,
   Client: 'client' as const,
 } as const
+
+export type AppType = (typeof AppType)[keyof typeof AppType]

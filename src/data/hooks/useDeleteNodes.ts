@@ -244,6 +244,7 @@ export const useDeleteNodes = () => {
           ],
           // Redo: delete the nodes again
           [networkId, result.deletedNodeIds],
+          networkId,
         )
       }
 

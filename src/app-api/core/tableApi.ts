@@ -19,12 +19,14 @@ import {
 import { Column } from '../../models/TableModel/Column'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
 import { AppCodes, ApiResult, ElementCodes, fail, ok } from '../types/ApiResult'
+import { TableCodes } from '../types/ApiResult'
 import {
   validateColumnDefaultValue,
   validateColumnName,
   validateColumnNameAvailable,
   validateTableElementsExist,
   validateValuesMatchColumnTypes,
+  valueMatchesType,
 } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -51,12 +53,23 @@ export interface ColumnInfo {
 /** Options for getTable() */
 export interface GetTableOptions {
   columns?: string[]
+  /**
+   * Include the element id on each row (and as a leading `id` column) so
+   * rows can be mapped back to nodes/edges. Defaults to true.
+   */
+  includeId?: boolean
 }
 
 /** Options for exportTableToTsv() */
 export interface ExportTableToTsvOptions {
   columns?: string[]
   includeTypeHeader?: boolean
+  /**
+   * Emit a leading `id` column holding each element's id. Defaults to
+   * true so the export round-trips through importTableFromTsv (whose
+   * default keyColumn is `id`). Set false for a data-only export.
+   */
+  includeId?: boolean
 }
 
 /** Options for importTableFromTsv() */
@@ -115,6 +128,11 @@ export interface TableApi {
     newColumns: string[]
     /** TSV key values that matched no element in the network */
     skippedRows: string[]
+    /**
+     * Non-empty cells whose value could not be parsed as the column's
+     * type. Skipped instead of being silently coerced.
+     */
+    skippedCells: Array<{ key: string; column: string; value: string }>
   }>
 
   // --- Write ---
@@ -132,7 +150,7 @@ export interface TableApi {
     columnName: string,
   ): ApiResult
 
-  setColumnName(
+  renameColumn(
     networkId: IdType,
     tableType: AppTableType,
     currentName: string,
@@ -253,9 +271,7 @@ function cascadeColumnToMappings(
     setMapping(
       networkId,
       vpName as VisualPropertyName,
-      newName === undefined
-        ? undefined
-        : { ...vp.mapping, attribute: newName },
+      newName === undefined ? undefined : { ...vp.mapping, attribute: newName },
     )
   })
 }
@@ -263,7 +279,12 @@ function cascadeColumnToMappings(
 // ── Core implementation ──────────────────────────────────────────────────────
 
 export const tableApi: TableApi = {
-  getValue(networkId, tableType, elementId, column): ApiResult<{ value: ValueType }> {
+  getValue(
+    networkId,
+    tableType,
+    elementId,
+    column,
+  ): ApiResult<{ value: ValueType }> {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -279,13 +300,36 @@ export const tableApi: TableApi = {
           elementId,
         )
       }
+      // source/target are pseudo-columns synthesized from the network
+      // model for edge tables (matching getTable/getColumns)
+      if (
+        tableType === 'edge' &&
+        (column === 'source' || column === 'target')
+      ) {
+        const edge = useNetworkStore
+          .getState()
+          .networks.get(networkId)
+          ?.edges.find((e) => e.id === elementId)
+        if (edge === undefined) {
+          return fail(ElementCodes.EDGE_NOT_FOUND, elementId)
+        }
+        return ok({ value: column === 'source' ? edge.s : edge.t })
+      }
+      const declared = (table?.columns ?? []).some((c) => c.name === column)
+      if (!declared && !(column in row)) {
+        return fail(AppCodes.COLUMN_NOT_FOUND, column, tableType)
+      }
       return ok({ value: row[column] as ValueType })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },
 
-  getRow(networkId, tableType, elementId): ApiResult<{ row: Record<AttributeName, ValueType> }> {
+  getRow(
+    networkId,
+    tableType,
+    elementId,
+  ): ApiResult<{ row: Record<AttributeName, ValueType> }> {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -307,7 +351,13 @@ export const tableApi: TableApi = {
     }
   },
 
-  createColumn(networkId, tableType, columnName, dataType, defaultValue): ApiResult {
+  createColumn(
+    networkId,
+    tableType,
+    columnName,
+    dataType,
+    defaultValue,
+  ): ApiResult {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -324,6 +374,15 @@ export const tableApi: TableApi = {
 
       const invalidDefault = validateColumnDefaultValue(defaultValue)
       if (invalidDefault) return invalidDefault
+
+      if (!valueMatchesType(defaultValue, dataType)) {
+        return fail(
+          TableCodes.VALUE_TYPE_MISMATCH,
+          columnName,
+          dataType,
+          JSON.stringify(defaultValue),
+        )
+      }
 
       useTableStore
         .getState()
@@ -352,6 +411,10 @@ export const tableApi: TableApi = {
       if (tableRecord === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      const columns = tableRecord[tableKey(tableType)]?.columns ?? []
+      if (!columns.some((c) => c.name === columnName)) {
+        return fail(AppCodes.COLUMN_NOT_FOUND, columnName, tableType)
+      }
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
 
       // Cascade: mappings referencing the column are deleted (CX2 RC3)
@@ -374,7 +437,7 @@ export const tableApi: TableApi = {
     }
   },
 
-  setColumnName(networkId, tableType, currentName, newName): ApiResult {
+  renameColumn(networkId, tableType, currentName, newName): ApiResult {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -382,6 +445,11 @@ export const tableApi: TableApi = {
       }
       const invalidName = validateColumnName(newName, tableType)
       if (invalidName) return invalidName
+
+      const columns = tableRecord[tableKey(tableType)]?.columns ?? []
+      if (!columns.some((c) => c.name === currentName)) {
+        return fail(AppCodes.COLUMN_NOT_FOUND, currentName, tableType)
+      }
 
       // Self-rename is a harmless no-op; anything else must not collide
       if (newName !== currentName) {
@@ -516,7 +584,13 @@ export const tableApi: TableApi = {
     }
   },
 
-  applyValueToElements(networkId, tableType, columnName, value, elementIds): ApiResult {
+  applyValueToElements(
+    networkId,
+    tableType,
+    columnName,
+    value,
+    elementIds,
+  ): ApiResult {
     try {
       const tableRecord = useTableStore.getState().tables[networkId]
       if (tableRecord === undefined) {
@@ -538,7 +612,13 @@ export const tableApi: TableApi = {
 
       useTableStore
         .getState()
-        .applyValueToElements(networkId, tableType, columnName, value, elementIds)
+        .applyValueToElements(
+          networkId,
+          tableType,
+          columnName,
+          value,
+          elementIds,
+        )
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -585,6 +665,7 @@ export const tableApi: TableApi = {
       const filteredColumns = requestedCols
         ? allColumns.filter((c) => requestedCols.includes(c.name))
         : allColumns
+      const includeId = options?.includeId ?? true
 
       // For edge tables, prepend source/target from the network model
       const edgeLookup =
@@ -596,6 +677,7 @@ export const tableApi: TableApi = {
         tableRows.forEach(
           (rowData: Record<AttributeName, ValueType>, elementId: IdType) => {
             const row: Record<string, ValueType> = {}
+            if (includeId) row['id'] = elementId
             if (edgeLookup) {
               const edge = edgeLookup.get(elementId)
               if (edge) {
@@ -611,8 +693,11 @@ export const tableApi: TableApi = {
         )
       }
 
-      // Build column info (with source/target prepended for edge table)
+      // Build column info (id first, then source/target for edge table)
       const columnInfos: ColumnInfo[] = []
+      if (includeId) {
+        columnInfos.push({ name: 'id', type: ValueTypeName.String })
+      }
       if (edgeLookup) {
         columnInfos.push(
           { name: 'source', type: ValueTypeName.String },
@@ -634,6 +719,7 @@ export const tableApi: TableApi = {
   exportTableToTsv(networkId, tableType, options) {
     const result = tableApi.getTable(networkId, tableType, {
       columns: options?.columns,
+      includeId: options?.includeId ?? true,
     })
     if (!result.success) return result
 
@@ -701,12 +787,29 @@ export const tableApi: TableApi = {
         )
       }
 
+      // Validate all new column names before mutating anything, so a
+      // forbidden name (CX2 FK1/FK2/A8) fails the import cleanly instead
+      // of leaving some columns created (same rules as createColumn)
+      // `source`/`target` are structural on edge tables (synthesized from
+      // the network model, never stored as columns) but are ordinary
+      // attribute names on node tables, so the skip is edge-only
+      const isStructuralColumn = (colName: string): boolean =>
+        tableType === 'edge' && (colName === 'source' || colName === 'target')
+
+      for (const colName of colNames) {
+        if (colName === keyColumn) continue
+        if (isStructuralColumn(colName)) continue
+        if (existingColumns.has(colName)) continue
+        const invalidName = validateColumnName(colName, tableType)
+        if (invalidName) return invalidName
+      }
+
       // Create any missing columns
       const newColumns: string[] = []
       const storeState = useTableStore.getState()
       for (const colName of colNames) {
         if (colName === keyColumn) continue
-        if (colName === 'source' || colName === 'target') continue
+        if (isStructuralColumn(colName)) continue
         if (!existingColumns.has(colName)) {
           const inferredType =
             colTypes.get(colName) ?? inferTypeFromData(lines, colNames, colName)
@@ -715,7 +818,7 @@ export const tableApi: TableApi = {
             tableType,
             colName,
             inferredType,
-            '',
+            defaultForType(inferredType),
           )
           // Record the type so cell values parse as the column type
           // (previously fell back to string for inferred columns)
@@ -771,6 +874,11 @@ export const tableApi: TableApi = {
         value: ValueType
       }> = []
       const skippedRows: string[] = []
+      const skippedCells: Array<{
+        key: string
+        column: string
+        value: string
+      }> = []
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split('\t')
         const keyValue = values[keyIndex]
@@ -783,11 +891,25 @@ export const tableApi: TableApi = {
         for (let j = 0; j < colNames.length; j++) {
           const colName = colNames[j]
           if (colName === keyColumn) continue
-          if (colName === 'source' || colName === 'target') continue
+          if (isStructuralColumn(colName)) continue
           const rawValue = values[j] ?? ''
-          const colType =
-            colTypes.get(colName) ?? existingColumns.get(colName) ?? 'string'
-          const parsedValue = parseTsvValue(rawValue, colType as ValueTypeName)
+          const colType = (colTypes.get(colName) ??
+            existingColumns.get(colName) ??
+            'string') as ValueTypeName
+          // Empty cells mean "no value provided" — leave the attribute alone
+          if (rawValue === '' && colType !== ValueTypeName.String) continue
+          const parsedValue = parseTsvValue(rawValue, colType)
+          if (parsedValue === undefined) {
+            // Unparseable for the column type — skip and report rather
+            // than silently coercing (matches the strict no-coercion
+            // policy of setValue/setValues)
+            skippedCells.push({
+              key: keyValue,
+              column: colName,
+              value: rawValue,
+            })
+            continue
+          }
           for (const targetId of targetIds) {
             cellEdits.push({
               row: targetId,
@@ -802,7 +924,12 @@ export const tableApi: TableApi = {
 
       // Count unique row IDs from cell edits
       const uniqueRows = new Set(cellEdits.map((e) => e.row))
-      return ok({ rowCount: uniqueRows.size, newColumns, skippedRows })
+      return ok({
+        rowCount: uniqueRows.size,
+        newColumns,
+        skippedRows,
+        skippedCells,
+      })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -839,26 +966,80 @@ function isValidTypeName(s: string): boolean {
   return VALID_TYPE_NAMES.has(s)
 }
 
-/** Parse a TSV cell value according to its type */
-function parseTsvValue(raw: string, type: ValueTypeName): ValueType {
-  if (raw === '') return ''
+/** Default cell value for a newly created column of the given type */
+function defaultForType(type: ValueTypeName): ValueType {
   switch (type) {
     case ValueTypeName.Long:
     case ValueTypeName.Integer:
-      return parseInt(raw, 10) || 0
     case ValueTypeName.Double:
-      return parseFloat(raw) || 0
+      return 0
     case ValueTypeName.Boolean:
-      return raw.toLowerCase() === 'true'
+      return false
+    case ValueTypeName.ListString:
+    case ValueTypeName.ListLong:
+    case ValueTypeName.ListInteger:
+    case ValueTypeName.ListDouble:
+    case ValueTypeName.ListBoolean:
+      return []
+    default:
+      return ''
+  }
+}
+
+const INTEGER_PATTERN = /^-?\d+$/
+
+function parseIntStrict(raw: string): number | undefined {
+  return INTEGER_PATTERN.test(raw.trim()) ? parseInt(raw.trim(), 10) : undefined
+}
+
+function parseFloatStrict(raw: string): number | undefined {
+  const n = Number(raw.trim())
+  return raw.trim() !== '' && Number.isFinite(n) ? n : undefined
+}
+
+function parseBooleanStrict(raw: string): boolean | undefined {
+  const lower = raw.trim().toLowerCase()
+  if (lower === 'true') return true
+  if (lower === 'false') return false
+  return undefined
+}
+
+/** Map each list element; undefined if any element fails to parse */
+function parseList<T>(
+  raw: string,
+  parseElement: (s: string) => T | undefined,
+): T[] | undefined {
+  const parsed = raw.split('|').map(parseElement)
+  return parsed.every((v) => v !== undefined) ? (parsed as T[]) : undefined
+}
+
+/**
+ * Parse a TSV cell value according to its type — strict, no coercion.
+ * Returns undefined when the raw text cannot represent the type, so the
+ * caller can skip and report the cell (CX2 A1: values must match the
+ * declared column type).
+ */
+function parseTsvValue(
+  raw: string,
+  type: ValueTypeName,
+): ValueType | undefined {
+  switch (type) {
+    case ValueTypeName.Long:
+    case ValueTypeName.Integer:
+      return parseIntStrict(raw)
+    case ValueTypeName.Double:
+      return parseFloatStrict(raw)
+    case ValueTypeName.Boolean:
+      return parseBooleanStrict(raw)
     case ValueTypeName.ListString:
       return raw.split('|')
     case ValueTypeName.ListLong:
     case ValueTypeName.ListInteger:
-      return raw.split('|').map((v) => parseInt(v, 10) || 0)
+      return parseList(raw, parseIntStrict)
     case ValueTypeName.ListDouble:
-      return raw.split('|').map((v) => parseFloat(v) || 0)
+      return parseList(raw, parseFloatStrict)
     case ValueTypeName.ListBoolean:
-      return raw.split('|').map((v) => v.toLowerCase() === 'true')
+      return parseList(raw, parseBooleanStrict)
     default:
       return raw
   }

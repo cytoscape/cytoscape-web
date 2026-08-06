@@ -2,6 +2,7 @@ import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererStore } from '../../data/hooks/stores/RendererStore'
+import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
@@ -17,7 +18,7 @@ import { NetworkTabs } from './NetworkTabs'
 
 interface NetworkPanelProps {
   networkId: IdType
-  failedToLoad?: boolean
+  failedToLoad?: string
 }
 
 /**
@@ -28,7 +29,7 @@ interface NetworkPanelProps {
  */
 const NetworkPanel = ({
   networkId,
-  failedToLoad = false,
+  failedToLoad = '',
 }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
 
@@ -69,8 +70,12 @@ const NetworkPanel = ({
 
   const workspace = useWorkspaceStore((state) => state.workspace)
 
+  const tables = useTableStore((state) => state.tables)
+
   if (failedToLoad) {
-    return <MessagePanel message="Failed to load network data" />
+    return (
+      <MessagePanel message={`Failed to load network data: ${failedToLoad}`} />
+    )
   }
 
   // If we have a networkId prop, we're expecting a network to load
@@ -85,6 +90,21 @@ const NetworkPanel = ({
 
     // If network isn't loaded yet, show loading state
     if (targetNetwork.id === '') {
+      return <MessagePanel message="Loading network data..." />
+    }
+
+    // The renderer cannot draw without the node/edge tables — it reads
+    // `tables[id].nodeTable` unconditionally — and a network can legitimately be
+    // in NetworkStore before its tables arrive, because `cyNetworks` and
+    // `cyTables` are separate IndexedDB rows written in separate transactions.
+    // Cross-tab hydration can therefore deliver the network first. Waiting here
+    // keeps the renderer from mounting against incomplete data.
+    // Same for the visual style: `renderNetwork` reads it unconditionally and
+    // bails without it, so mounting early would only show a blank canvas.
+    if (
+      tables[networkId] === undefined ||
+      visualStyles[networkId] === undefined
+    ) {
       return <MessagePanel message="Loading network data..." />
     }
 

@@ -359,6 +359,33 @@ describe('style:changed', () => {
 
     expect(dispatchSpy).not.toHaveBeenCalled()
   })
+
+  it('does not dispatch for a newly created network style (network:created covers it)', () => {
+    // Regression: adding a style for a brand-new network must not fire one
+    // style:changed per visual property — mirrors the new-network guards in
+    // network:changed and data:changed.
+    const newStyle = {
+      NODE_BACKGROUND_COLOR: { value: '#fff' },
+      EDGE_WIDTH: { value: 1 },
+      NODE_LABEL: { value: '' },
+    }
+    triggerVisualStyleSub({ visualStyles: { net1: newStyle } }, { visualStyles: {} })
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('still dispatches for an existing network when another network is new', () => {
+    const prevStyle = { NODE_BACKGROUND_COLOR: { value: '#fff' } }
+    const currStyle = { NODE_BACKGROUND_COLOR: { value: '#000' } }
+    const newStyle = { NODE_BACKGROUND_COLOR: { value: '#abc' } }
+    triggerVisualStyleSub(
+      { visualStyles: { net1: currStyle, net2: newStyle } },
+      { visualStyles: { net1: prevStyle } },
+    )
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(1)
+    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', property: 'NODE_BACKGROUND_COLOR' })
+  })
 })
 
 // ── data:changed ──────────────────────────────────────────────────────────────

@@ -62,7 +62,7 @@ it('removes the listener on unmount (handler not called after)', () => {
   expect(handler).toHaveBeenCalledTimes(1) // not called again
 })
 
-it('re-subscribes when handler reference changes', () => {
+it('calls the latest handler after the handler reference changes', () => {
   let handlerRef = vi.fn()
 
   const { rerender } = renderHook(
@@ -79,6 +79,31 @@ it('re-subscribes when handler reference changes', () => {
 
   dispatchNetworkCreated('net2')
   expect(newHandler).toHaveBeenCalledTimes(1)
+})
+
+it('does not re-subscribe when a fresh inline handler is passed each render', () => {
+  const addListenerSpy = vi.spyOn(window, 'addEventListener')
+
+  // No useCallback — a brand-new function identity every render. The ref
+  // indirection must keep the window listener stable regardless.
+  const { rerender } = renderHook(() =>
+    useCyWebEvent('network:created', () => {}),
+  )
+
+  const initialCallCount = addListenerSpy.mock.calls.filter(
+    ([type]) => type === 'network:created',
+  ).length
+
+  rerender()
+  rerender()
+
+  const finalCallCount = addListenerSpy.mock.calls.filter(
+    ([type]) => type === 'network:created',
+  ).length
+
+  expect(finalCallCount).toBe(initialCallCount)
+
+  addListenerSpy.mockRestore()
 })
 
 it('useCallback-wrapped handler does not re-subscribe on re-render', () => {

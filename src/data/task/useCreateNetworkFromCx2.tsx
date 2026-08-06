@@ -91,6 +91,7 @@ export const useCreateNetworkFromCx2 = (): ((
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
       } = cyNetwork
 
@@ -124,7 +125,7 @@ export const useCreateNetworkFromCx2 = (): ((
 
       // Store network data in Zustand
       addNetwork(network)
-      addVisualStyle(network.id, visualStyle)
+      addVisualStyle(network.id, visualStyle, visualStyleSet)
       addTable(network.id, nodeTable, edgeTable)
       addViewModel(network.id, networkViews[0]) // For now, just store the first view
       addSummary(network.id, summary)

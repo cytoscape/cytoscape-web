@@ -2,6 +2,7 @@
 // Framework-agnostic Viewport API core — zero React imports.
 // All store access via .getState(); no React hook subscriptions.
 
+import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
@@ -16,10 +17,15 @@ export type PositionRecord = Record<IdType, [number, number, number?]>
 export interface ViewportApi {
   fit(networkId: IdType): Promise<ApiResult>
 
+  /**
+   * Read node positions. When `nodeIds` is omitted, every node's position
+   * is returned. Requested ids with no view are reported in `missing`
+   * (symmetric with elementApi.getNodes).
+   */
   getNodePositions(
     networkId: IdType,
-    nodeIds: IdType[],
-  ): ApiResult<{ positions: PositionRecord }>
+    nodeIds?: IdType[],
+  ): ApiResult<{ positions: PositionRecord; missing: IdType[] }>
 
   updateNodePositions(networkId: IdType, positions: PositionRecord): ApiResult
 }
@@ -45,23 +51,39 @@ export const viewportApi: ViewportApi = {
   getNodePositions(
     networkId,
     nodeIds,
-  ): ApiResult<{ positions: PositionRecord }> {
+  ): ApiResult<{ positions: PositionRecord; missing: IdType[] }> {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      const positions: PositionRecord = {}
-      for (const nodeId of nodeIds) {
-        const nodeView = viewModel.nodeViews?.[nodeId]
-        if (nodeView !== undefined) {
-          positions[nodeId] =
-            nodeView.z !== undefined
-              ? [nodeView.x, nodeView.y, nodeView.z]
-              : [nodeView.x, nodeView.y]
-        }
+      const nodeViews = viewModel.nodeViews ?? {}
+      const readPosition = (
+        nodeId: IdType,
+      ): [number, number, number?] | undefined => {
+        const nodeView = nodeViews[nodeId]
+        if (nodeView === undefined) return undefined
+        return nodeView.z !== undefined
+          ? [nodeView.x, nodeView.y, nodeView.z]
+          : [nodeView.x, nodeView.y]
       }
-      return ok({ positions })
+
+      const positions: PositionRecord = {}
+      // Default to every node in the network when no ids are given
+      const ids =
+        nodeIds ??
+        useNetworkStore
+          .getState()
+          .networks.get(networkId)
+          ?.nodes.map((n) => n.id) ??
+        Object.keys(nodeViews)
+      const missing: IdType[] = []
+      for (const nodeId of ids) {
+        const position = readPosition(nodeId)
+        if (position !== undefined) positions[nodeId] = position
+        else missing.push(nodeId)
+      }
+      return ok({ positions, missing })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -73,10 +95,7 @@ export const viewportApi: ViewportApi = {
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      const missingNodes = validateNodesExist(
-        networkId,
-        Object.keys(positions),
-      )
+      const missingNodes = validateNodesExist(networkId, Object.keys(positions))
       if (missingNodes) return missingNodes
 
       // Convert PositionRecord (JSON-serializable) to Map required by store

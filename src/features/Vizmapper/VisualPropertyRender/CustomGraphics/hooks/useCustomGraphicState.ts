@@ -6,8 +6,12 @@ import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { CustomGraphicsType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
+  CustomGraphicsNameType,
+  isImageCustomGraphicsName,
+} from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import {
+  ImagePropertiesType,
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
@@ -32,6 +36,10 @@ const defaultRingProps: RingChartPropertiesType = {
   cy_holeSize: CHART_CONSTANTS.DEFAULT_HOLE_SIZE,
   cy_colors: [] as ColorType[],
   cy_dataColumns: [] as AttributeName[],
+}
+
+const defaultImageProps: ImagePropertiesType = {
+  url: '',
 }
 
 interface UseCustomGraphicStateProps {
@@ -62,6 +70,8 @@ export const useCustomGraphicState = ({
     React.useState<PieChartPropertiesType>(defaultPieProps)
   const [ringProps, setRingProps] =
     React.useState<RingChartPropertiesType>(defaultRingProps)
+  const [imageProps, setImageProps] =
+    React.useState<ImagePropertiesType>(defaultImageProps)
 
   React.useEffect(() => {
     if (!open) return
@@ -70,7 +80,9 @@ export const useCustomGraphicState = ({
     const initialKind: CustomGraphicKind =
       initialValue?.name === CustomGraphicsNameType.RingChart
         ? CustomGraphicsNameType.RingChart
-        : CustomGraphicsNameType.PieChart
+        : initialValue && isImageCustomGraphicsName(initialValue.name)
+          ? CustomGraphicsNameType.Image
+          : CustomGraphicsNameType.PieChart
     setKind(initialKind)
 
     // Initialize pieProps
@@ -95,22 +107,43 @@ export const useCustomGraphicState = ({
       setRingProps(defaultRingProps)
     }
 
+    // Initialize imageProps
+    if (initialValue && isImageCustomGraphicsName(initialValue.name)) {
+      const imageInit = initialValue.properties as ImagePropertiesType
+      setImageProps({
+        ...defaultImageProps,
+        ...imageInit,
+      })
+    } else {
+      setImageProps(defaultImageProps)
+    }
+
   }, [open, initialValue])
 
   const currentProps =
-    kind === CustomGraphicsNameType.PieChart ? pieProps : ringProps
+    kind === CustomGraphicsNameType.PieChart
+      ? pieProps
+      : kind === CustomGraphicsNameType.RingChart
+        ? ringProps
+        : imageProps
 
   const updateCurrent = (
-    newProps: PieChartPropertiesType | RingChartPropertiesType,
-  ) =>
-    kind === CustomGraphicsNameType.PieChart
-      ? setPieProps(newProps as PieChartPropertiesType)
-      : setRingProps(newProps as RingChartPropertiesType)
+    newProps: PieChartPropertiesType | RingChartPropertiesType | ImagePropertiesType,
+  ) => {
+    if (kind === CustomGraphicsNameType.PieChart) {
+      setPieProps(newProps as PieChartPropertiesType)
+    } else if (kind === CustomGraphicsNameType.RingChart) {
+      setRingProps(newProps as RingChartPropertiesType)
+    } else {
+      setImageProps(newProps as ImagePropertiesType)
+    }
+  }
 
   // Handler to remove graphics and reset to defaults
   const handleRemoveCharts = () => {
     setPieProps(defaultPieProps)
     setRingProps(defaultRingProps)
+    setImageProps(defaultImageProps)
     setKind(CustomGraphicsNameType.PieChart)
     return DEFAULT_CUSTOM_GRAPHICS
   }
@@ -121,6 +154,7 @@ export const useCustomGraphicState = ({
     colors: ColorType[],
     colorScheme: string,
   ) => {
+    if (kind === CustomGraphicsNameType.Image) return
     updateCurrent({
       ...currentProps,
       cy_dataColumns: dataColumns,
@@ -131,12 +165,21 @@ export const useCustomGraphicState = ({
 
   // Handle properties update
   const handlePropertiesUpdate = (startAngle: number, holeSize?: number) => {
+    if (kind === CustomGraphicsNameType.Image) return
     updateCurrent({
       ...currentProps,
       cy_startAngle: startAngle,
       ...(kind === CustomGraphicsNameType.RingChart && {
         cy_holeSize: holeSize,
       }),
+    })
+  }
+
+  // Handle image URL update
+  const handleImageUrlUpdate = (url: string) => {
+    updateCurrent({
+      ...(currentProps as ImagePropertiesType),
+      url,
     })
   }
 
@@ -148,5 +191,6 @@ export const useCustomGraphicState = ({
     handleRemoveCharts,
     handleAttributesAndColorsUpdate,
     handlePropertiesUpdate,
+    handleImageUrlUpdate,
   }
 }

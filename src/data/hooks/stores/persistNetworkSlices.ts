@@ -2,10 +2,8 @@ import { StateCreator, StoreApi } from 'zustand'
 
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
-import {
-  cancelWrite,
-  scheduleWrite,
-} from './persistenceScheduler'
+import { cancelWrite, scheduleWrite } from './persistenceScheduler'
+import { isHydrating } from './hydrationContext'
 
 /**
  * Zustand middleware that persists per-network slices to IndexedDB.
@@ -35,6 +33,14 @@ export interface NetworkSlicePersistOptions<S, V> {
   putSlice: (networkId: IdType, slice: V) => Promise<unknown>
   /** Optional: removes one network's row when its slice is deleted */
   removeSlice?: (networkId: IdType) => Promise<unknown>
+  /**
+   * Optional: return true to skip persistence for the `set` in flight.
+   *
+   * For changes the store persists itself, through a narrower row. Without it
+   * the generic path here still writes the whole slice, which is exactly the
+   * cost the narrower row exists to avoid.
+   */
+  skipPersist?: () => boolean
 }
 
 export const persistNetworkSlices =
@@ -48,6 +54,11 @@ export const persistNetworkSlices =
       (args: any, replace?: any) => {
         const before = options.selectSlices(get())
         set(args, replace)
+
+        if (isHydrating() || options.skipPersist?.() === true) {
+          return
+        }
+
         const after = options.selectSlices(get())
         if (before === after) {
           return

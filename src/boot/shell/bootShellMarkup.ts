@@ -20,13 +20,39 @@
 
 export const BOOT_SHELL_TESTID = 'boot-shell'
 
+/** Carries the action id the delegated click listener dispatches on. */
+export const BOOT_SHELL_ACTION_ATTR = 'data-boot-action'
+/** Label the button swaps to once armed. */
+export const BOOT_SHELL_ARMED_LABEL_ATTR = 'data-boot-action-armed-label'
+export const BOOT_SHELL_ARMED_CLASS = 'boot-shell-error-button-armed'
+export const BOOT_SHELL_ACTION_CONFIRM_CLASS = 'boot-shell-error-action-confirm'
+
 /** `full` includes the toolbar strip; `content` sits below the real toolbar. */
 export type BootShellRegion = 'full' | 'content'
+
+/**
+ * A recovery the reader can trigger from the error shell.
+ *
+ * Deliberately data, not a callback: this module is shared by both renderers
+ * and must stay dependency-free, so it only declares the button. The handler is
+ * registered separately by id — see `registerBootShellAction`.
+ *
+ * Every action here is arm-then-confirm (the first click swaps the label to
+ * `confirmLabel` and reveals `confirmMessage`), because the only thing worth
+ * offering at this point is destructive.
+ */
+export interface BootShellErrorAction {
+  id: string
+  label: string
+  confirmLabel: string
+  confirmMessage: string
+}
 
 export interface BootShellError {
   title: string
   message: string
   detail?: string
+  action?: BootShellErrorAction
 }
 
 export interface BootShellOptions {
@@ -287,6 +313,61 @@ body {
   color: #666666;
   word-break: break-word;
 }
+.boot-shell-error-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.boot-shell-error-action [hidden] {
+  display: none;
+}
+/*
+ * Form controls do not inherit font, so the explicit "font: inherit" is what
+ * keeps this on the shell's system-font stack rather than the UA's button font.
+ * (No backticks in this stylesheet — it is a template literal.)
+ */
+.boot-shell-error-button {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #c62828;
+  background: none;
+  border: 1px solid #c62828;
+  border-radius: 4px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+.boot-shell-error-button:hover {
+  background-color: rgba(198, 40, 40, 0.08);
+}
+.boot-shell-error-button:focus-visible {
+  outline: 2px solid #c62828;
+  outline-offset: 2px;
+}
+/* Armed: filled, so "one more click destroys data" reads at a glance. */
+.boot-shell-error-button.boot-shell-error-button-armed {
+  color: #ffffff;
+  background-color: #c62828;
+}
+.boot-shell-error-button.boot-shell-error-button-armed:hover {
+  background-color: #a91d1d;
+}
+.boot-shell-error-button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+/*
+ * Two classes deep on purpose: the .boot-shell-error p rule above is more
+ * specific than a lone class selector, and would otherwise win on font-size.
+ */
+.boot-shell-error .boot-shell-error-action-confirm {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #c62828;
+  max-width: 420px;
+}
 .boot-shell-bottom {
   height: 40px;
   flex-shrink: 0;
@@ -338,6 +419,11 @@ const ERROR_ICON_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/s
 const escapeHtml = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+// Separate from escapeHtml, which is for text nodes and leaves quotes alone:
+// an unescaped quote in an attribute value would end the attribute.
+const escapeAttr = (value: string): string =>
+  escapeHtml(value).replace(/"/g, '&quot;')
+
 const repeat = (count: number, html: string): string => html.repeat(count)
 
 export const bootShellVersion = (): string =>
@@ -345,7 +431,9 @@ export const bootShellVersion = (): string =>
 
 export const bootShellBuildTime = (): string => {
   const raw =
-    typeof REACT_APP_BUILD_TIME !== 'undefined' ? REACT_APP_BUILD_TIME : 'Unknown'
+    typeof REACT_APP_BUILD_TIME !== 'undefined'
+      ? REACT_APP_BUILD_TIME
+      : 'Unknown'
   if (raw === 'Unknown') {
     return raw
   }
@@ -413,6 +501,22 @@ const statusHtml = (): string => `
 // Terminal state: no spinner and no "may take some time" — both actively
 // mislead when nothing more is coming. The version and build time stay, since
 // that is precisely what someone diagnosing this needs to read off the screen.
+// The confirm line is rendered up front and hidden rather than injected on
+// click, so arming the button never changes the markup this module produces —
+// only attributes and one `hidden` flag. That keeps the string the React
+// renderer diffs against stable, same reason the status message is imperative.
+const errorActionHtml = (action: BootShellErrorAction): string => `
+      <div class="boot-shell-error-action">
+        <button type="button" class="boot-shell-error-button" ${BOOT_SHELL_ACTION_ATTR}="${escapeAttr(
+          action.id,
+        )}" ${BOOT_SHELL_ARMED_LABEL_ATTR}="${escapeAttr(
+          action.confirmLabel,
+        )}">${escapeHtml(action.label)}</button>
+        <p class="${BOOT_SHELL_ACTION_CONFIRM_CLASS}" hidden>${escapeHtml(
+          action.confirmMessage,
+        )}</p>
+      </div>`
+
 const errorHtml = (error: BootShellError): string => `
     <div class="boot-shell-error" role="alert">
       <div class="boot-shell-error-icon">${ERROR_ICON_SVG}</div>
@@ -422,7 +526,7 @@ const errorHtml = (error: BootShellError): string => `
           ? ''
           : `
       <p class="boot-shell-error-detail">${escapeHtml(error.detail)}</p>`
-      }
+      }${error.action === undefined ? '' : errorActionHtml(error.action)}
     </div>`
 
 /**
@@ -458,10 +562,7 @@ export const bootShellInnerHtml = (
   <div class="boot-shell-body">
     <div class="boot-shell-left">
       <div class="boot-shell-left-tabs">
-        ${repeat(
-          2,
-          '<div class="boot-shell-block boot-shell-left-tab"></div>',
-        )}
+        ${repeat(2, '<div class="boot-shell-block boot-shell-left-tab"></div>')}
       </div>
       ${repeat(3, '<div class="boot-shell-block boot-shell-left-row"></div>')}
     </div>

@@ -310,8 +310,8 @@ describe('useUiStateStore', () => {
       })
 
       expect(
-        result.current.ui.visualStyleOptions[networkId]
-          ?.visualEditorProperties.nodeSizeLocked,
+        result.current.ui.visualStyleOptions[networkId]?.visualEditorProperties
+          .nodeSizeLocked,
       ).toBe(true)
     })
 
@@ -353,8 +353,8 @@ describe('useUiStateStore', () => {
       })
 
       expect(
-        result.current.ui.visualStyleOptions[networkId]
-          ?.visualEditorProperties.arrowColorMatchesEdge,
+        result.current.ui.visualStyleOptions[networkId]?.visualEditorProperties
+          .arrowColorMatchesEdge,
       ).toBe(true)
     })
 
@@ -407,8 +407,8 @@ describe('useUiStateStore', () => {
       })
 
       expect(
-        result.current.ui.visualStyleOptions[networkId]
-          ?.visualEditorProperties.tableDisplayConfiguration,
+        result.current.ui.visualStyleOptions[networkId]?.visualEditorProperties
+          .tableDisplayConfiguration,
       ).toEqual(tableDisplayConfiguration)
     })
 
@@ -503,9 +503,8 @@ describe('useUiStateStore', () => {
   describe('deserializeColumnUIKey', () => {
     it('should deserialize column UI key', () => {
       const serialized = '9|network-1|4|node|8|column-1'
-      const [networkId, tableType, columnId] = deserializeColumnUIKey(
-        serialized,
-      )
+      const [networkId, tableType, columnId] =
+        deserializeColumnUIKey(serialized)
 
       expect(networkId).toBe('network-1')
       expect(tableType).toBe('node')
@@ -559,7 +558,12 @@ describe('useUiStateStore', () => {
         })
 
         // Set column width
-        result.current.setColumnWidth('network-1', TableType.NODE, 'column-1', 150)
+        result.current.setColumnWidth(
+          'network-1',
+          TableType.NODE,
+          'column-1',
+          150,
+        )
       })
 
       expect(result.current.ui.panels[Panel.LEFT]).toBe(PanelState.CLOSED)
@@ -573,4 +577,3 @@ describe('useUiStateStore', () => {
     })
   })
 })
-

@@ -108,6 +108,7 @@ export const useAddNetworks = (): (({
               nodeTable,
               edgeTable,
               visualStyle,
+              visualStyleSet,
               networkViews,
               visualStyleOptions,
               otherAspects,
@@ -130,7 +131,7 @@ export const useAddNetworks = (): (({
             addSummaries({ [localUuid]: summary })
             setVisualStyleOptions(localUuid, visualStyleOptions)
             addNewNetwork(network)
-            setVisualStyle(localUuid, visualStyle)
+            setVisualStyle(localUuid, visualStyle, visualStyleSet)
             setTables(localUuid, nodeTable, edgeTable)
             setViewModel(localUuid, networkViews[0])
             if (otherAspects !== undefined) {

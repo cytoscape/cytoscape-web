@@ -62,6 +62,9 @@ export const classifyBootError = (
       classified?.message ??
       'Something went wrong while starting up. Reloading the page may help.',
     detail: classified?.detail ?? errorMessageOf(cause),
+    // No generic fallback: an action has to be declared by the classifier that
+    // knows a recovery exists. There is nothing safe to offer by default.
+    action: classified?.action,
   }
 }
 

@@ -36,6 +36,7 @@ vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   useVisualStyleStore: {
     getState: vi.fn(() => ({ visualStyles: mockVisualStyles })),
   },
+  getVisualStyleSetSnapshot: vi.fn(() => undefined),
 }))
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────

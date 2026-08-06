@@ -1,7 +1,12 @@
 import Dexie from 'dexie'
 
 import { logDb } from '../../debug'
-import { currentVersion, DB_NAME, initializeDb } from './index'
+import {
+  currentVersion,
+  DB_NAME,
+  initializeDb,
+  verifyTransactionSourceStamp,
+} from './index'
 
 // Opens the database explicitly at startup and classifies why it failed.
 //
@@ -15,10 +20,10 @@ import { currentVersion, DB_NAME, initializeDb } from './index'
 // open a database at a version below the one on disk, and currentVersion has
 // moved seven times so far.
 //
-// It needs two builds on one *origin* (scheme + host + port). Netlify's branch
-// deploys are therefore safe — <branch>--incredible-meringue-aa83b1.netlify.app
-// gives each branch its own hostname and so its own IndexedDB. What is not safe
-// is localhost:5500, which is a single origin for every branch you check out:
+// It needs two builds on one *origin* (scheme + host + port). Any preview
+// scheme that gives each branch its own hostname is therefore safe: a distinct
+// origin means a distinct IndexedDB. What is not safe is localhost:5500, a
+// single origin for every branch you check out:
 // run a branch whose schema is ahead, switch back, and the app cannot open the
 // database it left behind. Rarer but worse, a production rollback past a
 // version bump does the same to every user who booted the newer build.
@@ -57,6 +62,9 @@ const readOnDiskVersion = async (): Promise<number | undefined> => {
 export const openDatabaseForStartup = async (): Promise<DbOpenResult> => {
   try {
     await initializeDb()
+    // Not awaited into the result: a missing origin stamp degrades cross-tab
+    // sync but leaves the app fully usable, so it must not gate startup.
+    void verifyTransactionSourceStamp()
     return { kind: 'ok' }
   } catch (e) {
     // Compare by name, not instanceof: Dexie builds its error names by

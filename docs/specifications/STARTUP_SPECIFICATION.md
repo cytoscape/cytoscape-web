@@ -67,6 +67,27 @@ application:
 `database` is fatal because AppShell's first act is to read the workspace from
 IndexedDB — rendering over a dead database only relocates the failure.
 
+**The one recoverable fatal case carries a button.** A `schema-too-new` failure
+(this origin holds a database written by a newer build) is the only boot failure
+with an action the reader can take, so its error shell offers
+"Reset Workspace and Reload Cytoscape" — the same wording and the same
+`deleteDb()` primitive as the error page's button in `src/features/Error.tsx`,
+which cannot be reused directly because React never mounts on this path.
+
+Two constraints on that button:
+
+- **Arm, then confirm.** The first click swaps the label and reveals what will be
+  destroyed; only the second click runs. Clearing the database destroys the whole
+  local workspace with no undo, and the shell is too early to have the app's
+  `ConfirmationDialog` available.
+- **Never offered for `unavailable`.** A blocked IndexedDB (private browsing) is
+  not fixed by clearing data, and offering it there would send people to destroy
+  data for no reason.
+
+Recoveries are declared as data on `BootShellError.action` and dispatched by id
+through `shell/bootShellActions.ts`, so the markup module stays dependency-free
+and one delegated listener serves both renderers. See `src/boot/boot_docs/boot.md`.
+
 ### 2.3 `publish` and `route` always run
 
 `publishWorkspace` is what unblocks `waitForWorkspaceHydration()` and makes the

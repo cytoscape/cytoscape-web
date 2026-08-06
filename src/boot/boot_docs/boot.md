@@ -15,11 +15,13 @@ this document is the map of the directory and the reasoning behind its shape.
 | `bootState.ts`                                       | What the boot shell displays. Module-scope observable, not Zustand.  |
 | `bootError.ts`                                       | Maps a thrown value to actionable copy; per-phase classifiers.       |
 | `startAuthentication.ts`                             | Keycloak silent SSO. Started, never awaited.                         |
-| `openDatabasePhase.ts`                               | The DB gate and its error copy.                                      |
+| `openDatabasePhase.ts`                               | The DB gate, its error copy, and the database-reset recovery.        |
 | `shell/`                                             | The boot shell: one markup source, plain-DOM and React renderers.    |
+| `shell/bootShellActions.ts`                          | Click dispatch for error-shell recovery buttons; arm-then-confirm.   |
 | `metrics/`                                           | User Timing marks and the dev boot report.                           |
 | `steps/`                                             | The AppShell half of the boot, one file per step.                    |
 | `keycloak.ts`, `tabManager.ts`, `googleAnalytics.ts` | Integrations the boot sets up.                                       |
+| `tabId.ts`                                           | This tab's id. Lazy — the DB layer stamps it on every transaction.   |
 | `AppBootstrap.tsx`                                   | First React component; swaps in the email-verification modal.        |
 
 ## Sequence
@@ -43,9 +45,9 @@ index.html
                                      ├─ phase WORKSPACE   workspace + summaries + UI state
                                      ├─ phase DEEP_LINK   :networkId not in workspace
                                      ├─ phase IMPORTS     ?import=<url>
-                                     ├─ phase PUBLISH     stores, event bus, cywebapi:ready
-                                     │                                    [workspace-hydrated]
-                                     ├─ phase INTENTS     ?installApp= / ?addserviceapp=
+                                     ├─ phase PUBLISH     per-tab network, stores, event bus,
+                                     │                   cywebapi:ready  [workspace-hydrated]
+                                     ├─ phase INTENTS     ?installApp= (fetch + classify)
                                      └─ phase ROUTE       restore URL state, navigate, strip params
                                           └─ <WorkspaceEditor/>          [workspace-editor-mounted]
                                                                           → publishBootReport()
@@ -66,6 +68,20 @@ bootstrap. Measured on a production build at 4 Mbps: first paint ~250ms against
 `bootShellMarkup.ts`. That is why `BootShell` uses `dangerouslySetInnerHTML`:
 it makes the handoff provably identical instead of relying on two copies
 staying in step. A unit test asserts the two DOMs are byte-equal.
+
+**Error-shell buttons are declared as data, dispatched by id.** A recovery is a
+`BootShellError.action` (`id`, `label`, `confirmLabel`, `confirmMessage`); the
+handler is registered separately by id in `shell/bootShellActions.ts`. Two
+reasons it is split that way: the markup module must stay dependency-free, and
+neither renderer can hand a button an `onClick` — both write the shell as an HTML
+string — so a single delegated listener on `document` serves both and survives a
+repaint. Every action is arm-then-confirm, since the only recovery worth offering
+this early is destructive. Today there is exactly one: resetting the database
+after a `schema-too-new` open failure (`openDatabasePhase.ts`), which registers
+its handler on the failure path rather than at module scope so a healthy boot
+pays nothing. It reuses `deleteDb()` — the same primitive as the error page's
+"Reset Workspace" button, which cannot be reused directly here because it is MUI
+plus react-router and React never mounts on this path.
 
 **The app renders over the SSO check, not after it.** What keeps a logged-in
 user's startup requests from going out anonymously is not ordering but

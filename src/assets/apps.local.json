@@ -6,7 +6,11 @@
     "author": "Cytoscape Core Team",
     "description": "Reference app demonstrating core App API patterns: visual style editing, selection tracking / clearing, async layout execution, app lifecycle hooks, and both component-scoped and app-scoped event handling.",
     "version": "1.0.0",
-    "tags": ["demo", "getting-started", "reference"],
+    "tags": [
+      "demo",
+      "getting-started",
+      "reference"
+    ],
     "license": "MIT",
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   },
@@ -17,7 +21,12 @@
     "author": "Cytoscape Core Team",
     "description": "Network creation, CX2 import, and external integration examples.",
     "version": "1.0.0",
-    "tags": ["workflow", "network-creation", "cx2", "jupyter"],
+    "tags": [
+      "workflow",
+      "network-creation",
+      "cx2",
+      "jupyter"
+    ],
     "license": "MIT",
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   },
@@ -28,7 +37,11 @@
     "author": "Cytoscape Core Team",
     "description": "Logs network topology statistics (density, degree distribution, roots, leaves) to the browser console on every network switch. A non-React example using only mount/unmount lifecycle hooks.",
     "version": "1.0.0",
-    "tags": ["statistics", "non-react", "headless"],
+    "tags": [
+      "statistics",
+      "non-react",
+      "headless"
+    ],
     "license": "MIT",
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   },
@@ -39,7 +52,27 @@
     "author": "Cytoscape Core Team",
     "description": "Displays a live log of commands sent by Claude Code via the MCP bridge server.",
     "version": "0.1.0",
-    "tags": ["ai", "mcp", "bridge", "developer-tools"],
+    "tags": [
+      "ai",
+      "mcp",
+      "bridge",
+      "developer-tools"
+    ],
+    "license": "MIT",
+    "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
+  },
+  {
+    "id": "template",
+    "name": "App Template",
+    "url": "http://localhost:5555/remoteEntry.js",
+    "author": "Cytoscape Core Team",
+    "description": "Boilerplate for creating a Cytoscape Web app: a right panel, an Apps-menu action and a context menu, with the Module Federation and runtime host-resolution wiring already in place.",
+    "version": "1.0.0",
+    "tags": [
+      "template",
+      "getting-started",
+      "boilerplate"
+    ],
     "license": "MIT",
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples"
   }

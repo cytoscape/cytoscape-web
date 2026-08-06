@@ -119,9 +119,7 @@ export const useAppManager = (): AppManagerCommands => {
   const registerApp = useAppStore((state) => state.add)
   const setCatalog = useAppStore((state) => state.setCatalog)
   const setLoadState = useAppStore((state) => state.setLoadState)
-  const storeSetManifestSource = useAppStore(
-    (state) => state.setManifestSource,
-  )
+  const storeSetManifestSource = useAppStore((state) => state.setManifestSource)
   const setStatus = useAppStore((state) => state.setStatus)
   const removeApp = useAppStore((state) => state.remove)
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -132,8 +130,7 @@ export const useAppManager = (): AppManagerCommands => {
    * back. Used after install/uninstall so the change is immediately visible.
    */
   const recomposeCatalog = (): void => {
-    const installed =
-      useWorkspaceStore.getState().workspace.installedApps ?? []
+    const installed = useWorkspaceStore.getState().workspace.installedApps ?? []
     const { entries, sources } = composeCatalog(
       manifestEntriesRef.current,
       installed,
@@ -358,9 +355,7 @@ export const useAppManager = (): AppManagerCommands => {
     logApp.info(`[useAppManager]: Uninstalled app "${id}"`)
   }
 
-  const cmdSetManifestSource = (
-    source: ManifestSource | undefined,
-  ): void => {
+  const cmdSetManifestSource = (source: ManifestSource | undefined): void => {
     storeSetManifestSource(source)
   }
 
@@ -464,7 +459,8 @@ export const useAppManager = (): AppManagerCommands => {
         const activeAppIds = installedAppList
           .filter(
             (a) =>
-              a.status === AppStatus.Active && catalog[a.entry.id] !== undefined,
+              a.status === AppStatus.Active &&
+              catalog[a.entry.id] !== undefined,
           )
           .map((a) => a.entry.id)
 
@@ -483,11 +479,7 @@ export const useAppManager = (): AppManagerCommands => {
         // Load all active apps in parallel
         const results = await Promise.allSettled(
           activeAppIds.map(async (id) => {
-            const cyApp = await loadRemoteApp(
-              id,
-              catalog[id].url,
-              appRegistry,
-            )
+            const cyApp = await loadRemoteApp(id, catalog[id].url, appRegistry)
             if (cyApp === undefined) {
               throw new Error(`Failed to load remote app "${id}"`)
             }

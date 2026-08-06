@@ -1,12 +1,5 @@
 import InfoIcon from '@mui/icons-material/Info'
-import {
-  Box,
-  IconButton,
-  Tab,
-  Tabs,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { Box, IconButton, Tab, Tabs, Tooltip, Typography } from '@mui/material'
 import * as React from 'react'
 
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -31,7 +24,7 @@ import { BypassForm } from './Forms/BypassForm'
 import { DefaultValueForm } from './Forms/DefaultValueForm'
 import { MappingForm } from './Forms/MappingForm'
 import { EmptyVisualPropertyViewBox } from './Forms/VisualPropertyViewBox'
-
+import { StyleManager } from './StyleManager'
 
 function VisualPropertyView(props: {
   currentNetworkId: IdType
@@ -144,7 +137,10 @@ function VisualPropertyView(props: {
           <Typography
             variant="body2"
             sx={{
-              color: (theme) => (disabled ? theme.palette.text.disabled : theme.palette.text.primary)
+              color: (theme) =>
+                disabled
+                  ? theme.palette.text.disabled
+                  : theme.palette.text.primary,
             }}
           >
             {visualProperty.displayName}
@@ -171,7 +167,8 @@ function VisualPropertyView(props: {
         <Tooltip
           placement="top"
           title={
-            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default.  Original size values are preserved.'
+            'Due to rendering limitations, custom graphics size cannot be edited and will scale to the size of nodes by default. Original size values are preserved. ' +
+            'Custom-graphic images render here but not in Cytoscape Desktop, which loads images from its own image pool rather than from the network file.'
           }
           arrow={true}
           sx={{
@@ -266,6 +263,9 @@ export default function VizmapperView(props: {
         height: '100%',
       }}
     >
+      {/* key resets menu/dialog state when the user switches networks, so an
+          open dialog can never act on a different network's style */}
+      <StyleManager key={props.networkId} networkId={props.networkId} />
       <Tabs
         data-testid="vizmapper-tabs"
         value={currentTabIndex}
@@ -283,28 +283,22 @@ export default function VizmapperView(props: {
         }}
         onChange={(e, nextTab) => setCurrentTabIndex(nextTab)}
       >
-        <Tab
-          data-testid="vizmapper-nodes-tab"
-          label="Nodes"
-        />
-        <Tab
-          data-testid="vizmapper-edges-tab"
-          label="Edges"
-        />
-        <Tab
-          data-testid="vizmapper-network-tab"
-          label="Network"
-        />
+        <Tab data-testid="vizmapper-nodes-tab" label="Nodes" />
+        <Tab data-testid="vizmapper-edges-tab" label="Edges" />
+        <Tab data-testid="vizmapper-network-tab" label="Network" />
       </Tabs>
-      <Box sx={{
-        display: 'flex',
-        px: 1.5,
-        pt: 1.5,
-        pb: 0,
-        ml: 0.5, 
-        minHeight: '40px' ,
-        borderBottom: (theme) => `2px solid ${theme.palette.background.default}`,
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          px: 1.5,
+          pt: 1.5,
+          pb: 0,
+          ml: 0.5,
+          minHeight: '40px',
+          borderBottom: (theme) =>
+            `2px solid ${theme.palette.background.default}`,
+        }}
+      >
         <Box
           sx={{
             width: TAB_TEXT_WIDTH,
@@ -344,7 +338,7 @@ export default function VizmapperView(props: {
             sx={{
               ml: 1,
               overflow: 'scroll',
-              height: props.height - 162, // we want to only scroll the vp list instead of the whole allotment
+              height: props.height - 202, // we want to only scroll the vp list instead of the whole allotment
               // height has to be computed based on allotment size to allow overflow scroll
               // height is passed as a prop but this could be pulled from a uiState store instead in the future
             }}
@@ -360,7 +354,7 @@ export default function VizmapperView(props: {
               ml: 1,
               pt: 1,
               overflow: 'scroll',
-              height: props.height - 162,
+              height: props.height - 202,
             }}
           >
             {edgeVps}
@@ -374,7 +368,7 @@ export default function VizmapperView(props: {
               ml: 1,
               pt: 1,
               overflow: 'scroll',
-              height: props.height - 162,
+              height: props.height - 202,
             }}
           >
             {networkVps}

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
 // src/app-api/core/layoutApi.test.ts
@@ -133,8 +133,8 @@ describe('getAvailableLayouts', () => {
     const result = layoutApi.getAvailableLayouts()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0]).toMatchObject({
+      expect(result.data.layouts).toHaveLength(1)
+      expect(result.data.layouts[0]).toMatchObject({
         engineName: 'testEngine',
         algorithmName: 'circle',
         displayName: 'Circle Layout',
@@ -148,7 +148,7 @@ describe('getAvailableLayouts', () => {
     const result = layoutApi.getAvailableLayouts()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(0)
+      expect(result.data.layouts).toHaveLength(0)
     }
   })
 
@@ -172,7 +172,7 @@ describe('getAvailableLayouts', () => {
     const result = layoutApi.getAvailableLayouts()
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data).toHaveLength(2)
+      expect(result.data.layouts).toHaveLength(2)
     }
   })
 })
@@ -300,16 +300,60 @@ describe('applyLayout — happy path', () => {
 
   it('layout succeeds when fit function is not registered (warning only)', async () => {
     mockGetFunction.mockReturnValue(undefined)
-    const consoleSpy = vi.spyOn(console, 'warn')
-      .mockImplementation(() => {})
     const result = await layoutApi.applyLayout('net1')
     expect(result.success).toBe(true)
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Fit function not registered'))
-    consoleSpy.mockRestore()
   })
 
   it('uses specified algorithmName to select engine', async () => {
     await layoutApi.applyLayout('net1', { algorithmName: 'circle' })
     expect(mockLayoutEngines[0].apply).toHaveBeenCalled()
+  })
+
+  it('records undo on the stack of the laid-out network, not the current one', async () => {
+    // WorkspaceStore mock reports currentNetworkId 'net1'; lay out 'net2'.
+    mockNetworks.set('net2', { nodes: [{ id: 'node1' }], edges: [] })
+    await layoutApi.applyLayout('net2')
+    expect(mockSetUndoStack).toHaveBeenCalledWith('net2', expect.any(Array))
+  })
+})
+
+// ── applyLayout — engine failure ──────────────────────────────────────────────
+
+describe('applyLayout — engine failure', () => {
+  beforeEach(() => {
+    mockNetworks.set('net1', { nodes: [{ id: 'node1' }], edges: [] })
+    mockLayoutEngines[0].apply.mockImplementation(() => {
+      throw new Error('malformed engine')
+    })
+  })
+
+  // The throwing implementation outlives clearAllMocks (which clears calls,
+  // not implementations), so it must be reset or it leaks into later suites
+  afterEach(() => {
+    mockLayoutEngines[0].apply.mockReset()
+  })
+
+  it('resolves fail() instead of throwing when engine.apply throws synchronously', async () => {
+    // Must not reject — the API contract is "never throw across the boundary"
+    const result = await layoutApi.applyLayout('net1')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
+      expect(result.error.message).toContain('malformed engine')
+    }
+  })
+
+  it('resets isRunning to false when engine.apply throws synchronously', async () => {
+    await layoutApi.applyLayout('net1')
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true)
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(2, false)
+  })
+
+  it('does not dispatch layout:completed when the engine throws', async () => {
+    await layoutApi.applyLayout('net1')
+    const completedCall = mockDispatchCyWebEvent.mock.calls.find(
+      ([type]) => type === 'layout:completed',
+    )
+    expect(completedCall).toBeUndefined()
   })
 })

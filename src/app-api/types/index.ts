@@ -25,11 +25,14 @@ export type { AppContext, AppContextApis, CyAppWithLifecycle } from './AppContex
 
 // ── Domain API types (Phase 1a–1g) ──────────────────────────────
 export type {
+  BatchCreateOptions,
   CreateEdgeOptions,
   CreateNodeOptions,
   EdgeData,
+  EdgeSpec,
   ElementApi,
   NodeData,
+  NodeSpec,
 } from '../core/elementApi'
 export type {
   ApplyLayoutOptions,
@@ -53,8 +56,12 @@ export type {
   TableApi,
 } from '../core/tableApi'
 export type { PositionRecord, ViewportApi } from '../core/viewportApi'
-export type { VisualStyleApi } from '../core/visualStyleApi'
-// Note: Cx2 from exportApi is a loose alias (any[]); the canonical Cx2 is exported below via ElementTypes
+export type {
+  CreateContinuousMappingOptions,
+  VisualPropertyInfo,
+  VisualStyleApi,
+} from '../core/visualStyleApi'
+// ExportApi's Cx2 is the canonical CxModel Cx2 (also exported via ElementTypes)
 export type { ExportApi, ExportOptions } from '../core/exportApi'
 
 // ── Workspace API types (Phase 1f) ───────────────────────────────
@@ -95,6 +102,9 @@ export type {
 
 // ── CyWebApiType: assembles all 10 domain APIs (Phase 1g+1h) ─────
 export type { CyWebApiType } from '../core'
+
+// ── Scoped (current-network) API ─────────────────────────────────
+export type { ScopedCyWebApi } from '../core/scopedApi'
 
 // ── Re-exported model types ─────────────────────────────────────
 export type {

@@ -10,6 +10,7 @@ import {
   Table,
   ValueType,
   VisualStyle,
+  VisualStyleSet,
 } from '../../models'
 import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
 import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
@@ -22,6 +23,7 @@ import {
   ServiceInputDefinition,
 } from '../../models/AppModel/ServiceInputDefinition'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { getVisualStyleSetSnapshot } from '../../data/hooks/stores/VisualStyleStore'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
@@ -67,6 +69,12 @@ export const createNetworkDataObj = (
   visualStyleOptions?: VisualStyleOptions,
   viewModel?: NetworkView,
   opaqueAspect?: OpaqueAspects,
+  /**
+   * The network's named-style set. Optional so existing callers keep working;
+   * omitting it reads the store directly, which makes this otherwise-pure
+   * function depend on live global state and is untestable without mocking.
+   */
+  visualStyleSet?: VisualStyleSet,
 ) => {
   const selectedNodes = new Set(viewModel?.selectedNodes)
   const selectedEdges = new Set(viewModel?.selectedEdges)
@@ -106,6 +114,7 @@ export const createNetworkDataObj = (
         nodeTable: table.nodeTable,
         edgeTable: table.edgeTable,
         visualStyle,
+        visualStyleSet: visualStyleSet ?? getVisualStyleSetSnapshot(network.id),
         networkViews: viewModel ? [viewModel] : [],
         visualStyleOptions,
         otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
@@ -283,6 +292,7 @@ export const useRunTask = (): ((
             visualStyleOptions,
             viewModel,
             opaqueAspect,
+            getVisualStyleSetSnapshot(network.id),
           )
         } else if (inputColumns !== null && table !== undefined) {
           data = createTableDataObj(

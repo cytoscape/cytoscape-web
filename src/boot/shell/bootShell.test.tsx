@@ -102,6 +102,22 @@ describe('BootShell / showBootShell parity', () => {
         },
       },
     ],
+    [
+      'error mode with a recovery action',
+      {
+        error: {
+          title: 'This browser has a newer database',
+          message: 'Open the newer deployment in a different browser profile.',
+          detail: 'onDisk=12 expected=11',
+          action: {
+            id: 'reset-database',
+            label: 'Reset Workspace and Reload Cytoscape',
+            confirmLabel: 'Confirm — permanently delete',
+            confirmMessage: 'This permanently deletes the local workspace.',
+          },
+        },
+      },
+    ],
   ])('renders identical DOM for %s', (_label, options) => {
     const root = mountRoot()
     showBootShell(options)
@@ -253,6 +269,71 @@ describe('bootShellInnerHtml', () => {
 
     expect(html).toContain('<svg')
     expect(html).not.toContain('<img')
+  })
+
+  it('omits the action button when the error declares no recovery', () => {
+    const root = mountRoot()
+    showBootShell({
+      error: { title: 'Storage unavailable', message: 'Private browsing?' },
+    })
+    const shell = root.querySelector(`[data-testid="${BOOT_SHELL_TESTID}"]`)
+
+    // Clearing the database is not the fix for a blocked IndexedDB, and
+    // offering it here would send people to destroy data for no reason.
+    expect(shell?.querySelector('button')).toBeNull()
+  })
+
+  it('renders the action button armed-off, with the confirm line hidden', () => {
+    const root = mountRoot()
+    showBootShell({
+      error: {
+        title: 'This browser has a newer database',
+        message: 'Two builds share this address.',
+        action: {
+          id: 'reset-database',
+          label: 'Reset Workspace and Reload Cytoscape',
+          confirmLabel: 'Confirm — permanently delete',
+          confirmMessage: 'This permanently deletes the local workspace.',
+        },
+      },
+    })
+    const shell = root.querySelector(`[data-testid="${BOOT_SHELL_TESTID}"]`)
+    const button = shell?.querySelector('button')
+
+    expect(button?.textContent).toBe('Reset Workspace and Reload Cytoscape')
+    expect(button?.getAttribute('data-boot-action')).toBe('reset-database')
+    expect(button?.classList.contains('boot-shell-error-button-armed')).toBe(
+      false,
+    )
+    // Present but hidden, so arming changes attributes only — never the markup
+    // string the React renderer diffs against.
+    const confirm = shell?.querySelector('.boot-shell-error-action-confirm')
+    expect(confirm?.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('escapes quotes in action attribute values', () => {
+    // escapeHtml alone leaves quotes untouched, which would end the attribute
+    // and let the rest of the value become attributes of its own.
+    const host = document.createElement('div')
+    host.innerHTML = bootShellInnerHtml({
+      error: {
+        title: 'T',
+        message: 'M',
+        action: {
+          id: 'x" onclick="alert(1)',
+          label: 'L',
+          confirmLabel: 'C',
+          confirmMessage: 'CM',
+        },
+      },
+    })
+    const button = host.querySelector('button')
+
+    expect(button?.hasAttribute('onclick')).toBe(false)
+    // The quote stayed inside the value rather than terminating it.
+    expect(button?.getAttribute('data-boot-action')).toBe(
+      'x" onclick="alert(1)',
+    )
   })
 })
 

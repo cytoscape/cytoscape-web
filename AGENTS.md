@@ -185,7 +185,6 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 - `npm install` - Install dependencies
 - `npm run dev` - Start dev server (opens browser at localhost:5500)
 - `npm run build` - Build for production
-- `npm run build:netlify` - Build for Netlify deployment
 - `npm run build:analyze` - Build with a Rollup visualizer report
 - `npm run build:api-types` - Build the `@cytoscape-web/api-types` package
 - `npm run clean` - Remove dist folder
@@ -256,15 +255,15 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 ### Important Files & Configuration
 
-| File                      | Purpose                                                                                                                                                                                             |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File                      | Purpose                                                                                                                                                                                 |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics |
-| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                                          |
-| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                           |
-| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                         |
-| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                                 |
-| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                                          |
-| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                                       |
+| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                              |
+| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                               |
+| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                             |
+| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                     |
+| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                              |
+| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                            |
 
 **Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
 
@@ -287,6 +286,7 @@ Read these before working in related areas:
 
 - `docs/specifications/STARTUP_SPECIFICATION.md` — boot phase contract, failure policy, timing milestones
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
+- `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, style library
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules
@@ -311,5 +311,4 @@ Read these before working in related areas:
 - **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
 - **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.
 - **Keycloak Auth** — SSO authentication with `silent-check-sso.html` for silent token refresh.
-- **Netlify Auto-Deploy** — All branches auto-deploy to `<branch>--incredible-meringue-aa83b1.netlify.app`.
 - **Branch Workflow** — `development` (default) → `master` (release) → GitHub release → Zenodo DOI.

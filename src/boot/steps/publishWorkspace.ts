@@ -1,9 +1,11 @@
+import { markReady } from '@/app-api/core/ready'
 import { initEventBus } from '@/app-api/event-bus/initEventBus'
 import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { MessageSeverity } from '@/models/MessageModel'
 import { markBoot } from '../metrics/bootMarks'
+import { markWorkspaceHydrated } from '../workspaceHydrated'
 import type { WorkspaceDraft } from './appShellBootContext'
 
 /**
@@ -36,6 +38,13 @@ export const publishWorkspace = (draft: WorkspaceDraft): void => {
   // network:created / network:switched events for the initial state.
   initEventBus()
   // Signals external consumers (extensions, LLM agents) that window.CyWebApi
-  // and the event bus are ready.
+  // and the event bus are ready. The flag is set FIRST so a consumer that mounts
+  // after this point can still tell hydration happened — the event itself is
+  // gone by then (see `workspaceHydrated.ts`).
+  markWorkspaceHydrated()
   window.dispatchEvent(new CustomEvent('cywebapi:ready'))
+  // Resolve any CyWebApi.whenReady() promises (idempotent). ready.ts also
+  // listens for the event above, but calling directly keeps readiness correct
+  // for hosts where that listener never installed (non-DOM environments).
+  markReady()
 }

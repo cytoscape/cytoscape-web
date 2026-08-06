@@ -41,6 +41,7 @@ export const runUrlImports = async (
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
         visualStyleOptions,
       } = cyNetwork
@@ -57,7 +58,9 @@ export const runUrlImports = async (
         .getState()
         .setVisualStyleOptions(importedNetworkId, visualStyleOptions)
       useNetworkStore.getState().add(network)
-      useVisualStyleStore.getState().add(importedNetworkId, visualStyle)
+      useVisualStyleStore
+        .getState()
+        .add(importedNetworkId, visualStyle, visualStyleSet)
       useTableStore.getState().add(importedNetworkId, nodeTable, edgeTable)
       useViewModelStore.getState().add(importedNetworkId, networkViews[0])
     } catch (error) {

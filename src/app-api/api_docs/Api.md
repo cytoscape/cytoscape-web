@@ -43,8 +43,12 @@ External apps import types from `cyweb/ApiTypes`:
 
 ```typescript
 import type { ApiResult, IdType } from 'cyweb/ApiTypes'
-import { AppCodes, ElementCodes, ok, fail } from 'cyweb/ApiTypes'
+import { AppCodes, ElementCodes, ok, fail, isOk, isFail } from 'cyweb/ApiTypes'
 ```
+
+`ok()` / `fail()` construct results; `isOk(result)` / `isFail(result)` are type
+guards that narrow an `ApiResult<T>` to its success or failure branch (handy in
+`filter`/`map` chains where `result.success` narrowing is inconvenient).
 
 ## App API Hooks
 
@@ -59,10 +63,65 @@ import { AppCodes, ElementCodes, ok, fail } from 'cyweb/ApiTypes'
 | `cyweb/LayoutApi`      | `useLayoutApi()`      | `.layout`                | 1e    |
 | `cyweb/ExportApi`      | `useExportApi()`      | `.export`                | 1e    |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`   | `.workspace`             | 1f    |
+| `cyweb/ScopedApi`      | `useScopedApi(id?)`   | `.forNetwork(id?)`       | 1g    |
 | `cyweb/EventBus`       | `useCyWebEvent()`     | _(window events)_        | 1g    |
 
 All hooks are thin React wrappers around framework-agnostic core objects.
 The same objects are exposed on `window.CyWebApi` for Vanilla JS consumers.
+
+### Scoped (current-network) API — `CyWebApi.forNetwork(networkId?)`
+
+Every method on the network-scoped domains takes `networkId` as its first
+argument. `forNetwork(networkId?)` returns a view of those domains — `element`,
+`table`, `selection`, `viewport`, `visualStyle`, `export`, and `layout`
+(`applyLayout` only) — with the id pre-bound, so it never has to be passed on
+individual calls. Omit the argument to target the workspace's **current**
+network, resolved at call time.
+
+```typescript
+// Bind the current network (resolved per call)
+const net = window.CyWebApi.forNetwork()
+net.element.createNode([100, 200])
+net.selection.exclusiveSelect(['n1'], [])
+net.table.getTable('node')
+
+// Bind a specific network
+const other = window.CyWebApi.forNetwork('net-42')
+other.export.exportToCx2()
+```
+
+React apps get the same view from the `cyweb/ScopedApi` hook, memoized per
+networkId (stable across renders, safe in effect/callback deps):
+
+```typescript
+import { useScopedApi } from 'cyweb/ScopedApi'
+
+const net = useScopedApi() // current network
+const other = useScopedApi(id) // a specific network
+```
+
+Domains whose methods are not uniformly network-scoped — `network`, `workspace`,
+`contextMenu` — are excluded from the scoped view; call those on the top-level
+`CyWebApi`. `layout` appears in the scoped view with only its network-scoped
+`applyLayout` bound (read algorithms from `CyWebApi.layout.getAvailableLayouts()`).
+The scoped view is purely additive: it delegates to the same underlying domain
+objects.
+
+### Readiness — `CyWebApi.whenReady()` / `CyWebApi.isReady()`
+
+`window.CyWebApi` is assigned before the app finishes hydrating, so its
+stateful methods only work after startup completes. Rather than listen for the
+one-shot `cywebapi:ready` event and track whether it already fired, await the
+promise:
+
+```javascript
+const api = await window.CyWebApi.whenReady() // resolves immediately if ready
+api.forNetwork().element.createNode([0, 0])
+```
+
+`whenReady()` resolves with the `CyWebApi` object; `isReady()` returns the
+current boolean. The `cywebapi:ready` window event still fires for consumers
+that prefer events.
 
 > **Context Menu API:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
 > Context menu access is now via `AppContext.apis.contextMenu` (per-app factory in `mount()`) or
@@ -100,15 +159,35 @@ interface EdgeData {
 
 interface CreateNodeOptions {
   attributes?: Record<AttributeName, ValueType>
-  /** Visual property bypasses applied atomically at creation. */
+  /** Visual property bypasses validated, then applied atomically at creation. */
   bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
   autoSelect?: boolean // default: true
 }
 
 interface CreateEdgeOptions {
   attributes?: Record<AttributeName, ValueType>
-  /** Visual property bypasses applied atomically at creation. */
+  /** Visual property bypasses validated, then applied atomically at creation. */
   bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+  autoSelect?: boolean // default: true
+}
+
+/** One node to create in a createNodes() batch. */
+interface NodeSpec {
+  position: [number, number, number?]
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** One edge to create in a createEdges() batch. */
+interface EdgeSpec {
+  sourceNodeId: IdType
+  targetNodeId: IdType
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** Options for the batch create operations. */
+interface BatchCreateOptions {
   autoSelect?: boolean // default: true
 }
 ```
@@ -133,6 +212,16 @@ Returns an edge's source/target IDs and table attributes.
 | `APP1`     | `networkId` does not exist             |
 | `GL2`      | `edgeId` does not exist in the network |
 
+#### `getNodes(networkId, nodeIds?): ApiResult<{ nodes: Array<{ id } & NodeData>, missing: IdType[] }>`
+
+Batch-reads nodes with their attributes and positions. When `nodeIds` is
+omitted, every node in the network is returned. IDs that do not exist are
+reported in `missing` rather than failing the whole call.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
+
 #### `createNode(networkId, position, options?): ApiResult<{ nodeId: IdType; node: NodeData }>`
 
 Creates a new node at the given `[x, y, z?]` position. Adds an undo entry and,
@@ -144,14 +233,19 @@ Returns the generated `nodeId` and a `node` object containing the final
 If the node table has a `name` column and no `name` attribute is provided,
 defaults to `"Node <id>"`.
 
-If `options.bypass` is provided, visual property bypasses are applied atomically
-immediately after the node is created (single operation — no separate `setBypass`
-call required).
+If `options.bypass` is provided, each bypass is validated **before** the node is
+created (property existence, node scope, and value type — the same checks
+`setBypass` performs); an invalid bypass fails the call without creating the
+node. Valid bypasses are then applied atomically immediately after the node is
+created (single operation — no separate `setBypass` call required).
 
-| Error Code | Condition                                 |
-| ---------- | ----------------------------------------- |
-| `APP1`     | `networkId` does not exist                |
-| `N3`       | `options.attributes` contains an `id` key |
+| Error Code   | Condition                                                         |
+| ------------ | ----------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                        |
+| `N3`         | `options.attributes` contains an `id` key                         |
+| `APP9`       | `options.bypass` names an unknown visual property                 |
+| `BV2`        | A `options.bypass` property doesn't match node scope              |
+| `VP1`–`VP10` | A `options.bypass` value is invalid for its property's value type |
 
 #### `createEdge(networkId, sourceNodeId, targetNodeId, options?): ApiResult<{ edgeId: IdType; edge: EdgeData }>`
 
@@ -164,14 +258,57 @@ Returns the generated `edgeId` and an `edge` object containing `sourceId`,
 If the edge table has a `name` column and no `name` attribute is provided,
 defaults to `"<source> (interacts with) <target>"`.
 
-If `options.bypass` is provided, visual property bypasses are applied atomically
-immediately after the edge is created.
+If `options.bypass` is provided, each bypass is validated **before** the edge is
+created (property existence, edge scope, and value type); an invalid bypass
+fails the call without creating the edge. Valid bypasses are then applied
+atomically immediately after the edge is created.
 
-| Error Code | Condition                                  |
-| ---------- | ------------------------------------------ |
-| `APP1`     | `networkId` does not exist                 |
-| `E6`       | `options.attributes` contains an `id` key  |
-| `GL1`      | `sourceNodeId` or `targetNodeId` not found |
+| Error Code   | Condition                                                         |
+| ------------ | ----------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                        |
+| `E6`         | `options.attributes` contains an `id` key                         |
+| `GL1`        | `sourceNodeId` or `targetNodeId` not found                        |
+| `APP9`       | `options.bypass` names an unknown visual property                 |
+| `BV2`        | A `options.bypass` property doesn't match edge scope              |
+| `VP1`–`VP10` | A `options.bypass` value is invalid for its property's value type |
+
+#### `createNodes(networkId, nodes, options?): ApiResult<{ nodes: Array<{ nodeId, node }> }>`
+
+Creates many nodes in one operation that records a **single** undo entry
+(undoing removes them all at once). Each `NodeSpec` carries its own `position`,
+`attributes`, and `bypass`. Validation is all-or-nothing: everything is checked
+up front, and if any spec is invalid no node is created. Unless
+`options.autoSelect: false`, the created nodes are exclusively selected.
+
+Returns each created `nodeId` paired with its `node` (`{ attributes, position }`).
+
+| Error Code   | Condition                                                        |
+| ------------ | ---------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                       |
+| `N3`         | A spec's `attributes` contains an `id` key                       |
+| `APP9`       | A spec's `bypass` names an unknown visual property               |
+| `BV2`        | A spec's `bypass` property doesn't match node scope              |
+| `VP1`–`VP10` | A spec's `bypass` value is invalid for its property's value type |
+
+#### `createEdges(networkId, edges, options?): ApiResult<{ edges: Array<{ edgeId, edge }> }>`
+
+Creates many edges in one operation that records a **single** undo entry. Each
+`EdgeSpec` carries `sourceNodeId`, `targetNodeId`, `attributes`, and `bypass`.
+Validation is all-or-nothing: if any endpoint is missing or any bypass invalid,
+no edge is created. Unless `options.autoSelect: false`, the created edges are
+exclusively selected.
+
+Returns each created `edgeId` paired with its `edge`
+(`{ sourceId, targetId, attributes }`).
+
+| Error Code   | Condition                                                        |
+| ------------ | ---------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                       |
+| `E6`         | A spec's `attributes` contains an `id` key                       |
+| `GL1`        | A spec's `sourceNodeId` or `targetNodeId` not found              |
+| `APP9`       | A spec's `bypass` names an unknown visual property               |
+| `BV2`        | A spec's `bypass` property doesn't match edge scope              |
+| `VP1`–`VP10` | A spec's `bypass` value is invalid for its property's value type |
 
 #### `moveEdge(networkId, edgeId, newSourceId, newTargetId): ApiResult`
 
@@ -184,7 +321,7 @@ columns in the edge table if they exist. Adds an undo entry.
 | `GL2`      | `edgeId` does not exist                  |
 | `GL1`      | `newSourceId` or `newTargetId` not found |
 
-#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges }>`
+#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges, missing }>`
 
 Deletes the specified nodes and any incident edges. Visual style bypasses for the
 deleted elements are cleaned up. Adds an undo entry.
@@ -195,6 +332,8 @@ Returns:
 - `deletedNodes: Array<{ id, attributes, position }>` — full `NodeData` for each deleted node
 - `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each
   incidentally-deleted edge (edges connected to the deleted nodes)
+- `missing: IdType[]` — requested node ids that did not exist (partial requests
+  still succeed; the op fails only when none of the ids exist)
 
 | Error Code | Condition                         |
 | ---------- | --------------------------------- |
@@ -202,7 +341,7 @@ Returns:
 | `APP9`     | `nodeIds` is empty                |
 | `GL1`      | None of the specified nodes exist |
 
-#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges }>`
+#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges, missing }>`
 
 Deletes the specified edges. Visual style bypasses are cleaned up. Adds an undo entry.
 
@@ -210,6 +349,7 @@ Returns:
 
 - `deletedEdgeCount` — number of removed edges
 - `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each deleted edge
+- `missing: IdType[]` — requested edge ids that did not exist
 
 | Error Code | Condition                         |
 | ---------- | --------------------------------- |
@@ -217,15 +357,23 @@ Returns:
 | `APP9`     | `edgeIds` is empty                |
 | `GL2`      | None of the specified edges exist |
 
-#### `generateNextNodeId(networkId): IdType`
+#### `generateNextNodeId(networkId): ApiResult<{ nodeId: IdType }>`
 
-Returns the next available node ID without creating a node. Returns `'0'` if the
-network is not found.
+Returns the ID the next created node in this network will receive, without
+creating a node.
 
-#### `generateNextEdgeId(networkId): IdType`
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
 
-Returns the next available edge ID without creating an edge. Returns `'e0'` if
-the network is not found.
+#### `generateNextEdgeId(networkId): ApiResult<{ edgeId: IdType }>`
+
+Returns the ID the next created edge in this network will receive, without
+creating an edge.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
 
 ### Graph Traversal
 
@@ -241,17 +389,19 @@ Returns all node IDs in the network.
 
 Returns all edge IDs in the network.
 
-#### `getEdges(networkId): ApiResult<{ edges: Array<{ id, sourceId, targetId }> }>`
+#### `getEdges(networkId, edgeIds?): ApiResult<{ edges: Array<{ id, sourceId, targetId, attributes }>; missing: IdType[] }>`
 
-Returns all edges with their source and target node IDs in a single call.
-Use this instead of `getEdgeIds` + per-edge `getEdge()` when building the
-network topology — it avoids one API round-trip per edge, which matters on
-networks with thousands of edges.
+Batch-reads edges with source/target and attributes in a single call. When
+`edgeIds` is omitted, every edge is returned; requested ids that don't exist
+are reported in `missing` (symmetric with `getNodes`). Use this instead of
+`getEdgeIds` + per-edge `getEdge()` when building topology — it avoids one API
+round-trip per edge, which matters on networks with thousands of edges.
 
-#### `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: EdgeData[] }>`
+#### `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: Array<{ id, sourceId, targetId, attributes }> }>`
 
 Returns all edges connected to the given node (both incoming and outgoing).
-Each `EdgeData` includes `sourceId`, `targetId`, and `attributes`.
+Each edge includes its `id`, `sourceId`, `targetId`, and `attributes`, so the
+results can be selected or deleted directly.
 
 #### `getConnectedNodes(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
 
@@ -310,7 +460,7 @@ interface CreateNetworkFromEdgeListProps {
   name: string
   description?: string
   edgeList: Array<[IdType, IdType, string?]> // [sourceLabel, targetLabel, edgeLabel?]
-  addToWorkspace?: boolean // default: false
+  addToWorkspace?: boolean // default: true
 }
 
 interface CreateNetworkFromCx2Props {
@@ -334,9 +484,10 @@ becomes a node with its label stored in the `name` column. A passthrough mapping
 for `nodeLabel → name` is created automatically.
 
 The resulting `CyNetwork` is added to NetworkStore, TableStore, VisualStyleStore,
-ViewModelStore, and NetworkSummaryStore. If `addToWorkspace: true`, the network is
-added to WorkspaceStore and set as the current network (firing `network:created`
-and `network:switched` events).
+ViewModelStore, and NetworkSummaryStore. If `addToWorkspace: true` (the default),
+the network is added to WorkspaceStore and set as the current network (firing
+`network:created` and `network:switched` events). Pass `addToWorkspace: false` to
+create the network without adding it to the workspace.
 
 | Error Code | Condition                              |
 | ---------- | -------------------------------------- |
@@ -353,7 +504,8 @@ attribute rows, and node positions are copied from the source network.
   endpoints are both in `nodeIds` is included.
 - Explicit `edgeIds` → only those edges; each must connect nodes in `nodeIds`.
 - `options`: `{ name?, description?, addToWorkspace? }` — name defaults to
-  `Subnetwork of <source name>`; `addToWorkspace` defaults to `false`.
+  `Subnetwork of <source name>`; `addToWorkspace` defaults to `true` (pass
+  `false` to opt out, matching `createNetworkFromEdgeList`).
 
 | Error Code | Condition                                             |
 | ---------- | ----------------------------------------------------- |
@@ -426,17 +578,21 @@ subscription in `initEventBus` fires automatically on store mutation).
 
 Clears current selection and selects exactly the specified nodes and edges.
 
-#### `additiveSelect(networkId, ids): ApiResult`
+#### `additiveSelect(networkId, nodeIds, edgeIds): ApiResult`
 
-Adds the specified IDs (nodes or edges) to the current selection.
+Adds the specified nodes and edges to the current selection.
 
-#### `additiveUnselect(networkId, ids): ApiResult`
+#### `additiveDeselect(networkId, nodeIds, edgeIds): ApiResult`
 
-Removes the specified IDs from the current selection.
+Removes the specified nodes and edges from the current selection.
 
-#### `toggleSelected(networkId, ids): ApiResult`
+#### `toggleSelected(networkId, nodeIds, edgeIds): ApiResult`
 
-Toggles the selection state of each specified ID.
+Toggles the selection state of each specified node and edge.
+
+#### `clearSelection(networkId): ApiResult`
+
+Clears the entire selection (deselects all nodes and edges).
 
 #### `getSelection(networkId): ApiResult<SelectionState>`
 
@@ -473,10 +629,11 @@ function. This is async because it delegates to the renderer.
 | `APP1`     | `networkId` does not exist                    |
 | `APP5`     | Fit function not yet registered for this view |
 
-#### `getNodePositions(networkId, nodeIds): ApiResult<{ positions: PositionRecord }>`
+#### `getNodePositions(networkId, nodeIds?): ApiResult<{ positions: PositionRecord; missing: IdType[] }>`
 
-Returns current `[x, y, z?]` positions for the specified nodes. Nodes without
-a view model entry are silently omitted from the result.
+Returns current `[x, y, z?]` positions. When `nodeIds` is omitted, every node's
+position is returned. Requested ids with no view model entry are reported in
+`missing` rather than silently dropped (symmetric with `elementApi.getNodes`).
 
 | Error Code | Condition                  |
 | ---------- | -------------------------- |
@@ -522,12 +679,15 @@ via the Event Bus (the TableStore subscription in `initEventBus` fires automatic
 
 #### `getValue(networkId, tableType, elementId, column): ApiResult<{ value: ValueType }>`
 
-Returns the value of a single cell.
+Returns the value of a single cell. On edge tables, the `source` and `target`
+pseudo-columns are resolved from the network model (matching `getTable` /
+`getColumns`).
 
 | Error Code  | Condition                                          |
 | ----------- | -------------------------------------------------- |
 | `APP1`      | `networkId` does not exist                         |
 | `GL1`/`GL2` | `elementId` row not found (`GL1` node, `GL2` edge) |
+| `APP10`     | `column` is not declared and absent from the row   |
 
 #### `getRow(networkId, tableType, elementId): ApiResult<{ row: Record<AttributeName, ValueType> }>`
 
@@ -536,6 +696,7 @@ Returns the full attribute row for a single element. Same error codes as `getVal
 #### `createColumn(networkId, tableType, columnName, dataType, defaultValue): ApiResult`
 
 Creates a new column with the given data type and default value. The
+`defaultValue` is validated against the declared `dataType`. The
 `data:changed` event reports the name in `addedColumns` and includes any rows
 whose values changed.
 
@@ -546,6 +707,7 @@ whose values changed.
 | `A8`        | `columnName` is `"s"`/`"t"` on an edge table                |
 | `AC6`       | `columnName` already exists on this table                   |
 | `A6`        | `defaultValue` is `null` or `undefined`                     |
+| `A1`        | `defaultValue` does not match the declared `dataType`       |
 
 #### `deleteColumn(networkId, tableType, columnName): ApiResult`
 
@@ -554,11 +716,12 @@ column, and removes the column from the Table Browser display config. The
 `data:changed` event reports the name in `removedColumns` and includes affected
 rows.
 
-| Error Code | Condition                  |
-| ---------- | -------------------------- |
-| `APP1`     | `networkId` does not exist |
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP1`     | `networkId` does not exist               |
+| `APP10`    | `columnName` does not exist in the table |
 
-#### `setColumnName(networkId, tableType, currentName, newName): ApiResult`
+#### `renameColumn(networkId, tableType, currentName, newName): ApiResult`
 
 Renames a column. Cascades: retargets any visual style mapping referencing the
 column, and updates the Table Browser display config. Renaming to the current
@@ -570,6 +733,7 @@ in `removedColumns`, the new name in `addedColumns`, and any affected rows.
 | `APP1`      | `networkId` does not exist                               |
 | `FK1`/`FK2` | `newName` is `"id"` (`FK1` node table, `FK2` edge table) |
 | `A8`        | `newName` is `"s"`/`"t"` on an edge table                |
+| `APP10`     | `currentName` does not exist in the table                |
 | `AC6`       | `newName` already exists and differs from `currentName`  |
 
 #### `setValue(networkId, tableType, elementId, column, value): ApiResult`
@@ -629,18 +793,22 @@ and `target` pseudo-columns, matching `getTable`'s output.
 #### `getTable(networkId, tableType, options?): ApiResult<{ columns, rows }>`
 
 Returns all columns (with type metadata) and all rows for the given table.
-For edge tables, `source` and `target` columns are always prepended (read from
-the network model, not from the table itself).
+By default a leading `id` column is prepended and every row carries an `id`
+field, so rows are round-trippable back to their nodes/edges. For edge tables,
+`source` and `target` columns follow (read from the network model, not from the
+table itself).
 
 **Options:**
 
 - `columns?: string[]` — return only these columns (omit = all)
+- `includeId?: boolean` — include the element `id` column and per-row `id`
+  field. Default: `true`. Set `false` for a data-only result.
 
 ```typescript
 const result = tableApi.getTable(networkId, 'node')
 if (result.success) {
-  result.data.columns // [{ name: 'name', type: 'string' }, { name: 'degree', type: 'long' }]
-  result.data.rows // [{ name: 'TP53', degree: 42 }, ...]
+  result.data.columns // [{ name: 'id', type: 'string' }, { name: 'name', type: 'string' }, { name: 'degree', type: 'long' }]
+  result.data.rows // [{ id: 'n1', name: 'TP53', degree: 42 }, ...]
 }
 ```
 
@@ -656,6 +824,10 @@ pandas, R, and other external tools.
 - `columns?: string[]` — export only these columns
 - `includeTypeHeader?: boolean` — `true` → `name:string\tscore:double` (Cytoscape
   Desktop format for lossless round-trip). Default: `false` (plain column names).
+- `includeId?: boolean` — emit a leading `id` column holding each element's id.
+  Default: `true`, so the export round-trips through `importTableFromTsv` (whose
+  default `keyColumn` is `id`) with no manual id insertion. Set `false` for a
+  data-only export.
 
 For edge tables, `source` and `target` columns are always included.
 
@@ -663,18 +835,29 @@ For edge tables, `source` and `target` columns are always included.
 const result = tableApi.exportTableToTsv(networkId, 'node')
 if (result.success) {
   console.log(result.data.tsvText)
-  // name\tscore
-  // TP53\t0.95
-  // BRCA1\t0.73
+  // id\tname\tscore
+  // n1\tTP53\t0.95
+  // n2\tBRCA1\t0.73
 }
 ```
 
-#### `importTableFromTsv(networkId, tableType, tsvText, options?): ApiResult<{ rowCount, newColumns, skippedRows }>`
+#### `importTableFromTsv(networkId, tableType, tsvText, options?): ApiResult<{ rowCount, newColumns, skippedRows, skippedCells }>`
 
-Parses a TSV string and writes data into the table. Creates new columns as
-needed. Matches rows by resolving the key column's value to element IDs — TSV
-rows whose key value matches no element are skipped (never creating orphaned
-rows) and their key values are returned in `skippedRows`.
+Parses a TSV string and writes data into the table. New column names are
+validated up front (before anything is mutated), so a forbidden name fails the
+import cleanly instead of leaving some columns created; valid missing columns
+are then created as needed. Matches rows by resolving the key column's value to
+element IDs — TSV rows whose key value matches no element are skipped (never
+creating orphaned rows) and their key values are returned in `skippedRows`.
+
+Cell values are parsed strictly against the column's type, with no coercion
+(matching `setValue`/`setValues`):
+
+- A non-empty cell that cannot be parsed as its column type is **skipped** and
+  reported in `skippedCells` (as `{ key, column, value }`) rather than coerced
+  to `0`/`false`.
+- An empty cell for a non-string column is treated as "no value provided" and
+  leaves the existing attribute untouched.
 
 **Options:**
 
@@ -690,13 +873,16 @@ if (result.success) {
   console.log(result.data.newColumns) // ['cluster', 'pagerank']
   console.log(result.data.rowCount) // 2
   console.log(result.data.skippedRows) // [] — no unmatched key values
+  console.log(result.data.skippedCells) // [] — no unparseable cells
 }
 ```
 
-| Error Code | Condition                               |
-| ---------- | --------------------------------------- |
-| `APP1`     | Table record for `networkId` not found  |
-| `APP9`     | TSV has < 2 lines or key column missing |
+| Error Code  | Condition                                             |
+| ----------- | ----------------------------------------------------- |
+| `APP1`      | Table record for `networkId` not found                |
+| `APP9`      | TSV has < 2 lines or key column missing               |
+| `FK1`/`FK2` | A new column is named `"id"` (`FK1` node, `FK2` edge) |
+| `A8`        | A new column is named `"s"`/`"t"` on an edge table    |
 
 All methods in this API return `APP1` if the table record for `networkId` is not found.
 
@@ -714,7 +900,64 @@ import { VisualPropertyName } from 'cyweb/ApiTypes'
 All write methods trigger `style:changed` via the Event Bus (the VisualStyleStore
 subscription in `initEventBus` fires on any property change).
 
-### Methods
+### Types
+
+```typescript
+/** One visual property's identity and scope, from getVisualProperties(). */
+interface VisualPropertyInfo {
+  name: VisualPropertyName
+  group: 'node' | 'edge' | 'network'
+  type: VisualPropertyValueTypeName // e.g. 'color', 'number', 'string'
+  hasMapping: boolean // true when the property has a mapping
+}
+
+/** Options bundle for createContinuousMapping. */
+interface CreateContinuousMappingOptions {
+  vpType: VisualPropertyValueTypeName // property's value type
+  attribute: AttributeName // source table column
+  attributeValues: ValueType[] // numeric anchors (min…max)
+  attributeType: ValueTypeName // declared type of the column
+  controlPoints?: ContinuousFunctionControlPoint[] // override interpolation points
+  ltMinVpValue?: VisualPropertyValueType // value below the minimum anchor
+  gtMaxVpValue?: VisualPropertyValueType // value above the maximum anchor
+}
+```
+
+### Read Methods
+
+#### `getVisualProperties(networkId): ApiResult<{ properties: VisualPropertyInfo[] }>`
+
+Lists every visual property in the network's style, each with its `name`,
+`group` (node/edge/network), value `type`, and whether it currently has a
+mapping (`hasMapping`).
+
+#### `getDefault(networkId, vpName): ApiResult<{ value }>`
+
+Reads the default value of a visual property.
+
+#### `getBypass(networkId, vpName, elementId): ApiResult<{ value }>`
+
+Reads a single element's bypass for a property. `value` is `undefined` when the
+element has no bypass for that property.
+
+#### `getBypasses(networkId, vpName): ApiResult<{ bypasses: Record<elementId, value> }>`
+
+Reads every bypass set for a property, keyed by element id. Returns an empty
+object when the property has no bypasses.
+
+#### `getMapping(networkId, vpName): ApiResult<{ mapping }>`
+
+Reads the mapping installed on a property. `mapping` is `undefined` when the
+property has no mapping.
+
+**Common errors for read methods:**
+
+| Error Code | Condition                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `APP1`     | `networkId` has no visual style                                                                                     |
+| `APP9`     | `vpName` is not a known visual property (the `vpName`-scoped reads only; `getVisualProperties` returns only `APP1`) |
+
+### Write Methods
 
 #### `setDefault(networkId, vpName, vpValue): ApiResult`
 
@@ -727,6 +970,14 @@ type before being written.
 | `APP1`                                                 | `networkId` does not exist                                                             |
 | `APP9`                                                 | `vpName` is not a known visual property                                                |
 | `VP1`/`VP2`/`VP3`/`VP4`/`VP5`/`VP6`/`VP7`/`VP9`/`VP10` | `vpValue` invalid for the property's value type (see [ErrorCodes.md](./ErrorCodes.md)) |
+
+#### `setDefaults(networkId, defaults): ApiResult`
+
+Sets several visual-property defaults in one call, where `defaults` is a
+`Partial<Record<VisualPropertyName, value>>`. Every entry is validated first
+(property existence and value type); if any is invalid, **nothing** is applied,
+so a bad value can't leave a half-updated style. Same error codes as
+`setDefault`.
 
 #### `setBypass(networkId, vpName, elementIds, vpValue): ApiResult`
 
@@ -741,6 +992,14 @@ property's node/edge scope; network-scoped properties cannot be bypassed.
 | `BV1`        | An `elementIds` entry does not exist in the network                          |
 | `BV2`        | An `elementIds` entry doesn't match the property's node/edge scope           |
 | `VP1`–`VP10` | `vpValue` invalid for the property's value type (same codes as `setDefault`) |
+
+#### `setBypasses(networkId, elementIds, bypasses): ApiResult`
+
+Sets several visual-property bypasses on the same `elementIds` in one call —
+e.g. highlighting nodes with color + border + size at once. `bypasses` is a
+`Partial<Record<VisualPropertyName, value>>`. Every property is validated first
+(existence, node/edge scope, value type, and element existence); if any is
+invalid, **nothing** is applied. Same error codes as `setBypass`.
 
 #### `deleteBypass(networkId, vpName, elementIds): ApiResult`
 
@@ -766,14 +1025,26 @@ of attribute-value keys (stringified; parsed back to `integer`/`long`/`double` p
 | `MI1`      | `attribute` is not declared in the matching node/edge table |
 | `MI2`      | `attributeType` does not match the declared column type     |
 
-#### `createContinuousMapping(networkId, vpName, vpType, attribute, attributeValues, attributeType, controlPoints?, ltMinVpValue?, gtMaxVpValue?): ApiResult`
+#### `createContinuousMapping(networkId, vpName, options): ApiResult`
 
-Creates a continuous (interpolated) mapping. `attributeValues` defines the
-control point values on the data axis. By default, `min`/`max`/`controlPoints`/
-`ltMinVpValue`/`gtMaxVpValue` are computed automatically from `attributeValues`
-and `vpType`. Pass `controlPoints` to override the interpolation points (`min`/
-`max` are derived from the first/last entries); pass `ltMinVpValue`/`gtMaxVpValue`
-to override the values used below/above the range.
+Creates a continuous (interpolated) mapping. `options` is a
+`CreateContinuousMappingOptions` bundle (see [Types](#types)) — the correlated
+values are passed as one object rather than positionally.
+`options.attributeValues` defines the control point values on the data axis. By
+default, `min`/`max`/`controlPoints`/`ltMinVpValue`/`gtMaxVpValue` are computed
+automatically from `attributeValues` and `vpType`. Pass `controlPoints` to
+override the interpolation points (`min`/`max` are derived from the first/last
+entries); pass `ltMinVpValue`/`gtMaxVpValue` to override the values used
+below/above the range.
+
+```typescript
+visualStyleApi.createContinuousMapping(networkId, 'NODE_BACKGROUND_COLOR', {
+  vpType: 'color',
+  attribute: 'degree',
+  attributeValues: [0, 50, 100],
+  attributeType: 'long',
+})
+```
 
 | Error Code | Condition                                                              |
 | ---------- | ---------------------------------------------------------------------- |
@@ -795,7 +1066,7 @@ Creates a passthrough mapping (attribute value used directly as the visual value
 | `MI1`      | `attribute` is not declared in the matching node/edge table |
 | `MI2`      | `attributeType` does not match the declared column type     |
 
-#### `removeMapping(networkId, vpName): ApiResult`
+#### `deleteMapping(networkId, vpName): ApiResult`
 
 Removes any mapping for the specified visual property.
 
@@ -842,14 +1113,24 @@ Applies a layout algorithm asynchronously. Lifecycle:
 
 Pre-layout positions are snapshotted for undo.
 
+Never throws across the API boundary: if the layout engine throws synchronously
+(or its callback throws), the promise resolves to `fail(APP3)` and
+`LayoutStore.isRunning` is reset to `false` rather than leaving the rejection to
+escape.
+
 | Error Code | Condition                                |
 | ---------- | ---------------------------------------- |
 | `APP1`     | `networkId` does not exist               |
 | `APP4`     | No engine registered for `algorithmName` |
+| `APP3`     | The layout engine or its callback threw  |
 
-#### `getAvailableLayouts(): ApiResult<LayoutAlgorithmInfo[]>`
+#### `getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>`
 
-Returns all registered layout algorithms across all engines. Never fails.
+Returns all registered layout algorithms across all engines. There are no
+validation failures to report — an empty engine registry yields
+`ok({ layouts: [] })` — but the call is still wrapped like every other, so an
+unexpected store error resolves to `fail(APP3)`. Handle both branches of the
+`ApiResult`.
 
 ---
 
@@ -925,7 +1206,7 @@ Returns top-level metadata. Always succeeds.
 Returns the ordered list of network IDs (tab order). Always succeeds (empty array
 when no networks are open).
 
-#### `getNetworkList(): ApiResult<WorkspaceNetworkInfo[]>`
+#### `getNetworks(): ApiResult<{ networks: WorkspaceNetworkInfo[] }>`
 
 Returns summary metadata for all networks. Networks whose summary is not found in
 NetworkSummaryStore are **silently omitted**.
@@ -1131,7 +1412,7 @@ interface ResourceVisibilityResult {
 
 ### Methods
 
-#### `getSupportedSlots(): ResourceSlot[]`
+#### `getSupportedSlots(): ApiResult<{ slots: ResourceSlot[] }>`
 
 Returns the slots the host supports. Currently `['right-panel', 'apps-menu']`.
 
@@ -1177,17 +1458,18 @@ if (result.success && result.data.errors.length > 0) {
 }
 ```
 
-#### `getRegisteredResources(): RegisteredResourceInfo[]`
+#### `getRegisteredResources(): ApiResult<{ resources: RegisteredResourceInfo[] }>`
 
 Returns all resources registered by this app. Useful for debugging.
 
-#### `getResourceVisibility(id): ResourceVisibilityResult`
+#### `getResourceVisibility(id): ApiResult<ResourceVisibilityResult>`
 
 Returns the visibility evaluation for a specific resource. Evaluates:
 
 1. App active status
 2. `requires.network` — hidden when no network is loaded
-3. `requires.selection` — hidden when nothing is selected
+3. `requires.selection` — hidden when nothing is selected, evaluated against the
+   current network's live selection
 
 ---
 
@@ -1378,20 +1660,20 @@ Also triggered by TableApi write methods.
 
 ### Event Dispatch Table
 
-| API Method / Store Mutation                                                                                                 | Events Fired                                                                             |
-| --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (`addToWorkspace: true`)                               | `network:created`, `network:switched`                                                    |
-| `networkApi.createNetworkFromCx2` (`addToWorkspace: true`)                                                                  | `network:created`                                                                        |
-| `networkApi.createNetworkFromCx2` (`navigate: true`)                                                                        | `network:switched`                                                                       |
-| `networkApi.deleteNetwork`                                                                                                  | `network:deleted`; `network:switched` only when deleting the current network             |
-| `networkApi.deleteAllNetworks`                                                                                              | `network:deleted` (×N)                                                                   |
-| `elementApi.createNode` / `createEdge` / `deleteNodes` / `deleteEdges`                                                      | `network:changed`; coordinated table/style/selection mutations may emit their own events |
-| `workspaceApi.switchCurrentNetwork`                                                                                         | `network:switched`                                                                       |
-| `selectionApi.exclusiveSelect` / `additiveSelect` / `additiveUnselect` / `toggleSelected`                                   | `selection:changed`                                                                      |
-| `layoutApi.applyLayout`                                                                                                     | `layout:started`, `layout:completed`                                                     |
-| `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `removeMapping`                             | `style:changed` (×per property)                                                          |
-| `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `setColumnName` / `applyValueToElements` | `data:changed`                                                                           |
-| `contextMenuApi.addContextMenuItem` / `removeContextMenuItem`                                                               | _(no events — synchronous store mutation only)_                                          |
+| API Method / Store Mutation                                                                                                | Events Fired                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (addToWorkspace: true)                                | `network:created`, `network:switched`                                                    |
+| `networkApi.createNetworkFromCx2` (addToWorkspace: true)                                                                   | `network:created`                                                                        |
+| `networkApi.createNetworkFromCx2` (navigate: true)                                                                         | `network:switched`                                                                       |
+| `networkApi.deleteNetwork`                                                                                                 | `network:deleted`; `network:switched` only when deleting the current network             |
+| `networkApi.deleteAllNetworks`                                                                                             | `network:deleted` (×N)                                                                   |
+| `elementApi.createNode` / `createNodes` / `createEdge` / `createEdges` / `deleteNodes` / `deleteEdges`                     | `network:changed`; coordinated table/style/selection mutations may emit their own events |
+| `workspaceApi.switchCurrentNetwork`                                                                                        | `network:switched`                                                                       |
+| `selectionApi.exclusiveSelect` / `additiveSelect` / `additiveDeselect` / `toggleSelected` / `clearSelection`               | `selection:changed`                                                                      |
+| `layoutApi.applyLayout`                                                                                                    | `layout:started`, `layout:completed`                                                     |
+| `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `deleteMapping`                            | `style:changed` (×per property)                                                          |
+| `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `renameColumn` / `applyValueToElements` | `data:changed`                                                                           |
+| `contextMenuApi.addContextMenuItem` / `removeContextMenuItem`                                                              | _(no events — synchronous store mutation only)_                                          |
 
 ### Usage Example (React)
 
@@ -1406,8 +1688,8 @@ function NetworkList() {
   const [networks, setNetworks] = useState<WorkspaceNetworkInfo[]>([])
 
   const refresh = useCallback(() => {
-    const result = workspaceApi.getNetworkList()
-    if (result.success) setNetworks(result.data)
+    const result = workspaceApi.getNetworks()
+    if (result.success) setNetworks(result.data.networks)
   }, [workspaceApi])
 
   useEffect(refresh, [refresh])

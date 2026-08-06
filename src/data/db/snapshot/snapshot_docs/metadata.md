@@ -27,7 +27,6 @@ interface DatabaseExportMetadata {
 ### `exportDate`
 
 - **Type**: `string` (ISO 8601 format)
-- **Description**: Timestamp when the snapshot was created
 - **Purpose**: Track when the export was made
 - **Example**: `"2025-01-15T14:30:00.000Z"`
 

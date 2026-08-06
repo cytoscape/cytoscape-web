@@ -136,7 +136,7 @@ describe('getNodePositions', () => {
     }
   })
 
-  it('omits nodeIds not present in the view model', () => {
+  it('omits nodeIds not present in the view model and reports them in missing', () => {
     mockGetViewModel.mockReturnValue(
       makeNetworkView({
         n1: { x: 10, y: 20 },
@@ -148,6 +148,30 @@ describe('getNodePositions', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(Object.keys(result.data.positions)).toEqual(['n1'])
+      expect(result.data.missing).toEqual(['n_missing'])
+    }
+  })
+
+  it('returns every node position when nodeIds is omitted', () => {
+    mockGetViewModel.mockReturnValue(
+      makeNetworkView({
+        n1: { x: 10, y: 20 },
+        n2: { x: 30, y: 40 },
+      }),
+    )
+    mockNetworks.set('net1', {
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+    })
+
+    const result = viewportApi.getNodePositions('net1')
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.positions).toEqual({
+        n1: [10, 20],
+        n2: [30, 40],
+      })
+      expect(result.data.missing).toEqual([])
     }
   })
 

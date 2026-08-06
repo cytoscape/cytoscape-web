@@ -1,4 +1,9 @@
 import { logStartup } from '@/debug'
+import {
+  getTabNetworkId,
+  resolveInitialNetworkId,
+} from '@/data/tabState/tabNetwork'
+import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { createWorkspace } from '@/models/WorkspaceModel/impl/workspaceImpl'
 import { BootPhase } from '../bootPhases'
 import { runPhase } from '../runBoot'
@@ -25,14 +30,15 @@ import { runUrlImports } from './runUrlImports'
 // the address bar, so a reload reproduced the same failure.
 
 export interface AppShellBootResult {
-  /** Service-app URLs the user must confirm before they are added. */
-  serviceAppUrlsNeedingConfirmation: string[]
+  /** Apps the URL asked to install, resolved but awaiting user confirmation. */
+  pendingAppInstalls: PendingAppInstall[]
 }
 
 const emptyWorkspaceDraft = (): WorkspaceDraft => ({
   workspace: createWorkspace(),
   summaries: {},
   errors: [],
+  deepLinkFailed: false,
 })
 
 export const runAppShellBoot = async (
@@ -56,6 +62,20 @@ export const runAppShellBoot = async (
   await runPhase(BootPhase.DEEP_LINK, () => resolveDeepLink(ctx, draft))
   await runPhase(BootPhase.IMPORTS, () => runUrlImports(ctx, draft))
   await runPhase(BootPhase.PUBLISH, () => {
+    // Which network THIS tab should display. The URL is the per-tab source of
+    // truth (each browser tab has its own address bar, and it survives reload);
+    // a per-tab sessionStorage backstop comes next, then the shared
+    // currentNetworkId. Without this a tab re-derives its network from the
+    // shared workspace row and swaps to whatever another tab last opened
+    // (CW-722).
+    draft.workspace.currentNetworkId = resolveInitialNetworkId(
+      ctx.networkIdParam,
+      getTabNetworkId(),
+      draft.workspace.currentNetworkId,
+      draft.workspace.networkIds,
+      draft.deepLinkFailed,
+    )
+
     publishWorkspace(draft)
   })
 
@@ -79,8 +99,6 @@ export const runAppShellBoot = async (
   })
 
   return {
-    serviceAppUrlsNeedingConfirmation: intents.ok
-      ? intents.value.serviceAppUrlsNeedingConfirmation
-      : [],
+    pendingAppInstalls: intents.ok ? intents.value.pendingAppInstalls : [],
   }
 }

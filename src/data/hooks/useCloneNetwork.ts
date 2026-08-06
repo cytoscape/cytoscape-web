@@ -17,7 +17,10 @@ import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useViewModelStore } from './stores/ViewModelStore'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useRegisterNetwork } from './useRegisterNetwork'
 
@@ -75,6 +78,10 @@ export const useCloneNetwork = () => {
           nodeTable: tables.nodeTable,
           edgeTable: tables.edgeTable,
           visualStyle,
+          // Without this the clone is round-tripped through a CX2 that has no
+          // cyWebVisualStyles aspect, so the copy arrives with only the active
+          // style and every other named style is lost.
+          visualStyleSet: getVisualStyleSetSnapshot(networkId),
           networkViews: [viewModel],
           visualStyleOptions,
           otherAspects: opaqueAspects ? [opaqueAspects as any] : undefined,

@@ -125,9 +125,18 @@ export const App = (): React.ReactElement => {
         <div data-testid="app-router" style={{ height: '100%' }}>
           <RouterProvider router={router} />
         </div>
+        {/*
+          Its own boundary, with a null fallback. A crash in the tour runner
+          (react-joyride walking a DOM that moved under it) must be caught, but
+          the outer boundary would swap the whole app — router included — for
+          the error page. The tour is an overlay: dropping just the overlay
+          leaves the user where they were.
+        */}
+        <ErrorBoundary fallback={null}>
+          <OnboardingHost />
+        </ErrorBoundary>
       </ErrorBoundary>
       <CookieConsentWidget />
-      <OnboardingHost />
     </CssVarsProvider>
   )
 }

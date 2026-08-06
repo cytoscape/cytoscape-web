@@ -82,10 +82,23 @@ function validateAndRegister(
   }
 }
 
-function removeItem(itemId: string): ApiResult {
+/**
+ * Remove a registered item. When `ownerAppId` is provided (per-app
+ * factory), the item is removed only if it belongs to that app — one app
+ * must not be able to remove another app's (or an anonymous) item by
+ * guessing its id. The anonymous singleton passes `undefined` and may
+ * remove only anonymous items for the same reason.
+ */
+function removeItem(itemId: string, ownerAppId?: string): ApiResult {
   try {
     const items = useContextMenuItemStore.getState().items
-    if (!items.some((item) => item.itemId === itemId)) {
+    const item = items.find((i) => i.itemId === itemId)
+    if (item === undefined) {
+      return fail(AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND, itemId)
+    }
+    if (item.appId !== ownerAppId) {
+      // Owned by a different app (or anonymous vs app-owned) — report as
+      // not found rather than leaking that the id exists elsewhere.
       return fail(AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND, itemId)
     }
     useContextMenuItemStore.getState().removeItem(itemId)
@@ -104,7 +117,7 @@ function removeItem(itemId: string): ApiResult {
  */
 export const createContextMenuApi = (appId: string): ContextMenuApi => ({
   addContextMenuItem: (config) => validateAndRegister(config, appId),
-  removeContextMenuItem: removeItem,
+  removeContextMenuItem: (itemId) => removeItem(itemId, appId),
 })
 
 // ── Anonymous singleton — no appId bound, for window.CyWebApi only ───────────

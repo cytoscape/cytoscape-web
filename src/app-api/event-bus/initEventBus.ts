@@ -143,7 +143,8 @@ export function initEventBus(): void {
     for (const networkId of Object.keys(curr.visualStyles) as IdType[]) {
       const style = curr.visualStyles[networkId]
       const prevStyle = prev.visualStyles[networkId]
-      if (prevStyle === style) continue
+      // A brand-new style (network just created) is covered by network:created
+      if (prevStyle === undefined || prevStyle === style) continue
       for (const property of Object.keys(style) as VisualPropertyName[]) {
         if (style[property] !== prevStyle?.[property]) {
           dispatchCyWebEvent('style:changed', { networkId, property })

@@ -38,17 +38,18 @@ if (!result.success) {
 ### N3
 
 **Severity:** error
-**Returned by:** `createNode`
+**Returned by:** `createNode`, `createNodes`
 
-The `attributes` payload passed to `createNode` contained an `"id"` key. The
-element ID lives outside the attributes object; shadowing it is forbidden.
+The `attributes` payload passed to `createNode` (or a `NodeSpec` in
+`createNodes`) contained an `"id"` key. The element ID lives outside the
+attributes object; shadowing it is forbidden.
 
 **CX2 spec:** `cx2-node-requirements#N3` — "Node id MUST NOT appear as a key in v".
 
 ### E6
 
 **Severity:** error
-**Returned by:** `createEdge`
+**Returned by:** `createEdge`, `createEdges`
 
 Same rule as N3, for edges.
 
@@ -57,11 +58,11 @@ Same rule as N3, for edges.
 ### GL1
 
 **Severity:** error
-**Returned by:** `getNode`, `createEdge` (source/target lookup), `moveEdge`,
-`deleteNodes`, `getConnectedEdges`, `getConnectedNodes`, `getOutgoers`,
-`getIncomers`, `getSuccessors`, `getPredecessors`, `getValue`, `getRow`,
-`setValue`, `setValues`, `editRows`, `applyValueToElements`,
-`updateNodePositions`, `createNetworkFromNodeList`
+**Returned by:** `getNode`, `createEdge` (source/target lookup), `createEdges`
+(source/target lookup), `moveEdge`, `deleteNodes`, `getConnectedEdges`,
+`getConnectedNodes`, `getOutgoers`, `getIncomers`, `getSuccessors`,
+`getPredecessors`, `getValue`, `getRow`, `setValue`, `setValues`, `editRows`,
+`applyValueToElements`, `updateNodePositions`, `createNetworkFromNodeList`
 
 A referenced node ID does not exist in the network. This is app-api's most
 common failure — every method that takes a node ID (or a list of node IDs)
@@ -89,17 +90,19 @@ Same as GL1, for edges.
 ### FK1
 
 **Severity:** error
-**Returned by:** `createColumn`, `setColumnName`
+**Returned by:** `createColumn`, `renameColumn`, `importTableFromTsv`
 
 A column named `"id"` was requested for a node table. `id` is reserved for the
-element identity and forbidden as a column name.
+element identity and forbidden as a column name. `importTableFromTsv` validates
+all new column names up front, so a TSV that would create an `"id"` column fails
+here before any column is created.
 
 **CX2 spec:** `cx2-library-design-requirements#FK1`.
 
 ### FK2
 
 **Severity:** error
-**Returned by:** `createColumn`, `setColumnName`
+**Returned by:** `createColumn`, `renameColumn`, `importTableFromTsv`
 
 Same as FK1, for edge tables.
 
@@ -108,7 +111,7 @@ Same as FK1, for edge tables.
 ### A8
 
 **Severity:** error
-**Returned by:** `createColumn`, `setColumnName`
+**Returned by:** `createColumn`, `renameColumn`, `importTableFromTsv`
 
 A column named `"s"` or `"t"` was requested for an edge table — these keys are
 reserved for the edge's structural source/target reference and cannot be
@@ -129,19 +132,24 @@ reused as an attribute column.
 ### A1
 
 **Severity:** error
-**Returned by:** `setValue`, `setValues`, `editRows`, `applyValueToElements`
+**Returned by:** `setValue`, `setValues`, `editRows`, `applyValueToElements`,
+`createColumn`
 
 A cell value did not match its column's declared type. Checked strictly — no
-coercion (e.g. `1.5` is rejected for an `integer` column). Writes to
-*undeclared* columns pass through unchecked (declaration policy is a separate,
-not-yet-implemented concern).
+coercion (e.g. `1.5` is rejected for an `integer` column). For `createColumn`,
+the `defaultValue` is validated against the column's declared `dataType` under
+the same rule. Writes to *undeclared* columns pass through unchecked
+(declaration policy is a separate, not-yet-implemented concern).
+
+Note `importTableFromTsv` does **not** raise A1: unparseable cells are skipped
+and reported in its `skippedCells` result instead of failing the import.
 
 **CX2 spec:** `cx2-validation-requirements#A1`.
 
 ### AC6
 
 **Severity:** error
-**Returned by:** `createColumn`, `setColumnName`
+**Returned by:** `createColumn`, `renameColumn`
 
 The requested column name is already declared on the table. Renaming a column
 to its own current name is treated as a no-op, not a collision.
@@ -415,3 +423,18 @@ TSV import with too few lines or a missing key column. The message describes
 the specific problem; the code itself is intentionally coarse — inventing a
 bespoke code for each one-off "caller passed garbage" case would add ceremony
 without adding information external callers can act on differently.
+
+### APP10 — `COLUMN_NOT_FOUND`
+
+**Severity:** error
+**Returned by:** `deleteColumn`, `renameColumn`, `getValue`
+
+The named column does not exist in the target table. `deleteColumn` and
+`renameColumn` return this when the column to delete/rename is absent
+(previously these no-oped to `ok()`); `getValue` returns it when the requested
+column is neither declared on the table nor present on the element's row. The
+message is `Column "<name>" does not exist in the <tableType> table`.
+
+This is a runtime/registry concern with no CX2 equivalent — a static CX2
+document has no notion of a live "does this column exist right now" query — so
+it lives in the `APP*` namespace rather than reusing a CX2 column code.

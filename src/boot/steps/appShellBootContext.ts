@@ -1,4 +1,3 @@
-import type { AppCatalogEntry } from '@/models/AppModel'
 import type { IdType } from '@/models/IdType'
 import type { NetworkSummary } from '@/models/NetworkSummaryModel'
 import type { Workspace } from '@/models/WorkspaceModel'
@@ -30,10 +29,12 @@ export interface AppShellBootContext {
   loadNetworkSummaries: (
     networkIds: IdType[],
   ) => Promise<Record<IdType, NetworkSummary>>
-  installApp: (
-    entry: AppCatalogEntry,
-    options?: { activate?: boolean },
-  ) => Promise<void>
+  /**
+   * Origins allowed to serve a React app bundle (§9), from AppConfigContext.
+   * Passed in because runInstallIntents rejects a disallowed origin before the
+   * confirmation dialog, and a plain async step cannot read React context.
+   */
+  appInstallAllowedOrigins: string[]
 }
 
 /**
@@ -46,6 +47,12 @@ export interface WorkspaceDraft {
   summaries: Record<IdType, NetworkSummary>
   /** Import/deep-link failures, surfaced as one message at publish time. */
   errors: string[]
+  /**
+   * True when a `:networkId` in the URL could not be resolved. The requested id
+   * is then kept as the current network so the error message explains an
+   * address the user recognizes (CW-514) — see `resolveInitialNetworkId`.
+   */
+  deepLinkFailed: boolean
 }
 
 export const hasSearchParams = (search: URLSearchParams): boolean =>

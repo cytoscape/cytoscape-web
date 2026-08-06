@@ -179,7 +179,7 @@ export interface ResourceApi {
    * Returns the set of UI slots this host version supports.
    * Apps should register resources only for supported slots.
    */
-  getSupportedSlots(): ResourceSlot[]
+  getSupportedSlots(): ApiResult<{ slots: ResourceSlot[] }>
 
   // ── Individual Registration (upsert semantics) ──────────────
 
@@ -225,12 +225,13 @@ export interface ResourceApi {
   /**
    * Returns all resources registered by this app.
    */
-  getRegisteredResources(): RegisteredResourceInfo[]
+  getRegisteredResources(): ApiResult<{ resources: RegisteredResourceInfo[] }>
 
   /**
    * Returns the visibility evaluation result for a resource registered
    * by this app. The `id` parameter is the slot-local id passed to
-   * `registerPanel` / `registerMenuItem`.
+   * `registerPanel` / `registerMenuItem`. `requires.selection` is
+   * evaluated against the current network's live selection.
    */
-  getResourceVisibility(id: string): ResourceVisibilityResult
+  getResourceVisibility(id: string): ApiResult<ResourceVisibilityResult>
 }

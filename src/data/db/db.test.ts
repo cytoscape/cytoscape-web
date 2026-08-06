@@ -1,4 +1,7 @@
+import Dexie from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { getTabId } from '@/data/tabState/tabId'
 
 import { logDb } from '../../debug'
 
@@ -12,7 +15,7 @@ import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
 import { SelectionType } from '../../models/FilterModel/SelectionType'
 import { IdType } from '../../models/IdType'
-import type { Edge,Network, Node } from '../../models/NetworkModel'
+import type { Edge, Network, Node } from '../../models/NetworkModel'
 import { GraphObjectType } from '../../models/NetworkModel/GraphObjectType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import type { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
@@ -23,7 +26,10 @@ import type { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { NetworkView } from '../../models/ViewModel'
-import type { VisualStyle } from '../../models/VisualStyleModel'
+import type {
+  VisualStyle,
+  VisualStyleSet,
+} from '../../models/VisualStyleModel'
 import type { DiscreteMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'
@@ -39,6 +45,7 @@ import {
   clearNetworksFromDb,
   clearNetworkSummaryFromDb,
   clearNetworkViewsFromDb,
+  clearStyleLibraryFromDb,
   clearOpaqueAspectsFromDb,
   clearTablesFromDb,
   clearUndoRedoStackFromDb,
@@ -53,12 +60,14 @@ import {
   deleteNetworkViewsFromDb,
   deleteOpaqueAspectsFromDb,
   deleteServiceAppFromDb,
+  deleteStyleTemplateFromDb,
   deleteTablesFromDb,
   deleteUiStateFromDb,
   deleteUndoRedoStackFromDb,
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
+  getAllStyleTemplatesFromDb,
   getAppFromDb,
   getAppSettingFromDb,
   getCyNetworkFromDb,
@@ -71,10 +80,13 @@ import {
   getNetworkViewsFromDb,
   getOpaqueAspectsFromDb,
   getTablesFromDb,
-  getTimestampFromDb,
   getUiStateFromDb,
   getUndoRedoStackFromDb,
+  getViewSelectionFromDb,
   getVisualStyleFromDb,
+  getStyleSetMetadataFromDb,
+  getVisualStyleSetFromDb,
+  LEGACY_STYLE_ID,
   getWorkspaceFromDb,
   initializeDb,
   putAppSettingToDb,
@@ -86,15 +98,22 @@ import {
   putNetworkViewToDb,
   putOpaqueAspectsToDb,
   putServiceAppToDb,
+  putStyleTemplateToDb,
   putTablesToDb,
-  putTimestampToDb,
   putUiStateToDb,
   putUndoRedoStackToDb,
+  putViewSelectionToDb,
+  putVisualStyleSetToDb,
   putVisualStyleToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
+  verifyTransactionSourceStamp,
 } from './index'
-import { deserializeNetworkView, serializeNetworkView } from './serialization/mapSerialization'
+import {
+  deserializeNetworkView,
+  serializeNetworkView,
+  serializeVisualStyle,
+} from './serialization/mapSerialization'
 
 const ensureDebugNamespace = () => {
   ;(window as any).debug = {}
@@ -809,15 +828,6 @@ describe('CyDB helper coverage', () => {
     expect(await getUiStateFromDb()).toBeUndefined()
   })
 
-  it('stores timestamps', async () => {
-    await setupFreshDb()
-
-    expect(await getTimestampFromDb()).toBeUndefined()
-
-    await putTimestampToDb(123456789)
-    expect(await getTimestampFromDb()).toBe(123456789)
-  })
-
   it('persists filter configurations with map values intact', async () => {
     await setupFreshDb()
 
@@ -896,6 +906,229 @@ describe('CyDB helper coverage', () => {
     await putUndoRedoStackToDb('undo-network', undoRedoStack)
     await clearUndoRedoStackFromDb()
     expect(await getUndoRedoStackFromDb('undo-network')).toBeUndefined()
+  })
+})
+
+describe('Visual style sets (multiple styles per network)', () => {
+  afterEach(async () => {
+    await closeDb()
+  })
+
+  const createTwoStyleSet = (): VisualStyleSet => {
+    const styleA = createVisualStyleModel()
+    const styleB = createVisualStyleModel()
+    return {
+      activeStyleId: 'style-a',
+      styles: {
+        'style-a': { id: 'style-a', name: 'Main', visualStyle: styleA },
+        'style-b': { id: 'style-b', name: 'Publication', visualStyle: styleB },
+      },
+    }
+  }
+
+  it('round-trips a complete style set with Maps restored', async () => {
+    await setupFreshDb()
+    const styleSet = createTwoStyleSet()
+    await putVisualStyleSetToDb('multi-style-network', styleSet)
+
+    const stored = await getVisualStyleSetFromDb('multi-style-network')
+    expect(stored).toBeDefined()
+    expect(stored?.activeStyleId).toBe('style-a')
+    expect(Object.keys(stored?.styles ?? {}).sort()).toEqual([
+      'style-a',
+      'style-b',
+    ])
+    expect(stored?.styles['style-b'].name).toBe('Publication')
+    expect(
+      stored?.styles['style-b'].visualStyle[
+        NetworkVisualPropertyName.NetworkBackgroundColor
+      ].bypassMap,
+    ).toBeInstanceOf(Map)
+  })
+
+  it('normalizes legacy single-style rows on read', async () => {
+    await setupFreshDb()
+    const visualStyle = createVisualStyleModel()
+
+    // Write a pre-v10 row shape directly
+    const db = await getDb()
+    await db.cyVisualStyles.put({
+      id: 'legacy-network',
+      visualStyle: serializeVisualStyle(visualStyle),
+    })
+
+    const styleSet = await getVisualStyleSetFromDb('legacy-network')
+    expect(styleSet).toBeDefined()
+    const entries = Object.values(styleSet?.styles ?? {})
+    expect(entries).toHaveLength(1)
+    expect(entries[0].name).toBe('Default')
+    expect(styleSet?.activeStyleId).toBe(entries[0].id)
+
+    // The active-style compatibility reader works on legacy rows too
+    const active = await getVisualStyleFromDb('legacy-network')
+    expect(
+      active?.[NetworkVisualPropertyName.NetworkBackgroundColor].bypassMap,
+    ).toBeInstanceOf(Map)
+  })
+
+  it('returns undefined for corrupted rows instead of throwing', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    // Row with styles but no activeStyleId and no legacy visualStyle
+    await db.cyVisualStyles.put({ id: 'corrupt-1', styles: {} })
+    expect(await getVisualStyleSetFromDb('corrupt-1')).toBeUndefined()
+
+    // Row with neither shape's required fields
+    await db.cyVisualStyles.put({ id: 'corrupt-2' })
+    expect(await getVisualStyleSetFromDb('corrupt-2')).toBeUndefined()
+
+    // Set row whose active pointer dangles
+    await db.cyVisualStyles.put({
+      id: 'corrupt-3',
+      activeStyleId: 'missing',
+      styles: {},
+    })
+    expect(await getVisualStyleSetFromDb('corrupt-3')).toBeUndefined()
+  })
+
+  it('putVisualStyleToDb preserves inactive styles in an existing set', async () => {
+    await setupFreshDb()
+    await putVisualStyleSetToDb('preserve-network', createTwoStyleSet())
+
+    const replacement = createVisualStyleModel()
+    await putVisualStyleToDb('preserve-network', replacement)
+
+    const stored = await getVisualStyleSetFromDb('preserve-network')
+    expect(Object.keys(stored?.styles ?? {}).sort()).toEqual([
+      'style-a',
+      'style-b',
+    ])
+    expect(stored?.activeStyleId).toBe('style-a')
+    expect(stored?.styles['style-b'].name).toBe('Publication')
+  })
+
+  it('putVisualStyleToDb creates a fresh single-style set when no row exists', async () => {
+    await setupFreshDb()
+    await putVisualStyleToDb('fresh-network', createVisualStyleModel())
+
+    const stored = await getVisualStyleSetFromDb('fresh-network')
+    const entries = Object.values(stored?.styles ?? {})
+    expect(entries).toHaveLength(1)
+    expect(entries[0].name).toBe('Default')
+  })
+
+  describe('getStyleSetMetadataFromDb', () => {
+    it('lists names for several networks in one read', async () => {
+      await setupFreshDb()
+      await putVisualStyleSetToDb('net-1', createTwoStyleSet())
+      await putVisualStyleSetToDb('net-2', createTwoStyleSet())
+
+      const metadata = await getStyleSetMetadataFromDb(['net-1', 'net-2'])
+
+      expect(metadata).toHaveLength(2)
+      expect(metadata[0].networkId).toBe('net-1')
+      expect(metadata[0].activeStyleId).toBe('style-a')
+      expect(metadata[0].styles.map((s) => s.name).sort()).toEqual([
+        'Main',
+        'Publication',
+      ])
+    })
+
+    it('omits networks with no style row rather than erroring', async () => {
+      // A network never opened has no row: its style lives only in the CX2 on
+      // the server. Callers use the absence to tell "no styles" from "not local".
+      await setupFreshDb()
+      await putVisualStyleSetToDb('net-1', createTwoStyleSet())
+
+      const metadata = await getStyleSetMetadataFromDb([
+        'net-1',
+        'never-opened',
+      ])
+
+      expect(metadata.map((m) => m.networkId)).toEqual(['net-1'])
+    })
+
+    it('reports a legacy row as a single Default style with the sentinel id', async () => {
+      await setupFreshDb()
+      const db = await getDb()
+      await db.cyVisualStyles.put({
+        id: 'legacy-meta-network',
+        visualStyle: serializeVisualStyle(createVisualStyleModel()),
+      })
+
+      const metadata = await getStyleSetMetadataFromDb(['legacy-meta-network'])
+
+      expect(metadata[0].styles).toEqual([
+        { id: LEGACY_STYLE_ID, name: 'Default' },
+      ])
+      // Entry id and active id agree, so "find by id, else use the active
+      // style" resolves correctly even though the real uuid is minted per read.
+      expect(metadata[0].activeStyleId).toBe(LEGACY_STYLE_ID)
+    })
+
+    it('does not deserialize style content', async () => {
+      // The whole point of this reader: names come straight out of the row, so
+      // a row whose serialized style is garbage still lists correctly. If this
+      // starts failing, the cheap path has grown a parse step.
+      await setupFreshDb()
+      const db = await getDb()
+      await db.cyVisualStyles.put({
+        id: 'unparseable-network',
+        activeStyleId: 'style-x',
+        styles: {
+          'style-x': {
+            id: 'style-x',
+            name: 'Still Listed',
+            visualStyle: 'not a serialized style at all' as any,
+          },
+        },
+      })
+
+      const metadata = await getStyleSetMetadataFromDb(['unparseable-network'])
+
+      expect(metadata[0].styles).toEqual([
+        { id: 'style-x', name: 'Still Listed' },
+      ])
+    })
+
+    it('short-circuits on an empty id list', async () => {
+      await setupFreshDb()
+      expect(await getStyleSetMetadataFromDb([])).toEqual([])
+    })
+  })
+})
+
+describe('Style library persistence', () => {
+  afterEach(async () => {
+    await closeDb()
+  })
+
+  it('supports full CRUD on style templates', async () => {
+    await setupFreshDb()
+
+    const template = {
+      id: 'template-1',
+      name: 'Publication',
+      visualStyle: createVisualStyleModel(),
+    }
+    await putStyleTemplateToDb(template)
+
+    let templates = await getAllStyleTemplatesFromDb()
+    expect(templates).toHaveLength(1)
+    expect(templates[0].name).toBe('Publication')
+    expect(
+      templates[0].visualStyle[NetworkVisualPropertyName.NetworkBackgroundColor]
+        .bypassMap,
+    ).toBeInstanceOf(Map)
+
+    await deleteStyleTemplateFromDb('template-1')
+    templates = await getAllStyleTemplatesFromDb()
+    expect(templates).toHaveLength(0)
+
+    await putStyleTemplateToDb(template)
+    await clearStyleLibraryFromDb()
+    expect(await getAllStyleTemplatesFromDb()).toHaveLength(0)
   })
 })
 
@@ -992,5 +1225,240 @@ describe('read-path validation (observe mode)', () => {
     expect(row).toBeDefined()
     expect(validationWarnings(warnSpy).length).toBeGreaterThan(0)
     warnSpy.mockRestore()
+  })
+})
+
+/**
+ * Guard for the cross-tab origin tag (see `stampTransactionSource` in index.ts).
+ *
+ * Cross-tab sync ignores changes whose `source` equals this tab's id. If the
+ * `_createTransaction` override ever stops firing — e.g. a Dexie upgrade
+ * renames the internal — every change would read as foreign and each tab would
+ * re-hydrate its own writes, silently reintroducing the echo loop. These tests
+ * make that failure loud.
+ */
+describe('cross-tab change origin tagging', () => {
+  it('stamps this tab id onto _changes rows written through the db helpers', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    await putNetworkSummaryToDb(createTestSummary('origin-net'))
+
+    const changes = await (db as any)._changes.toArray()
+    const summaryChanges = changes.filter((c: any) => c.table === 'summaries')
+
+    expect(summaryChanges.length).toBeGreaterThan(0)
+    for (const change of summaryChanges) {
+      expect(change.source).toBe(getTabId())
+    }
+  })
+
+  it('does not overwrite a source set explicitly by the caller', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    await db.transaction('rw', db.summaries, async () => {
+      ;(Dexie.currentTransaction as any).source = 'explicit-source'
+      await db.summaries.put({ ...createTestSummary('explicit-net') })
+    })
+
+    const changes = await (db as any)._changes.toArray()
+    const row = changes.find(
+      (c: any) => c.table === 'summaries' && c.key === 'explicit-net',
+    )
+
+    expect(row?.source).toBe('explicit-source')
+  })
+
+  it('self-check reports the stamp as present', async () => {
+    await setupFreshDb()
+
+    // The runtime counterpart of the two tests above: `openDatabaseForStartup`
+    // calls this on every boot so a broken hook is visible in the field, not
+    // just in CI.
+    await expect(verifyTransactionSourceStamp()).resolves.toBe(true)
+  })
+
+  it('self-check reports failure when the hook stops firing', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+
+    // Simulate the regression: restore an unpatched _createTransaction.
+    const patched = (db as any)._createTransaction
+    ;(db as any)._createTransaction = function (...args: unknown[]) {
+      const trans = patched.apply(this, args)
+      trans.source = undefined
+      return trans
+    }
+
+    try {
+      await expect(verifyTransactionSourceStamp()).resolves.toBe(false)
+    } finally {
+      ;(db as any)._createTransaction = patched
+    }
+  })
+})
+
+/**
+ * DB v11 moved node/edge selection out of the `cyNetworkViews` row into its own
+ * `viewSelections` store. Two properties matter: rows written before v11 must
+ * still surface their inline selection, and a selection change must not disturb
+ * the view row (an identical row produces no dexie-observable change record,
+ * which is what stops a click in one tab from replacing every other tab's view
+ * model).
+ */
+describe('view selection storage (DB v11)', () => {
+  it('round-trips a selection through its own store', async () => {
+    await setupFreshDb()
+
+    expect(await getViewSelectionFromDb('sel-net')).toBeUndefined()
+
+    await putViewSelectionToDb('sel-net', {
+      selectedNodes: ['n1', 'n2'],
+      selectedEdges: ['e1'],
+    })
+
+    expect(await getViewSelectionFromDb('sel-net')).toEqual({
+      selectedNodes: ['n1', 'n2'],
+      selectedEdges: ['e1'],
+    })
+  })
+
+  it('merges the stored selection into the views it reads', async () => {
+    await setupFreshDb()
+    const view = createNetworkView('merge-net-nodeLink-1', 'red')
+    await putNetworkViewsToDb('merge-net', [
+      { ...view, selectedNodes: [], selectedEdges: [] },
+    ])
+    await putViewSelectionToDb('merge-net', {
+      selectedNodes: ['n1'],
+      selectedEdges: ['e1'],
+    })
+
+    const views = await getNetworkViewsFromDb('merge-net')
+
+    expect(views?.[0].selectedNodes).toEqual(['n1'])
+    expect(views?.[0].selectedEdges).toEqual(['e1'])
+  })
+
+  it('falls back to inline selection for rows written before v11', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('legacy-net-nodeLink-1', 'blue')
+    // Write the row the way v10 did: selection inline, no viewSelections row.
+    await db.cyNetworkViews.put({
+      id: 'legacy-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: ['legacy-n1'],
+          selectedEdges: [],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    const views = await getNetworkViewsFromDb('legacy-net')
+
+    expect(views?.[0].selectedNodes).toEqual(['legacy-n1'])
+  })
+
+  it('back-fills a pre-v11 inline selection so a later view write cannot erase it', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('backfill-net-nodeLink-1', 'blue')
+    // A v10 row: selection inline, no viewSelections row.
+    await db.cyNetworkViews.put({
+      id: 'backfill-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: ['keep-n1'],
+          selectedEdges: ['keep-e1'],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    // Loading the network reads it, which is the moment the selection must be
+    // moved to its new home.
+    await getNetworkViewsFromDb('backfill-net')
+    expect(await getViewSelectionFromDb('backfill-net')).toEqual({
+      selectedNodes: ['keep-n1'],
+      selectedEdges: ['keep-e1'],
+    })
+
+    // Now any non-selection edit (a node move, a layout) rewrites the view row
+    // with selection stripped — `withoutSelection` in ViewModelStore. Without
+    // the back-fill above, the inline copy was the ONLY copy and this erased it.
+    await putNetworkViewsToDb('backfill-net', [
+      { ...view, selectedNodes: [], selectedEdges: [] },
+    ])
+
+    const reloaded = await getNetworkViewsFromDb('backfill-net')
+    expect(reloaded?.[0].selectedNodes).toEqual(['keep-n1'])
+    expect(reloaded?.[0].selectedEdges).toEqual(['keep-e1'])
+  })
+
+  it('does not create a selection row for a legacy view with no selection', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('empty-sel-net-nodeLink-1', 'blue')
+    await db.cyNetworkViews.put({
+      id: 'empty-sel-net',
+      views: [
+        {
+          ...view,
+          selectedNodes: [],
+          selectedEdges: [],
+          nodeViews: {},
+          edgeViews: {},
+          values: [],
+        },
+      ],
+    })
+
+    await getNetworkViewsFromDb('empty-sel-net')
+
+    // Nothing to preserve, so nothing is written — reading a network must not
+    // mint a change record every other tab then hydrates.
+    expect(await getViewSelectionFromDb('empty-sel-net')).toBeUndefined()
+  })
+
+  it('drops the selection row when the network views are deleted', async () => {
+    await setupFreshDb()
+    await putViewSelectionToDb('gone-net', {
+      selectedNodes: ['n1'],
+      selectedEdges: [],
+    })
+
+    await deleteNetworkViewsFromDb('gone-net')
+
+    expect(await getViewSelectionFromDb('gone-net')).toBeUndefined()
+  })
+
+  it('writes no change record when only the selection changes', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    const view = createNetworkView('quiet-net-nodeLink-1', 'green')
+    const persistable = [{ ...view, selectedNodes: [], selectedEdges: [] }]
+
+    await putNetworkViewsToDb('quiet-net', persistable)
+    const before = (await (db as any)._changes.toArray()).filter(
+      (c: any) => c.table === 'cyNetworkViews',
+    ).length
+
+    // Re-persisting the same views (what a selection-only change produces, now
+    // that selection is stripped) must be a no-op at the change-log level.
+    await putNetworkViewsToDb('quiet-net', persistable)
+    const after = (await (db as any)._changes.toArray()).filter(
+      (c: any) => c.table === 'cyNetworkViews',
+    ).length
+
+    expect(after).toBe(before)
   })
 })
