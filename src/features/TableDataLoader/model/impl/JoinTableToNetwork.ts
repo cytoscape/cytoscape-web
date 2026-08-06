@@ -1,5 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep'
-import type { ParsedRow as DataTableValue } from '../ParsedRow'
+import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 
 import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'
@@ -133,7 +133,7 @@ export function validNetworkKeyColumns(columns: Column[]): Column[] {
 
 export const findValidRowsToJoin = (
   table: Table,
-  rows: DataTableValue[],
+  rows: ParsedRow[],
   column?: ColumnAppendState,
   networkKeyColumn?: Column,
 ): number[] => {
@@ -169,7 +169,7 @@ export const findValidRowsToJoin = (
 // (i.e. shared between the network and the tabular data)
 export const joinRowsToTable = (
   table: Table,
-  rows: DataTableValue[],
+  rows: ParsedRow[],
   columns: ColumnAppendState[],
   networkKeyColumn: Column,
 ): Table => {
@@ -193,7 +193,7 @@ export const joinRowsToTable = (
     ...columnsToAppend.map((c) => ({ name: c.name, type: c.dataType })),
   )
 
-  const keyValues: Record<string, { rowId: number; value: DataTableValue }[]> =
+  const keyValues: Record<string, { rowId: number; value: ParsedRow }[]> =
     {}
   rows.forEach((r, i) => {
     if (keyValues[r[keyColumn.name]] !== undefined) {

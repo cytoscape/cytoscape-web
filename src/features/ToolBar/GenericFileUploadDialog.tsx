@@ -4,7 +4,7 @@ import {
   DropzoneHint,
   FileDropzoneDialog,
   FileRejection,
-} from '../FileDropzoneDialog'
+} from '@/features/FileDropzoneDialog'
 
 export interface GenericFileUploadDialogProps {
   show: boolean

@@ -1,6 +1,7 @@
 import { Button, ButtonGroup, Tooltip } from '@mui/material'
 import { IconBan, IconFileText, IconKey } from '@tabler/icons-react'
 
+import { compactButtonSx } from '@/features/TableDataLoader/components/compactButtonSx'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
 import { columnAppendType2Label } from '../../model/impl/JoinTableToNetwork'
 
@@ -13,15 +14,6 @@ export const columnAppendIconMap = {
   ),
   [ColumnAppendType.NotImported]: <IconBan size={20} color="gray" />,
 }
-
-const compactButtonSx = {
-  minWidth: 0,
-  px: 0.75,
-  py: 0.25,
-  color: 'text.primary',
-  borderColor: 'divider',
-  textTransform: 'none',
-} as const
 
 export function ColumnAppendTypeRender(props: { value: ColumnAppendType }) {
   return (
@@ -55,7 +47,7 @@ export function ColumnAppendForm(props: ColumnAppendFormProps) {
                 sx={{
                   ...compactButtonSx,
                   opacity: !validValues.includes(v) ? 0.2 : 1,
-                  backgroundColor: v === value ? '#D6D6D6' : 'transparent',
+                  backgroundColor: v === value ? 'action.selected' : 'transparent',
                 }}
                 disabled={!validValues.includes(v)}
                 onClick={() => onChange(v)}

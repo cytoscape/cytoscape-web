@@ -15,17 +15,17 @@ import { Ui } from '../../../models/UiModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
-import { prefetchOnIdle } from '../../../utils/idlePrefetch'
+import { prefetchOnIdle } from '@/utils/idlePrefetch'
 import { Summaries as SummaryList } from '../../SummaryPanel'
 import { WorkspaceNamePanel } from './WorkspaceNamePanel'
 
-// Lazy tab contents: Vizmapper alone drags in visx, d3, react-color and
-// Mantine, so keeping these out of the eager workspace chunk is one of the
-// largest cold-load wins. Module scope keeps component identity stable.
-const loadVizmapper = () => import('../../Vizmapper')
+// Lazy tab contents: Vizmapper alone drags in visx, d3 and react-color, so
+// keeping these out of the eager workspace chunk is one of the largest
+// cold-load wins. Module scope keeps component identity stable.
+const loadVizmapper = () => import('@/features/Vizmapper')
 const VizmapperView = lazy(loadVizmapper)
 const LLMQueryResultPanel = lazy(() =>
-  import('../../LLMQuery/components/LLMQueryResultPanel').then((m) => ({
+  import('@/features/LLMQuery/components/LLMQueryResultPanel').then((m) => ({
     default: m.LLMQueryResultPanel,
   })),
 )

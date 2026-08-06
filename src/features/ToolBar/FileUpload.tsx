@@ -5,7 +5,7 @@ import {
   DropzoneHint,
   FileDropzoneDialog,
   FileRejection,
-} from '../FileDropzoneDialog'
+} from '@/features/FileDropzoneDialog'
 
 import { putNetworkSummaryToDb } from '../../data/db'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'

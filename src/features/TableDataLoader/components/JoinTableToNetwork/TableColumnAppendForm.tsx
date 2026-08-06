@@ -243,6 +243,13 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
+    // A blank-lines-only file parses to zero rows; the headerless branch
+    // below would then call Object.keys(result.data[0]) on undefined.
+    if (result.data.length === 0) {
+      setRows([])
+      setColumns([])
+      return
+    }
     const rows = result.data.slice(skipNLines)
 
     let headers: string[]
@@ -404,6 +411,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
           <Select
             size="small"
             sx={{ minWidth: 200 }}
+            inputProps={{ 'aria-label': 'Key column for network' }}
             value={networkKeyColumn?.name ?? ''}
             onChange={(event) =>
               setNetworkKeyColumn(

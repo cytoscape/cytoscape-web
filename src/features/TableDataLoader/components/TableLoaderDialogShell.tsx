@@ -42,9 +42,11 @@ export function TableLoaderDialogShell(
       onClose={onClose}
       fullScreen={fullScreen}
       maxWidth={false}
+      aria-labelledby={`${testIdPrefix}-dialog-title`}
       sx={{ zIndex: 2000 }}
     >
       <DialogTitle
+        id={`${testIdPrefix}-dialog-title`}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -63,6 +65,7 @@ export function TableLoaderDialogShell(
           {fullScreen ? (
             <Tooltip title="Exit Fullscreen">
               <IconButton
+                aria-label="Exit fullscreen"
                 data-testid={`${testIdPrefix}-exit-fullscreen-button`}
                 onClick={() => setFullScreen(false)}
               >
@@ -72,6 +75,7 @@ export function TableLoaderDialogShell(
           ) : (
             <Tooltip title="Fullscreen">
               <IconButton
+                aria-label="Fullscreen"
                 data-testid={`${testIdPrefix}-fullscreen-button`}
                 onClick={() => setFullScreen(true)}
               >

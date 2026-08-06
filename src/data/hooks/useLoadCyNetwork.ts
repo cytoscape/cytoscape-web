@@ -4,7 +4,7 @@ import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
-import { takePrefetchedCyNetwork } from '../prefetch/networkPrefetch'
+import { takePrefetchedCyNetwork } from '@/data/prefetch/networkPrefetch'
 import { useCredentialStore } from './stores/CredentialStore'
 
 /**

@@ -12,7 +12,7 @@ import { IdType } from '../../models/IdType'
 // Type-only: the NetworkModel implementation is built on cytoscape.js, and a
 // value import here would put cytoscape on the boot-critical DATABASE phase.
 // The one implementation call site loads it dynamically (getNetworkFromDb).
-import type { Edge, Network, Node } from '../../models/NetworkModel'
+import type { Edge, Network, Node } from '@/models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'

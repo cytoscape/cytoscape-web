@@ -20,7 +20,7 @@ import { isBootAborted, runPhase } from './runBoot'
 import { repaintBootShell } from './shell/showBootShell'
 import { startAuthentication } from './startAuthentication'
 import { initializeTabManager } from './tabManager'
-import { runOnIdle } from '../utils/idlePrefetch'
+import { runOnIdle } from '@/utils/idlePrefetch'
 
 // Boot entry point. Deliberately thin: it wires phases together and renders.
 // The phases themselves live in their own modules, and runPhase gives each one

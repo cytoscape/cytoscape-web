@@ -22,8 +22,9 @@ import {
 } from '@mui/material'
 import { KeyboardEvent, MouseEvent, ReactNode, useState } from 'react'
 
-/** Row shape produced by Papa.parse with headers. */
-export type ParsedRow = Record<string, any>
+import type { ParsedRow } from '../model/ParsedRow'
+
+export type { ParsedRow }
 
 // The import preview renders a plain MUI table (the former primereact
 // DataTable brought a virtual scroller); capping the rendered rows keeps

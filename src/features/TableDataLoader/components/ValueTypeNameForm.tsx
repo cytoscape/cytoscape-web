@@ -8,6 +8,7 @@ import {
 } from '@mui/material'
 
 import { ValueTypeNameChip } from '@/components/ValueTypeNameChip'
+import { compactButtonSx } from '@/features/TableDataLoader/components/compactButtonSx'
 import { ValueTypeName } from '../../../models/TableModel'
 import { DelimiterType } from '../model/DelimiterType'
 import { valueTypeNameLabel as valueTypeName2Label } from '../../../models/TableModel/impl/valueTypeNameDisplay'
@@ -18,15 +19,6 @@ export interface ValueTypeFormProps {
   onChange: (nextValue: ValueTypeName, nextDelimiter?: DelimiterType) => void
   validValues: ValueTypeName[]
 }
-
-const compactButtonSx = {
-  minWidth: 0,
-  px: 0.75,
-  py: 0.25,
-  color: 'text.primary',
-  borderColor: 'divider',
-  textTransform: 'none',
-} as const
 
 // 'space' and 'tab' are display labels; the stored delimiter must be the
 // actual character because parseValue() feeds it to String.split() directly.
@@ -56,7 +48,7 @@ function TypeButtonGroup(props: {
               sx={{
                 ...compactButtonSx,
                 opacity: !validValues.includes(v) ? 0.2 : 1,
-                backgroundColor: v === value ? '#D6D6D6' : 'transparent',
+                backgroundColor: v === value ? 'action.selected' : 'transparent',
               }}
               disabled={!validValues.includes(v)}
               onClick={() => onSelect(v)}

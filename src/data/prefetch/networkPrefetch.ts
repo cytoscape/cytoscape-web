@@ -1,7 +1,7 @@
-import { getCyNetworkFromDb } from '../db'
-import type { CyNetwork } from '../../models/CyNetworkModel'
-import type { IdType } from '../../models/IdType'
-import { logDb } from '../../debug'
+import { getCyNetworkFromDb } from '@/data/db'
+import type { CyNetwork } from '@/models/CyNetworkModel'
+import type { IdType } from '@/models/IdType'
+import { logDb } from '@/debug'
 
 // Overlaps the current network's IndexedDB read with the rest of boot: the id
 // is known at the PUBLISH step, but the read otherwise starts only after the

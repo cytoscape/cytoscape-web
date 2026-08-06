@@ -1,4 +1,4 @@
-import type { ParsedRow as DataTableValue } from '../ParsedRow'
+import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 
 import { ValueType,ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'
@@ -93,7 +93,7 @@ export function parseValue(
 
 export const validateColumnValues = (
   column: ColumnAssignmentState | ColumnAppendState,
-  rows: DataTableValue[],
+  rows: ParsedRow[],
 ): number[] => {
   const values = rows.map((row) => row[column.name])
   const invalidRows: number[] = []
@@ -180,7 +180,7 @@ export function inferColumnType(values: string[]): TypeInferenceResult {
 }
 
 export function generateInferredColumnAssignment(
-  rows: DataTableValue[],
+  rows: ParsedRow[],
 ): ColumnAssignmentState[] {
   const inferredColumns: ColumnAssignmentState[] = []
   if (rows.length === 0) {
@@ -217,7 +217,7 @@ export function generateInferredColumnAssignment(
 }
 
 export function generateInferredColumnAppend(
-  rows: DataTableValue[],
+  rows: ParsedRow[],
 ): ColumnAppendState[] {
   const inferredColumns: ColumnAppendState[] = []
   if (rows.length === 0) {

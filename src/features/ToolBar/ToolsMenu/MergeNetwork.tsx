@@ -22,7 +22,7 @@ import { DropdownMenuItem } from '../DropdownMenu'
 // Lazy: MergeDialog is a 1000+ line component (plus chroma-js) that would
 // otherwise ship with the eager toolbar chunk. Mounted after first open only.
 const MergeDialog = lazy(
-  () => import('../../MergeNetworks/components/MergeDialog'),
+  () => import('@/features/MergeNetworks/components/MergeDialog'),
 )
 
 

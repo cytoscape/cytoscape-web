@@ -2,14 +2,14 @@ import { Typography } from '@mui/material'
 import Papa from 'papaparse'
 import { useState } from 'react'
 
-import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
-import { MessageSeverity } from '../../../../models/MessageModel'
-import { ConfirmationDialog } from '../../../ConfirmationDialog'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { MessageSeverity } from '@/models/MessageModel'
+import { ConfirmationDialog } from '@/features/ConfirmationDialog'
 import {
   DropzoneHint,
   FileDropzone,
   FileRejection,
-} from '../../../FileDropzoneDialog'
+} from '@/features/FileDropzoneDialog'
 import {
   JoinTableToNetworkStep,
   useJoinTableToNetworkStore,
@@ -70,7 +70,7 @@ export function TableUpload() {
           .map((e) => `${e.code}: ${e.message}`)
           .join('\n')
         setParseErrorState({
-          message: `The following errors occured parsing your data:\n${errorLines}\nDo you want to proceed to review your table data?`,
+          message: `The following errors occurred parsing your data:\n${errorLines}\nDo you want to proceed to review your table data?`,
           onConfirm: onFileValid,
         })
         setShowParseErrors(true)

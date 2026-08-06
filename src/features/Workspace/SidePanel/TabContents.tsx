@@ -21,7 +21,7 @@ import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 // d3-hierarchy/-selection/-zoom and react-query, which would otherwise ship
 // with the eager workspace chunk.
 const ViewerPanel = lazy(() =>
-  import('../../HierarchyViewer/components/MainPanel').then((m) => ({
+  import('@/features/HierarchyViewer/components/MainPanel').then((m) => ({
     default: m.MainPanel,
   })),
 )

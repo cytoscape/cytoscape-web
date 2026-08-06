@@ -1,4 +1,4 @@
-import type { ParsedRow as DataTableValue } from '../ParsedRow'
+import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 import { v4 as uuidv4 } from 'uuid'
 
 import { CyNetwork } from '../../../../models/CyNetworkModel'
@@ -163,7 +163,7 @@ export const unselectAllColumns = (
 }
 
 export function createNetworkFromTableData(
-  rows: DataTableValue[],
+  rows: ParsedRow[],
   columns: ColumnAssignmentState[],
   uuid?: string,
   name?: string,

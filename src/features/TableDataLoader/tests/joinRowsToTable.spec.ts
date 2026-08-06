@@ -1,4 +1,4 @@
-import type { ParsedRow as DataTableValue } from '../model/ParsedRow'
+import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 import { describe, expect, it } from 'vitest'
 
 import { Column,Table } from '../../../models/TableModel'
@@ -13,7 +13,7 @@ describe('joinRowsToTable', () => {
       columns: [{ name: 'id', type: 'string' }],
       rows: new Map([['1', { id: '1' }]]),
     }
-    const rows: DataTableValue[] = [
+    const rows: ParsedRow[] = [
       { xId: '1', f: 1 },
       { xId: '3', f: 2 },
     ]
@@ -51,7 +51,7 @@ describe('joinRowsToTable', () => {
       columns: [{ name: 'id', type: 'string' }],
       rows: new Map([['1', { id: '1' }]]),
     }
-    const rows: DataTableValue[] = [
+    const rows: ParsedRow[] = [
       { xId: '1', f: 1 },
       { xId: '3', f: 2 },
     ]
@@ -88,7 +88,7 @@ describe('joinRowsToTable', () => {
   //       columns: [{ name: 'id', type: 'string' }],
   //       rows: new Map([[0, { id: '1' }]]),
   //     };
-  //     const rows: DataTableValue[] = [{ id: '2' }, { id: '3' }];
+  //     const rows: ParsedRow[] = [{ id: '2' }, { id: '3' }];
   //     const columns: ColumnAppendState[] = [
   //       { name: 'name', dataType: 'string', meaning: ColumnAppendType.Attribute },
   //       { name: 'age', dataType: 'integer', meaning: ColumnAppendType.Attribute },
