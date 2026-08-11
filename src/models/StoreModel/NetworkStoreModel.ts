@@ -17,7 +17,7 @@ export interface NetworkUpdatedEvent {
 
 export interface NetworkState {
   networks: Map<IdType, Network>
-  // Wil be set by this store when a network topology is updated
+  // Will be set by this store when a network topology is updated
   lastUpdated?: NetworkUpdatedEvent
 
   /**
