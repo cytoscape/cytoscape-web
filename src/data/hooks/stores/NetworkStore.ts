@@ -51,7 +51,7 @@ export const useNetworkStore = create(
   subscribeWithSelector(
     immer<NetworkStore>((set, get) => ({
       networks: new Map<IdType, Network>(),
-      lastModified: undefined,
+      lastUpdated: undefined,
       topologyVersions: new Map<IdType, number>(),
 
       setNetwork: (networkId: IdType, network: Network) => {
