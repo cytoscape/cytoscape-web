@@ -21,8 +21,8 @@ export interface NetworkState {
   lastUpdated?: NetworkUpdatedEvent
 
   /**
-   * Monotonic counter per network, incremented by every action that changes
-   * the network topology.
+   * Monotonic counter per network, incremented whenever subscribers need to
+   * re-snapshot membership (network add/delete and topology mutations).
    *
    * Networks are cytoscape-backed and mutate in place, so
    * `networks.set(id, network)` re-stores a reference that is already there.
