@@ -8,6 +8,7 @@ import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
+import { Network } from '../../models/NetworkModel'
 import { Table } from '../../models/TableModel'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { dispatchCyWebEvent } from './dispatchCyWebEvent'
@@ -69,14 +70,32 @@ function detectColumnChanges(
 
 /** Returns element IDs present in curr but not prev, and vice versa */
 function diffElementIds(
-  curr: Array<{ id: IdType }>,
-  prev: Array<{ id: IdType }>,
+  curr: Set<IdType>,
+  prev: Set<IdType>,
 ): { added: IdType[]; removed: IdType[] } {
-  const currSet = new Set(curr.map((el) => el.id))
-  const prevSet = new Set(prev.map((el) => el.id))
   return {
-    added: [...currSet].filter((id) => !prevSet.has(id)),
-    removed: [...prevSet].filter((id) => !currSet.has(id)),
+    added: [...curr].filter((id) => !prev.has(id)),
+    removed: [...prev].filter((id) => !curr.has(id)),
+  }
+}
+
+/** Node and edge IDs of a network at one point in time */
+interface TopologySnapshot {
+  nodes: Set<IdType>
+  edges: Set<IdType>
+}
+
+/**
+ * Copies the current membership of a network out of the live cytoscape store.
+ *
+ * Network.nodes / .edges are getters over the backing cytoscape instance, so
+ * they always report the present state — they must be copied at read time to
+ * be usable as a "before" value later.
+ */
+function snapshotTopology(network: Network): TopologySnapshot {
+  return {
+    nodes: new Set(network.nodes.map((node) => node.id)),
+    edges: new Set(network.edges.map((edge) => edge.id)),
   }
 }
 
@@ -157,14 +176,34 @@ export function initEventBus(): void {
   // Fires when nodes/edges are added to or removed from an existing
   // network. Creation and deletion are excluded — network:created and
   // network:deleted (workspace subscriptions above) cover those.
+  //
+  // Networks are cytoscape-backed and mutate in place, so neither the Network
+  // object nor the networks Map changes identity on a topology edit, and
+  // neither can be diffed against its own past self. The subscription
+  // therefore watches topologyVersions (which the store bumps on every
+  // topology mutation) and diffs against snapshots kept here.
+  const topologySnapshots = new Map<IdType, TopologySnapshot>()
+  for (const [networkId, network] of useNetworkStore.getState().networks) {
+    topologySnapshots.set(networkId, snapshotTopology(network))
+  }
   useNetworkStore.subscribe(
-    (state) => state.networks,
+    (state) => state.topologyVersions,
     (curr, prev) => {
-      for (const [networkId, network] of curr) {
-        const prevNetwork = prev.get(networkId)
-        if (prevNetwork === undefined || prevNetwork === network) continue
-        const nodeDiff = diffElementIds(network.nodes, prevNetwork.nodes)
-        const edgeDiff = diffElementIds(network.edges, prevNetwork.edges)
+      const { networks } = useNetworkStore.getState()
+      for (const [networkId, version] of curr) {
+        if (prev.get(networkId) === version) continue
+        const network = networks.get(networkId)
+        if (network === undefined) continue
+
+        const snapshot = snapshotTopology(network)
+        const prevSnapshot = topologySnapshots.get(networkId)
+        topologySnapshots.set(networkId, snapshot)
+        // First sighting of this network: it was just added to the store, and
+        // network:created covers that. Nothing to diff against yet.
+        if (prevSnapshot === undefined) continue
+
+        const nodeDiff = diffElementIds(snapshot.nodes, prevSnapshot.nodes)
+        const edgeDiff = diffElementIds(snapshot.edges, prevSnapshot.edges)
         if (
           nodeDiff.added.length === 0 &&
           nodeDiff.removed.length === 0 &&
@@ -180,6 +219,10 @@ export function initEventBus(): void {
           addedEdgeIds: edgeDiff.added,
           removedEdgeIds: edgeDiff.removed,
         })
+      }
+      // Drop snapshots of networks that left the store
+      for (const networkId of topologySnapshots.keys()) {
+        if (!curr.has(networkId)) topologySnapshots.delete(networkId)
       }
     },
   )

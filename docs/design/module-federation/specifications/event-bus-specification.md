@@ -182,12 +182,26 @@ absent in the current array produces one `network:deleted` event per ID.
 | Property    | Value                                                                       |
 | ----------- | --------------------------------------------------------------------------- |
 | **Trigger** | Nodes or edges are added to or removed from an existing network             |
-| **Source**  | `NetworkStore` — subscription on the `networks` map                         |
+| **Source**  | `NetworkStore` — subscription on the `topologyVersions` map                 |
 | **Detail**  | `{ networkId; addedNodeIds; removedNodeIds; addedEdgeIds; removedEdgeIds }` |
 
 Creation and deletion of whole networks are excluded. An event is emitted only
 when at least one element ID changes; attribute or position-only changes do not
 produce `network:changed`.
+
+**Why not subscribe to `networks`:** networks are cytoscape-backed and mutate in
+place. `NetworkFn.addNode` / `deleteNodes` return the same object they were
+given, so `state.networks.set(id, network)` re-stores a reference that is
+already there, Immer records no change, and the `networks` map keeps its
+identity — a subscription on it never runs. `Network.nodes` / `.edges` are also
+getters over the live cytoscape instance, so a retained "previous" reference
+reports the present state and cannot be diffed against itself.
+
+`NetworkStore` therefore keeps `topologyVersions: Map<IdType, number>`, bumped
+by every topology-mutating action, and `initEventBus` keeps its own snapshot of
+each network's node/edge ID sets to diff against. The snapshots are seeded at
+init from networks already in the store, and taken (without dispatching) the
+first time a network appears — that first sighting is `network:created`.
 
 #### 1.4.4 `network:switched`
 
@@ -380,14 +394,26 @@ export function initEventBus(): void {
   })
 
   // --- network:changed ---
+  // Networks mutate in place, so the subscription watches the version counter
+  // and diffs against snapshots kept here (see §1.4.3)
+  const topologySnapshots = new Map<IdType, TopologySnapshot>()
+  for (const [networkId, network] of useNetworkStore.getState().networks) {
+    topologySnapshots.set(networkId, snapshotTopology(network))
+  }
   useNetworkStore.subscribe(
-    (state) => state.networks,
+    (state) => state.topologyVersions,
     (curr, prev) => {
-      for (const [networkId, network] of curr) {
-        const previous = prev.get(networkId)
-        if (previous === undefined || previous === network) continue
-        const nodeDiff = diffElementIds(network.nodes, previous.nodes)
-        const edgeDiff = diffElementIds(network.edges, previous.edges)
+      const { networks } = useNetworkStore.getState()
+      for (const [networkId, version] of curr) {
+        if (prev.get(networkId) === version) continue
+        const network = networks.get(networkId)
+        if (network === undefined) continue
+        const snapshot = snapshotTopology(network)
+        const previous = topologySnapshots.get(networkId)
+        topologySnapshots.set(networkId, snapshot)
+        if (previous === undefined) continue // first sighting → network:created
+        const nodeDiff = diffElementIds(snapshot.nodes, previous.nodes)
+        const edgeDiff = diffElementIds(snapshot.edges, previous.edges)
         if (
           nodeDiff.added.length > 0 ||
           nodeDiff.removed.length > 0 ||
@@ -402,6 +428,9 @@ export function initEventBus(): void {
             removedEdgeIds: edgeDiff.removed,
           })
         }
+      }
+      for (const networkId of topologySnapshots.keys()) {
+        if (!curr.has(networkId)) topologySnapshots.delete(networkId)
       }
     },
   )
@@ -631,7 +660,7 @@ window.addEventListener('selection:changed', (e) => {
 | ------------------- | ---------------- | ------------------------------------------------------- | --------------------------- |
 | `network:created`   | WorkspaceStore   | `state.workspace.networkIds`                            | Reference                   |
 | `network:deleted`   | WorkspaceStore   | `state.workspace.networkIds`                            | Reference                   |
-| `network:changed`   | NetworkStore     | `state.networks`                                        | Reference + ID diff         |
+| `network:changed`   | NetworkStore     | `state.topologyVersions`                                | Version bump + ID diff vs. kept snapshot |
 | `network:switched`  | WorkspaceStore   | `state.workspace.currentNetworkId`                      | `===`                       |
 | `selection:changed` | ViewModelStore   | primary view for the current network                    | Value comparison            |
 | `layout:started`    | —                | dispatched from `core/layoutApi.ts`                     | —                           |

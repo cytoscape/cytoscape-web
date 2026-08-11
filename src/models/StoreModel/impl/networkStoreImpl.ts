@@ -11,6 +11,22 @@ import {
 export interface NetworkStoreState {
   networks: Map<IdType, Network>
   lastUpdated?: NetworkUpdatedEvent
+  topologyVersions: Map<IdType, number>
+}
+
+/**
+ * Record that the topology of a network changed.
+ *
+ * Mutates the map in place (the caller passes an Immer draft) because the
+ * point of the counter is to give Immer a value that actually differs —
+ * see `topologyVersions` in NetworkStoreModel for why re-setting the network
+ * itself is not enough. Every topology-mutating store action must call this.
+ */
+export const bumpTopologyVersion = (
+  topologyVersions: Map<IdType, number>,
+  networkId: IdType,
+): void => {
+  topologyVersions.set(networkId, (topologyVersions.get(networkId) ?? 0) + 1)
 }
 
 /**
