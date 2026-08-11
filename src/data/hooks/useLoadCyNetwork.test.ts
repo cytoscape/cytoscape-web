@@ -5,6 +5,12 @@ import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
 import { useCredentialStore } from './stores/CredentialStore'
+import { useNetworkStore } from './stores/NetworkStore'
+import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
+import { useTableStore } from './stores/TableStore'
+import { useUndoStore } from './stores/UndoStore'
+import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useLoadCyNetwork } from './useLoadCyNetwork'
 
 vi.mock('../db', () => ({
@@ -99,6 +105,125 @@ describe('useLoadCyNetwork', () => {
       vi.mocked(fetchNdexNetwork).mockRejectedValue(new Error('404 Not Found'))
 
       await expect(loadCyNetwork()(NET_ID)).rejects.toThrow('404 Not Found')
+    })
+  })
+
+  // A network imported in this session lives fully in the in-memory stores
+  // before its debounced IndexedDB persist lands, so the first navigation to
+  // it can race the write and miss the cache (#665). The loader must fall
+  // back to the stores instead of declaring a local network lost — but only
+  // on a miss: when the DB read succeeds it stays authoritative, because
+  // cross-tab sync deliberately leaves non-current networks stale in memory.
+  describe('in-memory store fallback (#665)', () => {
+    const storeNetwork = { id: NET_ID, nodes: [], edges: [] } as any
+    const nodeTable = { id: NET_ID, columns: [], rows: new Map() } as any
+    const edgeTable = { id: NET_ID, columns: [], rows: new Map() } as any
+    const viewModel = {
+      id: NET_ID,
+      viewId: `${NET_ID}-view-1`,
+      type: 'nodeLink',
+      nodeViews: {},
+      edgeViews: {},
+      selectedNodes: [],
+      selectedEdges: [],
+    } as any
+    const visualStyle = { nodeShape: {} } as any
+    const undoRedoStack = { undoStack: [{ id: 'edit-1' }], redoStack: [] } as any
+
+    const seedStores = () => {
+      useNetworkStore.setState({
+        networks: new Map([[NET_ID, storeNetwork]]),
+      })
+      useTableStore.setState({
+        tables: { [NET_ID]: { nodeTable, edgeTable } },
+      } as any)
+      useViewModelStore.setState({
+        viewModels: { [NET_ID]: [viewModel] },
+      } as any)
+      useVisualStyleStore.setState({
+        visualStyles: { [NET_ID]: visualStyle },
+        styleSets: {},
+      } as any)
+      useUndoStore.setState({
+        undoRedoStacks: { [NET_ID]: undoRedoStack },
+      } as any)
+      useOpaqueAspectStore.setState({
+        opaqueAspects: { [NET_ID]: { metaAspect: [{ n: 1 }] } },
+      } as any)
+    }
+
+    afterEach(() => {
+      useNetworkStore.setState({ networks: new Map() })
+      useTableStore.setState({ tables: {} } as any)
+      useViewModelStore.setState({ viewModels: {} } as any)
+      useVisualStyleStore.setState({ visualStyles: {}, styleSets: {} } as any)
+      useUndoStore.setState({ undoRedoStacks: {} } as any)
+      useOpaqueAspectStore.setState({ opaqueAspects: {} } as any)
+    })
+
+    it('assembles the network from the stores when the DB read misses', async () => {
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      // Without the fallback this summary makes the loader throw the
+      // "local network is not found in cache" error — the #665 symptom.
+      vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
+        isNdex: false,
+        name: 'Imported Network',
+      } as any)
+      seedStores()
+
+      const result = await loadCyNetwork()(NET_ID)
+
+      expect(result.network).toBe(storeNetwork)
+      expect(result.nodeTable).toBe(nodeTable)
+      expect(result.edgeTable).toBe(edgeTable)
+      expect(result.visualStyle).toBe(visualStyle)
+      expect(result.visualStyleSet).toBeDefined()
+      expect(result.undoRedoStack).toBe(undoRedoStack)
+      expect(result.otherAspects).toEqual([{ metaAspect: [{ n: 1 }] }])
+      expect(fetchNdexNetwork).not.toHaveBeenCalled()
+    })
+
+    it('returns copies of the store view models, not the frozen originals', async () => {
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      seedStores()
+
+      const result = await loadCyNetwork()(NET_ID)
+
+      // ViewModelStore.add mutates the view it is given (viewId/type
+      // defaults, selection carry-over) and store state is Immer-frozen, so
+      // handing back the stored object would throw when the caller re-adds it.
+      expect(result.networkViews[0]).not.toBe(viewModel)
+      expect(result.networkViews[0]).toEqual(viewModel)
+    })
+
+    it('still reports a lost local network when the stores are only partially populated', async () => {
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
+        isNdex: false,
+        name: 'My Local Network',
+      } as any)
+      // Network present but no tables/views/style: not a usable copy
+      useNetworkStore.setState({
+        networks: new Map([[NET_ID, storeNetwork]]),
+      })
+
+      await expect(loadCyNetwork()(NET_ID)).rejects.toThrow(
+        /Local network "My Local Network".*cannot be retrieved from NDEx/,
+      )
+      expect(fetchNdexNetwork).not.toHaveBeenCalled()
+    })
+
+    it('prefers the DB copy when the cache read succeeds', async () => {
+      // Cross-tab sync leaves non-current networks stale in the stores and
+      // relies on the network swap re-reading the DB — the fallback must
+      // never shadow a successful DB read.
+      vi.mocked(getCyNetworkFromDb).mockResolvedValue(cachedNetwork)
+      seedStores()
+
+      const result = await loadCyNetwork()(NET_ID)
+
+      expect(result).toBe(cachedNetwork)
+      expect(result.network).not.toBe(storeNetwork)
     })
   })
 
