@@ -50,5 +50,14 @@ test.describe('Local Network File Import', () => {
     await expect(page.getByText('Test Network 20 nodes').first()).toBeVisible({
       timeout: 15000,
     })
+
+    // #665 regression: the view itself must render. The import races the
+    // debounced IndexedDB persist, and losing that race used to replace the
+    // renderer with "Failed to load network data: Local network ... is not
+    // found in cache" until a manual reload.
+    await expect(
+      page.locator('[data-testid="cyjs-renderer"] canvas').first(),
+    ).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText('Failed to load network data')).toHaveCount(0)
   })
 })
