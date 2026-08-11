@@ -11,6 +11,7 @@ import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { Table } from '../../models/TableModel'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
+import { CyWebEvents } from './CyWebEvents'
 import { dispatchCyWebEvent } from './dispatchCyWebEvent'
 
 // ── Private helpers ───────────────────────────────────────────────────────────
@@ -189,7 +190,16 @@ export function initEventBus(): void {
   useNetworkStore.subscribe(
     (state) => state.topologyVersions,
     (curr, prev) => {
+      // Bookkeeping first, dispatch second. Store subscribers and window event
+      // listeners both run synchronously, so a listener that mutates the
+      // network store re-enters this callback from inside the dispatch. While
+      // that nested call runs, `curr` and `networks` here are already stale —
+      // acting on them afterwards would clobber the snapshots the nested call
+      // just recorded. Nothing below touches the store until the loop, the
+      // cleanup, and every snapshot write are final.
+      const pending: Array<CyWebEvents['network:changed']> = []
       const { networks } = useNetworkStore.getState()
+
       for (const [networkId, version] of curr) {
         if (prev.get(networkId) === version) continue
         const network = networks.get(networkId)
@@ -212,7 +222,7 @@ export function initEventBus(): void {
         ) {
           continue
         }
-        dispatchCyWebEvent('network:changed', {
+        pending.push({
           networkId,
           addedNodeIds: nodeDiff.added,
           removedNodeIds: nodeDiff.removed,
@@ -220,9 +230,15 @@ export function initEventBus(): void {
           removedEdgeIds: edgeDiff.removed,
         })
       }
-      // Drop snapshots of networks that left the store
+
+      // Drop snapshots of networks that left the store. A retained snapshot
+      // would be diffed against a later network reusing the same id.
       for (const networkId of topologySnapshots.keys()) {
         if (!curr.has(networkId)) topologySnapshots.delete(networkId)
+      }
+
+      for (const detail of pending) {
+        dispatchCyWebEvent('network:changed', detail)
       }
     },
   )

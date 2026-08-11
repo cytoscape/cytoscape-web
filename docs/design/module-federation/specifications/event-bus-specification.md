@@ -203,6 +203,17 @@ each network's node/edge ID sets to diff against. The snapshots are seeded at
 init from networks already in the store, and taken (without dispatching) the
 first time a network appears — that first sighting is `network:created`.
 
+**Reentrancy:** Zustand runs subscribers synchronously inside `set`, and
+`window.dispatchEvent` runs listeners synchronously, so an app that mutates the
+network store from a `network:changed` handler re-enters this subscription from
+inside the dispatch. While the nested call runs, the outer call's `curr` and
+`networks` are stale. The subscription therefore completes all snapshot writes
+and the snapshot cleanup **before** dispatching anything: a network registered
+by a nested listener keeps the snapshot that call recorded, instead of having
+it deleted by an outer cleanup that never saw it (which would swallow that
+network's next `network:changed`). Any future bookkeeping in this subscription
+must stay on the pre-dispatch side of that line.
+
 #### 1.4.4 `network:switched`
 
 | Property    | Value                                                 |
@@ -403,6 +414,8 @@ export function initEventBus(): void {
   useNetworkStore.subscribe(
     (state) => state.topologyVersions,
     (curr, prev) => {
+      // Bookkeeping first, dispatch second — see §1.4.3 (reentrancy)
+      const pending: Array<CyWebEvents['network:changed']> = []
       const { networks } = useNetworkStore.getState()
       for (const [networkId, version] of curr) {
         if (prev.get(networkId) === version) continue
@@ -420,7 +433,7 @@ export function initEventBus(): void {
           edgeDiff.added.length > 0 ||
           edgeDiff.removed.length > 0
         ) {
-          dispatchCyWebEvent('network:changed', {
+          pending.push({
             networkId,
             addedNodeIds: nodeDiff.added,
             removedNodeIds: nodeDiff.removed,
@@ -431,6 +444,9 @@ export function initEventBus(): void {
       }
       for (const networkId of topologySnapshots.keys()) {
         if (!curr.has(networkId)) topologySnapshots.delete(networkId)
+      }
+      for (const detail of pending) {
+        dispatchCyWebEvent('network:changed', detail)
       }
     },
   )

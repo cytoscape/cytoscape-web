@@ -199,3 +199,80 @@ describe('network:changed with in-place (cy-backed) mutations', () => {
     expect(changedDetails().map((d) => d.networkId)).toEqual(['net9'])
   })
 })
+
+// ── Reentrancy ────────────────────────────────────────────────────────────────
+
+describe('network:changed under a reentrant listener', () => {
+  // Store subscribers and window event listeners both run synchronously, so a
+  // listener that mutates the network store re-enters the subscription from
+  // inside the dispatch. The bus must finish its own bookkeeping before
+  // handing control to listeners, or the outer invocation clobbers what the
+  // nested one recorded.
+
+  it('keeps the snapshot of a network created from inside a listener', () => {
+    // The listener adds 'nested' while the bus is dispatching for 'outer'
+    let added = false
+    const listener = (): void => {
+      if (added) return
+      added = true
+      addNetwork('nested')
+    }
+    window.addEventListener('network:changed', listener)
+    addNetwork('outer')
+
+    try {
+      useNetworkStore.getState().addNode('outer', 'n3')
+    } finally {
+      window.removeEventListener('network:changed', listener)
+    }
+
+    expect(added).toBe(true)
+    dispatchSpy.mockClear()
+
+    // 'nested' was registered while the bus was mid-dispatch. Its snapshot must
+    // have survived, so this change is a change — not a first sighting.
+    useNetworkStore.getState().addNode('nested', 'n3')
+
+    expect(changedDetails()).toEqual([
+      {
+        networkId: 'nested',
+        addedNodeIds: ['n3'],
+        removedNodeIds: [],
+        addedEdgeIds: [],
+        removedEdgeIds: [],
+      },
+    ])
+  })
+
+  it('drops the snapshot of a network deleted from inside a listener', () => {
+    // Mirror case: a snapshot retained past its network's deletion would be
+    // diffed against a later network that reuses the id, dispatching a
+    // spurious change for what is really a creation.
+    addNetwork('doomed')
+    addNetwork('trigger')
+
+    let deleted = false
+    const listener = (): void => {
+      if (deleted) return
+      deleted = true
+      useNetworkStore.getState().delete('doomed')
+    }
+    window.addEventListener('network:changed', listener)
+
+    try {
+      useNetworkStore.getState().addNode('trigger', 'n3')
+    } finally {
+      window.removeEventListener('network:changed', listener)
+    }
+
+    expect(deleted).toBe(true)
+    dispatchSpy.mockClear()
+
+    // Same id, different topology than the network that was deleted
+    useNetworkStore
+      .getState()
+      .add(NetworkFn.createNetworkFromLists('doomed', [{ id: 'z1' }], []))
+
+    expect(changedDetails()).toEqual([])
+  })
+})
