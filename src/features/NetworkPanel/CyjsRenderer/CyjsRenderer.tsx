@@ -185,6 +185,12 @@ const CyjsRenderer = ({
       sourceNodeId: edgeCreationMode.sourceNodeId,
     })
 
+    // Leaving the mode does not move the pointer, so the node under it keeps
+    // its target highlight until an unrelated mouseout: clear it here instead.
+    if (!edgeCreationMode.active && cy !== null) {
+      cy.nodes().removeClass('edge-creation-target')
+    }
+
     // Apply cursor style to Cytoscape container when edge creation mode changes
     if (cy !== null && cyContainer.current) {
       const container = cy.container()
