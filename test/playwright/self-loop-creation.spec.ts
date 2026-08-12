@@ -68,12 +68,9 @@ const getEdgeEndpoints = async (
 const firstNodeScreenPosition = async (
   page: Page,
 ): Promise<{ x: number; y: number } | null> =>
-  page.evaluate(() => {
-    const container = document.getElementById('cy-container') as
-      | (HTMLElement & { _cyreg?: { cy?: any } })
-      | null
-    const cy = container?._cyreg?.cy
-    if (container == null || cy === undefined || cy.nodes().length === 0) {
+  page.getByTestId('cyjs-renderer').evaluate((container) => {
+    const cy = (container as HTMLElement & { _cyreg?: { cy?: any } })._cyreg?.cy
+    if (cy === undefined || cy.nodes().length === 0) {
       return null
     }
     cy.fit(undefined, 100)

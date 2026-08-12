@@ -9,7 +9,7 @@
  * tested without a Cytoscape.js instance.
  */
 
-import { IdType } from '../../../models/IdType'
+import { IdType } from '@/models/IdType'
 
 /**
  * Edge creation mode state: which node an edge is being drawn from, if any.
