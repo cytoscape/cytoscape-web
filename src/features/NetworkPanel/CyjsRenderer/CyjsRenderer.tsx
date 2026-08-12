@@ -39,6 +39,12 @@ import {
 import { CxToCyCanvas } from './annotations/cyjsAnnotationRenderer'
 import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
+import {
+  EDGE_CREATION_MODE_OFF,
+  EdgeCreationModeState,
+  isEdgeCreationTarget,
+  resolveEdgeCreationTap,
+} from './edgeCreationMode'
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { registerCyExtensions } from './registerCyExtensions'
 import { isGraphVisible } from './viewportRecovery'
@@ -126,13 +132,8 @@ const CyjsRenderer = ({
   })
 
   // Edge creation mode state
-  const [edgeCreationMode, setEdgeCreationMode] = useState<{
-    active: boolean
-    sourceNodeId: IdType | null
-  }>({
-    active: false,
-    sourceNodeId: null,
-  })
+  const [edgeCreationMode, setEdgeCreationMode] =
+    useState<EdgeCreationModeState>(EDGE_CREATION_MODE_OFF)
 
   // When cxttap fires, the MUI Menu opens and its backdrop renders before the
   // browser's contextmenu event fires. The contextmenu event then targets the
@@ -173,7 +174,7 @@ const CyjsRenderer = ({
 
   // Reset edge creation mode when switching networks
   useEffect(() => {
-    setEdgeCreationMode({ active: false, sourceNodeId: null })
+    setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
   }, [id])
   // Ref to track edge creation mode for event handlers
   const edgeCreationModeRef = useRef(edgeCreationMode)
@@ -443,8 +444,12 @@ const CyjsRenderer = ({
       e.stopPropagation()
       e.stopImmediatePropagation()
 
-      const targetNodeId: IdType = e.target.data('id')
-      const sourceNodeId = currentMode.sourceNodeId
+      // Tapping the source node itself creates a self-loop
+      const endpoints = resolveEdgeCreationTap(currentMode, e.target.data('id'))
+      if (endpoints === null) {
+        return
+      }
+      const { sourceNodeId, targetNodeId } = endpoints
 
       logUi.info(
         '[CyjsRenderer] edgeCreationTapHandler: Processing edge creation',
@@ -454,20 +459,11 @@ const CyjsRenderer = ({
         },
       )
 
-      // Check for self-loop
-      if (targetNodeId === sourceNodeId) {
-        logUi.info(
-          '[CyjsRenderer] edgeCreationTapHandler: Self-loop detected, preventing',
-        )
-        // TODO: Show tooltip or prevent self-loop
-        return
-      }
-
       // Exit edge creation mode
       logUi.info(
         '[CyjsRenderer] edgeCreationTapHandler: Exiting edge creation mode and creating edge',
       )
-      setEdgeCreationMode({ active: false, sourceNodeId: null })
+      setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
 
       // Create edge directly with default empty attributes
       createEdge(id, sourceNodeId, targetNodeId, { attributes: {} })
@@ -498,7 +494,7 @@ const CyjsRenderer = ({
           logUi.info(
             '[CyjsRenderer] General tap handler: Background click, exiting edge creation mode',
           )
-          setEdgeCreationMode({ active: false, sourceNodeId: null })
+          setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
         } else if (targetIsNode) {
           // Node click: let the edge creation handler process it
           // Don't do normal selection
@@ -745,15 +741,18 @@ const CyjsRenderer = ({
       const targetNode = e.target
       setHoveredElement(targetNode.data('id'))
 
-      // In edge creation mode, highlight valid target nodes
+      // In edge creation mode, highlight valid target nodes.
+      // The source node is a valid target too: it creates a self-loop.
       const currentMode = edgeCreationModeRef.current
       const targetIsNode =
         typeof targetNode.isNode === 'function' && targetNode.isNode()
-      if (currentMode.active && targetIsNode) {
-        const nodeId = targetNode.data('id')
-        if (nodeId !== currentMode.sourceNodeId) {
-          targetNode.addClass('edge-creation-target')
-        }
+      if (
+        isEdgeCreationTarget(
+          currentMode,
+          targetIsNode ? targetNode.data('id') : null,
+        )
+      ) {
+        targetNode.addClass('edge-creation-target')
       }
     })
     // Remove hover class and clear hovered element on mouseout
@@ -1408,7 +1407,7 @@ const CyjsRenderer = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && edgeCreationMode.active) {
-        setEdgeCreationMode({ active: false, sourceNodeId: null })
+        setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
       }
     }
 
@@ -1424,7 +1423,7 @@ const CyjsRenderer = ({
 
     const handleBackgroundClick = (e: EventObject): void => {
       if (e.target === cy) {
-        setEdgeCreationMode({ active: false, sourceNodeId: null })
+        setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
       }
     }
 
