@@ -1,10 +1,14 @@
 import AccessibilityIcon from '@mui/icons-material/Accessibility'
-import { Box, Chip, Typography } from '@mui/material'
-import React from 'react'
+import { Box, BoxProps, Chip, Typography } from '@mui/material'
+import * as React from 'react'
 
 import { PaletteDefinition } from '@/models/VisualStyleModel/VisualPropertyValue/ColorPalette'
 
-interface PalettePreviewProps {
+/**
+ * Box props come along so a MUI Tooltip can inject its handlers, and so a
+ * caller can style the wrapper. `children` is ours — the swatches.
+ */
+interface PalettePreviewProps extends Omit<BoxProps, 'children'> {
   palette: PaletteDefinition
   width?: number
   height?: number
@@ -28,6 +32,7 @@ export const PalettePreview = React.forwardRef<
     height = 150,
     orientation = 'vertical',
     showMetadata = false,
+    sx,
     ...rest
   },
   ref,
@@ -39,12 +44,16 @@ export const PalettePreview = React.forwardRef<
     <Box
       ref={ref}
       {...rest}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 0.5,
-      }}
+      // Array form so a caller's sx layers on top instead of being dropped.
+      sx={[
+        {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0.5,
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
     >
       <Box
         sx={{

@@ -11,7 +11,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material'
-import React from 'react'
+import * as React from 'react'
 
 import {
   getPalettesByCategory,
@@ -102,11 +102,21 @@ export function PaletteSelector({
     const el = stripRef.current
     if (el == null) return
     const maxScrollLeft = el.scrollWidth - el.clientWidth
-    setStripScroll({
+    const next = {
       overflowing: maxScrollLeft > 1,
       atStart: el.scrollLeft <= 1,
       atEnd: el.scrollLeft >= maxScrollLeft - 1,
-    })
+    }
+    // This runs on every scroll event and every resize notification. Keeping
+    // the old object when nothing changed spares a re-render of the whole
+    // strip — one gradient preview per palette — on each frame of a drag.
+    setStripScroll((prev) =>
+      prev.overflowing === next.overflowing &&
+      prev.atStart === next.atStart &&
+      prev.atEnd === next.atEnd
+        ? prev
+        : next,
+    )
   }, [])
 
   // A callback ref, not an effect: MUI's Portal mounts a popover body one

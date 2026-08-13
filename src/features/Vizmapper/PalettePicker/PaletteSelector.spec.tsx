@@ -208,21 +208,26 @@ describe('PaletteSelector', () => {
   it(
     'shows strip arrows only when the strip overflows, disabled at its ends',
     () => {
-      render(<PaletteSelector layout="strip" value="" onChange={vi.fn()} />)
+      const { unmount } = render(
+        <PaletteSelector layout="strip" value="" onChange={vi.fn()} />,
+      )
       // jsdom reports 0 for both metrics, i.e. nothing to scroll.
       expect(screen.queryByTestId('palette-scroll-left')).toBeNull()
+      unmount()
 
       stubScrollMetrics(600, 300)
       render(<PaletteSelector layout="strip" value="" onChange={vi.fn()} />)
 
-      const arrows = screen.getAllByTestId(
-        'palette-scroll-left',
-      ) as HTMLButtonElement[]
-      const rights = screen.getAllByTestId(
-        'palette-scroll-right',
-      ) as HTMLButtonElement[]
-      expect(arrows[arrows.length - 1].disabled).toBe(true)
-      expect(rights[rights.length - 1].disabled).toBe(false)
+      // Scrolled to the start of an overflowing strip: back is spent, forward
+      // is not.
+      expect(
+        (screen.getByTestId('palette-scroll-left') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true)
+      expect(
+        (screen.getByTestId('palette-scroll-right') as HTMLButtonElement)
+          .disabled,
+      ).toBe(false)
     },
     RENDER_TIMEOUT_MS,
   )
