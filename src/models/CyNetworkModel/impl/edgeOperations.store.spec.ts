@@ -18,6 +18,8 @@ import { NetworkSummary } from '../../NetworkSummaryModel'
 import { Visibility } from '../../NetworkSummaryModel/Visibility'
 import { createEdgesCore, EdgeOperationStoreActions } from './edgeOperations'
 
+const NET_ID = 'net-1'
+
 vi.mock('../../../data/db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../data/db')>()
   return {
@@ -27,14 +29,6 @@ vi.mock('../../../data/db', async (importOriginal) => {
     deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
-
-vi.mock('../../../data/hooks/stores/WorkspaceStore', () => ({
-  useWorkspaceStore: {
-    getState: vi.fn(() => ({ workspace: { currentNetworkId: NET_ID } })),
-  },
-}))
-
-const NET_ID = 'net-1'
 
 const makeSummary = (nodeCount: number, edgeCount: number): NetworkSummary =>
   ({
