@@ -130,12 +130,5 @@ export const theme = extendTheme({
         },
       },
     },
-    MuiTouchRipple: {
-      styleOverrides: {
-        root: {
-          display: 'none !important',
-        },
-      },
-    },
   },
 });

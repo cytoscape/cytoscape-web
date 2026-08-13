@@ -1,22 +1,12 @@
 import PaletteIcon from '@mui/icons-material/Palette'
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Popover,
-  Tab,
-  Tabs,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { Box, Button, Popover, Tooltip, Typography } from '@mui/material'
 import * as React from 'react'
 
-import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
-import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { COLORS } from '../utils/constants'
+import { PaletteSelector } from '@/features/Vizmapper/PalettePicker'
+import { AttributeName } from '@/models/TableModel/AttributeName'
+import { PALETTES } from '@/models/VisualStyleModel/impl/colorPalettes'
+import { pickEvenly } from '@/models/VisualStyleModel/impl/colorUtils'
+import { ColorType } from '@/models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { StepGuidance } from '../WizardSteps/StepGuidance'
 
 interface PaletteFormProps {
@@ -28,16 +18,9 @@ interface PaletteFormProps {
   anchorEl?: HTMLButtonElement | null
   open?: boolean
   onClose?: () => void
+  /** Offer a "No palette" button, which reports an empty scheme. */
+  allowNoPalette?: boolean
 }
-
-// Group palettes by type - calculated once at module level
-const PALETTE_GROUPS = {
-  Sequential: Object.keys(PALETTES).filter((key) =>
-    key.startsWith('Sequential'),
-  ),
-  Diverging: Object.keys(PALETTES).filter((key) => key.startsWith('Diverging')),
-  Viridis: Object.keys(PALETTES).filter((key) => key.startsWith('Viridis')),
-} as const
 
 export const PaletteForm: React.FC<PaletteFormProps> = ({
   colorScheme,
@@ -48,10 +31,10 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
   anchorEl: externalAnchorEl,
   open: externalOpen,
   onClose: externalOnClose,
+  allowNoPalette = false,
 }) => {
   const [internalAnchorEl, setInternalAnchorEl] =
     React.useState<HTMLButtonElement | null>(null)
-  const [activeTab, setActiveTab] = React.useState(0)
 
   // Use external control if provided, otherwise use internal state
   const anchorEl =
@@ -73,10 +56,6 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
     }
   }
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue)
-  }
-
   // assign colors evenly based on palette
   const handlePaletteChange = (scheme: string) => {
     const palette = PALETTES[scheme]
@@ -88,146 +67,44 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
 
   const selectedPaletteName = colorScheme || 'None'
 
-  // Get the current tab's palette keys
-  const tabNames = Object.keys(PALETTE_GROUPS)
-  const currentPaletteKeys = Object.values(PALETTE_GROUPS)[activeTab]
-
-  // Render popover content
-  const renderPopoverContent = () => (
+  const popoverContent = (
     <Box
       sx={{
         p: 2,
         height: '100%',
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-        }}
-      >
-        <Typography variant="subtitle1" sx={{ fontSize: '0.9rem' }}>
-          Select Color Palette
-        </Typography>
-      </Box>
-
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onChange={handleTabChange}
-        variant="fullWidth"
-        sx={{
-          mb: 2,
-          '& .MuiTab-root': {
-            fontSize: '0.8rem',
-            textTransform: 'none',
-            minHeight: 32,
-          },
-        }}
-      >
-        {tabNames.map((tabName) => (
-          <Tab key={tabName} label={tabName} />
-        ))}
-      </Tabs>
-
-      {/* Palette Grid */}
-      <Box
-        sx={{
-          flex: 1,
-          overflow: 'auto',
-          display: 'flex',
-          justifyContent: 'center',
-          px: 1,
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0.5,
-            alignItems: 'stretch',
-            width: '100%',
-            maxWidth: 300,
-            py: 0.5,
-          }}
-        >
-          {currentPaletteKeys.map((paletteKey) => {
-            const palette = PALETTES[paletteKey]
-            if (!palette) return null
-            const paletteColors = palette.colors
-            return (
-              <Card
-                key={paletteKey}
-                sx={{
-                  cursor: 'pointer',
-                  border:
-                    colorScheme === paletteKey
-                      ? `2px solid ${COLORS.PRIMARY}`
-                      : `1px solid ${COLORS.BORDER}`,
-                  '&:hover': {
-                    borderColor: COLORS.PRIMARY,
-                    boxShadow: 3,
-                    transform: 'translateY(-2px)',
-                  },
-                  transition: 'all 0.2s ease',
-                  width: '100%',
-                  minHeight: 32,
-                }}
-                onClick={() => handlePaletteChange(paletteKey)}
-              >
-                <CardContent
-                  sx={{
-                    p: 1,
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    '&:last-child': {
-                      pb: 1,
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: 20,
-                      borderRadius: 1,
-                      overflow: 'hidden',
-                      gap: 0.5,
-                    }}
-                  >
-                    {paletteColors.map((color, index) => (
-                      <Tooltip key={index} title={color}>
-                        <Box
-                          sx={{
-                            width: 16,
-                            height: 16,
-                            bgcolor: color,
-                            border: '1px solid',
-                            borderColor: 'grey.400',
-                            borderRadius: 0.5,
-                            '&:hover': {
-                              opacity: 0.8,
-                            },
-                          }}
-                        />
-                      </Tooltip>
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </Box>
-      </Box>
+      <Typography variant="subtitle1" sx={{ fontSize: '0.9rem', mb: 1 }}>
+        Select Color Palette
+      </Typography>
+      <PaletteSelector
+        layout="list"
+        value={colorScheme}
+        onChange={handlePaletteChange}
+        onClear={allowNoPalette ? () => handlePaletteChange('') : undefined}
+      />
     </Box>
   )
+
+  const paperProps = {
+    sx: {
+      // Clamp to the viewport the way MUI's own Popover Paper does; a flat
+      // 500x600 pushes the Paper off-screen on a phone (#653).
+      width: 500,
+      maxWidth: 'calc(100% - 32px)',
+      height: 600,
+      maxHeight: 'calc(100% - 32px)',
+      overflow: 'hidden',
+    },
+  }
+
+  const anchorProps = {
+    anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+    transformOrigin: { vertical: 'top', horizontal: 'left' },
+  } as const
 
   // If controlled externally, only render the popover
   if (externalAnchorEl !== undefined) {
@@ -236,24 +113,10 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          sx: {
-            maxWidth: 500,
-            width: 500,
-            height: 600,
-            overflow: 'hidden',
-          },
-        }}
+        {...anchorProps}
+        PaperProps={paperProps}
       >
-        {renderPopoverContent()}
+        {popoverContent}
       </Popover>
     )
   }
@@ -311,24 +174,10 @@ export const PaletteForm: React.FC<PaletteFormProps> = ({
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          sx: {
-            maxWidth: 500,
-            width: 500,
-            height: 600,
-            overflow: 'hidden',
-          },
-        }}
+        {...anchorProps}
+        PaperProps={paperProps}
       >
-        {renderPopoverContent()}
+        {popoverContent}
       </Popover>
 
       {/* Show current colors preview */}

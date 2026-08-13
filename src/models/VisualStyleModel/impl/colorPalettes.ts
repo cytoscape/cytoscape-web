@@ -1,5 +1,8 @@
 import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
-import { PaletteDefinition } from '../VisualPropertyValue/ColorPalette'
+import {
+  PaletteCategory,
+  PaletteDefinition,
+} from '../VisualPropertyValue/ColorPalette'
 import { ColorType } from '../VisualPropertyValue/ColorType'
 import {
   DivergingCustomColors,
@@ -590,6 +593,59 @@ export function recommendPaletteCategory(
   const lo = Math.min(minValue, maxValue)
   const hi = Math.max(minValue, maxValue)
   return lo < 0 && hi > 0 ? 'diverging' : 'sequential'
+}
+
+/**
+ * The palette categories the pickers offer, in display order.
+ *
+ * `metadata.category` is the single source of this grouping. Grouping by
+ * palette-id prefix instead (`key.startsWith('Sequential')`) misses every
+ * named palette — the 9 ColorBrewer diverging palettes are `rdbu`, `puor`,
+ * `brbg` and friends, not `Diverging12`.
+ */
+export const PALETTE_CATEGORY_ORDER: PaletteCategory[] = [
+  'sequential',
+  'diverging',
+  'viridis',
+]
+
+export const PALETTE_CATEGORY_LABELS: Record<PaletteCategory, string> = {
+  sequential: 'Sequential',
+  diverging: 'Diverging',
+  viridis: 'Viridis',
+  categorical: 'Categorical',
+}
+
+/**
+ * Palette entries of one category, in table order.
+ *
+ * With `colorBlindSafeOnly`, palettes explicitly marked `colorBlindSafe: false`
+ * are dropped; palettes that say nothing are kept.
+ */
+export function getPalettesByCategory(
+  category: PaletteCategory,
+  options: { colorBlindSafeOnly?: boolean } = {},
+): Array<{ id: string; palette: PaletteDefinition }> {
+  return Object.entries(PALETTES)
+    .filter(([, palette]) => palette.metadata.category === category)
+    .filter(
+      ([, palette]) =>
+        !options.colorBlindSafeOnly ||
+        palette.metadata.colorBlindSafe !== false,
+    )
+    .map(([id, palette]) => ({ id, palette }))
+}
+
+/**
+ * One category's palettes as the `string[][]` shape react-color's
+ * SwatchesPicker wants: one inner array per palette, rendered as a column.
+ */
+export function getPaletteSwatchGroups(
+  category: PaletteCategory,
+): ColorType[][] {
+  return getPalettesByCategory(category).map(({ palette }) => [
+    ...palette.colors,
+  ])
 }
 
 // Legacy export for backward compatibility - now just references PALETTES
