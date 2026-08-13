@@ -35,7 +35,7 @@ export function PaletteTooltip({
           <Typography variant="caption" sx={{ display: 'block' }}>
             Category: {palette.metadata.category}
           </Typography>
-          {palette.metadata.colorBlindSafe !== false && (
+          {palette.metadata.colorBlindSafe === true && (
             <Typography
               variant="caption"
               sx={{ display: 'block', color: 'success.main' }}

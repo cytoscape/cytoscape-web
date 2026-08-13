@@ -68,9 +68,11 @@ export function ColorPalettePicker({
   }
 
   const handlePaletteChange = (paletteId: string): void => {
-    setColorPalette(paletteId)
     const colors = getPaletteGradientColors(paletteId)
+    // Nothing to apply, so leave the selection alone rather than highlighting a
+    // palette whose gradient Confirm would not send.
     if (colors == null) return
+    setColorPalette(paletteId)
     setMinPalette(colors.min)
     setMiddlePalette(colors.middle)
     setMaxPalette(colors.max)

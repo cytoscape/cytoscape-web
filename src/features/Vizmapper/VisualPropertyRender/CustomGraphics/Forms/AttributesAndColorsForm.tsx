@@ -19,17 +19,19 @@ import {
 } from '@mui/material'
 import * as React from 'react'
 
-import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
-import { IdType } from '../../../../../models/IdType'
-import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
-import { PaletteForm } from './PaletteForm'
-import { generateRandomColor } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import { useTableStore } from '@/data/hooks/stores/TableStore'
+import { IdType } from '@/models/IdType'
+import { AttributeName } from '@/models/TableModel/AttributeName'
+import { PALETTES } from '@/models/VisualStyleModel/impl/colorPalettes'
+import {
+  generateRandomColor,
+  pickEvenly,
+} from '@/models/VisualStyleModel/impl/colorUtils'
+import { ColorType } from '@/models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { DataTableHeader, DataTableRow, OrderControls } from '../components'
 import { CHART_CONSTANTS, COLORS } from '../utils/constants'
 import { getNumericColumnNames } from '../utils/numericColumnUtils'
+import { PaletteForm } from './PaletteForm'
 
 interface AttributesAndColorsFormProps {
   dataColumns: AttributeName[]

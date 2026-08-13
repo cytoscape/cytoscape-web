@@ -111,6 +111,42 @@ describe('PaletteSelector', () => {
   )
 
   it(
+    'lets the keyboard reach and activate a list palette',
+    () => {
+      const onChange = vi.fn()
+      render(
+        <PaletteSelector
+          value="Viridis1"
+          onChange={onChange}
+          defaultCategory="viridis"
+        />,
+      )
+
+      // A Card is a div, so without these it is neither focusable nor
+      // announced as the selected palette.
+      const card = screen.getByTestId('palette-card-Viridis1')
+      expect(card.getAttribute('role')).toBe('button')
+      expect(card.getAttribute('tabindex')).toBe('0')
+      expect(card.getAttribute('aria-pressed')).toBe('true')
+      expect(
+        screen
+          .getByTestId('palette-card-Viridis2')
+          .getAttribute('aria-pressed'),
+      ).toBe('false')
+
+      fireEvent.keyDown(screen.getByTestId('palette-card-Viridis2'), {
+        key: 'Enter',
+      })
+      fireEvent.keyDown(screen.getByTestId('palette-card-Viridis3'), {
+        key: ' ',
+      })
+
+      expect(onChange.mock.calls).toEqual([['Viridis2'], ['Viridis3']])
+    },
+    RENDER_TIMEOUT_MS,
+  )
+
+  it(
     'drops colorblind-unsafe palettes when asked',
     () => {
       const unsafe = getPalettesByCategory('diverging').filter(

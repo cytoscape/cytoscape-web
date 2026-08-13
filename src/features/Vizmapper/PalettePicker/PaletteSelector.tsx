@@ -295,7 +295,18 @@ export function PaletteSelector({
                 <Card
                   data-testid={`palette-card-${id}`}
                   aria-label={palette.metadata.name}
+                  // A Card is a div, so the button behaviour the strip layout
+                  // gets from ToggleButton has to be spelled out here.
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={value === id}
                   onClick={() => onChange(id)}
+                  onKeyDown={(event: React.KeyboardEvent) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    // Space would otherwise scroll the list.
+                    event.preventDefault()
+                    onChange(id)
+                  }}
                   sx={{
                     cursor: 'pointer',
                     border: '1px solid',
