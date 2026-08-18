@@ -99,6 +99,21 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setShow,
   )
 
+  // The two table-loader forms are lazy, but mounting them unconditionally
+  // made React.lazy fetch their chunks (the whole table-import wizard) on
+  // every cold load. Mount only after the first open — latched via refs so
+  // the dialog close animation still plays and reopening is instant. Ref
+  // writes during render are safe here: the store flag flipping is itself
+  // what triggers the re-render that reads them.
+  const isJoinFormOpen = useJoinTableToNetworkStore((state) => state.show)
+  const isCreateFormOpen = useCreateNetworkFromTableStore(
+    (state) => state.show,
+  )
+  const hasOpenedJoinFormRef = useRef<boolean>(false)
+  if (isJoinFormOpen) hasOpenedJoinFormRef.current = true
+  const hasOpenedCreateFormRef = useRef<boolean>(false)
+  if (isCreateFormOpen) hasOpenedCreateFormRef.current = true
+
   // Block multiple loading
   const isLoadingRef = useRef<boolean>(false)
 
@@ -608,10 +623,21 @@ const WorkSpaceEditor = (): JSX.Element => {
         title="Open panel"
         show={panels.right === PanelState.CLOSED}
       />
-      <JoinTableToNetworkForm onClick={() => showTableJoinForm(false)} />
-      <CreateNetworkFromTableForm
-        onClick={() => showCreateNetworkFromTableForm(false)}
-      />
+      {/* Local Suspense on purpose: without it the first open would suspend
+          up to the App-level boundary and flash the boot shell over the
+          whole editor. */}
+      {hasOpenedJoinFormRef.current && (
+        <Suspense fallback={null}>
+          <JoinTableToNetworkForm onClick={() => showTableJoinForm(false)} />
+        </Suspense>
+      )}
+      {hasOpenedCreateFormRef.current && (
+        <Suspense fallback={null}>
+          <CreateNetworkFromTableForm
+            onClick={() => showCreateNetworkFromTableForm(false)}
+          />
+        </Suspense>
+      )}
     </Box>
   )
 }

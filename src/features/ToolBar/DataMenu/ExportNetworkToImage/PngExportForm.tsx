@@ -1,4 +1,3 @@
-import { MantineProvider, NumberInput } from '@mantine/core'
 import {
   Box,
   Checkbox,
@@ -8,6 +7,7 @@ import {
   MenuItem,
   Select,
   Slider,
+  TextField,
   Typography,
 } from '@mui/material'
 //@ts-expect-error no type declarations for file-saver
@@ -24,6 +24,34 @@ const MIN_ZOOM = 0
 const MAX_ZOOM = 5
 
 type UnitType = 'pixels' | 'inches'
+
+// Clamping to min/max lives in the change handlers, matching the previous
+// clamp-on-change behavior.
+const NumberField = (props: {
+  label: string
+  value: number
+  min: number
+  max: number
+  step?: number
+  onChange: (value: string | number) => void
+}): JSX.Element => (
+  <TextField
+    type="number"
+    size="small"
+    label={props.label}
+    value={props.value}
+    inputProps={{ min: props.min, max: props.max, step: props.step ?? 1 }}
+    onChange={(e) => {
+      // A cleared field emits '' which Number() reads as 0, collapsing the
+      // size and zoom; keep the previous value until a number is typed.
+      if (e.target.value === '') {
+        return
+      }
+      props.onChange(e.target.value)
+    }}
+    sx={{ width: 110, mr: 1.25 }}
+  />
+)
 
 const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
@@ -199,7 +227,6 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     }
 
     return (
-      <MantineProvider>
         <Box
           sx={{
             mt: 1,
@@ -249,21 +276,15 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
               Size
             </Typography>
             {unit === 'pixels' ? (
-              <Box sx={{ display: 'flex' }}>
-                <NumberInput
-                  clampBehavior="blur"
-                  mr={10}
-                  w={100}
+              <Box sx={{ display: 'flex', pt: 0.5 }}>
+                <NumberField
                   min={0}
                   max={maxWidth}
                   value={customWidth}
                   onChange={handleWidthChange}
                   label="Width (pixels)"
-                />{' '}
-                <NumberInput
-                  clampBehavior="blur"
-                  w={100}
-                  mr={10}
+                />
+                <NumberField
                   min={0}
                   max={maxHeight}
                   value={customHeight}
@@ -272,23 +293,19 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
                 />
               </Box>
             ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <NumberInput
-                  clampBehavior="blur"
-                  w={100}
-                  mr={10}
+              <Box sx={{ display: 'flex', alignItems: 'center', pt: 0.5 }}>
+                <NumberField
                   min={0}
                   max={maxWidthInches}
+                  step={0.01}
                   value={widthInches}
                   onChange={handleWidthInchesChange}
                   label="Width (inches)"
                 />
-                <NumberInput
-                  clampBehavior="blur"
-                  w={100}
-                  mr={10}
+                <NumberField
                   min={0}
                   max={maxHeightInches}
+                  step={0.01}
                   value={heightInches}
                   onChange={handleHeightInchesChange}
                   label="Height (inches)"
@@ -352,7 +369,6 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
             />
           </Box>
         </Box>
-      </MantineProvider>
     )
   },
 )

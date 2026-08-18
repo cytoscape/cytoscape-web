@@ -1,5 +1,11 @@
-import { MantineProvider, NumberInput } from '@mantine/core'
-import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
+import {
+  Box,
+  Button,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from '@mui/material'
 import React from 'react'
 
 import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/defaultVisualStyle'
@@ -87,38 +93,39 @@ export function NodeLabelPositionPicker(props: {
         </Select>{' '}
       </Box>
 
-      <MantineProvider>
-        <Box sx={{ p: 1 }}>
-          <Box sx={{ mb: 1 }}>X offset</Box>
-          <NumberInput
-            allowDecimal={false}
-            value={localValue.MARGIN_X}
-            onChange={(value) => {
-              const e = Number(value)
-              setLocalValue({
-                ...localValue,
-                MARGIN_X: e,
-              })
-            }}
-          />
-        </Box>
+      <Box sx={{ p: 1 }}>
+        <Box sx={{ mb: 1 }}>X offset</Box>
+        <TextField
+          type="number"
+          size="small"
+          inputProps={{ step: 1, 'aria-label': 'Label X offset' }}
+          value={localValue.MARGIN_X}
+          onChange={(e) => {
+            const parsed = Number.parseInt(e.target.value, 10)
+            setLocalValue({
+              ...localValue,
+              MARGIN_X: Number.isNaN(parsed) ? 0 : parsed,
+            })
+          }}
+        />
+      </Box>
 
-        <Box sx={{ p: 1 }}>
-          <Box sx={{ mb: 1 }}>Y offset</Box>
-
-          <NumberInput
-            allowDecimal={false}
-            value={localValue.MARGIN_Y}
-            onChange={(value) => {
-              const e = Number(value)
-              setLocalValue({
-                ...localValue,
-                MARGIN_Y: e,
-              })
-            }}
-          />
-        </Box>
-      </MantineProvider>
+      <Box sx={{ p: 1 }}>
+        <Box sx={{ mb: 1 }}>Y offset</Box>
+        <TextField
+          type="number"
+          size="small"
+          inputProps={{ step: 1, 'aria-label': 'Label Y offset' }}
+          value={localValue.MARGIN_Y}
+          onChange={(e) => {
+            const parsed = Number.parseInt(e.target.value, 10)
+            setLocalValue({
+              ...localValue,
+              MARGIN_Y: Number.isNaN(parsed) ? 0 : parsed,
+            })
+          }}
+        />
+      </Box>
 
       <Box
         sx={{

@@ -98,7 +98,11 @@ replays the same failing URL. Covered by `steps/runAppShellBoot.test.ts`.
 ### 2.4 Auth never blocks rendering
 
 The app renders optimistically over the SSO check. Safety comes from
-`CredentialStore`'s auth gate, not from ordering. Therefore:
+`CredentialStore`'s auth gate, not from ordering. The check is started
+**before** the `database` gate: silent SSO is network-bound while the database
+open is disk-bound, so the two overlap instead of queueing. The check runs in a
+hidden iframe and never navigates the top-level page, so an in-flight check is
+harmless even when `database` aborts into the error shell. Therefore:
 
 - **Every** terminal path in `startAuthentication` must call
   `completeAuthInitialization()`, exactly once. A path that does not will hang
@@ -113,7 +117,20 @@ The app renders optimistically over the SSO check. Safety comes from
 - No watchdog on `localhost`/`127.0.0.1`: a developer pointing at a local
   Keycloak should see it hang rather than have it silently downgrade.
 
-### 2.5 The boot shell has exactly one markup source
+### 2.5 Only boot-critical work runs before render
+
+Google Analytics initialization is scheduled for browser idle time after
+`react-render` (`runOnIdle` in `src/utils/idlePrefetch.ts`): the gtag script is
+pure overhead for startup and must not compete with boot-critical chunks or
+the SSO iframe for the connection.
+
+`publish` additionally starts a **cache-only** read of the current network
+(`src/data/prefetch/networkPrefetch.ts`) so the IndexedDB deserialization
+overlaps the editor chunk's download and mount; `useLoadCyNetwork` consumes it
+and falls back to a normal read on any miss. The prefetch never touches NDEx —
+that path needs the auth token and must not race the SSO check.
+
+### 2.6 The boot shell has exactly one markup source
 
 `bootShellMarkup.ts` produces the HTML; `showBootShell()` and `BootShell.tsx`
 both render it. Do not add markup to one renderer only — `bootShell.test.tsx`
@@ -124,7 +141,7 @@ The shell must stay dependency-free. It paints before react-dom and the shared
 MUI chunk arrive; a single `@mui/material` import there puts that whole bundle
 on the first-paint critical path.
 
-### 2.6 URL params are a mount-time snapshot
+### 2.7 URL params are a mount-time snapshot
 
 The boot both reads the search params and, in `route`, strips them. Steps
 receive the snapshot taken when AppShell mounted. Never re-read
@@ -169,13 +186,26 @@ these.
 
 | Milestone                  | ms   |
 | -------------------------- | ---- |
-| first contentful paint     | 264  |
-| `shell-painted`            | 247  |
-| `init-exec`                | 1630 |
-| `react-render`             | 1645 |
-| `app-shell-mounted`        | 3194 |
-| `workspace-hydrated`       | 3224 |
-| `workspace-editor-mounted` | 4148 |
+| first contentful paint     | 268  |
+| `shell-painted`            | 252  |
+| `init-exec`                | 1370 |
+| `react-render`             | 1383 |
+| `auth-settled`             | 1374 |
+| `app-shell-mounted`        | 3233 |
+| `workspace-hydrated`       | 3250 |
+| `workspace-editor-mounted` | 3700 |
+
+Recorded after the #603 load-performance series (empty workspace; the
+cold-load JS transfer for the same scenario was 973 KB, down from 1292 KB
+before the series, with cytoscape and the feature chunks off the pre-render
+path and the table-loader form chunks no longer fetched at cold load).
+
+One negative result worth keeping: injecting `modulepreload`/`prefetch`
+hints for the App/AppShell/WorkspaceEditor chunk closures was measured and
+rejected. Bandwidth, not discovery latency, binds this path — equal-priority
+preloads starved the chunks that gate `init-exec`/`auth-settled` (both
+regressed to ~2.8 s), and low-priority prefetch was slower everywhere.
+Re-measure before reintroducing hints.
 
 The gap from `shell-painted` to `init-exec` is the Module Federation shared
 chunk downloading; that is the cost the boot shell exists to cover, not a

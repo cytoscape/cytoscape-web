@@ -35,10 +35,11 @@ index.html
             └─ import('./boot/bootstrap')
                  ├─ markBoot('init-exec')                      [init-exec]
                  ├─ createRoot(#root)
-                 ├─ phase RUNTIME    enableMapSet, debug, tabManager, analytics
+                 ├─ phase RUNTIME    enableMapSet, debug, tabManager
+                 ├─ startAuthentication()  ← not awaited; overlaps the DB open  [auth-settled]
                  ├─ phase DATABASE   openDatabaseForStartup()   ← the gate; fatal
-                 ├─ startAuthentication()  ← not awaited        [auth-settled]
-                 └─ root.render(<AppBootstrap/>)                [react-render]
+                 ├─ root.render(<AppBootstrap/>)                [react-render]
+                 └─ runOnIdle(analytics)  ← gtag deferred off the boot path
                       └─ <App/>  (prefetched chunk)
                            └─ <AppShell/>  (prefetched chunk)   [app-shell-mounted]
                                 └─ runAppShellBoot()
@@ -47,6 +48,7 @@ index.html
                                      ├─ phase IMPORTS     ?import=<url>
                                      ├─ phase PUBLISH     per-tab network, stores, event bus,
                                      │                   cywebapi:ready  [workspace-hydrated]
+                                     │                   + cache-only prefetch of the current network
                                      ├─ phase INTENTS     ?installApp= (fetch + classify)
                                      └─ phase ROUTE       restore URL state, navigate, strip params
                                           └─ <WorkspaceEditor/>          [workspace-editor-mounted]

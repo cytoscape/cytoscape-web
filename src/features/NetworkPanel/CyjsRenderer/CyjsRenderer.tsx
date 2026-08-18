@@ -8,7 +8,7 @@ import Cytoscape, {
   Position,
   SingularElementArgument,
 } from 'cytoscape'
-import debounce from 'lodash.debounce'
+import debounce from 'lodash/debounce'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
@@ -32,7 +32,9 @@ import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
 import { NetworkViewSources } from '../../../models/VisualStyleModel/VisualStyleFn'
-import {
+// Type-only: a value import here would pull PdfExportForm (and the whole
+// export-form graph) past the ExportImage lazy boundary into this chunk.
+import type {
   Orientation,
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'

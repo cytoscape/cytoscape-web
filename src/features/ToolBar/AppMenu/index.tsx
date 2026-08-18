@@ -1,5 +1,5 @@
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
-import { MenuItem } from 'primereact/menuitem'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AppIdProvider } from '../../../app-api/AppIdContext'

@@ -2,13 +2,13 @@ import {
   Autocomplete,
   Box,
   Button,
-  Group,
-  Space,
-  Text,
+  ButtonGroup,
+  TextField,
   Tooltip,
-} from '@mantine/core'
+} from '@mui/material'
 
 import { ValueTypeNameChip } from '@/components/ValueTypeNameChip'
+import { compactButtonSx } from '@/features/TableDataLoader/components/compactButtonSx'
 import { ValueTypeName } from '../../../models/TableModel'
 import { DelimiterType } from '../model/DelimiterType'
 import { valueTypeNameLabel as valueTypeName2Label } from '../../../models/TableModel/impl/valueTypeNameDisplay'
@@ -20,74 +20,91 @@ export interface ValueTypeFormProps {
   validValues: ValueTypeName[]
 }
 
+// 'space' and 'tab' are display labels; the stored delimiter must be the
+// actual character because parseValue() feeds it to String.split() directly.
+const DELIMITER_SUGGESTIONS = ['|', ':', '\\', '/', ',', 'space', 'tab']
+const DELIMITER_LABEL_TO_VALUE: Record<string, DelimiterType> = {
+  space: DelimiterType.Space,
+  tab: DelimiterType.Tab,
+}
+const DELIMITER_VALUE_TO_LABEL: Record<string, string> = {
+  [DelimiterType.Space]: 'space',
+  [DelimiterType.Tab]: 'tab',
+}
+
+function TypeButtonGroup(props: {
+  types: ValueTypeName[]
+  value: ValueTypeName
+  validValues: ValueTypeName[]
+  onSelect: (v: ValueTypeName) => void
+}) {
+  const { types, value, validValues, onSelect } = props
+  return (
+    <ButtonGroup size="small" variant="outlined">
+      {types.map((v) => (
+        <Tooltip key={v} title={valueTypeName2Label(v)}>
+          <span>
+            <Button
+              sx={{
+                ...compactButtonSx,
+                opacity: !validValues.includes(v) ? 0.2 : 1,
+                backgroundColor: v === value ? 'action.selected' : 'transparent',
+              }}
+              disabled={!validValues.includes(v)}
+              onClick={() => onSelect(v)}
+              variant="outlined"
+              size="small"
+            >
+              <ValueTypeNameChip type={v} showTooltip={false} />
+            </Button>
+          </span>
+        </Tooltip>
+      ))}
+    </ButtonGroup>
+  )
+}
+
 export function ValueTypeForm(props: ValueTypeFormProps) {
   const { value, onChange, validValues } = props
+  const allTypes = Object.values(ValueTypeName)
 
   return (
     <Box>
-      <Button.Group>
-        {Object.values(ValueTypeName)
-          .filter((x) => !x.startsWith('list_'))
-          .map((v) => {
-            return (
-              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label(v)}>
-                <Button
-                  style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
-                  disabled={!validValues.includes(v)}
-                  onClick={() => onChange(v)}
-                  bg={v === value ? '#D6D6D6' : 'white'}
-                  justify="flex-start"
-                  size="compact-xs"
-                  leftSection={
-                    <ValueTypeNameChip type={v} showTooltip={false} />
-                  }
-                  variant="default"
-                ></Button>
-              </Tooltip>
-            )
-          })}
-      </Button.Group>
-      <Space h="xl" />
-      <Button.Group>
-        {Object.values(ValueTypeName)
-          .filter((x) => x.startsWith('list_'))
-          .map((v) => {
-            return (
-              <Tooltip zIndex={2001} key={v} label={valueTypeName2Label(v)}>
-                <Button
-                  style={{ opacity: !validValues.includes(v) ? 0.2 : 1 }}
-                  disabled={!validValues.includes(v)}
-                  onClick={() => onChange(v, props.delimiter ?? '|')}
-                  bg={v === value ? '#D6D6D6' : 'white'}
-                  justify="flex-start"
-                  size="compact-xs"
-                  leftSection={
-                    <ValueTypeNameChip type={v} showTooltip={false} />
-                  }
-                  variant="default"
-                ></Button>
-              </Tooltip>
-            )
-          })}
-      </Button.Group>
-      <Group>
-        <Autocomplete
-          styles={{
-            input: {
-              width: 250,
-            },
-          }}
-          disabled={!value?.startsWith('list_')}
-          size="xs"
-          value={props.delimiter ?? '|'}
-          onChange={(e) => props.onChange(value, e as DelimiterType)}
-          label={<Text size={'xs'}>List Delimiter</Text>}
-          placeholder="Select or type custom delimiter"
-          data={['|', ':', '\\', '/', ',', 'space', 'tab']}
-          comboboxProps={{ withinPortal: false }}
-          filter={({ options }) => options}
-        />
-      </Group>
+      <TypeButtonGroup
+        types={allTypes.filter((x) => !x.startsWith('list_'))}
+        value={value}
+        validValues={validValues}
+        onSelect={(v) => onChange(v)}
+      />
+      <Box sx={{ height: 24 }} />
+      <TypeButtonGroup
+        types={allTypes.filter((x) => x.startsWith('list_'))}
+        value={value}
+        validValues={validValues}
+        onSelect={(v) => onChange(v, props.delimiter ?? '|')}
+      />
+      <Autocomplete
+        freeSolo
+        disableClearable
+        disabled={!value?.startsWith('list_')}
+        size="small"
+        sx={{ width: 250, mt: 1.5 }}
+        value={DELIMITER_VALUE_TO_LABEL[props.delimiter ?? '|'] ?? props.delimiter ?? '|'}
+        onInputChange={(_, newValue) =>
+          props.onChange(
+            value,
+            DELIMITER_LABEL_TO_VALUE[newValue] ?? (newValue as DelimiterType),
+          )
+        }
+        options={DELIMITER_SUGGESTIONS}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="List Delimiter"
+            placeholder="Select or type custom delimiter"
+          />
+        )}
+      />
     </Box>
   )
 }
@@ -101,10 +118,10 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
 export function ValueTypeNameRender(props: { value: ValueTypeName }) {
   return (
     <Button
-      justify="flex-start"
-      size="compact-xs"
-      leftSection={<ValueTypeNameChip type={props.value} showTooltip={false} />}
-      variant="default"
+      size="small"
+      variant="outlined"
+      startIcon={<ValueTypeNameChip type={props.value} showTooltip={false} />}
+      sx={{ ...compactButtonSx, justifyContent: 'flex-start' }}
     >
       {valueTypeName2Label(props.value)}
     </Button>

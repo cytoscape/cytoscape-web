@@ -12,7 +12,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { MenuItem as NestedMenuItem } from 'primereact/menuitem'
+import { ToolbarMenuItem as NestedMenuItem } from '@/features/ToolBar/menuItemModel'
 import { useState } from 'react'
 import React from 'react'
 

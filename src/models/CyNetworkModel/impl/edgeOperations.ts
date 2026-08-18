@@ -1,5 +1,5 @@
 import { IdType } from '../../IdType'
-import { Network } from '../../NetworkModel'
+import type { Network } from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import { ValueType } from '../../TableModel'
