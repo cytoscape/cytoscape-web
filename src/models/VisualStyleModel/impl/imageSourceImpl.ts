@@ -94,13 +94,61 @@ export const describeImageSourceRejection = (
   }
 }
 
+/** Leading number of an SVG length attribute (`"100"`, `"100px"`). */
+const readLength = (value: string | undefined): number | undefined => {
+  if (value === undefined) return undefined
+  const match = /^\s*([\d.]+)/.exec(value)
+  if (match === null) return undefined
+  const parsed = parseFloat(match[1])
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+/**
+ * Rewrite the source root `<svg>` so it fills its parent viewport while keeping
+ * its own aspect ratio.
+ *
+ * Without this the source renders at its natural size inside the wrapper, which
+ * crops anything larger than the node — measurably so: a 100x100 source in a
+ * 140x60 node lost its centre entirely, and the visible remnant drifted further
+ * off-centre the more the canvas was zoomed.
+ *
+ * A source carrying `width`/`height` but no `viewBox` has no scalable coordinate
+ * system, so one is derived from those dimensions before they are replaced.
+ */
+const fitSourceToViewport = (rawSvg: string): string =>
+  rawSvg.replace(
+    /<svg\b([^>]*?)(\/?)>/,
+    (whole: string, attrs: string, selfClose: string) => {
+      const width = readLength(/\bwidth="([^"]*)"/.exec(attrs)?.[1])
+      const height = readLength(/\bheight="([^"]*)"/.exec(attrs)?.[1])
+
+      let next = attrs
+      if (
+        !/\bviewBox=/.test(next) &&
+        width !== undefined &&
+        height !== undefined
+      ) {
+        next += ` viewBox="0 0 ${width} ${height}"`
+      }
+      next = next.replace(
+        /\s(width|height|preserveAspectRatio)="[^"]*"/g,
+        '',
+      )
+
+      return `<svg${next} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"${selfClose}>`
+    },
+  )
+
 /**
  * Wrap an SVG data URI in an outer SVG sized to `width` x `height`, with the
- * source SVG centered inside it.
+ * source scaled to fit inside it and centered.
  *
- * This pins the rendered aspect ratio and works around a Cytoscape.js bug where
- * data-URI background images pick up a zoom offset. See
- * docs/design/custom-graphics-image/zoom-bug-demo.html for a repro.
+ * The outer box must match the node box: that is what keeps Cytoscape's image
+ * offset at zero and avoids a canvas bug where a background image whose bounding
+ * box is smaller than the node drifts off its anchor as the view zooms. See
+ * docs/design/custom-graphics-image/zoom-bug-demo.html for a repro. Within that
+ * box the source keeps its own aspect ratio, so a wide graphic uses the node's
+ * full width instead of being confined to a min(width, height) square.
  *
  * Non-SVG URLs pass through untouched. On any decode failure the input is
  * returned unchanged, so a malformed URI degrades to "unsized" rather than
@@ -127,11 +175,7 @@ export const wrapSvgDataUriForSize = (
       ? atob(data)
       : decodeURIComponent(data)
 
-    const size = Math.min(width, height)
-    const offsetX = (width - size) / 2
-    const offsetY = (height - size) / 2
-
-    const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><svg x="${offsetX}" y="${offsetY}" width="${size}" height="${size}">${rawSvg}</svg></svg>`
+    const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">${fitSourceToViewport(rawSvg)}</svg>`
 
     return 'data:image/svg+xml,' + encodeURIComponent(wrapperSvg)
   } catch (e) {

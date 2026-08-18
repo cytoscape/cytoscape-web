@@ -149,15 +149,25 @@ describe('wrapSvgDataUriForSize', () => {
     expect(wrapSvgDataUriForSize(url, 40, 40)).toBe(url)
   })
 
-  it('wraps a percent-encoded SVG in an outer SVG at the given size', () => {
-    const inner = '<svg><circle r="5"/></svg>'
-    const url = 'data:image/svg+xml,' + encodeURIComponent(inner)
+  it('wraps in an outer SVG matching the node box', () => {
+    // The outer box must equal the node box, or Cytoscape's image offset stops
+    // being zero and the graphic drifts as the canvas zooms.
+    const url =
+      'data:image/svg+xml,' + encodeURIComponent('<svg><circle r="5"/></svg>')
 
     const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 60, 40))
 
     expect(wrapped).toContain('viewBox="0 0 60 40"')
     expect(wrapped).toContain('width="60" height="40"')
-    expect(wrapped).toContain(inner)
+  })
+
+  it('keeps the source content', () => {
+    const url =
+      'data:image/svg+xml,' + encodeURIComponent('<svg><circle r="5"/></svg>')
+
+    expect(decodeWrapper(wrapSvgDataUriForSize(url, 60, 40))).toContain(
+      '<circle r="5"/>',
+    )
   })
 
   it('unwraps a base64 SVG data URI before wrapping', () => {
@@ -166,16 +176,76 @@ describe('wrapSvgDataUriForSize', () => {
 
     const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 30, 30))
 
-    expect(wrapped).toContain(inner)
+    expect(wrapped).toContain('<rect width="1" height="1"/>')
   })
 
-  it('centers the inner SVG on the shorter axis', () => {
-    const url = 'data:image/svg+xml,' + encodeURIComponent('<svg/>')
+  describe('aspect ratio', () => {
+    // Verified in real Cytoscape: the previous min(width, height) square inner
+    // viewport confined a wide graphic to the short axis, and rendered a source
+    // with intrinsic dimensions at natural size — which cropped it and left the
+    // visible remnant drifting off-centre as the canvas zoomed.
+    it('lets the source fill the box while preserving its own ratio', () => {
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg viewBox="0 0 200 50"><rect/></svg>')
 
-    // size = min(100, 40) = 40; offsetX = (100-40)/2 = 30; offsetY = 0
-    const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40))
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40))
 
-    expect(wrapped).toContain('x="30" y="0" width="40" height="40"')
+      expect(wrapped).toContain('width="100%" height="100%"')
+      expect(wrapped).toContain('preserveAspectRatio="xMidYMid meet"')
+      // No min(width, height) square viewport any more.
+      expect(wrapped).not.toContain('width="40" height="40"')
+    })
+
+    it('derives a viewBox for a source that has dimensions but none', () => {
+      // Stripping width/height without adding a viewBox would leave the source
+      // with no scalable coordinate system, so it would render at 1:1 and crop.
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg width="100" height="100"><rect/></svg>')
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 60, 30))
+
+      expect(wrapped).toContain('viewBox="0 0 100 100"')
+      expect(wrapped).toContain('width="100%" height="100%"')
+    })
+
+    it('keeps an existing viewBox rather than deriving one', () => {
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent(
+          '<svg width="200" height="50" viewBox="0 0 400 100"><rect/></svg>',
+        )
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 60, 30))
+
+      expect(wrapped).toContain('viewBox="0 0 400 100"')
+      expect(wrapped).not.toContain('viewBox="0 0 200 50"')
+    })
+
+    it('replaces a source preserveAspectRatio rather than duplicating it', () => {
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent(
+          '<svg viewBox="0 0 10 10" preserveAspectRatio="none"><rect/></svg>',
+        )
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 40, 40))
+
+      expect(wrapped).not.toContain('preserveAspectRatio="none"')
+      expect(
+        wrapped.match(/preserveAspectRatio=/g),
+      ).toHaveLength(1)
+    })
+
+    it('does not corrupt a self-closing source tag', () => {
+      const url = 'data:image/svg+xml,' + encodeURIComponent('<svg/>')
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40))
+
+      expect(wrapped).toContain('preserveAspectRatio="xMidYMid meet"/>')
+      expect(wrapped).not.toContain('/ width')
+    })
   })
 
   it('returns the input unchanged when the data URI has no comma', () => {

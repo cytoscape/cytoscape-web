@@ -1,4 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
+import type { Core } from 'cytoscape'
+import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeGraphicsStore } from '../../../data/hooks/stores/NodeGraphicsStore'
@@ -6,6 +8,7 @@ import type { IdType } from '../../../models/IdType'
 import type { NodeGraphicsRenderHook } from '../../../models/StoreModel/NodeGraphicsStoreModel'
 import type { Table } from '../../../models/TableModel'
 import type { ValueType } from '../../../models/TableModel'
+import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { useNodeGraphicsSync } from './useNodeGraphicsSync'
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -554,6 +557,202 @@ describe('useNodeGraphicsSync', () => {
       // cleared and nothing may have refilled it.
       expect(imagesFor('net1')).toEqual({})
       expect(imagesFor('net2').z1).toBeDefined()
+    })
+  })
+
+  // ── Sync + apply, composed ─────────────────────────────────────────────────
+  //
+  // The tests above count hook invocations. These count the cy writes that
+  // result, because "only that node re-renders" is a claim about BOTH: the hook
+  // must run once, and exactly one element must be restyled. The two are
+  // separate mechanisms (row diffing vs the apply layer's overlay diff), so a
+  // regression in either would leave the other's test passing.
+  //
+  // Wires the real store, the real sync hook, and the real apply layer, with a
+  // stub cy that records writes — mirroring CyjsRenderer's onNodeGraphicsChange
+  // effect.
+  describe('scoping of cy writes', () => {
+    const NODE_IDS = ['n0', 'n1', 'n2', 'n3', 'n4']
+
+    const stubCy = () => {
+      const styleCalls: string[] = []
+      const removeCalls: string[] = []
+      const nodes = new Map(
+        NODE_IDS.map((id) => [
+          id,
+          {
+            style: vi.fn(() => styleCalls.push(id)),
+            removeStyle: vi.fn(() => removeCalls.push(id)),
+            empty: () => false,
+            width: () => 40,
+            height: () => 40,
+          },
+        ]),
+      )
+      const missing = {
+        style: vi.fn(),
+        removeStyle: vi.fn(),
+        empty: () => true,
+        width: () => 0,
+        height: () => 0,
+      }
+      const cy = {
+        startBatch: vi.fn(),
+        endBatch: vi.fn(),
+        getElementById: (id: string) => nodes.get(id) ?? missing,
+      } as unknown as Core
+      return { cy, styleCalls, removeCalls }
+    }
+
+    /** Mirrors CyjsRenderer: run the sync hook, apply whatever it returns. */
+    const renderRenderer = (cy: Core, networkId: string) =>
+      renderHook(() => {
+        const graphics = useNodeGraphicsSync(networkId)
+        useEffect(() => {
+          applyNodeGraphics(cy, graphics)
+        }, [graphics])
+        return graphics
+      })
+
+    type Rows = Array<[string, Record<string, ValueType>]>
+
+    /**
+     * Row set whose objects keep their identity across calls, so a "single cell
+     * edit" can be modelled faithfully: `InMemoryTable.setValue` clones the rows
+     * Map but replaces only the one target row object. Building fresh objects
+     * for every row would instead model a column operation.
+     */
+    const makeRows = (): {
+      rows: Rows
+      editOne: (id: string, score: number) => Rows
+      rebuildAll: (extra: Record<string, ValueType>) => Rows
+    } => {
+      const rows: Rows = NODE_IDS.map((id, i) => [id, { score: i }])
+      return {
+        rows,
+        editOne: (target, score) =>
+          rows.map(([id, r]) => (id === target ? [id, { score }] : [id, r])),
+        rebuildAll: (extra) => rows.map(([id, r]) => [id, { ...r, ...extra }]),
+      }
+    }
+
+    it('writes to exactly one node when one row changes', async () => {
+      const { cy, styleCalls, removeCalls } = stubCy()
+      const table = makeRows()
+      await setNodeTable('net1', tableOf(table.rows))
+      const render = vi.fn<NodeGraphicsRenderHook>(
+        ({ attributes }) => `https://example.com/${attributes.score}.png`,
+      )
+      registerHook(render)
+
+      const view = renderRenderer(cy, 'net1')
+      await drain()
+
+      // All five painted on mount.
+      expect(styleCalls.sort()).toEqual([...NODE_IDS].sort())
+      styleCalls.length = 0
+      removeCalls.length = 0
+      render.mockClear()
+
+      // Change n2's row only; every other row keeps its object identity.
+      await act(async () => {
+        await setNodeTable('net1', tableOf(table.editOne('n2', 99)))
+      })
+      await drain()
+
+      // The hook ran once, for n2.
+      expect(render).toHaveBeenCalledTimes(1)
+      expect(render.mock.calls[0][0].nodeId).toBe('n2')
+
+      // And exactly one element was restyled — not the whole network.
+      expect(styleCalls).toEqual(['n2'])
+      expect(removeCalls).toEqual([])
+
+      view.unmount()
+      resetNodeGraphics(cy)
+    })
+
+    it('writes nothing when a row changes but its image does not', async () => {
+      const { cy, styleCalls } = stubCy()
+      const table = makeRows()
+      await setNodeTable('net1', tableOf(table.rows))
+      // Image ignores the data, so an edit cannot change it.
+      registerHook(() => 'https://example.com/constant.png')
+
+      const view = renderRenderer(cy, 'net1')
+      await drain()
+      styleCalls.length = 0
+
+      await act(async () => {
+        await setNodeTable('net1', tableOf(table.editOne('n2', 99)))
+      })
+      await drain()
+
+      // The de-dupe skips the store write, so no cy write either.
+      expect(styleCalls).toEqual([])
+
+      view.unmount()
+      resetNodeGraphics(cy)
+    })
+
+    it('writes to every node when a column operation rebuilds every row', async () => {
+      const { cy, styleCalls } = stubCy()
+      const table = makeRows()
+      await setNodeTable('net1', tableOf(table.rows))
+      const render = vi.fn<NodeGraphicsRenderHook>(
+        ({ attributes }) =>
+          `https://example.com/${attributes.score}-${attributes.tag ?? ''}.png`,
+      )
+      registerHook(render)
+
+      const view = renderRenderer(cy, 'net1')
+      await drain()
+      styleCalls.length = 0
+      render.mockClear()
+
+      // What createColumn / setColumnName / applyValueToElements actually do:
+      // clone every row object. This is the case the coalescing window exists
+      // for, and it legitimately restyles everything.
+      await act(async () => {
+        await setNodeTable('net1', tableOf(table.rebuildAll({ tag: 'x' })))
+      })
+      await drain()
+
+      expect(render).toHaveBeenCalledTimes(NODE_IDS.length)
+      expect(styleCalls.sort()).toEqual([...NODE_IDS].sort())
+
+      view.unmount()
+      resetNodeGraphics(cy)
+    })
+
+    it('removes the bypass from only the node whose hook stops returning one', async () => {
+      const { cy, styleCalls, removeCalls } = stubCy()
+      const table = makeRows()
+      await setNodeTable('net1', tableOf(table.rows))
+      // n2 drops out once its score passes 50.
+      registerHook(({ attributes }) =>
+        Number(attributes.score) > 50
+          ? null
+          : `https://example.com/${attributes.score}.png`,
+      )
+
+      const view = renderRenderer(cy, 'net1')
+      await drain()
+      styleCalls.length = 0
+      removeCalls.length = 0
+
+      await act(async () => {
+        await setNodeTable('net1', tableOf(table.editOne('n2', 99)))
+      })
+      await drain()
+
+      // A declined node has its image dropped from the store, which the apply
+      // layer turns into one removeStyle — leaving the other four untouched.
+      expect(removeCalls).toEqual(['n2'])
+      expect(styleCalls).toEqual([])
+
+      view.unmount()
+      resetNodeGraphics(cy)
     })
   })
 })

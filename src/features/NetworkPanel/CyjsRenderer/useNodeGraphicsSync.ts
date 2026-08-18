@@ -159,6 +159,8 @@ export const useNodeGraphicsSync = (
       if (generation !== generationRef.current) return
 
       const entries: Array<[IdType, ResolvedNodeGraphics]> = []
+      /** Nodes the hook used to serve and now declines. */
+      const declined: IdType[] = []
       const end = Math.min(index + CHUNK_SIZE, targets.length)
       const existing = useNodeGraphicsStore.getState().images[networkId] ?? {}
 
@@ -184,7 +186,13 @@ export const useNodeGraphicsSync = (
         }
 
         const resolved = runHooks(activeHooks, request)
-        if (resolved === null) continue
+        if (resolved === null) {
+          // Declining is a real answer, not a no-op: a node whose data no longer
+          // qualifies must lose the image it had, or a stale picture survives
+          // until the next refresh or network switch.
+          if (existing[nodeId] !== undefined) declined.push(nodeId)
+          continue
+        }
 
         // Reference-new but string-identical images would re-enter Cytoscape's
         // unbounded image cache for nothing.
@@ -212,6 +220,9 @@ export const useNodeGraphicsSync = (
       // stalling once at the end.
       if (entries.length > 0) {
         useNodeGraphicsStore.getState().setImages(networkId, entries)
+      }
+      if (declined.length > 0) {
+        useNodeGraphicsStore.getState().clearImages(networkId, declined)
       }
 
       if (index < targets.length) {
