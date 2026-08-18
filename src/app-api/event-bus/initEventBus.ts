@@ -9,6 +9,7 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { Table } from '../../models/TableModel'
+import { detectChangedRowIds } from '../../models/TableModel/impl/tableDiff'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { dispatchCyWebEvent } from './dispatchCyWebEvent'
 
@@ -33,21 +34,6 @@ function selectionEqual(
     if (a.selectedEdges[i] !== b.selectedEdges[i]) return false
   }
   return true
-}
-
-/**
- * Returns the IDs of rows that were added, deleted, or mutated between two
- * table snapshots. An empty array indicates a schema-only change.
- */
-function detectChangedRowIds(curr: Table, prev: Table): IdType[] {
-  const changed: IdType[] = []
-  for (const [id, row] of curr.rows) {
-    if (prev.rows.get(id) !== row) changed.push(id)
-  }
-  for (const id of prev.rows.keys()) {
-    if (!curr.rows.has(id)) changed.push(id)
-  }
-  return changed
 }
 
 /**

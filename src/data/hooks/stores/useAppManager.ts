@@ -1,12 +1,8 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 
-import { CyWebApi } from '../../../app-api/core'
-import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { createResourceApi } from '../../../app-api/core/resourceApi'
-import type {
-  AppContextApis,
-  CyAppWithLifecycle,
-} from '../../../app-api/types/AppContext'
+import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
 import type {
   RegisterMenuItemOptions,
   RegisterPanelOptions,
@@ -54,18 +50,6 @@ export interface AppManagerCommands {
     opts?: { activate?: boolean },
   ) => Promise<void>
   uninstallApp: (id: string) => Promise<void>
-}
-
-/**
- * Build a per-app AppContextApis object. Extends CyWebApi with
- * per-app resource and contextMenu factories bound to the given appId.
- */
-function buildPerAppApis(appId: string): AppContextApis {
-  return {
-    ...CyWebApi,
-    resource: createResourceApi(appId),
-    contextMenu: createContextMenuApi(appId),
-  }
 }
 
 /**
