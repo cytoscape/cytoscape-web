@@ -28,6 +28,7 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
+import type { ResolvedNodeGraphics } from '../../../models/StoreModel/NodeGraphicsStoreModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
 import VisualStyleFn, { VisualStyle } from '../../../models/VisualStyleModel'
@@ -48,7 +49,9 @@ import {
   resolveEdgeCreationTap,
 } from './edgeCreationMode'
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
+import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
+import { useNodeGraphicsSync } from './useNodeGraphicsSync'
 import { isGraphVisible } from './viewportRecovery'
 
 registerCyExtensions()
@@ -292,6 +295,15 @@ const CyjsRenderer = ({
   const table = tables[id]
   const summary = summaries[id]
 
+  // App-supplied per-node images. Applied as Cytoscape.js element style
+  // bypasses, never as element data — see nodeGraphicsApply.ts for why, and for
+  // why they cannot reach CX2.
+  const nodeGraphics = useNodeGraphicsSync(id)
+  const nodeGraphicsRef = useRef<
+    Record<IdType, ResolvedNodeGraphics> | undefined
+  >(nodeGraphics)
+  nodeGraphicsRef.current = nodeGraphics
+
   /**
    * Renders the Cytoscape.js network visualization based on the current network data, view, and visual style.
    *
@@ -348,6 +360,10 @@ const CyjsRenderer = ({
     cy.removeAllListeners()
     cy.startBatch()
     cy.remove('*')
+
+    // The elements holding the node-graphics bypasses are gone, so the overlay
+    // must be re-applied in full below rather than diffed against a stale copy.
+    resetNodeGraphics(cy)
 
     // Prepare the data sources for visual style application
     const data: NetworkViewSources = {
@@ -844,6 +860,10 @@ const CyjsRenderer = ({
     // Apply the computed style to Cytoscape.js
     cy.style(newStyle)
 
+    // Must follow cy.style(): node.width()/height() feed the SVG size wrapper
+    // and only report correct values once the new stylesheet is installed.
+    applyNodeGraphics(cy, nodeGraphicsRef.current)
+
     // Restore saved viewport if available, otherwise fit the network if forceFit is true
     const savedViewport = getViewport('cyjs', id)
     if (savedViewport) {
@@ -950,11 +970,34 @@ const CyjsRenderer = ({
         cy.style(cyStyle)
       }
 
+      // Reapplying the stylesheet does not clear element bypasses, but it does
+      // reset node sizes, so re-run the apply to resize any SVG images.
+      applyNodeGraphics(cy, nodeGraphicsRef.current)
+
       // Store the key-value pair in the local IndexedDB
       setViewModel(id, updatedNetworkView)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- style/table triggers only; networkView is written here (loop)
     [vs, table, visualEditorProperties],
+  )
+
+  /**
+   * Effect: Paints app-supplied node images as they arrive.
+   *
+   * `useNodeGraphicsSync` runs render hooks in chunks across animation frames,
+   * so most images land after the render that triggered them. The two apply
+   * calls inside renderNetwork and onStyleModelUpdate only catch images that
+   * already existed; this effect catches the rest.
+   *
+   * Cheap to run: applyNodeGraphics diffs against the last applied overlay and
+   * returns immediately when nothing changed.
+   */
+  useEffect(
+    function onNodeGraphicsChange() {
+      if (cy === null) return
+      applyNodeGraphics(cy, nodeGraphics)
+    },
+    [nodeGraphics, cy],
   )
 
   /**

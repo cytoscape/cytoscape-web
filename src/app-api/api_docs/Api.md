@@ -1353,6 +1353,173 @@ export const MyApp: CyAppWithLifecycle = {
 
 ---
 
+## NodeGraphicsApi
+
+Register one function that Cytoscape Web calls with each node whose data changed.
+Return an image and the host draws it as that node's `background-image`.
+
+Access is via `AppContext.apis.nodeGraphics` (per-app factory, lifecycle-managed)
+or `window.CyWebApi.nodeGraphics` (anonymous singleton, non-React consumers only).
+There is no `cyweb/NodeGraphicsApi` Module Federation expose.
+
+> **Hook images are never exported to CX2.** They are renderer-only, applied as
+> Cytoscape.js element style bypasses. Vizmapper custom graphics
+> (`nodeImageChart1..9`) still export exactly as before. See
+> `docs/design/custom-graphics-image/node-graphics-render-hook.md`.
+
+```typescript
+// In mount() — per-app factory (recommended for plugin apps)
+mount({ apis }) {
+  apis.nodeGraphics.setRenderHook(({ nodeId, attributes }) => {
+    const pct = Number(attributes.confidence)
+    if (!Number.isFinite(pct)) return null   // leave this node to the Vizmapper
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+      <circle cx='50' cy='50' r='48' fill='none' stroke='#4caf50'
+              stroke-width='4' stroke-dasharray='${pct * 302} 302'/>
+    </svg>`
+  })
+}
+
+// Non-React consumers — anonymous singleton (no auto-cleanup)
+window.CyWebApi.nodeGraphics.setRenderHook((req) => '…')
+```
+
+### Types
+
+```typescript
+interface NodeGraphicsRequest {
+  networkId: IdType
+  nodeId: IdType
+  /** Shallow copy of the node's table row. Writes to it are ignored. */
+  attributes: Record<string, ValueType>
+  /** Current node size in model units, when the view model has it. */
+  width?: number
+  height?: number
+}
+
+interface NodeGraphicsImage {
+  /**
+   * An `http(s)://` URL, a `data:` URI, or raw `<svg>` markup.
+   * `blob:` and `file:` are rejected.
+   */
+  image: string
+  /** @default 'contain' */
+  fit?: 'contain' | 'cover' | 'none'
+  /** 0..1. @default 1 */
+  opacity?: number
+  /** @default 'null' — loads without CORS, but taints the canvas. */
+  crossOrigin?: 'anonymous' | 'use-credentials' | 'null'
+  /**
+   * 'inside' draws under pie/ring charts; 'over' draws above them.
+   * @default 'inside'
+   */
+  containment?: 'inside' | 'over'
+}
+
+/** A bare string is shorthand for `{ image }`. `null` means "no image". */
+type NodeGraphicsResult = string | NodeGraphicsImage | null | undefined
+
+/** Synchronous. Must not throw. */
+type NodeGraphicsRenderHook = (request: NodeGraphicsRequest) => NodeGraphicsResult
+```
+
+### Hook contract
+
+- **Synchronous.** For images needing async work (a fetch, an offscreen render),
+  compute and cache in your own code, then call `refresh()` so the hook can
+  return the cached value.
+- **Must not throw.** A throw yields no image for that node. After 20 throws or
+  slow calls (>16 ms) the hook is disabled for the rest of the session.
+- **Return `null` to decline a node.** It falls back to its Vizmapper custom
+  graphic, if any. With several apps registered, hooks run in registration order
+  and the first non-`null` result wins.
+- **Prefer stable URLs over freshly generated data URIs.** Cytoscape retains one
+  image per distinct URL with no eviction. The host caps a network at 2000
+  distinct images and warns once when it stops accepting new ones.
+
+### When the hook runs
+
+Automatically on: renderer mount, network switch, hook registration, and any node
+table edit (including undo and redo). Deleted nodes have their image dropped
+without a hook call. Call `refresh()` for anything the host cannot observe —
+your own state.
+
+### Methods
+
+#### `setRenderHook(hook): ApiResult<{ hookId: string }>`
+
+Registers the hook, replacing any hook this caller previously registered. Hooks
+registered via `AppContext.apis.nodeGraphics` are removed automatically, along
+with every image they produced, when the app is disabled.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `VP9`      | `hook` is not a function   |
+
+#### `clearRenderHook(): ApiResult`
+
+Removes this caller's hook and every image it produced. Affected nodes fall back
+to their Vizmapper custom graphics.
+
+| Error Code | Condition                                  |
+| ---------- | ------------------------------------------ |
+| `APP5`     | This caller has no hook registered         |
+
+One app cannot clear another app's hook, and the anonymous singleton cannot clear
+an app-owned hook.
+
+#### `refresh(networkId?, nodeIds?): ApiResult<{ nodeCount: number }>`
+
+Re-runs the hook. Omit `networkId` for the workspace's current network; omit
+`nodeIds` for every node.
+
+| Error Code | Condition                                  |
+| ---------- | ------------------------------------------ |
+| `APP5`     | This caller has no hook registered         |
+| `APP2`     | No `networkId` given and none is current   |
+| `APP1`     | `networkId` is unknown                     |
+
+### Example — an image driven by the app's own state
+
+```typescript
+let currentThreshold = 0.5
+const cache = new Map<string, string>()
+
+export const MyApp: CyAppWithLifecycle = {
+  mount(context) {
+    // Synchronous: read from the cache the app fills elsewhere.
+    context.apis.nodeGraphics.setRenderHook(({ nodeId, attributes }) =>
+      Number(attributes.score) >= currentThreshold
+        ? (cache.get(nodeId) ?? null)
+        : null,
+    )
+
+    onSliderChange(async (value) => {
+      currentThreshold = value
+      await fillCache(cache, value) // async work lives here, not in the hook
+      // Ask the host to re-run the hook now that the cache is warm.
+      context.apis.nodeGraphics.refresh()
+    })
+  },
+
+  // No unmount needed — the hook and its images are auto-cleaned on disable.
+}
+```
+
+### Interaction with Vizmapper custom graphics
+
+| Situation | Result |
+| --- | --- |
+| Hook returns an image, node has a Vizmapper image | Hook wins |
+| Hook returns `null` | Vizmapper image shows |
+| `clearRenderHook()` | Vizmapper image returns on the next restyle |
+| Node has a Vizmapper **pie or ring** chart | The chart draws **on top** of a hook image unless you set `containment: 'over'` |
+
+The last row is Cytoscape's node draw order (shape → images(inside) → border →
+pie → stripe → images(over)), and matches how two Vizmapper slots already behave.
+
+---
+
 ## ResourceApi (`cyweb/AppIdContext`)
 
 Per-app resource registration API for panels and menu items. Available via
@@ -1766,6 +1933,7 @@ Per-app API object that extends `CyWebApiType` with additional per-app capabilit
 interface AppContextApis extends CyWebApiType {
   readonly resource: ResourceApi // per-app resource registration
   readonly contextMenu: ContextMenuApi // per-app, auto-cleaned on disable
+  readonly nodeGraphics: NodeGraphicsApi // per-app, auto-cleaned on disable
 }
 ```
 

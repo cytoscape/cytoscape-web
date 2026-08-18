@@ -28,6 +28,12 @@ src/app-api/
 │   ├── exportApi.ts
 │   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
+│   ├── nodeGraphicsApi.ts      ← node-graphics render hook registry (NodeGraphicsStore)
+│   ├── resourceApi.ts          ← per-app panel/menu component registry (AppResourceStore)
+│   ├── perAppApis.ts           ← buildPerAppApis(appId): the ONLY place AppContextApis is assembled
+│   ├── ready.ts                ← isReady / whenReadySignal / markReady
+│   ├── undo.ts                 ← corePostEdit
+│   ├── validation.ts
 │   ├── scopedApi.ts            ← forNetwork(id?): network-scoped domains with networkId pre-bound
 │   └── index.ts                 ← Assembles CyWebApi object (incl. forNetwork); assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
@@ -73,13 +79,23 @@ src/app-api/
    through `event-bus/dispatchCyWebEvent.ts`. Never call `window.dispatchEvent(new CustomEvent(...))`
    directly anywhere else.
 9. **`initEventBus()` is called once after hydration** — `window.CyWebApi = CyWebApi` is assigned
-   in `src/init.tsx` (before React renders). `initEventBus()` and `cywebapi:ready` are called in
-   `src/features/AppShell.tsx` immediately after `setWorkspace(workspace)` completes, so
-   subscriptions are never active during the IndexedDB → store hydration transition and no
-   spurious `network:created` / `network:switched` events fire on startup.
+   via a dynamic import in `src/boot/bootstrap.tsx:41-42`. `initEventBus()` and `cywebapi:ready`
+   are called in `src/boot/steps/publishWorkspace.ts:39,45`, immediately after
+   `setWorkspace(workspace)` completes, so subscriptions are never active during the
+   IndexedDB → store hydration transition and no spurious `network:created` /
+   `network:switched` events fire on startup.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
     fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
     promise resolution. Errors do NOT dispatch `layout:completed`.
+11. **Per-app API objects are built in exactly one place** — `core/perAppApis.ts`
+    `buildPerAppApis(appId)`. Adding a per-app domain means editing that one function. Do NOT
+    spread `CyWebApi` and override factories inline at a call site; three sites used to do that
+    and a missed one produced an app silently lacking the new domain.
+12. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
+    written to `VisualStyleStore` or `ViewModelStore`: both serialize (to CX2 and to IndexedDB
+    respectively). They live in the non-persisted `NodeGraphicsStore` and reach Cytoscape.js as
+    element style bypasses. Guarded by `src/models/CxModel/impl/exporter.nodeGraphics.test.ts`;
+    rationale in `docs/design/custom-graphics-image/node-graphics-render-hook.md`.
 
 ## Two-Layer Pattern
 
