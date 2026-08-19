@@ -38,7 +38,7 @@ import type {
   Orientation,
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
-import { CxToCyCanvas } from './annotations/cyjsAnnotationRenderer'
+import { createAnnotationLayers } from './annotations/cyjsAnnotationRenderer'
 import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
 import {
@@ -95,8 +95,10 @@ const CyjsRenderer = ({
     IdType | undefined
   >(undefined)
 
-  // Canvas layer state for annotation layers, to clear previous network layers before rendering the next network
-  const [annotationLayers, setAnnotationLayers] = useState<any[]>([])
+  // Annotation canvases. They belong to the Cytoscape instance, not to a single
+  // render: `cyCanvas()` appends a new canvas on every call, so creating them
+  // per render left a frozen copy behind each time (issue #675).
+  const annotationLayersRef = useRef<any>(null)
 
   // Cytoscape instance and container ref
   const [cy, setCy] = useState<any>(null)
@@ -812,28 +814,17 @@ const CyjsRenderer = ({
       },
     }
 
-    // Clear all annotation layers before rendering new ones
-    annotationLayers.forEach((layer) => {
-      const ctx = layer?.getCanvas()?.getContext('2d')
-      if (ctx !== undefined) {
-        layer.clear(ctx)
-      }
-    })
-
-    // Set up annotation rendering utilities
-    const annotationRenderer = new CxToCyCanvas()
-
-    // Render annotations if present, otherwise clear annotation layers
-    if (annotations.length > 0) {
-      const result = annotationRenderer.drawAnnotationsFromNiceCX(
-        cy,
-        niceCXForCyAnnotationRendering,
+    // Swap the annotation data on the canvases created with the Cytoscape
+    // instance. `cy.removeAllListeners()` above dropped their redraw handlers,
+    // so re-attach them; `attach()` is idempotent.
+    const annotationLayers = annotationLayersRef.current
+    if (annotationLayers !== null) {
+      annotationLayers.setAnnotations(niceCXForCyAnnotationRendering)
+      annotationLayers.setBackgroundColor(
+        annotations.length > 0 ? bgColor : undefined,
       )
-      annotationRenderer.drawBackground(cy, bgColor)
-
-      setAnnotationLayers([result.topLayer, result.bottomLayer])
-    } else {
-      setAnnotationLayers([])
+      annotationLayers.attach()
+      annotationLayers.redraw()
     }
 
     // --- Finalize Rendering ---
@@ -1168,11 +1159,16 @@ const CyjsRenderer = ({
       })
       cyInstance.current = cy
 
+      // One annotation canvas set per instance, reused by every render.
+      annotationLayersRef.current = createAnnotationLayers(cy)
+
       const unregisterDebugTool = registerDebugTool('cy', cy)
       setCy(cy)
 
       return () => {
         unregisterDebugTool()
+        annotationLayersRef.current?.dispose()
+        annotationLayersRef.current = null
         cyInstance.current?.destroy()
         cyInstance.current = null
         isInitialized.current = false
@@ -1181,6 +1177,8 @@ const CyjsRenderer = ({
 
     return () => {
       // Reset the guard so a StrictMode remount recreates the instance.
+      annotationLayersRef.current?.dispose()
+      annotationLayersRef.current = null
       cyInstance.current?.destroy()
       cyInstance.current = null
       isInitialized.current = false
