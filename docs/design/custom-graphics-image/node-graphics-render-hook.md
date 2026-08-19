@@ -101,7 +101,7 @@ of the style.
 
 ## Architecture
 
-```
+```text
 App (Module Federation plugin / window.CyWebApi)
   │  apis.nodeGraphics.setRenderHook(fn)
   ▼
@@ -252,6 +252,7 @@ background networks, and mounting is the natural first-run trigger.
 | Table edit                      | Run the rows whose object identity changed                     |
 | Node deleted                    | Drop its image, no hook call                                   |
 | `refresh(networkId?, nodeIds?)` | Run the named nodes, or all                                    |
+| Two `refresh` calls in one tick | Node ids merge; either call omitting `nodeIds` runs all         |
 | Unmount                         | Cancel queued work, drop the network's images                  |
 | Undo / redo                     | Automatic — `useUndoStack` replays the same TableStore actions |
 
@@ -270,8 +271,13 @@ So a single column rename reports every node as changed.
 4. `isHydrating()` defers the flush. A peer tab's edit arrives as a full-table
    replace, so every row looks changed; the pending set is preserved, so nothing
    is lost.
-5. An image string-identical to the stored one is skipped — the main defense
-   against Cytoscape's unbounded image cache.
+5. A result identical to the stored one in every field is skipped — the main
+   defense against Cytoscape's unbounded image cache. All fields are compared, not
+   just the image: a hook that keeps the URL and changes only `opacity` is making
+   a real change.
+6. A refresh request merges with one the renderer has not read yet, then is
+   acknowledged once its nodes are queued. Merging without the ack would make
+   every later refresh re-run every node ever refreshed for that network.
 
 ## Known limitations
 

@@ -46,7 +46,16 @@ export const normalizeImageSource = (value: unknown): ImageSourceResult => {
     return { kind: 'rejected', reason: 'empty', raw: '' }
   }
 
-  const raw = String(value).trim()
+  let raw: string
+  try {
+    raw = String(value).trim()
+  } catch {
+    // String() throws on a symbol, and on an object whose Symbol.toPrimitive or
+    // toString throws or is absent (Object.create(null)). A hook returning one
+    // of those must degrade like any other unusable value, because this runs in
+    // the render path where a throw would break the frame.
+    return { kind: 'rejected', reason: 'unrecognized', raw: '' }
+  }
   if (raw === '') {
     return { kind: 'rejected', reason: 'empty', raw: '' }
   }
@@ -104,6 +113,27 @@ const readLength = (value: string | undefined): number | undefined => {
 }
 
 /**
+ * Read one root attribute, accepting either quote style.
+ *
+ * Single quotes are legal in SVG, so a source written `width='100'` must be
+ * found here — otherwise the cleanup below leaves it in place and the wrapper
+ * emits two `width` attributes, which is invalid XML and fails to load at all.
+ *
+ * Case-sensitive on purpose: SVG attribute names are, so `WIDTH` is not a width.
+ */
+const readRootAttr = (attrs: string, name: string): string | undefined => {
+  const match = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(
+    attrs,
+  )
+  if (match === null) return undefined
+  return match[1] ?? match[2]
+}
+
+/** The attributes the wrapper reasserts, in either quote style. */
+const ROOT_ATTRS_TO_REPLACE =
+  /\s(?:width|height|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g
+
+/**
  * Rewrite the source root `<svg>` so it fills its parent viewport while keeping
  * its own aspect ratio.
  *
@@ -119,21 +149,18 @@ const fitSourceToViewport = (rawSvg: string): string =>
   rawSvg.replace(
     /<svg\b([^>]*?)(\/?)>/,
     (whole: string, attrs: string, selfClose: string) => {
-      const width = readLength(/\bwidth="([^"]*)"/.exec(attrs)?.[1])
-      const height = readLength(/\bheight="([^"]*)"/.exec(attrs)?.[1])
+      const width = readLength(readRootAttr(attrs, 'width'))
+      const height = readLength(readRootAttr(attrs, 'height'))
 
       let next = attrs
       if (
-        !/\bviewBox=/.test(next) &&
+        !/\bviewBox\s*=/.test(next) &&
         width !== undefined &&
         height !== undefined
       ) {
         next += ` viewBox="0 0 ${width} ${height}"`
       }
-      next = next.replace(
-        /\s(width|height|preserveAspectRatio)="[^"]*"/g,
-        '',
-      )
+      next = next.replace(ROOT_ATTRS_TO_REPLACE, '')
 
       return `<svg${next} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"${selfClose}>`
     },

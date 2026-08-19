@@ -97,7 +97,7 @@ export const useNodeGraphicsStore = create(
 
     setImages(
       networkId: IdType,
-      entries: Array<[IdType, ResolvedNodeGraphics]>,
+      entries: ReadonlyArray<readonly [IdType, ResolvedNodeGraphics]>,
     ) {
       if (entries.length === 0) return
       set((state) => {
@@ -110,7 +110,7 @@ export const useNodeGraphicsStore = create(
       })
     },
 
-    clearImages(networkId: IdType, nodeIds: IdType[]) {
+    clearImages(networkId: IdType, nodeIds: readonly IdType[]) {
       if (nodeIds.length === 0) return
       set((state) => {
         const perNode = state.images[networkId]
@@ -130,13 +130,40 @@ export const useNodeGraphicsStore = create(
       })
     },
 
-    requestRefresh(networkId: IdType, nodeIds?: IdType[]) {
+    requestRefresh(networkId: IdType, nodeIds?: readonly IdType[]) {
       set((state) => {
         const prev = state.refreshRequests[networkId]
-        state.refreshRequests[networkId] = {
-          token: (prev?.token ?? 0) + 1,
-          nodeIds,
+        const token = (prev?.token ?? 0) + 1
+
+        // Copied, so a caller that mutates its array after the call cannot
+        // change what the renderer runs.
+        let nextIds = nodeIds === undefined ? undefined : [...nodeIds]
+
+        if (prev !== undefined) {
+          // Merge with the unconsumed request rather than replacing it. Two
+          // refresh() calls in one tick notify React once, so the renderer only
+          // ever reads the final entry — a replace would silently drop the first
+          // call's nodes. Either side asking for the whole network wins.
+          nextIds =
+            prev.nodeIds === undefined || nextIds === undefined
+              ? undefined
+              : [...new Set([...prev.nodeIds, ...nextIds])]
         }
+
+        state.refreshRequests[networkId] = { token, nodeIds: nextIds }
+        return state
+      })
+    },
+
+    consumeRefresh(networkId: IdType, token: number) {
+      set((state) => {
+        // Bounded accumulation depends on this: without an ack, merging would
+        // make every refresh re-run every node ever refreshed for this network.
+        //
+        // Token-checked so a request that arrived after the renderer read this
+        // one is not thrown away with it.
+        if (state.refreshRequests[networkId]?.token !== token) return state
+        delete state.refreshRequests[networkId]
         return state
       })
     },

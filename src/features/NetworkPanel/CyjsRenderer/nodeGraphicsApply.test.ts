@@ -192,6 +192,41 @@ describe('applyNodeGraphics', () => {
     resetNodeGraphics(cy)
   })
 
+  it('keeps applying later nodes after one node throws', () => {
+    // The guard is per node, so one malformed value costs one image — not every
+    // image queued behind it in the same pass.
+    const { cy, nodes } = stubCy()
+    nodes.get('n1')!.style.mockImplementation(() => {
+      throw new Error('bad value')
+    })
+
+    applyNodeGraphics(cy, {
+      n1: graphics('https://example.com/a.png'),
+      n2: graphics('https://example.com/b.png'),
+      n3: graphics('https://example.com/c.png'),
+    })
+
+    expect(nodes.get('n2')!.style).toHaveBeenCalledTimes(1)
+    expect(nodes.get('n3')!.style).toHaveBeenCalledTimes(1)
+    resetNodeGraphics(cy)
+  })
+
+  it('keeps clearing later nodes after one removeStyle throws', () => {
+    const { cy, nodes } = stubCy()
+    applyNodeGraphics(cy, {
+      n1: graphics('https://example.com/a.png'),
+      n2: graphics('https://example.com/b.png'),
+    })
+    nodes.get('n1')!.removeStyle.mockImplementation(() => {
+      throw new Error('cannot remove')
+    })
+
+    applyNodeGraphics(cy, {})
+
+    expect(nodes.get('n2')!.removeStyle).toHaveBeenCalledTimes(1)
+    resetNodeGraphics(cy)
+  })
+
   describe('SVG sizing', () => {
     it('wraps an SVG data URI to the node box', () => {
       const { cy, nodes } = stubCy()

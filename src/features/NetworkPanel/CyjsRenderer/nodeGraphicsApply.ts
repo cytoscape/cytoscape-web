@@ -107,40 +107,48 @@ export const applyNodeGraphics = (
   cy.startBatch()
   try {
     for (const nodeId of touched) {
-      const graphics = next[nodeId]
+      // Scoped per node, not around the loop: one node's malformed value must
+      // not cost every later node in `touched` its image. The overlay is
+      // recorded below either way, so a failing write is not retried forever.
+      try {
+        const graphics = next[nodeId]
 
-      // A node can disappear between the hook running and this apply.
-      const node = cy.getElementById(nodeId)
-      if (node.empty()) continue
+        // A node can disappear between the hook running and this apply.
+        const node = cy.getElementById(nodeId)
+        if (node.empty()) continue
 
-      if (graphics === undefined) {
-        // Dropping the bypass lets the Vizmapper mapper (if any) reassert
-        // itself, leaving no residue in the user's saved style.
-        node.removeStyle(HOOK_STYLE_PROPS)
-        continue
+        if (graphics === undefined) {
+          // Dropping the bypass lets the Vizmapper mapper (if any) reassert
+          // itself, leaving no residue in the user's saved style.
+          node.removeStyle(HOOK_STYLE_PROPS)
+          continue
+        }
+
+        // ResolvedNodeGraphics instances are immutable, so reference equality is
+        // a sound "nothing to do" test.
+        if (prev[nodeId] === graphics) continue
+
+        node.style({
+          'background-image': resolveImageForNode(
+            graphics.image,
+            node.width(),
+            node.height(),
+          ),
+          'background-fit': graphics.fit,
+          'background-image-opacity': graphics.opacity,
+          'background-image-crossorigin': graphics.crossOrigin,
+          'background-image-containment': graphics.containment,
+        })
+      } catch (e) {
+        logUi.warn(
+          `[nodeGraphics]: failed to apply node graphics to ${nodeId}`,
+          e,
+        )
       }
-
-      // ResolvedNodeGraphics instances are immutable, so reference equality is
-      // a sound "nothing to do" test.
-      if (prev[nodeId] === graphics) continue
-
-      node.style({
-        'background-image': resolveImageForNode(
-          graphics.image,
-          node.width(),
-          node.height(),
-        ),
-        'background-fit': graphics.fit,
-        'background-image-opacity': graphics.opacity,
-        'background-image-crossorigin': graphics.crossOrigin,
-        'background-image-containment': graphics.containment,
-      })
     }
-  } catch (e) {
-    // A malformed value must not break the frame. The overlay is still recorded
-    // below so the next apply does not retry the same failing write forever.
-    logUi.warn('[nodeGraphics]: failed to apply node graphics', e)
   } finally {
+    // Must run even if something escapes the per-node guard, or the renderer
+    // stays batched and stops repainting.
     cy.endBatch()
   }
 

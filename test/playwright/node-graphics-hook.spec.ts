@@ -41,9 +41,12 @@ const SENTINEL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10
 type DebugGlobals = { debug?: Record<string, any>; CyWebApi?: any }
 
 test.describe('Node graphics render hook', () => {
-  test('paints a hook image as a cy style bypass and keeps it out of CX2', async ({
-    page,
-  }) => {
+  /**
+   * Serve the CX2 fixture at the import URL, and enable debug before boot so
+   * `registerDebugTool('cy', cy)` reaches `window`. The HEAD response carries the
+   * headers with no body, which is what the importer probes for first.
+   */
+  test.beforeEach(async ({ page }) => {
     const cx2 = fs.readFileSync(CX2_FIXTURE, 'utf8')
     await page.route(IMPORT_URL, (route) =>
       route.fulfill({
@@ -56,12 +59,14 @@ test.describe('Node graphics render hook', () => {
         body: route.request().method() === 'HEAD' ? undefined : cx2,
       }),
     )
-
-    // Enable debug before boot so registerDebugTool('cy', cy) reaches window.
     await page.addInitScript(() => {
       localStorage.setItem('cyweb-debug-enabled', 'true')
     })
+  })
 
+  test('paints a hook image as a cy style bypass and keeps it out of CX2', async ({
+    page,
+  }) => {
     await gotoAndWaitReady(page, `/?import=${encodeURIComponent(IMPORT_URL)}`)
     await expect
       .poll(() => getWorkspaceNetworkCount(page), { timeout: 15000 })
@@ -203,22 +208,6 @@ test.describe('Node graphics render hook', () => {
     // The load-bearing cytoscape behavior this design rests on: cy.style(sheet)
     // installs a new Style object without clearing element bypasses. A change to
     // the visual style triggers that reapply through onStyleModelUpdate.
-    const cx2 = fs.readFileSync(CX2_FIXTURE, 'utf8')
-    await page.route(IMPORT_URL, (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: {
-          'access-control-allow-origin': '*',
-          'content-length': String(Buffer.byteLength(cx2)),
-        },
-        body: route.request().method() === 'HEAD' ? undefined : cx2,
-      }),
-    )
-    await page.addInitScript(() => {
-      localStorage.setItem('cyweb-debug-enabled', 'true')
-    })
-
     await gotoAndWaitReady(page, `/?import=${encodeURIComponent(IMPORT_URL)}`)
     await expect
       .poll(() => getWorkspaceNetworkCount(page), { timeout: 15000 })
@@ -237,6 +226,7 @@ test.describe('Node graphics render hook', () => {
       ).CyWebApi.workspace.getNetworkIds()
       return result.success ? result.data.networkIds[0] : undefined
     })
+    expect(networkId).toBeTruthy()
 
     await page.evaluate(
       (svg) =>

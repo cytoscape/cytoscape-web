@@ -6,10 +6,11 @@ The app API (`src/app-api/`) is the sole public API for external apps loaded via
 Module Federation. It provides a stable contract independent of internal store and
 hook implementations.
 
-`window.CyWebApi` contains **10 domain namespaces**, including its anonymous
-Context Menu API. Plugin apps additionally receive per-app Context Menu and
-Resource Registration factories, the typed Event Bus (`useCyWebEvent`), and an
-App Lifecycle interface with declarative resource support.
+`window.CyWebApi` contains **11 domain namespaces**, including its anonymous
+Context Menu and Node Graphics APIs. Plugin apps additionally receive per-app
+Context Menu, Node Graphics, and Resource Registration factories, the typed Event
+Bus (`useCyWebEvent`), and an App Lifecycle interface with declarative resource
+support.
 
 ## Result Convention
 
@@ -1977,7 +1978,8 @@ interface AppContext {
 
 ### `AppContextApis`
 
-Per-app API object that extends `CyWebApiType` with additional per-app capabilities:
+Per-app API object. Adds `resource`, and replaces two shared domains with
+factories bound to the calling app:
 
 ```typescript
 interface AppContextApis extends CyWebApiType {
@@ -1989,7 +1991,9 @@ interface AppContextApis extends CyWebApiType {
 
 > **Note:** `window.CyWebApi` is typed as `CyWebApiType` and does NOT include
 > `resource`. Resource registration requires the per-app context available in
-> `mount()` or via `useAppContext()`.
+> `mount()` or via `useAppContext()`. `contextMenu` and `nodeGraphics` do appear
+> on `window.CyWebApi`, but as anonymous singletons with no owning app — nothing
+> registered through them is cleaned up automatically.
 
 ### `CyAppWithLifecycle`
 
@@ -2106,7 +2110,7 @@ export const MyApp: CyAppWithLifecycle = {
 
 ## `window.CyWebApi`
 
-The global `window.CyWebApi` object assembles all 10 domain APIs into a single
+The global `window.CyWebApi` object assembles all 11 domain APIs into a single
 singleton. Available after the `cywebapi:ready` event.
 
 ```typescript
@@ -2121,6 +2125,7 @@ interface CyWebApiType {
   export: ExportApi
   workspace: WorkspaceApi
   contextMenu: ContextMenuApi
+  nodeGraphics: NodeGraphicsApi
 }
 ```
 
@@ -2131,6 +2136,13 @@ window.addEventListener('cywebapi:ready', () => {
 })
 ```
 
-`AppContext.apis` extends `window.CyWebApi` with per-app `resource` and `contextMenu`
-fields. The 10 domain APIs (element, network, etc.) are shared; `resource` and the
-per-app `contextMenu` are exclusive to `AppContext.apis`.
+`AppContext.apis` extends `window.CyWebApi` with a per-app `resource` field and
+per-app `contextMenu` and `nodeGraphics` factories. The 11 domain APIs (element,
+network, etc.) are shared; `resource` is exclusive to `AppContext.apis`.
+
+`contextMenu` and `nodeGraphics` exist on both, but not as the same object. On
+`window.CyWebApi` each is an anonymous singleton with no owning app and therefore
+no lifecycle. On `AppContext.apis` each is bound to the calling `appId`, so
+everything it registers — menu items, a render hook and every image that hook
+produced — is dropped automatically when the app is disabled or uninstalled.
+Prefer the `AppContext.apis` form in any app that has a `mount()`.

@@ -21,9 +21,9 @@ import { Table } from '../Table'
 
 export interface RowDelta {
   /** Rows present in `curr` whose object identity differs from `prev`. */
-  changed: IdType[]
+  readonly changed: readonly IdType[]
   /** Rows present in `prev` and absent from `curr`. */
-  removed: IdType[]
+  readonly removed: readonly IdType[]
 }
 
 /**

@@ -331,6 +331,30 @@ describe('useNodeGraphicsSync', () => {
       // cache is not re-entered for nothing.
       expect(imagesFor('net1').n1).toBe(first)
     })
+
+    it('records a re-run that changes only a non-image field', async () => {
+      // The skip must compare every resolved field. Keying it on the image
+      // string alone swallowed a hook that dimmed a node without changing the
+      // URL, so the renderer never saw the new opacity.
+      await setNodeTable('net1', tableOf([['n1', { score: 1 }]]))
+      let opacity = 1
+      registerHook(() => ({ image: 'https://example.com/a.png', opacity }))
+
+      renderHook(() => useNodeGraphicsSync('net1'))
+      await drain()
+      expect((imagesFor('net1').n1 as any).opacity).toBe(1)
+
+      opacity = 0.25
+      act(() => {
+        useNodeGraphicsStore.getState().requestRefresh('net1')
+      })
+      await drain()
+
+      expect((imagesFor('net1').n1 as any).opacity).toBe(0.25)
+      expect((imagesFor('net1').n1 as any).image).toBe(
+        'https://example.com/a.png',
+      )
+    })
   })
 
   describe('hook lifecycle', () => {
@@ -459,6 +483,9 @@ describe('useNodeGraphicsSync', () => {
       renderHook(() => useNodeGraphicsSync('net1'))
       await drain()
 
+      // Bounded above by the budget, and above zero — a hook that was never
+      // called at all would otherwise satisfy this assertion.
+      expect(render.mock.calls.length).toBeGreaterThan(0)
       expect(render.mock.calls.length).toBeLessThanOrEqual(20)
       render.mockClear()
 

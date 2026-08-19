@@ -107,6 +107,52 @@ describe('normalizeImageSource', () => {
     })
   })
 
+  describe('values that cannot be coerced to a string', () => {
+    // String(value) itself throws for these. The function is documented as
+    // never throwing and runs in the render path, so each must come back as a
+    // rejection instead of breaking the frame. `raw` is empty because there is
+    // no string to report.
+    it.each([
+      ['a null-prototype object', () => Object.create(null) as unknown],
+      [
+        'an object whose toString throws',
+        () =>
+          ({
+            toString() {
+              throw new Error('toString exploded')
+            },
+          }) as unknown,
+      ],
+      [
+        'an object whose Symbol.toPrimitive throws',
+        () =>
+          ({
+            [Symbol.toPrimitive]() {
+              throw new Error('toPrimitive exploded')
+            },
+          }) as unknown,
+      ],
+    ])('rejects %s without throwing', (_label, make) => {
+      const value = make()
+
+      expect(() => normalizeImageSource(value)).not.toThrow()
+      expect(normalizeImageSource(value)).toEqual({
+        kind: 'rejected',
+        reason: 'unrecognized',
+        raw: '',
+      })
+    })
+
+    it('rejects a symbol through the normal unrecognized path', () => {
+      // String(symbol) does not throw — the spec special-cases the explicit
+      // call — so this one reaches the scheme check like any other string.
+      const result = normalizeImageSource(Symbol('nope'))
+
+      expect(result.kind).toBe('rejected')
+      expect(result.kind === 'rejected' && result.reason).toBe('unrecognized')
+    })
+  })
+
   it('never throws on hostile input', () => {
     const hostile = [
       Symbol.iterator.toString(),
@@ -210,6 +256,22 @@ describe('wrapSvgDataUriForSize', () => {
       expect(wrapped).toContain('width="100%" height="100%"')
     })
 
+    it('handles single-quoted dimensions', () => {
+      // Single quotes are legal in SVG. Missing them would leave the source
+      // width in place beside the wrapper's, and two width attributes make the
+      // data URI invalid XML — the image then fails to load entirely.
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent("<svg width='200' height='50'><rect/></svg>")
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 60, 30))
+
+      expect(wrapped).toContain('viewBox="0 0 200 50"')
+      expect(wrapped).not.toContain("width='200'")
+      expect(wrapped).not.toContain("height='50'")
+      expect(wrapped.match(/\swidth=/g)).toHaveLength(2) // wrapper + source root
+    })
+
     it('keeps an existing viewBox rather than deriving one', () => {
       const url =
         'data:image/svg+xml,' +
@@ -233,9 +295,7 @@ describe('wrapSvgDataUriForSize', () => {
       const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 40, 40))
 
       expect(wrapped).not.toContain('preserveAspectRatio="none"')
-      expect(
-        wrapped.match(/preserveAspectRatio=/g),
-      ).toHaveLength(1)
+      expect(wrapped.match(/preserveAspectRatio=/g)).toHaveLength(1)
     })
 
     it('does not corrupt a self-closing source tag', () => {

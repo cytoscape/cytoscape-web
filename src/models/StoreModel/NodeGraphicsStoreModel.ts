@@ -126,40 +126,57 @@ export interface NodeGraphicsRefreshRequest {
   /** Monotonic; the renderer reacts to changes, not to the value. */
   readonly token: number
   /** Undefined means the whole network. */
-  readonly nodeIds?: IdType[]
+  readonly nodeIds?: readonly IdType[]
 }
 
 export interface NodeGraphicsState {
   /** Registration order. First non-null result wins. */
-  hooks: RegisteredNodeGraphicsHook[]
+  readonly hooks: RegisteredNodeGraphicsHook[]
   /**
    * networkId → nodeId → resolved image.
    *
    * Ephemeral. Never persisted and never read by the CX2 exporter, which is
    * what keeps hook images out of exported files.
    */
-  images: Record<IdType, Record<IdType, ResolvedNodeGraphics>>
-  refreshRequests: Record<IdType, NodeGraphicsRefreshRequest>
+  readonly images: Record<IdType, Record<IdType, ResolvedNodeGraphics>>
+  readonly refreshRequests: Record<IdType, NodeGraphicsRefreshRequest>
 }
 
 export interface NodeGraphicsActions {
   /** Register or replace the hook owned by `hook.appId`. */
-  setHook: (hook: RegisteredNodeGraphicsHook) => void
+  readonly setHook: (hook: RegisteredNodeGraphicsHook) => void
   /** Remove an app's hook and every image it produced. */
-  removeAllByAppId: (appId: string) => void
+  readonly removeAllByAppId: (appId: string) => void
   /** Remove the anonymous (`window.CyWebApi`) hook and its images. */
-  removeAnonymousHook: () => void
+  readonly removeAnonymousHook: () => void
   /** Merge resolved images for a network. */
-  setImages: (
+  readonly setImages: (
     networkId: IdType,
-    entries: Array<[IdType, ResolvedNodeGraphics]>,
+    entries: ReadonlyArray<readonly [IdType, ResolvedNodeGraphics]>,
   ) => void
   /** Drop images for specific nodes, e.g. after they are deleted. */
-  clearImages: (networkId: IdType, nodeIds: IdType[]) => void
+  readonly clearImages: (networkId: IdType, nodeIds: readonly IdType[]) => void
   /** Drop every image and pending refresh for a network. */
-  clearNetwork: (networkId: IdType) => void
-  /** Ask the renderer to re-run the hook. */
-  requestRefresh: (networkId: IdType, nodeIds?: IdType[]) => void
+  readonly clearNetwork: (networkId: IdType) => void
+  /**
+   * Ask the renderer to re-run the hook.
+   *
+   * Coalesces with a request the renderer has not consumed yet: node ids merge,
+   * and a whole-network request (`nodeIds` omitted) absorbs any pending ids.
+   */
+  readonly requestRefresh: (
+    networkId: IdType,
+    nodeIds?: readonly IdType[],
+  ) => void
+  /**
+   * Renderer-only: acknowledge a refresh request once its nodes are queued.
+   *
+   * Ignored unless `token` still matches the stored request, so a refresh that
+   * landed after the renderer read the request survives. Without this ack the
+   * merge in `requestRefresh` would accumulate node ids for the network's whole
+   * lifetime.
+   */
+  readonly consumeRefresh: (networkId: IdType, token: number) => void
 }
 
 export type NodeGraphicsStoreModel = NodeGraphicsState & NodeGraphicsActions

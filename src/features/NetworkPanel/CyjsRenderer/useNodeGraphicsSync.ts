@@ -47,6 +47,24 @@ const FAILURE_BUDGET = 20
 const MAX_DISTINCT_IMAGES = 2000
 
 /**
+ * True when a freshly resolved result is indistinguishable from the stored one.
+ *
+ * Compares every field, `hookId` included: a node now served by a different hook
+ * must be re-attributed, or removing that hook would leave its image behind.
+ */
+const isSameGraphics = (
+  existing: ResolvedNodeGraphics | undefined,
+  next: ResolvedNodeGraphics,
+): boolean =>
+  existing !== undefined &&
+  existing.image === next.image &&
+  existing.fit === next.fit &&
+  existing.opacity === next.opacity &&
+  existing.crossOrigin === next.crossOrigin &&
+  existing.containment === next.containment &&
+  existing.hookId === next.hookId
+
+/**
  * Run the registered hooks for one network and return the resulting images.
  *
  * @param networkId - Network this renderer is showing
@@ -194,9 +212,11 @@ export const useNodeGraphicsSync = (
           continue
         }
 
-        // Reference-new but string-identical images would re-enter Cytoscape's
-        // unbounded image cache for nothing.
-        if (existing[nodeId]?.image === resolved.image) continue
+        // A reference-new but field-identical result would re-enter Cytoscape's
+        // unbounded image cache for nothing. Every field is compared, not just
+        // the image: a hook that keeps the same URL and changes only `opacity`
+        // or `fit` is making a real change and must not be skipped.
+        if (isSameGraphics(existing[nodeId], resolved)) continue
 
         if (
           !distinctImagesRef.current.has(resolved.image) &&
@@ -365,6 +385,9 @@ export const useNodeGraphicsSync = (
           pendingRef.current.add(nodeId)
         }
       }
+      // The work now lives in the pending set, so release the request. This is
+      // what stops requestRefresh's merge from accumulating node ids forever.
+      useNodeGraphicsStore.getState().consumeRefresh(networkId, request.token)
       // An app that recomputed its images expects them to replace the old ones,
       // so the dedupe cache must not veto a repeat of an earlier image.
       distinctImagesRef.current.clear()

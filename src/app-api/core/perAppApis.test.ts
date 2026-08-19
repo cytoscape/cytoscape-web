@@ -35,6 +35,7 @@ describe('buildPerAppApis', () => {
 
     expect(a.resource).not.toBe(b.resource)
     expect(a.contextMenu).not.toBe(b.contextMenu)
+    expect(a.nodeGraphics).not.toBe(b.nodeGraphics)
   })
 
   it('registers context menu items under the calling app', () => {

@@ -287,6 +287,97 @@ describe('NodeGraphicsStore', () => {
 
       expect(result.current.refreshRequests.net1).toBeUndefined()
     })
+
+    it('merges node ids from an unconsumed request', () => {
+      // Both calls land in one tick, so the renderer only ever reads the final
+      // entry. Replacing instead of merging would drop n1 entirely.
+      const { result } = renderHook(() => useNodeGraphicsStore())
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n1'])
+        result.current.requestRefresh('net1', ['n2'])
+      })
+
+      expect(result.current.refreshRequests.net1.nodeIds).toEqual(['n1', 'n2'])
+      expect(result.current.refreshRequests.net1.token).toBe(2)
+    })
+
+    it('does not duplicate an id present in both requests', () => {
+      const { result } = renderHook(() => useNodeGraphicsStore())
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n1', 'n2'])
+        result.current.requestRefresh('net1', ['n2', 'n3'])
+      })
+
+      expect(result.current.refreshRequests.net1.nodeIds).toEqual([
+        'n1',
+        'n2',
+        'n3',
+      ])
+    })
+
+    it('keeps a pending whole-network request when ids arrive after it', () => {
+      const { result } = renderHook(() => useNodeGraphicsStore())
+
+      act(() => {
+        result.current.requestRefresh('net1')
+        result.current.requestRefresh('net1', ['n1'])
+      })
+
+      expect(result.current.refreshRequests.net1.nodeIds).toBeUndefined()
+    })
+
+    it('copies the caller-supplied array', () => {
+      const { result } = renderHook(() => useNodeGraphicsStore())
+      const nodeIds = ['n1']
+
+      act(() => {
+        result.current.requestRefresh('net1', nodeIds)
+      })
+      nodeIds.push('n2')
+
+      expect(result.current.refreshRequests.net1.nodeIds).toEqual(['n1'])
+    })
+
+    it('starts a fresh request after the renderer consumes one', () => {
+      // The ack is what bounds the merge: without it, every later refresh would
+      // re-run every node ever refreshed for this network.
+      const { result } = renderHook(() => useNodeGraphicsStore())
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n1'])
+      })
+      const token = result.current.refreshRequests.net1.token
+
+      act(() => {
+        result.current.consumeRefresh('net1', token)
+      })
+      expect(result.current.refreshRequests.net1).toBeUndefined()
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n2'])
+      })
+      expect(result.current.refreshRequests.net1.nodeIds).toEqual(['n2'])
+    })
+
+    it('ignores an ack for a superseded token', () => {
+      // A refresh that arrives after the renderer read the request must not be
+      // thrown away with it.
+      const { result } = renderHook(() => useNodeGraphicsStore())
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n1'])
+      })
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n2'])
+        result.current.consumeRefresh('net1', 1)
+      })
+
+      expect(result.current.refreshRequests.net1.token).toBe(2)
+      expect(result.current.refreshRequests.net1.nodeIds).toEqual(['n1', 'n2'])
+    })
   })
 
   describe('app lifecycle integration', () => {
