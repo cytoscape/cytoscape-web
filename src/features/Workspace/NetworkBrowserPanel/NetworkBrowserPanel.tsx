@@ -2,8 +2,8 @@ import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
 import PaletteIcon from '@mui/icons-material/Palette'
 import ShareIcon from '@mui/icons-material/Share'
-import { Box, IconButton, Tab, Tabs, Tooltip } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { Box, CircularProgress, IconButton, Tab, Tabs, Tooltip } from '@mui/material'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
 import llmLogo from '../../../assets/openai.svg'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -15,10 +15,33 @@ import { Ui } from '../../../models/UiModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
-import { LLMQueryResultPanel } from '../../LLMQuery/components'
+import { prefetchOnIdle } from '@/utils/idlePrefetch'
 import { Summaries as SummaryList } from '../../SummaryPanel'
-import VizmapperView from '../../Vizmapper'
 import { WorkspaceNamePanel } from './WorkspaceNamePanel'
+
+// Lazy tab contents: Vizmapper alone drags in visx, d3 and react-color, so
+// keeping these out of the eager workspace chunk is one of the largest
+// cold-load wins. Module scope keeps component identity stable.
+const loadVizmapper = () => import('@/features/Vizmapper')
+const VizmapperView = lazy(loadVizmapper)
+const LLMQueryResultPanel = lazy(() =>
+  import('@/features/LLMQuery/components/LLMQueryResultPanel').then((m) => ({
+    default: m.LLMQueryResultPanel,
+  })),
+)
+
+const tabContentFallback = (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100%',
+    }}
+  >
+    <CircularProgress size={24} />
+  </Box>
+)
 
 
 const TABS_HEIGHT = 40
@@ -73,6 +96,10 @@ export const NetworkBrowserPanel = ({
   const changeTab = (event: React.SyntheticEvent, newValue: number): void => {
     setCurrentTabIndex(newValue)
   }
+
+  // Warm the STYLE tab's chunk during idle time so the first click doesn't
+  // stall on a network fetch.
+  useEffect(() => prefetchOnIdle(loadVizmapper), [])
   const summary = summaries[currentNetworkId]
 
   const showLLMQueryPanel = isHCX(summary)
@@ -221,15 +248,19 @@ export const NetworkBrowserPanel = ({
           }}
         >
           {currentTabIndex === 1 && (
-            <VizmapperView
-              networkId={targetNetworkId}
-              height={allotmentDimensions[0]}
-            />
+            <Suspense fallback={tabContentFallback}>
+              <VizmapperView
+                networkId={targetNetworkId}
+                height={allotmentDimensions[0]}
+              />
+            </Suspense>
           )}
         </Box>
         <Box hidden={currentTabIndex !== 2}>
           {currentTabIndex === 2 && (
-            <LLMQueryResultPanel height={allotmentDimensions[0]} />
+            <Suspense fallback={tabContentFallback}>
+              <LLMQueryResultPanel height={allotmentDimensions[0]} />
+            </Suspense>
           )}
         </Box>
       </Box>

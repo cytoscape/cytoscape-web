@@ -4,8 +4,8 @@ import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 export const gForce: LayoutAlgorithm = {
   name: 'gForce',
   engineName: 'G6',
-  displayName: 'gForce Layout (GPU-based force-directed)',
-  description: 'Force-directed layout with GPU acceleration',
+  displayName: 'gForce Layout (force-directed)',
+  description: 'Force-directed layout',
   type: LayoutAlgorithmType.force,
   parameters: {
     type: 'gForce',
@@ -24,13 +24,6 @@ export const gForce: LayoutAlgorithm = {
     preventOverlap: {
       name: 'preventOverlap',
       description: 'Avoid overlapping nodes',
-      type: ValueTypeName.Boolean,
-      value: true,
-      defaultValue: true,
-    },
-    gpuEnabled: {
-      name: 'gpuEnabled',
-      description: 'Whether to activate GPU acceleration',
       type: ValueTypeName.Boolean,
       value: true,
       defaultValue: true,

@@ -1,5 +1,5 @@
 import { IdType } from '../../IdType'
-import { Edge, Network } from '../../NetworkModel'
+import type { Edge, Network } from '../../NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import { ValueType } from '../../TableModel'
@@ -206,6 +206,15 @@ export const createNodesCore = (
     throw new Error(`Network ${networkId} not found`)
   }
 
+  // Capture counts BEFORE the topology is mutated, mirroring deleteNodesCore.
+  // The `networks` Map is a stale snapshot, but the Network it holds is the
+  // live instance: `Network.nodes`/`Network.edges` are getters over the
+  // underlying Cytoscape store, and addNode mutates that store in place. So
+  // reading `network.nodes.length` after the loop already includes the new
+  // nodes — adding nodeIds.length to it would count them twice.
+  const originalNodeCount = network.nodes.length
+  const originalEdgeCount = network.edges.length
+
   nodeIds.forEach((nodeId) => {
     // 1. Add node to network topology
     addNode(networkId, nodeId)
@@ -234,10 +243,10 @@ export const createNodesCore = (
   })
 
   // 4. Update network summary
-  // Calculate counts from original network since networks Map is a stale snapshot
+  // Use the pre-mutation counts captured above plus the number of nodes added
   updateNetworkSummary(networkId, {
-    nodeCount: network.nodes.length + nodeIds.length,
-    edgeCount: network.edges.length,
+    nodeCount: originalNodeCount + nodeIds.length,
+    edgeCount: originalEdgeCount,
   })
 }
 

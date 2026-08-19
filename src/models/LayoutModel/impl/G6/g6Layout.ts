@@ -1,21 +1,20 @@
-import type { EdgeConfig, GraphData, LayoutConfig, NodeConfig } from '@antv/g6'
-
 import { IdType } from '../../../IdType'
-import { Edge,Node } from '../../../NetworkModel'
+import { Edge, Node } from '../../../NetworkModel'
 import { LayoutAlgorithm } from '../../LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutEngine'
 import { G6Algorithms } from './Algorithms/g6Algorithms'
 
 const DEFAULT_ALGORITHM: LayoutAlgorithm = G6Algorithms.gForce
 
-const dummyContainer: HTMLElement = document.createElement('div')
-dummyContainer.style.display = 'none'
-
+// The engine keeps its historical name 'G6' because LayoutStore persists
+// engine/algorithm selections by name, but it now runs the algorithms
+// through @antv/layout directly. The full @antv/g6 package bundled its
+// entire rendering stack (~380 KB gzip) only to execute a layout into a
+// hidden container and read the positions back.
 export const G6Layout: LayoutEngine = {
-  // G6 Layout
   name: 'G6',
 
-  description: 'G6 Graph Visualization Engine by AntV.',
+  description: 'Layout algorithms from AntV (@antv/layout).',
 
   defaultAlgorithmName: DEFAULT_ALGORITHM.name,
 
@@ -27,41 +26,10 @@ export const G6Layout: LayoutEngine = {
     afterLayout: (positionMap: Map<IdType, [number, number]>) => void,
     algorithm: LayoutAlgorithm,
   ): Promise<void> => {
-    return import('@antv/g6')
-      .then(({ default: G6 }) => {
-        const graph = new G6.Graph({
-          container: dummyContainer,
-          width: 4000,
-          height: 4000,
-          layout: algorithm.parameters as LayoutConfig,
-        })
-
-        graph.data(transform(nodes, edges))
-        graph.on('afterlayout', () => {
-          const positions = new Map<IdType, [number, number]>()
-          const g6Nodes = graph.getNodes()
-          g6Nodes.forEach((g6Node) => {
-            const id = g6Node.getModel().id as string
-            const { x, y } = g6Node.getModel()
-
-            positions.set(id, [x as number, y as number])
-          })
-          afterLayout(positions)
-          graph.destroy()
-        })
-        graph.render()
-      })
+    // Dynamic so the layout implementation stays out of the eager graph;
+    // this boundary is what keeps @antv/layout in its own chunk.
+    return import('./runAntvLayout').then(({ runAntvLayout }) => {
+      runAntvLayout(nodes, edges, afterLayout, algorithm)
+    })
   },
-}
-
-const transform = (nodes: Node[], edges: Edge[]): GraphData => {
-  const nodeConfigs: NodeConfig[] = nodes.map((node: Node) => ({ id: node.id }))
-  const edgeConfigs: EdgeConfig[] = edges.map((edge: Edge) => ({
-    source: edge.s,
-    target: edge.t,
-  }))
-  return {
-    nodes: nodeConfigs,
-    edges: edgeConfigs,
-  }
 }

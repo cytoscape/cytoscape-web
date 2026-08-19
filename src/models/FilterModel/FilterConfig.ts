@@ -1,4 +1,6 @@
-import { GraphObjectType } from '../NetworkModel'
+// Direct leaf import: going through the NetworkModel barrel would pull the
+// cytoscape-backed impl into every consumer of this boot-critical model.
+import { GraphObjectType } from '@/models/NetworkModel/GraphObjectType'
 import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
 import { AttributeName, ValueType } from '../TableModel'

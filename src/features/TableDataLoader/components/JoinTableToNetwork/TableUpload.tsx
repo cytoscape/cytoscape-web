@@ -1,22 +1,22 @@
-import {
-  Button,
-  Group,
-  List,
-  rem,
-  Stack,
-  Text,
-} from '@mantine/core'
-import { Dropzone } from '@mantine/dropzone'
-import { modals } from '@mantine/modals'
-import { IconUpload, IconX } from '@tabler/icons-react'
+import { Typography } from '@mui/material'
 import Papa from 'papaparse'
+import { useState } from 'react'
 
-import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
-import { MessageSeverity } from '../../../../models/MessageModel'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { MessageSeverity } from '@/models/MessageModel'
+import { ConfirmationDialog } from '@/features/ConfirmationDialog'
+import {
+  DropzoneHint,
+  FileDropzone,
+  FileRejection,
+} from '@/features/FileDropzoneDialog'
 import {
   JoinTableToNetworkStep,
   useJoinTableToNetworkStore,
 } from '../../store/joinTableToNetworkStore'
+
+const SUPPORTED_EXTENSIONS = ['csv', 'txt', 'tsv']
+const MAX_FILE_SIZE_MB = 5
 
 export function TableUpload() {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
@@ -25,11 +25,18 @@ export function TableUpload() {
   const options = useJoinTableToNetworkStore((state) => state.options)
   const addMessage = useMessageStore((state) => state.addMessage)
 
-  const onFileError = (files: any) => {
-    const supportedExtensions = ['.txt', '.csv', '.tsv']
+  // Parse errors are surfaced through a confirm dialog: the user can still
+  // choose to review the partially parsed table.
+  const [parseErrorState, setParseErrorState] = useState<{
+    message: string
+    onConfirm: () => void
+  } | null>(null)
+  const [showParseErrors, setShowParseErrors] = useState(false)
+
+  const onFileError = (files: FileRejection[]) => {
     addMessage({
       duration: 5000,
-      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. Supported file types are: ${supportedExtensions.join(', ')}.`,
+      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. Supported file types are: ${SUPPORTED_EXTENSIONS.map((e) => `.${e}`).join(', ')}.`,
       severity: MessageSeverity.ERROR,
     })
   }
@@ -59,27 +66,14 @@ export function TableUpload() {
       }
 
       if (result.errors.length > 0) {
-        modals.openConfirmModal({
-          title: 'Errors found during data parsing',
-          children: (
-            <>
-              <Text>The following errors occured parsing your data:</Text>
-              <List>
-                {result.errors.map((e, index) => {
-                  return (
-                    <List.Item
-                      key={`${e.code}-${index}`}
-                    >{`${e.code}: ${e.message}`}</List.Item>
-                  )
-                })}
-              </List>
-              <Text>Do you want to proceed to review your table data?</Text>
-            </>
-          ),
-          labels: { confirm: 'Confirm', cancel: 'Cancel' },
-          onCancel: () => {},
-          onConfirm: () => onFileValid(),
+        const errorLines = result.errors
+          .map((e) => `${e.code}: ${e.message}`)
+          .join('\n')
+        setParseErrorState({
+          message: `The following errors occurred parsing your data:\n${errorLines}\nDo you want to proceed to review your table data?`,
+          onConfirm: onFileValid,
         })
+        setShowParseErrors(true)
       } else {
         onFileValid()
       }
@@ -88,64 +82,48 @@ export function TableUpload() {
   }
 
   return (
-    // <Box sx={{ height: 500 }}>
     <>
-      <Dropzone
-        data-testid="join-table-upload-dropzone"
-        onDrop={(files: any) => {
-          onFileDrop(files[0])
+      <FileDropzone
+        testIds={{
+          dropzone: 'join-table-upload-dropzone',
+          browseButton: 'join-table-upload-browse-button',
         }}
-        onReject={(files: any) => {
-          onFileError(files)
+        validator={(file: File) => {
+          if (!file.name) {
+            return null
+          }
+          const extension = file.name.split('.').pop()?.toLowerCase()
+          if (!extension || !SUPPORTED_EXTENSIONS.includes(extension)) {
+            return {
+              code: 'file-invalid-type',
+              message: `File ${file.name} is not a supported type.`,
+            }
+          }
+          // Enforce the limit the hint below promises: the whole file is read
+          // into memory and parsed synchronously on the main thread.
+          if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            return {
+              code: 'file-too-large',
+              message: `File ${file.name} exceeds the maximum size of ${MAX_FILE_SIZE_MB}MB.`,
+            }
+          }
+          return null
         }}
-        accept={{
-          'text/csv': ['.csv'],
-          'text/plain': ['.txt'],
-          'text/tab-separated-values': ['.tsv'],
-        }}
+        onDrop={onFileDrop}
+        onReject={onFileError}
       >
-        <Group
-          justify="center"
-          gap="xl"
-          mih={220}
-          style={{ pointerEvents: 'none' }}
-        >
-          <Dropzone.Accept>
-            <IconUpload
-              style={{
-                width: rem(52),
-                height: rem(52),
-                color: 'var(--mantine-color-blue-6)',
-              }}
-              stroke={1.5}
-            />
-          </Dropzone.Accept>
-          <Dropzone.Reject>
-            <IconX
-              style={{
-                width: rem(52),
-                height: rem(52),
-                color: 'var(--mantine-color-red-6)',
-              }}
-              stroke={1.5}
-            />
-          </Dropzone.Reject>
-
-          <Stack align="center">
-            <Button data-testid="join-table-upload-browse-button">
-              Browse
-            </Button>
-            <Text size="xl" inline>
-              Or drag a tabular file here
-            </Text>
-            <Text size="sm" c="dimmed" inline mt={7}>
-              Files under 5mb supported
-            </Text>
-          </Stack>
-        </Group>
-      </Dropzone>
+        <Typography variant="h6">Or drag a tabular file here</Typography>
+        <DropzoneHint dimmed>Files under 5mb supported</DropzoneHint>
+      </FileDropzone>
+      <ConfirmationDialog
+        title="Errors found during data parsing"
+        message={parseErrorState?.message ?? ''}
+        onConfirm={() => parseErrorState?.onConfirm()}
+        onCancel={() => setShowParseErrors(false)}
+        open={showParseErrors}
+        setOpen={setShowParseErrors}
+        buttonTitle="Confirm"
+      />
     </>
-
-    // </Box>
   )
 }

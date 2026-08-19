@@ -1,7 +1,6 @@
 import DownloadIcon from '@mui/icons-material/Download'
 import { ReactElement } from 'react'
 
-import { exportDatabaseSnapshotToFile } from '../../../data/db'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -15,6 +14,11 @@ export const ExportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement =
   const handleExport = async (): Promise<void> => {
     try {
       props.onClick()
+      // Loaded on demand: the snapshot module is heavy and this menu item is
+      // eager via the ToolBar, so a static import would put it on cold load.
+      const { exportDatabaseSnapshotToFile } = await import(
+        '../../../data/db/snapshot'
+      )
       await exportDatabaseSnapshotToFile()
       addMessage({
         message: 'Database snapshot exported successfully.',

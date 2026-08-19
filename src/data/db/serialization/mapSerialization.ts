@@ -1,13 +1,16 @@
-import {
+import type {
   DiscreteMappingFunction,
-  MappingFunctionType,
   NetworkView,
   Table,
   VisualProperty,
   VisualPropertyValueType,
   VisualStyle,
-} from '../../../models'
-import { FilterConfig } from '../../../models/FilterModel/FilterConfig'
+} from '@/models'
+// Direct leaf import: this module is on the boot-critical DATABASE phase, and
+// a value import through the models barrel would pull the cytoscape-backed
+// network impl with it.
+import { MappingFunctionType } from '@/models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
+import { FilterConfig } from '@/models/FilterModel/FilterConfig'
 
 // Utility type to recursively replace all Map<K, V> with Array<[K, V]>
 type ReplaceMapsWithArrayEntries<T> =

@@ -1,24 +1,159 @@
-import { Button, Tooltip } from '@mui/material'
-import { Box } from '@mui/material'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import { Box, Button, Divider, Popover, Popper, Tooltip } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
 import * as React from 'react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 
 import { darkPalette } from '../../theme'
-
+import { ToolbarMenuItem } from './menuItemModel'
 
 interface DropdownMenuProps {
   id: string
   label: string
-  menuItems: any[]
+  menuItems: ToolbarMenuItem[]
   open?: boolean
   minWidth?: number
   disabled?: boolean
   disabledTooltip?: React.ReactNode
   onOpenChange?: (open: boolean) => void
+}
+
+/**
+ * Renders one level of the menu model. An item with children opens its
+ * submenu on hover (one open submenu per level, like the former primereact
+ * TieredMenu); it stays open until a sibling is hovered or the menu closes.
+ */
+function MenuLevel({
+  items,
+  minWidth,
+}: {
+  items: ToolbarMenuItem[]
+  minWidth?: number
+}): React.ReactElement {
+  const theme = useTheme()
+  const [openSubmenu, setOpenSubmenu] = useState<{
+    index: number
+    anchorEl: HTMLElement
+  } | null>(null)
+
+  return (
+    <Box
+      role="menu"
+      sx={{
+        minWidth: minWidth ?? 200,
+        maxWidth: 600,
+        py: 0.5,
+        backgroundColor: theme.palette.background.paper,
+      }}
+    >
+      {items.map((item, index) => {
+        if (item.separator === true) {
+          return <Divider key={index} sx={{ my: 0.5 }} />
+        }
+
+        const hasChildren = (item.items?.length ?? 0) > 0
+        if (!hasChildren && item.template !== undefined) {
+          return (
+            <Box
+              key={index}
+              role="menuitem"
+              onMouseEnter={() => setOpenSubmenu(null)}
+            >
+              {item.template}
+            </Box>
+          )
+        }
+
+        const activateRow = (target: HTMLElement): void => {
+          if (item.disabled === true) {
+            return
+          }
+          if (hasChildren) {
+            setOpenSubmenu({ index, anchorEl: target })
+            return
+          }
+          item.command?.()
+        }
+
+        const row = (
+          <Box
+            key={index}
+            role="menuitem"
+            tabIndex={item.disabled === true ? -1 : 0}
+            aria-disabled={item.disabled === true ? true : undefined}
+            aria-haspopup={hasChildren ? 'menu' : undefined}
+            style={item.style}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              padding: '4px 16px',
+              cursor: item.disabled === true ? 'default' : 'pointer',
+              color:
+                item.disabled === true
+                  ? theme.palette.text.disabled
+                  : theme.palette.text.primary,
+              '&:hover': {
+                backgroundColor:
+                  item.disabled === true
+                    ? theme.palette.background.paper
+                    : theme.palette.action.hover,
+              },
+            }}
+            onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
+              setOpenSubmenu(
+                hasChildren
+                  ? { index, anchorEl: event.currentTarget }
+                  : null,
+              )
+            }}
+            onClick={(event: React.MouseEvent<HTMLElement>) => {
+              activateRow(event.currentTarget)
+            }}
+            onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                activateRow(event.currentTarget)
+              }
+            }}
+          >
+            {item.icon !== undefined ? (
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {item.icon}
+              </Box>
+            ) : null}
+            <Box sx={{ flexGrow: 1 }}>{item.label}</Box>
+            {hasChildren ? <ChevronRightIcon fontSize="small" /> : null}
+          </Box>
+        )
+
+        if (!hasChildren) {
+          return row
+        }
+
+        return (
+          <React.Fragment key={index}>
+            {row}
+            <Popper
+              open={openSubmenu?.index === index}
+              anchorEl={openSubmenu?.index === index ? openSubmenu.anchorEl : null}
+              placement="right-start"
+              sx={{ zIndex: theme.zIndex.modal + 1 }}
+            >
+              <Box
+                sx={{
+                  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+                  backgroundColor: theme.palette.background.paper,
+                }}
+              >
+                <MenuLevel items={item.items ?? []} minWidth={minWidth} />
+              </Box>
+            </Popper>
+          </React.Fragment>
+        )
+      })}
+    </Box>
+  )
 }
 
 export const DropdownMenu: React.FC<DropdownMenuProps> = ({
@@ -31,12 +166,12 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   disabledTooltip = '',
   onOpenChange,
 }) => {
-  const overlayPanelRef = useRef<OverlayPanel>(null)
   const theme = useTheme()
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!open || disabled) {
-      overlayPanelRef.current?.hide()
+      setAnchorEl(null)
     }
   }, [open, disabled])
 
@@ -44,74 +179,56 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     if (disabled) {
       return
     }
-    overlayPanelRef.current?.toggle(event)
+    if (open) {
+      setAnchorEl(null)
+      onOpenChange?.(false)
+    } else {
+      setAnchorEl(event.currentTarget)
+      onOpenChange?.(true)
+    }
   }
-
-  // If the cytoscape container exists, use its bounding rect to position the "click outside" overlay,
-  // otherwise default to covering the entire viewport
-  const cyContainer = document.getElementById('cy-container')
-  const overlayTarget = cyContainer ? cyContainer : 'body'
-  const overlayTargetRect = overlayTarget !== 'body' ? overlayTarget.getBoundingClientRect() : null
 
   return (
     <>
-    {open && !disabled && (
-      // Invisible "click outside" overlay to capture clicks outside the menu
-      <Box
-        sx={{
-          position: 'fixed',
-          top: overlayTargetRect ? overlayTargetRect.top : 0,
-          left: overlayTargetRect ? overlayTargetRect.left : 0,
-          width: overlayTargetRect ? overlayTargetRect.width : '100vw',
-          height: overlayTargetRect ? overlayTargetRect.height : '100vh',
-          zIndex: 1000, // Just below the menu
-        }}
-        onClick={() => {
-          overlayPanelRef.current?.hide()
-          onOpenChange?.(false)
-        }}
-      />
-    )}
-      <PrimeReactProvider>
-        <Tooltip title={disabled ? disabledTooltip : ''}>
-          <span>
-            <Button
-              data-testid={`toolbar-${id}-menu-button`}
-              disabled={disabled}
-              sx={{
-                color: darkPalette.text.primary,
-                textTransform: 'none',
-                '&.Mui-disabled': {
-                  color: darkPalette.text.disabled,
-                },
-              }}
-              id={`${id}-dropdown`}
-              aria-controls={open ? 'basic-menu' : undefined}
-              aria-haspopup="true"
-              aria-expanded={open ? 'true' : undefined}
-              onClick={handleClick}
-            >
-              {label}
-            </Button>
-          </span>
-        </Tooltip>
-        <OverlayPanel
-          ref={overlayPanelRef}
-          onShow={() => onOpenChange?.(true)}
-          onHide={() => onOpenChange?.(false)}
-          unstyled
-        >
-          <TieredMenu
-            style={{ 
-              minWidth: minWidth ?? 200,
-              maxWidth: 600,
-              backgroundColor: theme.palette.background.paper,
-              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+      <Tooltip title={disabled ? disabledTooltip : ''}>
+        <span>
+          <Button
+            data-testid={`toolbar-${id}-menu-button`}
+            disabled={disabled}
+            sx={{
+              color: darkPalette.text.primary,
+              textTransform: 'none',
+              '&.Mui-disabled': {
+                color: darkPalette.text.disabled,
+              },
             }}
-            model={menuItems}
-          />
-        </OverlayPanel>
-      </PrimeReactProvider>
+            id={`${id}-dropdown`}
+            aria-controls={open ? 'basic-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? 'true' : undefined}
+            onClick={handleClick}
+          >
+            {label}
+          </Button>
+        </span>
+      </Tooltip>
+      <Popover
+        open={open && !disabled && anchorEl !== null}
+        anchorEl={anchorEl}
+        onClose={() => onOpenChange?.(false)}
+        // No open/close animation: menus feel snappier and interactions
+        // cannot race a transition (the former TieredMenu had none either).
+        transitionDuration={0}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        sx={{
+          '& .MuiPopover-paper': {
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+            backgroundColor: theme.palette.background.paper,
+          },
+        }}
+      >
+        <MenuLevel items={menuItems} minWidth={minWidth} />
+      </Popover>
     </>
   )
 }
@@ -141,6 +258,8 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
       <span>
         <Box
           data-testid={dataTestId}
+          tabIndex={disabled ? -1 : 0}
+          aria-disabled={disabled ? true : undefined}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -155,6 +274,12 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
           onClick={() => {
             if (!disabled && onClick) {
               onClick()
+            }
+          }}
+          onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+            if ((event.key === 'Enter' || event.key === ' ') && !disabled) {
+              event.preventDefault()
+              onClick?.()
             }
           }}
         >

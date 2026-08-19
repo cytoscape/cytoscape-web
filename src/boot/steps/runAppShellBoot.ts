@@ -12,6 +12,7 @@ import {
   type AppShellBootContext,
   type WorkspaceDraft,
 } from './appShellBootContext'
+import { prefetchCyNetworkFromDb } from '@/data/prefetch/networkPrefetch'
 import { loadWorkspaceState } from './loadWorkspaceState'
 import { publishWorkspace } from './publishWorkspace'
 import { resolveDeepLink } from './resolveDeepLink'
@@ -77,6 +78,11 @@ export const runAppShellBoot = async (
     )
 
     publishWorkspace(draft)
+
+    // Fire-and-forget: overlaps the current network's IndexedDB read with the
+    // editor chunk download/mount; the editor's load path consumes it via
+    // takePrefetchedCyNetwork and falls back to a normal read on a miss.
+    prefetchCyNetworkFromDb(draft.workspace.currentNetworkId)
   })
 
   const intents = await runPhase(BootPhase.INTENTS, () =>

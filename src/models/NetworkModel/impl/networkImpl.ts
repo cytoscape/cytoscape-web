@@ -56,13 +56,7 @@ class NetworkImpl implements Network {
  */
 export const createNetwork = (id: IdType): Network => new NetworkImpl(id)
 
-// cy.js does not allow nodes and edges to have the same ids
-// when converting cx ids to cy ids, we add a prefix to edges
-export const translateCXEdgeId = (id: IdType): IdType => `e${id}`
-
-export const isEdgeId = (id: IdType): boolean => id.startsWith('e')
-
-export const translateEdgeIdToCX = (id: IdType): IdType => id.slice(1)
+export { isEdgeId, translateCXEdgeId, translateEdgeIdToCX } from './edgeIds'
 
 /**
  * Create a Cytoscape.js object from a Cyjs JSON

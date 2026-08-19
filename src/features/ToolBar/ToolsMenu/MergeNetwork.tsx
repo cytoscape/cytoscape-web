@@ -1,5 +1,5 @@
 import JoinFullOutlinedIcon from '@mui/icons-material/JoinFullOutlined'
-import { ReactElement, useState } from 'react'
+import { lazy, ReactElement, Suspense, useState } from 'react'
 
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -11,8 +11,7 @@ import { Network } from '../../../models/NetworkModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { generateUniqueName } from '../../../utils/generateUniqueName'
-import MergeDialog from '../../MergeNetworks/components/MergeDialog'
-import {
+import type {
   NetworkRecord,
   Pair,
 } from '../../MergeNetworks/models/DataInterfaceForMerge'
@@ -20,9 +19,18 @@ import { getNetTableFromSummary } from '../../MergeNetworks/utils/mergeNetworkUt
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
+// Lazy: MergeDialog is a 1000+ line component (plus chroma-js) that would
+// otherwise ship with the eager toolbar chunk. Mounted after first open only.
+const MergeDialog = lazy(
+  () => import('@/features/MergeNetworks/components/MergeDialog'),
+)
+
 
 export const MergeNetwork = ({ onClick: handleClose }: BaseMenuItemProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
+  // Mount latch for the lazy dialog: stays true after the first open so the
+  // close animation still plays and reopening is instant.
+  const [hasOpenedDialog, setHasOpenedDialog] = useState<boolean>(false)
   const networkIds: IdType[] = useWorkspaceStore(
     (state) => state.workspace.networkIds,
   )
@@ -48,6 +56,7 @@ export const MergeNetwork = ({ onClick: handleClose }: BaseMenuItemProps): React
   )
 
   const handleOpenDialog = (): void => {
+    setHasOpenedDialog(true)
     setOpenDialog(true)
   }
 
@@ -81,13 +90,17 @@ export const MergeNetwork = ({ onClick: handleClose }: BaseMenuItemProps): React
         icon={<JoinFullOutlinedIcon />}
         onClick={handleOpenDialog}
       />
-      <MergeDialog
-        open={openDialog}
-        handleClose={handleCloseDialog}
-        uniqueName={uniqueName}
-        workSpaceNetworks={workSpaceNetworks}
-        networksLoaded={networksLoaded}
-      />
+      {hasOpenedDialog && (
+        <Suspense fallback={null}>
+          <MergeDialog
+            open={openDialog}
+            handleClose={handleCloseDialog}
+            uniqueName={uniqueName}
+            workSpaceNetworks={workSpaceNetworks}
+            networksLoaded={networksLoaded}
+          />
+        </Suspense>
+      )}
     </>
   )
 }

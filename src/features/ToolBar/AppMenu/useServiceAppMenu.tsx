@@ -1,4 +1,4 @@
-import { MenuItem } from 'primereact/menuitem'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { ReactNode, useCallback, useMemo, useState } from 'react'
 
 import { useAppStore } from '../../../data/hooks/stores/AppStore'

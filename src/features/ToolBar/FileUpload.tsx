@@ -1,16 +1,11 @@
-import {
-  Button,
-  Group,
-  MantineProvider,
-  Modal,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
-import { Dropzone, FileWithPath } from '@mantine/dropzone'
-import { ModalsProvider } from '@mantine/modals'
-import { PrimeReactProvider } from 'primereact/api'
+import { Typography } from '@mui/material'
 import { v4 as uuidv4 } from 'uuid'
+
+import {
+  DropzoneHint,
+  FileDropzoneDialog,
+  FileRejection,
+} from '@/features/FileDropzoneDialog'
 
 import { putNetworkSummaryToDb } from '../../data/db'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
@@ -400,88 +395,55 @@ export function FileUpload(props: FileUploadProps) {
   }
 
   return (
-    <>
-      <PrimeReactProvider>
-        <MantineProvider>
-          <ModalsProvider>
-            <Modal
-              data-testid="file-upload-modal"
-              onClose={() => props.handleClose()}
-              opened={props.show}
-              zIndex={2000}
-              centered
-              title={
-                <Title c="gray" order={4}>
-                  Upload network file
-                </Title>
-              }
-            >
-              <Dropzone
-                data-testid="file-upload-dropzone"
-                multiple={false}
-                maxFiles={1}
-                validator={(file: File) => {
-                  // Do not validate if the object is not a file
-                  if (!file.name) {
-                    return null
-                  }
+    <FileDropzoneDialog
+      show={props.show}
+      handleClose={() => props.handleClose()}
+      title="Upload network file"
+      testIds={{
+        modal: 'file-upload-modal',
+        dropzone: 'file-upload-dropzone',
+        browseButton: 'file-upload-browse-button',
+      }}
+      validator={(file: File) => {
+        // Do not validate if the object is not a file
+        if (!file.name) {
+          return null
+        }
 
-                  const fileExtension = file.name
-                    .split('.')
-                    .pop()
-                    ?.toLowerCase()
-                  if (
-                    fileExtension !== 'csv' &&
-                    fileExtension !== 'txt' &&
-                    fileExtension !== 'tsv' &&
-                    fileExtension !== 'cx2' &&
-                    fileExtension !== 'sif'
-                  ) {
-                    return {
-                      code: 'file-invalid-type',
-                      message: `File ${file.name} is not a supported type.`,
-                    }
-                  }
-                  return null
-                }}
-                onDrop={(files: FileWithPath[]) => {
-                  if (files && files.length > 0) {
-                    onFileDrop(files[0])
-                  }
-                }}
-                onReject={(rejectedFiles: any) => {
-                  onFileError(rejectedFiles)
-                }}
-              >
-                <Group
-                  justify="center"
-                  gap="xl"
-                  mih={220}
-                  style={{ pointerEvents: 'stroke' }}
-                >
-                  <Stack align="center">
-                    <Button data-testid="file-upload-browse-button">
-                      Browse
-                    </Button>
-                    <Text size="xl" inline>
-                      Drag network file here
-                    </Text>
-                    <Text size="sm" inline mt={7}>
-                      Supported file types: .csv, .txt, .tsv, .cx2, .sif.
-                    </Text>
-                    <Text size="sm" c="dimmed" inline>
-                      Microsoft Excel files are not supported.
-                    </Text>
-                    <Text size="sm" c="dimmed" inline mt={7}>
-                      Files under 5MB supported.
-                    </Text>
-                  </Stack>
-                </Group>
-              </Dropzone>
-            </Modal>
-          </ModalsProvider>
-        </MantineProvider>
-      </PrimeReactProvider>
-    </>
+        const fileExtension = file.name.split('.').pop()?.toLowerCase()
+        if (
+          fileExtension !== 'csv' &&
+          fileExtension !== 'txt' &&
+          fileExtension !== 'tsv' &&
+          fileExtension !== 'cx2' &&
+          fileExtension !== 'sif'
+        ) {
+          return {
+            code: 'file-invalid-type',
+            message: `File ${file.name} is not a supported type.`,
+          }
+        }
+        // Enforce the limit the hint below promises: the whole file is read
+        // into memory and parsed on the main thread.
+        if (file.size > 5 * 1024 * 1024) {
+          return {
+            code: 'file-too-large',
+            message: `File ${file.name} exceeds the maximum size of 5MB.`,
+          }
+        }
+        return null
+      }}
+      onDrop={onFileDrop}
+      onReject={(rejectedFiles: FileRejection[]) => {
+        onFileError(rejectedFiles)
+      }}
+    >
+      <Typography variant="h6">Drag network file here</Typography>
+      <DropzoneHint>
+        Supported file types: .csv, .txt, .tsv, .cx2, .sif.
+      </DropzoneHint>
+      <DropzoneHint dimmed>Microsoft Excel files are not supported.</DropzoneHint>
+      <DropzoneHint dimmed>Files under 5MB supported.</DropzoneHint>
+    </FileDropzoneDialog>
   )
 }
