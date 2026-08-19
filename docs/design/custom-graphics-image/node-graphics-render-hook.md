@@ -58,7 +58,7 @@ Five independent reasons a hook image cannot appear:
 2. The hook never writes `VisualStyleStore`, so custom-graphics aspects are
    byte-identical.
 3. The hook never writes `ViewModelStore`. Excluded even though the exporter
-   reads only x/y, because `NodeView.values` *is* serialized to IndexedDB and
+   reads only x/y, because `NodeView.values` _is_ serialized to IndexedDB and
    cross-tab diffed.
 4. The image never enters `ele.data()`.
 5. The store has no persistence middleware, so nothing reaches Dexie.
@@ -86,11 +86,11 @@ Two facts make the `data()` route unusable:
 A bypass sidesteps both by not participating in either mechanism, and it survives
 a stylesheet swap. Verified in `node_modules/cytoscape/dist/cytoscape.cjs.js`:
 
-| Fact | Location |
-| --- | --- |
-| `cy.style(sheet)` installs a new Style object, never calling `cleanElements` | `:19259-19278` |
+| Fact                                                                                                                         | Location                 |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `cy.style(sheet)` installs a new Style object, never calling `cleanElements`                                                 | `:19259-19278`           |
 | `cleanElements(eles, true)` is reached only from `styfn.clear`, which the app never calls, and preserves bypass props anyway | `:19140`, `:16547-16570` |
-| Reapplying a stylesheet value over a bypass keeps the bypass and stores the stylesheet value underneath as `bypassed` | `:16535-16538` |
+| Reapplying a stylesheet value over a bypass keeps the bypass and stores the stylesheet value underneath as `bypassed`        | `:16535-16538`           |
 
 The third row is also why the hook wins over a Vizmapper image for free.
 
@@ -124,21 +124,23 @@ defaulting whatever the app returned.
 
 ### Files
 
-| File | Role |
-| --- | --- |
-| `src/models/StoreModel/NodeGraphicsStoreModel.ts` | Types |
-| `src/data/hooks/stores/NodeGraphicsStore.ts` | Hook registry + resolved images |
-| `src/app-api/core/nodeGraphicsApi.ts` | Public API |
-| `src/features/NetworkPanel/CyjsRenderer/nodeGraphicsResolve.ts` | Validate + default a hook result |
-| `src/features/NetworkPanel/CyjsRenderer/nodeGraphicsApply.ts` | Write bypasses into cy |
-| `src/features/NetworkPanel/CyjsRenderer/useNodeGraphicsSync.ts` | Decide when to run hooks |
-| `src/models/VisualStyleModel/impl/imageSourceImpl.ts` | Shared scheme policy + SVG sizing |
-| `src/models/TableModel/impl/tableDiff.ts` | `detectRowDelta` for changed vs removed rows |
+| File                                                            | Role                                         |
+| --------------------------------------------------------------- | -------------------------------------------- |
+| `src/models/StoreModel/NodeGraphicsStoreModel.ts`               | Types                                        |
+| `src/data/hooks/stores/NodeGraphicsStore.ts`                    | Hook registry + resolved images              |
+| `src/app-api/core/nodeGraphicsApi.ts`                           | Public API                                   |
+| `src/features/NetworkPanel/CyjsRenderer/nodeGraphicsResolve.ts` | Validate + default a hook result             |
+| `src/features/NetworkPanel/CyjsRenderer/nodeGraphicsApply.ts`   | Write bypasses into cy                       |
+| `src/features/NetworkPanel/CyjsRenderer/useNodeGraphicsSync.ts` | Decide when to run hooks                     |
+| `src/models/VisualStyleModel/impl/imageSourceImpl.ts`           | Shared scheme policy + SVG sizing            |
+| `src/models/TableModel/impl/tableDiff.ts`                       | `detectRowDelta` for changed vs removed rows |
 
 ## The hook contract
 
 ```ts
-type NodeGraphicsRenderHook = (request: NodeGraphicsRequest) => NodeGraphicsResult
+type NodeGraphicsRenderHook = (
+  request: NodeGraphicsRequest,
+) => NodeGraphicsResult
 
 interface NodeGraphicsRequest {
   readonly networkId: IdType
@@ -168,6 +170,58 @@ Accepted image sources: `http(s)://` URLs, `data:` URIs, raw `<svg>` markup
 and `file:`. Same policy as the Vizmapper passthrough path — one implementation
 in `imageSourceImpl.ts`.
 
+## Worked example: STRING node images
+
+STRING networks carry two node-image values, and both need handling the contract
+above does not do for you.
+
+| STRING column            | Value shape                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `stringdb::imageurl`     | `https://version-12-0.string-db.org//images/Proteinpictures/pdb/1f/1fgu_A.png` |
+| `stringdb::STRING style` | `string:data:image/png;base64,iVBORw0KGgo…`                                    |
+
+```js
+const strip = (v) => String(v).replace(/^string:(?=data:|https?:)/, '')
+
+api.nodeGraphics.setRenderHook(({ attributes }) => {
+  const raw =
+    attributes['stringdb::STRING style'] ?? attributes['stringdb::imageurl']
+  if (raw == null) return null
+  return {
+    image: strip(raw),
+    fit: 'contain',
+    // Required for the remote host — see below.
+    crossOrigin: 'null',
+  }
+})
+```
+
+**The `string:` prefix must be stripped.** `string:data:image/png;base64,…` is not
+a recognised scheme, so `normalizeImageSource` rejects it as `unrecognized` and the
+node silently gets no image. The prefix is a STRING app namespace marker, not part
+of the URI.
+
+**The remote host sends no CORS header.** Measured: `GET` on the structure URL
+returns `200 image/png`, `content-length: 33667`, and **no
+`Access-Control-Allow-Origin`**. So `crossOrigin: 'anonymous'` fails to load it at
+all and `'null'` is required — which taints the canvas, so Cytoscape omits that
+image from `cy.png()`. The base64 value is same-origin and survives PNG export
+either way. This is the general shape of the problem with remote node images:
+the failure looks identical to "the feature is broken", so preflight with an
+`Image()` under both modes when adding a new source.
+
+**Both STRING images are 240×240.** Square, so a square node uses the whole
+graphic; on the default 75×35 node they letterbox to a 35px square — correct, just
+small. Rasters skip the SVG size wrapper entirely, so Cytoscape's native
+`background-fit` sizes them and their aspect ratio is preserved without the drift
+workaround being involved.
+
+Note for STRING specifically: `.serena/memories/lessons.md` [2026-07-18] records
+that Desktop loads custom-graphic image bytes from its session pool rather than the
+network file, so these images do not round-trip to a fresh Desktop session even by
+the Vizmapper path — independent of this feature keeping hook images out of CX2 by
+design.
+
 ## Precedence and draw order
 
 A hook image wins over a Vizmapper image on the same node. Returning `null` drops
@@ -190,16 +244,16 @@ the next phase.
 Renderer-scoped: called from `CyjsRenderer`, so no hook work happens for
 background networks, and mounting is the natural first-run trigger.
 
-| Trigger | Action |
-| --- | --- |
-| Mount / network switch | Run every node |
-| Hook registered or replaced | Run every node |
-| Last hook removed | Drop every image for the network |
-| Table edit | Run the rows whose object identity changed |
-| Node deleted | Drop its image, no hook call |
-| `refresh(networkId?, nodeIds?)` | Run the named nodes, or all |
-| Unmount | Cancel queued work, drop the network's images |
-| Undo / redo | Automatic — `useUndoStack` replays the same TableStore actions |
+| Trigger                         | Action                                                         |
+| ------------------------------- | -------------------------------------------------------------- |
+| Mount / network switch          | Run every node                                                 |
+| Hook registered or replaced     | Run every node                                                 |
+| Last hook removed               | Drop every image for the network                               |
+| Table edit                      | Run the rows whose object identity changed                     |
+| Node deleted                    | Drop its image, no hook call                                   |
+| `refresh(networkId?, nodeIds?)` | Run the named nodes, or all                                    |
+| Unmount                         | Cancel queued work, drop the network's images                  |
+| Undo / redo                     | Automatic — `useUndoStack` replays the same TableStore actions |
 
 ### Why coalescing is mandatory
 
@@ -221,14 +275,14 @@ So a single column rename reports every node as changed.
 
 ## Known limitations
 
-| Limitation | Detail |
-| --- | --- |
-| **Cytoscape's image cache is unbounded** | `BRp.getCachedImage` retains one `Image` per distinct URL with no eviction, freed only by `cy.destroy()`. Mitigated by string-equality dedupe and a 2000-distinct-image cap per network. **Prefer stable URLs over freshly generated data URIs.** This is the likeliest production problem. |
-| Synchronous only | Async images go through `refresh()`. |
-| PNG export drops remote images | `crossOrigin: 'null'` (the default) taints the canvas, and Cytoscape excludes tainted images from `cy.png()`. Use data URIs or `crossOrigin: 'anonymous'`. |
-| No HierarchyViewer circle-packing support | Only the two `CyjsRenderer` mount sites are covered. |
-| Images recompute on network switch | The sync hook is renderer-scoped. If it hurts, promote the images slice to survive unmount and evict on `network:deleted`. |
-| Breaks the `ele.data()` convention | Deliberate; see above. `nodeGraphicsApply.ts` carries the reasoning inline. |
+| Limitation                                | Detail                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cytoscape's image cache is unbounded**  | `BRp.getCachedImage` retains one `Image` per distinct URL with no eviction, freed only by `cy.destroy()`. Mitigated by string-equality dedupe and a 2000-distinct-image cap per network. **Prefer stable URLs over freshly generated data URIs.** This is the likeliest production problem. |
+| Synchronous only                          | Async images go through `refresh()`.                                                                                                                                                                                                                                                        |
+| PNG export drops remote images            | `crossOrigin: 'null'` (the default) taints the canvas, and Cytoscape excludes tainted images from `cy.png()`. Use data URIs or `crossOrigin: 'anonymous'`.                                                                                                                                  |
+| No HierarchyViewer circle-packing support | Only the two `CyjsRenderer` mount sites are covered.                                                                                                                                                                                                                                        |
+| Images recompute on network switch        | The sync hook is renderer-scoped. If it hurts, promote the images slice to survive unmount and evict on `network:deleted`.                                                                                                                                                                  |
+| Breaks the `ele.data()` convention        | Deliberate; see above. `nodeGraphicsApply.ts` carries the reasoning inline.                                                                                                                                                                                                                 |
 
 ## Deferred
 
