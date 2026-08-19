@@ -122,6 +122,23 @@ export const useAppManager = (): AppManagerCommands => {
     useContext(AppConfigContext)
 
   /**
+   * True if this catalog entry is one the deployment's own default manifest
+   * currently lists — the only class `isCatalogEntryAllowed` exempts.
+   *
+   * Decided against the manifest as loaded, and matched on **url as well as
+   * id**: `composeCatalog` lets an installed `appstore`/`snapshot` entry win a
+   * collision with a manifest entry of the same id, so id alone would vouch for
+   * a URL the manifest never named.
+   */
+  const isFromDefaultManifest = (
+    id: string,
+    url: string,
+    manifestSource: ManifestSource | undefined,
+  ): boolean =>
+    manifestSource === undefined &&
+    manifestEntriesRef.current.some((e) => e.id === id && e.url === url)
+
+  /**
    * Recompose the catalog (manifest ∪ workspace.installedApps) and write it
    * back. Used after install/uninstall so the change is immediately visible.
    */
@@ -197,7 +214,6 @@ export const useAppManager = (): AppManagerCommands => {
   const activateApp = async (id: string): Promise<void> => {
     const {
       catalog,
-      catalogSources,
       manifestSource,
       loadStates,
       apps: currentApps,
@@ -216,8 +232,7 @@ export const useAppManager = (): AppManagerCommands => {
     if (
       !isCatalogEntryAllowed(
         catalogEntry.url,
-        catalogSources[id],
-        manifestSource !== undefined,
+        isFromDefaultManifest(id, catalogEntry.url, manifestSource),
         appInstallAllowedOrigins,
         allowsLocalhostAppsOn,
       )
@@ -485,8 +500,7 @@ export const useAppManager = (): AppManagerCommands => {
         //    legacy global apps store.
         const installedAppList =
           useWorkspaceStore.getState().workspace.installedApps ?? []
-        const { catalog, catalogSources, manifestSource } =
-          useAppStore.getState()
+        const { catalog, manifestSource } = useAppStore.getState()
         // Same gate as activateApp, and needed separately: this path loads
         // `catalog[id].url`, not the installed record's URL, so a user-set
         // manifest declaring an existing app's id would otherwise decide where
@@ -501,8 +515,7 @@ export const useAppManager = (): AppManagerCommands => {
           .filter((id) => {
             const allowed = isCatalogEntryAllowed(
               catalog[id].url,
-              catalogSources[id],
-              manifestSource !== undefined,
+              isFromDefaultManifest(id, catalog[id].url, manifestSource),
               appInstallAllowedOrigins,
               allowsLocalhostAppsOn,
             )

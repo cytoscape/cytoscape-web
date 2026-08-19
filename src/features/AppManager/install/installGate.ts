@@ -2,7 +2,6 @@ import { satisfies, valid, validRange } from 'semver'
 
 import { logApp } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
-import { AppSource } from '../../../models/AppModel/InstalledApp'
 import { parseManifest } from '../manifest/parseManifest'
 
 /**
@@ -161,24 +160,30 @@ export function isAllowedOrigin(
  * `appInstallAllowedOrigins` names `apps.cytoscape.org`, so the naive fix would
  * disable every app the product comes with.
  *
- * The distinction is **provenance, not origin**. Entries from the deployment's
- * own default manifest are the operator's own list, as trusted as the
- * deployment serving them. Everything else — a manifest the *user* pointed at,
- * an App Store install, a restored snapshot — goes through the same gate as the
- * install paths, so an organization's catalog works by being allow-listed
- * rather than by being unchecked.
+ * So one entry class is exempt: the ones the **deployment's own default
+ * manifest** currently lists, which are the operator's own list and as trusted
+ * as the deployment serving them. Everything else — a manifest the *user*
+ * pointed at, an App Store install, a restored snapshot — goes through the same
+ * gate as the install paths, so an organization's catalog works by being
+ * allow-listed rather than by being unchecked.
+ *
+ * `fromDefaultManifest` must be decided against the manifest **as loaded**, not
+ * inferred from an entry's stored `AppSource`. Provenance looks like the right
+ * signal and is not: `reconcileInstalledStatus` stamps `source: 'manifest'` on
+ * first activation whichever manifest the entry came from, and `composeCatalog`
+ * hands an installed-only entry its stored source back. An app activated from a
+ * custom Manifest Source therefore persists as `'manifest'`, and once the user
+ * resets the source to default it would satisfy a provenance test — as would an
+ * unlisted app imported inactive from a restored workspace, defeating the check
+ * that imported it inactive in the first place.
  */
 export function isCatalogEntryAllowed(
   url: string,
-  // Optional, and absent means untrusted. The store writes a provenance for
-  // every entry, but it is persisted and restored, and a partial restore must
-  // not be readable as "came from the operator's own manifest".
-  provenance: AppSource | undefined,
-  manifestIsUserSet: boolean,
+  fromDefaultManifest: boolean,
   allowedOrigins: string[],
   allowsLocalhostAppsOn?: string,
 ): boolean {
-  if (provenance === 'manifest' && !manifestIsUserSet) return true
+  if (fromDefaultManifest) return true
   return isAllowedOrigin(url, allowedOrigins, allowsLocalhostAppsOn)
 }
 

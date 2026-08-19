@@ -391,6 +391,7 @@ describe('isCatalogEntryAllowed', () => {
   // What src/assets/apps.json actually ships: an origin deliberately absent
   // from the install allow-list.
   const BUNDLED = 'https://cytoscape.org/cytoscape-web-app-examples/hello/remoteEntry.js'
+  const UNLISTED = 'https://evil.example.com/remoteEntry.js'
   const originalLocation = window.location
 
   const serveFrom = (origin: string): void => {
@@ -409,34 +410,26 @@ describe('isCatalogEntryAllowed', () => {
     })
   })
 
-  // The regression this whole helper exists to avoid: sending the catalog
-  // through isAllowedOrigin would disable every app the product ships with.
-  it('trusts the deployment default catalog even off the allow-list', () => {
+  // The regression this exemption exists to avoid: sending the catalog through
+  // isAllowedOrigin would disable every app the product ships with.
+  it('trusts the deployment default manifest even off the allow-list', () => {
     serveFrom('https://web.cytoscape.org')
-    expect(isCatalogEntryAllowed(BUNDLED, 'manifest', false, ALLOWED)).toBe(true)
+    expect(isCatalogEntryAllowed(BUNDLED, true, ALLOWED)).toBe(true)
   })
 
   // G-6: the bypass. Today this loads; it must not.
-  it('refuses a user-set manifest naming an unlisted origin', () => {
+  it('refuses an entry the default manifest does not list', () => {
     serveFrom('https://web.cytoscape.org')
-    expect(
-      isCatalogEntryAllowed(
-        'https://evil.example.com/remoteEntry.js',
-        'manifest',
-        true,
-        ALLOWED,
-      ),
-    ).toBe(false)
+    expect(isCatalogEntryAllowed(UNLISTED, false, ALLOWED)).toBe(false)
   })
 
   // H-2: an organization keeps working by being allow-listed, not unchecked.
-  it('allows a user-set manifest on an allow-listed origin', () => {
+  it('allows a non-manifest entry on an allow-listed origin', () => {
     serveFrom('https://web.cytoscape.org')
     expect(
       isCatalogEntryAllowed(
         'https://apps.cytoscape.org/web/hello/1.0.0/remoteEntry.js',
-        'manifest',
-        true,
+        false,
         ALLOWED,
       ),
     ).toBe(true)
@@ -444,13 +437,12 @@ describe('isCatalogEntryAllowed', () => {
 
   // The acceptance constraint that names this project: closing the bypass must
   // not close the route Phases 1-2 opened.
-  it('allows a localhost app from a user-set manifest when the deployment opted in', () => {
+  it('allows a localhost app outside the manifest when the deployment opted in', () => {
     serveFrom('https://dev1.ndexbio.org')
     expect(
       isCatalogEntryAllowed(
         'http://localhost:6000/remoteEntry.js',
-        'manifest',
-        true,
+        false,
         ALLOWED,
         'https://dev1.ndexbio.org',
       ),
@@ -462,53 +454,10 @@ describe('isCatalogEntryAllowed', () => {
     expect(
       isCatalogEntryAllowed(
         'http://localhost:6000/remoteEntry.js',
-        'manifest',
-        true,
+        false,
         ALLOWED,
         'https://dev1.ndexbio.org',
       ),
     ).toBe(false)
   })
-
-  // The store writes a provenance for every entry, but the catalog is persisted
-  // and restored: a partial restore must not read as "the operator's own list".
-  it('refuses an entry whose provenance is missing', () => {
-    serveFrom('https://web.cytoscape.org')
-    expect(isCatalogEntryAllowed(BUNDLED, undefined, false, ALLOWED)).toBe(false)
-  })
-
-  it('still checks a missing-provenance entry against the allow-list', () => {
-    serveFrom('https://web.cytoscape.org')
-    expect(
-      isCatalogEntryAllowed(
-        'https://apps.cytoscape.org/web/x/1.0.0/remoteEntry.js',
-        undefined,
-        false,
-        ALLOWED,
-      ),
-    ).toBe(true)
-  })
-
-  it.each(['appstore', 'snapshot'] as const)(
-    'still checks a %s entry against the allow-list',
-    (provenance) => {
-      serveFrom('https://web.cytoscape.org')
-      expect(
-        isCatalogEntryAllowed(
-          'https://evil.example.com/remoteEntry.js',
-          provenance,
-          false,
-          ALLOWED,
-        ),
-      ).toBe(false)
-      expect(
-        isCatalogEntryAllowed(
-          'https://apps.cytoscape.org/web/x/1.0.0/remoteEntry.js',
-          provenance,
-          false,
-          ALLOWED,
-        ),
-      ).toBe(true)
-    },
-  )
 })

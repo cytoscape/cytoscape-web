@@ -293,17 +293,15 @@ describe('useAppManager — install / uninstall', () => {
       expect(mockLoadRemoteApp).toHaveBeenCalled()
     })
 
-    // The gate decides on provenance, so the hook must report it truthfully:
-    // passing 'manifest'/false for everything would restore the bypass while
-    // leaving the call in place.
-    it('reports the entry provenance and whether the manifest is user-set', async () => {
+    // The exemption is "the default manifest lists this entry", so the hook has
+    // to answer that question truthfully. Hardcoding true would restore the
+    // bypass while leaving the call in place.
+    it('does not vouch for an entry the loaded manifest does not list', async () => {
       const { result } = await renderManager()
-      seedCatalog('appstore')
-      act(() => {
-        useAppStore
-          .getState()
-          .setManifestSource({ type: 'url', url: 'https://elsewhere.example/apps.json' })
-      })
+      // Seeded straight into the catalog, so no manifest was loaded that
+      // contains it — the shape a workspace-restored or previously-activated
+      // app has after the Manifest Source is reset to default.
+      seedCatalog('manifest')
 
       await act(async () => {
         await result.current.activateApp('remote')
@@ -311,11 +309,28 @@ describe('useAppManager — install / uninstall', () => {
 
       expect(mockIsCatalogEntryAllowed).toHaveBeenCalledWith(
         expect.any(String),
-        'appstore',
-        true,
+        false,
         expect.any(Array),
         undefined,
       )
+    })
+
+    // Stored provenance is not the signal. An app first activated from a custom
+    // Manifest Source persists as source:'manifest' (reconcileInstalledStatus
+    // stamps that whichever manifest it came from), and composeCatalog hands an
+    // installed-only entry its stored source back. Once the source is reset to
+    // default, a provenance test would have trusted it.
+    it('does not vouch for a stored source:manifest entry either', async () => {
+      const { result } = await renderManager()
+      seedCatalog('manifest')
+      expect(useAppStore.getState().manifestSource).toBeUndefined()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      const [, fromDefaultManifest] = mockIsCatalogEntryAllowed.mock.calls[0]
+      expect(fromDefaultManifest).toBe(false)
     })
   })
 })
