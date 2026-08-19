@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { logApp } from '../../../debug'
 import {
   isAllowedOrigin,
   isHostCompatible,
+  isLocalhostAppOptIn,
   parseSingleEntryManifest,
 } from './installGate'
 
@@ -125,6 +129,75 @@ describe('installGate', () => {
           ),
         ).toBe(true)
       })
+    })
+  })
+
+  describe('isLocalhostAppOptIn', () => {
+    const DEV1 = 'https://dev1.ndexbio.org'
+
+    it('is on when the configured origin is the one being served', () => {
+      expect(isLocalhostAppOptIn(DEV1, DEV1)).toBe(true)
+    })
+
+    it('is off when the configured origin is a different deployment', () => {
+      expect(isLocalhostAppOptIn(DEV1, 'https://web.cytoscape.org')).toBe(false)
+    })
+
+    // The property the whole design rests on: src/assets/config.json is the
+    // development server's config, and a production build starts from a copy of
+    // it. Carrying this field forward unedited must not enable anything.
+    it('does nothing when the committed dev value is copied into production', () => {
+      const committed = JSON.parse(
+        readFileSync(
+          resolve(__dirname, '../../../assets/config.json'),
+          'utf8',
+        ),
+      ) as { allowsLocalhostAppsOn?: string }
+
+      expect(committed.allowsLocalhostAppsOn).toBe(DEV1)
+      expect(
+        isLocalhostAppOptIn(
+          committed.allowsLocalhostAppsOn,
+          'https://web.cytoscape.org',
+        ),
+      ).toBe(false)
+    })
+
+    it('normalizes a value carrying a path down to its origin', () => {
+      expect(isLocalhostAppOptIn(`${DEV1}/cytoscape/`, DEV1)).toBe(true)
+    })
+
+    it('is off when absent', () => {
+      expect(isLocalhostAppOptIn(undefined, DEV1)).toBe(false)
+    })
+
+    it('is off for an empty value', () => {
+      expect(isLocalhostAppOptIn('   ', DEV1)).toBe(false)
+    })
+
+    it('is off when the served origin is unknown', () => {
+      expect(isLocalhostAppOptIn(DEV1, undefined)).toBe(false)
+    })
+
+    it.each([
+      ['not a url', 'not a url'],
+      ['a wildcard', '*'],
+      ['a bare hostname', 'dev1.ndexbio.org'],
+      ['a scheme with no usable origin', 'foo:bar'],
+    ])('is off and warns for %s', (_label, value) => {
+      const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => undefined)
+      expect(isLocalhostAppOptIn(value, DEV1)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('allowsLocalhostAppsOn'),
+      )
+    })
+
+    it('is off and warns for a non-string value', () => {
+      const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => undefined)
+      expect(isLocalhostAppOptIn(true as unknown as string, DEV1)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('must be a string'),
+      )
     })
   })
 
