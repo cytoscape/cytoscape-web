@@ -1420,7 +1420,9 @@ interface NodeGraphicsImage {
 type NodeGraphicsResult = string | NodeGraphicsImage | null | undefined
 
 /** Synchronous. Must not throw. */
-type NodeGraphicsRenderHook = (request: NodeGraphicsRequest) => NodeGraphicsResult
+type NodeGraphicsRenderHook = (
+  request: NodeGraphicsRequest,
+) => NodeGraphicsResult
 ```
 
 ### Hook contract
@@ -1452,18 +1454,18 @@ Registers the hook, replacing any hook this caller previously registered. Hooks
 registered via `AppContext.apis.nodeGraphics` are removed automatically, along
 with every image they produced, when the app is disabled.
 
-| Error Code | Condition                  |
-| ---------- | -------------------------- |
-| `VP9`      | `hook` is not a function   |
+| Error Code | Condition                |
+| ---------- | ------------------------ |
+| `VP9`      | `hook` is not a function |
 
 #### `clearRenderHook(): ApiResult`
 
 Removes this caller's hook and every image it produced. Affected nodes fall back
 to their Vizmapper custom graphics.
 
-| Error Code | Condition                                  |
-| ---------- | ------------------------------------------ |
-| `APP5`     | This caller has no hook registered         |
+| Error Code | Condition                          |
+| ---------- | ---------------------------------- |
+| `APP5`     | This caller has no hook registered |
 
 One app cannot clear another app's hook, and the anonymous singleton cannot clear
 an app-owned hook.
@@ -1473,11 +1475,11 @@ an app-owned hook.
 Re-runs the hook. Omit `networkId` for the workspace's current network; omit
 `nodeIds` for every node.
 
-| Error Code | Condition                                  |
-| ---------- | ------------------------------------------ |
-| `APP5`     | This caller has no hook registered         |
-| `APP2`     | No `networkId` given and none is current   |
-| `APP1`     | `networkId` is unknown                     |
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP5`     | This caller has no hook registered       |
+| `APP2`     | No `networkId` given and none is current |
+| `APP1`     | `networkId` is unknown                   |
 
 ### Example — an image driven by the app's own state
 
@@ -1506,14 +1508,62 @@ export const MyApp: CyAppWithLifecycle = {
 }
 ```
 
+### Example — remote images from a STRING network
+
+STRING networks carry two node-image columns. Both need handling the contract
+above does not do for you.
+
+| Column                   | Value shape                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `stringdb::imageurl`     | `https://version-12-0.string-db.org//images/Proteinpictures/pdb/1f/1fgu_A.png` |
+| `stringdb::STRING style` | `string:data:image/png;base64,iVBORw0KGgo…`                                    |
+
+```typescript
+// `string:` is a STRING namespace marker, not part of the URI. Without stripping
+// it the value is an unrecognised scheme and the node silently gets no image.
+const strip = (v: unknown): string =>
+  String(v).replace(/^string:(?=data:|https?:)/, '')
+
+apis.nodeGraphics.setRenderHook(({ attributes }) => {
+  const raw =
+    attributes['stringdb::STRING style'] ?? attributes['stringdb::imageurl']
+  if (raw == null) return null
+
+  return {
+    image: strip(raw),
+    fit: 'contain',
+    // Required for the remote host — it sends no CORS header. See below.
+    crossOrigin: 'null',
+  }
+})
+```
+
+Two things measured against the live host, both of which look like "the feature
+is broken" when hit:
+
+- **The `string:` prefix is rejected.** `normalizeImageSource` classifies
+  `string:data:…` as `unrecognized`, so the hook's return value is discarded.
+- **The structure-image host sends no `Access-Control-Allow-Origin`.** It answers
+  `200 image/png` (33,667 bytes), so the URL is fine — but
+  `crossOrigin: 'anonymous'` fails to load it at all. `'null'` works and taints
+  the canvas, which means Cytoscape omits that image from `cy.png()`. The base64
+  value is same-origin and survives PNG export either way.
+
+When adding any new remote source, preflight it with an `Image()` under both
+`crossOrigin` modes before concluding anything about the hook.
+
+Both STRING images are 240×240. Rasters skip the SVG size wrapper entirely, so
+Cytoscape's `background-fit` sizes them natively and their aspect ratio is
+preserved; on the default 75×35 node a square image letterboxes to a 35px square.
+
 ### Interaction with Vizmapper custom graphics
 
-| Situation | Result |
-| --- | --- |
-| Hook returns an image, node has a Vizmapper image | Hook wins |
-| Hook returns `null` | Vizmapper image shows |
-| `clearRenderHook()` | Vizmapper image returns on the next restyle |
-| Node has a Vizmapper **pie or ring** chart | The chart draws **on top** of a hook image unless you set `containment: 'over'` |
+| Situation                                         | Result                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Hook returns an image, node has a Vizmapper image | Hook wins                                                                       |
+| Hook returns `null`                               | Vizmapper image shows                                                           |
+| `clearRenderHook()`                               | Vizmapper image returns on the next restyle                                     |
+| Node has a Vizmapper **pie or ring** chart        | The chart draws **on top** of a hook image unless you set `containment: 'over'` |
 
 The last row is Cytoscape's node draw order (shape → images(inside) → border →
 pie → stripe → images(over)), and matches how two Vizmapper slots already behave.

@@ -96,6 +96,11 @@ src/app-api/
     respectively). They live in the non-persisted `NodeGraphicsStore` and reach Cytoscape.js as
     element style bypasses. Guarded by `src/models/CxModel/impl/exporter.nodeGraphics.test.ts`;
     rationale in `docs/design/custom-graphics-image/node-graphics-render-hook.md`.
+    Two failure modes look identical to a broken feature, so check them first when a
+    hook draws nothing: a namespace-prefixed value (STRING ships
+    `string:data:image/png;base64,…`) is an unrecognised scheme and is discarded, and a
+    remote host without an `Access-Control-Allow-Origin` header will not load under
+    `crossOrigin: 'anonymous'` at all. See the STRING example in `api_docs/Api.md`.
 
 ## Two-Layer Pattern
 

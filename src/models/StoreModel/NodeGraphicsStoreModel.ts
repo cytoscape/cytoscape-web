@@ -53,13 +53,23 @@ export interface NodeGraphicsImage {
   /**
    * An `http(s)://` URL, a `data:` URI, or raw `<svg>` markup. `blob:` and
    * `file:` are rejected — blob URLs are dead by the time a style reapplies.
+   *
+   * Must be the bare URI. Values copied out of another tool's column may carry a
+   * namespace prefix — STRING's `stringdb::STRING style` is
+   * `string:data:image/png;base64,…` — which reads as an unrecognised scheme and
+   * is discarded. Strip the prefix before returning.
    */
   readonly image: string
   /** Default `'contain'`. */
   readonly fit?: NodeGraphicsFit
   /** 0..1. Default 1. */
   readonly opacity?: number
-  /** Default `'null'`. */
+  /**
+   * Default `'null'`, which loads from hosts that send no CORS header at the cost
+   * of tainting the canvas — Cytoscape then omits the image from PNG export.
+   * `'anonymous'` keeps export working but fails outright on such a host, so
+   * preflight a new remote source under both modes.
+   */
   readonly crossOrigin?: NodeGraphicsCrossOrigin
   /** Default `'inside'`. */
   readonly containment?: NodeGraphicsContainment
