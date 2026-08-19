@@ -196,7 +196,7 @@ describe('installGate', () => {
 
     it('is off and warns for a non-string value', () => {
       const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => undefined)
-      expect(isLocalhostAppOptIn(true as unknown as string, DEV1)).toBe(false)
+      expect(isLocalhostAppOptIn(true, DEV1)).toBe(false)
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('must be a string'),
       )
@@ -304,6 +304,23 @@ describe('localhost apps on an opted-in deployment', () => {
       ).toBe(true)
     })
 
+    // `new URL('http://[::1]:6000/x').hostname` is "[::1]", brackets included,
+    // which is how a dev server bound to localhost is reached on an
+    // IPv6-preferring system.
+    it('allows the IPv6 loopback', () => {
+      serveFrom(DEV1)
+      expect(
+        isAllowedOrigin('http://[::1]:6000/remoteEntry.js', allowed, DEV1),
+      ).toBe(true)
+    })
+
+    it('allows a localhost app when the host itself is on IPv6 loopback', () => {
+      serveFrom('http://[::1]:5500')
+      expect(
+        isAllowedOrigin('http://localhost:6000/remoteEntry.js', allowed),
+      ).toBe(true)
+    })
+
     it('refuses a hostname that merely contains "localhost"', () => {
       serveFrom(DEV1)
       expect(
@@ -351,6 +368,13 @@ describe('localhost apps on an opted-in deployment', () => {
       expect(
         validateManifestUrl('http://evil.example.com/apps.json', DEV1),
       ).toBe('URL must use HTTPS protocol')
+    })
+
+    it('accepts an IPv6 loopback manifest when the deployment opted in', () => {
+      serveFrom(DEV1)
+      expect(
+        validateManifestUrl('http://[::1]:6000/cyweb-app.json', DEV1),
+      ).toBeUndefined()
     })
 
     it('reports an unparsable URL', () => {
@@ -444,6 +468,25 @@ describe('isCatalogEntryAllowed', () => {
         'https://dev1.ndexbio.org',
       ),
     ).toBe(false)
+  })
+
+  // The store writes a provenance for every entry, but the catalog is persisted
+  // and restored: a partial restore must not read as "the operator's own list".
+  it('refuses an entry whose provenance is missing', () => {
+    serveFrom('https://web.cytoscape.org')
+    expect(isCatalogEntryAllowed(BUNDLED, undefined, false, ALLOWED)).toBe(false)
+  })
+
+  it('still checks a missing-provenance entry against the allow-list', () => {
+    serveFrom('https://web.cytoscape.org')
+    expect(
+      isCatalogEntryAllowed(
+        'https://apps.cytoscape.org/web/x/1.0.0/remoteEntry.js',
+        undefined,
+        false,
+        ALLOWED,
+      ),
+    ).toBe(true)
   })
 
   it.each(['appstore', 'snapshot'] as const)(

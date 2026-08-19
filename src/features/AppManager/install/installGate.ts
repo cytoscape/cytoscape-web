@@ -42,6 +42,19 @@ export function parseSingleEntryManifest(
 }
 
 /**
+ * Hostnames that name this machine.
+ *
+ * `[::1]` is the IPv6 loopback as the URL parser reports it — brackets included,
+ * which is why a plain `'::1'` comparison would never match. A dev server bound
+ * to "localhost" on an IPv6-preferring system is reached this way, and without
+ * it an opted-in deployment refuses an address that is loopback by definition.
+ */
+const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+const isLoopbackHostname = (hostname: string): boolean =>
+  LOOPBACK_HOSTNAMES.has(hostname)
+
+/**
  * True if this deployment has opted in to installing apps served from localhost.
  *
  * The opt-in names the origin it applies to instead of being a boolean, and is
@@ -56,13 +69,15 @@ export function parseSingleEntryManifest(
  * the gate rather than narrow it, so there is no input that means "any origin".
  */
 export function isLocalhostAppOptIn(
-  configuredOrigin: string | undefined,
+  // `unknown`, not `string | undefined`: the value arrives from config.json,
+  // which nothing validates, so the declared type would be a claim this
+  // function is not in a position to make. Typing it honestly is also what
+  // makes the non-string branch below reachable without a cast.
+  configuredOrigin: unknown,
   currentOrigin: string | undefined = window.location?.origin,
 ): boolean {
   if (configuredOrigin === undefined) return false
 
-  // The type says string, but the value reaches here from config.json, which
-  // nothing validates. A non-string must be off rather than a crash.
   if (typeof configuredOrigin !== 'string') {
     logApp.warn(
       `[installGate]: allowsLocalhostAppsOn must be a string, got ${typeof configuredOrigin}; localhost app installs stay disabled`,
@@ -126,11 +141,8 @@ export function isAllowedOrigin(
 
   if (allowedOrigins.includes(parsed.origin)) return true
 
-  const hostIsLocalhost =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
-  const urlIsLocalhost =
-    parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+  const hostIsLocalhost = isLoopbackHostname(window.location.hostname)
+  const urlIsLocalhost = isLoopbackHostname(parsed.hostname)
 
   return (
     (hostIsLocalhost || isLocalhostAppOptIn(allowsLocalhostAppsOn)) &&
@@ -158,7 +170,10 @@ export function isAllowedOrigin(
  */
 export function isCatalogEntryAllowed(
   url: string,
-  provenance: AppSource,
+  // Optional, and absent means untrusted. The store writes a provenance for
+  // every entry, but it is persisted and restored, and a partial restore must
+  // not be readable as "came from the operator's own manifest".
+  provenance: AppSource | undefined,
   manifestIsUserSet: boolean,
   allowedOrigins: string[],
   allowsLocalhostAppsOn?: string,
@@ -208,9 +223,7 @@ export function validateManifestUrl(
 ): string | undefined {
   try {
     const parsed = new URL(input, window.location.origin)
-    const isDev =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1'
+    const isDev = isLoopbackHostname(window.location.hostname)
     if (parsed.protocol === 'https:') return undefined
     if (isDev && parsed.protocol === 'http:') return undefined
     // A deployment that opted in to localhost apps must be able to name a
@@ -222,8 +235,7 @@ export function validateManifestUrl(
     // http: URL, which is tolerable when the page itself is on localhost; here
     // the page is a shared deployment, so the relaxation is confined to the
     // localhost addresses the opt-in is actually about.
-    const urlIsLocalhost =
-      parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+    const urlIsLocalhost = isLoopbackHostname(parsed.hostname)
     if (
       parsed.protocol === 'http:' &&
       urlIsLocalhost &&

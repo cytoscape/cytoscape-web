@@ -216,7 +216,7 @@ export const useAppManager = (): AppManagerCommands => {
     if (
       !isCatalogEntryAllowed(
         catalogEntry.url,
-        catalogSources[id] ?? 'manifest',
+        catalogSources[id],
         manifestSource !== undefined,
         appInstallAllowedOrigins,
         allowsLocalhostAppsOn,
@@ -501,7 +501,7 @@ export const useAppManager = (): AppManagerCommands => {
           .filter((id) => {
             const allowed = isCatalogEntryAllowed(
               catalog[id].url,
-              catalogSources[id] ?? 'manifest',
+              catalogSources[id],
               manifestSource !== undefined,
               appInstallAllowedOrigins,
               allowsLocalhostAppsOn,
