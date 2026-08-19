@@ -5,6 +5,7 @@ import { createElement, ReactNode } from 'react'
 import { AppConfigContext, defaultAppConfig } from '../../../AppConfigContext'
 import {
   isAllowedOrigin,
+  isCatalogEntryAllowed,
   isHostCompatible,
 } from '../../../features/AppManager/install/installGate'
 import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
@@ -40,6 +41,7 @@ vi.mock('../../../features/AppManager/install/migrateLegacyApps', () => ({
 
 vi.mock('../../../features/AppManager/install/installGate', () => ({
   isAllowedOrigin: vi.fn(() => true),
+  isCatalogEntryAllowed: vi.fn(() => true),
   isHostCompatible: vi.fn(() => true),
 }))
 
@@ -54,6 +56,7 @@ vi.mock('../../../features/AppManager/loader/loadRemoteApp', () => ({
 }))
 
 const mockIsAllowedOrigin = isAllowedOrigin as Mock
+const mockIsCatalogEntryAllowed = isCatalogEntryAllowed as Mock
 const mockIsHostCompatible = isHostCompatible as Mock
 const mockMigrate = migrateLegacyApps as Mock
 const mockLoadRemoteApp = loadRemoteApp as Mock
@@ -83,6 +86,7 @@ describe('useAppManager — install / uninstall', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsAllowedOrigin.mockReturnValue(true)
+    mockIsCatalogEntryAllowed.mockReturnValue(true)
     mockIsHostCompatible.mockReturnValue(true)
     appRegistry.clear()
     // Hydrated workspace so addInstalledApp persists and the readiness gate
@@ -115,6 +119,33 @@ describe('useAppManager — install / uninstall', () => {
       expect(installed()[0].status).toBe(AppStatus.Inactive)
       expect(useAppStore.getState().catalog['hello']).toBeDefined()
       expect(useAppStore.getState().catalogSources['hello']).toBe('appstore')
+    })
+
+    // isAllowedOrigin is mocked here, so what this asserts is the wiring: the
+    // hook must hand the gate this deployment's opt-in, or the gate decides
+    // with the field permanently undefined and dev1 never works.
+    it('passes the localhost opt-in through to the origin gate', async () => {
+      const optedIn = {
+        ...defaultAppConfig,
+        allowsLocalhostAppsOn: 'https://dev1.ndexbio.org',
+      }
+      const optedInWrapper = ({ children }: { children: ReactNode }) =>
+        createElement(AppConfigContext.Provider, { value: optedIn }, children)
+
+      const { result } = renderHook(() => useAppManager(), {
+        wrapper: optedInWrapper,
+      })
+      await waitFor(() => expect(mockMigrate).toHaveBeenCalled())
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+
+      expect(mockIsAllowedOrigin).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Array),
+        'https://dev1.ndexbio.org',
+      )
     })
 
     it('rejects a disallowed origin and persists nothing', async () => {
@@ -221,6 +252,85 @@ describe('useAppManager — install / uninstall', () => {
         await result.current.deactivateApp('hello')
       })
       expect(installed()[0].status).toBe(AppStatus.Inactive)
+    })
+  })
+  // G-6: the catalog was the one install path with no origin check, so a
+  // user-set Manifest Source could name any URL and it would be loaded.
+  describe('activateApp — catalog trust boundary', () => {
+    const seedCatalog = (source: 'manifest' | 'appstore' = 'manifest'): void => {
+      act(() => {
+        useAppStore
+          .getState()
+          .setCatalog([entry('remote')], { remote: source })
+      })
+    }
+
+    it('refuses to load an entry the catalog gate rejects, and says so', async () => {
+      mockIsCatalogEntryAllowed.mockReturnValue(false)
+      const { result } = await renderManager()
+      seedCatalog()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+      expect(useAppStore.getState().loadStates['remote']).toBe('failed')
+      const messages = useMessageStore.getState().messages
+      expect(messages[messages.length - 1].message).toContain(
+        'not from an allowed origin',
+      )
+    })
+
+    it('loads it when the gate allows it', async () => {
+      const { result } = await renderManager()
+      seedCatalog()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenCalled()
+    })
+
+    // The exemption is "the default manifest lists this entry", so the hook has
+    // to answer that question truthfully. Hardcoding true would restore the
+    // bypass while leaving the call in place.
+    it('does not vouch for an entry the loaded manifest does not list', async () => {
+      const { result } = await renderManager()
+      // Seeded straight into the catalog, so no manifest was loaded that
+      // contains it — the shape a workspace-restored or previously-activated
+      // app has after the Manifest Source is reset to default.
+      seedCatalog('manifest')
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      expect(mockIsCatalogEntryAllowed).toHaveBeenCalledWith(
+        expect.any(String),
+        false,
+        expect.any(Array),
+        undefined,
+      )
+    })
+
+    // Stored provenance is not the signal. An app first activated from a custom
+    // Manifest Source persists as source:'manifest' (reconcileInstalledStatus
+    // stamps that whichever manifest it came from), and composeCatalog hands an
+    // installed-only entry its stored source back. Once the source is reset to
+    // default, a provenance test would have trusted it.
+    it('does not vouch for a stored source:manifest entry either', async () => {
+      const { result } = await renderManager()
+      seedCatalog('manifest')
+      expect(useAppStore.getState().manifestSource).toBeUndefined()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      const [, fromDefaultManifest] = mockIsCatalogEntryAllowed.mock.calls[0]
+      expect(fromDefaultManifest).toBe(false)
     })
   })
 })

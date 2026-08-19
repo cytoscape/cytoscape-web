@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { logApp } from '../../debug'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -436,6 +437,68 @@ describe('useLoadWorkspace', () => {
       const dbApps = await getAllAppsFromDb()
       const legacy = dbApps.find((a) => a.id === 'legacy')
       expect(legacy?.status).toBe(AppStatus.Active) // activated via activeApps
+    })
+  })
+  describe('installedApps from localhost (opted-in deployment)', () => {
+    const DEV1 = 'https://dev1.ndexbio.org'
+    const LOCAL_APP = 'http://localhost:6000/remoteEntry.js'
+
+    // The module-level location stub carries only `reload`, so hostname and
+    // origin are undefined by default — which is already "not localhost, no
+    // opt-in", the production shape.
+    const serveFrom = (origin?: string): void => {
+      const loc = window.location as unknown as Record<string, unknown>
+      loc.origin = origin
+      loc.hostname = origin === undefined ? undefined : new URL(origin).hostname
+    }
+
+    afterEach(() => serveFrom(undefined))
+
+    it('keeps a localhost app Active when this deployment opted in', async () => {
+      serveFrom(DEV1)
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-local', [
+        createInstalledApp('devapp', AppStatus.Active, LOCAL_APP),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED, DEV1)
+
+      const saved = await getWorkspaceFromDb('ws-local')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Active)
+    })
+
+    // Workspaces travel between hosts through NDEx, so this is not a corner
+    // case: a developer's saved workspace opened anywhere else must degrade,
+    // and must say why.
+    it('imports it inactive on a deployment that did not opt in, naming the reason', async () => {
+      serveFrom('https://web.cytoscape.org')
+      const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => undefined)
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-local', [
+        createInstalledApp('devapp', AppStatus.Active, LOCAL_APP),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED)
+
+      const saved = await getWorkspaceFromDb('ws-local')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Inactive)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('origin is not allow-listed'),
+      )
+      warn.mockRestore()
+    })
+
+    it('does nothing when the committed dev1 value reaches another deployment', async () => {
+      serveFrom('https://web.cytoscape.org')
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-local', [
+        createInstalledApp('devapp', AppStatus.Active, LOCAL_APP),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED, DEV1)
+
+      const saved = await getWorkspaceFromDb('ws-local')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Inactive)
     })
   })
 })

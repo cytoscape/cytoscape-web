@@ -43,6 +43,7 @@ const reportFailure = (url: string, reason: string, error?: unknown): void => {
 const resolveInstallUrl = async (
   url: string,
   appInstallAllowedOrigins: string[],
+  allowsLocalhostAppsOn?: string,
 ): Promise<PendingAppInstall | undefined> => {
   let payload: unknown
   try {
@@ -95,7 +96,13 @@ const resolveInstallUrl = async (
   // replacement. Checked here rather than only inside installApp so a rejected
   // app never reaches the dialog and the user is not asked about an install that
   // cannot happen. Service apps have no allow-list: the dialog is their gate.
-  if (!isAllowedOrigin(classified.entry.url, appInstallAllowedOrigins)) {
+  if (
+    !isAllowedOrigin(
+      classified.entry.url,
+      appInstallAllowedOrigins,
+      allowsLocalhostAppsOn,
+    )
+  ) {
     reportFailure(url, 'its URL is not from an allowed origin')
     return undefined
   }
@@ -125,7 +132,11 @@ export const runInstallIntents = async (
     requested.map(async (url) =>
       url.trim() === ''
         ? undefined
-        : resolveInstallUrl(url.trim(), ctx.appInstallAllowedOrigins),
+        : resolveInstallUrl(
+            url.trim(),
+            ctx.appInstallAllowedOrigins,
+            ctx.allowsLocalhostAppsOn,
+          ),
     ),
   )
 

@@ -33,6 +33,16 @@ export interface AppConfig {
   // Origins from which external apps may be installed (App Store CDN, etc.).
   // localhost origins are additionally allowed when the host itself runs on localhost.
   appInstallAllowedOrigins: string[]
+  /**
+   * Origin of the deployment that may install apps served from localhost, for
+   * app developers running a dev server against a shared host.
+   *
+   * Names the origin it applies to rather than being a boolean, and is honoured
+   * only when it matches the origin actually being served — see
+   * `isLocalhostAppOptIn`. Absent (the default) means off, so a deployment that
+   * says nothing behaves as if this field did not exist.
+   */
+  allowsLocalhostAppsOn?: string
 }
 
 export const defaultAppConfig: AppConfig = {
