@@ -43,8 +43,14 @@ const createRecordingContext = (): any => {
  * `cyCanvas()` appends a fresh canvas every call (as the real extension does),
  * and `removeAllListeners()` drops every handler (as `renderNetwork` does).
  */
+const CONTAINER_WIDTH = 400
+const CONTAINER_HEIGHT = 300
+
 const createFakeCy = (): any => {
   const container = document.createElement('div')
+  // jsdom does no layout, so the offsets a real container reports are stubbed.
+  Object.defineProperty(container, 'offsetWidth', { value: CONTAINER_WIDTH })
+  Object.defineProperty(container, 'offsetHeight', { value: CONTAINER_HEIGHT })
   document.body.appendChild(container)
   let handlers: Array<{ event: string; handler: (...a: any[]) => void }> = []
 
@@ -155,6 +161,25 @@ describe('createAnnotationLayers', () => {
     const before = paintedShapes(cy)
     cy.trigger('render')
     expect(paintedShapes(cy)).toBe(before)
+  })
+
+  it('sizes the canvases to the container on paint', () => {
+    const layers = createAnnotationLayers(cy)
+    const pixelRatio = window.devicePixelRatio || 1
+
+    // The extension sized them at creation; a container that grows afterwards
+    // without a Cytoscape `resize` event must still be picked up.
+    cy.canvases().forEach((canvas: HTMLCanvasElement) => {
+      canvas.width = 0
+      canvas.height = 0
+    })
+
+    layers.redraw()
+
+    cy.canvases().forEach((canvas: HTMLCanvasElement) => {
+      expect(canvas.width).toBe(CONTAINER_WIDTH * pixelRatio)
+      expect(canvas.height).toBe(CONTAINER_HEIGHT * pixelRatio)
+    })
   })
 
   it('removes its canvases and handlers on dispose', () => {

@@ -839,7 +839,34 @@ export const createAnnotationLayers = (cytoscapeInstance) => {
   let annotationElements = []
   let backgroundColor
 
+  // Match the canvases to the container. The extension does this on `resize`
+  // and loses the handler to `removeAllListeners`, and Cytoscape does not emit
+  // `resize` for every layout change that moves the container, so this runs on
+  // every paint instead. Assigning `width` clears a canvas, hence the guard.
+  const syncSize = () => {
+    const container = cytoscapeInstance.container()
+    if (container === null || container === undefined) {
+      return
+    }
+    const pixelRatio = window.devicePixelRatio || 1
+    const width = container.offsetWidth
+    const height = container.offsetHeight
+    canvases.forEach((canvas) => {
+      if (
+        canvas.width === width * pixelRatio &&
+        canvas.height === height * pixelRatio
+      ) {
+        return
+      }
+      canvas.width = width * pixelRatio
+      canvas.height = height * pixelRatio
+      canvas.style.width = width + 'px'
+      canvas.style.height = height + 'px'
+    })
+  }
+
   const paint = () => {
+    syncSize()
     if (backgroundColor === undefined) {
       backgroundCtx.clearRect(
         0,
@@ -859,37 +886,15 @@ export const createAnnotationLayers = (cytoscapeInstance) => {
     painter.paintAnnotations(layers, annotationElements)
   }
 
-  // The extension sizes its canvas to the container on `resize` and loses that
-  // handler to `removeAllListeners`. Re-implement it so the annotation canvases
-  // keep tracking the container across renders.
-  const resize = () => {
-    const container = cytoscapeInstance.container()
-    if (container === null || container === undefined) {
-      return
-    }
-    const width = container.offsetWidth
-    const height = container.offsetHeight
-    const pixelRatio = window.devicePixelRatio || 1
-    canvases.forEach((canvas) => {
-      canvas.width = width * pixelRatio
-      canvas.height = height * pixelRatio
-      canvas.style.width = width + 'px'
-      canvas.style.height = height + 'px'
-    })
-    paint()
-  }
-
   const off = () => {
-    cytoscapeInstance.off('render cyCanvas.resize', paint)
-    cytoscapeInstance.off('resize', resize)
+    cytoscapeInstance.off('render cyCanvas.resize resize', paint)
   }
 
   return {
     /** (Re-)register the redraw handlers. Idempotent. */
     attach() {
       off()
-      cytoscapeInstance.on('render cyCanvas.resize', paint)
-      cytoscapeInstance.on('resize', resize)
+      cytoscapeInstance.on('render cyCanvas.resize resize', paint)
     },
 
     /** Replace the annotations drawn from the next paint on. */
