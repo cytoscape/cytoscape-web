@@ -36,6 +36,7 @@ import { AppListPanel } from './AppListPanel'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
 import {
   isAllowedOrigin,
+  validateManifestUrl,
   isHostCompatible,
   parseSingleEntryManifest,
 } from './install/installGate'
@@ -47,24 +48,6 @@ interface AppSettingsDialogProps {
   setOpenDialog: (open: boolean) => void
 }
 
-/**
- * Validate a custom manifest URL.
- * In production, only https: is allowed. In dev, http: is also permitted.
- */
-function validateManifestUrl(input: string): string | undefined {
-  try {
-    const parsed = new URL(input, window.location.origin)
-    const isDev =
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1'
-    if (parsed.protocol === 'https:') return undefined
-    if (isDev && parsed.protocol === 'http:') return undefined
-    return 'URL must use HTTPS protocol'
-  } catch {
-    return 'Invalid URL format'
-  }
-}
-
 export const AppSettingsDialog = ({
   openDialog,
   setOpenDialog,
@@ -73,7 +56,8 @@ export const AppSettingsDialog = ({
   const { setManifestSource, refreshCatalog, installApp } =
     useAppManagerCommands()
   const currentSource = useAppStore((state) => state.manifestSource)
-  const { appInstallAllowedOrigins } = useContext(AppConfigContext)
+  const { appInstallAllowedOrigins, allowsLocalhostAppsOn } =
+    useContext(AppConfigContext)
 
   const [tabIndex, setTabIndex] = useState(0)
   const [urlInput, setUrlInput] = useState('')
@@ -109,7 +93,13 @@ export const AppSettingsDialog = ({
         setInstallError('No valid app entry found in the manifest')
         return
       }
-      if (!isAllowedOrigin(entry.url, appInstallAllowedOrigins)) {
+      if (
+        !isAllowedOrigin(
+          entry.url,
+          appInstallAllowedOrigins,
+          allowsLocalhostAppsOn,
+        )
+      ) {
         setInstallError('The app URL is not from an allowed origin')
         return
       }
@@ -132,7 +122,7 @@ export const AppSettingsDialog = ({
   const handleSetCustomUrl = (): void => {
     if (!EXTERNAL_APPS_ENABLED) return
 
-    const error = validateManifestUrl(urlInput)
+    const error = validateManifestUrl(urlInput, allowsLocalhostAppsOn)
     if (error !== undefined) {
       setUrlError(error)
       return

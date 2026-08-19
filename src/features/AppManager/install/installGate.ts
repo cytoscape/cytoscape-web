@@ -97,14 +97,24 @@ export function isLocalhostAppOptIn(
 /**
  * True if `url`'s origin is allowed for app install.
  *
- * Allowed when the origin is in `allowedOrigins`, or — when the host itself
- * runs on localhost — when the URL is a localhost origin (dev convenience,
- * same precedent as `validateManifestUrl` in AppSettingsDialog). Invalid URLs
- * are rejected.
+ * Allowed when the origin is in `allowedOrigins`, or when the URL is a
+ * localhost origin and localhost apps are permitted here — which they are when
+ * the host itself runs on localhost, or when this deployment opted in through
+ * `allowsLocalhostAppsOn` (see `isLocalhostAppOptIn`). Invalid URLs are
+ * rejected.
+ *
+ * The opt-in cannot be expressed as an allow-list entry: `parsed.origin`
+ * carries the port, the match is exact, and a dev server's port varies per
+ * developer and per app, so allow-listing "localhost" would mean allow-listing
+ * one port.
+ *
+ * `allowsLocalhostAppsOn` is optional and omitting it means off, so a caller
+ * that has not been updated fails closed rather than open.
  */
 export function isAllowedOrigin(
   url: string,
   allowedOrigins: string[],
+  allowsLocalhostAppsOn?: string,
 ): boolean {
   let parsed: URL
   try {
@@ -121,7 +131,10 @@ export function isAllowedOrigin(
   const urlIsLocalhost =
     parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
 
-  return hostIsLocalhost && urlIsLocalhost
+  return (
+    (hostIsLocalhost || isLocalhostAppOptIn(allowsLocalhostAppsOn)) &&
+    urlIsLocalhost
+  )
 }
 
 /**
@@ -145,4 +158,51 @@ export function isHostCompatible(
   }
   if (hostVersion === undefined || valid(hostVersion) === null) return true
   return satisfies(hostVersion, range)
+}
+
+/**
+ * Validate a custom manifest URL, returning an error message or undefined.
+ *
+ * Lives here rather than in AppSettingsDialog because it is a trust-boundary
+ * check like its neighbours, and because as a module-private function in a
+ * component file it could not be tested directly.
+ *
+ * Only https: in general. http: is additionally accepted when the page itself
+ * is on localhost (long-standing dev convenience), and — narrowly — when this
+ * deployment opted in to localhost apps and the URL is itself a localhost
+ * address.
+ */
+export function validateManifestUrl(
+  input: string,
+  allowsLocalhostAppsOn?: string,
+): string | undefined {
+  try {
+    const parsed = new URL(input, window.location.origin)
+    const isDev =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    if (parsed.protocol === 'https:') return undefined
+    if (isDev && parsed.protocol === 'http:') return undefined
+    // A deployment that opted in to localhost apps must be able to name a
+    // localhost manifest, or every other part of that flow is unreachable: this
+    // is a protocol check, and on a public origin `isDev` is false, so a
+    // developer could not even type their dev server's URL.
+    //
+    // Narrower than the `isDev` case above deliberately. That one allows any
+    // http: URL, which is tolerable when the page itself is on localhost; here
+    // the page is a shared deployment, so the relaxation is confined to the
+    // localhost addresses the opt-in is actually about.
+    const urlIsLocalhost =
+      parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+    if (
+      parsed.protocol === 'http:' &&
+      urlIsLocalhost &&
+      isLocalhostAppOptIn(allowsLocalhostAppsOn)
+    ) {
+      return undefined
+    }
+    return 'URL must use HTTPS protocol'
+  } catch {
+    return 'Invalid URL format'
+  }
 }

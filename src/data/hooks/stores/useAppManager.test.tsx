@@ -117,6 +117,33 @@ describe('useAppManager — install / uninstall', () => {
       expect(useAppStore.getState().catalogSources['hello']).toBe('appstore')
     })
 
+    // isAllowedOrigin is mocked here, so what this asserts is the wiring: the
+    // hook must hand the gate this deployment's opt-in, or the gate decides
+    // with the field permanently undefined and dev1 never works.
+    it('passes the localhost opt-in through to the origin gate', async () => {
+      const optedIn = {
+        ...defaultAppConfig,
+        allowsLocalhostAppsOn: 'https://dev1.ndexbio.org',
+      }
+      const optedInWrapper = ({ children }: { children: ReactNode }) =>
+        createElement(AppConfigContext.Provider, { value: optedIn }, children)
+
+      const { result } = renderHook(() => useAppManager(), {
+        wrapper: optedInWrapper,
+      })
+      await waitFor(() => expect(mockMigrate).toHaveBeenCalled())
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+
+      expect(mockIsAllowedOrigin).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Array),
+        'https://dev1.ndexbio.org',
+      )
+    })
+
     it('rejects a disallowed origin and persists nothing', async () => {
       mockIsAllowedOrigin.mockReturnValue(false)
       const { result } = await renderManager()

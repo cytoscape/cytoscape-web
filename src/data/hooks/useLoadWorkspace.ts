@@ -73,6 +73,7 @@ export const useLoadWorkspace = (
     currentApps: Record<string, CyApp>,
     currentServiceApps: Record<string, ServiceApp>,
     allowedOrigins: string[] = [],
+    allowsLocalhostAppsOn?: string,
   ): Promise<void> => {
     try {
       // Step 1: Clear the database
@@ -130,7 +131,11 @@ export const useLoadWorkspace = (
             continue
           }
           const entry = validated[0]
-          const allowed = isAllowedOrigin(entry.url, allowedOrigins)
+          const allowed = isAllowedOrigin(
+            entry.url,
+            allowedOrigins,
+            allowsLocalhostAppsOn,
+          )
           const compatible = isHostCompatible(entry.compatibleHostVersions)
           const keepActive =
             allowed && compatible && app.status === AppStatus.Active

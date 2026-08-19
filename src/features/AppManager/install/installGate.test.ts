@@ -9,6 +9,7 @@ import {
   isHostCompatible,
   isLocalhostAppOptIn,
   parseSingleEntryManifest,
+  validateManifestUrl,
 } from './installGate'
 
 const validEntry = {
@@ -227,6 +228,135 @@ describe('installGate', () => {
 
     it('returns true when the host version is unknown or invalid', () => {
       expect(isHostCompatible('>=2.0.0', 'not-a-version')).toBe(true)
+    })
+  })
+})
+
+describe('localhost apps on an opted-in deployment', () => {
+  const DEV1 = 'https://dev1.ndexbio.org'
+  const allowed = ['https://apps.cytoscape.org']
+  const originalLocation = window.location
+
+  const serveFrom = (origin: string): void => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { origin, hostname: new URL(origin).hostname },
+    })
+  }
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: originalLocation,
+    })
+  })
+
+  describe('isAllowedOrigin', () => {
+    it('allows a localhost app when the served origin is the opted-in one', () => {
+      serveFrom(DEV1)
+      expect(
+        isAllowedOrigin('http://localhost:6000/remoteEntry.js', allowed, DEV1),
+      ).toBe(true)
+    })
+
+    it('allows 127.0.0.1 too', () => {
+      serveFrom(DEV1)
+      expect(
+        isAllowedOrigin('http://127.0.0.1:6000/remoteEntry.js', allowed, DEV1),
+      ).toBe(true)
+    })
+
+    // The regression that matters: this is production's behaviour, and it must
+    // not change because the field exists.
+    it('refuses a localhost app when no opt-in is configured', () => {
+      serveFrom('https://web.cytoscape.org')
+      expect(
+        isAllowedOrigin('http://localhost:6000/remoteEntry.js', allowed),
+      ).toBe(false)
+    })
+
+    // D-2 itself: the committed dev1 value carried into another deployment.
+    it('refuses when the opt-in names a different deployment', () => {
+      serveFrom('https://web.cytoscape.org')
+      expect(
+        isAllowedOrigin('http://localhost:6000/remoteEntry.js', allowed, DEV1),
+      ).toBe(false)
+    })
+
+    it('does not widen anything beyond localhost', () => {
+      serveFrom(DEV1)
+      expect(
+        isAllowedOrigin('https://evil.example.com/remoteEntry.js', allowed, DEV1),
+      ).toBe(false)
+    })
+
+    it('still allows an allow-listed origin', () => {
+      serveFrom(DEV1)
+      expect(
+        isAllowedOrigin(
+          'https://apps.cytoscape.org/web/hello/1.0.0/remoteEntry.js',
+          allowed,
+          DEV1,
+        ),
+      ).toBe(true)
+    })
+
+    it('refuses a hostname that merely contains "localhost"', () => {
+      serveFrom(DEV1)
+      expect(
+        isAllowedOrigin(
+          'http://localhost.evil.example.com/remoteEntry.js',
+          allowed,
+          DEV1,
+        ),
+      ).toBe(false)
+    })
+  })
+
+  describe('validateManifestUrl', () => {
+    it('accepts https anywhere', () => {
+      serveFrom(DEV1)
+      expect(validateManifestUrl('https://example.com/apps.json')).toBeUndefined()
+    })
+
+    it('accepts http from a localhost page, as before', () => {
+      serveFrom('http://localhost:5500')
+      expect(
+        validateManifestUrl('http://localhost:6000/cyweb-app.json'),
+      ).toBeUndefined()
+    })
+
+    // Without this, every other part of the flow is unreachable from dev1: the
+    // developer cannot even type their dev server's manifest URL.
+    it('accepts an http localhost manifest when the deployment opted in', () => {
+      serveFrom(DEV1)
+      expect(
+        validateManifestUrl('http://localhost:6000/cyweb-app.json', DEV1),
+      ).toBeUndefined()
+    })
+
+    it('rejects an http localhost manifest without the opt-in', () => {
+      serveFrom(DEV1)
+      expect(validateManifestUrl('http://localhost:6000/cyweb-app.json')).toBe(
+        'URL must use HTTPS protocol',
+      )
+    })
+
+    // The opt-in is about localhost, so it must not turn into "http anywhere".
+    it('still rejects a non-localhost http manifest when opted in', () => {
+      serveFrom(DEV1)
+      expect(
+        validateManifestUrl('http://evil.example.com/apps.json', DEV1),
+      ).toBe('URL must use HTTPS protocol')
+    })
+
+    it('reports an unparsable URL', () => {
+      serveFrom(DEV1)
+      expect(validateManifestUrl('http://[::1', DEV1)).toBe(
+        'Invalid URL format',
+      )
     })
   })
 })

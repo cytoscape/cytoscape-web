@@ -39,7 +39,8 @@ const AppShell = (): ReactElement => {
   const navigate = useNavigate()
   const [search] = useSearchParams()
   const loadNetworkSummaries = useLoadNetworkSummaries()
-  const { appInstallAllowedOrigins } = useContext(AppConfigContext)
+  const { appInstallAllowedOrigins, allowsLocalhostAppsOn } =
+    useContext(AppConfigContext)
 
   const addMessage = useMessageStore((state) => state.addMessage)
   const addService = useAppStore((state) => state.addService)
@@ -73,6 +74,7 @@ const AppShell = (): ReactElement => {
       navigate,
       loadNetworkSummaries,
       appInstallAllowedOrigins,
+      allowsLocalhostAppsOn,
     })
       .then(({ pendingAppInstalls: pending }) => {
         if (pending.length > 0) {

@@ -35,6 +35,13 @@ export interface AppShellBootContext {
    * confirmation dialog, and a plain async step cannot read React context.
    */
   appInstallAllowedOrigins: string[]
+  /**
+   * The origin permitted to install apps served from localhost, from
+   * AppConfigContext. Passed for the same reason as the allow-list above: this
+   * step runs outside React and rejects a disallowed origin before the
+   * confirmation dialog exists.
+   */
+  allowsLocalhostAppsOn?: string
 }
 
 /**

@@ -117,7 +117,8 @@ export const useAppManager = (): AppManagerCommands => {
   const setStatus = useAppStore((state) => state.setStatus)
   const removeApp = useAppStore((state) => state.remove)
   const addMessage = useMessageStore((state) => state.addMessage)
-  const { appInstallAllowedOrigins } = useContext(AppConfigContext)
+  const { appInstallAllowedOrigins, allowsLocalhostAppsOn } =
+    useContext(AppConfigContext)
 
   /**
    * Recompose the catalog (manifest ∪ workspace.installedApps) and write it
@@ -293,7 +294,9 @@ export const useAppManager = (): AppManagerCommands => {
     opts?: { activate?: boolean },
   ): Promise<void> => {
     // 1. Trust boundary (§9)
-    if (!isAllowedOrigin(entry.url, appInstallAllowedOrigins)) {
+    if (
+      !isAllowedOrigin(entry.url, appInstallAllowedOrigins, allowsLocalhostAppsOn)
+    ) {
       addMessage({
         message: `Cannot install "${entry.name ?? entry.id}": its URL is not from an allowed origin.`,
         duration: 5000,
