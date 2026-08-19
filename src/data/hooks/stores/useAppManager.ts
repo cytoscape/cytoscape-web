@@ -15,6 +15,7 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { logApp } from '../../../debug'
 import {
   isAllowedOrigin,
+  isCatalogEntryAllowed,
   isHostCompatible,
 } from '../../../features/AppManager/install/installGate'
 import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
@@ -194,10 +195,42 @@ export const useAppManager = (): AppManagerCommands => {
   // ── Command implementations ──────────────────────────────────────
 
   const activateApp = async (id: string): Promise<void> => {
-    const { catalog, loadStates, apps: currentApps } = useAppStore.getState()
+    const {
+      catalog,
+      catalogSources,
+      manifestSource,
+      loadStates,
+      apps: currentApps,
+    } = useAppStore.getState()
     const catalogEntry = catalog[id]
     if (catalogEntry === undefined) {
       logApp.warn(`[useAppManager]: activateApp: "${id}" not found in catalog`)
+      return
+    }
+
+    // The trust boundary the catalog path used to skip entirely (§9/G-6).
+    // Checked before the fast re-enable path too: a module already in memory
+    // was loaded under whatever configuration applied then, and re-mounting it
+    // under a configuration that now forbids it would keep the old decision
+    // alive for the life of the tab.
+    if (
+      !isCatalogEntryAllowed(
+        catalogEntry.url,
+        catalogSources[id] ?? 'manifest',
+        manifestSource !== undefined,
+        appInstallAllowedOrigins,
+        allowsLocalhostAppsOn,
+      )
+    ) {
+      addMessage({
+        message: `Cannot load "${catalogEntry.name ?? id}": its URL is not from an allowed origin.`,
+        duration: 5000,
+        severity: MessageSeverity.ERROR,
+      })
+      logApp.warn(
+        `[useAppManager]: activateApp: "${id}" blocked — ${catalogEntry.url} is not from an allowed origin`,
+      )
+      setLoadState(id, 'failed')
       return
     }
 
@@ -452,7 +485,12 @@ export const useAppManager = (): AppManagerCommands => {
         //    legacy global apps store.
         const installedAppList =
           useWorkspaceStore.getState().workspace.installedApps ?? []
-        const catalog = useAppStore.getState().catalog
+        const { catalog, catalogSources, manifestSource } =
+          useAppStore.getState()
+        // Same gate as activateApp, and needed separately: this path loads
+        // `catalog[id].url`, not the installed record's URL, so a user-set
+        // manifest declaring an existing app's id would otherwise decide where
+        // an already-trusted app is fetched from.
         const activeAppIds = installedAppList
           .filter(
             (a) =>
@@ -460,6 +498,22 @@ export const useAppManager = (): AppManagerCommands => {
               catalog[a.entry.id] !== undefined,
           )
           .map((a) => a.entry.id)
+          .filter((id) => {
+            const allowed = isCatalogEntryAllowed(
+              catalog[id].url,
+              catalogSources[id] ?? 'manifest',
+              manifestSource !== undefined,
+              appInstallAllowedOrigins,
+              allowsLocalhostAppsOn,
+            )
+            if (!allowed) {
+              setLoadState(id, 'failed')
+              logApp.warn(
+                `[useAppManager]: startup auto-load: "${id}" blocked — ${catalog[id].url} is not from an allowed origin`,
+              )
+            }
+            return allowed
+          })
 
         if (activeAppIds.length === 0) {
           logApp.info(

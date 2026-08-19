@@ -2,6 +2,7 @@ import { satisfies, valid, validRange } from 'semver'
 
 import { logApp } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppSource } from '../../../models/AppModel/InstalledApp'
 import { parseManifest } from '../manifest/parseManifest'
 
 /**
@@ -135,6 +136,35 @@ export function isAllowedOrigin(
     (hostIsLocalhost || isLocalhostAppOptIn(allowsLocalhostAppsOn)) &&
     urlIsLocalhost
   )
+}
+
+/**
+ * True if a catalog entry may be loaded as code.
+ *
+ * The catalog is the one install path that never had an origin check, which is
+ * how a user-set Manifest Source could load whatever it named. It cannot simply
+ * be handed to `isAllowedOrigin`, though: the deployment's own default catalog
+ * deliberately serves apps from origins that are not on the install allow-list.
+ * `src/assets/apps.json` ships every bundled app from `cytoscape.org` while
+ * `appInstallAllowedOrigins` names `apps.cytoscape.org`, so the naive fix would
+ * disable every app the product comes with.
+ *
+ * The distinction is **provenance, not origin**. Entries from the deployment's
+ * own default manifest are the operator's own list, as trusted as the
+ * deployment serving them. Everything else — a manifest the *user* pointed at,
+ * an App Store install, a restored snapshot — goes through the same gate as the
+ * install paths, so an organization's catalog works by being allow-listed
+ * rather than by being unchecked.
+ */
+export function isCatalogEntryAllowed(
+  url: string,
+  provenance: AppSource,
+  manifestIsUserSet: boolean,
+  allowedOrigins: string[],
+  allowsLocalhostAppsOn?: string,
+): boolean {
+  if (provenance === 'manifest' && !manifestIsUserSet) return true
+  return isAllowedOrigin(url, allowedOrigins, allowsLocalhostAppsOn)
 }
 
 /**

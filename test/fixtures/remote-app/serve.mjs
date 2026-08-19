@@ -39,6 +39,21 @@ const MANIFEST = JSON.stringify([
   },
 ])
 
+// A second manifest whose entry points at an origin the host must refuse: not
+// the allow-list, not localhost. The `.invalid` TLD can never resolve, so if the
+// gate ever stops working the test sees a request attempt rather than a
+// coincidental failure.
+const BLOCKED_MANIFEST = JSON.stringify([
+  {
+    id: 'blockedRemoteApp',
+    name: 'Blocked Remote App',
+    url: 'https://blocked.invalid/remoteEntry.js',
+    author: 'E2E Fixture',
+    description: 'Served from an origin outside the install allow-list.',
+    version: '1.0.0',
+  },
+])
+
 const CONTENT_TYPES = {
   '.js': 'text/javascript',
   '.mjs': 'text/javascript',
@@ -63,6 +78,12 @@ const server = createServer((req, res) => {
   if (url === '/manifest.json') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(MANIFEST)
+    return
+  }
+
+  if (url === '/manifest-blocked.json') {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(BLOCKED_MANIFEST)
     return
   }
 

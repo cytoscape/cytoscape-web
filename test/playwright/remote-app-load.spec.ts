@@ -16,6 +16,9 @@ import { expect, test } from './fixtures'
 // that never ran fails the load outright.
 
 const FIXTURE_MANIFEST_URL = 'http://localhost:4191/manifest.json'
+// Same fixture server, but its entry names an origin that is neither
+// allow-listed nor localhost — the case the catalog path used to load blindly.
+const BLOCKED_MANIFEST_URL = 'http://localhost:4191/manifest-blocked.json'
 
 // The host redirects `/` to `<base>/<workspaceId>/networks`, so the URL is an
 // independent source for the id the remote should have received.
@@ -117,5 +120,46 @@ test.describe('host loads a real federated remote', () => {
       'single-react-ok',
     )
     expect(hookErrors).toEqual([])
+  })
+  // G-6: activateApp reached loadRemoteApp with no origin check, so a manifest
+  // the *user* pointed at could name any URL and the host would fetch and
+  // execute it. The two tests above still pass because host and app are both on
+  // localhost; this one is the case that must now be refused.
+  test('refuses an app whose origin is neither allow-listed nor localhost', async ({
+    page,
+  }) => {
+    const attempted: string[] = []
+    page.on('request', (request) => {
+      if (request.url().includes('blocked.invalid')) {
+        attempted.push(request.url())
+      }
+    })
+
+    await page.goto('/')
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
+    await expect(
+      page.locator('[data-testid="app-settings-dialog"]'),
+    ).toBeVisible()
+
+    await page.getByText('Manifest Source').click()
+    await page.getByLabel('Custom manifest URL').fill(BLOCKED_MANIFEST_URL)
+    await page.getByRole('button', { name: 'Apply' }).click()
+
+    // The entry is catalogued — the refusal is about loading it as code, not
+    // about listing it, so the user can still see what the manifest offered.
+    const toggle = page.locator('[data-testid="app-toggle-blockedRemoteApp"]')
+    await expect(toggle).toBeVisible({ timeout: 15_000 })
+
+    await toggle.click()
+
+    await expect(
+      page.getByText(/not from an allowed origin/i).first(),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // The real assertion. A refusal that still fetched the bundle would have
+    // defeated the purpose, and an unresolvable host makes "it failed anyway"
+    // indistinguishable from "it was blocked" without this.
+    expect(attempted).toEqual([])
   })
 })

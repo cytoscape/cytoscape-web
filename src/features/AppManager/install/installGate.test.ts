@@ -8,6 +8,7 @@ import {
   isAllowedOrigin,
   isHostCompatible,
   isLocalhostAppOptIn,
+  isCatalogEntryAllowed,
   parseSingleEntryManifest,
   validateManifestUrl,
 } from './installGate'
@@ -359,4 +360,112 @@ describe('localhost apps on an opted-in deployment', () => {
       )
     })
   })
+})
+
+describe('isCatalogEntryAllowed', () => {
+  const ALLOWED = ['https://apps.cytoscape.org']
+  // What src/assets/apps.json actually ships: an origin deliberately absent
+  // from the install allow-list.
+  const BUNDLED = 'https://cytoscape.org/cytoscape-web-app-examples/hello/remoteEntry.js'
+  const originalLocation = window.location
+
+  const serveFrom = (origin: string): void => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: { origin, hostname: new URL(origin).hostname },
+    })
+  }
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: originalLocation,
+    })
+  })
+
+  // The regression this whole helper exists to avoid: sending the catalog
+  // through isAllowedOrigin would disable every app the product ships with.
+  it('trusts the deployment default catalog even off the allow-list', () => {
+    serveFrom('https://web.cytoscape.org')
+    expect(isCatalogEntryAllowed(BUNDLED, 'manifest', false, ALLOWED)).toBe(true)
+  })
+
+  // G-6: the bypass. Today this loads; it must not.
+  it('refuses a user-set manifest naming an unlisted origin', () => {
+    serveFrom('https://web.cytoscape.org')
+    expect(
+      isCatalogEntryAllowed(
+        'https://evil.example.com/remoteEntry.js',
+        'manifest',
+        true,
+        ALLOWED,
+      ),
+    ).toBe(false)
+  })
+
+  // H-2: an organization keeps working by being allow-listed, not unchecked.
+  it('allows a user-set manifest on an allow-listed origin', () => {
+    serveFrom('https://web.cytoscape.org')
+    expect(
+      isCatalogEntryAllowed(
+        'https://apps.cytoscape.org/web/hello/1.0.0/remoteEntry.js',
+        'manifest',
+        true,
+        ALLOWED,
+      ),
+    ).toBe(true)
+  })
+
+  // The acceptance constraint that names this project: closing the bypass must
+  // not close the route Phases 1-2 opened.
+  it('allows a localhost app from a user-set manifest when the deployment opted in', () => {
+    serveFrom('https://dev1.ndexbio.org')
+    expect(
+      isCatalogEntryAllowed(
+        'http://localhost:6000/remoteEntry.js',
+        'manifest',
+        true,
+        ALLOWED,
+        'https://dev1.ndexbio.org',
+      ),
+    ).toBe(true)
+  })
+
+  it('refuses that same entry on a deployment that did not opt in', () => {
+    serveFrom('https://web.cytoscape.org')
+    expect(
+      isCatalogEntryAllowed(
+        'http://localhost:6000/remoteEntry.js',
+        'manifest',
+        true,
+        ALLOWED,
+        'https://dev1.ndexbio.org',
+      ),
+    ).toBe(false)
+  })
+
+  it.each(['appstore', 'snapshot'] as const)(
+    'still checks a %s entry against the allow-list',
+    (provenance) => {
+      serveFrom('https://web.cytoscape.org')
+      expect(
+        isCatalogEntryAllowed(
+          'https://evil.example.com/remoteEntry.js',
+          provenance,
+          false,
+          ALLOWED,
+        ),
+      ).toBe(false)
+      expect(
+        isCatalogEntryAllowed(
+          'https://apps.cytoscape.org/web/x/1.0.0/remoteEntry.js',
+          provenance,
+          false,
+          ALLOWED,
+        ),
+      ).toBe(true)
+    },
+  )
 })
