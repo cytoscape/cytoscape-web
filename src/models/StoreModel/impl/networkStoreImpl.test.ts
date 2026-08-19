@@ -12,6 +12,7 @@ import {
   addNodeToNetwork,
   createDeleteEdgesEvent,
   createDeleteNodesEvent,
+  bumpTopologyVersion,
   deleteAll,
   deleteEdgesFromNetwork,
   deleteNetwork,
@@ -24,6 +25,7 @@ import {
 const createDefaultState = (): NetworkStoreState => {
   return {
     networks: new Map<IdType, Network>(),
+    topologyVersions: new Map<IdType, number>(),
   }
 }
 
@@ -245,6 +247,35 @@ describe('NetworkStoreImpl', () => {
       // Verify original is unchanged
       expect(original.networks).toBe(originalNetworks)
       expect(original.networks.size).toBe(0)
+    })
+  })
+
+  describe('bumpTopologyVersion', () => {
+    it('starts an unknown network at 1', () => {
+      const versions = new Map<IdType, number>()
+
+      bumpTopologyVersion(versions, 'net1')
+
+      expect(versions.get('net1')).toBe(1)
+    })
+
+    it('increments an existing version', () => {
+      const versions = new Map<IdType, number>([['net1', 3]])
+
+      bumpTopologyVersion(versions, 'net1')
+
+      expect(versions.get('net1')).toBe(4)
+    })
+
+    it('leaves other networks alone', () => {
+      const versions = new Map<IdType, number>([
+        ['net1', 1],
+        ['net2', 1],
+      ])
+
+      bumpTopologyVersion(versions, 'net1')
+
+      expect(versions.get('net2')).toBe(1)
     })
   })
 })

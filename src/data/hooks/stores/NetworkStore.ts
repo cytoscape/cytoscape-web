@@ -51,7 +51,8 @@ export const useNetworkStore = create(
   subscribeWithSelector(
     immer<NetworkStore>((set, get) => ({
       networks: new Map<IdType, Network>(),
-      lastModified: undefined,
+      lastUpdated: undefined,
+      topologyVersions: new Map<IdType, number>(),
 
       setNetwork: (networkId: IdType, network: Network) => {
         set((state) => {
@@ -61,6 +62,7 @@ export const useNetworkStore = create(
             network,
           )
           state.networks = newState.networks
+          NetworkStoreImpl.bumpTopologyVersion(state.topologyVersions, networkId)
           return state
         })
         persistNetwork(networkId)
@@ -75,6 +77,10 @@ export const useNetworkStore = create(
               nodeId,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
           }
           return state
         })
@@ -89,6 +95,10 @@ export const useNetworkStore = create(
               nodeIds,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
           }
           return state
         })
@@ -109,6 +119,10 @@ export const useNetworkStore = create(
               edges,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
           }
           return state
         })
@@ -138,6 +152,10 @@ export const useNetworkStore = create(
               deletedElements,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
             state.lastUpdated = event
             deletedConnectingEdges = deletedEdgeObjects
           } else {
@@ -174,6 +192,10 @@ export const useNetworkStore = create(
               deletedElements,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
             state.lastUpdated = event
           }
           return state
@@ -197,6 +219,7 @@ export const useNetworkStore = create(
           newTargetId,
         )
         set((state) => {
+          NetworkStoreImpl.bumpTopologyVersion(state.topologyVersions, networkId)
           state.lastUpdated = {
             networkId,
             type: UpdateEventType.ADD,
@@ -219,6 +242,10 @@ export const useNetworkStore = create(
               t,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
           }
           return state
         })
@@ -233,6 +260,10 @@ export const useNetworkStore = create(
               edges,
             )
             state.networks.set(networkId, updatedNetwork)
+            NetworkStoreImpl.bumpTopologyVersion(
+              state.topologyVersions,
+              networkId,
+            )
           }
           return state
         })
@@ -256,6 +287,12 @@ export const useNetworkStore = create(
 
           const newState = NetworkStoreImpl.add(state, network)
           state.networks = newState.networks
+          // Registers the network with the version map so topology
+          // subscribers can snapshot it before the first mutation
+          NetworkStoreImpl.bumpTopologyVersion(
+            state.topologyVersions,
+            network.id,
+          )
           if (!isHydrating()) {
             void putNetworkToDb(network)
               .then(() => {
@@ -271,6 +308,7 @@ export const useNetworkStore = create(
         set((state) => {
           const newState = NetworkStoreImpl.deleteNetwork(state, networkId)
           state.networks = newState.networks
+          state.topologyVersions.delete(networkId)
           // A stale pending put must never resurrect the deleted row
           cancelWrite(`NetworkStore:${networkId}`)
           if (!isHydrating()) {
@@ -302,6 +340,7 @@ export const useNetworkStore = create(
               })
           }
           state.networks = newState.networks
+          state.topologyVersions = new Map<IdType, number>()
           return state
         }),
     })),
