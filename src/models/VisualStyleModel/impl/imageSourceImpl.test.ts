@@ -272,6 +272,26 @@ describe('wrapSvgDataUriForSize', () => {
       expect(wrapped.match(/\swidth=/g)).toHaveLength(2) // wrapper + source root
     })
 
+    it('keeps a quoted ">" inside a root attribute intact', () => {
+      // `>` is legal inside a quoted attribute value. A matcher that stops at
+      // the first `>` ends the opening tag mid-value, so the wrapper's own
+      // width/height land inside the label and the source dimensions survive
+      // beside them — two width attributes, invalid XML, no image at all.
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent(
+          '<svg aria-label="a > b" width="200" height="50"><rect/></svg>',
+        )
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 60, 30))
+
+      expect(wrapped).toContain('aria-label="a > b"')
+      expect(wrapped).toContain('viewBox="0 0 200 50"')
+      expect(wrapped).not.toContain('width="200"')
+      expect(wrapped).not.toContain('height="50"')
+      expect(wrapped.match(/\swidth=/g)).toHaveLength(2) // wrapper + source root
+    })
+
     it('keeps an existing viewBox rather than deriving one', () => {
       const url =
         'data:image/svg+xml,' +

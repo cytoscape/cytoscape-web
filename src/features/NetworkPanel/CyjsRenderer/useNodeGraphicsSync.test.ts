@@ -622,6 +622,47 @@ describe('useNodeGraphicsSync', () => {
 
       expect(Object.keys(imagesFor('net1'))).toEqual(['n1'])
     })
+
+    it('finishes the nodes left over when the table vanishes mid-flush', async () => {
+      // A peer-tab replace clears the table before setting the new one. A chunk
+      // landing in that gap must put its unprocessed nodes back, or they keep
+      // stale images: the replacement carries the same rows, so the table-diff
+      // effect finds nothing changed and never re-queues them.
+      const rows: Array<[string, Record<string, ValueType>]> = Array.from(
+        { length: 500 },
+        (_, i) => [`n${i}`, { score: i }],
+      )
+      await setNodeTable('net1', tableOf(rows))
+      registerHook(() => 'https://example.com/a.png')
+
+      renderHook(() => useNodeGraphicsSync('net1'))
+      // Coalescing timer plus one frame: 200 of 500 nodes done, the rest queued.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COALESCE_MS + 1)
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20)
+      })
+      expect(Object.keys(imagesFor('net1'))).toHaveLength(200)
+
+      const { useTableStore } = await import(
+        '../../../data/hooks/stores/TableStore'
+      )
+      await act(async () => {
+        ;(useTableStore as any).setState({ tables: {} })
+      })
+      // The frame that finds no table.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20)
+      })
+      // Same rows, new object — the diff sees no change and queues nothing.
+      await act(async () => {
+        await setNodeTable('net1', tableOf(rows))
+      })
+      await drain(10)
+
+      expect(Object.keys(imagesFor('net1'))).toHaveLength(500)
+    })
   })
 
   describe('cross-tab hydration', () => {

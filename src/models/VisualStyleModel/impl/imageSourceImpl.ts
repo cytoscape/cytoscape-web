@@ -165,7 +165,10 @@ const fitSourceToViewport = (
   fit: ImageFit,
 ): string =>
   rawSvg.replace(
-    /<svg\b([^>]*?)(\/?)>/,
+    // Quote-aware: a `>` inside a quoted attribute value (`aria-label="a > b"`)
+    // is legal SVG, and `[^>]*` would end the opening tag there — the wrapper
+    // would then inject its attributes into the middle of the value.
+    /<svg\b((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/,
     (whole: string, attrs: string, selfClose: string) => {
       const width = readLength(readRootAttr(attrs, 'width'))
       const height = readLength(readRootAttr(attrs, 'height'))

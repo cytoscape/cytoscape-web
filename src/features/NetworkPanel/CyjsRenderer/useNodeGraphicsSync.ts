@@ -209,7 +209,16 @@ export const useNodeGraphicsSync = (
       // mid-flush was already cleared by the table-diff effect, and writing it
       // back from a stale snapshot would resurrect its image.
       const currentTable = nodeTableRef.current
-      if (currentTable === undefined) return
+      if (currentTable === undefined) {
+        // The table is momentarily absent, not gone: a peer-tab replace clears
+        // it before setting the new one. Returning alone would drop every node
+        // this flush had not reached yet, so put them back and retry.
+        for (let i = index; i < targets.length; i++) {
+          pendingRef.current.add(targets[i])
+        }
+        schedule()
+        return
+      }
 
       const chunkStart = index
       const chunkStartedAt = performance.now()
