@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { GridCellKind, Item } from '@glideapps/glide-data-grid'
 import { createTheme } from '@mui/material/styles'
 import { describe, expect, it } from 'vitest'

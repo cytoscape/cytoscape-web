@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { CompactSelection } from '@glideapps/glide-data-grid'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

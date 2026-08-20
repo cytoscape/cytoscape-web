@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, type MockedFunction, vi } from 'vitest'
 
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'

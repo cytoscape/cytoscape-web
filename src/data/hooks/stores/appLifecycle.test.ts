@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Tests for the pure CyApp mount/unmount helpers (extracted from
 // useAppManager specifically so they can be unit-tested — see the
 // module header in appLifecycle.ts).

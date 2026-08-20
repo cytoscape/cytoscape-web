@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
 import { LayoutState, setIsRunning, setLayoutOption, setPreferredLayout } from './layoutStoreImpl'

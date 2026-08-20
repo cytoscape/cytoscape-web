@@ -10,7 +10,12 @@ export default defineConfig(async () => {
 
   return mergeConfig(resolvedViteConfig, {
     test: {
+      // jsdom is the safe default; DOM-free test files opt into the much
+      // cheaper node environment with a `// @vitest-environment node` first
+      // line (jsdom setup costs ~1s per file, node is near-free).
       environment: 'jsdom',
+      // Worker threads spawn faster than the default child-process forks.
+      pool: 'threads',
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
       setupFiles: ['./vitest-setup.ts'],
       coverage: {

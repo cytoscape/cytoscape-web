@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 
 import { LayoutAlgorithm } from '../../../models'

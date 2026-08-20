@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import { hydrateFromCrossTabChange } from '@/data/sync/crossTabHydration'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'

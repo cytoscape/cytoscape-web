@@ -1,3 +1,4 @@
+// @vitest-environment node
 // src/app-api/core/undo.test.ts
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

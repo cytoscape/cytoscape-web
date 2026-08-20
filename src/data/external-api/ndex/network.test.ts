@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Cx2 } from '../../../models/CxModel/Cx2'

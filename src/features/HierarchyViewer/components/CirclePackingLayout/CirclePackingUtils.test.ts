@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type * as d3Hierarchy from 'd3-hierarchy'
 import { describe, expect, it } from 'vitest'
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi, beforeEach, type Mock } from 'vitest'
 import { deleteAppFromDb, getAllAppsFromDb } from '../../../data/db'
 import { AppStatus } from '../../../models/AppModel/AppStatus'

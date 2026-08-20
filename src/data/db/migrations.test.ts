@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { Dexie } from 'dexie'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 

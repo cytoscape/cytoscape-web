@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 import { describe, expect, it } from 'vitest'
 
