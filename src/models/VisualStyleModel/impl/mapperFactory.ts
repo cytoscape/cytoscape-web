@@ -21,6 +21,10 @@ import {
 // import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { normalizeEnumValue } from './enumValueNormalization'
+import {
+  describeImageSourceRejection,
+  normalizeImageSource,
+} from './imageSourceImpl'
 
 const enumTypes: Set<VisualPropertyValueTypeName> = new Set([
   VisualPropertyValueTypeName.NodeShape,
@@ -71,68 +75,49 @@ const customGraphicPassthroughFn = (
   pm: PassthroughMappingFunction,
   value: VisualPropertyValueType,
 ): VisualPropertyValueType => {
-  if (value == null || value === '') {
-    return pm.defaultValue
-  }
+  // Scheme policy and raw-<svg> promotion are shared with the renderer and the
+  // app render-hook API — see imageSourceImpl.ts.
+  const source = normalizeImageSource(value)
 
-  const str = String(value).trim()
+  switch (source.kind) {
+    // Image (raster or vector, class chosen by content so it round-trips to Desktop)
+    case 'url':
+      return makeImageGraphics(source.url)
 
-  // 1. Reject file: and blob: URLs
-  if (str.startsWith('blob:')) {
-    logUi.warn(
-      'Blob URLs are ephemeral and cannot be used for custom graphics:',
-      str.substring(0, 80),
-    )
-    return pm.defaultValue
-  }
-  if (str.startsWith('file:')) {
-    logUi.warn(
-      'Local file URLs are not supported for custom graphics:',
-      str.substring(0, 80),
-    )
-    return pm.defaultValue
-  }
-
-  // 2. Raw SVG detection → inline data URI
-  if (str.startsWith('<svg')) {
-    const dataUri = 'data:image/svg+xml,' + encodeURIComponent(str)
-    return makeImageGraphics(dataUri)
-  }
-
-  // 3. HTTP/HTTPS URL or data: URI → image (raster or vector, chosen by content)
-  if (
-    str.startsWith('http://') ||
-    str.startsWith('https://') ||
-    str.startsWith('data:')
-  ) {
-    return makeImageGraphics(str)
-  }
-
-  // 4. JSON chart object
-  if (str.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(str)
-      // Distinguish chart types by checking for chart-specific fields
-      if (
-        Array.isArray(parsed.cy_dataColumns) &&
-        Array.isArray(parsed.cy_colors)
-      ) {
-        const isRing = parsed.cy_holeSize !== undefined
-        return {
-          type: CustomGraphicsTypeType.Chart,
-          name: isRing
-            ? CustomGraphicsNameType.RingChart
-            : CustomGraphicsNameType.PieChart,
-          properties: parsed,
-        } as CustomGraphicsType
+    // JSON chart object
+    case 'json':
+      try {
+        const parsed = JSON.parse(source.raw)
+        // Distinguish chart types by checking for chart-specific fields
+        if (
+          Array.isArray(parsed.cy_dataColumns) &&
+          Array.isArray(parsed.cy_colors)
+        ) {
+          const isRing = parsed.cy_holeSize !== undefined
+          return {
+            type: CustomGraphicsTypeType.Chart,
+            name: isRing
+              ? CustomGraphicsNameType.RingChart
+              : CustomGraphicsNameType.PieChart,
+            properties: parsed,
+          } as CustomGraphicsType
+        }
+      } catch {
+        // Malformed JSON — fall through to default
       }
-    } catch {
-      // Malformed JSON — fall through to default
-    }
-  }
+      return pm.defaultValue
 
-  // 5. Unrecognized string — return default silently
-  return pm.defaultValue
+    default:
+      // 'empty' and 'unrecognized' are ordinary misses on a passthrough column,
+      // so stay silent. Bad schemes are worth a warning.
+      if (source.reason === 'blob' || source.reason === 'file') {
+        logUi.warn(
+          `${describeImageSourceRejection(source.reason)}:`,
+          source.raw.substring(0, 80),
+        )
+      }
+      return pm.defaultValue
+  }
 }
 
 /**

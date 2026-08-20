@@ -6,10 +6,11 @@ The app API (`src/app-api/`) is the sole public API for external apps loaded via
 Module Federation. It provides a stable contract independent of internal store and
 hook implementations.
 
-`window.CyWebApi` contains **10 domain namespaces**, including its anonymous
-Context Menu API. Plugin apps additionally receive per-app Context Menu and
-Resource Registration factories, the typed Event Bus (`useCyWebEvent`), and an
-App Lifecycle interface with declarative resource support.
+`window.CyWebApi` contains **11 domain namespaces**, including its anonymous
+Context Menu and Node Graphics APIs. Plugin apps additionally receive per-app
+Context Menu, Node Graphics, and Resource Registration factories, the typed Event
+Bus (`useCyWebEvent`), and an App Lifecycle interface with declarative resource
+support.
 
 ## Result Convention
 
@@ -1353,6 +1354,232 @@ export const MyApp: CyAppWithLifecycle = {
 
 ---
 
+## NodeGraphicsApi
+
+Register one function that Cytoscape Web calls with each node whose data changed.
+Return an image and the host draws it as that node's `background-image`.
+
+Access is via `AppContext.apis.nodeGraphics` (per-app factory, lifecycle-managed)
+or `window.CyWebApi.nodeGraphics` (anonymous singleton, non-React consumers only).
+There is no `cyweb/NodeGraphicsApi` Module Federation expose.
+
+> **Hook images are never exported to CX2.** They are renderer-only, applied as
+> Cytoscape.js element style bypasses. Vizmapper custom graphics
+> (`nodeImageChart1..9`) still export exactly as before. See
+> `docs/design/custom-graphics-image/node-graphics-render-hook.md`.
+
+```typescript
+// In mount() — per-app factory (recommended for plugin apps)
+mount({ apis }) {
+  apis.nodeGraphics.setRenderHook(({ nodeId, attributes }) => {
+    const pct = Number(attributes.confidence)
+    if (!Number.isFinite(pct)) return null   // leave this node to the Vizmapper
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+      <circle cx='50' cy='50' r='48' fill='none' stroke='#4caf50'
+              stroke-width='4' stroke-dasharray='${pct * 302} 302'/>
+    </svg>`
+  })
+}
+
+// Non-React consumers — anonymous singleton (no auto-cleanup)
+window.CyWebApi.nodeGraphics.setRenderHook((req) => '…')
+```
+
+### Types
+
+```typescript
+interface NodeGraphicsRequest {
+  networkId: IdType
+  nodeId: IdType
+  /** Shallow copy of the node's table row. Writes to it are ignored. */
+  attributes: Record<string, ValueType>
+  /** Current node size in model units, when the view model has it. */
+  width?: number
+  height?: number
+}
+
+interface NodeGraphicsImage {
+  /**
+   * An `http(s)://` URL, a `data:` URI, or raw `<svg>` markup.
+   * `blob:` and `file:` are rejected.
+   */
+  image: string
+  /**
+   * @default 'contain'
+   *
+   * Rasters use Cytoscape's `background-fit`. SVG sources are wrapped to the
+   * node box, so the fit is baked into the wrapper instead: `contain` → `meet`,
+   * `cover` → `slice`, `none` → natural size centred when the source declares
+   * one, `meet` otherwise.
+   */
+  fit?: 'contain' | 'cover' | 'none'
+  /** 0..1. @default 1 */
+  opacity?: number
+  /** @default 'null' — loads without CORS, but taints the canvas. */
+  crossOrigin?: 'anonymous' | 'use-credentials' | 'null'
+  /**
+   * 'inside' draws under pie/ring charts; 'over' draws above them.
+   * @default 'inside'
+   */
+  containment?: 'inside' | 'over'
+}
+
+/** A bare string is shorthand for `{ image }`. `null` means "no image". */
+type NodeGraphicsResult = string | NodeGraphicsImage | null | undefined
+
+/** Synchronous. Must not throw. */
+type NodeGraphicsRenderHook = (
+  request: NodeGraphicsRequest,
+) => NodeGraphicsResult
+```
+
+### Hook contract
+
+- **Synchronous.** For images needing async work (a fetch, an offscreen render),
+  compute and cache in your own code, then call `refresh()` so the hook can
+  return the cached value.
+- **Must not throw.** A throw yields no image for that node. After 20 throws or
+  slow calls (>16 ms) the hook is disabled for the rest of the session.
+- **Return `null` to decline a node.** It falls back to its Vizmapper custom
+  graphic, if any. With several apps registered, hooks run in registration order
+  and the first non-`null` result wins.
+- **Prefer stable URLs over freshly generated data URIs.** Cytoscape retains one
+  image per distinct URL with no eviction. The host caps a renderer at 2000
+  distinct image URLs and warns once when it stops accepting new ones. SVG
+  sources are re-wrapped per node size, so one SVG on many differently sized
+  nodes costs one URL per size.
+
+### When the hook runs
+
+Automatically on: renderer mount, network switch, hook registration, and any node
+table edit (including undo and redo). Deleted nodes have their image dropped
+without a hook call. Call `refresh()` for anything the host cannot observe —
+your own state.
+
+### Methods
+
+#### `setRenderHook(hook): ApiResult<{ hookId: string }>`
+
+Registers the hook, replacing any hook this caller previously registered. Hooks
+registered via `AppContext.apis.nodeGraphics` are removed automatically, along
+with every image they produced, when the app is disabled.
+
+| Error Code | Condition                |
+| ---------- | ------------------------ |
+| `VP9`      | `hook` is not a function |
+
+#### `clearRenderHook(): ApiResult`
+
+Removes this caller's hook and every image it produced. Affected nodes fall back
+to their Vizmapper custom graphics.
+
+| Error Code | Condition                          |
+| ---------- | ---------------------------------- |
+| `APP5`     | This caller has no hook registered |
+
+One app cannot clear another app's hook, and the anonymous singleton cannot clear
+an app-owned hook.
+
+#### `refresh(networkId?, nodeIds?): ApiResult<{ nodeCount: number }>`
+
+Re-runs the hook. Omit `networkId` for the workspace's current network; omit
+`nodeIds` for every node.
+
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP5`     | This caller has no hook registered       |
+| `APP2`     | No `networkId` given and none is current |
+| `APP1`     | `networkId` is unknown                   |
+
+### Example — an image driven by the app's own state
+
+```typescript
+let currentThreshold = 0.5
+const cache = new Map<string, string>()
+
+export const MyApp: CyAppWithLifecycle = {
+  mount(context) {
+    // Synchronous: read from the cache the app fills elsewhere.
+    context.apis.nodeGraphics.setRenderHook(({ nodeId, attributes }) =>
+      Number(attributes.score) >= currentThreshold
+        ? (cache.get(nodeId) ?? null)
+        : null,
+    )
+
+    onSliderChange(async (value) => {
+      currentThreshold = value
+      await fillCache(cache, value) // async work lives here, not in the hook
+      // Ask the host to re-run the hook now that the cache is warm.
+      context.apis.nodeGraphics.refresh()
+    })
+  },
+
+  // No unmount needed — the hook and its images are auto-cleaned on disable.
+}
+```
+
+### Example — remote images from a STRING network
+
+STRING networks carry two node-image columns. Both need handling the contract
+above does not do for you.
+
+| Column                   | Value shape                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `stringdb::imageurl`     | `https://version-12-0.string-db.org//images/Proteinpictures/pdb/1f/1fgu_A.png` |
+| `stringdb::STRING style` | `string:data:image/png;base64,iVBORw0KGgo…`                                    |
+
+```typescript
+// `string:` is a STRING namespace marker, not part of the URI. Without stripping
+// it the value is an unrecognised scheme and the node silently gets no image.
+const strip = (v: unknown): string =>
+  String(v).replace(/^string:(?=data:|https?:)/, '')
+
+apis.nodeGraphics.setRenderHook(({ attributes }) => {
+  const raw =
+    attributes['stringdb::STRING style'] ?? attributes['stringdb::imageurl']
+  if (raw == null) return null
+
+  return {
+    image: strip(raw),
+    fit: 'contain',
+    // Required for the remote host — it sends no CORS header. See below.
+    crossOrigin: 'null',
+  }
+})
+```
+
+Two things measured against the live host, both of which look like "the feature
+is broken" when hit:
+
+- **The `string:` prefix is rejected.** `normalizeImageSource` classifies
+  `string:data:…` as `unrecognized`, so the hook's return value is discarded.
+- **The structure-image host sends no `Access-Control-Allow-Origin`.** It answers
+  `200 image/png` (33,667 bytes), so the URL is fine — but
+  `crossOrigin: 'anonymous'` fails to load it at all. `'null'` works and taints
+  the canvas, which means Cytoscape omits that image from `cy.png()`. The base64
+  value is same-origin and survives PNG export either way.
+
+When adding any new remote source, preflight it with an `Image()` under both
+`crossOrigin` modes before concluding anything about the hook.
+
+Both STRING images are 240×240. Rasters skip the SVG size wrapper entirely, so
+Cytoscape's `background-fit` sizes them natively and their aspect ratio is
+preserved; on the default 75×35 node a square image letterboxes to a 35px square.
+
+### Interaction with Vizmapper custom graphics
+
+| Situation                                         | Result                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Hook returns an image, node has a Vizmapper image | Hook wins                                                                       |
+| Hook returns `null`                               | Vizmapper image shows                                                           |
+| `clearRenderHook()`                               | Vizmapper image returns on the next restyle                                     |
+| Node has a Vizmapper **pie or ring** chart        | The chart draws **on top** of a hook image unless you set `containment: 'over'` |
+
+The last row is Cytoscape's node draw order (shape → images(inside) → border →
+pie → stripe → images(over)), and matches how two Vizmapper slots already behave.
+
+---
+
 ## ResourceApi (`cyweb/AppIdContext`)
 
 Per-app resource registration API for panels and menu items. Available via
@@ -1760,18 +1987,22 @@ interface AppContext {
 
 ### `AppContextApis`
 
-Per-app API object that extends `CyWebApiType` with additional per-app capabilities:
+Per-app API object. Adds `resource`, and replaces two shared domains with
+factories bound to the calling app:
 
 ```typescript
 interface AppContextApis extends CyWebApiType {
   readonly resource: ResourceApi // per-app resource registration
   readonly contextMenu: ContextMenuApi // per-app, auto-cleaned on disable
+  readonly nodeGraphics: NodeGraphicsApi // per-app, auto-cleaned on disable
 }
 ```
 
 > **Note:** `window.CyWebApi` is typed as `CyWebApiType` and does NOT include
 > `resource`. Resource registration requires the per-app context available in
-> `mount()` or via `useAppContext()`.
+> `mount()` or via `useAppContext()`. `contextMenu` and `nodeGraphics` do appear
+> on `window.CyWebApi`, but as anonymous singletons with no owning app — nothing
+> registered through them is cleaned up automatically.
 
 ### `CyAppWithLifecycle`
 
@@ -1888,7 +2119,7 @@ export const MyApp: CyAppWithLifecycle = {
 
 ## `window.CyWebApi`
 
-The global `window.CyWebApi` object assembles all 10 domain APIs into a single
+The global `window.CyWebApi` object assembles all 11 domain APIs into a single
 singleton. Available after the `cywebapi:ready` event.
 
 ```typescript
@@ -1903,6 +2134,7 @@ interface CyWebApiType {
   export: ExportApi
   workspace: WorkspaceApi
   contextMenu: ContextMenuApi
+  nodeGraphics: NodeGraphicsApi
 }
 ```
 
@@ -1913,6 +2145,13 @@ window.addEventListener('cywebapi:ready', () => {
 })
 ```
 
-`AppContext.apis` extends `window.CyWebApi` with per-app `resource` and `contextMenu`
-fields. The 10 domain APIs (element, network, etc.) are shared; `resource` and the
-per-app `contextMenu` are exclusive to `AppContext.apis`.
+`AppContext.apis` extends `window.CyWebApi` with a per-app `resource` field and
+per-app `contextMenu` and `nodeGraphics` factories. The 11 domain APIs (element,
+network, etc.) are shared; `resource` is exclusive to `AppContext.apis`.
+
+`contextMenu` and `nodeGraphics` exist on both, but not as the same object. On
+`window.CyWebApi` each is an anonymous singleton with no owning app and therefore
+no lifecycle. On `AppContext.apis` each is bound to the calling `appId`, so
+everything it registers — menu items, a render hook and every image that hook
+produced — is dropped automatically when the app is disabled or uninstalled.
+Prefer the `AppContext.apis` form in any app that has a `mount()`.

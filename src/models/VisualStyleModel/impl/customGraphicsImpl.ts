@@ -19,6 +19,7 @@ import {
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { normalizeImageSource, wrapSvgDataUriForSize } from './imageSourceImpl'
 
 export const getCustomGraphicNodeVps = (
   vps: VisualProperty<VisualPropertyValueType>[],
@@ -395,43 +396,16 @@ export const computeImageProperties = (
 
   // A custom graphic can carry raw `<svg>` markup rather than a URL (Desktop-authored
   // values and hand-edited CX2 both do this). Cytoscape.js only accepts a URL for
-  // background-image, so promote the markup to the data URI form the wrapping branch
-  // below already handles.
-  let finalUrl = imageProps.url
-  if (finalUrl.trimStart().startsWith('<svg')) {
-    finalUrl = 'data:image/svg+xml,' + encodeURIComponent(finalUrl.trimStart())
-  }
+  // background-image, so promote the markup to a data URI.
+  //
+  // Stored values are deliberately NOT held to the scheme policy that gates new
+  // input (blob:/file: rejection). Applying it here would silently drop images
+  // from existing networks — a product decision, not a refactor. A non-'url'
+  // classification therefore falls through with the value untouched.
+  const source = normalizeImageSource(imageProps.url)
+  const promotedUrl = source.kind === 'url' ? source.url : imageProps.url
 
-  // For SVG data URIs we wrap the source SVG in an outer SVG sized to the slot's
-  // width/height and centered inside it. This pins the rendered aspect ratio and
-  // works around a Cytoscape.js bug where data-URI background images pick up a zoom
-  // offset. See docs/design/custom-graphics-image/zoom-bug-demo.html for a repro.
-  if (finalUrl.startsWith('data:image/svg+xml')) {
-    try {
-      const commaIdx = finalUrl.indexOf(',')
-      if (commaIdx !== -1) {
-        const metadata = finalUrl.substring(0, commaIdx)
-        const data = finalUrl.substring(commaIdx + 1)
-
-        let rawSvg = ''
-        if (metadata.includes('base64')) {
-          rawSvg = atob(data)
-        } else {
-          rawSvg = decodeURIComponent(data)
-        }
-
-        const size = Math.min(width, height)
-        const offsetX = (width - size) / 2
-        const offsetY = (height - size) / 2
-
-        const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><svg x="${offsetX}" y="${offsetY}" width="${size}" height="${size}">${rawSvg}</svg></svg>`
-
-        finalUrl = 'data:image/svg+xml,' + encodeURIComponent(wrapperSvg)
-      }
-    } catch (e) {
-      logModel.warn('Failed to wrap SVG custom graphic', e)
-    }
-  }
+  const finalUrl = wrapSvgDataUriForSize(promotedUrl, width, height)
 
   pairs.push([SpecialPropertyName.BackgroundImage, finalUrl])
   pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
