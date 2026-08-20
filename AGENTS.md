@@ -209,7 +209,8 @@ for a targeted e2e spec).
 **Agents must not run the whole e2e suite locally.** Full-suite runs are flaky under
 worker contention and take minutes to tell you little, so `.claude/settings.json`
 denies `npm test`, `npm run test:e2e`, `npm run test:e2e:chromium`, their `:quiet`
-variants, and a bare `npx playwright test` — CI owns the full suite. Running the
+variants, the `e2e:run` helper scripts, and a bare `npx playwright test` — CI owns
+the full suite. Running the
 **one or few specs that cover the change in hand** is fine and encouraged:
 `npx playwright test <spec-name> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts`.
 Keep the scope to the change; `npm run test:unit:quiet` and `npm run lint` remain
