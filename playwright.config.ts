@@ -54,7 +54,11 @@ export default defineConfig({
 		baseURL: externalHostUrl ?? 'http://localhost:5500',
 		headless: true,
 		trace: 'on-first-retry',
-		video: 'retain-on-failure',
+		// Like trace: record only when a test is retried. 'retain-on-failure'
+		// paid the screencast overhead on every first attempt of every test,
+		// only to delete the file when it passed; a failure still gets a video
+		// because it is retried (1 local retry, 2 on CI).
+		video: 'on-first-retry',
 		screenshot: 'only-on-failure'
 	},
 	projects: [
