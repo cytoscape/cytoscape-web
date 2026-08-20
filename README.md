@@ -153,7 +153,7 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 - `test:unit`: run Vitest unit tests
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
 
-Each test script also has a `:quiet` variant that produces minimal output (dot reporters, per-test stdio suppressed) while still reporting failures in full — useful for CI logs and AI agents:
+Each test script also has a `:quiet` variant that prints only failures and a final summary (no per-test output, test stdio, or debug-logger noise) — useful for CI logs and AI agents:
 
 - `test:quiet`: quiet version of `npm test` (lint → unit → Chromium e2e)
 - `test:unit:quiet`: quiet Vitest unit tests
