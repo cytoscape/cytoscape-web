@@ -153,6 +153,14 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 - `test:unit`: run Vitest unit tests
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
 
+Each test script also has a `:quiet` variant that produces minimal output (dot reporters, per-test stdio suppressed) while still reporting failures in full — useful for CI logs and AI agents:
+
+- `test:quiet`: quiet version of `npm test` (lint → unit → Chromium e2e)
+- `test:unit:quiet`: quiet Vitest unit tests
+- `test:coverage:quiet`: quiet unit tests with coverage
+- `test:e2e:quiet`: quiet Playwright tests (all configured browsers)
+- `test:e2e:chromium:quiet`: quiet Playwright tests (Chromium only)
+
 #### Installing Playwright browsers
 
 Playwright manages its own browser binaries separately from system browsers. After `npm install`, install the browsers before running E2E tests:
