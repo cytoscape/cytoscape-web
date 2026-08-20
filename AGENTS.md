@@ -191,7 +191,8 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 
 **Testing:**
 
-- `npm test` - Run all checks in sequence (lint → unit → Chromium e2e) via `run-s`
+- `npm test` - Run all checks (lint ∥ unit in parallel, then Chromium e2e)
+- `npm run test:checks` - Run lint and unit tests in parallel (no e2e)
 - `npm run test:unit` - Run Vitest unit tests
 - `npm run test:e2e` - Run Playwright end-to-end tests (all browsers)
 - `npm run test:e2e:chromium` - Run Playwright end-to-end tests (Chromium only; used by `npm test`)
@@ -213,8 +214,8 @@ variants, the `e2e:run` helper scripts, and a bare `npx playwright test` — CI 
 the full suite. Running the
 **one or few specs that cover the change in hand** is fine and encouraged:
 `npx playwright test <spec-name> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts`.
-Keep the scope to the change; `npm run test:unit:quiet` and `npm run lint` remain
-the local gates for everything else.
+Keep the scope to the change; `npm run test:checks:quiet` (lint and the unit
+suite in parallel) remains the local gate for everything else.
 
 **Port 5500 must be free before an e2e run.** Playwright builds the app and serves
 it with `vite preview` on 5500 — the port Keycloak's client registration expects —
@@ -234,7 +235,11 @@ flakier suite. See `test/playwright/README.md`.
 
 **Unit Tests (Vitest):**
 
-- Environment: jsdom
+- Environment: jsdom by default. **Test files that never touch the DOM must start
+  with `// @vitest-environment node`** — jsdom setup costs ~1s per file, node is
+  near-free, and ~150 files already opt in. If a node-tagged file fails on a
+  missing browser global (`window`, `document`, `localStorage`, or an import like
+  `keycloak-js`/`dexie-observable` that needs one), remove the pragma.
 - Setup: `vitest-setup.ts` loads `fake-indexeddb/auto`, calls `enableMapSet()`, and sets a 1-second test timeout
 - **Tests are co-located with source files**, not in a separate directory
 - Convention: `.test.ts` for utilities/hooks/APIs; `.spec.ts` for stores and feature modules
