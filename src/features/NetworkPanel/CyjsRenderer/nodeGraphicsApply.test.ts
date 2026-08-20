@@ -255,6 +255,56 @@ describe('applyNodeGraphics', () => {
       resetNodeGraphics(cy)
     })
 
+    it('rewraps the same graphics when the node box changes', () => {
+      // A stylesheet change resizes nodes without changing hook output. The SVG
+      // is wrapped to the node box, so the same graphics must be rewritten.
+      const svg = 'data:image/svg+xml,' + encodeURIComponent('<svg/>')
+      const same = graphics(svg)
+      let size = 40
+      const node = {
+        style: vi.fn(),
+        removeStyle: vi.fn(),
+        empty: () => false,
+        width: () => size,
+        height: () => size,
+      }
+      const cy = {
+        startBatch: vi.fn(),
+        endBatch: vi.fn(),
+        getElementById: () => node,
+      } as unknown as Core
+
+      applyNodeGraphics(cy, { n1: same })
+      size = 80
+      applyNodeGraphics(cy, { n1: same })
+
+      expect(node.style).toHaveBeenCalledTimes(2)
+      const second = node.style.mock.calls[1][0]['background-image'] as string
+      expect(
+        decodeURIComponent(second.substring('data:image/svg+xml,'.length)),
+      ).toContain('viewBox="0 0 80 80"')
+      resetNodeGraphics(cy)
+    })
+
+    it('applies the requested fit to the wrapped SVG', () => {
+      // Cytoscape's background-fit cannot act on an image already sized to the
+      // node, so cover has to be baked into the wrapper.
+      const { cy, nodes } = stubCy()
+      const svg =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg viewBox="0 0 200 50"/>')
+
+      applyNodeGraphics(cy, { n1: graphics(svg, { fit: 'cover' }) })
+
+      const applied = nodes.get('n1')!.style.mock.calls[0][0][
+        'background-image'
+      ] as string
+      expect(
+        decodeURIComponent(applied.substring('data:image/svg+xml,'.length)),
+      ).toContain('preserveAspectRatio="xMidYMid slice"')
+      resetNodeGraphics(cy)
+    })
+
     it('does not wrap when the node reports a zero size', () => {
       // Happens if this is called before cy.style() installs the stylesheet.
       const svg = 'data:image/svg+xml,' + encodeURIComponent('<svg/>')
@@ -276,6 +326,29 @@ describe('applyNodeGraphics', () => {
       applyNodeGraphics(cy, { n1: graphics(svg) })
 
       expect(node.style.mock.calls[0][0]['background-image']).toBe(svg)
+      resetNodeGraphics(cy)
+    })
+  })
+
+  describe('image cache cap', () => {
+    it('refuses a new URL past the cap and still admits a cached one', () => {
+      // Counted here, on the URL Cytoscape actually caches: SVG wrapping turns
+      // one hook image into a distinct URL per node size, so counting hook
+      // images instead would let the cache grow without bound.
+      const { cy, nodes } = stubCy(['n1'])
+      const node = nodes.get('n1')!
+
+      for (let i = 0; i < 2000; i++) {
+        applyNodeGraphics(cy, { n1: graphics(`https://example.com/${i}.png`) })
+      }
+      expect(node.style).toHaveBeenCalledTimes(2000)
+
+      applyNodeGraphics(cy, { n1: graphics('https://example.com/new.png') })
+      expect(node.style).toHaveBeenCalledTimes(2000)
+
+      // Already cached, so it costs no new Image and still goes through.
+      applyNodeGraphics(cy, { n1: graphics('https://example.com/0.png') })
+      expect(node.style).toHaveBeenCalledTimes(2001)
       resetNodeGraphics(cy)
     })
   })

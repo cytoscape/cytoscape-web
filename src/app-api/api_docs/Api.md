@@ -1404,7 +1404,14 @@ interface NodeGraphicsImage {
    * `blob:` and `file:` are rejected.
    */
   image: string
-  /** @default 'contain' */
+  /**
+   * @default 'contain'
+   *
+   * Rasters use Cytoscape's `background-fit`. SVG sources are wrapped to the
+   * node box, so the fit is baked into the wrapper instead: `contain` → `meet`,
+   * `cover` → `slice`, `none` → natural size centred when the source declares
+   * one, `meet` otherwise.
+   */
   fit?: 'contain' | 'cover' | 'none'
   /** 0..1. @default 1 */
   opacity?: number
@@ -1437,8 +1444,10 @@ type NodeGraphicsRenderHook = (
   graphic, if any. With several apps registered, hooks run in registration order
   and the first non-`null` result wins.
 - **Prefer stable URLs over freshly generated data URIs.** Cytoscape retains one
-  image per distinct URL with no eviction. The host caps a network at 2000
-  distinct images and warns once when it stops accepting new ones.
+  image per distinct URL with no eviction. The host caps a renderer at 2000
+  distinct image URLs and warns once when it stops accepting new ones. SVG
+  sources are re-wrapped per node size, so one SVG on many differently sized
+  nodes costs one URL per size.
 
 ### When the hook runs
 

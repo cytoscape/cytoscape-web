@@ -263,8 +263,11 @@ background networks, and mounting is the natural first-run trigger.
 So a single column rename reports every node as changed.
 
 1. Pending nodes are a `Set`; writes within 50 ms merge into one flush.
-2. A flush processes 200 nodes per animation frame, writing once per chunk, so a
-   large batch repaints progressively rather than stalling.
+2. A flush processes up to 200 nodes per animation frame, and stops early once a
+   chunk has spent 8 ms, so a large batch repaints progressively rather than
+   stalling. Both bounds are needed: a hook taking 12 ms per node stays under the
+   16 ms slow-call threshold, so a node count alone would not bound the frame.
+   At least one node always runs, so progress never stalls.
 3. A generation counter is captured at flush start. A chunk from an older
    generation drops its results, which is what makes rapid network switching and
    hook re-registration safe.
@@ -283,7 +286,7 @@ So a single column rename reports every node as changed.
 
 | Limitation                                | Detail                                                                                                                                                                                                                                                                                      |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Cytoscape's image cache is unbounded**  | `BRp.getCachedImage` retains one `Image` per distinct URL with no eviction, freed only by `cy.destroy()`. Mitigated by string-equality dedupe and a 2000-distinct-image cap per network. **Prefer stable URLs over freshly generated data URIs.** This is the likeliest production problem. |
+| **Cytoscape's image cache is unbounded**  | `BRp.getCachedImage` retains one `Image` per distinct URL with no eviction, freed only by `cy.destroy()`. Mitigated by string-equality dedupe and a 2000-distinct-URL cap per renderer, counted in `nodeGraphicsApply.ts` on the URL actually handed to Cytoscape — an SVG re-wrapped per node size is a distinct URL per size, so counting hook images instead would miss it. **Prefer stable URLs over freshly generated data URIs.** This is the likeliest production problem. |
 | Synchronous only                          | Async images go through `refresh()`.                                                                                                                                                                                                                                                        |
 | PNG export drops remote images            | `crossOrigin: 'null'` (the default) taints the canvas, and Cytoscape excludes tainted images from `cy.png()`. Use data URIs or `crossOrigin: 'anonymous'`.                                                                                                                                  |
 | No HierarchyViewer circle-packing support | Only the two `CyjsRenderer` mount sites are covered.                                                                                                                                                                                                                                        |

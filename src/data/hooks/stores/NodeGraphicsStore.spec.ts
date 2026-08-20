@@ -29,6 +29,7 @@ describe('NodeGraphicsStore', () => {
         hooks: [],
         images: {},
         refreshRequests: {},
+        refreshSequence: {},
       })
     })
   })
@@ -359,6 +360,25 @@ describe('NodeGraphicsStore', () => {
         result.current.requestRefresh('net1', ['n2'])
       })
       expect(result.current.refreshRequests.net1.nodeIds).toEqual(['n2'])
+    })
+
+    it('never reissues a token the renderer already saw', () => {
+      // The renderer's effect keys off the token value. A token derived from the
+      // pending request would restart at 1 after the ack, and a refresh batched
+      // with that ack would look like no change at all.
+      const { result } = renderHook(() => useNodeGraphicsStore())
+
+      act(() => {
+        result.current.requestRefresh('net1', ['n1'])
+      })
+      expect(result.current.refreshRequests.net1.token).toBe(1)
+
+      act(() => {
+        result.current.consumeRefresh('net1', 1)
+        result.current.requestRefresh('net1', ['n2'])
+      })
+
+      expect(result.current.refreshRequests.net1.token).toBe(2)
     })
 
     it('ignores an ack for a superseded token', () => {

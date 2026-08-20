@@ -51,6 +51,7 @@ export const useNodeGraphicsStore = create(
     hooks: [],
     images: {},
     refreshRequests: {},
+    refreshSequence: {},
 
     setHook(hook: RegisteredNodeGraphicsHook) {
       set((state) => {
@@ -126,6 +127,8 @@ export const useNodeGraphicsStore = create(
       set((state) => {
         delete state.images[networkId]
         delete state.refreshRequests[networkId]
+        // refreshSequence survives on purpose: a renderer that comes back to
+        // this network must still see the next token as a change.
         return state
       })
     },
@@ -133,7 +136,11 @@ export const useNodeGraphicsStore = create(
     requestRefresh(networkId: IdType, nodeIds?: readonly IdType[]) {
       set((state) => {
         const prev = state.refreshRequests[networkId]
-        const token = (prev?.token ?? 0) + 1
+        // From the per-network sequence, not from the pending request: the
+        // request is deleted on consume, so deriving the token from it would
+        // reissue 1 and the renderer's selector would see no change.
+        const token = (state.refreshSequence[networkId] ?? 0) + 1
+        state.refreshSequence[networkId] = token
 
         // Copied, so a caller that mutates its array after the call cannot
         // change what the renderer runs.

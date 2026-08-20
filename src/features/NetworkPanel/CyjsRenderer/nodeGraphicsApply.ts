@@ -50,13 +50,41 @@ const HOOK_STYLE_PROPS = [
 ].join(' ')
 
 /**
+ * Distinct background-image URLs one cy instance accepts before new ones are
+ * refused.
+ *
+ * Cytoscape's `getCachedImage` retains one Image per distinct URL with no
+ * eviction, freed only by `cy.destroy()`. An app generating a fresh data URI per
+ * update would grow that cache without bound. Counted here rather than in
+ * useNodeGraphicsSync because SVG wrapping below makes one hook image into a
+ * different URL per node size — the URL is the cache key, so it is what counts.
+ */
+const MAX_DISTINCT_IMAGES = 2000
+
+/** What was last written to one node, and the node box it was written for. */
+interface AppliedEntry {
+  readonly graphics: ResolvedNodeGraphics
+  readonly width: number
+  readonly height: number
+}
+
+/**
  * Overlay last applied to each cy instance, so the next apply can be a diff.
  *
  * A WeakMap rather than store state: this is a fact about a specific
  * Cytoscape.js instance, it must not survive that instance, and it must not be
  * observable by anything that serializes.
  */
-const applied = new WeakMap<Core, Record<IdType, ResolvedNodeGraphics>>()
+const applied = new WeakMap<Core, Record<IdType, AppliedEntry>>()
+
+/**
+ * Distinct URLs handed to each cy instance, mirroring its image cache.
+ *
+ * Not cleared by `resetNodeGraphics`: removing elements does not empty the
+ * renderer's image cache, so what was cached is still cached.
+ */
+const cachedUrls = new WeakMap<Core, Set<string>>()
+const capReported = new WeakSet<Core>()
 
 /**
  * Forget what was applied to `cy`.
@@ -69,15 +97,42 @@ export const resetNodeGraphics = (cy: Core): void => {
   applied.delete(cy)
 }
 
+/**
+ * True when `url` may be handed to Cytoscape, counting it if it is new.
+ *
+ * A URL already in the cache always passes: it costs no new Image.
+ */
+const admitUrl = (cy: Core, url: string): boolean => {
+  let urls = cachedUrls.get(cy)
+  if (urls === undefined) {
+    urls = new Set<string>()
+    cachedUrls.set(cy, urls)
+  }
+  if (urls.has(url)) return true
+  if (urls.size >= MAX_DISTINCT_IMAGES) {
+    if (!capReported.has(cy)) {
+      capReported.add(cy)
+      logUi.warn(
+        `[nodeGraphics]: reached ${MAX_DISTINCT_IMAGES} distinct images on this renderer; ` +
+          'refusing new ones. Prefer stable URLs over freshly generated data URIs.',
+      )
+    }
+    return false
+  }
+  urls.add(url)
+  return true
+}
+
 /** SVG data URIs get wrapped to the node's box; other URLs pass through. */
 const resolveImageForNode = (
-  image: string,
+  graphics: ResolvedNodeGraphics,
   width: number,
   height: number,
 ): string => {
+  const image = graphics.image
   if (!Number.isFinite(width) || !Number.isFinite(height)) return image
   if (width <= 0 || height <= 0) return image
-  return wrapSvgDataUriForSize(image, width, height)
+  return wrapSvgDataUriForSize(image, width, height, graphics.fit)
 }
 
 /**
@@ -104,12 +159,14 @@ export const applyNodeGraphics = (
   const touched = new Set<IdType>([...Object.keys(prev), ...Object.keys(next)])
   if (touched.size === 0) return
 
+  const nextApplied: Record<IdType, AppliedEntry> = {}
+
   cy.startBatch()
   try {
     for (const nodeId of touched) {
       // Scoped per node, not around the loop: one node's malformed value must
-      // not cost every later node in `touched` its image. The overlay is
-      // recorded below either way, so a failing write is not retried forever.
+      // not cost every later node in `touched` its image. The entry is recorded
+      // before the write, so a failing write is not retried forever.
       try {
         const graphics = next[nodeId]
 
@@ -124,16 +181,32 @@ export const applyNodeGraphics = (
           continue
         }
 
+        const width = node.width()
+        const height = node.height()
+
         // ResolvedNodeGraphics instances are immutable, so reference equality is
-        // a sound "nothing to do" test.
-        if (prev[nodeId] === graphics) continue
+        // a sound "nothing to do" test — but only for the same node box. An SVG
+        // is wrapped to that box, so a node resized by a stylesheet change needs
+        // the same graphics rewritten at the new size.
+        const before = prev[nodeId]
+        if (
+          before !== undefined &&
+          before.graphics === graphics &&
+          before.width === width &&
+          before.height === height
+        ) {
+          nextApplied[nodeId] = before
+          continue
+        }
+
+        const url = resolveImageForNode(graphics, width, height)
+        // Recorded before the write, so neither a refused URL nor a throwing
+        // write is retried on every restyle for the rest of the session.
+        nextApplied[nodeId] = { graphics, width, height }
+        if (!admitUrl(cy, url)) continue
 
         node.style({
-          'background-image': resolveImageForNode(
-            graphics.image,
-            node.width(),
-            node.height(),
-          ),
+          'background-image': url,
           'background-fit': graphics.fit,
           'background-image-opacity': graphics.opacity,
           'background-image-crossorigin': graphics.crossOrigin,
@@ -152,5 +225,5 @@ export const applyNodeGraphics = (
     cy.endBatch()
   }
 
-  applied.set(cy, next)
+  applied.set(cy, nextApplied)
 }

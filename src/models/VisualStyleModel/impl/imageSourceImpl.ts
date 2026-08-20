@@ -131,21 +131,39 @@ const readRootAttr = (attrs: string, name: string): string | undefined => {
 
 /** The attributes the wrapper reasserts, in either quote style. */
 const ROOT_ATTRS_TO_REPLACE =
-  /\s(?:width|height|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g
+  /\s(?:width|height|preserveAspectRatio|x|y)\s*=\s*(?:"[^"]*"|'[^']*')/g
 
 /**
- * Rewrite the source root `<svg>` so it fills its parent viewport while keeping
- * its own aspect ratio.
+ * How the source fills the node box. Mirrors Cytoscape.js `background-fit`, so
+ * `NodeGraphicsFit` and the Vizmapper fit values both satisfy it.
+ */
+export type ImageFit = 'contain' | 'cover' | 'none'
+
+/**
+ * Rewrite the source root `<svg>` so it fills its parent viewport as `fit` asks.
  *
  * Without this the source renders at its natural size inside the wrapper, which
  * crops anything larger than the node — measurably so: a 100x100 source in a
  * 140x60 node lost its centre entirely, and the visible remnant drifted further
  * off-centre the more the canvas was zoomed.
  *
+ * The fit is applied here, not by Cytoscape: the wrapper hands it an image
+ * already exactly the node's size, so `background-fit` has nothing left to do.
+ *   - `contain` → `meet`, the whole source visible inside the box.
+ *   - `cover` → `slice`, the box filled and the overflow clipped.
+ *   - `none` → the source at its own size, centred, when it declares one;
+ *     `meet` otherwise, because a source with only a `viewBox` has no natural
+ *     size to honour.
+ *
  * A source carrying `width`/`height` but no `viewBox` has no scalable coordinate
  * system, so one is derived from those dimensions before they are replaced.
  */
-const fitSourceToViewport = (rawSvg: string): string =>
+const fitSourceToViewport = (
+  rawSvg: string,
+  boxWidth: number,
+  boxHeight: number,
+  fit: ImageFit,
+): string =>
   rawSvg.replace(
     /<svg\b([^>]*?)(\/?)>/,
     (whole: string, attrs: string, selfClose: string) => {
@@ -162,7 +180,14 @@ const fitSourceToViewport = (rawSvg: string): string =>
       }
       next = next.replace(ROOT_ATTRS_TO_REPLACE, '')
 
-      return `<svg${next} width="100%" height="100%" preserveAspectRatio="xMidYMid meet"${selfClose}>`
+      if (fit === 'none' && width !== undefined && height !== undefined) {
+        const x = (boxWidth - width) / 2
+        const y = (boxHeight - height) / 2
+        return `<svg${next} x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"${selfClose}>`
+      }
+
+      const aspect = fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'
+      return `<svg${next} width="100%" height="100%" preserveAspectRatio="${aspect}"${selfClose}>`
     },
   )
 
@@ -174,8 +199,13 @@ const fitSourceToViewport = (rawSvg: string): string =>
  * offset at zero and avoids a canvas bug where a background image whose bounding
  * box is smaller than the node drifts off its anchor as the view zooms. See
  * docs/design/custom-graphics-image/zoom-bug-demo.html for a repro. Within that
- * box the source keeps its own aspect ratio, so a wide graphic uses the node's
- * full width instead of being confined to a min(width, height) square.
+ * box the source is laid out per `fit`, which defaults to `'contain'`: it keeps
+ * its own aspect ratio, so a wide graphic uses the node's full width instead of
+ * being confined to a min(width, height) square.
+ *
+ * `fit` must be applied here rather than left to Cytoscape's `background-fit`:
+ * the returned image is already exactly the node box, so every Cytoscape fit
+ * mode would be a no-op on it.
  *
  * Non-SVG URLs pass through untouched. On any decode failure the input is
  * returned unchanged, so a malformed URI degrades to "unsized" rather than
@@ -185,6 +215,7 @@ export const wrapSvgDataUriForSize = (
   url: string,
   width: number,
   height: number,
+  fit: ImageFit = 'contain',
 ): string => {
   if (!url.startsWith('data:image/svg+xml')) {
     return url
@@ -202,7 +233,7 @@ export const wrapSvgDataUriForSize = (
       ? atob(data)
       : decodeURIComponent(data)
 
-    const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">${fitSourceToViewport(rawSvg)}</svg>`
+    const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">${fitSourceToViewport(rawSvg, width, height, fit)}</svg>`
 
     return 'data:image/svg+xml,' + encodeURIComponent(wrapperSvg)
   } catch (e) {

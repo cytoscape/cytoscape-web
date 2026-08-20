@@ -140,6 +140,13 @@ export interface NodeGraphicsState {
    */
   readonly images: Record<IdType, Record<IdType, ResolvedNodeGraphics>>
   readonly refreshRequests: Record<IdType, NodeGraphicsRefreshRequest>
+  /**
+   * networkId → last token issued. Kept separately from `refreshRequests` and
+   * never reset, because deriving the next token from the pending request would
+   * restart at 1 after the renderer consumes one — and a request the renderer
+   * never saw at a lower value would then not look like a change at all.
+   */
+  readonly refreshSequence: Record<IdType, number>
 }
 
 export interface NodeGraphicsActions {

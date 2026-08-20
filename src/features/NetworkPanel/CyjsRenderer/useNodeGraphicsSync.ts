@@ -24,7 +24,7 @@ import type {
   RegisteredNodeGraphicsHook,
   ResolvedNodeGraphics,
 } from '../../../models/StoreModel/NodeGraphicsStoreModel'
-import type { Table } from '../../../models/TableModel'
+import type { AttributeName, Table, ValueType } from '../../../models/TableModel'
 import { detectRowDelta } from '../../../models/TableModel/impl/tableDiff'
 import { NodeVisualPropertyName } from '../../../models/VisualStyleModel/VisualPropertyName'
 import { resolveNodeGraphics } from './nodeGraphicsResolve'
@@ -33,18 +33,18 @@ import { resolveNodeGraphics } from './nodeGraphicsResolve'
 const COALESCE_MS = 50
 /** Nodes processed per animation frame, so a large batch never blocks one. */
 const CHUNK_SIZE = 200
+/**
+ * Wall-clock a chunk may spend before yielding the frame.
+ *
+ * A node count alone does not bound a frame: a hook taking 12ms per node stays
+ * under `SLOW_CALL_MS` yet CHUNK_SIZE of them blocks for seconds. At least one
+ * node still runs per frame, so progress never stalls.
+ */
+const CHUNK_BUDGET_MS = 8
 /** A synchronous hook call slower than this counts against the failure budget. */
 const SLOW_CALL_MS = 16
 /** Throws plus slow calls before a hook is disabled for the session. */
 const FAILURE_BUDGET = 20
-/**
- * Distinct image strings per network before new ones are refused.
- *
- * Cytoscape's `getCachedImage` retains one Image per distinct URL with no
- * eviction, freed only by `cy.destroy()`. An app generating a fresh data URI per
- * update would grow that cache without bound.
- */
-const MAX_DISTINCT_IMAGES = 2000
 
 /**
  * True when a freshly resolved result is indistinguishable from the stored one.
@@ -63,6 +63,32 @@ const isSameGraphics = (
   existing.crossOrigin === next.crossOrigin &&
   existing.containment === next.containment &&
   existing.hookId === next.hookId
+
+/**
+ * Copy a table row for the hook, list values included.
+ *
+ * A spread alone shares every list-valued attribute with the host table, so a
+ * hook could edit host data through it — or throw, because immer froze it.
+ */
+const copyRow = (
+  row: Record<AttributeName, ValueType>,
+): Record<AttributeName, ValueType> => {
+  const copy: Record<AttributeName, ValueType> = { ...row }
+  for (const key of Object.keys(copy)) {
+    const value = copy[key]
+    if (Array.isArray(value)) copy[key] = [...value] as ValueType
+  }
+  return copy
+}
+
+/**
+ * What the hook chain answered for one node.
+ *
+ * `'declined'` and `'noop'` must stay distinct: declining is an answer that
+ * clears the node's image, while `'noop'` — every hook threw or is disabled —
+ * must leave the image a working hook already produced.
+ */
+type HookOutcome = ResolvedNodeGraphics | 'declined' | 'noop'
 
 /**
  * Run the registered hooks for one network and return the resulting images.
@@ -95,8 +121,6 @@ export const useNodeGraphicsSync = (
   /** hookId → throws + slow calls so far. */
   const failuresRef = useRef<Map<string, number>>(new Map())
   const degradedRef = useRef<Set<string>>(new Set())
-  const distinctImagesRef = useRef<Set<string>>(new Set())
-  const imageCapReportedRef = useRef<boolean>(false)
 
   // Read in the flush without making it an effect dependency.
   const hooksRef = useRef<RegisteredNodeGraphicsHook[]>(hooks)
@@ -181,10 +205,25 @@ export const useNodeGraphicsSync = (
       const declined: IdType[] = []
       const end = Math.min(index + CHUNK_SIZE, targets.length)
       const existing = useNodeGraphicsStore.getState().images[networkId] ?? {}
+      // The live table, not the snapshot `targets` came from: a node deleted
+      // mid-flush was already cleared by the table-diff effect, and writing it
+      // back from a stale snapshot would resurrect its image.
+      const currentTable = nodeTableRef.current
+      if (currentTable === undefined) return
+
+      const chunkStart = index
+      const chunkStartedAt = performance.now()
 
       for (; index < end; index++) {
+        if (
+          index > chunkStart &&
+          performance.now() - chunkStartedAt > CHUNK_BUDGET_MS
+        ) {
+          break
+        }
+
         const nodeId = targets[index]
-        const row = table.rows.get(nodeId)
+        const row = currentTable.rows.get(nodeId)
         // Deleted between queueing and now; the table-diff effect already
         // dropped its image.
         if (row === undefined) continue
@@ -194,7 +233,7 @@ export const useNodeGraphicsSync = (
           networkId,
           nodeId,
           // A copy: an app must not be able to mutate host table state.
-          attributes: { ...row },
+          attributes: copyRow(row),
           width: nodeView?.values.get(NodeVisualPropertyName.NodeWidth) as
             | number
             | undefined,
@@ -203,8 +242,11 @@ export const useNodeGraphicsSync = (
             | undefined,
         }
 
-        const resolved = runHooks(activeHooks, request)
-        if (resolved === null) {
+        const outcome = runHooks(activeHooks, request)
+        // No hook answered — every one threw or is disabled. Leave whatever a
+        // working hook produced earlier in place.
+        if (outcome === 'noop') continue
+        if (outcome === 'declined') {
           // Declining is a real answer, not a no-op: a node whose data no longer
           // qualifies must lose the image it had, or a stale picture survives
           // until the next refresh or network switch.
@@ -216,24 +258,9 @@ export const useNodeGraphicsSync = (
         // unbounded image cache for nothing. Every field is compared, not just
         // the image: a hook that keeps the same URL and changes only `opacity`
         // or `fit` is making a real change and must not be skipped.
-        if (isSameGraphics(existing[nodeId], resolved)) continue
+        if (isSameGraphics(existing[nodeId], outcome)) continue
 
-        if (
-          !distinctImagesRef.current.has(resolved.image) &&
-          distinctImagesRef.current.size >= MAX_DISTINCT_IMAGES
-        ) {
-          if (!imageCapReportedRef.current) {
-            imageCapReportedRef.current = true
-            logApp.warn(
-              `[nodeGraphics]: reached ${MAX_DISTINCT_IMAGES} distinct images for network ${networkId}; ` +
-                'refusing new ones. Prefer stable URLs over freshly generated data URIs.',
-            )
-          }
-          continue
-        }
-        distinctImagesRef.current.add(resolved.image)
-
-        entries.push([nodeId, resolved])
+        entries.push([nodeId, outcome])
       }
 
       // One write per chunk, so a large batch repaints progressively instead of
@@ -257,11 +284,16 @@ export const useNodeGraphicsSync = (
    * Call hooks in registration order; the first non-null result wins. A hook
    * returning null yields to the next one, which is what makes multiple apps
    * compose.
+   *
+   * Returns `'declined'` only when a hook actually ran and answered "no image".
+   * A chain where every hook threw or is disabled returns `'noop'`, so a
+   * tripped circuit breaker never erases images the hook produced while healthy.
    */
   const runHooks = (
     activeHooks: RegisteredNodeGraphicsHook[],
     request: NodeGraphicsRequest,
-  ): ResolvedNodeGraphics | null => {
+  ): HookOutcome => {
+    let declined = false
     for (const hook of activeHooks) {
       // Re-checked per call, not just per flush: a hook that starts failing on
       // node 1 of 100000 must stop being called on node 21, not at the next
@@ -281,10 +313,20 @@ export const useNodeGraphicsSync = (
         noteFailure(hook.hookId, `took ${elapsed.toFixed(0)}ms`)
       }
 
-      const resolved = resolveNodeGraphics(result, hook.hookId)
+      let resolved
+      try {
+        resolved = resolveNodeGraphics(result, hook.hookId)
+      } catch (e) {
+        // Normalization reads properties off an untrusted object, so a throwing
+        // getter lands here rather than in the call above. Same treatment: a
+        // failure, never an answer, and never an escape from the frame.
+        noteFailure(hook.hookId, `returned an unreadable value: ${String(e)}`)
+        continue
+      }
       if (resolved !== null) return resolved
+      declined = true
     }
-    return null
+    return declined ? 'declined' : 'noop'
   }
 
   /**
@@ -312,8 +354,6 @@ export const useNodeGraphicsSync = (
       prevNodeTableRef.current = undefined
       pendingRef.current.clear()
       pendingAllRef.current = true
-      distinctImagesRef.current.clear()
-      imageCapReportedRef.current = false
       schedule()
       // eslint-disable-next-line react-hooks/exhaustive-deps -- schedule/invalidateQueuedWork are stable closures over refs
     },
@@ -333,8 +373,17 @@ export const useNodeGraphicsSync = (
         return
       }
 
-      failuresRef.current.clear()
-      degradedRef.current.clear()
+      // Prune rather than clear. The hook list changes whenever any app
+      // registers, and clearing here would revive a hook the circuit breaker
+      // disabled. A re-registered hook gets a fresh hookId, so dropping only
+      // ids that are gone still gives it a clean slate.
+      const registered = new Set(hooks.map((h) => h.hookId))
+      for (const hookId of Array.from(failuresRef.current.keys())) {
+        if (!registered.has(hookId)) failuresRef.current.delete(hookId)
+      }
+      for (const hookId of Array.from(degradedRef.current)) {
+        if (!registered.has(hookId)) degradedRef.current.delete(hookId)
+      }
       pendingAllRef.current = true
       schedule()
       // eslint-disable-next-line react-hooks/exhaustive-deps -- schedule/invalidateQueuedWork are stable closures over refs
@@ -388,10 +437,6 @@ export const useNodeGraphicsSync = (
       // The work now lives in the pending set, so release the request. This is
       // what stops requestRefresh's merge from accumulating node ids forever.
       useNodeGraphicsStore.getState().consumeRefresh(networkId, request.token)
-      // An app that recomputed its images expects them to replace the old ones,
-      // so the dedupe cache must not veto a repeat of an earlier image.
-      distinctImagesRef.current.clear()
-      imageCapReportedRef.current = false
       schedule()
       // eslint-disable-next-line react-hooks/exhaustive-deps -- schedule is a stable closure over refs
     },

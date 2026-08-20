@@ -298,6 +298,63 @@ describe('wrapSvgDataUriForSize', () => {
       expect(wrapped.match(/preserveAspectRatio=/g)).toHaveLength(1)
     })
 
+    it('slices the source to fill the box for fit cover', () => {
+      // The wrapper hands Cytoscape a node-sized image, so background-fit has
+      // nothing left to do — cover has to happen here or not at all.
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg viewBox="0 0 200 50"><rect/></svg>')
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40, 'cover'))
+
+      expect(wrapped).toContain('preserveAspectRatio="xMidYMid slice"')
+      expect(wrapped).toContain('width="100%" height="100%"')
+    })
+
+    it('centres the source at its natural size for fit none', () => {
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg width="20" height="10"><rect/></svg>')
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40, 'none'))
+
+      expect(wrapped).toContain('x="40" y="15" width="20" height="10"')
+      expect(wrapped).not.toContain('width="100%"')
+    })
+
+    it('falls back to meet for fit none when the source has no size', () => {
+      // A viewBox alone gives no natural size to honour.
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg viewBox="0 0 20 10"><rect/></svg>')
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40, 'none'))
+
+      expect(wrapped).toContain('width="100%" height="100%"')
+      expect(wrapped).toContain('preserveAspectRatio="xMidYMid meet"')
+    })
+
+    it('does not duplicate a source x or y attribute', () => {
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg x="5" y="5" width="20" height="10"/>')
+
+      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40, 'none'))
+
+      expect(wrapped.match(/\sx=/g)).toHaveLength(1)
+      expect(wrapped.match(/\sy=/g)).toHaveLength(1)
+    })
+
+    it('defaults to contain when no fit is given', () => {
+      const url =
+        'data:image/svg+xml,' +
+        encodeURIComponent('<svg viewBox="0 0 200 50"><rect/></svg>')
+
+      expect(decodeWrapper(wrapSvgDataUriForSize(url, 100, 40))).toContain(
+        'preserveAspectRatio="xMidYMid meet"',
+      )
+    })
+
     it('does not corrupt a self-closing source tag', () => {
       const url = 'data:image/svg+xml,' + encodeURIComponent('<svg/>')
 

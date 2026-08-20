@@ -104,6 +104,7 @@ describe('useNodeGraphicsSync', () => {
       hooks: [],
       images: {},
       refreshRequests: {},
+      refreshSequence: {},
     })
   })
 
@@ -152,6 +153,22 @@ describe('useNodeGraphicsSync', () => {
     await drain()
 
     expect(row.score).toBe(1)
+  })
+
+  it('copies list attributes, so a hook cannot reach the host array', async () => {
+    // A spread shares every array value with the host table. Immer freezes
+    // those, so a hook writing to one either corrupts host data or throws.
+    const row = { tags: ['a', 'b'] }
+    await setNodeTable('net1', tableOf([['n1', row]]))
+    registerHook((req: any) => {
+      req.attributes.tags.push('c')
+      return 'https://example.com/a.png'
+    })
+
+    renderHook(() => useNodeGraphicsSync('net1'))
+    await drain()
+
+    expect(row.tags).toEqual(['a', 'b'])
   })
 
   it('skips a node when the hook returns null', async () => {
@@ -499,6 +516,111 @@ describe('useNodeGraphicsSync', () => {
       await drain()
 
       expect(render).not.toHaveBeenCalled()
+    })
+
+    it('keeps the images a hook produced before it was disabled', async () => {
+      // A tripped circuit breaker is not a decline. Clearing here would erase
+      // every image the hook drew while it was healthy.
+      const rows: Array<[string, Record<string, ValueType>]> = Array.from(
+        { length: 25 },
+        (_, i) => [`n${i}`, { score: i }],
+      )
+      await setNodeTable('net1', tableOf(rows))
+      let throwing = false
+      registerHook(() => {
+        if (throwing) throw new Error('boom')
+        return 'https://example.com/a.png'
+      })
+
+      renderHook(() => useNodeGraphicsSync('net1'))
+      await drain()
+      expect(Object.keys(imagesFor('net1'))).toHaveLength(25)
+
+      throwing = true
+      await act(async () => {
+        await setNodeTable(
+          'net1',
+          tableOf(rows.map(([id, r]) => [id, { ...r, again: true }])),
+        )
+      })
+      await drain()
+
+      expect(Object.keys(imagesFor('net1'))).toHaveLength(25)
+    })
+
+    it('leaves a disabled hook disabled when another app registers one', async () => {
+      // The hook list changes whenever any app registers, so resetting the
+      // circuit breaker there would revive every hook it had disabled.
+      const rows: Array<[string, Record<string, ValueType>]> = Array.from(
+        { length: 25 },
+        (_, i) => [`n${i}`, { score: i }],
+      )
+      await setNodeTable('net1', tableOf(rows))
+      const bad = vi.fn(() => {
+        throw new Error('boom')
+      })
+      registerHook(bad, 'app-a')
+
+      renderHook(() => useNodeGraphicsSync('net1'))
+      await drain()
+      expect(bad.mock.calls.length).toBeGreaterThan(0)
+      bad.mockClear()
+
+      registerHook(() => null, 'app-b')
+      await drain()
+
+      expect(bad).not.toHaveBeenCalled()
+    })
+
+    it('keeps rendering later nodes when a returned value cannot be read', async () => {
+      // Normalization reads the value's properties, so a throwing getter throws
+      // outside the hook call. Unguarded, it kills the rest of the chunk.
+      await setNodeTable(
+        'net1',
+        tableOf([
+          ['n1', { bad: true }],
+          ['n2', { bad: false }],
+        ]),
+      )
+      registerHook((req) => {
+        if (req.attributes.bad !== true) return 'https://example.com/a.png'
+        return {
+          get image(): string {
+            throw new Error('hostile getter')
+          },
+        }
+      })
+
+      renderHook(() => useNodeGraphicsSync('net1'))
+      await drain()
+
+      expect(Object.keys(imagesFor('net1'))).toEqual(['n2'])
+    })
+
+    it('does not resurrect a node deleted after the flush began', async () => {
+      // `targets` is a snapshot. Rows must be read from the live table, or a
+      // chunk running after the deletion writes the image back.
+      await setNodeTable(
+        'net1',
+        tableOf([
+          ['n1', { score: 1 }],
+          ['n2', { score: 2 }],
+        ]),
+      )
+      registerHook(() => 'https://example.com/a.png')
+
+      renderHook(() => useNodeGraphicsSync('net1'))
+      // Runs the coalescing timer only: the flush queues its first chunk for
+      // the next frame.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(COALESCE_MS + 1)
+      })
+      await act(async () => {
+        await setNodeTable('net1', tableOf([['n1', { score: 1 }]]))
+      })
+      await drain()
+
+      expect(Object.keys(imagesFor('net1'))).toEqual(['n1'])
     })
   })
 
