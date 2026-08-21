@@ -19,6 +19,12 @@ interface DropdownMenuProps {
 }
 
 /**
+ * Marks the element a template row activates on Enter or Space. The row owns
+ * the keyboard; the click handler lives in the template.
+ */
+const MENU_ITEM_ACTION_ATTR = 'data-menuitem-action'
+
+/**
  * Renders one level of the menu model. An item with children opens its
  * submenu on hover (one open submenu per level, like the former primereact
  * TieredMenu); it stays open until a sibling is hovered or the menu closes.
@@ -49,13 +55,15 @@ function MenuLevel({
   } | null>(null)
 
   // Rows of THIS level only: submenus render through a Popper portal, so they
-  // are not descendants of this container in the DOM.
+  // are not descendants of this container in the DOM. Template rows mark their
+  // disabled state on the content inside the row, so filter those out too —
+  // otherwise arrow navigation stops on rows that cannot be activated.
   const focusableRows = (): HTMLElement[] =>
     Array.from(
       containerRef.current?.querySelectorAll<HTMLElement>(
         ':scope > [role="menuitem"][tabindex="0"]',
       ) ?? [],
-    )
+    ).filter((row) => row.querySelector('[aria-disabled="true"]') === null)
 
   useEffect(() => {
     if (autoFocus) {
@@ -118,11 +126,30 @@ function MenuLevel({
 
         const hasChildren = (item.items?.length ?? 0) > 0
         if (!hasChildren && item.template !== undefined) {
+          // The row, not the template inside it, is the one focusable
+          // menuitem: nesting a second one would show the row twice by role
+          // and leave arrow navigation unable to reach it at all. Enter and
+          // Space forward to the template's own click target, since the
+          // command lives in the template.
           return (
             <Box
               key={index}
               role="menuitem"
+              tabIndex={0}
               onMouseEnter={() => setOpenSubmenu(null)}
+              onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                  return
+                }
+                event.preventDefault()
+                // App menu templates render a MUI MenuItem instead, so accept
+                // either as the click target.
+                event.currentTarget
+                  .querySelector<HTMLElement>(
+                    `[${MENU_ITEM_ACTION_ATTR}], [role="menuitem"]`,
+                  )
+                  ?.click()
+              }}
             >
               {item.template}
             </Box>
@@ -344,7 +371,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
       <span>
         <Box
           data-testid={dataTestId}
-          tabIndex={disabled ? -1 : 0}
+          {...{ [MENU_ITEM_ACTION_ATTR]: '' }}
           aria-disabled={disabled ? true : undefined}
           sx={{
             display: 'flex',
@@ -364,12 +391,6 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
           onClick={() => {
             if (!disabled && onClick) {
               onClick()
-            }
-          }}
-          onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
-            if ((event.key === 'Enter' || event.key === ' ') && !disabled) {
-              event.preventDefault()
-              onClick?.()
             }
           }}
         >

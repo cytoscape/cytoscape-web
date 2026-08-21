@@ -552,14 +552,17 @@ export const clearNetworksFromDb = async (): Promise<void> => {
   })
 }
 
-export const getTablesFromDb = async (id: IdType): Promise<any> => {
+/**
+ * Deserialized tables for a network, or undefined when the network has no
+ * `cyTables` row at all. Callers that must tell "no tables persisted" apart
+ * from "tables persisted but empty" — network restore — use this, not
+ * getTablesFromDb, whose empty defaults erase that difference.
+ */
+const getStoredTablesFromDb = async (id: IdType): Promise<any | undefined> => {
   const cached: any = await db.cyTables.get({ id })
 
   if (cached === undefined) {
-    return {
-      nodeTable: { id: `${id}-nodes`, columns: [], rows: new Map() },
-      edgeTable: { id: `${id}-edges`, columns: [], rows: new Map() },
-    }
+    return undefined
   }
 
   return {
@@ -576,6 +579,15 @@ export const getTablesFromDb = async (id: IdType): Promise<any> => {
     ),
   }
 }
+
+/** Empty node and edge tables, the default for a network with no tables row. */
+const emptyTables = (id: IdType): any => ({
+  nodeTable: { id: `${id}-nodes`, columns: [], rows: new Map() },
+  edgeTable: { id: `${id}-edges`, columns: [], rows: new Map() },
+})
+
+export const getTablesFromDb = async (id: IdType): Promise<any> =>
+  (await getStoredTablesFromDb(id)) ?? emptyTables(id)
 /**
  *
  * @param id associated with the network
@@ -1679,7 +1691,9 @@ export class CyNetworkCacheMissError extends Error {
 export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
-    const tables = await getTablesFromDb(id)
+    // Row-aware read: getTablesFromDb() invents empty tables for a missing
+    // row, which made a partially persisted network look fully cached.
+    const tables = await getStoredTablesFromDb(id)
     // Through getNetworkViewsFromDb, not a raw row read: since DB v11 selection
     // lives in `viewSelections`, and only that helper merges it back in. Reading
     // the row directly restored every network with an empty selection.

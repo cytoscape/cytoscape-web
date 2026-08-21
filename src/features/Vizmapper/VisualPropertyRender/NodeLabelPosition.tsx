@@ -19,6 +19,24 @@ import {
   NodeLabelPositionValueType,
 } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
+/**
+ * The offset a draft describes, or undefined when the draft is not a complete
+ * number. Number(), not parseInt(): parseInt truncated "1.5" to 1 and "1e3" to
+ * 1, silently storing an offset the user never typed.
+ */
+export function parseOffset(draft: string): number | undefined {
+  if (draft.trim() === '') {
+    return undefined
+  }
+  const parsed = Number(draft)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/** Whether a draft is a complete number, so Confirm may write it. */
+export function isValidOffset(draft: string): boolean {
+  return parseOffset(draft) !== undefined
+}
+
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null
   onValueChange: (labelPosition: NodeLabelPositionType) => void
@@ -113,12 +131,13 @@ export function NodeLabelPositionPicker(props: {
           size="small"
           inputProps={{ step: 1, 'aria-label': 'Label X offset' }}
           value={marginXDraft}
+          error={!isValidOffset(marginXDraft)}
           onChange={(e) => {
             setMarginXDraft(e.target.value)
             // Write MARGIN_X only for a parsable draft; "-" or "" leaves the
             // last good offset in place instead of snapping to 0.
-            const parsed = Number.parseInt(e.target.value, 10)
-            if (!Number.isNaN(parsed)) {
+            const parsed = parseOffset(e.target.value)
+            if (parsed !== undefined) {
               setLocalValue({ ...localValue, MARGIN_X: parsed })
             }
           }}
@@ -132,10 +151,11 @@ export function NodeLabelPositionPicker(props: {
           size="small"
           inputProps={{ step: 1, 'aria-label': 'Label Y offset' }}
           value={marginYDraft}
+          error={!isValidOffset(marginYDraft)}
           onChange={(e) => {
             setMarginYDraft(e.target.value)
-            const parsed = Number.parseInt(e.target.value, 10)
-            if (!Number.isNaN(parsed)) {
+            const parsed = parseOffset(e.target.value)
+            if (parsed !== undefined) {
               setLocalValue({ ...localValue, MARGIN_Y: parsed })
             }
           }}
@@ -162,6 +182,9 @@ export function NodeLabelPositionPicker(props: {
         </Button>
         <Button
           variant="contained"
+          disabled={
+            !isValidOffset(marginXDraft) || !isValidOffset(marginYDraft)
+          }
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

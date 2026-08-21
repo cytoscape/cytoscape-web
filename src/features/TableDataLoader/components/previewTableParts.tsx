@@ -237,6 +237,10 @@ export function AdvancedParseSettings(props: {
                 state.setFileDelimiter(event.target.value)
                 if (event.target.value !== 'custom') {
                   state.setCustomFileDelimiter('')
+                  // Reopening Custom starts clean: without this the cleared
+                  // value keeps the "single character" error from the last
+                  // visit.
+                  setFileDelimiterTouched(false)
                 }
               }}
             >

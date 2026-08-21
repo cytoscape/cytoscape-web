@@ -611,6 +611,25 @@ describe('CyDB regressions', () => {
       `Visual style not found in IndexedDB for network ${networkId}`,
     )
   })
+
+  it('throws a cache miss when the network has no tables row', async () => {
+    await setupFreshDb()
+
+    const networkId = 'network-missing-tables'
+    await putNetworkToDb(createNetworkTopology(networkId))
+
+    // No putTablesToDb: the row is absent, not empty. getTablesFromDb() hands
+    // out empty defaults here, which would let a half-persisted network restore
+    // with no columns instead of falling back to the in-memory stores.
+    expect((await getTablesFromDb(networkId)).nodeTable.columns).toEqual([])
+
+    await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
+      CyNetworkCacheMissError,
+    )
+    await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
+      `Tables not found in IndexedDB for network ${networkId}`,
+    )
+  })
 })
 
 describe('CyDB helper coverage', () => {

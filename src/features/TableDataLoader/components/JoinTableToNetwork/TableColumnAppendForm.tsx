@@ -46,6 +46,7 @@ import {
   generateInferredColumnAppend,
   validateColumnValues,
 } from '../../model/impl/ParseValues'
+import { dropLeadingLines } from '../../model/impl/SkipLines'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
 import {
   AdvancedParseSettings,
@@ -239,7 +240,13 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
     if (rawText === '') {
       return
     }
-    const result = Papa.parse(rawText, {
+    // With a header row the skipped lines leave the text before the parse:
+    // Papa.parse reads its first line as the column names, so a metadata line
+    // would otherwise land in result.meta.fields.
+    const parseInput = useFirstRowAsColumns
+      ? dropLeadingLines(rawText, skipNLines)
+      : rawText
+    const result = Papa.parse(parseInput, {
       header: useFirstRowAsColumns,
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
@@ -251,7 +258,9 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
       setColumns([])
       return
     }
-    const rows = result.data.slice(skipNLines)
+    const rows = useFirstRowAsColumns
+      ? result.data
+      : result.data.slice(skipNLines)
 
     let headers: string[]
     if (useFirstRowAsColumns) {
