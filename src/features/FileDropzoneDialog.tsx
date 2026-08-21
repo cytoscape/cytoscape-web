@@ -68,7 +68,16 @@ export const FileDropzone = (props: FileDropzoneProps): JSX.Element => {
   return (
     <Box
       data-testid={testIds.dropzone}
+      role="button"
+      tabIndex={0}
       onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          // Space would otherwise scroll the dialog.
+          e.preventDefault()
+          inputRef.current?.click()
+        }
+      }}
       onDragOver={(e) => {
         e.preventDefault()
         setDragActive(true)
@@ -96,6 +105,11 @@ export const FileDropzone = (props: FileDropzoneProps): JSX.Element => {
         ref={inputRef}
         type="file"
         hidden
+        // The input lives inside the clickable Box; without this its own click
+        // bubbles back into that handler and re-opens the picker.
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
         onChange={(e) => {
           handleFiles(Array.from(e.target.files ?? []))
           // Allow re-selecting the same file after a rejection.

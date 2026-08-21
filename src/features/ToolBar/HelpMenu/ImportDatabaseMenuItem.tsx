@@ -1,23 +1,24 @@
 import UploadIcon from '@mui/icons-material/Upload'
 import { lazy, ReactElement, Suspense, useState } from 'react'
 
-import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
-import { logUi } from '../../../debug'
-import { MessageSeverity } from '../../../models/MessageModel'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { logUi } from '@/debug'
+import { MessageSeverity } from '@/models/MessageModel'
+import { ConfirmationDialog } from '@/features/ConfirmationDialog'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
 // Lazy: the upload dialog pulls in the dropzone/dialog stack, which would
 // otherwise ship with the eager toolbar chunk.
 const DatabaseSnapshotFileUpload = lazy(() =>
-  import('../DatabaseSnapshotFileUpload').then((m) => ({
+  import('@/features/ToolBar/DatabaseSnapshotFileUpload').then((m) => ({
     default: m.DatabaseSnapshotFileUpload,
   })),
 )
 
-
-export const ImportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const ImportDatabaseMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   const [showUpload, setShowUpload] = useState(false)
   // Mount latch for the lazy upload dialog: stays true after the first open
   // so the close animation still plays and reopening is instant.
@@ -41,7 +42,7 @@ export const ImportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement =
       // Loaded on demand: the snapshot module is heavy and this menu item is
       // eager via the ToolBar, so a static import would put it on cold load.
       const { importDatabaseSnapshotFromFile } = await import(
-        '../../../data/db/snapshot'
+        '@/data/db/snapshot'
       )
       const result = await importDatabaseSnapshotFromFile(file, {
         merge: false, // Replace existing data

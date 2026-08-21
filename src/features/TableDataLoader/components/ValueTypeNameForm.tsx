@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   ButtonGroup,
+  Chip,
   TextField,
   Tooltip,
 } from '@mui/material'
@@ -48,7 +49,8 @@ function TypeButtonGroup(props: {
               sx={{
                 ...compactButtonSx,
                 opacity: !validValues.includes(v) ? 0.2 : 1,
-                backgroundColor: v === value ? 'action.selected' : 'transparent',
+                backgroundColor:
+                  v === value ? 'action.selected' : 'transparent',
               }}
               disabled={!validValues.includes(v)}
               onClick={() => onSelect(v)}
@@ -89,7 +91,11 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
         disabled={!value?.startsWith('list_')}
         size="small"
         sx={{ width: 250, mt: 1.5 }}
-        value={DELIMITER_VALUE_TO_LABEL[props.delimiter ?? '|'] ?? props.delimiter ?? '|'}
+        value={
+          DELIMITER_VALUE_TO_LABEL[props.delimiter ?? '|'] ??
+          props.delimiter ??
+          '|'
+        }
         onInputChange={(_, newValue) =>
           props.onChange(
             value,
@@ -116,14 +122,16 @@ export function ValueTypeForm(props: ValueTypeFormProps) {
  * other data type surface (CW-562).
  */
 export function ValueTypeNameRender(props: { value: ValueTypeName }) {
+  // A Chip, not a Button: this summary renders inside ColumnHeaderEditor's
+  // role="button" container, and a nested interactive element there is
+  // unreachable for assistive technology.
   return (
-    <Button
+    <Chip
       size="small"
       variant="outlined"
-      startIcon={<ValueTypeNameChip type={props.value} showTooltip={false} />}
+      icon={<ValueTypeNameChip type={props.value} showTooltip={false} />}
+      label={valueTypeName2Label(props.value)}
       sx={{ ...compactButtonSx, justifyContent: 'flex-start' }}
-    >
-      {valueTypeName2Label(props.value)}
-    </Button>
+    />
   )
 }

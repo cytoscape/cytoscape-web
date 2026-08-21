@@ -53,7 +53,12 @@ export const ConfirmationDialog = (
     >
       <DialogTitle id="confirmation-dialog-title">{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="confirmation-dialog-description">
+        <DialogContentText
+          id="confirmation-dialog-description"
+          // Callers build multi-line messages (one parse error per line);
+          // without this the newlines collapse into one run-on paragraph.
+          sx={{ whiteSpace: 'pre-line' }}
+        >
           {message}
         </DialogContentText>
       </DialogContent>
@@ -68,7 +73,7 @@ export const ConfirmationDialog = (
         <Button
           data-testid="confirmation-dialog-confirm"
           variant="contained"
-          color={isAlert ? "error" : "primary"}
+          color={isAlert ? 'error' : 'primary'}
           onClick={handleConfirm}
           disabled={confirmDisabled ?? false}
           autoFocus

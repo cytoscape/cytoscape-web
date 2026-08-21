@@ -2,7 +2,11 @@ import { logApi, logDb } from '../../debug'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
-import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
+import {
+  CyNetworkCacheMissError,
+  getCyNetworkFromDb,
+  getNetworkSummaryFromDb,
+} from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
 import { takePrefetchedCyNetwork } from '@/data/prefetch/networkPrefetch'
 import { getCyNetworkFromStores } from './getCyNetworkFromStores'
@@ -37,7 +41,14 @@ export const useLoadCyNetwork = () => {
         }
         const cyNetwork = await getCyNetworkFromDb(networkId)
         return cyNetwork
-      } catch {
+      } catch (dbError) {
+        // Only a cache miss recovers here. A validation, deserialization or
+        // Dexie failure means the row exists but is unusable, and substituting
+        // the stores (or re-fetching from NDEx) would hide it.
+        if (!(dbError instanceof CyNetworkCacheMissError)) {
+          throw dbError
+        }
+
         // Cache miss — but a network imported in this session is fully in the
         // in-memory stores before its debounced IndexedDB persist lands, so
         // the first load can race the write (#665). Memory is authoritative

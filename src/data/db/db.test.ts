@@ -51,6 +51,7 @@ import {
   clearUndoRedoStackFromDb,
   clearVisualStyleFromDb,
   closeDb,
+  CyNetworkCacheMissError,
   deleteAppFromDb,
   deleteAppSettingFromDb,
   deleteDb,
@@ -601,8 +602,13 @@ describe('CyDB regressions', () => {
       createUiState(networkId, createVisualStyleOptionsModel()),
     )
 
+    // Typed as a cache miss, not a generic failure: useLoadCyNetwork only
+    // falls back to the in-memory stores for this class of error.
     await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
-      `Visual style not found for id: ${networkId}`,
+      CyNetworkCacheMissError,
+    )
+    await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
+      `Visual style not found in IndexedDB for network ${networkId}`,
     )
   })
 })

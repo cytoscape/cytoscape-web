@@ -2,7 +2,11 @@ import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
-import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
+import {
+  CyNetworkCacheMissError,
+  getCyNetworkFromDb,
+  getNetworkSummaryFromDb,
+} from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
 import { useCredentialStore } from './stores/CredentialStore'
 import { useNetworkStore } from './stores/NetworkStore'
@@ -14,6 +18,14 @@ import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useLoadCyNetwork } from './useLoadCyNetwork'
 
 vi.mock('../db', () => ({
+  // The real class: the loader classifies failures with `instanceof`, so a
+  // stub would make every rejection look like a hard DB error.
+  CyNetworkCacheMissError: class CyNetworkCacheMissError extends Error {
+    constructor(id: string, missing: string) {
+      super(`${missing} not found in IndexedDB for network ${id}`)
+      this.name = 'CyNetworkCacheMissError'
+    }
+  },
   getCyNetworkFromDb: vi.fn(),
   getNetworkSummaryFromDb: vi.fn(),
 }))
@@ -58,7 +70,9 @@ describe('useLoadCyNetwork', () => {
     })
 
     it('on cache miss, fetches from NDEx and converts the validated CX2', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
         isNdex: true,
       } as any)
@@ -74,7 +88,9 @@ describe('useLoadCyNetwork', () => {
     })
 
     it('also tries NDEx when no summary exists (unknown origin)', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue(undefined as any)
       vi.mocked(fetchNdexNetwork).mockResolvedValue([] as any)
       vi.mocked(getCyNetworkFromCx2).mockReturnValue(convertedNetwork)
@@ -85,7 +101,9 @@ describe('useLoadCyNetwork', () => {
     // A local-only network missing from cache is unrecoverable data loss —
     // it must NOT fall through to NDEx (which cannot have it).
     it('throws for a local-only network missing from cache instead of asking NDEx', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
         isNdex: false,
         name: 'My Local Network',
@@ -98,7 +116,9 @@ describe('useLoadCyNetwork', () => {
     })
 
     it('propagates NDEx fetch failures', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
         isNdex: true,
       } as any)
@@ -128,7 +148,10 @@ describe('useLoadCyNetwork', () => {
       selectedEdges: [],
     } as any
     const visualStyle = { nodeShape: {} } as any
-    const undoRedoStack = { undoStack: [{ id: 'edit-1' }], redoStack: [] } as any
+    const undoRedoStack = {
+      undoStack: [{ id: 'edit-1' }],
+      redoStack: [],
+    } as any
 
     const seedStores = () => {
       useNetworkStore.setState({
@@ -162,7 +185,9 @@ describe('useLoadCyNetwork', () => {
     })
 
     it('assembles the network from the stores when the DB read misses', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       // Without the fallback this summary makes the loader throw the
       // "local network is not found in cache" error — the #665 symptom.
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
@@ -184,7 +209,9 @@ describe('useLoadCyNetwork', () => {
     })
 
     it('returns copies of the store view models, not the frozen originals', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       seedStores()
 
       const result = await loadCyNetwork()(NET_ID)
@@ -197,7 +224,9 @@ describe('useLoadCyNetwork', () => {
     })
 
     it('still reports a lost local network when the stores are only partially populated', async () => {
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
         isNdex: false,
         name: 'My Local Network',
@@ -210,6 +239,21 @@ describe('useLoadCyNetwork', () => {
       await expect(loadCyNetwork()(NET_ID)).rejects.toThrow(
         /Local network "My Local Network".*cannot be retrieved from NDEx/,
       )
+      expect(fetchNdexNetwork).not.toHaveBeenCalled()
+    })
+
+    it('re-throws a non-miss DB failure instead of using the stores', async () => {
+      // A validation/deserialization/Dexie failure means the row exists but is
+      // unusable. Substituting the stores would hide the corruption.
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new Error('Invalid network view in IndexedDB'),
+      )
+      seedStores()
+
+      await expect(loadCyNetwork()(NET_ID)).rejects.toThrow(
+        'Invalid network view in IndexedDB',
+      )
+      expect(getNetworkSummaryFromDb).not.toHaveBeenCalled()
       expect(fetchNdexNetwork).not.toHaveBeenCalled()
     })
 
@@ -251,7 +295,9 @@ describe('useLoadCyNetwork', () => {
     it('lazily resolves the token from CredentialStore on a cache miss', async () => {
       const getTokenSpy = vi.fn().mockResolvedValue('lazy-token')
       useCredentialStore.setState({ getToken: getTokenSpy })
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue(undefined as any)
       vi.mocked(fetchNdexNetwork).mockResolvedValue([] as any)
       vi.mocked(getCyNetworkFromCx2).mockReturnValue(convertedNetwork)
@@ -266,7 +312,9 @@ describe('useLoadCyNetwork', () => {
     it('prefers an explicitly-passed access token over the store token', async () => {
       const getTokenSpy = vi.fn().mockResolvedValue('store-token')
       useCredentialStore.setState({ getToken: getTokenSpy })
-      vi.mocked(getCyNetworkFromDb).mockRejectedValue(new Error('cache miss'))
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
       vi.mocked(getNetworkSummaryFromDb).mockResolvedValue(undefined as any)
       vi.mocked(fetchNdexNetwork).mockResolvedValue([] as any)
       vi.mocked(getCyNetworkFromCx2).mockReturnValue(convertedNetwork)

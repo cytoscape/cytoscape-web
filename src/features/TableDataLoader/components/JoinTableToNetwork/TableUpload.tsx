@@ -10,13 +10,20 @@ import {
   FileDropzone,
   FileRejection,
 } from '@/features/FileDropzoneDialog'
+import { createFileValidator } from '@/features/ToolBar/GenericFileUploadDialog'
 import {
   JoinTableToNetworkStep,
   useJoinTableToNetworkStore,
 } from '../../store/joinTableToNetworkStore'
 
 const SUPPORTED_EXTENSIONS = ['csv', 'txt', 'tsv']
+// The whole file is read into memory and parsed synchronously on the main
+// thread, so the hint in the dropzone and the validator promise the same limit.
 const MAX_FILE_SIZE_MB = 5
+const validateTableFile = createFileValidator(
+  SUPPORTED_EXTENSIONS,
+  MAX_FILE_SIZE_MB,
+)
 
 export function TableUpload() {
   const setFile = useJoinTableToNetworkStore((state) => state.setFile)
@@ -34,9 +41,15 @@ export function TableUpload() {
   const [showParseErrors, setShowParseErrors] = useState(false)
 
   const onFileError = (files: FileRejection[]) => {
+    // The validator already says why the file was rejected (wrong type, too
+    // large, too many files); reporting "not supported" for all of them hid
+    // the size limit.
+    const rejectionMessage = files?.[0]?.errors?.[0]?.message
     addMessage({
       duration: 5000,
-      message: `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. Supported file types are: ${SUPPORTED_EXTENSIONS.map((e) => `.${e}`).join(', ')}.`,
+      message:
+        rejectionMessage ??
+        `The uploaded file ${files?.[0]?.file?.name ?? ''} is not supported. Supported file types are: ${SUPPORTED_EXTENSIONS.map((e) => `.${e}`).join(', ')}.`,
       severity: MessageSeverity.ERROR,
     })
   }
@@ -88,32 +101,14 @@ export function TableUpload() {
           dropzone: 'join-table-upload-dropzone',
           browseButton: 'join-table-upload-browse-button',
         }}
-        validator={(file: File) => {
-          if (!file.name) {
-            return null
-          }
-          const extension = file.name.split('.').pop()?.toLowerCase()
-          if (!extension || !SUPPORTED_EXTENSIONS.includes(extension)) {
-            return {
-              code: 'file-invalid-type',
-              message: `File ${file.name} is not a supported type.`,
-            }
-          }
-          // Enforce the limit the hint below promises: the whole file is read
-          // into memory and parsed synchronously on the main thread.
-          if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-            return {
-              code: 'file-too-large',
-              message: `File ${file.name} exceeds the maximum size of ${MAX_FILE_SIZE_MB}MB.`,
-            }
-          }
-          return null
-        }}
+        validator={validateTableFile}
         onDrop={onFileDrop}
         onReject={onFileError}
       >
         <Typography variant="h6">Or drag a tabular file here</Typography>
-        <DropzoneHint dimmed>Files under 5mb supported</DropzoneHint>
+        <DropzoneHint dimmed>
+          Files under {MAX_FILE_SIZE_MB}MB supported
+        </DropzoneHint>
       </FileDropzone>
       <ConfirmationDialog
         title="Errors found during data parsing"

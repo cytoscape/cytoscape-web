@@ -36,7 +36,8 @@ index.html
                  ├─ markBoot('init-exec')                      [init-exec]
                  ├─ createRoot(#root)
                  ├─ phase RUNTIME    enableMapSet, debug, tabManager
-                 ├─ startAuthentication()  ← not awaited; overlaps the DB open  [auth-settled]
+                 ├─ startAuthentication()  ← not awaited; overlaps the DB open
+                 │    └─ releaseTokenGate()  ← on SSO settle, any time later  [auth-settled]
                  ├─ phase DATABASE   openDatabaseForStartup()   ← the gate; fatal
                  ├─ root.render(<AppBootstrap/>)                [react-render]
                  └─ runOnIdle(analytics)  ← gtag deferred off the boot path

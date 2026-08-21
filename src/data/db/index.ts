@@ -531,7 +531,7 @@ export const getNetworkFromDb = async (
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
     observeValidation(`network ${id}`, network, validateNetwork)
-    const { default: NetworkFn } = await import('../../models/NetworkModel')
+    const { default: NetworkFn } = await import('@/models/NetworkModel')
     return NetworkFn.networkModelToImplNetwork(network)
   }
 }
@@ -1663,6 +1663,19 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
  * @returns Promise resolving to CyNetwork object
  * @throws Error if data retrieval fails or required fields are missing
  */
+/**
+ * The network is absent from IndexedDB, or only partially written (a debounced
+ * persist that has not landed yet). Distinguished from a validation,
+ * deserialization or Dexie failure so callers can fall back to another source
+ * on a miss while letting real failures surface.
+ */
+export class CyNetworkCacheMissError extends Error {
+  constructor(id: string, missing: string) {
+    super(`${missing} not found in IndexedDB for network ${id}`)
+    this.name = 'CyNetworkCacheMissError'
+  }
+}
+
 export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
@@ -1697,16 +1710,16 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
 
     // Ensure all required fields are present
     if (!network) {
-      throw new Error(`Network not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Network')
     }
     if (!tables || !tables.nodeTable || !tables.edgeTable) {
-      throw new Error(`Tables not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Tables')
     }
     if (!visualStyle) {
-      throw new Error(`Visual style not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Visual style')
     }
     if (!networkViews) {
-      throw new Error(`Network views not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Network views')
     }
 
     return {

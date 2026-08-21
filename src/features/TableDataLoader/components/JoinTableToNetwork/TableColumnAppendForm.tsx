@@ -184,6 +184,7 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
         rows as ParsedRow[],
         columns,
         networkKeyColumn,
+        caseSensitiveKeyValues,
       )
       setTable(currentNetworkId, tableToAppend, nextTable)
     }
@@ -385,10 +386,11 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
     rows,
     keyCol,
     networkKeyColumn,
+    caseSensitiveKeyValues,
   )
 
   return (
-    <Box sx={{ zIndex: 2001 }}>
+    <Box>
       <Stack spacing={1.5} sx={{ mb: 2 }}>
         <Stack direction="row" alignItems="center">
           <Typography sx={{ width: 200 }}>Import data as</Typography>
@@ -525,10 +527,10 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
               sx={{
                 fontWeight: willBeJoined ? 900 : 500,
                 color: valueIsInvalid
-                  ? 'red'
+                  ? 'error.main'
                   : willBeJoined
-                    ? '#4f4949'
-                    : '#a39c9c',
+                    ? 'text.primary'
+                    : 'text.disabled',
               }}
             >
               {row[c.name]}

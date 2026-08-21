@@ -114,7 +114,11 @@ export function PreviewDataTable(props: {
   columnNames: string[]
   height: number
   renderHeader: (columnIndex: number) => ReactNode
-  renderCell: (columnIndex: number, row: ParsedRow, rowIndex: number) => ReactNode
+  renderCell: (
+    columnIndex: number,
+    row: ParsedRow,
+    rowIndex: number,
+  ) => ReactNode
 }) {
   const { rows, columnNames, height, renderHeader, renderCell } = props
   const visibleRows = rows.slice(0, PREVIEW_ROW_LIMIT)
@@ -131,8 +135,8 @@ export function PreviewDataTable(props: {
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
-              {columnNames.map((name, i) => (
-                <TableCell key={name} sx={{ verticalAlign: 'top' }}>
+              {columnNames.map((_name, i) => (
+                <TableCell key={i} sx={{ verticalAlign: 'top' }}>
                   {renderHeader(i)}
                 </TableCell>
               ))}
@@ -148,8 +152,8 @@ export function PreviewDataTable(props: {
                   },
                 }}
               >
-                {columnNames.map((name, i) => (
-                  <TableCell key={name} sx={{ py: 0.25 }}>
+                {columnNames.map((_name, i) => (
+                  <TableCell key={i} sx={{ py: 0.25 }}>
                     {renderCell(i, row, rowIndex)}
                   </TableCell>
                 ))}
@@ -190,6 +194,10 @@ export function AdvancedParseSettings(props: {
 }) {
   const { testId, state } = props
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  // A freshly-revealed custom delimiter field is empty, which is not yet a
+  // mistake. Flag the empty value only after the user has typed in it.
+  const [fileDelimiterTouched, setFileDelimiterTouched] = useState(false)
+  const [decimalDelimiterTouched, setDecimalDelimiterTouched] = useState(false)
 
   const radioRow = (value: string, label: string) => (
     <FormControlLabel
@@ -246,14 +254,17 @@ export function AdvancedParseSettings(props: {
                 value={state.customFileDelimiter}
                 onChange={(event) => {
                   const val = event.currentTarget.value
+                  setFileDelimiterTouched(true)
                   if (val.length <= 1) state.setCustomFileDelimiter(val)
                 }}
                 placeholder="Enter a single character"
                 size="small"
                 sx={{ mt: 1 }}
-                error={state.customFileDelimiter.length !== 1}
+                error={
+                  fileDelimiterTouched && state.customFileDelimiter.length !== 1
+                }
                 helperText={
-                  state.customFileDelimiter.length !== 1
+                  fileDelimiterTouched && state.customFileDelimiter.length !== 1
                     ? 'Please enter a single character.'
                     : undefined
                 }
@@ -282,13 +293,18 @@ export function AdvancedParseSettings(props: {
                 value={state.customDecimalDelimiter}
                 onChange={(event) => {
                   const val = event.currentTarget.value
+                  setDecimalDelimiterTouched(true)
                   if (val.length <= 1) state.setCustomDecimalDelimiter(val)
                 }}
                 placeholder="Enter a single character"
                 size="small"
                 sx={{ mt: 1 }}
-                error={state.customDecimalDelimiter.length !== 1}
+                error={
+                  decimalDelimiterTouched &&
+                  state.customDecimalDelimiter.length !== 1
+                }
                 helperText={
+                  decimalDelimiterTouched &&
                   state.customDecimalDelimiter.length !== 1
                     ? 'Please enter a single character.'
                     : undefined

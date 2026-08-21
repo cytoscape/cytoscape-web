@@ -2,7 +2,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { Box, Button, Divider, Popover, Popper, Tooltip } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import * as React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { darkPalette } from '../../theme'
 import { ToolbarMenuItem } from './menuItemModel'
@@ -26,19 +26,84 @@ interface DropdownMenuProps {
 function MenuLevel({
   items,
   minWidth,
+  menuId,
+  autoFocus = false,
+  onEscape,
 }: {
   items: ToolbarMenuItem[]
   minWidth?: number
+  /** Id the trigger's aria-controls points at; set on the top level only. */
+  menuId?: string
+  /** Move focus to the first enabled row on mount (keyboard-opened submenu). */
+  autoFocus?: boolean
+  /** Escape with no submenu of our own open — the level above closes us. */
+  onEscape?: () => void
 }): React.ReactElement {
   const theme = useTheme()
+  const containerRef = useRef<HTMLDivElement>(null)
   const [openSubmenu, setOpenSubmenu] = useState<{
     index: number
     anchorEl: HTMLElement
+    /** Opened from the keyboard, so focus must follow into the submenu. */
+    fromKeyboard: boolean
   } | null>(null)
+
+  // Rows of THIS level only: submenus render through a Popper portal, so they
+  // are not descendants of this container in the DOM.
+  const focusableRows = (): HTMLElement[] =>
+    Array.from(
+      containerRef.current?.querySelectorAll<HTMLElement>(
+        ':scope > [role="menuitem"][tabindex="0"]',
+      ) ?? [],
+    )
+
+  useEffect(() => {
+    if (autoFocus) {
+      focusableRows()[0]?.focus()
+    }
+  }, [autoFocus])
+
+  const moveFocus = (delta: number): void => {
+    const rows = focusableRows()
+    if (rows.length === 0) {
+      return
+    }
+    const current = rows.indexOf(document.activeElement as HTMLElement)
+    const next =
+      current === -1 ? 0 : (current + delta + rows.length) % rows.length
+    rows[next]?.focus()
+  }
+
+  const closeSubmenu = (): void => {
+    const anchor = openSubmenu?.anchorEl
+    setOpenSubmenu(null)
+    anchor?.focus()
+  }
 
   return (
     <Box
+      ref={containerRef}
+      id={menuId}
       role="menu"
+      onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+        // Escape and ArrowLeft both back out one level. Only stop propagation
+        // when this level actually handles it — at the top level the event must
+        // reach the Popover, which closes the whole menu.
+        if (event.key === 'Escape' || event.key === 'ArrowLeft') {
+          if (openSubmenu !== null) {
+            event.stopPropagation()
+            closeSubmenu()
+          } else if (onEscape !== undefined) {
+            event.stopPropagation()
+            onEscape()
+          }
+          return
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault()
+          moveFocus(event.key === 'ArrowDown' ? 1 : -1)
+        }
+      }}
       sx={{
         minWidth: minWidth ?? 200,
         maxWidth: 600,
@@ -64,12 +129,15 @@ function MenuLevel({
           )
         }
 
-        const activateRow = (target: HTMLElement): void => {
+        const activateRow = (
+          target: HTMLElement,
+          fromKeyboard = false,
+        ): void => {
           if (item.disabled === true) {
             return
           }
           if (hasChildren) {
-            setOpenSubmenu({ index, anchorEl: target })
+            setOpenSubmenu({ index, anchorEl: target, fromKeyboard })
             return
           }
           item.command?.()
@@ -103,7 +171,11 @@ function MenuLevel({
             onMouseEnter={(event: React.MouseEvent<HTMLElement>) => {
               setOpenSubmenu(
                 hasChildren
-                  ? { index, anchorEl: event.currentTarget }
+                  ? {
+                      index,
+                      anchorEl: event.currentTarget,
+                      fromKeyboard: false,
+                    }
                   : null,
               )
             }}
@@ -113,7 +185,13 @@ function MenuLevel({
             onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
-                activateRow(event.currentTarget)
+                activateRow(event.currentTarget, true)
+              }
+              // ArrowRight opens a submenu; ArrowLeft is handled by the
+              // submenu's own level, which closes itself and refocuses here.
+              if (event.key === 'ArrowRight' && hasChildren) {
+                event.preventDefault()
+                activateRow(event.currentTarget, true)
               }
             }}
           >
@@ -136,7 +214,9 @@ function MenuLevel({
             {row}
             <Popper
               open={openSubmenu?.index === index}
-              anchorEl={openSubmenu?.index === index ? openSubmenu.anchorEl : null}
+              anchorEl={
+                openSubmenu?.index === index ? openSubmenu.anchorEl : null
+              }
               placement="right-start"
               sx={{ zIndex: theme.zIndex.modal + 1 }}
             >
@@ -146,7 +226,12 @@ function MenuLevel({
                   backgroundColor: theme.palette.background.paper,
                 }}
               >
-                <MenuLevel items={item.items ?? []} minWidth={minWidth} />
+                <MenuLevel
+                  items={item.items ?? []}
+                  minWidth={minWidth}
+                  autoFocus={openSubmenu?.fromKeyboard === true}
+                  onEscape={closeSubmenu}
+                />
               </Box>
             </Popper>
           </React.Fragment>
@@ -168,6 +253,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
 }) => {
   const theme = useTheme()
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const menuId = `${id}-menu`
 
   useEffect(() => {
     if (!open || disabled) {
@@ -203,7 +289,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
               },
             }}
             id={`${id}-dropdown`}
-            aria-controls={open ? 'basic-menu' : undefined}
+            aria-controls={open ? menuId : undefined}
             aria-haspopup="true"
             aria-expanded={open ? 'true' : undefined}
             onClick={handleClick}
@@ -227,7 +313,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
           },
         }}
       >
-        <MenuLevel items={menuItems} minWidth={minWidth} />
+        <MenuLevel items={menuItems} minWidth={minWidth} menuId={menuId} />
       </Popover>
     </>
   )
@@ -266,9 +352,13 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
             gap: 1,
             padding: '4px 16px',
             cursor: disabled ? 'default' : 'pointer',
-            color: disabled ? theme.palette.text.disabled : theme.palette.text.primary,
+            color: disabled
+              ? theme.palette.text.disabled
+              : theme.palette.text.primary,
             '&:hover': {
-              backgroundColor: disabled ? theme.palette.background.paper : theme.palette.action.hover,
+              backgroundColor: disabled
+                ? theme.palette.background.paper
+                : theme.palette.action.hover,
             },
           }}
           onClick={() => {

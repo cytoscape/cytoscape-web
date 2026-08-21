@@ -109,13 +109,44 @@ describe('DropdownMenu keyboard access', () => {
     expect(command).not.toHaveBeenCalled()
   })
 
-  it('opens a submenu with Enter', () => {
+  it('opens a submenu with Enter and moves focus into it', () => {
     renderOpenMenu([
       { label: 'Import', items: [{ label: 'From file', command: vi.fn() }] },
     ])
 
     const parent = screen.getByRole('menuitem', { name: 'Import' })
     fireEvent.keyDown(parent, { key: 'Enter' })
-    expect(screen.getByRole('menuitem', { name: 'From file' })).toBeTruthy()
+
+    const child = screen.getByRole('menuitem', { name: 'From file' })
+    expect(child).toBeTruthy()
+    // Without this the submenu opens but the keyboard is stranded on the
+    // parent row, so the submenu is unreachable without a mouse.
+    expect(document.activeElement).toBe(child)
+  })
+
+  it('closes the submenu with Escape and returns focus to the parent', () => {
+    renderOpenMenu([
+      { label: 'Import', items: [{ label: 'From file', command: vi.fn() }] },
+    ])
+
+    const parent = screen.getByRole('menuitem', { name: 'Import' })
+    fireEvent.keyDown(parent, { key: 'Enter' })
+
+    const child = screen.getByRole('menuitem', { name: 'From file' })
+    fireEvent.keyDown(child, { key: 'Escape' })
+
+    expect(screen.queryByRole('menuitem', { name: 'From file' })).toBeNull()
+    expect(document.activeElement).toBe(parent)
+  })
+
+  it("points the trigger's aria-controls at the rendered menu", () => {
+    renderOpenMenu([{ label: 'Run', command: vi.fn() }])
+
+    const button = screen.getByTestId('toolbar-tools-menu-button')
+    const controls = button.getAttribute('aria-controls')
+    expect(controls).toBe('tools-menu')
+    expect(document.getElementById(controls as string)).toBe(
+      screen.getByRole('menu'),
+    )
   })
 })
