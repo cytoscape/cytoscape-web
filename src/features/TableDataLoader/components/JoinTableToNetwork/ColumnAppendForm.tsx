@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Tooltip } from '@mui/material'
+import { Button, ButtonGroup, Chip, Tooltip } from '@mui/material'
 import { IconBan, IconFileText, IconKey } from '@tabler/icons-react'
 
 import { compactButtonSx } from '@/features/TableDataLoader/components/compactButtonSx'
@@ -15,16 +15,20 @@ export const columnAppendIconMap = {
   [ColumnAppendType.NotImported]: <IconBan size={20} color="gray" />,
 }
 
+/**
+ * Read-only summary of a column's meaning. A Chip, not a Button: it renders
+ * inside ColumnHeaderEditor's role="button" container, and a nested
+ * interactive element there is unreachable for assistive technology.
+ */
 export function ColumnAppendTypeRender(props: { value: ColumnAppendType }) {
   return (
-    <Button
+    <Chip
       size="small"
       variant="outlined"
-      startIcon={columnAppendIconMap[props.value]}
+      icon={columnAppendIconMap[props.value]}
+      label={columnAppendType2Label[props.value]}
       sx={{ ...compactButtonSx, justifyContent: 'flex-start' }}
-    >
-      {columnAppendType2Label[props.value]}
-    </Button>
+    />
   )
 }
 
@@ -44,10 +48,12 @@ export function ColumnAppendForm(props: ColumnAppendFormProps) {
           <Tooltip key={v} title={columnAppendType2Label[v]}>
             <span>
               <Button
+                aria-pressed={v === value}
                 sx={{
                   ...compactButtonSx,
                   opacity: !validValues.includes(v) ? 0.2 : 1,
-                  backgroundColor: v === value ? 'action.selected' : 'transparent',
+                  backgroundColor:
+                    v === value ? 'action.selected' : 'transparent',
                 }}
                 disabled={!validValues.includes(v)}
                 onClick={() => onChange(v)}

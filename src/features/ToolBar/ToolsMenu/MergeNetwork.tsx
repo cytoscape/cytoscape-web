@@ -7,15 +7,15 @@ import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
-import { Network } from '../../../models/NetworkModel'
-import { NetworkSummary } from '../../../models/NetworkSummaryModel'
-import { VisualStyle } from '../../../models/VisualStyleModel'
-import { generateUniqueName } from '../../../utils/generateUniqueName'
+import { Network } from '@/models/NetworkModel'
+import { NetworkSummary } from '@/models/NetworkSummaryModel'
+import { VisualStyle } from '@/models/VisualStyleModel'
+import { generateUniqueName } from '@/utils/generateUniqueName'
 import type {
   NetworkRecord,
   Pair,
-} from '../../MergeNetworks/models/DataInterfaceForMerge'
-import { getNetTableFromSummary } from '../../MergeNetworks/utils/mergeNetworkUtil'
+} from '@/features/MergeNetworks/models/DataInterfaceForMerge'
+import { getNetTableFromSummary } from '@/features/MergeNetworks/utils/mergeNetworkUtil'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
@@ -25,8 +25,9 @@ const MergeDialog = lazy(
   () => import('@/features/MergeNetworks/components/MergeDialog'),
 )
 
-
-export const MergeNetwork = ({ onClick: handleClose }: BaseMenuItemProps): ReactElement => {
+export const MergeNetwork = ({
+  onClick: handleClose,
+}: BaseMenuItemProps): ReactElement => {
   const [openDialog, setOpenDialog] = useState<boolean>(false)
   // Mount latch for the lazy dialog: stays true after the first open so the
   // close animation still plays and reopening is instant.

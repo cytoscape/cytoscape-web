@@ -1,7 +1,7 @@
 import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
+import { Column, Table } from '@/models/TableModel'
 import { describe, expect, it } from 'vitest'
 
-import { Column,Table } from '../../../models/TableModel'
 import { ColumnAppendState } from '../model/ColumnAppendState'
 import { ColumnAppendType } from '../model/ColumnAppendType'
 import { joinRowsToTable } from '../model/impl/JoinTableToNetwork'
@@ -81,6 +81,50 @@ describe('joinRowsToTable', () => {
     ])
 
     expect(result.rows).toEqual(new Map([['1', { id: '1', f: 1 }]]))
+  })
+
+  it('joins case-insensitively when caseSensitive is false', () => {
+    const table: Table = {
+      id: 'test',
+      columns: [{ name: 'name', type: 'string' }],
+      rows: new Map([['1', { name: 'John' }]]),
+    }
+    const rows: ParsedRow[] = [{ key: 'john', score: 7 }]
+    const columns: ColumnAppendState[] = [
+      {
+        name: 'key',
+        dataType: 'string',
+        meaning: ColumnAppendType.Key,
+        rowsToJoin: [],
+        invalidValues: [],
+      },
+      {
+        name: 'score',
+        dataType: 'integer',
+        meaning: ColumnAppendType.Attribute,
+        rowsToJoin: [],
+        invalidValues: [],
+      },
+    ]
+    const networkKeyColumn: Column = { name: 'name', type: 'string' }
+
+    const insensitive = joinRowsToTable(
+      table,
+      rows,
+      columns,
+      networkKeyColumn,
+      false,
+    )
+    expect(insensitive.rows.get('1')).toEqual({ name: 'John', score: 7 })
+
+    const sensitive = joinRowsToTable(
+      table,
+      rows,
+      columns,
+      networkKeyColumn,
+      true,
+    )
+    expect(sensitive.rows.get('1')).toEqual({ name: 'John' })
   })
 
   //   it('does not append rows if key column is missing', () => {

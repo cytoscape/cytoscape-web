@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react'
 
-import { Network } from '../models/NetworkModel'
-import { DEFAULT_RENDERER_ID } from '../models/RendererModel/impl/defaultRenderer'
-import { Renderer } from '../models/RendererModel/Renderer'
+import { Network } from '@/models/NetworkModel'
+import { DEFAULT_RENDERER_ID } from '@/models/RendererModel/impl/defaultRenderer'
+import { Renderer } from '@/models/RendererModel/Renderer'
 
 // Loaded lazily so this module stays light: RendererStore imports it at store
 // creation to seed `renderers`, which would otherwise drag cytoscape and the

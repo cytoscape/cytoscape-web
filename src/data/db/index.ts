@@ -531,7 +531,7 @@ export const getNetworkFromDb = async (
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
     observeValidation(`network ${id}`, network, validateNetwork)
-    const { default: NetworkFn } = await import('../../models/NetworkModel')
+    const { default: NetworkFn } = await import('@/models/NetworkModel')
     return NetworkFn.networkModelToImplNetwork(network)
   }
 }
@@ -552,14 +552,17 @@ export const clearNetworksFromDb = async (): Promise<void> => {
   })
 }
 
-export const getTablesFromDb = async (id: IdType): Promise<any> => {
+/**
+ * Deserialized tables for a network, or undefined when the network has no
+ * `cyTables` row at all. Callers that must tell "no tables persisted" apart
+ * from "tables persisted but empty" — network restore — use this, not
+ * getTablesFromDb, whose empty defaults erase that difference.
+ */
+const getStoredTablesFromDb = async (id: IdType): Promise<any | undefined> => {
   const cached: any = await db.cyTables.get({ id })
 
   if (cached === undefined) {
-    return {
-      nodeTable: { id: `${id}-nodes`, columns: [], rows: new Map() },
-      edgeTable: { id: `${id}-edges`, columns: [], rows: new Map() },
-    }
+    return undefined
   }
 
   return {
@@ -576,6 +579,15 @@ export const getTablesFromDb = async (id: IdType): Promise<any> => {
     ),
   }
 }
+
+/** Empty node and edge tables, the default for a network with no tables row. */
+const emptyTables = (id: IdType): any => ({
+  nodeTable: { id: `${id}-nodes`, columns: [], rows: new Map() },
+  edgeTable: { id: `${id}-edges`, columns: [], rows: new Map() },
+})
+
+export const getTablesFromDb = async (id: IdType): Promise<any> =>
+  (await getStoredTablesFromDb(id)) ?? emptyTables(id)
 /**
  *
  * @param id associated with the network
@@ -1663,10 +1675,25 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
  * @returns Promise resolving to CyNetwork object
  * @throws Error if data retrieval fails or required fields are missing
  */
+/**
+ * The network is absent from IndexedDB, or only partially written (a debounced
+ * persist that has not landed yet). Distinguished from a validation,
+ * deserialization or Dexie failure so callers can fall back to another source
+ * on a miss while letting real failures surface.
+ */
+export class CyNetworkCacheMissError extends Error {
+  constructor(id: string, missing: string) {
+    super(`${missing} not found in IndexedDB for network ${id}`)
+    this.name = 'CyNetworkCacheMissError'
+  }
+}
+
 export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
-    const tables = await getTablesFromDb(id)
+    // Row-aware read: getTablesFromDb() invents empty tables for a missing
+    // row, which made a partially persisted network look fully cached.
+    const tables = await getStoredTablesFromDb(id)
     // Through getNetworkViewsFromDb, not a raw row read: since DB v11 selection
     // lives in `viewSelections`, and only that helper merges it back in. Reading
     // the row directly restored every network with an empty selection.
@@ -1697,16 +1724,16 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
 
     // Ensure all required fields are present
     if (!network) {
-      throw new Error(`Network not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Network')
     }
     if (!tables || !tables.nodeTable || !tables.edgeTable) {
-      throw new Error(`Tables not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Tables')
     }
     if (!visualStyle) {
-      throw new Error(`Visual style not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Visual style')
     }
     if (!networkViews) {
-      throw new Error(`Network views not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Network views')
     }
 
     return {

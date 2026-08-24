@@ -51,6 +51,7 @@ import {
   clearUndoRedoStackFromDb,
   clearVisualStyleFromDb,
   closeDb,
+  CyNetworkCacheMissError,
   deleteAppFromDb,
   deleteAppSettingFromDb,
   deleteDb,
@@ -601,8 +602,32 @@ describe('CyDB regressions', () => {
       createUiState(networkId, createVisualStyleOptionsModel()),
     )
 
+    // Typed as a cache miss, not a generic failure: useLoadCyNetwork only
+    // falls back to the in-memory stores for this class of error.
     await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
-      `Visual style not found for id: ${networkId}`,
+      CyNetworkCacheMissError,
+    )
+    await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
+      `Visual style not found in IndexedDB for network ${networkId}`,
+    )
+  })
+
+  it('throws a cache miss when the network has no tables row', async () => {
+    await setupFreshDb()
+
+    const networkId = 'network-missing-tables'
+    await putNetworkToDb(createNetworkTopology(networkId))
+
+    // No putTablesToDb: the row is absent, not empty. getTablesFromDb() hands
+    // out empty defaults here, which would let a half-persisted network restore
+    // with no columns instead of falling back to the in-memory stores.
+    expect((await getTablesFromDb(networkId)).nodeTable.columns).toEqual([])
+
+    await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
+      CyNetworkCacheMissError,
+    )
+    await expect(getCyNetworkFromDb(networkId)).rejects.toThrow(
+      `Tables not found in IndexedDB for network ${networkId}`,
     )
   })
 })

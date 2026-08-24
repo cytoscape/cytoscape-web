@@ -2,9 +2,14 @@ import { logApi, logDb } from '../../debug'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
-import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
+import {
+  CyNetworkCacheMissError,
+  getCyNetworkFromDb,
+  getNetworkSummaryFromDb,
+} from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
 import { takePrefetchedCyNetwork } from '@/data/prefetch/networkPrefetch'
+import { getCyNetworkFromStores } from './getCyNetworkFromStores'
 import { useCredentialStore } from './stores/CredentialStore'
 
 /**
@@ -36,8 +41,29 @@ export const useLoadCyNetwork = () => {
         }
         const cyNetwork = await getCyNetworkFromDb(networkId)
         return cyNetwork
-      } catch {
-        // Cache miss - check if this is a local-only network
+      } catch (dbError) {
+        // Only a cache miss recovers here. A validation, deserialization or
+        // Dexie failure means the row exists but is unusable, and substituting
+        // the stores (or re-fetching from NDEx) would hide it.
+        if (!(dbError instanceof CyNetworkCacheMissError)) {
+          throw dbError
+        }
+
+        // Cache miss — but a network imported in this session is fully in the
+        // in-memory stores before its debounced IndexedDB persist lands, so
+        // the first load can race the write (#665). Memory is authoritative
+        // exactly when the DB has nothing; when the DB read succeeds above it
+        // stays authoritative (cross-tab sync leaves non-current networks
+        // stale in the stores on purpose).
+        const inMemory = getCyNetworkFromStores(networkId)
+        if (inMemory !== undefined) {
+          logDb.info(
+            `[${loadCyNetwork.name}]: Cache miss for ${networkId}, using the in-memory store copy`,
+          )
+          return inMemory
+        }
+
+        // Not in memory either - check if this is a local-only network
         const summary = await getNetworkSummaryFromDb(networkId)
 
         if (summary && !summary.isNdex) {

@@ -38,6 +38,19 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../TableDataLoader/store/createNetworkFromTableStore'
+import {
+  createFileValidator,
+  DEFAULT_MAX_FILE_SIZE_MB,
+} from './GenericFileUploadDialog'
+
+const NETWORK_FILE_TYPES = ['csv', 'txt', 'tsv', 'cx2', 'sif']
+// The whole file is read into memory and parsed on the main thread, so the
+// hint in the dropzone and the validator must promise the same limit.
+const NETWORK_FILE_MAX_SIZE_MB = DEFAULT_MAX_FILE_SIZE_MB
+const validateNetworkFile = createFileValidator(
+  NETWORK_FILE_TYPES,
+  NETWORK_FILE_MAX_SIZE_MB,
+)
 
 interface FileUploadProps {
   show: boolean
@@ -270,7 +283,7 @@ export function FileUpload(props: FileUploadProps) {
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const setName = useCreateNetworkFromTableStore((state) => state.setName)
-  const onFileError = (files: any) => {
+  const onFileError = (files: FileRejection[]) => {
     if (files.length > 1) {
       addMessage({
         duration: 3000,
@@ -404,35 +417,7 @@ export function FileUpload(props: FileUploadProps) {
         dropzone: 'file-upload-dropzone',
         browseButton: 'file-upload-browse-button',
       }}
-      validator={(file: File) => {
-        // Do not validate if the object is not a file
-        if (!file.name) {
-          return null
-        }
-
-        const fileExtension = file.name.split('.').pop()?.toLowerCase()
-        if (
-          fileExtension !== 'csv' &&
-          fileExtension !== 'txt' &&
-          fileExtension !== 'tsv' &&
-          fileExtension !== 'cx2' &&
-          fileExtension !== 'sif'
-        ) {
-          return {
-            code: 'file-invalid-type',
-            message: `File ${file.name} is not a supported type.`,
-          }
-        }
-        // Enforce the limit the hint below promises: the whole file is read
-        // into memory and parsed on the main thread.
-        if (file.size > 5 * 1024 * 1024) {
-          return {
-            code: 'file-too-large',
-            message: `File ${file.name} exceeds the maximum size of 5MB.`,
-          }
-        }
-        return null
-      }}
+      validator={validateNetworkFile}
       onDrop={onFileDrop}
       onReject={(rejectedFiles: FileRejection[]) => {
         onFileError(rejectedFiles)
@@ -442,8 +427,12 @@ export function FileUpload(props: FileUploadProps) {
       <DropzoneHint>
         Supported file types: .csv, .txt, .tsv, .cx2, .sif.
       </DropzoneHint>
-      <DropzoneHint dimmed>Microsoft Excel files are not supported.</DropzoneHint>
-      <DropzoneHint dimmed>Files under 5MB supported.</DropzoneHint>
+      <DropzoneHint dimmed>
+        Microsoft Excel files are not supported.
+      </DropzoneHint>
+      <DropzoneHint dimmed>
+        Files under {NETWORK_FILE_MAX_SIZE_MB}MB supported.
+      </DropzoneHint>
     </FileDropzoneDialog>
   )
 }

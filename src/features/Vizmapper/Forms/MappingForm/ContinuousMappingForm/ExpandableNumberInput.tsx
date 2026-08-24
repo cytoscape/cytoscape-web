@@ -8,7 +8,6 @@ import {
 } from '@mui/material'
 import React from 'react'
 
-
 // A button that displays a number input value, the user can click this button to open up a dropdown form that allows the user to input a number and cancel/confirm
 //
 // CW-591: `displayMultiplier`/`suffix`/`displayDecimals` let a caller show the
@@ -33,14 +32,26 @@ export function ExpandableNumberInput(props: {
   const toDisplay = (v: number): number => v * displayMultiplier
   const fromDisplay = (v: number): number => v / displayMultiplier
   const [localValue, setLocalValue] = React.useState<number>(value as number)
+  // The raw text the user is typing. Bound to the field so partial input
+  // ("-", "1.", "0.05") survives: binding the field to the parsed number
+  // rewrote it on every keystroke and made decimals unenterable.
+  const [draft, setDraft] = React.useState<string>(
+    String(toDisplay(value as number)),
+  )
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
-  
+
   React.useEffect(() => {
     setLocalValue(value as number)
-  }, [value])
+    setDraft(String(toDisplay(value as number)))
+    // toDisplay is derived from displayMultiplier, which is covered below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toDisplay is recreated every render
+  }, [value, displayMultiplier])
+
+  const draftIsNumber = Number.isFinite(Number.parseFloat(draft))
 
   const handleCancel = () => {
     setLocalValue(value as number)
+    setDraft(String(toDisplay(value as number)))
     hidePopover()
   }
 
@@ -102,7 +113,8 @@ export function ExpandableNumberInput(props: {
               pointer: 'cursor',
             },
             overflow: 'hidden',
-            border: (theme) => props.disabled ? 'none' : `1px solid ${theme.palette.divider}`,
+            border: (theme) =>
+              props.disabled ? 'none' : `1px solid ${theme.palette.divider}`,
             borderRadius: '4px',
             display: 'flex',
             justifyContent: 'center',
@@ -129,9 +141,9 @@ export function ExpandableNumberInput(props: {
         <TextField
           type="number"
           size="small"
-          error={errorMsg(localValue) !== null}
-          helperText={errorMsg(localValue)}
-          value={toDisplay(localValue)}
+          error={!draftIsNumber || errorMsg(localValue) !== null}
+          helperText={draftIsNumber ? errorMsg(localValue) : 'Enter a number'}
+          value={draft}
           inputProps={{
             min: props.min != null ? toDisplay(props.min) : undefined,
             max: props.max != null ? toDisplay(props.max) : undefined,
@@ -147,8 +159,13 @@ export function ExpandableNumberInput(props: {
               : undefined
           }
           onChange={(e) => {
+            setDraft(e.target.value)
+            // Commit only a parsable draft; an intermediate "-" or "1." leaves
+            // localValue at its last good value instead of snapping to 0.
             const parsed = Number.parseFloat(e.target.value)
-            setLocalValue(Number.isNaN(parsed) ? 0 : fromDisplay(parsed))
+            if (Number.isFinite(parsed)) {
+              setLocalValue(fromDisplay(parsed))
+            }
           }}
         />
         <Box
@@ -169,7 +186,7 @@ export function ExpandableNumberInput(props: {
           </Button>
           <Button
             variant="contained"
-            disabled={!isValid(localValue)}
+            disabled={!draftIsNumber || !isValid(localValue)}
             onClick={handleConfirm}
             sx={{
               border: (theme) => `1px solid ${theme.palette.divider}`,

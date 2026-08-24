@@ -7,8 +7,9 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
-export const ExportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const ExportDatabaseMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const handleExport = async (): Promise<void> => {
@@ -17,7 +18,7 @@ export const ExportDatabaseMenuItem = (props: BaseMenuItemProps): ReactElement =
       // Loaded on demand: the snapshot module is heavy and this menu item is
       // eager via the ToolBar, so a static import would put it on cold load.
       const { exportDatabaseSnapshotToFile } = await import(
-        '../../../data/db/snapshot'
+        '@/data/db/snapshot'
       )
       await exportDatabaseSnapshotToFile()
       addMessage({

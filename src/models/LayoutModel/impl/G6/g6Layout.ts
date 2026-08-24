@@ -1,7 +1,7 @@
-import { IdType } from '../../../IdType'
-import { Edge, Node } from '../../../NetworkModel'
-import { LayoutAlgorithm } from '../../LayoutAlgorithm'
-import { LayoutEngine } from '../../LayoutEngine'
+import { IdType } from '@/models/IdType'
+import { Edge, Node } from '@/models/NetworkModel'
+import { LayoutAlgorithm } from '@/models/LayoutModel/LayoutAlgorithm'
+import { LayoutEngine } from '@/models/LayoutModel/LayoutEngine'
 import { G6Algorithms } from './Algorithms/g6Algorithms'
 
 const DEFAULT_ALGORITHM: LayoutAlgorithm = G6Algorithms.gForce

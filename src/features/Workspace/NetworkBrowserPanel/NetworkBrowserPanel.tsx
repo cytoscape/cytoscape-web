@@ -2,7 +2,14 @@ import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
 import PaletteIcon from '@mui/icons-material/Palette'
 import ShareIcon from '@mui/icons-material/Share'
-import { Box, CircularProgress, IconButton, Tab, Tabs, Tooltip } from '@mui/material'
+import {
+  Box,
+  CircularProgress,
+  IconButton,
+  Tab,
+  Tabs,
+  Tooltip,
+} from '@mui/material'
 import { lazy, Suspense, useEffect, useState } from 'react'
 
 import llmLogo from '../../../assets/openai.svg'
@@ -42,7 +49,6 @@ const tabContentFallback = (
     <CircularProgress size={24} />
   </Box>
 )
-
 
 const TABS_HEIGHT = 40
 

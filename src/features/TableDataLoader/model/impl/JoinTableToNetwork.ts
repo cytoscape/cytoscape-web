@@ -131,11 +131,22 @@ export function validNetworkKeyColumns(columns: Column[]): Column[] {
   )
 }
 
+/**
+ * Key used to match a tabular row against a network row. Case-insensitive
+ * matching lower-cases both sides; case-sensitive matching compares the raw
+ * stringified value.
+ */
+const joinKey = (value: unknown, caseSensitive: boolean): string => {
+  const asString = `${value}`
+  return caseSensitive ? asString : asString.toLowerCase()
+}
+
 export const findValidRowsToJoin = (
   table: Table,
   rows: ParsedRow[],
   column?: ColumnAppendState,
   networkKeyColumn?: Column,
+  caseSensitive: boolean = true,
 ): number[] => {
   if (column === undefined || networkKeyColumn === undefined) {
     return []
@@ -144,10 +155,11 @@ export const findValidRowsToJoin = (
   const rowsToJoin: number[] = []
   const keyValues: Record<string, number[]> = {}
   rows.forEach((r, i) => {
-    if (keyValues[r[column.name]] !== undefined) {
-      keyValues[r[column.name]].push(i)
+    const key = joinKey(r[column.name], caseSensitive)
+    if (keyValues[key] !== undefined) {
+      keyValues[key].push(i)
     } else {
-      keyValues[r[column.name]] = [i]
+      keyValues[key] = [i]
     }
   })
 
@@ -156,7 +168,7 @@ export const findValidRowsToJoin = (
     // string, integer or long
 
     // TODO figure out how I know what the networkKeyColumn is?
-    const value = `${row[networkKeyColumn.name]}`
+    const value = joinKey(row[networkKeyColumn.name], caseSensitive)
     if (keyValues[value] !== undefined) {
       rowsToJoin.push(...keyValues[value])
     }
@@ -172,6 +184,7 @@ export const joinRowsToTable = (
   rows: ParsedRow[],
   columns: ColumnAppendState[],
   networkKeyColumn: Column,
+  caseSensitive: boolean = true,
 ): Table => {
   const keyColumn = columns.find((c) => c.meaning === ColumnAppendType.Key)
   const columnsToAppend = columns.filter(
@@ -193,13 +206,13 @@ export const joinRowsToTable = (
     ...columnsToAppend.map((c) => ({ name: c.name, type: c.dataType })),
   )
 
-  const keyValues: Record<string, { rowId: number; value: ParsedRow }[]> =
-    {}
+  const keyValues: Record<string, { rowId: number; value: ParsedRow }[]> = {}
   rows.forEach((r, i) => {
-    if (keyValues[r[keyColumn.name]] !== undefined) {
-      keyValues[r[keyColumn.name]].push({ rowId: i, value: r })
+    const key = joinKey(r[keyColumn.name], caseSensitive)
+    if (keyValues[key] !== undefined) {
+      keyValues[key].push({ rowId: i, value: r })
     } else {
-      keyValues[r[keyColumn.name]] = [{ rowId: i, value: r }]
+      keyValues[key] = [{ rowId: i, value: r }]
     }
   })
 
@@ -209,7 +222,7 @@ export const joinRowsToTable = (
     // string, integer or long
 
     // How do I know which columnn is the key column in the network?
-    const rowKey = `${row[networkKeyColumn.name]}`
+    const rowKey = joinKey(row[networkKeyColumn.name], caseSensitive)
     if (keyValues[rowKey] !== undefined) {
       keyValues[rowKey].forEach((v) => {
         columnsToAppend.forEach((c) => {
