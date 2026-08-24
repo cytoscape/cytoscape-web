@@ -5,35 +5,33 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   FormControl,
   FormControlLabel,
   IconButton,
   MenuItem,
-  Popover,
   Radio,
   RadioGroup,
   Select,
   SelectChangeEvent,
-  Tab,
-  Tabs,
   Tooltip,
   Typography,
 } from '@mui/material'
 import * as React from 'react'
 
-import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
-import { IdType } from '../../../../../models/IdType'
-import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { PALETTES } from '../../../../../models/VisualStyleModel/impl/colorPalettes'
-import { generateRandomColor } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { pickEvenly } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { DataTableHeader, DataTableRow,OrderControls } from '../components'
+import { useTableStore } from '@/data/hooks/stores/TableStore'
+import { IdType } from '@/models/IdType'
+import { AttributeName } from '@/models/TableModel/AttributeName'
+import { PALETTES } from '@/models/VisualStyleModel/impl/colorPalettes'
+import {
+  generateRandomColor,
+  pickEvenly,
+} from '@/models/VisualStyleModel/impl/colorUtils'
+import { ColorType } from '@/models/VisualStyleModel/VisualPropertyValue/ColorType'
+import { DataTableHeader, DataTableRow, OrderControls } from '../components'
 import { CHART_CONSTANTS, COLORS } from '../utils/constants'
 import { getNumericColumnNames } from '../utils/numericColumnUtils'
+import { PaletteForm } from './PaletteForm'
 
 interface AttributesAndColorsFormProps {
   dataColumns: AttributeName[]
@@ -48,15 +46,6 @@ interface AttributesAndColorsFormProps {
 }
 
 type ColorMode = 'palette' | 'custom'
-
-// Group palettes by type
-const PALETTE_GROUPS = {
-  Sequential: Object.keys(PALETTES).filter((key) =>
-    key.startsWith('Sequential'),
-  ),
-  Diverging: Object.keys(PALETTES).filter((key) => key.startsWith('Diverging')),
-  Viridis: Object.keys(PALETTES).filter((key) => key.startsWith('Viridis')),
-} as const
 
 export const AttributesAndColorsForm: React.FC<
   AttributesAndColorsFormProps
@@ -80,7 +69,6 @@ export const AttributesAndColorsForm: React.FC<
   // Palette selection state
   const [paletteAnchorEl, setPaletteAnchorEl] =
     React.useState<HTMLButtonElement | null>(null)
-  const [activeTab, setActiveTab] = React.useState(0)
   const paletteOpen = Boolean(paletteAnchorEl)
 
   // Handle color mode change
@@ -95,15 +83,6 @@ export const AttributesAndColorsForm: React.FC<
     }
   }
 
-  // Handle palette selection
-  const handlePaletteSelect = (scheme: string) => {
-    const palette = PALETTES[scheme]
-    const base = palette?.colors ?? []
-    const newColors = pickEvenly(base, dataColumns.length) as ColorType[]
-    onUpdate(dataColumns, newColors, scheme)
-    setPaletteAnchorEl(null)
-  }
-
   // Handle adding attribute
   const addRow = () => {
     const newCol = nextDefaultCol
@@ -111,18 +90,11 @@ export const AttributesAndColorsForm: React.FC<
       // If in palette mode, regenerate colors from palette
       const palette = PALETTES[colorScheme]
       const base = palette?.colors ?? []
-      const newColors = pickEvenly(
-        base,
-        dataColumns.length + 1,
-      ) as ColorType[]
+      const newColors = pickEvenly(base, dataColumns.length + 1) as ColorType[]
       onUpdate([...dataColumns, newCol], newColors, colorScheme)
     } else {
       // Custom mode - add random color
-      onUpdate(
-        [...dataColumns, newCol],
-        [...colors, generateRandomColor()],
-        '',
-      )
+      onUpdate([...dataColumns, newCol], [...colors, generateRandomColor()], '')
     }
   }
 
@@ -132,10 +104,7 @@ export const AttributesAndColorsForm: React.FC<
       // Regenerate colors from palette
       const palette = PALETTES[colorScheme]
       const base = palette?.colors ?? []
-      const newColors = pickEvenly(
-        base,
-        dataColumns.length - 1,
-      ) as ColorType[]
+      const newColors = pickEvenly(base, dataColumns.length - 1) as ColorType[]
       onUpdate(
         dataColumns.filter((_, idx) => idx !== i),
         newColors,
@@ -174,7 +143,11 @@ export const AttributesAndColorsForm: React.FC<
   }
 
   // Handle custom color change (switches to custom mode)
-  const handleCustomColorChange = (i: number, column: AttributeName, color: ColorType) => {
+  const handleCustomColorChange = (
+    i: number,
+    column: AttributeName,
+    color: ColorType,
+  ) => {
     // Switch to custom mode when individual color is changed
     updateRow(i, column, color)
     if (colorMode === 'palette') {
@@ -199,9 +172,6 @@ export const AttributesAndColorsForm: React.FC<
     newColors.splice(to, 0, colorMoved)
     onUpdate(newCols, newColors, colorScheme)
   }
-
-  const tabNames = Object.keys(PALETTE_GROUPS)
-  const currentPaletteKeys = Object.values(PALETTE_GROUPS)[activeTab]
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -271,7 +241,10 @@ export const AttributesAndColorsForm: React.FC<
                     />
                   ))}
                   {colors.length > 4 && (
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'text.secondary' }}
+                    >
                       +{colors.length - 4}
                     </Typography>
                   )}
@@ -280,165 +253,19 @@ export const AttributesAndColorsForm: React.FC<
             </Box>
           </Button>
 
-          <Popover
-            open={paletteOpen}
+          <PaletteForm
+            colorScheme={colorScheme}
+            colors={colors}
+            dataColumns={dataColumns}
+            onUpdate={(scheme, newColors) =>
+              onUpdate(dataColumns, newColors, scheme)
+            }
+            hideGuidance
+            allowNoPalette
             anchorEl={paletteAnchorEl}
+            open={paletteOpen}
             onClose={() => setPaletteAnchorEl(null)}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
-            }}
-            PaperProps={{
-              sx: {
-                maxWidth: 500,
-                width: 500,
-                height: 600,
-                overflow: 'hidden',
-              },
-            }}
-          >
-            <Box
-              sx={{
-                p: 2,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                }}
-              >
-                <Typography variant="subtitle1" sx={{ fontSize: '0.9rem' }}>
-                  Select Color Palette
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => handlePaletteSelect('')}
-                  sx={{
-                    fontSize: '0.75rem',
-                    textTransform: 'none',
-                    borderColor: !colorScheme ? COLORS.PRIMARY : COLORS.BORDER,
-                    color: !colorScheme ? COLORS.PRIMARY : 'inherit',
-                  }}
-                >
-                  No Palette
-                </Button>
-              </Box>
-
-              <Tabs
-                value={activeTab}
-                onChange={(_, newValue) => setActiveTab(newValue)}
-                variant="fullWidth"
-                sx={{
-                  mb: 2,
-                  '& .MuiTab-root': {
-                    fontSize: '0.8rem',
-                    textTransform: 'none',
-                    minHeight: 32,
-                  },
-                }}
-              >
-                {tabNames.map((tabName) => (
-                  <Tab key={tabName} label={tabName} />
-                ))}
-              </Tabs>
-
-              <Box
-                sx={{
-                  flex: 1,
-                  overflow: 'auto',
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 0.5,
-                    alignItems: 'center',
-                    width: '100%',
-                    maxWidth: 300,
-                  }}
-                >
-                  {currentPaletteKeys.map((paletteKey) => {
-                    const palette = PALETTES[paletteKey]
-                    if (!palette) return null
-                    const paletteColors = palette.colors
-                    return (
-                      <Card
-                        key={paletteKey}
-                        sx={{
-                          cursor: 'pointer',
-                          border:
-                            colorScheme === paletteKey
-                              ? `2px solid ${COLORS.PRIMARY}`
-                              : `1px solid ${COLORS.BORDER}`,
-                          '&:hover': {
-                            borderColor: COLORS.PRIMARY,
-                            boxShadow: 3,
-                            transform: 'translateY(-2px)',
-                          },
-                          transition: 'all 0.2s ease',
-                          width: '100%',
-                        }}
-                        onClick={() => handlePaletteSelect(paletteKey)}
-                      >
-                        <CardContent
-                          sx={{
-                            p: 0.5,
-                            textAlign: 'center',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              justifyContent: 'center',
-                              height: 16,
-                              borderRadius: 1,
-                              overflow: 'hidden',
-                              gap: 0.5,
-                            }}
-                          >
-                            {paletteColors.map((color, index) => (
-                              <Tooltip key={index} title={color}>
-                                <Box
-                                  sx={{
-                                    width: 16,
-                                    height: 16,
-                                    bgcolor: color,
-                                    border: '1px solid',
-                                    borderColor: 'grey.400',
-                                    borderRadius: 0.5,
-                                    '&:hover': {
-                                      opacity: 0.8,
-                                    },
-                                  }}
-                                />
-                              </Tooltip>
-                            ))}
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
-                </Box>
-              </Box>
-            </Box>
-          </Popover>
+          />
         </Box>
       )}
 
@@ -493,7 +320,9 @@ export const AttributesAndColorsForm: React.FC<
 
                   <FormControl
                     size="small"
-                    sx={{ '& .MuiInputBase-root': { height: 32, width: '100%' } }}
+                    sx={{
+                      '& .MuiInputBase-root': { height: 32, width: '100%' },
+                    }}
                   >
                     <Select
                       labelId={`col-label-${i}`}
@@ -514,9 +343,15 @@ export const AttributesAndColorsForm: React.FC<
                     <Tooltip title={`Click to change color for ${col}`}>
                       <input
                         type="color"
-                        value={(colors[i] ?? COLORS.DEFAULT_FALLBACK) as ColorType}
+                        value={
+                          (colors[i] ?? COLORS.DEFAULT_FALLBACK) as ColorType
+                        }
                         onChange={(e) =>
-                          handleCustomColorChange(i, col, e.target.value as ColorType)
+                          handleCustomColorChange(
+                            i,
+                            col,
+                            e.target.value as ColorType,
+                          )
                         }
                         style={{
                           width: 32,
@@ -604,4 +439,3 @@ export const AttributesAndColorsForm: React.FC<
     </Box>
   )
 }
-

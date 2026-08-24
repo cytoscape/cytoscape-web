@@ -193,6 +193,15 @@ export const createEdgesCore = (
     throw new Error(`Target node ${targetId} not found`)
   }
 
+  // Capture counts BEFORE the topology is mutated, mirroring deleteEdgesCore.
+  // The `networks` Map is a stale snapshot, but the Network it holds is the
+  // live instance: `Network.nodes`/`Network.edges` are getters over the
+  // underlying Cytoscape store, and addEdge mutates that store in place. So
+  // reading `network.edges.length` after the loop already includes the new
+  // edges — adding edgeIds.length to it would count them twice.
+  const originalNodeCount = network.nodes.length
+  const originalEdgeCount = network.edges.length
+
   edgeIds.forEach((edgeId) => {
     // 1. Add edge to network topology
     addEdge(networkId, edgeId, sourceId, targetId)
@@ -218,9 +227,9 @@ export const createEdgesCore = (
   })
 
   // 4. Update network summary
-  // Calculate counts from original network since networks Map is a stale snapshot
+  // Use the pre-mutation counts captured above plus the number of edges added
   updateNetworkSummary(networkId, {
-    nodeCount: network.nodes.length,
-    edgeCount: network.edges.length + edgeIds.length,
+    nodeCount: originalNodeCount,
+    edgeCount: originalEdgeCount + edgeIds.length,
   })
 }

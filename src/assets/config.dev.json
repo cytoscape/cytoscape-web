@@ -33,5 +33,6 @@
   "appInstallAllowedOrigins": [
     "https://apps.cytoscape.org",
     "https://apps-stage.cytoscape.org"
-  ]
+  ],
+  "allowsLocalhostAppsOn": "https://dev1.ndexbio.org"
 }

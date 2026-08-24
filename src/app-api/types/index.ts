@@ -79,6 +79,18 @@ export type {
   ContextMenuTarget,
 } from '../core/contextMenuApi'
 
+// ── Node Graphics API types ──────────────────────────────────────
+export type {
+  NodeGraphicsApi,
+  NodeGraphicsContainment,
+  NodeGraphicsCrossOrigin,
+  NodeGraphicsFit,
+  NodeGraphicsImage,
+  NodeGraphicsRenderHook,
+  NodeGraphicsRequest,
+  NodeGraphicsResult,
+} from '../core/nodeGraphicsApi'
+
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
   MenuItemHostProps,

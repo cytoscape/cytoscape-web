@@ -5,7 +5,7 @@ import { expect, test } from './fixtures'
 // `cywebapi:ready` event. The unit-level cywebapi-ready.test.ts only checks a
 // hand-built mock object, so it is blind to a bundler regression — this is not.
 
-// The 10 public domain namespaces assembled in src/app-api/core/index.ts.
+// The public domain namespaces assembled in src/app-api/core/index.ts.
 const EXPECTED_API_KEYS = [
   'element',
   'network',
@@ -17,6 +17,7 @@ const EXPECTED_API_KEYS = [
   'export',
   'workspace',
   'contextMenu',
+  'nodeGraphics',
 ]
 
 test.describe('window.CyWebApi public surface', () => {

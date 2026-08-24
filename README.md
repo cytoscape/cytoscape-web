@@ -209,6 +209,13 @@ Key fields to update for each environment:
 | `googleAnalyticsId` | `""` (empty to disable) | Your production GA measurement ID |
 | `urlBaseName` | `"/"` | Path prefix of your deployment (e.g. `"/"`) |
 
+`allowsLocalhostAppsOn` is deliberately **not** in that table and needs no edit.
+It names the one origin allowed to install apps from a developer's `localhost`,
+and the host honours it only when it equals the origin actually being served —
+so the development value carried into a production build matches nothing and
+does nothing. Leave it alone unless you are enabling that flow for a deployment
+you operate, in which case set it to that deployment's own origin.
+
 Reference config files are provided in `src/assets/`:
 - `config.dev.json` — values for the NDEx development server
 - `config-test.txt` — values for the NDEx test server

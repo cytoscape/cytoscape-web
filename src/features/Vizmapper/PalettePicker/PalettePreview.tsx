@@ -1,10 +1,14 @@
 import AccessibilityIcon from '@mui/icons-material/Accessibility'
-import { Box, Chip,Typography } from '@mui/material'
-import React from 'react'
+import { Box, BoxProps, Chip, Typography } from '@mui/material'
+import * as React from 'react'
 
-import { PaletteDefinition } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorPalette'
+import { PaletteDefinition } from '@/models/VisualStyleModel/VisualPropertyValue/ColorPalette'
 
-interface PalettePreviewProps {
+/**
+ * Box props come along so a MUI Tooltip can inject its handlers, and so a
+ * caller can style the wrapper. `children` is ours — the swatches.
+ */
+interface PalettePreviewProps extends Omit<BoxProps, 'children'> {
   palette: PaletteDefinition
   width?: number
   height?: number
@@ -15,25 +19,41 @@ interface PalettePreviewProps {
 /**
  * React component to render a color palette preview with metadata
  * Replaces the need for palette image files
+ *
+ * Forwards its ref so a MUI Tooltip can wrap it directly.
  */
-export function PalettePreview({
-  palette,
-  width = 15,
-  height = 150,
-  orientation = 'vertical',
-  showMetadata = false,
-}: PalettePreviewProps): React.ReactElement {
+export const PalettePreview = React.forwardRef<
+  HTMLDivElement,
+  PalettePreviewProps
+>(function PalettePreview(
+  {
+    palette,
+    width = 15,
+    height = 150,
+    orientation = 'vertical',
+    showMetadata = false,
+    sx,
+    ...rest
+  },
+  ref,
+) {
   const isVertical = orientation === 'vertical'
   const numColors = palette.colors.length
 
   return (
     <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 0.5,
-      }}
+      ref={ref}
+      {...rest}
+      // Array form so a caller's sx layers on top instead of being dropped.
+      sx={[
+        {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0.5,
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
     >
       <Box
         sx={{
@@ -124,4 +144,4 @@ export function PalettePreview({
       )}
     </Box>
   )
-}
+})

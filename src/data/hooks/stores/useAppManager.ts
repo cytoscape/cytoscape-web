@@ -1,12 +1,8 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 
-import { CyWebApi } from '../../../app-api/core'
-import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { createResourceApi } from '../../../app-api/core/resourceApi'
-import type {
-  AppContextApis,
-  CyAppWithLifecycle,
-} from '../../../app-api/types/AppContext'
+import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
 import type {
   RegisterMenuItemOptions,
   RegisterPanelOptions,
@@ -15,6 +11,7 @@ import { AppConfigContext } from '../../../AppConfigContext'
 import { logApp } from '../../../debug'
 import {
   isAllowedOrigin,
+  isCatalogEntryAllowed,
   isHostCompatible,
 } from '../../../features/AppManager/install/installGate'
 import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
@@ -54,18 +51,6 @@ export interface AppManagerCommands {
     opts?: { activate?: boolean },
   ) => Promise<void>
   uninstallApp: (id: string) => Promise<void>
-}
-
-/**
- * Build a per-app AppContextApis object. Extends CyWebApi with
- * per-app resource and contextMenu factories bound to the given appId.
- */
-function buildPerAppApis(appId: string): AppContextApis {
-  return {
-    ...CyWebApi,
-    resource: createResourceApi(appId),
-    contextMenu: createContextMenuApi(appId),
-  }
 }
 
 /**
@@ -117,7 +102,25 @@ export const useAppManager = (): AppManagerCommands => {
   const setStatus = useAppStore((state) => state.setStatus)
   const removeApp = useAppStore((state) => state.remove)
   const addMessage = useMessageStore((state) => state.addMessage)
-  const { appInstallAllowedOrigins } = useContext(AppConfigContext)
+  const { appInstallAllowedOrigins, allowsLocalhostAppsOn } =
+    useContext(AppConfigContext)
+
+  /**
+   * True if this catalog entry is one the deployment's own default manifest
+   * currently lists — the only class `isCatalogEntryAllowed` exempts.
+   *
+   * Decided against the manifest as loaded, and matched on **url as well as
+   * id**: `composeCatalog` lets an installed `appstore`/`snapshot` entry win a
+   * collision with a manifest entry of the same id, so id alone would vouch for
+   * a URL the manifest never named.
+   */
+  const isFromDefaultManifest = (
+    id: string,
+    url: string,
+    manifestSource: ManifestSource | undefined,
+  ): boolean =>
+    manifestSource === undefined &&
+    manifestEntriesRef.current.some((e) => e.id === id && e.url === url)
 
   /**
    * Recompose the catalog (manifest ∪ workspace.installedApps) and write it
@@ -193,10 +196,40 @@ export const useAppManager = (): AppManagerCommands => {
   // ── Command implementations ──────────────────────────────────────
 
   const activateApp = async (id: string): Promise<void> => {
-    const { catalog, loadStates, apps: currentApps } = useAppStore.getState()
+    const {
+      catalog,
+      manifestSource,
+      loadStates,
+      apps: currentApps,
+    } = useAppStore.getState()
     const catalogEntry = catalog[id]
     if (catalogEntry === undefined) {
       logApp.warn(`[useAppManager]: activateApp: "${id}" not found in catalog`)
+      return
+    }
+
+    // The trust boundary the catalog path used to skip entirely (§9/G-6).
+    // Checked before the fast re-enable path too: a module already in memory
+    // was loaded under whatever configuration applied then, and re-mounting it
+    // under a configuration that now forbids it would keep the old decision
+    // alive for the life of the tab.
+    if (
+      !isCatalogEntryAllowed(
+        catalogEntry.url,
+        isFromDefaultManifest(id, catalogEntry.url, manifestSource),
+        appInstallAllowedOrigins,
+        allowsLocalhostAppsOn,
+      )
+    ) {
+      addMessage({
+        message: `Cannot load "${catalogEntry.name ?? id}": its URL is not from an allowed origin.`,
+        duration: 5000,
+        severity: MessageSeverity.ERROR,
+      })
+      logApp.warn(
+        `[useAppManager]: activateApp: "${id}" blocked — ${catalogEntry.url} is not from an allowed origin`,
+      )
+      setLoadState(id, 'failed')
       return
     }
 
@@ -293,7 +326,9 @@ export const useAppManager = (): AppManagerCommands => {
     opts?: { activate?: boolean },
   ): Promise<void> => {
     // 1. Trust boundary (§9)
-    if (!isAllowedOrigin(entry.url, appInstallAllowedOrigins)) {
+    if (
+      !isAllowedOrigin(entry.url, appInstallAllowedOrigins, allowsLocalhostAppsOn)
+    ) {
       addMessage({
         message: `Cannot install "${entry.name ?? entry.id}": its URL is not from an allowed origin.`,
         duration: 5000,
@@ -449,7 +484,11 @@ export const useAppManager = (): AppManagerCommands => {
         //    legacy global apps store.
         const installedAppList =
           useWorkspaceStore.getState().workspace.installedApps ?? []
-        const catalog = useAppStore.getState().catalog
+        const { catalog, manifestSource } = useAppStore.getState()
+        // Same gate as activateApp, and needed separately: this path loads
+        // `catalog[id].url`, not the installed record's URL, so a user-set
+        // manifest declaring an existing app's id would otherwise decide where
+        // an already-trusted app is fetched from.
         const activeAppIds = installedAppList
           .filter(
             (a) =>
@@ -457,6 +496,21 @@ export const useAppManager = (): AppManagerCommands => {
               catalog[a.entry.id] !== undefined,
           )
           .map((a) => a.entry.id)
+          .filter((id) => {
+            const allowed = isCatalogEntryAllowed(
+              catalog[id].url,
+              isFromDefaultManifest(id, catalog[id].url, manifestSource),
+              appInstallAllowedOrigins,
+              allowsLocalhostAppsOn,
+            )
+            if (!allowed) {
+              setLoadState(id, 'failed')
+              logApp.warn(
+                `[useAppManager]: startup auto-load: "${id}" blocked — ${catalog[id].url} is not from an allowed origin`,
+              )
+            }
+            return allowed
+          })
 
         if (activeAppIds.length === 0) {
           logApp.info(

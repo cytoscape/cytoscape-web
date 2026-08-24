@@ -83,9 +83,16 @@ vi.mock('../../data/hooks/stores/TableStore', () => ({
 
 const networkSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
 
+// The network:changed subscription reads the live networks Map out of the
+// store (topology mutations happen in place, so the subscription payload is
+// only a version counter). Tests drive this Map directly.
+const { mockNetworks } = vi.hoisted(() => ({
+  mockNetworks: new Map<string, any>(),
+}))
+
 vi.mock('../../data/hooks/stores/NetworkStore', () => ({
   useNetworkStore: {
-    getState: vi.fn(),
+    getState: vi.fn(() => ({ networks: mockNetworks })),
     subscribe: vi.fn((selectorOrCb: any, cb?: any) => {
       if (typeof cb === 'function') {
         networkSubs.push({ selector: selectorOrCb, callback: cb })
@@ -140,6 +147,7 @@ beforeEach(() => {
   visualStyleSubs.length = 0
   tableSubs.length = 0
   networkSubs.length = 0
+  mockNetworks.clear()
   dispatchSpy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
 })
@@ -157,11 +165,35 @@ describe('network:changed', () => {
     edges: edges.map(([id, s, t]) => ({ id, s, t })),
   })
 
-  it('reports added nodes', () => {
-    const prev = net(['n1'], [])
-    const curr = net(['n1', 'n2'], [])
+  /**
+   * Puts a network in the store and lets the bus snapshot it, the way
+   * NetworkStore.add() does. Networks mutate in place, so the subscription
+   * carries only the bumped version — the membership is read from the store.
+   */
+  const registerNetwork = (
+    nodes: string[],
+    edges: Array<[string, string, string]> = [],
+  ): void => {
+    mockNetworks.set('net1', net(nodes, edges))
+    triggerNetworkSub(new Map([['net1', 1]]), new Map())
+  }
 
-    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+  /** Mutates the network in place and bumps its topology version */
+  const mutateNetwork = (
+    nodes: string[],
+    edges: Array<[string, string, string]> = [],
+  ): void => {
+    const network = mockNetworks.get('net1')
+    network.nodes = nodes.map((id) => ({ id }))
+    network.edges = edges.map(([id, s, t]) => ({ id, s, t }))
+    triggerNetworkSub(new Map([['net1', 2]]), new Map([['net1', 1]]))
+  }
+
+  it('reports added nodes', () => {
+    registerNetwork(['n1'])
+    dispatchSpy.mockClear()
+
+    mutateNetwork(['n1', 'n2'])
 
     expect(dispatchedTypes()).toContain('network:changed')
     expect(dispatchedDetails()[0]).toEqual({
@@ -174,10 +206,10 @@ describe('network:changed', () => {
   })
 
   it('reports removed nodes and their cascaded edges', () => {
-    const prev = net(['n1', 'n2'], [['e0', 'n1', 'n2']])
-    const curr = net(['n1'], [])
+    registerNetwork(['n1', 'n2'], [['e0', 'n1', 'n2']])
+    dispatchSpy.mockClear()
 
-    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+    mutateNetwork(['n1'])
 
     expect(dispatchedDetails()[0]).toEqual({
       networkId: 'net1',
@@ -189,26 +221,26 @@ describe('network:changed', () => {
   })
 
   it('does not dispatch for a newly created network (network:created covers it)', () => {
-    const curr = net(['n1'], [])
-
-    triggerNetworkSub(new Map([['net1', curr]]), new Map())
+    registerNetwork(['n1'])
 
     expect(dispatchedTypes()).not.toContain('network:changed')
   })
 
-  it('does not dispatch when the reference changed but membership did not', () => {
-    const prev = net(['n1'], [])
-    const curr = net(['n1'], [])
+  it('does not dispatch when membership did not change', () => {
+    registerNetwork(['n1'])
+    dispatchSpy.mockClear()
 
-    triggerNetworkSub(new Map([['net1', curr]]), new Map([['net1', prev]]))
+    mutateNetwork(['n1'])
 
     expect(dispatchSpy).not.toHaveBeenCalled()
   })
 
-  it('does not dispatch when the network reference is unchanged', () => {
-    const same = net(['n1'], [])
+  it('does not dispatch when the topology version is unchanged', () => {
+    registerNetwork(['n1'])
+    dispatchSpy.mockClear()
+    mockNetworks.get('net1').nodes = [{ id: 'n1' }, { id: 'n2' }]
 
-    triggerNetworkSub(new Map([['net1', same]]), new Map([['net1', same]]))
+    triggerNetworkSub(new Map([['net1', 1]]), new Map([['net1', 1]]))
 
     expect(dispatchSpy).not.toHaveBeenCalled()
   })

@@ -3,9 +3,7 @@ import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AppIdProvider } from '../../../app-api/AppIdContext'
-import { CyWebApi } from '../../../app-api/core'
-import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
-import { createResourceApi } from '../../../app-api/core/resourceApi'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { appRegistry } from '../../../data/hooks/stores/useAppManager'
@@ -96,11 +94,7 @@ export const AppMenu = () => {
       })
       .map((r: RegisteredAppResource) => {
         const MenuComponent = r.component as React.ComponentType<any>
-        const perAppApis = {
-          ...CyWebApi,
-          resource: createResourceApi(r.appId),
-          contextMenu: createContextMenuApi(r.appId),
-        }
+        const perAppApis = buildPerAppApis(r.appId)
 
         const wrapped = r.closeOnAction ? (
           <div

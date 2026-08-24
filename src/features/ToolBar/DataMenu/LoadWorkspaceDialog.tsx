@@ -48,7 +48,8 @@ export const LoadWorkspaceDialog: React.FC<{
   )
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const setWorkspaceIsRemote = useWorkspaceStore((state) => state.setIsRemote)
-  const { ndexBaseUrl, appInstallAllowedOrigins } = useContext(AppConfigContext)
+  const { ndexBaseUrl, appInstallAllowedOrigins, allowsLocalhostAppsOn } =
+    useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const addMessage = useMessageStore((state) => state.addMessage)
   const apps = useAppStore((state) => state.apps)
@@ -128,6 +129,7 @@ export const LoadWorkspaceDialog: React.FC<{
           apps,
           serviceApps,
           appInstallAllowedOrigins,
+          allowsLocalhostAppsOn,
         )
         handleClose()
         // Reload the page to apply changes

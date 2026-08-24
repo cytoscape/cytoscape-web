@@ -285,7 +285,12 @@ export function VisualPropertyValueForm(
         onClose={() => closePopover()}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
-        <Box sx={{ overflow: 'hidden' }}>
+        {/*
+          Scroll rather than clip: a picker wider than the Paper (the color
+          swatch grids, the shape grids) would otherwise be unreachable on a
+          narrow viewport (#653).
+        */}
+        <Box sx={{ overflowX: 'auto', overflowY: 'hidden' }}>
           <Box
             sx={{
               margin: 'auto',
