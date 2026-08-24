@@ -1,4 +1,4 @@
-# CLAUDE.md — App API Layer
+# AGENTS.md — App API Layer
 
 > Local context for `src/app-api/`. Read this before implementing any app API hook, core function, or event bus code.
 

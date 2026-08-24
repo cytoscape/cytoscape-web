@@ -161,7 +161,7 @@ See `docs/specifications/DEBUG_GUIDE.MD` for the full policy.
 
 The `src/app-api/` directory is the **sole public API surface** for external apps consuming Cytoscape Web via Module Federation or `window.CyWebApi`.
 
-**Read `src/app-api/CLAUDE.md` before modifying any file in this directory.** It documents the two-layer pattern, error handling conventions, and event bus architecture.
+**Read `src/app-api/AGENTS.md` before modifying any file in this directory.** It documents the two-layer pattern, error handling conventions, and event bus architecture.
 
 **Key principles:**
 
@@ -326,7 +326,7 @@ Read these before working in related areas:
 - `docs/prompts/code-quality-for-testing-behaviour.md` — Adding `data-testid`, documentation, linting
 - `docs/prompts/code-quality-testing-refactoring.md` — Extracting hooks, adding unit tests
 - `src/boot/boot_docs/boot.md` — startup directory map and design reasoning
-- `src/app-api/CLAUDE.md` — App API architecture, two-layer pattern, event bus
+- `src/app-api/AGENTS.md` — App API architecture, two-layer pattern, event bus
 
 ---
 
