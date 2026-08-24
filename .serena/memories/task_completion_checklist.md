@@ -14,17 +14,23 @@ npm run format
 ```
 Ensures Prettier formatting is applied (no semicolons, single quotes, trailing commas, 2-space indent).
 
-## 3. Run Unit Tests
+## 3. Run Lint + Unit Tests
 ```bash
-npm run test:unit
+npm run test:checks:quiet
 ```
-Vitest tests with a jsdom environment. Tests are co-located with source files.
+Runs lint and the Vitest suite in parallel. Tests are co-located with source
+files. **Agents must always use the `:quiet` variants** (`test:unit:quiet`,
+`test:checks:quiet`, ...) — they print failures and a summary only, so passing
+tests do not flood the context.
 
-## 4. Run E2E Tests (if UI changed)
+## 4. Run the E2E Specs Covering the Change (if UI changed)
 ```bash
-npm run test:e2e
+npx playwright test <spec-name> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts
 ```
-Playwright tests against localhost:5500.
+Playwright against localhost:5500 (port must be free). **Agents must not run the
+whole e2e suite locally** — `.claude/settings.json` denies `npm test`,
+`npm run test:e2e[:chromium]`, their `:quiet` variants, the `e2e:run` scripts,
+and bare `npx playwright test`. CI owns the full suite.
 
 ## 5. Build Check (if needed)
 ```bash

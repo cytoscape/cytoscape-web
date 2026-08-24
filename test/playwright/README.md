@@ -81,6 +81,24 @@ Note that the dev server makes the suite noticeably flakier: the app is served
 as thousands of unbundled modules, and parallel workers all cold-booting it at
 once can push the app past the first assertion's timeout.
 
+### Quiet output
+
+Every test script has a `:quiet` variant (`npm run test:e2e:quiet`,
+`npm run test:e2e:chromium:quiet`) that prints failures and a final summary only
+— no per-test lines, no test stdio, and no `debug`-logger noise. It pairs
+Playwright's `--quiet` with the custom reporter in `quiet-reporter.ts`; add both
+flags when invoking `npx playwright test` directly:
+
+```bash
+npx playwright test <spec> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts
+```
+
+**AI agents must always use the quiet form, and must not run the whole suite
+locally** — full-suite runs are flaky under worker contention, so CI owns them
+and `.claude/settings.json` denies `npm test`, `npm run test:e2e[:chromium]`,
+their `:quiet` variants, the `e2e:run` scripts, and a bare `npx playwright test`.
+Running the one or few specs covering the change in hand is encouraged.
+
 ### Run All Tests
 
 ```bash

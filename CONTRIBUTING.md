@@ -80,4 +80,10 @@ npm run test:e2e    # run end-to-end tests (Playwright)
 npm test            # run lint, unit, and Chromium e2e in sequence
 ```
 
+Every test script has a `:quiet` variant (`npm run test:quiet`,
+`npm run test:unit:quiet`, `npm run test:checks:quiet`, `npm run test:e2e:quiet`,
+`npm run test:e2e:chromium:quiet`) that prints failures and a summary only — no
+per-test output and no `debug`-logger noise. Handy for CI logs, and required of
+AI agents working in this repo (see `AGENTS.md`).
+
 Please make sure the tests are passing before you submit your pull request. If you're unsure why something is failing, open the pull request anyway and note what you've tried — we're happy to help.

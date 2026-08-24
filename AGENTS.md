@@ -7,14 +7,14 @@
 **Workflow Orchestration:**
 
 - **Plan First:** Enter plan mode for any non-trivial task (3+ steps or architectural decisions). Break work into checkable items and track progress via the built-in todo list tool.
-- **Context Ingestion:** Before planning, actively review the relevant specs in `docs/specifications/` and relevant ADRs. See [Section 5](#5-specification-references) for the full list.
+- **Context Ingestion:** Before planning, actively review the relevant specs in `docs/specifications/` and relevant ADRs. See [Section 6](#6-specification-references) for the full list.
 - **Halt and Re-plan:** If something goes wrong, STOP and re-plan immediately rather than continuing blindly.
 - **Capture Lessons:** After any user corrections or unexpected failures, record what you learned in `.serena/memories/lessons.md` to prevent repeated mistakes. This file is git-tracked and shared across all agents. Review it at the start of each session.
 
 **Autonomous Bug Fixing & Verification:**
 
 - **Test-Driven Fixes:** Before writing implementation code, write a failing regression test. Follow `vitest-setup.ts` conventions (including `enableMapSet()`) and test stores via `@testing-library/react` hooks. Prove it fails, apply the fix, then prove it passes.
-- **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:unit` or `npm run test:e2e` and diff the behavior.
+- **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:checks:quiet` (lint ∥ unit), plus the one or few e2e specs covering the change, and diff the behavior. Always use the `:quiet` variants — see [Section 5](#5-development-operations).
 - **Fix Root Causes:** Fix root causes, not symptoms. Never apply band-aid fixes. Fix failing CI tests proactively.
 
 **Safety:**
