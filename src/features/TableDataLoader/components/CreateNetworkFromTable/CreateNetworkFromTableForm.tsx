@@ -9,6 +9,7 @@ import { TableColumnAssignmentForm } from './TableColumnAssignmentForm'
 export function CreateNetworkFromTableForm(props: BaseMenuItemProps) {
   const step = useCreateNetworkFromTableStore((state) => state.step)
   const show = useCreateNetworkFromTableStore((state) => state.show)
+  const setShow = useCreateNetworkFromTableStore((state) => state.setShow)
 
   const title =
     step === CreateNetworkFromTableStep.FileUpload
@@ -26,7 +27,10 @@ export function CreateNetworkFromTableForm(props: BaseMenuItemProps) {
     <TableLoaderDialogShell
       show={show}
       title={title}
-      onClose={props.onClick}
+      onClose={() => {
+        props.onClick()
+        setShow(false)
+      }}
       testIdPrefix="create-network-from-table"
       minHeight={600}
       minWidth={1000}

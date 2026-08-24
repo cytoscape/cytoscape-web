@@ -13,6 +13,8 @@ import type { LayoutApi } from './layoutApi'
 import { layoutApi } from './layoutApi'
 import type { NetworkApi } from './networkApi'
 import { networkApi } from './networkApi'
+import type { NodeGraphicsApi } from './nodeGraphicsApi'
+import { nodeGraphicsApi } from './nodeGraphicsApi'
 import type { SelectionApi } from './selectionApi'
 import { selectionApi } from './selectionApi'
 import type { TableApi } from './tableApi'
@@ -37,6 +39,11 @@ export interface CyWebApiType {
   export: ExportApi
   workspace: WorkspaceApi
   contextMenu: ContextMenuApi
+  /**
+   * Register a per-node graphics render hook. Hook output is renderer-only and
+   * is never exported to CX2 — Vizmapper custom graphics still are.
+   */
+  nodeGraphics: NodeGraphicsApi
   /**
    * Return the network-scoped domains (element, table, selection,
    * viewport, visualStyle, export, plus `layout.applyLayout`) with
@@ -68,6 +75,7 @@ export const CyWebApi: CyWebApiType = {
   export: exportApi,
   workspace: workspaceApi,
   contextMenu: contextMenuApi,
+  nodeGraphics: nodeGraphicsApi,
   forNetwork,
   isReady,
   whenReady: () => whenReadySignal().then(() => CyWebApi),

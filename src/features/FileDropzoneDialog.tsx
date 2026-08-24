@@ -66,6 +66,9 @@ export const FileDropzone = (props: FileDropzoneProps): JSX.Element => {
   }
 
   return (
+    // The drop area itself carries no button semantics: it wraps the Browse
+    // button, and a button inside a button is invalid. Clicking anywhere still
+    // opens the picker; Browse is the keyboard entry point.
     <Box
       data-testid={testIds.dropzone}
       onClick={() => inputRef.current?.click()}
@@ -96,6 +99,11 @@ export const FileDropzone = (props: FileDropzoneProps): JSX.Element => {
         ref={inputRef}
         type="file"
         hidden
+        // The input lives inside the clickable Box; without this its own click
+        // bubbles back into that handler and re-opens the picker.
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
         onChange={(e) => {
           handleFiles(Array.from(e.target.files ?? []))
           // Allow re-selecting the same file after a rejection.

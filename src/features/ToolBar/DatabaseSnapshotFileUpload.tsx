@@ -21,7 +21,11 @@ export function DatabaseSnapshotFileUpload(
       description="Drag database snapshot file here"
       supportedFileTypesText="Supported file type: .json"
       maxFileSizeMB={100}
+      testIds={{
+        modal: 'database-snapshot-upload-modal',
+        dropzone: 'database-snapshot-upload-dropzone',
+        browseButton: 'database-snapshot-upload-browse-button',
+      }}
     />
   )
 }
-

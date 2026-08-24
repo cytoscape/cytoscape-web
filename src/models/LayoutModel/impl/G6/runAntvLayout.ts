@@ -7,7 +7,7 @@ import { RadialLayout } from '@antv/layout/es/layout/radial/index.js'
 
 import { IdType } from '@/models/IdType'
 import { Edge, Node } from '@/models/NetworkModel'
-import { LayoutAlgorithm } from '../../LayoutAlgorithm'
+import { LayoutAlgorithm } from '@/models/LayoutModel/LayoutAlgorithm'
 
 // Parity with the previous G6-based implementation, which laid out into a
 // hidden 4000x4000 canvas.

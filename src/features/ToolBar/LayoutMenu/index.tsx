@@ -23,8 +23,35 @@ import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPan
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
+import { ToolbarMenuItem } from '../menuItemModel'
 import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
+
+/**
+ * One algorithm while the menu is being assembled and sorted. Deliberately
+ * separate from ToolbarMenuItem: these fields — the grouping type, the engine
+ * callback — exist only inside this module and are translated into
+ * ToolbarMenuItem templates at the end.
+ */
+interface LayoutAlgorithmEntry {
+  key: string
+  label: string
+  description: string
+  /** Algorithm type, used to group and order the list. */
+  type: string
+  disabled: boolean
+  onClick: () => void
+  isDivider?: false
+}
+
+/** A boundary between two algorithm groups in the sorted list. */
+interface LayoutGroupDivider {
+  key: string
+  type: string
+  isDivider: true
+}
+
+type LayoutMenuEntry = LayoutAlgorithmEntry | LayoutGroupDivider
 
 export const LayoutMenu = (): JSX.Element => {
   const [open, setOpen] = useState(false)
@@ -149,8 +176,8 @@ export const LayoutMenu = (): JSX.Element => {
     setLayoutCounter((prev) => prev + 1)
   }
 
-  const getMenuItems = (): any => {
-    const layoutMenuItems: any[] = []
+  const getMenuItems = (): ToolbarMenuItem[] => {
+    const layoutMenuItems: LayoutAlgorithmEntry[] = []
 
     layoutEngines.forEach((layoutEngine: LayoutEngine) => {
       const engineName: string = layoutEngine.name
@@ -186,7 +213,7 @@ export const LayoutMenu = (): JSX.Element => {
     })
 
     // Group by type and then sort each group alphabetically
-    const typeGroups: Record<string, any[]> = {}
+    const typeGroups: Record<string, LayoutAlgorithmEntry[]> = {}
 
     // Group items by their type
     layoutMenuItems.forEach((item) => {
@@ -206,7 +233,7 @@ export const LayoutMenu = (): JSX.Element => {
     const sortedTypes = Object.keys(typeGroups).sort()
 
     // Create a new array with dividers between groups
-    const sortedMenuItemsWithDividers: any[] = []
+    const sortedMenuItemsWithDividers: LayoutMenuEntry[] = []
     sortedTypes.forEach((type, index) => {
       // Add group items
       sortedMenuItemsWithDividers.push(...typeGroups[type])
@@ -253,7 +280,7 @@ export const LayoutMenu = (): JSX.Element => {
         separator: true,
       },
       ...(allDisabled
-        ? sortedMenuItemsWithDividers.map((menuItem: any) => {
+        ? sortedMenuItemsWithDividers.map((menuItem) => {
             // Render divider
             if (menuItem.isDivider) {
               return {
@@ -275,7 +302,7 @@ export const LayoutMenu = (): JSX.Element => {
               ),
             }
           })
-        : sortedMenuItemsWithDividers.map((menuItem: any) => {
+        : sortedMenuItemsWithDividers.map((menuItem) => {
             // Render divider
             if (menuItem.isDivider) {
               return {

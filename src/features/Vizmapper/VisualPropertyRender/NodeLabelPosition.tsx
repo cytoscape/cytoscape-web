@@ -19,6 +19,24 @@ import {
   NodeLabelPositionValueType,
 } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
+/**
+ * The offset a draft describes, or undefined when the draft is not a complete
+ * number. Number(), not parseInt(): parseInt truncated "1.5" to 1 and "1e3" to
+ * 1, silently storing an offset the user never typed.
+ */
+export function parseOffset(draft: string): number | undefined {
+  if (draft.trim() === '') {
+    return undefined
+  }
+  const parsed = Number(draft)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/** Whether a draft is a complete number, so Confirm may write it. */
+export function isValidOffset(draft: string): boolean {
+  return parseOffset(draft) !== undefined
+}
+
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null
   onValueChange: (labelPosition: NodeLabelPositionType) => void
@@ -37,8 +55,21 @@ export function NodeLabelPositionPicker(props: {
     currentValue ?? DEFAULT_NODE_LABEL_POSITION,
   )
 
+  // Raw text for the two offset fields. Bound to the inputs so partial input
+  // ("-", "") survives: binding them to the parsed number rewrote the field on
+  // every keystroke, so a negative offset could not be typed.
+  const [marginXDraft, setMarginXDraft] = React.useState(
+    String((currentValue ?? DEFAULT_NODE_LABEL_POSITION).MARGIN_X),
+  )
+  const [marginYDraft, setMarginYDraft] = React.useState(
+    String((currentValue ?? DEFAULT_NODE_LABEL_POSITION).MARGIN_Y),
+  )
+
   React.useEffect(() => {
-    setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
+    const next = currentValue ?? DEFAULT_NODE_LABEL_POSITION
+    setLocalValue(next)
+    setMarginXDraft(String(next.MARGIN_X))
+    setMarginYDraft(String(next.MARGIN_Y))
   }, [currentValue])
 
   const handleOrientationChange = (orientation: NodeLabelOrientationType) => {
@@ -99,13 +130,16 @@ export function NodeLabelPositionPicker(props: {
           type="number"
           size="small"
           inputProps={{ step: 1, 'aria-label': 'Label X offset' }}
-          value={localValue.MARGIN_X}
+          value={marginXDraft}
+          error={!isValidOffset(marginXDraft)}
           onChange={(e) => {
-            const parsed = Number.parseInt(e.target.value, 10)
-            setLocalValue({
-              ...localValue,
-              MARGIN_X: Number.isNaN(parsed) ? 0 : parsed,
-            })
+            setMarginXDraft(e.target.value)
+            // Write MARGIN_X only for a parsable draft; "-" or "" leaves the
+            // last good offset in place instead of snapping to 0.
+            const parsed = parseOffset(e.target.value)
+            if (parsed !== undefined) {
+              setLocalValue({ ...localValue, MARGIN_X: parsed })
+            }
           }}
         />
       </Box>
@@ -116,13 +150,14 @@ export function NodeLabelPositionPicker(props: {
           type="number"
           size="small"
           inputProps={{ step: 1, 'aria-label': 'Label Y offset' }}
-          value={localValue.MARGIN_Y}
+          value={marginYDraft}
+          error={!isValidOffset(marginYDraft)}
           onChange={(e) => {
-            const parsed = Number.parseInt(e.target.value, 10)
-            setLocalValue({
-              ...localValue,
-              MARGIN_Y: Number.isNaN(parsed) ? 0 : parsed,
-            })
+            setMarginYDraft(e.target.value)
+            const parsed = parseOffset(e.target.value)
+            if (parsed !== undefined) {
+              setLocalValue({ ...localValue, MARGIN_Y: parsed })
+            }
           }}
         />
       </Box>
@@ -147,6 +182,9 @@ export function NodeLabelPositionPicker(props: {
         </Button>
         <Button
           variant="contained"
+          disabled={
+            !isValidOffset(marginXDraft) || !isValidOffset(marginYDraft)
+          }
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

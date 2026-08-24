@@ -1,16 +1,15 @@
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { useCallback, useState } from 'react'
 
-import { RootMenu } from '../../../models/AppModel/RootMenu'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { RootMenu } from '@/models/AppModel/RootMenu'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 // Direct file imports: the components barrel would pull LLMQueryResultPanel
 // (and its query stack) into this eager menu chunk.
-import { LLMQueryOptionsDialog } from '../../LLMQuery/components/LLMQueryOptionsDialog'
-import { LLMQueryOptionsMenuItem } from '../../LLMQuery/components/LLMQueryOptionsMenuItem'
-import { RunLLMQueryMenuItem } from '../../LLMQuery/components/RunLLMQueryMenuItem'
+import { LLMQueryOptionsDialog } from '@/features/LLMQuery/components/LLMQueryOptionsDialog'
+import { LLMQueryOptionsMenuItem } from '@/features/LLMQuery/components/LLMQueryOptionsMenuItem'
+import { RunLLMQueryMenuItem } from '@/features/LLMQuery/components/RunLLMQueryMenuItem'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
-
 
 export const AnalysisMenu = () => {
   const [open, setOpen] = useState(false)

@@ -61,9 +61,11 @@ import { HcxValidationButtonGroup } from '../HierarchyViewer/components/Validati
 // SummaryPanel chunk. Mounted only after the first open (see the latch below)
 // so cold loads never fetch it.
 const ExportImage = lazy(() =>
-  import('../ToolBar/DataMenu/ExportNetworkToImage/ExportImage').then((m) => ({
-    default: m.ExportImage,
-  })),
+  import('@/features/ToolBar/DataMenu/ExportNetworkToImage/ExportImage').then(
+    (m) => ({
+      default: m.ExportImage,
+    }),
+  ),
 )
 
 interface NetworkPropertyPanelProps {

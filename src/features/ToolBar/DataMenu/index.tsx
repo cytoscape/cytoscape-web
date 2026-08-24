@@ -15,7 +15,9 @@ import { DropdownMenu } from '../DropdownMenu'
 // dropzone/dialog stack), which would otherwise ship with the eager toolbar
 // chunk. Mounted after first open only.
 const FileUpload = lazy(() =>
-  import('@/features/ToolBar/FileUpload').then((m) => ({ default: m.FileUpload })),
+  import('@/features/ToolBar/FileUpload').then((m) => ({
+    default: m.FileUpload,
+  })),
 )
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'

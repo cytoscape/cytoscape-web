@@ -24,6 +24,7 @@ const MOCK_API_DOMAINS = [
   'export',
   'workspace',
   'contextMenu',
+  'nodeGraphics',
 ] as const
 
 describe('cywebapi:ready smoke test', () => {
@@ -44,7 +45,7 @@ describe('cywebapi:ready smoke test', () => {
     expect((window as any).CyWebApi).toBeDefined()
   })
 
-  it('window.CyWebApi exposes all 10 required API domain keys', () => {
+  it('window.CyWebApi exposes all 11 required API domain keys', () => {
     ;(window as any).CyWebApi = mockCyWebApi
     for (const domain of MOCK_API_DOMAINS) {
       expect((window as any).CyWebApi).toHaveProperty(domain)

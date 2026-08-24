@@ -3,6 +3,7 @@
 import { CyApp } from '../../models/AppModel/CyApp'
 import type { CyWebApiType } from '../core'
 import type { ContextMenuApi } from '../core/contextMenuApi'
+import type { NodeGraphicsApi } from '../core/nodeGraphicsApi'
 import type { ResourceApi, ResourceDeclaration } from './AppResourceTypes'
 
 /**
@@ -23,6 +24,12 @@ export interface AppContextApis extends CyWebApiType {
    * Overrides the anonymous contextMenu from CyWebApiType.
    */
   readonly contextMenu: ContextMenuApi
+  /**
+   * Per-app node-graphics render hook API (factory-bound to this app's ID).
+   * The hook and every image it produced are dropped when the app is disabled.
+   * Overrides the anonymous nodeGraphics from CyWebApiType.
+   */
+  readonly nodeGraphics: NodeGraphicsApi
 }
 
 /**

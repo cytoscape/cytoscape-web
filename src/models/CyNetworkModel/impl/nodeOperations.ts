@@ -1,5 +1,5 @@
 import { IdType } from '../../IdType'
-import type { Edge, Network } from '../../NetworkModel'
+import type { Edge, Network } from '@/models/NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import { ValueType } from '../../TableModel'
@@ -249,4 +249,3 @@ export const createNodesCore = (
     edgeCount: originalEdgeCount,
   })
 }
-

@@ -1052,9 +1052,16 @@ describe('CustomGraphicsImpl', () => {
         '<circle cx="50" cy="50" r="40" fill="red" /></svg>'
 
       const expectWrapped = (decoded: string) => {
+        // Outer box matches the slot, which keeps Cytoscape's image offset at
+        // zero (no zoom drift).
         expect(decoded).toContain('viewBox="0 0 120 80"')
         expect(decoded).toContain('width="120" height="80"')
-        expect(decoded).toContain('x="20" y="0" width="80" height="80"')
+        // The source scales to fit that box while keeping its own aspect ratio.
+        // It used to be dropped into a min(width, height) square at natural
+        // size, which cropped this 100x100 source inside an 80x80 viewport.
+        expect(decoded).toContain('viewBox="0 0 100 100"')
+        expect(decoded).toContain('width="100%" height="100%"')
+        expect(decoded).toContain('preserveAspectRatio="xMidYMid meet"')
         expect(decoded).toContain(
           '<circle cx="50" cy="50" r="40" fill="red" />',
         )

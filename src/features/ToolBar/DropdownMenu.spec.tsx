@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { DropdownMenu } from './DropdownMenu'
+import { DropdownMenu, DropdownMenuItem } from './DropdownMenu'
 
 const onOpenChange = vi.fn()
 
@@ -109,13 +109,80 @@ describe('DropdownMenu keyboard access', () => {
     expect(command).not.toHaveBeenCalled()
   })
 
-  it('opens a submenu with Enter', () => {
+  it('opens a submenu with Enter and moves focus into it', () => {
     renderOpenMenu([
       { label: 'Import', items: [{ label: 'From file', command: vi.fn() }] },
     ])
 
     const parent = screen.getByRole('menuitem', { name: 'Import' })
     fireEvent.keyDown(parent, { key: 'Enter' })
-    expect(screen.getByRole('menuitem', { name: 'From file' })).toBeTruthy()
+
+    const child = screen.getByRole('menuitem', { name: 'From file' })
+    expect(child).toBeTruthy()
+    // Without this the submenu opens but the keyboard is stranded on the
+    // parent row, so the submenu is unreachable without a mouse.
+    expect(document.activeElement).toBe(child)
+  })
+
+  it('closes the submenu with Escape and returns focus to the parent', () => {
+    renderOpenMenu([
+      { label: 'Import', items: [{ label: 'From file', command: vi.fn() }] },
+    ])
+
+    const parent = screen.getByRole('menuitem', { name: 'Import' })
+    fireEvent.keyDown(parent, { key: 'Enter' })
+
+    const child = screen.getByRole('menuitem', { name: 'From file' })
+    fireEvent.keyDown(child, { key: 'Escape' })
+
+    expect(screen.queryByRole('menuitem', { name: 'From file' })).toBeNull()
+    expect(document.activeElement).toBe(parent)
+  })
+
+  it('moves focus across template rows and activates them with Enter', () => {
+    const run = vi.fn()
+    const skipped = vi.fn()
+    renderOpenMenu([
+      {
+        template: (
+          <DropdownMenuItem label="Apply Default Layout" onClick={run} />
+        ),
+      },
+      {
+        template: (
+          <DropdownMenuItem label="Grid" disabled={true} onClick={skipped} />
+        ),
+      },
+      { template: <DropdownMenuItem label="Settings..." onClick={run} /> },
+    ])
+
+    const menu = screen.getByRole('menu')
+    const rows = screen.getAllByRole('menuitem')
+    // One menuitem per template row, not one per template plus its wrapper.
+    expect(rows).toHaveLength(3)
+
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(rows[0])
+
+    // The disabled row is skipped: focus lands on 'Settings...'.
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(rows[2])
+
+    fireEvent.keyDown(rows[2], { key: 'Enter' })
+    expect(run).toHaveBeenCalledTimes(1)
+
+    fireEvent.keyDown(rows[1], { key: 'Enter' })
+    expect(skipped).not.toHaveBeenCalled()
+  })
+
+  it("points the trigger's aria-controls at the rendered menu", () => {
+    renderOpenMenu([{ label: 'Run', command: vi.fn() }])
+
+    const button = screen.getByTestId('toolbar-tools-menu-button')
+    const controls = button.getAttribute('aria-controls')
+    expect(controls).toBe('tools-menu')
+    expect(document.getElementById(controls as string)).toBe(
+      screen.getByRole('menu'),
+    )
   })
 })

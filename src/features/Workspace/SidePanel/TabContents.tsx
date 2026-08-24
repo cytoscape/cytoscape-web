@@ -12,9 +12,7 @@ import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
 import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
 import { AppIdProvider } from '../.././../app-api/AppIdContext'
-import { CyWebApi } from '../../../app-api/core'
-import { createContextMenuApi } from '../../../app-api/core/contextMenuApi'
-import { createResourceApi } from '../../../app-api/core/resourceApi'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 // Lazy, directly from MainPanel (not the barrel): the hierarchy viewer pulls
@@ -139,17 +137,6 @@ export function usePanelEntries(): PanelEntry[] {
 }
 
 /**
- * Build per-app APIs map for AppIdProvider.
- */
-function getPerAppApis(appId: string) {
-  return {
-    ...CyWebApi,
-    resource: createResourceApi(appId),
-    contextMenu: createContextMenuApi(appId),
-  }
-}
-
-/**
  * Render the panel entries as TabPanel elements.
  */
 export function renderPanelContents(
@@ -159,7 +146,7 @@ export function renderPanelContents(
   return entries.map((entry, index) => {
     const PanelComponent = entry.component
     const content = entry.appId ? (
-      <AppIdProvider value={{ appId: entry.appId, apis: getPerAppApis(entry.appId) }}>
+      <AppIdProvider value={{ appId: entry.appId, apis: buildPerAppApis(entry.appId) }}>
         <PluginErrorBoundary
           appId={entry.appId}
           slot="right-panel"
