@@ -188,7 +188,10 @@ describe('Database Snapshot Import/Export', () => {
       await expect(importDatabaseSnapshot(invalidSnapshot)).rejects.toThrow(
         'exceeds maximum allowed size',
       )
-    })
+      // Building and stringifying a >MAX_SNAPSHOT_SIZE_BYTES string genuinely
+      // takes over a second — this test is slow, not stuck, so it opts out of
+      // the 1s default rather than flaking under parallel workers.
+    }, 15_000)
 
     it('should handle merge mode', async () => {
       // Create initial data

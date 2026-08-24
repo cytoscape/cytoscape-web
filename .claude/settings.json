@@ -2,9 +2,40 @@
   "permissions": {
     "deny": [
       "Bash(npm test)",
+      "Bash(npm run test:quiet)",
       "Bash(npm run test:e2e)",
+      "Bash(npm run test:e2e:quiet)",
       "Bash(npm run test:e2e:chromium)",
+      "Bash(npm run test:e2e:chromium:quiet)",
+      "Bash(npm run e2e:run)",
+      "Bash(npm run e2e:run:quiet)",
       "Bash(npx playwright test)"
+    ],
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git blame:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(node -v)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run format)",
+      "Bash(npm run build)",
+      "Bash(npm run test:unit:quiet)",
+      "Bash(npm run test:checks:quiet)",
+      "Bash(npm run test:coverage:quiet)",
+      "Bash(npm run e2e:spec:*)",
+      "Bash(npx vitest run:*)"
     ]
   }
 }

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { produce } from 'immer'
 import { describe, expect, it } from 'vitest'
 

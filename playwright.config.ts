@@ -41,6 +41,9 @@ export default defineConfig({
 	// the renderer). The default cpus/2 -- 5 on a 10-core machine -- oversubscribes
 	// badly: measured, 5 workers took 3m06s with 3-10 unstable tests, while 3
 	// workers took 55s with none. Fewer workers is both faster and steadier here.
+	// Re-measured 2026-08 on a 16-core machine: 5 workers ran ~36s when clean but
+	// flaked boot-timeout retries in 1 of 3 runs (67s with retries); 3 workers
+	// held ~43s with zero retries across runs. 3 stays the right local cap.
 	workers: process.env.CI ? undefined : 3,
 	// Above Playwright's 30s default, which a single slow boot can consume on its
 	// own now that the shared helper allows 30s for one. Specs that import a file
@@ -54,7 +57,11 @@ export default defineConfig({
 		baseURL: externalHostUrl ?? 'http://localhost:5500',
 		headless: true,
 		trace: 'on-first-retry',
-		video: 'retain-on-failure',
+		// Like trace: record only when a test is retried. 'retain-on-failure'
+		// paid the screencast overhead on every first attempt of every test,
+		// only to delete the file when it passed; a failure still gets a video
+		// because it is retried (1 local retry, 2 on CI).
+		video: 'on-first-retry',
 		screenshot: 'only-on-failure'
 	},
 	projects: [

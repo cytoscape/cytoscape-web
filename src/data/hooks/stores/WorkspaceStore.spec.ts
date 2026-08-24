@@ -29,6 +29,13 @@ const sampleInstalledApp = (
   installedAt: FIXED_TIME,
 })
 
+// The cross-tab reset handshake sleeps PEER_CLOSE_GRACE_MS (300ms) waiting for
+// peer tabs that do not exist under jsdom — 300ms per resetWorkspace test. The
+// handshake has its own coverage in lifecycle.test.ts.
+vi.mock('@/data/db/lifecycle', () => ({
+  announceDatabaseReset: vi.fn(async () => () => {}),
+}))
+
 // Mock the database operations to avoid IndexedDB issues in tests
 vi.mock('../../db', async (importOriginal) => {
   const actual = (await importOriginal()) as typeof import('../../db')

@@ -50,7 +50,7 @@ _Design: app-api-specification.md §1.5.1, §3.1, §3.1.1, §3.10.1_
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="elementApi"` passes
+- [x]`npx vitest run elementApi` passes
 - [x]`npm run build` succeeds
 
 ---
@@ -87,7 +87,7 @@ _Design: app-api-specification.md §1.5.2, §3.2, §3.10.2_
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="networkApi"` passes
+- [x]`npx vitest run networkApi` passes
 - [x]`npm run build` succeeds
 
 ---
@@ -130,7 +130,7 @@ _Design: app-api-specification.md §1.5.3, §1.5.7, §3.3, §3.7, §3.10.3, §3.
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="selectionApi|viewportApi"` passes
+- [x]`npx vitest run selectionApi viewportApi` passes
 - [x]`npm run build` succeeds
 
 ---
@@ -167,7 +167,7 @@ _Design: app-api-specification.md §1.5.4, §1.5.5, §3.4, §3.5, §3.10.4, §3.
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="tableApi|visualStyleApi"` passes
+- [x]`npx vitest run tableApi visualStyleApi` passes
 - [x]`npm run build` succeeds
 
 ---
@@ -208,7 +208,7 @@ _Design: app-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.10.6, §3.
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="layoutApi|exportApi"` passes
+- [x]`npx vitest run layoutApi exportApi` passes
 - [x]`npm run build` succeeds
 
 ---
@@ -249,7 +249,7 @@ _Design: app-api-specification.md §1.5.10, §3.9_
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="workspaceApi"` passes
+- [x]`npx vitest run workspaceApi` passes
 - [x]`npm run build` succeeds
 - [x]Manual: `window.CyWebApi.workspace.getNetworkList()` returns the current workspace's networks in DevTools console
 - [x]Manual: `window.CyWebApi.workspace.switchCurrentNetwork(id)` triggers `network:switched` event (visible in DevTools Event Listeners)
@@ -296,7 +296,7 @@ _Design: app-api-specification.md §1.5.9, §2.6 (Phase 1g)_
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="useAppManager.lifecycle"` passes
+- [x]`npx vitest run useAppManager.lifecycle` passes
 - [x]`npm run build` succeeds
 - [x]Manual: App that logs in `mount()` shows the log when Cytoscape Web loads
 - [x]Manual: `AppContext.apis.workspace.getNetworkList()` works inside a `mount()` callback
@@ -326,7 +326,7 @@ _Design: app-api-specification.md §1.5.1 (CreateNodeOptions / CreateEdgeOptions
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="elementApi"` passes
+- [x]`npx vitest run elementApi` passes
 - [x]Manual: create node with `bypass: { nodeBackgroundColor: '#ff0000' }` — node renders red immediately
 
 ---
@@ -393,7 +393,7 @@ _Design: app-api-specification.md §1.5.11_
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="contextMenuApi|ContextMenuItemStore"` passes
+- [x]`npx vitest run contextMenuApi ContextMenuItemStore` passes
 - [x]`npm run build` succeeds
 - [x]Manual: call `window.CyWebApi.contextMenu.addContextMenuItem({ label: 'Test Item', handler: (t) => console.log(t) })` in DevTools — item appears in node right-click menu
 - [x]Manual: call `window.CyWebApi.contextMenu.removeContextMenuItem(itemId)` — item disappears from menu
@@ -463,7 +463,7 @@ to be complete before Step 2 is closed.
 ### Verification
 
 - [x]`npm run lint` passes
-- [x]`npm run test:unit -- --testPathPattern="initEventBus|useCyWebEvent"` passes
+- [x]`npx vitest run initEventBus useCyWebEvent` passes
 - [x]`npm run build` succeeds
 - [x]Manual: open DevTools Event Listeners panel — confirm `selection:changed` fires on node click
 

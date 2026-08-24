@@ -7,14 +7,14 @@
 **Workflow Orchestration:**
 
 - **Plan First:** Enter plan mode for any non-trivial task (3+ steps or architectural decisions). Break work into checkable items and track progress via the built-in todo list tool.
-- **Context Ingestion:** Before planning, actively review the relevant specs in `docs/specifications/` and relevant ADRs. See [Section 5](#5-specification-references) for the full list.
+- **Context Ingestion:** Before planning, actively review the relevant specs in `docs/specifications/` and relevant ADRs. See [Section 6](#6-specification-references) for the full list.
 - **Halt and Re-plan:** If something goes wrong, STOP and re-plan immediately rather than continuing blindly.
-- **Capture Lessons:** After any user corrections or unexpected failures, record what you learned in `.serena/memories/lessons.md` to prevent repeated mistakes. This file is git-tracked and shared across all agents. Review it at the start of each session.
+- **Capture Lessons:** After any user corrections or unexpected failures, record what you learned so it is not repeated. Short standing rules go in `.serena/memories/lessons.md` — read that file at the start of each session; it is kept small on purpose. Long-form findings (what was measured, what was tried and rejected) go in `.serena/memories/lessons-archive.md`, which you grep by keyword when working in the area it covers rather than reading end to end. Both are git-tracked and shared across all agents.
 
 **Autonomous Bug Fixing & Verification:**
 
 - **Test-Driven Fixes:** Before writing implementation code, write a failing regression test. Follow `vitest-setup.ts` conventions (including `enableMapSet()`) and test stores via `@testing-library/react` hooks. Prove it fails, apply the fix, then prove it passes.
-- **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:unit` or `npm run test:e2e` and diff the behavior.
+- **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:checks:quiet` (lint ∥ unit), plus the one or few e2e specs covering the change, and diff the behavior. Always use the `:quiet` variants — see [Section 5](#5-development-operations).
 - **Fix Root Causes:** Fix root causes, not symptoms. Never apply band-aid fixes. Fix failing CI tests proactively.
 
 **Safety:**
@@ -39,97 +39,19 @@ Cytoscape Web is a React-based network visualization and analysis app with a str
 
 **Rules:** Models must NOT import from React or Zustand. Stores must NOT import React components. Features consume stores through hooks.
 
-### Naming Conventions
+**Non-negotiables that bite if you miss them:**
 
-| Artifact               | Location                                      | Naming Pattern                 |
-| ---------------------- | --------------------------------------------- | ------------------------------ |
-| Model interfaces       | `src/models/<Domain>Model/`                   | `<Domain>.ts`, `Edge.ts`, etc. |
-| Model implementations  | `src/models/<Domain>Model/impl/`              | `<domain>Impl.ts`              |
-| Model barrel export    | `src/models/<Domain>Model/index.ts`           | Default export: `<Domain>Fn`   |
-| Store model interfaces | `src/models/StoreModel/<Domain>StoreModel.ts` | `<Domain>Store` (type)         |
-| Store implementations  | `src/data/hooks/stores/<Domain>Store.ts`      | `use<Domain>Store` (hook)      |
-| Feature modules        | `src/features/<Feature>/`                     | PascalCase directory           |
-| Feature documentation  | `src/features/<Feature>/<Feature>_docs/`      | Behavioral markdown            |
+- Model implementations in `impl/` are pure TypeScript — no React, no Zustand. Interfaces use `readonly` properties; `IdType = string` (`src/models/IdType.ts`) identifies nodes, edges and networks alike.
+- All stores use Immer; persisted stores with subscriptions use `create(subscribeWithSelector(immer(persist(...))))`.
+- `enableMapSet()` must run before Immer touches a Map or Set — done in `src/boot/bootstrap.tsx` and `vitest-setup.ts`. A new standalone test entry point must call it too.
+- Before saving to IndexedDB, convert proxies with `toPlainObject()` from `src/data/db/serialization/`; Map-based data has dedicated serializers (`serializeTable`, `serializeVisualStyle`, `serializeNetworkView`).
+- Inside store actions, reach other stores with `useXxxStore.getState()`, never hooks. Hooks are for components.
+- All external CX2 data must pass `validateCX2()` first (see `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md`).
 
-### Key Directories
-
-- `src/models/` — Source of truth for current model domains.
-- `src/data/hooks/stores/` — Source of truth for current store modules.
-- `src/data/hooks/` — Hooks that compose stores for complex workflows.
-- `src/data/db/` — Dexie IndexedDB layer. DB name and current version are defined in `src/data/db/index.ts`. Includes `migrations.ts`, `serialization/`, `snapshot/`, `validator.ts`.
-- `src/data/external-api/ndex/` — NDEx (Network Data Exchange) API client.
-- `src/data/external-api/cytoscape/` — Cytoscape Desktop integration API.
-- `src/data/task/` — Task hooks exposed via Module Federation to external apps.
-- `src/features/` — Source of truth for current feature modules.
-- `src/assets/` — Static assets and runtime config files.
-- `src/app-api/` — Public API surface for external apps (see [Section 4](#4-app-api-module-federation)).
-
-### Feature Module Pattern
-
-Feature modules are self-contained. Larger features follow this structure:
-
-```text
-Feature/
-├── Feature_docs/      # Behavioral documentation (markdown)
-├── components/        # React components
-├── models/            # Feature-specific models
-├── store/             # Feature-specific Zustand store (if needed)
-├── tests/             # Feature-specific tests
-└── utils/             # Feature-specific utilities
-```
-
-Key feature modules:
-
-- `AppShell` — Main container (toolbar + routed content). Startup itself lives in `src/boot/steps/`
-- `NetworkPanel/CyjsRenderer` — Cytoscape.js rendering engine
-- `Vizmapper` — Visual style mapping interface
-- `TableBrowser` — Node/edge data table browsing
-- `HierarchyViewer` — Hierarchical network viewer (uses web workers)
-- `MergeNetworks` — Multi-network merge operations
-- `ServiceApps` — External Module Federation app integration
-- `Workspace` — Workspace editor and management
-
-### Model Patterns
-
-Each model directory exports a `<Domain>Fn` default object with pure implementation functions:
-
-```typescript
-// src/models/NetworkModel/index.ts
-import * as NetworkFn from './impl/networkImpl'
-export { Network } from './Network'
-export { Edge } from './Edge'
-export { NetworkFn as default }
-```
-
-**Key rules:**
-
-- Interfaces use `readonly` properties
-- Implementation functions in `impl/` are pure TypeScript — no React, no Zustand
-- `IdType = string` (defined in `src/models/IdType.ts`) is used universally for nodes, edges, networks
-- All external CX2 data must be validated with `validateCX2()` before processing (see `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md`)
-
-### Zustand Store Patterns
-
-- **Middleware Stack:** All stores use Immer middleware. Persisted stores with subscriptions use: `create(subscribeWithSelector(immer<StoreType>(persist((set, get) => ({ ... })))))`
-- **`enableMapSet()` (CRITICAL):** Must be called before Immer can handle Map/Set. Already done in `src/boot/bootstrap.tsx` (app) and `vitest-setup.ts` (tests). **If you create a new standalone test entry point, you MUST include this call or tests will fail with cryptic errors.**
-- **IndexedDB Persistence:** Stores use a custom `persist` wrapper that auto-saves to IndexedDB. Before saving, proxy objects must be converted with `toPlainObject()` from `src/data/db/serialization/`. Specialized serializers exist: `serializeTable`, `serializeVisualStyle`, `serializeNetworkView` for Map-based data.
-- **Cross-Store Communication:** Inside store actions, access other stores via `useXxxStore.getState()` — not hooks. Hooks are for React components only.
-
-### Routing
-
-URL-as-state pattern with React Router. Search parameters are consumed on initial load, then removed from URL.
-
-```text
-/                                       → Root (AppShell)
-/:workspaceId                           → Workspace Editor
-/:workspaceId/networks                  → Workspace with no network
-/:workspaceId/networks/:networkId       → Network viewer
-/error                                  → Error page
-```
-
-See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and search parameter behavior.
-
----
+**Reference:** naming conventions, the directory map, the feature-module and
+model patterns, the full store middleware stack, and the routing table live in
+[`docs/agents/architecture.md`](docs/agents/architecture.md). Read the part you
+need when you get there — do not read it all up front.
 
 ## 3. Code Style & Conventions
 
@@ -161,7 +83,7 @@ See `docs/specifications/DEBUG_GUIDE.MD` for the full policy.
 
 The `src/app-api/` directory is the **sole public API surface** for external apps consuming Cytoscape Web via Module Federation or `window.CyWebApi`.
 
-**Read `src/app-api/CLAUDE.md` before modifying any file in this directory.** It documents the two-layer pattern, error handling conventions, and event bus architecture.
+**Read `src/app-api/AGENTS.md` before modifying any file in this directory.** It documents the two-layer pattern, error handling conventions, and event bus architecture.
 
 **Key principles:**
 
@@ -178,6 +100,16 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 
 ## 5. Development Operations
 
+### Prerequisites
+
+**Node 24.** `package.json` sets `engines.node >= 24.0.0` and `.npmrc` sets
+`engine-strict=true`, so `npm install` hard-fails on anything older, and Vite 8
+needs 22.12+ regardless. On a machine whose default `node` is older, the
+failures are cryptic — `vitest` dies loading its config with `ERR_REQUIRE_ESM`
+from `std-env`, and Playwright's build dies the same way. **Check `node -v`
+against `.nvmrc` before diagnosing any toolchain error**; `nvm use` (or
+`mise install`) fixes it.
+
 ### Commands
 
 **Building & Development:**
@@ -191,18 +123,47 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 
 **Testing:**
 
-- `npm test` - Run all checks in sequence (lint → unit → Chromium e2e) via `run-s`
+- `npm test` - Run all checks (lint ∥ unit in parallel, then Chromium e2e)
+- `npm run test:checks` - Run lint and unit tests in parallel (no e2e)
 - `npm run test:unit` - Run Vitest unit tests
 - `npm run test:e2e` - Run Playwright end-to-end tests (all browsers)
 - `npm run test:e2e:chromium` - Run Playwright end-to-end tests (Chromium only; used by `npm test`)
 
+Most of the time you want **one file, not the suite** — the full unit run is
+~70s, a single spec is a few seconds:
+
+```bash
+npx vitest run src/models/CxModel/impl/converter.test.ts   # one file
+npx vitest run elementApi                                  # substring match
+```
+
+(Vitest takes paths/patterns as positional arguments. `--testPathPattern` is
+Jest syntax and errors out here.)
+
+Each test script has a `:quiet` variant (`test:quiet`, `test:unit:quiet`,
+`test:coverage:quiet`, `test:e2e:quiet`, `test:e2e:chromium:quiet`) that prints
+failures and a summary only — no per-test output, no test stdio, and (via
+`CYWEB_TEST_QUIET`) no `debug`-logger noise. Vitest uses its built-in `minimal`
+reporter; Playwright uses `test/playwright/quiet-reporter.ts`. **Agents must
+ALWAYS run the quiet variants** to avoid polluting their context with verbose
+passing-test output (e.g. `npm run test:unit:quiet`, or
+`npm run e2e:spec -- <spec-name>` for a targeted e2e spec).
+
 **Agents must not run the whole e2e suite locally.** Full-suite runs are flaky under
 worker contention and take minutes to tell you little, so `.claude/settings.json`
-denies `npm test`, `npm run test:e2e`, `npm run test:e2e:chromium`, and a bare
-`npx playwright test` — CI owns the full suite. Running the **one or few specs that
-cover the change in hand** is fine and encouraged:
-`npx playwright test <spec-name> --project=chromium`. Keep the scope to the change;
-`npm run test:unit` and `npm run lint` remain the local gates for everything else.
+denies `npm test`, `npm run test:e2e`, `npm run test:e2e:chromium`, their `:quiet`
+variants, the `e2e:run` helper scripts, and a bare `npx playwright test`, and
+`scripts/run-playwright.mjs` refuses any local run that names no spec — a guard
+that binds Codex and humans too, overridable with `CYWEB_FULL_E2E=1`. CI owns
+the full suite. Running the **one or few specs that cover the change in hand**
+is fine and encouraged:
+
+```bash
+npm run e2e:spec -- table-browser        # quiet, chromium, builds the fixture remote
+```
+
+Keep the scope to the change; `npm run test:checks:quiet` (lint and the unit
+suite in parallel) remains the local gate for everything else.
 
 **Port 5500 must be free before an e2e run.** Playwright builds the app and serves
 it with `vite preview` on 5500 — the port Keycloak's client registration expects —
@@ -222,7 +183,11 @@ flakier suite. See `test/playwright/README.md`.
 
 **Unit Tests (Vitest):**
 
-- Environment: jsdom
+- Environment: jsdom by default. **Test files that never touch the DOM must start
+  with `// @vitest-environment node`** — jsdom setup costs ~1s per file, node is
+  near-free, and ~150 files already opt in. If a node-tagged file fails on a
+  missing browser global (`window`, `document`, `localStorage`, or an import like
+  `keycloak-js`/`dexie-observable` that needs one), remove the pragma.
 - Setup: `vitest-setup.ts` loads `fake-indexeddb/auto`, calls `enableMapSet()`, and sets a 1-second test timeout
 - **Tests are co-located with source files**, not in a separate directory
 - Convention: `.test.ts` for utilities/hooks/APIs; `.spec.ts` for stores and feature modules
@@ -244,41 +209,12 @@ flakier suite. See `test/playwright/README.md`.
 - Naming convention: `<characteristic>.<valid|invalid>.<extension>`
 - Generation scripts: `scripts/generate-test-fixtures/`
 
-### Build System
+### Build, Configuration & Scripts
 
-Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
-
-- Module Federation exposed modules are defined in `src/app-api/federation/federationExposes.ts` and wired into `vite.config.ts`.
-- Shared singletons: react, react-dom, @mui/material
-- Vite's `define` option injects git commit hash and timestamps at build time
-- Production builds strip direct `console.*()` calls through Vite's Oxc minifier configuration
-
-### Important Files & Configuration
-
-| File                      | Purpose                                                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics |
-| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                              |
-| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                               |
-| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                             |
-| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                     |
-| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                              |
-| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                            |
-
-**Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
-
-### Scripts
-
-| Script                                       | Purpose                                         |
-| -------------------------------------------- | ----------------------------------------------- |
-| `scripts/generate-test-fixtures/`            | Generate CX2, SIF, table, and URL test fixtures |
-| `scripts/generate-model-diagram/`            | Generate Mermaid diagrams of model dependencies |
-| `scripts/generate-state-diagram/`            | Generate state structure diagrams               |
-| `scripts/download-ndex-networks.ts`          | Download networks from NDEx for testing         |
-| `scripts/manual-database-snapshot-export.js` | Export IndexedDB snapshots                      |
-| `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv       |
-
----
+The Vite 8 / Module Federation build, the runtime configuration files
+(`src/assets/config.json`, `apps.json`, `src/debug.ts`, `src/boot/`), and the
+`scripts/` directory are documented in
+[`docs/agents/environment.md`](docs/agents/environment.md).
 
 ## 6. Specification References
 
@@ -298,15 +234,15 @@ Read these before working in related areas:
 - `docs/prompts/code-quality-for-testing-behaviour.md` — Adding `data-testid`, documentation, linting
 - `docs/prompts/code-quality-testing-refactoring.md` — Extracting hooks, adding unit tests
 - `src/boot/boot_docs/boot.md` — startup directory map and design reasoning
-- `src/app-api/CLAUDE.md` — App API architecture, two-layer pattern, event bus
+- `src/app-api/AGENTS.md` — App API architecture, two-layer pattern, event bus
+- `docs/agents/architecture.md` — naming conventions, directory map, feature/model/store patterns, routing table
+- `docs/agents/environment.md` — build system, runtime config files, repo scripts
 
 ---
 
 ## 7. Special Considerations
 
-- **`enableMapSet()`** — Must be called before Immer can handle Map/Set. Already done in `src/boot/bootstrap.tsx` and `vitest-setup.ts`. **If you create a new standalone test entry point, include it.**
 - **`zod`** — Available as a dependency for runtime validation.
-- **`validateCX2()`** — Required for all external CX2 data before processing.
 - **NDEx Dev Server** — `config.json` points to `dev1.ndexbio.org` by default.
 - **DB Migrations** — Schema changes go in `src/data/db/migrations.ts`. DB name and current version are defined in `src/data/db/index.ts`.
 - **Blank Workspace?** — Clear IndexedDB (`cyweb-db`) to reset. Browser DevTools → Application → IndexedDB.

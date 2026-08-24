@@ -1,3 +1,4 @@
+// @vitest-environment node
 import Papa from 'papaparse'
 import { describe, expect, it } from 'vitest'
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // src/app-api/core/resourceApi.test.ts
 //
 // Plain Jest tests for the per-app ResourceApi factory.

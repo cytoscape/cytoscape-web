@@ -36,6 +36,6 @@ The package provides TypeScript declarations for vanilla JS consumers (browser e
 ## Verification
 
 - [x] `npm run lint` passes
-- [x] `npm run test:unit -- --testPathPattern="ApiResult"` passes
+- [x] `npx vitest run ApiResult` passes
 - [x] `npm run build` succeeds
 - [x] `npm install @cytoscape-web/api-types@alpha` resolves and ambient types for `window.CyWebApi` are available in a consuming project

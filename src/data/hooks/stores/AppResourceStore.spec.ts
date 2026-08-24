@@ -1,3 +1,4 @@
+// @vitest-environment node
 // src/data/hooks/stores/AppResourceStore.spec.ts
 import { enableMapSet } from 'immer'
 import { beforeEach, describe, expect, it } from 'vitest'

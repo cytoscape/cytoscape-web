@@ -777,7 +777,7 @@ Ordered steps for the implementer:
 | 7 | Create `api/index.ts` barrel | `src/app-api/index.ts` | `npm run lint` passes |
 | 8 | Create `src/app-api/CLAUDE.md` | `src/app-api/CLAUDE.md` | File exists |
 | 9 | Add `./ApiTypes` to webpack exposes | `webpack.config.js` | `npm run build` succeeds |
-| 10 | Create `ApiResult.test.ts` | `src/app-api/types/ApiResult.test.ts` | `npm run test:unit -- --testPathPattern="ApiResult"` passes |
+| 10 | Create `ApiResult.test.ts` | `src/app-api/types/ApiResult.test.ts` | `npx vitest run ApiResult` passes |
 | 11 | Create `Api.md` documentation | `src/app-api/api_docs/Api.md` | File exists, reviewed |
 | 12 | Full build verification | — | `npm run build` succeeds |
 | 13 | Full lint verification | — | `npm run lint` passes |

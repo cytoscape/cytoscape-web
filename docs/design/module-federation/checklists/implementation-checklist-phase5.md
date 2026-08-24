@@ -144,7 +144,7 @@ _Design: §9 rules 1–3_
 #### Verification (Step 2)
 
 - [x] `npm run lint` passes — new files clean (no errors or warnings)
-- [x] `npm run test:unit -- --testPathPattern="installGate"` passes — 18/18
+- [x] `npx vitest run installGate` passes — 18/18
 - [x] `npm run build` succeeds — semver import and `typeof REACT_APP_VERSION` guard compile cleanly
 
 ---
@@ -233,7 +233,7 @@ _Design: §10.1_
 
 #### Verification (Step 4)
 
-- [x] `npm run lint` passes; `npm run test:unit -- --testPathPattern="migrateLegacyApps"` passes (6/6); `npm run build` succeeds — full suite 2063/2064 (lone pre-existing `visualStyleApi` failure)
+- [x] `npm run lint` passes; `npx vitest run migrateLegacyApps` passes (6/6); `npm run build` succeeds — full suite 2063/2064 (lone pre-existing `visualStyleApi` failure)
 - [x] Manual test: seed a legacy `apps` record (DevTools), reload → record appears in `workspace.installedApps` with `source: 'manifest'`, legacy table is empty, previously Active app auto-loads
 
 ---

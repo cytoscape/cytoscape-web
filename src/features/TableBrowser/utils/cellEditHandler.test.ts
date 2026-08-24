@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { Item } from '@glideapps/glide-data-grid'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
 import { getElementId, ID_COLUMN_ID, ID_COLUMN_TITLE } from './idColumn'

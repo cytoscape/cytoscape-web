@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { NDExClient } from '@js4cytoscape/ndex-client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

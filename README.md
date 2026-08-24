@@ -151,7 +151,19 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 - `lint`: type-check with TypeScript and lint source code with oxlint
 - `format`: format source code with Prettier
 - `test:unit`: run Vitest unit tests
+- `test:checks`: run lint and unit tests in parallel (no e2e)
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
+- `test:e2e:chromium`: run Playwright end-to-end tests (Chromium only; used by `npm test`)
+- `e2e:spec -- <spec-name>`: run one or a few e2e specs (Chromium, quiet output) — the everyday form, since a full local e2e run is refused unless `CYWEB_FULL_E2E=1` is set
+
+Each test script also has a `:quiet` variant that prints only failures and a final summary (no per-test output, test stdio, or debug-logger noise) — useful for CI logs and AI agents:
+
+- `test:quiet`: quiet version of `npm test` (lint ∥ unit, then Chromium e2e)
+- `test:checks:quiet`: quiet lint + unit tests in parallel (no e2e)
+- `test:unit:quiet`: quiet Vitest unit tests
+- `test:coverage:quiet`: quiet unit tests with coverage
+- `test:e2e:quiet`: quiet Playwright tests (all configured browsers)
+- `test:e2e:chromium:quiet`: quiet Playwright tests (Chromium only)
 
 #### Installing Playwright browsers
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { Core, NodeSingular } from 'cytoscape'
 import { describe, expect, it } from 'vitest'
 

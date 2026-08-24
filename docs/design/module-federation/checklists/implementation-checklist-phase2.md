@@ -73,7 +73,7 @@ _Design: §6.1, §6.5, §8.1, §8.5_
 ### Verification (Step 2.0)
 
 - [x] `npm run lint` passes
-- [x] `npm run test:unit -- --testPathPattern="AppResourceStore"` passes
+- [x] `npx vitest run AppResourceStore` passes
 - [x] `npm run build` succeeds
 
 ---
@@ -112,7 +112,7 @@ _Design: §6.4.1_
 ### Verification (Step 2.1)
 
 - [x] `npm run lint` passes
-- [x] `npm run test:unit -- --testPathPattern="AppCleanupRegistry"` passes
+- [x] `npx vitest run AppCleanupRegistry` passes
 - [x] `npm run build` succeeds
 
 ---
@@ -173,7 +173,7 @@ _Design: §6.2.1–§6.2.3, §6.2.5–§6.2.6_
 ### Verification (Step 2.2)
 
 - [x] `npm run lint` passes
-- [x] `npm run test:unit -- --testPathPattern="resourceApi"` passes
+- [x] `npx vitest run resourceApi` passes
 - [x] `npm run build` succeeds
 
 ---
@@ -243,7 +243,7 @@ _Design: §6.6.0, §6.6.1, §6.6.3, §8.3_
 ### Verification (Step 2.3)
 
 - [x] `npm run lint` passes
-- [x] `npm run test:unit -- --testPathPattern="contextMenuApi"` passes
+- [x] `npx vitest run contextMenuApi` passes
 - [x] `npm run build` succeeds
 - [x] `import { useContextMenuApi } from 'cyweb/ContextMenuApi'` would cause a TypeScript error (module no longer exists)
 
@@ -357,7 +357,7 @@ _Design: §6.4.0, §6.4.2–§6.4.3, §6.7.1–§6.7.2_
 ### Verification (Step 2.5)
 
 - [x] `npm run lint` passes
-- [x] `npm run test:unit -- --testPathPattern="appLifecycle"` passes
+- [x] `npx vitest run appLifecycle` passes
 - [x] `npm run build` succeeds
 
 ---

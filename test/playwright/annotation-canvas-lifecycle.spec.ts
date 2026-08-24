@@ -90,13 +90,16 @@ const waitForRenderedNetwork = async (page: Page): Promise<void> => {
       .catch(() => false)
 
     // The error panel can replace a renderer that already put canvases up, so
-    // the state only counts once it has held for a moment.
+    // the state only counts once it has held for a moment. Waiting on the
+    // error locator itself (rather than sleeping a flat 1500ms) keeps the
+    // guard while bounding the cost: the failed Dexie read that triggers the
+    // panel resolves within tens of milliseconds of the canvases attaching.
     if (rendered) {
-      await page.waitForTimeout(1500)
       const loadFailed = await page
         .getByText('Failed to load network data')
         .first()
-        .isVisible()
+        .waitFor({ state: 'visible', timeout: 500 })
+        .then(() => true)
         .catch(() => false)
       const stillRendered = (await countCanvases(page)) >= EXPECTED_CANVAS_COUNT
       if (!loadFailed && stillRendered) return

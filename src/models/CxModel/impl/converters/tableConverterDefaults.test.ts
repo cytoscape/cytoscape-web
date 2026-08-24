@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { createTablesFromCx } from './tableConverter'
 import { Cx2 } from '../../Cx2'

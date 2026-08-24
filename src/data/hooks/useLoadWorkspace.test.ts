@@ -20,6 +20,13 @@ vi.mock('../db', async (importOriginal) => {
   }
 })
 
+// The cross-tab reset handshake sleeps PEER_CLOSE_GRACE_MS (300ms) waiting for
+// peer tabs that do not exist under jsdom; that alone made this the slowest
+// unit test file. The handshake has its own coverage in lifecycle.test.ts.
+vi.mock('../db/lifecycle', () => ({
+  announceDatabaseReset: vi.fn(async () => () => {}),
+}))
+
 import { RemoteWorkspace, useLoadWorkspace } from './useLoadWorkspace'
 
 // Mock window.location.reload
