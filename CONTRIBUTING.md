@@ -75,15 +75,16 @@ Unit tests (Vitest) are co-located with the source files they cover. End-to-end 
 Run the checks before opening your pull request:
 
 ```sh
-npm run test:unit   # run unit tests (Vitest)
-npm run test:e2e    # run end-to-end tests (Playwright)
-npm test            # run lint, unit, and Chromium e2e in sequence
+npm run test:checks   # lint + unit tests, in parallel
+npm run e2e:spec -- <spec-name>   # the e2e specs covering your change
+npm test              # lint, unit, and the full Chromium e2e run
 ```
 
-Every test script has a `:quiet` variant (`npm run test:quiet`,
-`npm run test:unit:quiet`, `npm run test:checks:quiet`, `npm run test:e2e:quiet`,
-`npm run test:e2e:chromium:quiet`) that prints failures and a summary only — no
-per-test output and no `debug`-logger noise. Handy for CI logs, and required of
-AI agents working in this repo (see `AGENTS.md`).
+Every test script has a `:quiet` variant that prints failures and a summary
+only — handy for CI logs, and required of AI agents working in this repo. A
+full local e2e run is refused unless `CYWEB_FULL_E2E=1` is set; CI runs the
+whole suite on your PR. See [AGENTS.md](AGENTS.md) §5 for the complete command
+reference — it is the source of truth, and this section deliberately does not
+duplicate it.
 
 Please make sure the tests are passing before you submit your pull request. If you're unsure why something is failing, open the pull request anyway and note what you've tried — we're happy to help.

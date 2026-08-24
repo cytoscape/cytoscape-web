@@ -1,42 +1,21 @@
 # Task Completion Checklist
 
-When completing a coding task in this project, follow these steps:
+Commands live in AGENTS.md §5 — the single source of truth. This file is the
+order to run them in, not a second copy of them.
 
-## 1. Lint
-```bash
-npm run lint
-```
-Fix all TypeScript and oxlint errors.
+When completing a coding task in this project:
 
-## 2. Format
-```bash
-npm run format
-```
-Ensures Prettier formatting is applied (no semicolons, single quotes, trailing commas, 2-space indent).
+1. **Lint + unit tests** — `npm run test:checks:quiet` (runs both in parallel).
+   Always the `:quiet` variants: they print failures and a summary only, so
+   passing tests do not flood your context.
+2. **Format** — `npm run format` (Prettier over `src/`).
+3. **E2E, if the UI changed** — `npm run e2e:spec -- <spec-name>`, scoped to the
+   specs covering the change. Never the whole suite locally: CI owns it, and
+   both the deny list and `scripts/run-playwright.mjs` refuse it.
+4. **Build, if the change could affect bundling** — `npm run build`.
 
-## 3. Run Lint + Unit Tests
-```bash
-npm run test:checks:quiet
-```
-Runs lint and the Vitest suite in parallel. Tests are co-located with source
-files. **Agents must always use the `:quiet` variants** (`test:unit:quiet`,
-`test:checks:quiet`, ...) — they print failures and a summary only, so passing
-tests do not flood the context.
-
-## 4. Run the E2E Specs Covering the Change (if UI changed)
-```bash
-npx playwright test <spec-name> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts
-```
-Playwright against localhost:5500 (port must be free). **Agents must not run the
-whole e2e suite locally** — `.claude/settings.json` denies `npm test`,
-`npm run test:e2e[:chromium]`, their `:quiet` variants, the `e2e:run` scripts,
-and bare `npx playwright test`. CI owns the full suite.
-
-## 5. Build Check (if needed)
-```bash
-npm run build
-```
-Ensures the production build succeeds.
+Regression test first, then the fix: prove the test fails, apply the fix, prove
+it passes.
 
 ## Key Reminders
 - Do NOT use `console.log` — use the structured `debug` logger from `src/debug.ts`
