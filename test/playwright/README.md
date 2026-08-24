@@ -103,6 +103,12 @@ Playwright's `--quiet` with the custom reporter in `quiet-reporter.ts`; add both
 flags when invoking `npx playwright test` directly:
 
 ```bash
+npm run e2e:spec -- <spec>   # chromium, quiet, fixture remote built for you
+```
+
+The same thing spelled out, if you need other flags:
+
+```bash
 npx playwright test <spec> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts
 ```
 
@@ -110,7 +116,10 @@ npx playwright test <spec> --project=chromium --quiet --reporter=test/playwright
 locally** — full-suite runs are flaky under worker contention, so CI owns them
 and `.claude/settings.json` denies `npm test`, `npm run test:e2e[:chromium]`,
 their `:quiet` variants, the `e2e:run` scripts, and a bare `npx playwright test`.
-Running the one or few specs covering the change in hand is encouraged.
+`scripts/run-playwright.mjs` enforces the same rule for every other caller:
+a local run that names no spec, `--grep`, or `--shard` is refused unless
+`CYWEB_FULL_E2E=1` is set. Running the one or few specs covering the change in
+hand is encouraged.
 
 ### Run All Tests
 

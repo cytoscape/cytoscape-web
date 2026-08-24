@@ -154,6 +154,7 @@ Run a command using `npm <command>`. Run `npm install` before using other comman
 - `test:checks`: run lint and unit tests in parallel (no e2e)
 - `test:e2e`: run Playwright end-to-end tests (all configured browsers)
 - `test:e2e:chromium`: run Playwright end-to-end tests (Chromium only; used by `npm test`)
+- `e2e:spec -- <spec-name>`: run one or a few e2e specs (Chromium, quiet output) — the everyday form, since a full local e2e run is refused unless `CYWEB_FULL_E2E=1` is set
 
 Each test script also has a `:quiet` variant that prints only failures and a final summary (no per-test output, test stdio, or debug-logger noise) — useful for CI logs and AI agents:
 

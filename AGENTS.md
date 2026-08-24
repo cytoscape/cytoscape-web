@@ -215,16 +215,21 @@ failures and a summary only — no per-test output, no test stdio, and (via
 reporter; Playwright uses `test/playwright/quiet-reporter.ts`. **Agents must
 ALWAYS run the quiet variants** to avoid polluting their context with verbose
 passing-test output (e.g. `npm run test:unit:quiet`, or
-`npx playwright test <spec-name> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts`
-for a targeted e2e spec).
+`npm run e2e:spec -- <spec-name>` for a targeted e2e spec).
 
 **Agents must not run the whole e2e suite locally.** Full-suite runs are flaky under
 worker contention and take minutes to tell you little, so `.claude/settings.json`
 denies `npm test`, `npm run test:e2e`, `npm run test:e2e:chromium`, their `:quiet`
-variants, the `e2e:run` helper scripts, and a bare `npx playwright test` — CI owns
-the full suite. Running the
-**one or few specs that cover the change in hand** is fine and encouraged:
-`npx playwright test <spec-name> --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts`.
+variants, the `e2e:run` helper scripts, and a bare `npx playwright test`, and
+`scripts/run-playwright.mjs` refuses any local run that names no spec — a guard
+that binds Codex and humans too, overridable with `CYWEB_FULL_E2E=1`. CI owns
+the full suite. Running the **one or few specs that cover the change in hand**
+is fine and encouraged:
+
+```bash
+npm run e2e:spec -- table-browser        # quiet, chromium, builds the fixture remote
+```
+
 Keep the scope to the change; `npm run test:checks:quiet` (lint and the unit
 suite in parallel) remains the local gate for everything else.
 
