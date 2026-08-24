@@ -277,7 +277,7 @@ _Design: §7.1, §7.2, §7.3, §7.4, §7.5, §7.6_
 #### Verification (Step 2)
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="parseManifest"` passes
+- [ ] `npx vitest run parseManifest` passes
 - [ ] `npm run build` succeeds
 - [ ] Manual test: host fetches `/apps.json` at startup and populates `catalog` in AppStore (verify via React DevTools or debug log)
 - [ ] Manual test: if `/apps.json` is unreachable, host starts with empty catalog (no crash)
@@ -317,7 +317,7 @@ _Design: §6.0 Two-Layer Separation, §13 Step 3_
 #### Verification (Step 3)
 
 - [ ] `npm run lint` passes
-- [ ] `npm run test:unit -- --testPathPattern="loadRemoteApp"` passes
+- [ ] `npx vitest run loadRemoteApp` passes
 - [ ] `npm run build` succeeds
 
 ---

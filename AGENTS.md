@@ -197,6 +197,17 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 - `npm run test:e2e` - Run Playwright end-to-end tests (all browsers)
 - `npm run test:e2e:chromium` - Run Playwright end-to-end tests (Chromium only; used by `npm test`)
 
+Most of the time you want **one file, not the suite** — the full unit run is
+~70s, a single spec is a few seconds:
+
+```bash
+npx vitest run src/models/CxModel/impl/converter.test.ts   # one file
+npx vitest run elementApi                                  # substring match
+```
+
+(Vitest takes paths/patterns as positional arguments. `--testPathPattern` is
+Jest syntax and errors out here.)
+
 Each test script has a `:quiet` variant (`test:quiet`, `test:unit:quiet`,
 `test:coverage:quiet`, `test:e2e:quiet`, `test:e2e:chromium:quiet`) that prints
 failures and a summary only — no per-test output, no test stdio, and (via
