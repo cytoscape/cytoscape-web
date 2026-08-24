@@ -178,6 +178,16 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 
 ## 5. Development Operations
 
+### Prerequisites
+
+**Node 24.** `package.json` sets `engines.node >= 24.0.0` and `.npmrc` sets
+`engine-strict=true`, so `npm install` hard-fails on anything older, and Vite 8
+needs 22.12+ regardless. On a machine whose default `node` is older, the
+failures are cryptic — `vitest` dies loading its config with `ERR_REQUIRE_ESM`
+from `std-env`, and Playwright's build dies the same way. **Check `node -v`
+against `.nvmrc` before diagnosing any toolchain error**; `nvm use` (or
+`mise install`) fixes it.
+
 ### Commands
 
 **Building & Development:**
