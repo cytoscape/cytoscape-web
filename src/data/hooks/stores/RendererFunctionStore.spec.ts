@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import { useRendererFunctionStore } from './RendererFunctionStore'
@@ -274,6 +274,84 @@ describe('useRendererFunctionStore', () => {
 
       expect(retrievedFn1).toBe(mockFn1)
       expect(retrievedFn2).toBe(mockFn2)
+    })
+  })
+
+  describe('deleteFunctionsForNetwork', () => {
+    it('deletes functions scoped to a network and removes matching global registrations', () => {
+      const { result } = renderHook(() => useRendererFunctionStore())
+      const rendererName = 'test-renderer'
+      const functionName = 'test-function'
+      const networkId = 'net-123'
+      const mockFn = vi.fn()
+
+      act(() => {
+        result.current.setFunction(
+          rendererName,
+          functionName,
+          mockFn,
+          networkId,
+        )
+      })
+
+      expect(
+        result.current.getFunction(rendererName, functionName, networkId),
+      ).toBe(mockFn)
+      expect(result.current.getFunction(rendererName, functionName)).toBe(
+        mockFn,
+      )
+
+      act(() => {
+        result.current.deleteFunctionsForNetwork(networkId)
+      })
+
+      expect(
+        result.current.getFunction(rendererName, functionName, networkId),
+      ).toBeUndefined()
+      expect(
+        result.current.getFunction(rendererName, functionName),
+      ).toBeUndefined()
+    })
+
+    it('preserves global function registration if another function was registered globally', () => {
+      const { result } = renderHook(() => useRendererFunctionStore())
+      const rendererName = 'test-renderer'
+      const functionName = 'test-function'
+      const networkId1 = 'net-1'
+      const networkId2 = 'net-2'
+      const mockFn1 = vi.fn()
+      const mockFn2 = vi.fn()
+
+      act(() => {
+        result.current.setFunction(
+          rendererName,
+          functionName,
+          mockFn1,
+          networkId1,
+        )
+        // networkId2 overwrites global map
+        result.current.setFunction(
+          rendererName,
+          functionName,
+          mockFn2,
+          networkId2,
+        )
+      })
+
+      act(() => {
+        // Deleting networkId1 should not touch global map since it points to mockFn2
+        result.current.deleteFunctionsForNetwork(networkId1)
+      })
+
+      expect(
+        result.current.getFunction(rendererName, functionName, networkId1),
+      ).toBeUndefined()
+      expect(
+        result.current.getFunction(rendererName, functionName, networkId2),
+      ).toBe(mockFn2)
+      expect(result.current.getFunction(rendererName, functionName)).toBe(
+        mockFn2,
+      )
     })
   })
 })
