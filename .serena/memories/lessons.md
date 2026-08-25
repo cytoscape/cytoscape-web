@@ -33,6 +33,7 @@
 ## Testing
 
 - [2026-08-03] jsdom drops CSS values it cannot parse: `getComputedStyle` returns `auto` for `width: min(500px, calc(100% - 32px))` while `calc(100% - 32px)` resolves fine. Layout-assertion unit tests must stick to values jsdom's cssstyle understands, or assert in Playwright instead.
+- [2026-08-25] MUI dialog dismissal: `stopPropagation()` on a `<Dialog>`'s own `onClick`/`onKeyDown` blocks NEITHER backdrop click nor Escape — MUI runs the user handler first and dismisses regardless. `disableEscapeKeyDown={false}` is the default and does nothing. Render modals through `CyDialog` (`src/components/CyDialog.tsx`) with a `dismiss` tier; direct `Dialog` imports are lint-blocked. See `docs/specifications/DIALOG_DISMISS_POLICY.md`.
 
 ## Agent Workflow
 
