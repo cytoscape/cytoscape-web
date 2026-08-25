@@ -7,11 +7,18 @@ import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { TableDisplayConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { CellEdit } from '../../../models/StoreModel/TableStoreModel'
-import { deserializeValue, serializedStringIsValid } from '../../../models/TableModel/impl/valueTypeImpl'
+import {
+  deserializeValue,
+  serializedStringIsValid,
+} from '../../../models/TableModel/impl/valueTypeImpl'
 import { useJoinTableToNetworkStore } from '../../TableDataLoader/store/joinTableToNetworkStore'
 import { VisualProperty } from '../../../models/VisualStyleModel'
 
-import { CreateTableColumnForm, DeleteTableColumnForm, EditTableColumnForm } from '../TableColumnForm'
+import {
+  CreateTableColumnForm,
+  DeleteTableColumnForm,
+  EditTableColumnForm,
+} from '../TableColumnForm'
 
 // --- Helper Components ---
 const ButtonTooltip = ({
@@ -108,19 +115,58 @@ export interface TableToolbarProps {
   rows: any[] | undefined
   allColumns: any[] | undefined
   tableDisplayConfiguration: TableDisplayConfiguration | undefined
-  createUpdatedTableDisplayConfiguration: (config: any) => TableDisplayConfiguration
-  setTableDisplayConfiguration: (networkId: IdType, config: TableDisplayConfiguration) => void
+  createUpdatedTableDisplayConfiguration: (
+    config: any,
+  ) => TableDisplayConfiguration
+  setTableDisplayConfiguration: (
+    networkId: IdType,
+    config: TableDisplayConfiguration,
+  ) => void
   setNetworkModified: (networkId: IdType, modified: boolean) => void
-  postEdit: (type: UndoCommandType, desc: string, undo: any[], redo: any[]) => void
-  addColumn: (networkId: IdType, tableType: 'node'|'edge', colName: string, dataType: ValueTypeName, defValue: any) => void
-  deleteColumn: (networkId: IdType, tableType: 'node'|'edge', colName: string) => void
-  setColumnName: (networkId: IdType, tableType: 'node'|'edge', oldName: string, newName: string) => void
-  applyValueToElements: (networkId: IdType, tableType: 'node'|'edge', colKey: string, val: any, elements?: string[]) => void
-  exclusiveSelect: (networkId: IdType, nodeIds: string[], edgeIds: string[]) => void
+  postEdit: (
+    type: UndoCommandType,
+    desc: string,
+    undo: any[],
+    redo: any[],
+  ) => void
+  addColumn: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    colName: string,
+    dataType: ValueTypeName,
+    defValue: any,
+  ) => void
+  deleteColumn: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    colName: string,
+  ) => void
+  setColumnName: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    oldName: string,
+    newName: string,
+  ) => void
+  applyValueToElements: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    colKey: string,
+    val: any,
+    elements?: string[],
+  ) => void
+  exclusiveSelect: (
+    networkId: IdType,
+    nodeIds: string[],
+    edgeIds: string[],
+  ) => void
   visualPropertiesDependentOnSelectedColumn: VisualProperty<any>[]
   setMapping: (networkId: IdType, vpName: any, mapping: any) => void
   setSort: (sort: any) => void
-  duplicateColumn: (networkId: IdType, tableType: 'node'|'edge', colName: string) => void
+  duplicateColumn: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    colName: string,
+  ) => void
   columns: any[]
 }
 
@@ -150,19 +196,30 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   duplicateColumn,
   columns,
 }) => {
-  const showTableJoinForm = useJoinTableToNetworkStore((state: any) => state.setShow)
+  const showTableJoinForm = useJoinTableToNetworkStore(
+    (state: any) => state.setShow,
+  )
 
   // Modals state
   const [showCreateColumnForm, setShowCreateColumnForm] = React.useState(false)
-  const [createColumnFormError, setCreateColumnFormError] = React.useState<string | undefined>(undefined)
+  const [createColumnFormError, setCreateColumnFormError] = React.useState<
+    string | undefined
+  >(undefined)
   const [showEditColumnForm, setShowEditColumnForm] = React.useState(false)
-  const [columnFormError, setColumnFormError] = React.useState<string | undefined>(undefined)
+  const [columnFormError, setColumnFormError] = React.useState<
+    string | undefined
+  >(undefined)
   const [showDeleteColumnForm, setShowDeleteColumnForm] = React.useState(false)
-  const [deleteColumnFormError, setDeleteColumnFormError] = React.useState<string | undefined>(undefined)
+  const [deleteColumnFormError, setDeleteColumnFormError] = React.useState<
+    string | undefined
+  >(undefined)
 
   // Derived state
   const selectedColumnIndex = selection.columns.first()
-  const selectedColumn = selectedColumnIndex !== undefined && allColumns != null ? allColumns[selectedColumnIndex] : null
+  const selectedColumn =
+    selectedColumnIndex !== undefined && allColumns != null
+      ? allColumns[selectedColumnIndex]
+      : null
 
   const selectedCell = selection.current?.cell ?? null
   const isSelectedCellVirtual =
@@ -184,71 +241,138 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             backgroundColor: 'transparent',
           }}
         >
-          <ToolbarTextButton testId="table-toolbar-sort-asc-button" onClick={() => {
-            if (selectedColumn != null) {
-              const columnKey = selectedColumn.id
-              const columnType = selectedColumn.type
-              setSort({ column: columnKey, direction: 'asc', valueType: columnType })
-              const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({ sortColumn: columnKey, sortDirection: 'ascending' })
-              setTableDisplayConfiguration(currentNetworkId, newTableDisplayConfiguration)
-              setNetworkModified(currentNetworkId, true)
-            }
-          }}>
-            Sort Asc
-          </ToolbarTextButton>
-          <ToolbarTextButton testId="table-toolbar-sort-desc-button" onClick={() => {
-            if (selectedColumn != null) {
-              const columnKey = selectedColumn.id
-              const columnType = selectedColumn.type
-              setSort({ column: columnKey, direction: 'desc', valueType: columnType })
-              const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({ sortColumn: columnKey, sortDirection: 'descending' })
-              setTableDisplayConfiguration(currentNetworkId, newTableDisplayConfiguration)
-              setNetworkModified(currentNetworkId, true)
-            }
-          }}>
-            Sort Desc
-          </ToolbarTextButton>
-          <ToolbarTextButton testId="table-toolbar-duplicate-column-button" onClick={() => {
-            if (selectedColumn !== null && !(selectedColumn as any)?.isVirtual) {
-              const columnKey = selectedColumn.id
-              duplicateColumn(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', columnKey)
-              setNetworkModified(currentNetworkId, true)
-              setSelection({ ...selection, columns: CompactSelection.fromSingleSelection(selectedColumn.index + 1) })
-
-              const defaultConfig = {
-                columnConfiguration: (currentTable === nodeTable ? nodeTable : edgeTable)?.columns?.map((col: any) => ({
-                  attributeName: col.name,
-                  visible: true,
-                  columnWidth: undefined,
-                })) ?? [],
-                sortColumn: undefined,
-                sortDirection: undefined,
-              }
-              const currentConfig = currentTable === nodeTable
-                ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
-                : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
-              const duplicatedCol = currentConfig.columnConfiguration.find((col: any) => col.attributeName === columnKey)
-              const allColumnNames = columns.map((c: any) => c.id)
-              const originalIndex = allColumnNames.indexOf(columnKey)
-              const newColumnName = allColumnNames[originalIndex + 1]
-              if (duplicatedCol && newColumnName) {
-                const newColConfig = [
-                  ...currentConfig.columnConfiguration.slice(0, originalIndex + 1),
-                  { ...duplicatedCol, attributeName: newColumnName },
-                  ...currentConfig.columnConfiguration.slice(originalIndex + 1),
-                ]
-                const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({ columnConfiguration: newColConfig })
-                setTableDisplayConfiguration(currentNetworkId, newTableDisplayConfiguration)
+          <ToolbarTextButton
+            testId="table-toolbar-sort-asc-button"
+            onClick={() => {
+              if (selectedColumn != null) {
+                const columnKey = selectedColumn.id
+                const columnType = selectedColumn.type
+                setSort({
+                  column: columnKey,
+                  direction: 'asc',
+                  valueType: columnType,
+                })
+                const newTableDisplayConfiguration =
+                  createUpdatedTableDisplayConfiguration({
+                    sortColumn: columnKey,
+                    sortDirection: 'ascending',
+                  })
+                setTableDisplayConfiguration(
+                  currentNetworkId,
+                  newTableDisplayConfiguration,
+                )
                 setNetworkModified(currentNetworkId, true)
               }
-            }
-          }}>
+            }}
+          >
+            Sort Asc
+          </ToolbarTextButton>
+          <ToolbarTextButton
+            testId="table-toolbar-sort-desc-button"
+            onClick={() => {
+              if (selectedColumn != null) {
+                const columnKey = selectedColumn.id
+                const columnType = selectedColumn.type
+                setSort({
+                  column: columnKey,
+                  direction: 'desc',
+                  valueType: columnType,
+                })
+                const newTableDisplayConfiguration =
+                  createUpdatedTableDisplayConfiguration({
+                    sortColumn: columnKey,
+                    sortDirection: 'descending',
+                  })
+                setTableDisplayConfiguration(
+                  currentNetworkId,
+                  newTableDisplayConfiguration,
+                )
+                setNetworkModified(currentNetworkId, true)
+              }
+            }}
+          >
+            Sort Desc
+          </ToolbarTextButton>
+          <ToolbarTextButton
+            testId="table-toolbar-duplicate-column-button"
+            onClick={() => {
+              if (
+                selectedColumn !== null &&
+                !(selectedColumn as any)?.isVirtual
+              ) {
+                const columnKey = selectedColumn.id
+                duplicateColumn(
+                  currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  columnKey,
+                )
+                setNetworkModified(currentNetworkId, true)
+                setSelection({
+                  ...selection,
+                  columns: CompactSelection.fromSingleSelection(
+                    selectedColumn.index + 1,
+                  ),
+                })
+
+                const defaultConfig = {
+                  columnConfiguration:
+                    (currentTable === nodeTable
+                      ? nodeTable
+                      : edgeTable
+                    )?.columns?.map((col: any) => ({
+                      attributeName: col.name,
+                      visible: true,
+                      columnWidth: undefined,
+                    })) ?? [],
+                  sortColumn: undefined,
+                  sortDirection: undefined,
+                }
+                const currentConfig =
+                  currentTable === nodeTable
+                    ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
+                    : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
+                const duplicatedCol = currentConfig.columnConfiguration.find(
+                  (col: any) => col.attributeName === columnKey,
+                )
+                const allColumnNames = columns.map((c: any) => c.id)
+                const originalIndex = allColumnNames.indexOf(columnKey)
+                const newColumnName = allColumnNames[originalIndex + 1]
+                if (duplicatedCol && newColumnName) {
+                  const newColConfig = [
+                    ...currentConfig.columnConfiguration.slice(
+                      0,
+                      originalIndex + 1,
+                    ),
+                    { ...duplicatedCol, attributeName: newColumnName },
+                    ...currentConfig.columnConfiguration.slice(
+                      originalIndex + 1,
+                    ),
+                  ]
+                  const newTableDisplayConfiguration =
+                    createUpdatedTableDisplayConfiguration({
+                      columnConfiguration: newColConfig,
+                    })
+                  setTableDisplayConfiguration(
+                    currentNetworkId,
+                    newTableDisplayConfiguration,
+                  )
+                  setNetworkModified(currentNetworkId, true)
+                }
+              }
+            }}
+          >
             Duplicate
           </ToolbarTextButton>
-          <ToolbarTextButton testId="table-toolbar-edit-column-button" onClick={() => setShowEditColumnForm(true)}>
+          <ToolbarTextButton
+            testId="table-toolbar-edit-column-button"
+            onClick={() => setShowEditColumnForm(true)}
+          >
             Edit Column Name
           </ToolbarTextButton>
-          <ToolbarTextButton testId="table-toolbar-delete-column-button" onClick={() => setShowDeleteColumnForm(true)}>
+          <ToolbarTextButton
+            testId="table-toolbar-delete-column-button"
+            onClick={() => setShowDeleteColumnForm(true)}
+          >
             Delete Column
           </ToolbarTextButton>
         </Box>
@@ -261,42 +385,81 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             setShowEditColumnForm(false)
             setColumnFormError(undefined)
           }}
-          onSubmit={(newColumnName: string, mappingUpdateType?: 'delete' | 'rename') => {
-            if (currentTable?.columns?.find((c: any) => c.name === newColumnName)) {
-              setColumnFormError(`${newColumnName} already exists. Please enter a new unique column name`)
+          onSubmit={(
+            newColumnName: string,
+            mappingUpdateType?: 'delete' | 'rename',
+          ) => {
+            if (
+              currentTable?.columns?.find((c: any) => c.name === newColumnName)
+            ) {
+              setColumnFormError(
+                `${newColumnName} already exists. Please enter a new unique column name`,
+              )
             } else {
               postEdit(
                 UndoCommandType.RENAME_COLUMN,
                 `Rename column '${selectedColumn.title}' to '${newColumnName}'`,
-                [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', newColumnName, selectedColumn.id],
-                [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', selectedColumn.id, newColumnName],
+                [
+                  currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  newColumnName,
+                  selectedColumn.id,
+                ],
+                [
+                  currentNetworkId,
+                  currentTable === nodeTable ? 'node' : 'edge',
+                  selectedColumn.id,
+                  newColumnName,
+                ],
               )
-              setColumnName(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', selectedColumn.id, newColumnName)
+              setColumnName(
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                selectedColumn.id,
+                newColumnName,
+              )
               setNetworkModified(currentNetworkId, true)
 
               const defaultConfig = {
-                columnConfiguration: (currentTable === nodeTable ? nodeTable : edgeTable)?.columns?.map((col: any) => ({
-                  attributeName: col.name,
-                  visible: true,
-                  columnWidth: undefined,
-                })) ?? [],
+                columnConfiguration:
+                  (currentTable === nodeTable
+                    ? nodeTable
+                    : edgeTable
+                  )?.columns?.map((col: any) => ({
+                    attributeName: col.name,
+                    visible: true,
+                    columnWidth: undefined,
+                  })) ?? [],
                 sortColumn: undefined,
                 sortDirection: undefined,
               }
-              const currentConfig = currentTable === nodeTable
+              const currentConfig =
+                currentTable === nodeTable
                   ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
                   : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
-              const newColumnConfig = currentConfig.columnConfiguration.map((col: any) =>
-                col.attributeName === selectedColumn.id ? { ...col, attributeName: newColumnName } : col,
+              const newColumnConfig = currentConfig.columnConfiguration.map(
+                (col: any) =>
+                  col.attributeName === selectedColumn.id
+                    ? { ...col, attributeName: newColumnName }
+                    : col,
               )
-              const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({ columnConfiguration: newColumnConfig })
-              setTableDisplayConfiguration(currentNetworkId, newTableDisplayConfiguration)
+              const newTableDisplayConfiguration =
+                createUpdatedTableDisplayConfiguration({
+                  columnConfiguration: newColumnConfig,
+                })
+              setTableDisplayConfiguration(
+                currentNetworkId,
+                newTableDisplayConfiguration,
+              )
               setNetworkModified(currentNetworkId, true)
 
               if (mappingUpdateType === 'rename') {
                 visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
                   if (vp.mapping != null) {
-                    setMapping(currentNetworkId, vp.name, { ...vp.mapping, attribute: newColumnName })
+                    setMapping(currentNetworkId, vp.name, {
+                      ...vp.mapping,
+                      attribute: newColumnName,
+                    })
                   }
                 })
               } else if (mappingUpdateType === 'delete') {
@@ -322,27 +485,54 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             postEdit(
               UndoCommandType.DELETE_COLUMN,
               `Delete ${currentTable === nodeTable ? 'node' : 'edge'} column ${selectedColumn.title}`,
-              [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', currentTable, selectedColumn],
-              [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', currentTable, selectedColumn],
+              [
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                currentTable,
+                selectedColumn,
+              ],
+              [
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                currentTable,
+                selectedColumn,
+              ],
             )
-            deleteColumn(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', selectedColumn.id)
+            deleteColumn(
+              currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              selectedColumn.id,
+            )
             setNetworkModified(currentNetworkId, true)
 
             const defaultConfig = {
-              columnConfiguration: (currentTable === nodeTable ? nodeTable : edgeTable)?.columns?.map((col: any) => ({
-                attributeName: col.name,
-                visible: true,
-                columnWidth: undefined,
-              })) ?? [],
+              columnConfiguration:
+                (currentTable === nodeTable
+                  ? nodeTable
+                  : edgeTable
+                )?.columns?.map((col: any) => ({
+                  attributeName: col.name,
+                  visible: true,
+                  columnWidth: undefined,
+                })) ?? [],
               sortColumn: undefined,
               sortDirection: undefined,
             }
-            const currentConfig = currentTable === nodeTable
+            const currentConfig =
+              currentTable === nodeTable
                 ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
                 : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
-            const newColumnConfig = currentConfig.columnConfiguration.filter((col: any) => col.attributeName !== selectedColumn.id)
-            const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({ columnConfiguration: newColumnConfig })
-            setTableDisplayConfiguration(currentNetworkId, newTableDisplayConfiguration)
+            const newColumnConfig = currentConfig.columnConfiguration.filter(
+              (col: any) => col.attributeName !== selectedColumn.id,
+            )
+            const newTableDisplayConfiguration =
+              createUpdatedTableDisplayConfiguration({
+                columnConfiguration: newColumnConfig,
+              })
+            setTableDisplayConfiguration(
+              currentNetworkId,
+              newTableDisplayConfiguration,
+            )
             setNetworkModified(currentNetworkId, true)
 
             if (mappingUpdateType === 'delete') {
@@ -352,7 +542,10 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             }
             setShowDeleteColumnForm(false)
             setDeleteColumnFormError(undefined)
-            setSelection({ columns: CompactSelection.empty(), rows: CompactSelection.empty() })
+            setSelection({
+              columns: CompactSelection.empty(),
+              rows: CompactSelection.empty(),
+            })
           }}
         />
       </>
@@ -360,7 +553,15 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
   const selectedCellToolbar =
     selectedCell != null && !isSelectedCellVirtual ? (
-      <Box sx={{ display: 'flex', gap: 1, ml: 2, backgroundColor: 'transparent', minWidth: '540px' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 1,
+          ml: 2,
+          backgroundColor: 'transparent',
+          minWidth: '540px',
+        }}
+      >
         <ToolbarTextButton
           testId="table-toolbar-apply-value-to-column-button"
           onClick={() => {
@@ -374,15 +575,32 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             const prevColumnValues: CellEdit[] = []
             Array.from(currentTable?.rows.entries() || []).map(([k, v]) => {
               cellEdits.push({ row: k, column: columnKey, value: cellValue })
-              prevColumnValues.push({ row: k, column: columnKey, value: (v as any)?.[columnKey] as ValueType })
+              prevColumnValues.push({
+                row: k,
+                column: columnKey,
+                value: (v as any)?.[columnKey] as ValueType,
+              })
             })
             postEdit(
               UndoCommandType.APPLY_VALUE_TO_COLUMN,
               'Apply value to column',
-              [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', prevColumnValues],
-              [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', cellEdits],
+              [
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                prevColumnValues,
+              ],
+              [
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                cellEdits,
+              ],
             )
-            applyValueToElements(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', columnKey, cellValue)
+            applyValueToElements(
+              currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              columnKey,
+              cellValue,
+            )
             setNetworkModified(currentNetworkId, true)
           }}
         >
@@ -402,17 +620,39 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
             rows?.forEach((r) => {
               const rowId = r.id
-              cellEdits.push({ row: rowId, column: columnKey, value: cellValue })
-              prevColumnValues.push({ row: rowId, column: columnKey, value: (r as any)?.[columnKey] as ValueType })
+              cellEdits.push({
+                row: rowId,
+                column: columnKey,
+                value: cellValue,
+              })
+              prevColumnValues.push({
+                row: rowId,
+                column: columnKey,
+                value: (r as any)?.[columnKey] as ValueType,
+              })
             })
 
             postEdit(
               UndoCommandType.APPLY_VALUE_TO_SELECTED,
               'Apply value to selected elements',
-              [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', prevColumnValues],
-              [currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', cellEdits],
+              [
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                prevColumnValues,
+              ],
+              [
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                cellEdits,
+              ],
             )
-            applyValueToElements(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', columnKey, cellValue, rows?.map((r) => r.id))
+            applyValueToElements(
+              currentNetworkId,
+              currentTable === nodeTable ? 'node' : 'edge',
+              columnKey,
+              cellValue,
+              rows?.map((r) => r.id),
+            )
             setNetworkModified(currentNetworkId, true)
           }}
         >
@@ -423,12 +663,22 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
   const selectedRowToolbar =
     selection.rows.length > 0 ? (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2, backgroundColor: 'transparent' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          ml: 2,
+          backgroundColor: 'transparent',
+        }}
+      >
         <ToolbarTextButton
           testId="table-toolbar-select-elements-button"
           onClick={() => {
             const rowsToSelect = selection.rows.toArray()
-            const rowIds = rowsToSelect.map((r) => rows?.[r].id).filter((id) => id !== undefined)
+            const rowIds = rowsToSelect
+              .map((r) => rows?.[r].id)
+              .filter((id) => id !== undefined)
             if (currentTable === nodeTable) {
               exclusiveSelect(currentNetworkId, rowIds, [])
             } else {
@@ -443,7 +693,15 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
     ) : null
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 1, backgroundColor: 'transparent' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        ml: 1,
+        backgroundColor: 'transparent',
+      }}
+    >
       <ToolbarIconButton
         testId="insert-column-button"
         title="Insert new column"
@@ -467,42 +725,74 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           setShowCreateColumnForm(false)
           setCreateColumnFormError(undefined)
         }}
-        onSubmit={(columnName: string, dataType: ValueTypeName, value: string) => {
+        onSubmit={(
+          columnName: string,
+          dataType: ValueTypeName,
+          value: string,
+        ) => {
           const columnNameSet = new Set(columns?.map((c: any) => c.name))
           const columnNameAlreadyExists = columnNameSet.has(columnName)
           const valueIsValid = serializedStringIsValid(dataType, value)
           if (columnNameAlreadyExists) {
-            setCreateColumnFormError(`${columnName} already exists. Please enter a new unique column name`)
+            setCreateColumnFormError(
+              `${columnName} already exists. Please enter a new unique column name`,
+            )
           } else {
             if (!valueIsValid) {
-              setCreateColumnFormError(`Default value ${value} is not a valid ${dataType}. Please enter a valid ${dataType}`)
+              setCreateColumnFormError(
+                `Default value ${value} is not a valid ${dataType}. Please enter a valid ${dataType}`,
+              )
             } else {
               const valueType = deserializeValue(dataType, value)
-              addColumn(currentNetworkId, currentTable === nodeTable ? 'node' : 'edge', columnName, dataType, valueType)
+              addColumn(
+                currentNetworkId,
+                currentTable === nodeTable ? 'node' : 'edge',
+                columnName,
+                dataType,
+                valueType,
+              )
               setNetworkModified(currentNetworkId, true)
 
               const defaultConfig = {
-                columnConfiguration: (currentTable === nodeTable ? nodeTable : edgeTable)?.columns?.map((col: any) => ({
-                  attributeName: col.name,
-                  visible: true,
-                  columnWidth: undefined,
-                })) ?? [],
+                columnConfiguration:
+                  (currentTable === nodeTable
+                    ? nodeTable
+                    : edgeTable
+                  )?.columns?.map((col: any) => ({
+                    attributeName: col.name,
+                    visible: true,
+                    columnWidth: undefined,
+                  })) ?? [],
                 sortColumn: undefined,
                 sortDirection: undefined,
               }
-              const currentConfig = currentTable === nodeTable
+              const currentConfig =
+                currentTable === nodeTable
                   ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
                   : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
               const newColumnConfig = [
-                { attributeName: columnName, visible: true, columnWidth: undefined },
+                {
+                  attributeName: columnName,
+                  visible: true,
+                  columnWidth: undefined,
+                },
                 ...currentConfig.columnConfiguration,
               ]
-              const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({ columnConfiguration: newColumnConfig })
-              setTableDisplayConfiguration(currentNetworkId, newTableDisplayConfiguration)
+              const newTableDisplayConfiguration =
+                createUpdatedTableDisplayConfiguration({
+                  columnConfiguration: newColumnConfig,
+                })
+              setTableDisplayConfiguration(
+                currentNetworkId,
+                newTableDisplayConfiguration,
+              )
               setNetworkModified(currentNetworkId, true)
 
               setCreateColumnFormError(undefined)
-              setSelection({ ...selection, columns: CompactSelection.fromSingleSelection(0) })
+              setSelection({
+                ...selection,
+                columns: CompactSelection.fromSingleSelection(0),
+              })
               setShowCreateColumnForm(false)
             }
           }

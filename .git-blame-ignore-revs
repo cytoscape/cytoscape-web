@@ -1,0 +1,11 @@
+# Revisions to skip when running `git blame`.
+#
+# Only formatting-only commits belong here — no behavior changes.
+#
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub honors this file automatically in its blame view.
+
+# style: run Prettier across src, test, scripts, and root configs
+af5188e186b68161779c1d0c5671802bff87ff60

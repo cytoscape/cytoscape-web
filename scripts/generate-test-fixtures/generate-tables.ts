@@ -17,7 +17,14 @@ const DEFAULT_COLUMNS = 5
 const DEFAULT_DATA_TYPES = ['string', 'number', 'string']
 
 type TableType = 'csv' | 'tsv' | 'txt' | 'invalid'
-type DataType = 'string' | 'number' | 'integer' | 'float' | 'boolean' | 'date' | 'mixed'
+type DataType =
+  | 'string'
+  | 'number'
+  | 'integer'
+  | 'float'
+  | 'boolean'
+  | 'date'
+  | 'mixed'
 type ErrorType =
   | 'inconsistent-columns'
   | 'no-delimiter'
@@ -157,7 +164,12 @@ function generateValue(
  * Escapes CSV value (handles quotes and commas)
  */
 function escapeCSVValue(value: string, quoted: boolean): string {
-  if (quoted || value.includes(',') || value.includes('"') || value.includes('\n')) {
+  if (
+    quoted ||
+    value.includes(',') ||
+    value.includes('"') ||
+    value.includes('\n')
+  ) {
     return `"${value.replace(/"/g, '""')}"`
   }
   return value
@@ -251,7 +263,10 @@ function generateValidTable(options: GenerateTableOptions): string {
         // Apply quoting if needed
         if (type === 'csv' && quotedValues) {
           value = escapeCSVValue(value, true)
-        } else if (type === 'csv' && (value.includes(',') || value.includes('"'))) {
+        } else if (
+          type === 'csv' &&
+          (value.includes(',') || value.includes('"'))
+        ) {
           value = escapeCSVValue(value, false)
         }
 
@@ -479,4 +494,3 @@ function main(): void {
 }
 
 main()
-

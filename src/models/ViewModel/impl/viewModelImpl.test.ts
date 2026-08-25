@@ -12,7 +12,7 @@ import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
 import { createViewModelFromCX } from '../../CxModel/impl/converters'
 import { IdType } from '../../IdType'
 import NetworkFn from '../../NetworkModel'
-import { EdgeView,NetworkView, NodeView } from '../index'
+import { EdgeView, NetworkView, NodeView } from '../index'
 import {
   addEdgeViewDirect,
   addEdgeViewsToModel,
@@ -862,11 +862,7 @@ describe('ViewModel Implementation', () => {
   describe('setNodePosition', () => {
     it('should set node position', () => {
       const networkView = createViewModel(
-        NetworkFn.createNetworkFromLists(
-          'test-network-1',
-          [{ id: 'n1' }],
-          [],
-        ),
+        NetworkFn.createNetworkFromLists('test-network-1', [{ id: 'n1' }], []),
       )
 
       const result = setNodePosition(networkView, 'n1', [100, 200])
@@ -879,11 +875,7 @@ describe('ViewModel Implementation', () => {
 
     it('should set node position with z coordinate', () => {
       const networkView = createViewModel(
-        NetworkFn.createNetworkFromLists(
-          'test-network-1',
-          [{ id: 'n1' }],
-          [],
-        ),
+        NetworkFn.createNetworkFromLists('test-network-1', [{ id: 'n1' }], []),
       )
 
       const result = setNodePosition(networkView, 'n1', [100, 200, 300])
@@ -1053,11 +1045,7 @@ describe('ViewModel Implementation', () => {
 
     it('should replace existing node view', () => {
       const networkView = createViewModel(
-        NetworkFn.createNetworkFromLists(
-          'test-network-1',
-          [{ id: 'n1' }],
-          [],
-        ),
+        NetworkFn.createNetworkFromLists('test-network-1', [{ id: 'n1' }], []),
       )
       const updatedNodeView: NodeView = {
         id: 'n1',
@@ -1194,7 +1182,11 @@ describe('ViewModel Implementation', () => {
       const network = NetworkFn.createNetwork('test-network-101')
       const networkView = createViewModel(network)
 
-      const updated = addNodeViewWithPosition(networkView, 'n1', [100, 200, 300])
+      const updated = addNodeViewWithPosition(
+        networkView,
+        'n1',
+        [100, 200, 300],
+      )
 
       expect(updated.nodeViews['n1']).toBeDefined()
       expect(updated.nodeViews['n1'].x).toBe(100)

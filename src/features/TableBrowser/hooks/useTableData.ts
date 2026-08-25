@@ -3,7 +3,10 @@ import { GridColumnIcon } from '@glideapps/glide-data-grid'
 import orderBy from 'lodash/orderBy'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Network } from '../../../models/NetworkModel'
-import { TableDisplayConfiguration, ColumnConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import {
+  TableDisplayConfiguration,
+  ColumnConfiguration,
+} from '../../../models/VisualStyleModel/VisualStyleOptions'
 import { getElementId, ID_COLUMN_ID, ID_COLUMN_TITLE } from '../idColumn'
 import { SortType } from '../../../models/TableModel/impl/valueTypeImpl'
 import { TableBrowserTab } from '../components/TableBrowserTabs'
@@ -27,8 +30,10 @@ export const useTableData = ({
   selectedNodes,
   selectedEdges,
 }: UseTableDataProps) => {
-  const currentTable = currentTabIndex === TableBrowserTab.NODES ? nodeTable : edgeTable
-  const selectedElements = currentTabIndex === TableBrowserTab.NODES ? selectedNodes : selectedEdges
+  const currentTable =
+    currentTabIndex === TableBrowserTab.NODES ? nodeTable : edgeTable
+  const selectedElements =
+    currentTabIndex === TableBrowserTab.NODES ? selectedNodes : selectedEdges
 
   const isNodeTable = currentTable === nodeTable
   const currentTableConfig = isNodeTable
@@ -50,11 +55,17 @@ export const useTableData = ({
 
       setSort({
         column: currentTableConfig.sortColumn,
-        direction: currentTableConfig.sortDirection === 'ascending' ? 'asc' : 'desc',
+        direction:
+          currentTableConfig.sortDirection === 'ascending' ? 'asc' : 'desc',
         valueType: sortColumn?.type ?? ValueTypeName.String,
       })
     }
-  }, [tableDisplayConfiguration, currentTabIndex, currentTable, currentTableConfig])
+  }, [
+    tableDisplayConfiguration,
+    currentTabIndex,
+    currentTable,
+    currentTableConfig,
+  ])
 
   // Get configuration columns or fallback to table columns
   const modelColumns = React.useMemo(() => {
@@ -135,7 +146,9 @@ export const useTableData = ({
         isVirtual: true,
         getValue: (edgeData: any) => {
           const edgeId = edgeData?.id?.toString()
-          const edge = network?.edges?.find((e: any) => e.id?.toString() === edgeId)
+          const edge = network?.edges?.find(
+            (e: any) => e.id?.toString() === edgeId,
+          )
           const sourceId = edge?.s?.toString()
           return sourceId ? nodeNameMap.get(sourceId) || `Node ${sourceId}` : ''
         },
@@ -150,7 +163,9 @@ export const useTableData = ({
         isVirtual: true,
         getValue: (edgeData: any) => {
           const edgeId = edgeData?.id?.toString()
-          const edge = network?.edges?.find((e: any) => e.id?.toString() === edgeId)
+          const edge = network?.edges?.find(
+            (e: any) => e.id?.toString() === edgeId,
+          )
           const targetId = edge?.t?.toString()
           return targetId ? nodeNameMap.get(targetId) || `Node ${targetId}` : ''
         },
@@ -194,17 +209,28 @@ export const useTableData = ({
         ? rowsWithIds.filter((r) => selectedElementsSet.has(r.id))
         : rowsWithIds
 
-    if (sort.column != null && sort.direction != null && sort.valueType != null) {
-      if (sort.column === '__sourceNodeName' || sort.column === '__targetNodeName') {
+    if (
+      sort.column != null &&
+      sort.direction != null &&
+      sort.valueType != null
+    ) {
+      if (
+        sort.column === '__sourceNodeName' ||
+        sort.column === '__targetNodeName'
+      ) {
         result = orderBy(
           result,
           (o) => {
             if (sort.column === '__sourceNodeName') {
               const sourceId = (o as any).s?.toString()
-              return sourceId ? nodeNameMap.get(sourceId) || `Node ${sourceId}` : ''
+              return sourceId
+                ? nodeNameMap.get(sourceId) || `Node ${sourceId}`
+                : ''
             } else if (sort.column === '__targetNodeName') {
               const targetId = (o as any).t?.toString()
-              return targetId ? nodeNameMap.get(targetId) || `Node ${targetId}` : ''
+              return targetId
+                ? nodeNameMap.get(targetId) || `Node ${targetId}`
+                : ''
             }
             return ''
           },
@@ -215,7 +241,10 @@ export const useTableData = ({
       } else {
         result = orderBy(
           result,
-          (o) => (o as Record<string, ValueType>)[sort.column as string] as ValueType,
+          (o) =>
+            (o as Record<string, ValueType>)[
+              sort.column as string
+            ] as ValueType,
           sort.direction,
         )
       }
@@ -223,7 +252,6 @@ export const useTableData = ({
 
     return result
   }, [selectedElements, rowsWithIds, sort, nodeNameMap])
-
 
   const createUpdatedTableDisplayConfiguration = React.useCallback(
     (updates: {

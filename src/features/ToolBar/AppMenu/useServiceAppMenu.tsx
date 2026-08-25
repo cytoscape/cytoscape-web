@@ -58,10 +58,7 @@ export const useServiceAppMenu = (
       } catch (e) {
         setNotificationDialog(true)
         setNotificationMessage(e instanceof Error ? e.message : String(e))
-        logApp.error(
-          `[useServiceAppMenu]: Failed to run the task: ${url}`,
-          e,
-        )
+        logApp.error(`[useServiceAppMenu]: Failed to run the task: ${url}`, e)
       } finally {
         clearCurrentTask()
       }

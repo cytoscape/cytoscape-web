@@ -49,7 +49,6 @@ import {
 import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 
-
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Passthrough]: <PassthroughMappingIcon />,
   [MappingFunctionType.Discrete]: <DiscreteMappingIcon />,

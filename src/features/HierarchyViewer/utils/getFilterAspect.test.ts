@@ -59,7 +59,12 @@ describe('createFilterFromAspect', () => {
 
   it('returns an empty list for no aspects', () => {
     expect(
-      createFilterFromAspect('net-1', [] as unknown as FilterAspects, nodeTable, edgeTable),
+      createFilterFromAspect(
+        'net-1',
+        [] as unknown as FilterAspects,
+        nodeTable,
+        edgeTable,
+      ),
     ).toEqual([])
   })
 })

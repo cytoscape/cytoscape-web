@@ -257,9 +257,7 @@ export const AppSettingsDialog = ({
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Install from URL
               </Typography>
-              <Box
-                sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}
-              >
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
                 <TextField
                   size="small"
                   label="Single-entry manifest URL"

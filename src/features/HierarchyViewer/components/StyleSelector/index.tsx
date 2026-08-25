@@ -1,1 +1,1 @@
-export {StyleSelector} from './StyleSelector'
+export { StyleSelector } from './StyleSelector'

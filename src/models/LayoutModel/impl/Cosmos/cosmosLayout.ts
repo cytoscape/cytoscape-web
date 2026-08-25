@@ -1,6 +1,5 @@
-
 import { IdType } from '../../../IdType'
-import { Edge,Node } from '../../../NetworkModel'
+import { Edge, Node } from '../../../NetworkModel'
 import { LayoutEngine } from '../../LayoutEngine'
 import { CosmosAlgorithms } from './Algorithms/cosmosAlgorithms'
 

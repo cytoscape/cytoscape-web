@@ -12,7 +12,10 @@ import { initEventBus } from './initEventBus'
 
 type SubscriptionCallback = (curr: any, prev: any) => void
 
-const workspaceSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
+const workspaceSubs: Array<{
+  selector: (s: any) => any
+  callback: SubscriptionCallback
+}> = []
 
 const mockWorkspaceState = {
   workspace: {
@@ -35,14 +38,22 @@ vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
 
-const viewModelSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback; options?: any }> = []
+const viewModelSubs: Array<{
+  selector: (s: any) => any
+  callback: SubscriptionCallback
+  options?: any
+}> = []
 
 vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
     getState: vi.fn(),
     subscribe: vi.fn((selectorOrCb: any, cb?: any, opts?: any) => {
       if (typeof cb === 'function') {
-        viewModelSubs.push({ selector: selectorOrCb, callback: cb, options: opts })
+        viewModelSubs.push({
+          selector: selectorOrCb,
+          callback: cb,
+          options: opts,
+        })
       }
       return () => {}
     }),
@@ -65,7 +76,10 @@ vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
 
 // ── Mock: TableStore ──────────────────────────────────────────────────────────
 
-const tableSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
+const tableSubs: Array<{
+  selector: (s: any) => any
+  callback: SubscriptionCallback
+}> = []
 
 vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
@@ -81,7 +95,10 @@ vi.mock('../../data/hooks/stores/TableStore', () => ({
 
 // ── Mock: NetworkStore ────────────────────────────────────────────────────────
 
-const networkSubs: Array<{ selector: (s: any) => any; callback: SubscriptionCallback }> = []
+const networkSubs: Array<{
+  selector: (s: any) => any
+  callback: SubscriptionCallback
+}> = []
 
 // The network:changed subscription reads the live networks Map out of the
 // store (topology mutations happen in place, so the subscription payload is
@@ -111,7 +128,8 @@ function triggerWorkspaceSub(index: number, curr: any, prev: any): void {
 function triggerViewModelSub(curr: any, prev: any): void {
   const { callback, options } = viewModelSubs[0]
   // Simulate subscribeWithSelector: skip callback when equalityFn returns true
-  if (options?.equalityFn !== undefined && options.equalityFn(curr, prev)) return
+  if (options?.equalityFn !== undefined && options.equalityFn(curr, prev))
+    return
   callback(curr, prev)
 }
 
@@ -129,12 +147,16 @@ function triggerNetworkSub(curr: any, prev: any): void {
 
 function dispatchedTypes(): string[] {
   const spy = vi.spyOn(window, 'dispatchEvent') as import('vitest').MockInstance
-  return (spy.mock.calls as Array<[Event]>).map((args) => (args[0] as CustomEvent).type)
+  return (spy.mock.calls as Array<[Event]>).map(
+    (args) => (args[0] as CustomEvent).type,
+  )
 }
 
 function dispatchedDetails(): any[] {
   const spy = vi.spyOn(window, 'dispatchEvent') as import('vitest').MockInstance
-  return (spy.mock.calls as Array<[Event]>).map((args) => (args[0] as CustomEvent).detail)
+  return (spy.mock.calls as Array<[Event]>).map(
+    (args) => (args[0] as CustomEvent).detail,
+  )
 }
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
@@ -301,7 +323,10 @@ describe('network:switched', () => {
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
     expect(dispatchedTypes()).toContain('network:switched')
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net2', previousId: 'net1' })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net2',
+      previousId: 'net1',
+    })
   })
 
   it('does not dispatch when currentNetworkId is unchanged', () => {
@@ -313,7 +338,10 @@ describe('network:switched', () => {
   it('uses previousId="" when no network was active before', () => {
     triggerWorkspaceSub(1, 'net1', '')
 
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', previousId: '' })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      previousId: '',
+    })
   })
 })
 
@@ -321,8 +349,16 @@ describe('network:switched', () => {
 
 describe('selection:changed', () => {
   it('dispatches when selectedNodes changes', () => {
-    const detail = { networkId: 'net1', selectedNodes: ['n1'], selectedEdges: [] }
-    triggerViewModelSub(detail, { networkId: 'net1', selectedNodes: [], selectedEdges: [] })
+    const detail = {
+      networkId: 'net1',
+      selectedNodes: ['n1'],
+      selectedEdges: [],
+    }
+    triggerViewModelSub(detail, {
+      networkId: 'net1',
+      selectedNodes: [],
+      selectedEdges: [],
+    })
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
     expect(dispatchedTypes()).toContain('selection:changed')
@@ -330,8 +366,16 @@ describe('selection:changed', () => {
   })
 
   it('dispatches when selectedEdges changes', () => {
-    const detail = { networkId: 'net1', selectedNodes: [], selectedEdges: ['e1'] }
-    triggerViewModelSub(detail, { networkId: 'net1', selectedNodes: [], selectedEdges: [] })
+    const detail = {
+      networkId: 'net1',
+      selectedNodes: [],
+      selectedEdges: ['e1'],
+    }
+    triggerViewModelSub(detail, {
+      networkId: 'net1',
+      selectedNodes: [],
+      selectedEdges: [],
+    })
 
     expect(dispatchedDetails()[0]).toEqual(detail)
   })
@@ -368,12 +412,21 @@ describe('style:changed', () => {
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
     expect(dispatchedTypes()).toContain('style:changed')
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', property: 'NODE_BACKGROUND_COLOR' })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      property: 'NODE_BACKGROUND_COLOR',
+    })
   })
 
   it('dispatches one event per changed property', () => {
-    const prevStyle = { NODE_BACKGROUND_COLOR: { value: '#fff' }, EDGE_WIDTH: { value: 1 } }
-    const currStyle = { NODE_BACKGROUND_COLOR: { value: '#000' }, EDGE_WIDTH: { value: 2 } }
+    const prevStyle = {
+      NODE_BACKGROUND_COLOR: { value: '#fff' },
+      EDGE_WIDTH: { value: 1 },
+    }
+    const currStyle = {
+      NODE_BACKGROUND_COLOR: { value: '#000' },
+      EDGE_WIDTH: { value: 2 },
+    }
     triggerVisualStyleSub(
       { visualStyles: { net1: currStyle } },
       { visualStyles: { net1: prevStyle } },
@@ -401,7 +454,10 @@ describe('style:changed', () => {
       EDGE_WIDTH: { value: 1 },
       NODE_LABEL: { value: '' },
     }
-    triggerVisualStyleSub({ visualStyles: { net1: newStyle } }, { visualStyles: {} })
+    triggerVisualStyleSub(
+      { visualStyles: { net1: newStyle } },
+      { visualStyles: {} },
+    )
 
     expect(dispatchSpy).not.toHaveBeenCalled()
   })
@@ -416,7 +472,10 @@ describe('style:changed', () => {
     )
 
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
-    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1', property: 'NODE_BACKGROUND_COLOR' })
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      property: 'NODE_BACKGROUND_COLOR',
+    })
   })
 })
 
@@ -426,8 +485,14 @@ describe('data:changed', () => {
   it('dispatches when a single row changes in node table', () => {
     const sharedRow = { name: 'A' }
     const changedRow = { name: 'B' }
-    const prevTable = { nodeTable: { id: 't1', columns: [], rows: new Map([['n1', sharedRow]]) }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
-    const currTable = { nodeTable: { id: 't1', columns: [], rows: new Map([['n1', changedRow]]) }, edgeTable: prevTable.edgeTable }
+    const prevTable = {
+      nodeTable: { id: 't1', columns: [], rows: new Map([['n1', sharedRow]]) },
+      edgeTable: { id: 't2', columns: [], rows: new Map() },
+    }
+    const currTable = {
+      nodeTable: { id: 't1', columns: [], rows: new Map([['n1', changedRow]]) },
+      edgeTable: prevTable.edgeTable,
+    }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
@@ -444,8 +509,14 @@ describe('data:changed', () => {
 
   it('reports added columns for schema-only change', () => {
     const rows = new Map([['n1', { name: 'A' }]])
-    const prevTable = { nodeTable: { id: 't1', columns: [], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
-    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'newCol' }], rows }, edgeTable: prevTable.edgeTable }
+    const prevTable = {
+      nodeTable: { id: 't1', columns: [], rows },
+      edgeTable: { id: 't2', columns: [], rows: new Map() },
+    }
+    const currTable = {
+      nodeTable: { id: 't1', columns: [{ name: 'newCol' }], rows },
+      edgeTable: prevTable.edgeTable,
+    }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
@@ -460,8 +531,18 @@ describe('data:changed', () => {
 
   it('reports removed columns when a column is deleted', () => {
     const rows = new Map([['n1', { name: 'A' }]])
-    const prevTable = { nodeTable: { id: 't1', columns: [{ name: 'name' }, { name: 'score' }], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
-    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'name' }], rows }, edgeTable: prevTable.edgeTable }
+    const prevTable = {
+      nodeTable: {
+        id: 't1',
+        columns: [{ name: 'name' }, { name: 'score' }],
+        rows,
+      },
+      edgeTable: { id: 't2', columns: [], rows: new Map() },
+    }
+    const currTable = {
+      nodeTable: { id: 't1', columns: [{ name: 'name' }], rows },
+      edgeTable: prevTable.edgeTable,
+    }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
@@ -471,8 +552,14 @@ describe('data:changed', () => {
 
   it('reports a rename as one added and one removed column', () => {
     const rows = new Map([['n1', { oldName: 'A' }]])
-    const prevTable = { nodeTable: { id: 't1', columns: [{ name: 'oldName' }], rows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
-    const currTable = { nodeTable: { id: 't1', columns: [{ name: 'newName' }], rows }, edgeTable: prevTable.edgeTable }
+    const prevTable = {
+      nodeTable: { id: 't1', columns: [{ name: 'oldName' }], rows },
+      edgeTable: { id: 't2', columns: [], rows: new Map() },
+    }
+    const currTable = {
+      nodeTable: { id: 't1', columns: [{ name: 'newName' }], rows },
+      edgeTable: prevTable.edgeTable,
+    }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
@@ -481,10 +568,22 @@ describe('data:changed', () => {
   })
 
   it('includes all changed row IDs on bulk change', () => {
-    const prevRows = new Map([['n1', { v: 1 }], ['n2', { v: 2 }]])
-    const currRows = new Map([['n1', { v: 9 }], ['n2', { v: 9 }]])
-    const prevTable = { nodeTable: { id: 't1', columns: [], rows: prevRows }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
-    const currTable = { nodeTable: { id: 't1', columns: [], rows: currRows }, edgeTable: prevTable.edgeTable }
+    const prevRows = new Map([
+      ['n1', { v: 1 }],
+      ['n2', { v: 2 }],
+    ])
+    const currRows = new Map([
+      ['n1', { v: 9 }],
+      ['n2', { v: 9 }],
+    ])
+    const prevTable = {
+      nodeTable: { id: 't1', columns: [], rows: prevRows },
+      edgeTable: { id: 't2', columns: [], rows: new Map() },
+    }
+    const currTable = {
+      nodeTable: { id: 't1', columns: [], rows: currRows },
+      edgeTable: prevTable.edgeTable,
+    }
 
     triggerTableSub({ net1: currTable }, { net1: prevTable })
 
@@ -495,7 +594,10 @@ describe('data:changed', () => {
   })
 
   it('does not dispatch when table reference is unchanged', () => {
-    const table = { nodeTable: { id: 't1', columns: [], rows: new Map() }, edgeTable: { id: 't2', columns: [], rows: new Map() } }
+    const table = {
+      nodeTable: { id: 't1', columns: [], rows: new Map() },
+      edgeTable: { id: 't2', columns: [], rows: new Map() },
+    }
     triggerTableSub({ net1: table }, { net1: table })
 
     expect(dispatchSpy).not.toHaveBeenCalled()

@@ -36,7 +36,7 @@ export const addAll = (
   aspects: OpaqueAspects[],
   isUpdate: boolean = false,
 ): OpaqueAspectState => {
-  const networkAspects = isUpdate ? {} : state.opaqueAspects[networkId] ?? {}
+  const networkAspects = isUpdate ? {} : (state.opaqueAspects[networkId] ?? {})
   const newNetworkAspects = { ...networkAspects }
 
   aspects.forEach((aspect) => {
@@ -143,4 +143,3 @@ export const update = (
     },
   }
 }
-

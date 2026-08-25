@@ -39,7 +39,7 @@ export function NumberInput(props: {
       serializedStringIsValid(ValueTypeName.Long, value)
     ) {
       const numValue = Number(value)
-      const maxVal = getDefaultVisualStyle()[vpName]?.maxVal      
+      const maxVal = getDefaultVisualStyle()[vpName]?.maxVal
       if (numValue >= 0 && (maxVal === undefined || numValue <= maxVal))
         return true
     }
@@ -77,7 +77,7 @@ export function NumberInput(props: {
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          p: 0.25
+          p: 0.25,
         }}
       >
         <Button

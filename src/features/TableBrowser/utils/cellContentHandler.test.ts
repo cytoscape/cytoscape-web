@@ -44,7 +44,7 @@ describe('cellContentHandler', () => {
         isVirtual: true,
         getValue: (row: any) => row.id,
       }
-      
+
       const result = handleGetCellContent({
         cell: [0, 0] as Item,
         rows: mockRows,
@@ -69,7 +69,7 @@ describe('cellContentHandler', () => {
         allColumns: [{ id: 'score', type: ValueTypeName.Double }],
         theme,
       })
-      
+
       expect(result.kind).toBe(GridCellKind.Number)
       expect((result as any).displayData).toBe('10.5')
       expect((result as any).data).toBe(10.5)
@@ -83,7 +83,7 @@ describe('cellContentHandler', () => {
         allColumns: [{ id: 'active', type: ValueTypeName.Boolean }],
         theme,
       })
-      
+
       expect(result.kind).toBe(GridCellKind.Boolean)
       expect((result as any).data).toBe(true)
       expect((result as any).readonly).toBe(false)
@@ -97,7 +97,7 @@ describe('cellContentHandler', () => {
         allColumns: [{ id: 'link', type: ValueTypeName.String }],
         theme,
       })
-      
+
       expect(result.kind).toBe(GridCellKind.Uri)
       expect((result as any).data).toBe('https://cytoscape.org')
     })

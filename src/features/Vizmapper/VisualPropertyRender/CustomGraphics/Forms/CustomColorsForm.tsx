@@ -18,7 +18,7 @@ import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../../../models/IdType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { DataTableHeader, DataTableRow,OrderControls } from '../components'
+import { DataTableHeader, DataTableRow, OrderControls } from '../components'
 import { CHART_CONSTANTS, COLORS } from '../utils/constants'
 import { getNumericColumnNames } from '../utils/numericColumnUtils'
 
@@ -36,7 +36,9 @@ export const CustomColorsForm: React.FC<CustomColorsFormProps> = ({
   onUpdate,
 }) => {
   const tables = useTableStore((s) => s.tables)
-  const nodeTable = currentNetworkId ? tables[currentNetworkId]?.nodeTable : null
+  const nodeTable = currentNetworkId
+    ? tables[currentNetworkId]?.nodeTable
+    : null
 
   // Available numeric columns
   const availableColumns: string[] = React.useMemo(() => {
@@ -51,10 +53,7 @@ export const CustomColorsForm: React.FC<CustomColorsFormProps> = ({
   const count = dataColumns.length
 
   const addRow = () =>
-    onUpdate(
-      [...dataColumns, nextDefaultCol],
-      [...colors, COLORS.DEFAULT],
-    )
+    onUpdate([...dataColumns, nextDefaultCol], [...colors, COLORS.DEFAULT])
 
   const removeRow = (i: number) =>
     onUpdate(
@@ -64,10 +63,11 @@ export const CustomColorsForm: React.FC<CustomColorsFormProps> = ({
 
   const updateRow = (i: number, column: AttributeName, color: ColorType) => {
     // Ensure colors array matches dataColumns length, filling with gray if needed
-    const currentColors = colors.length === dataColumns.length 
-      ? colors 
-      : dataColumns.map((_, idx) => colors[idx] || COLORS.DEFAULT)
-    
+    const currentColors =
+      colors.length === dataColumns.length
+        ? colors
+        : dataColumns.map((_, idx) => colors[idx] || COLORS.DEFAULT)
+
     onUpdate(
       dataColumns.map((c, idx) => (idx === i ? column : c)),
       currentColors.map((c, idx) => (idx === i ? color : c)),
@@ -158,11 +158,7 @@ export const CustomColorsForm: React.FC<CustomColorsFormProps> = ({
                     labelId={`col-label-${i}`}
                     value={col}
                     onChange={(e: SelectChangeEvent<string>) =>
-                      updateRow(
-                        i,
-                        e.target.value,
-                        colors[i] || COLORS.DEFAULT,
-                      )
+                      updateRow(i, e.target.value, colors[i] || COLORS.DEFAULT)
                     }
                   >
                     {options.map((c) => (
@@ -241,4 +237,3 @@ export const CustomColorsForm: React.FC<CustomColorsFormProps> = ({
     </Box>
   )
 }
-

@@ -1,4 +1,8 @@
-export type { ColorPalette, PaletteDefinition,PaletteMetadata } from './ColorPalette'
+export type {
+  ColorPalette,
+  PaletteDefinition,
+  PaletteMetadata,
+} from './ColorPalette'
 export type { ColorType } from './ColorType'
 export type {
   CustomGraphicsType,
@@ -16,10 +20,7 @@ export type {
   NodeLabelPositionType,
   NodeLabelPositionValueType,
 } from './NodeLabelPositionType'
-export {
-  HorizontalAlignType,
-  VerticalAlignType,
-} from './NodeLabelPositionType'
+export { HorizontalAlignType, VerticalAlignType } from './NodeLabelPositionType'
 export { NodeShapeType } from './NodeShapeType'
 export { VisibilityType } from './VisibilityType'
 export type { VisualPropertyValueType } from './VisualPropertyValueType'

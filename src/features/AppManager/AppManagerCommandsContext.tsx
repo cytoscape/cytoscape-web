@@ -2,9 +2,9 @@ import { createContext, useContext } from 'react'
 
 import type { AppManagerCommands } from '../../data/hooks/stores/useAppManager'
 
-const AppManagerCommandsContext = createContext<
-  AppManagerCommands | undefined
->(undefined)
+const AppManagerCommandsContext = createContext<AppManagerCommands | undefined>(
+  undefined,
+)
 
 export const AppManagerCommandsProvider = AppManagerCommandsContext.Provider
 

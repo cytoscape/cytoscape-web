@@ -128,7 +128,10 @@ const MUTATIONS = {
     walkVisualProps(cx2, (vp) => {
       const node = vp?.default?.node ?? {}
       for (const k of Object.keys(node)) {
-        if (k.startsWith('NODE_CUSTOMGRAPHICS_SIZE') && typeof node[k] === 'string') {
+        if (
+          k.startsWith('NODE_CUSTOMGRAPHICS_SIZE') &&
+          typeof node[k] === 'string'
+        ) {
           node[k] = parseFloat(node[k])
         }
       }
@@ -152,7 +155,11 @@ const MUTATIONS = {
     walkVisualProps(cx2, (vp) => {
       const m = vp?.nodeMapping ?? {}
       for (const k of Object.keys(m)) {
-        if (m[k]?.type === 'PASSTHROUGH' && m[k].definition && !m[k].definition.type) {
+        if (
+          m[k]?.type === 'PASSTHROUGH' &&
+          m[k].definition &&
+          !m[k].definition.type
+        ) {
           m[k].definition.type = 'string'
         }
       }
@@ -169,7 +176,9 @@ async function probeCmd(baseFile) {
     ['passthrough type dropped', MUTATIONS.dropPassthroughType],
     ['passthrough type=string added', MUTATIONS.addPassthroughType],
   ]
-  log(`Probing Desktop import with ${variants.length} variants of ${baseFile}\n`)
+  log(
+    `Probing Desktop import with ${variants.length} variants of ${baseFile}\n`,
+  )
   const results = []
   for (const [label, mutate] of variants) {
     const cx2 = mutate(JSON.parse(base))

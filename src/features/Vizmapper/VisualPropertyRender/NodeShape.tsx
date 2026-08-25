@@ -87,7 +87,10 @@ export function NodeShapePicker(props: {
           <Box
             data-testid={`node-shape-picker-option-${shape}`}
             sx={{
-              color: (theme) => (localValue === shape ? theme.palette.primary.main : theme.palette.text.secondary),
+              color: (theme) =>
+                localValue === shape
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === shape ? 'bold' : 'normal',
               p: 1,
               '&:hover': { cursor: 'pointer' },
@@ -110,7 +113,9 @@ export function NodeShapePicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="node-shape-picker-cancel-button"
           variant="outlined"

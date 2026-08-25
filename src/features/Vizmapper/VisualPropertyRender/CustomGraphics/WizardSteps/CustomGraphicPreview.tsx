@@ -18,7 +18,10 @@ import { CustomGraphicKind } from './SelectTypeStep'
 
 interface CustomGraphicPreviewProps {
   kind: CustomGraphicKind
-  properties: PieChartPropertiesType | RingChartPropertiesType | ImagePropertiesType
+  properties:
+    | PieChartPropertiesType
+    | RingChartPropertiesType
+    | ImagePropertiesType
   size?: number
   showLabels?: boolean
   sticky?: boolean
@@ -102,7 +105,7 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
                 />
               )
             ) : kind === CustomGraphicsNameType.PieChart &&
-            isPieChartProperties(modifiedProperties) ? (
+              isPieChartProperties(modifiedProperties) ? (
               <PieChartRenderComponent
                 properties={modifiedProperties}
                 size={size}
@@ -125,35 +128,37 @@ export const CustomGraphicPreview: React.FC<CustomGraphicPreviewProps> = ({
               {properties.cy_dataColumns.length !== 1 ? 's' : ''}
             </Typography>
           )}
-          {showIndices && !isImageProperties(properties) && properties.cy_dataColumns.length > 0 && (
-            <Box sx={{ mt: 2, width: '100%', maxWidth: 280 }}>
-              <Box
-                component="ul"
-                sx={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  textAlign: 'left',
-                }}
-              >
-                {properties.cy_dataColumns.map((col, index) => (
-                  <Box
-                    key={index}
-                    component="li"
-                    sx={{
-                      py: 0.5,
-                      fontSize: '0.75rem',
-                      color: 'text.secondary',
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary">
-                      {index + 1}. {col}
-                    </Typography>
-                  </Box>
-                ))}
+          {showIndices &&
+            !isImageProperties(properties) &&
+            properties.cy_dataColumns.length > 0 && (
+              <Box sx={{ mt: 2, width: '100%', maxWidth: 280 }}>
+                <Box
+                  component="ul"
+                  sx={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    textAlign: 'left',
+                  }}
+                >
+                  {properties.cy_dataColumns.map((col, index) => (
+                    <Box
+                      key={index}
+                      component="li"
+                      sx={{
+                        py: 0.5,
+                        fontSize: '0.75rem',
+                        color: 'text.secondary',
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        {index + 1}. {col}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
               </Box>
-            </Box>
-          )}
+            )}
         </>
       ) : (
         <Box

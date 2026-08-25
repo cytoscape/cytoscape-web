@@ -120,9 +120,9 @@ export const getIndex = <T, I>(
   if (indexObject === undefined) {
     return undefined
   }
-  return (type === GraphObjectType.NODE
-    ? indexObject.node
-    : indexObject.edge) as I | undefined
+  return (
+    type === GraphObjectType.NODE ? indexObject.node : indexObject.edge
+  ) as I | undefined
 }
 
 /**
@@ -234,7 +234,6 @@ export const updateRange = <T>(
     },
   }
 }
-
 
 /**
  * Remove all per-network search state (index + indexed columns) for a

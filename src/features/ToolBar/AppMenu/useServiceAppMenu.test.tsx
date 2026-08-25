@@ -105,8 +105,6 @@ describe('useServiceAppMenu', () => {
 
     const { result } = renderHook(() => useServiceAppMenu(RootMenu.Tools))
 
-    expect(result.current.menuItems.map((i) => i.label)).toEqual([
-      'Tools App',
-    ])
+    expect(result.current.menuItems.map((i) => i.label)).toEqual(['Tools App'])
   })
 })

@@ -26,10 +26,7 @@ import type { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { NetworkView } from '../../models/ViewModel'
-import type {
-  VisualStyle,
-  VisualStyleSet,
-} from '../../models/VisualStyleModel'
+import type { VisualStyle, VisualStyleSet } from '../../models/VisualStyleModel'
 import type { DiscreteMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
 import { VisualPropertyGroup } from '../../models/VisualStyleModel/VisualPropertyGroup'

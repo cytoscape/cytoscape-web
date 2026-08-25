@@ -122,17 +122,14 @@ const vpHandlers = new Map<
 >()
 
 // Handler for node label position: computes and sets alignment, margin, and justification.
-vpHandlers.set(
-  VisualPropertyName.NodeLabelPosition,
-  (obj, key, value) => {
-    const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
-    obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
-    obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
-    obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
-    obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
-    obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
-  },
-)
+vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value) => {
+  const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
+  obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
+  obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
+  obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
+  obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
+  obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
+})
 
 // Handler for edge target arrow shape and fill.
 vpHandlers.set(
@@ -168,20 +165,14 @@ vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value) => {
 })
 
 // Handler for node label rotation: converts degrees to radians for Cytoscape.js.
-vpHandlers.set(
-  VisualPropertyName.NodeLabelRotation,
-  (obj, key, value) => {
-    obj.data(key, transformRotation(value))
-  },
-)
+vpHandlers.set(VisualPropertyName.NodeLabelRotation, (obj, key, value) => {
+  obj.data(key, transformRotation(value))
+})
 
 // Handler for edge label rotation: converts degrees to radians for Cytoscape.js.
-vpHandlers.set(
-  VisualPropertyName.EdgeLabelRotation,
-  (obj, key, value) => {
-    obj.data(key, transformRotation(value))
-  },
-)
+vpHandlers.set(VisualPropertyName.EdgeLabelRotation, (obj, key, value) => {
+  obj.data(key, transformRotation(value))
+})
 
 /**
  * Generates an array of Cytoscape.js style mappings (CyjsDirectMapper) from the application's VisualStyle.
@@ -531,7 +522,6 @@ const updateCyElements = <T extends View>(
           obj.removeData(key as any)
         }
       })
-
 
       // If node size is locked, set width equal to height.
       if (visualEditorProperties?.nodeSizeLocked) {

@@ -52,7 +52,10 @@ describe('AppConfigContext', () => {
       'appInstallAllowedOrigins',
     ]
     for (const key of required) {
-      expect(committedConfig[key], `config.json is missing "${key}"`).toBeDefined()
+      expect(
+        committedConfig[key],
+        `config.json is missing "${key}"`,
+      ).toBeDefined()
     }
   })
 })

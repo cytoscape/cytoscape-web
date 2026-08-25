@@ -41,15 +41,13 @@ export const ElementCodes = {
   NODE_ID_FORBIDDEN: {
     code: 'N3',
     severity: 'error',
-    message:
-      'Attribute "id" is forbidden in the node attributes payload',
+    message: 'Attribute "id" is forbidden in the node attributes payload',
   },
   /** @see src/app-api/api_docs/ErrorCodes.md#e6 */
   EDGE_ID_FORBIDDEN: {
     code: 'E6',
     severity: 'error',
-    message:
-      'Attribute "id" is forbidden in the edge attributes payload',
+    message: 'Attribute "id" is forbidden in the edge attributes payload',
   },
   /** @see src/app-api/api_docs/ErrorCodes.md#gl1 */
   NODE_NOT_FOUND: {

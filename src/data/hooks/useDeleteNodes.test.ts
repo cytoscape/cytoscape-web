@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
-import { Column,Table } from '../../models/TableModel'
+import { Column, Table } from '../../models/TableModel'
 import TableFn from '../../models/TableModel'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { NetworkView } from '../../models/ViewModel'
@@ -111,9 +111,7 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: summaryResult } = renderHook(() =>
         useNetworkSummaryStore(),
       )
@@ -227,18 +225,20 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: summaryResult } = renderHook(() =>
         useNetworkSummaryStore(),
       )
 
-      const network = createTestNetwork(networkId, ['0', '1', '2', '3'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-        { id: 'e2', s: '2', t: '3' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2', '3'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+          { id: 'e2', s: '2', t: '3' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -316,13 +316,13 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -377,13 +377,13 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -397,9 +397,7 @@ describe('useDeleteNodes', () => {
 
     it('should delete node views', () => {
       const { result: hookResult } = renderHook(() => useDeleteNodes())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.deleteNodes(networkId, ['0'])
@@ -413,9 +411,7 @@ describe('useDeleteNodes', () => {
 
     it('should delete edge views for connected edges', () => {
       const { result: hookResult } = renderHook(() => useDeleteNodes())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.deleteNodes(networkId, ['0'])
@@ -430,16 +426,16 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: visualStyleResult } = renderHook(() =>
         useVisualStyleStore(),
       )
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -458,12 +454,7 @@ describe('useDeleteNodes', () => {
           ['0', '1'],
           '#FF0000',
         )
-        visualStyleResult.current.setBypass(
-          networkId,
-          'nodeWidth',
-          ['0'],
-          100,
-        )
+        visualStyleResult.current.setBypass(networkId, 'nodeWidth', ['0'], 100)
         visualStyleResult.current.setBypass(
           networkId,
           'edgeLineColor',
@@ -513,9 +504,7 @@ describe('useDeleteNodes', () => {
     it('should handle complete deletion workflow', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: visualStyleResult } = renderHook(() =>
         useVisualStyleStore(),
       )
@@ -598,12 +587,12 @@ describe('useDeleteNodes', () => {
       // Check visual styles
       const updatedVisualStyle =
         visualStyleResult.current.visualStyles[networkId]
-      expect(
-        updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('1'),
-      ).toBe(false)
-      expect(
-        updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('2'),
-      ).toBe(true)
+      expect(updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('1')).toBe(
+        false,
+      )
+      expect(updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('2')).toBe(
+        true,
+      )
 
       // Check summary
       const summary = summaryResult.current.summaries[networkId]
@@ -614,14 +603,14 @@ describe('useDeleteNodes', () => {
     it('should handle deleting all nodes', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: hookResult } = renderHook(() => useDeleteNodes())
 
-      const network = createTestNetwork(networkId, ['0', '1'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -647,4 +636,3 @@ describe('useDeleteNodes', () => {
     })
   })
 })
-

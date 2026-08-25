@@ -15,7 +15,13 @@ interface BooleanEditorProps {
   value: boolean
   setValue: (optionName: string, value: boolean) => void
   typeLabel?: string
-  typeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  typeColor?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
   tableLayout?: boolean
 }
 
@@ -48,7 +54,7 @@ export const BooleanEditor = ({
             maxWidth: 0,
           }}
         >
-          <Typography 
+          <Typography
             variant="body2"
             sx={{
               overflow: 'hidden',
@@ -69,9 +75,9 @@ export const BooleanEditor = ({
           }}
         >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px' }}
             />
@@ -108,11 +114,19 @@ export const BooleanEditor = ({
       }}
       disablePadding
       secondaryAction={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: '200px', justifyContent: 'flex-end' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            minWidth: '200px',
+            justifyContent: 'flex-end',
+          }}
+        >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px', flexShrink: 0 }}
             />

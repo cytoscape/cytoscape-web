@@ -22,7 +22,12 @@ const mockFetch = (options: {
   ok?: boolean
   status?: number
 }): ReturnType<typeof vi.fn> => {
-  const { contentLength, body = JSON.stringify(VALID_CX), ok = true, status = 200 } = options
+  const {
+    contentLength,
+    body = JSON.stringify(VALID_CX),
+    ok = true,
+    status = 200,
+  } = options
   const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
     if (init?.method === 'HEAD') {
       return {

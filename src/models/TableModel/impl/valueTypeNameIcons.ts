@@ -2,14 +2,21 @@ import { ValueTypeName } from '../ValueTypeName'
 import { valueTypeNameGlyph } from './valueTypeNameDisplay'
 import { isListType } from './valueTypeImpl'
 
-export const getValueTypeNameColors = (type: ValueTypeName, isDarkTheme: boolean) => {
+export const getValueTypeNameColors = (
+  type: ValueTypeName,
+  isDarkTheme: boolean,
+) => {
   const isList = isListType(type)
   const baseType = isList ? type.replace('list_of_', '') : type
 
   let textColor = isDarkTheme ? '#e0e0e0' : '#424242'
   if (baseType === 'string') {
     textColor = isDarkTheme ? '#4db6ac' : '#00897b'
-  } else if (baseType === 'integer' || baseType === 'long' || baseType === 'double') {
+  } else if (
+    baseType === 'integer' ||
+    baseType === 'long' ||
+    baseType === 'double'
+  ) {
     textColor = isDarkTheme ? '#81c784' : '#43a047'
   } else if (baseType === 'boolean') {
     textColor = isDarkTheme ? '#9575cd' : '#5e35b1'
@@ -49,14 +56,18 @@ export const getBadgeWidth = (type: ValueTypeName): number => {
   return Math.max(MIN_BADGE_WIDTH, Math.ceil(totalTextWidth + paddingX))
 }
 
-export const getValueTypeNameSVG = (type: ValueTypeName, isDarkTheme: boolean): string => {
+export const getValueTypeNameSVG = (
+  type: ValueTypeName,
+  isDarkTheme: boolean,
+): string => {
   const isList = isListType(type)
   const glyph = getBaseGlyph(type)
-  const { textColor, bracketColor, borderColor, bgColor } = getValueTypeNameColors(type, isDarkTheme)
+  const { textColor, bracketColor, borderColor, bgColor } =
+    getValueTypeNameColors(type, isDarkTheme)
 
   const badgeWidth = getBadgeWidth(type)
   const badgeHeight = 18
-  
+
   const size = badgeWidth
   const yOffset = (size - badgeHeight) / 2
   const midX = size / 2
@@ -73,4 +84,3 @@ export const getValueTypeNameSVG = (type: ValueTypeName, isDarkTheme: boolean): 
   <text x="${midX}" y="${yOffset + 12.5}" font-family="monospace, Consolas, Courier New" font-size="11" font-weight="bold" text-anchor="middle">${textContent}</text>
 </svg>`
 }
-

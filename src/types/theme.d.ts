@@ -1,7 +1,7 @@
 import '@mui/material/styles'
-import '@mui/material/Paper';
+import '@mui/material/Paper'
 
-declare module "@mui/material/styles" {
+declare module '@mui/material/styles' {
   interface TypeBackground {
     subtle: string
   }
@@ -13,6 +13,6 @@ declare module "@mui/material/styles" {
 
 declare module '@mui/material/Paper' {
   interface PaperPropsVariantOverrides {
-    filled: true;
+    filled: true
   }
 }

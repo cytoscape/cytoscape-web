@@ -28,9 +28,7 @@ import {
   cxVisualPropertyConverter,
   CXVisualPropertyValue,
 } from '../../../VisualStyleModel/impl/cxVisualPropertyConverter'
-import {
-  getDefaultVisualStyle,
-} from '../../../VisualStyleModel/impl/defaultVisualStyle'
+import { getDefaultVisualStyle } from '../../../VisualStyleModel/impl/defaultVisualStyle'
 import {
   edgeVisualProperties,
   networkVisualProperties,
@@ -274,12 +272,19 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 cxMapping.definition.map[0].maxVPValue != null
               ) {
                 const outOfBoundsVal = cxMapping.definition.map[0].maxVPValue
-                const inBoundsVal = numMapEntries > 2 ? cxMapping.definition.map[1].minVPValue : outOfBoundsVal
-                
-                ltMinVpValue = converter.valueConverter(outOfBoundsVal as CXVisualPropertyValue)
+                const inBoundsVal =
+                  numMapEntries > 2
+                    ? cxMapping.definition.map[1].minVPValue
+                    : outOfBoundsVal
+
+                ltMinVpValue = converter.valueConverter(
+                  outOfBoundsVal as CXVisualPropertyValue,
+                )
                 min = {
                   value: cxMapping.definition.map[0].max as ValueType,
-                  vpValue: converter.valueConverter(inBoundsVal as CXVisualPropertyValue),
+                  vpValue: converter.valueConverter(
+                    inBoundsVal as CXVisualPropertyValue,
+                  ),
                   inclusive: cxMapping.definition.map[0].includeMax,
                 }
               }
@@ -288,14 +293,22 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
                 cxMapping.definition.map[numMapEntries - 1].min != null &&
                 cxMapping.definition.map[numMapEntries - 1].minVPValue != null
               ) {
-                const outOfBoundsVal = cxMapping.definition.map[numMapEntries - 1].minVPValue
-                const inBoundsVal = numMapEntries > 2 ? cxMapping.definition.map[numMapEntries - 2].maxVPValue : outOfBoundsVal
-                
-                gtMaxVpValue = converter.valueConverter(outOfBoundsVal as CXVisualPropertyValue)
+                const outOfBoundsVal =
+                  cxMapping.definition.map[numMapEntries - 1].minVPValue
+                const inBoundsVal =
+                  numMapEntries > 2
+                    ? cxMapping.definition.map[numMapEntries - 2].maxVPValue
+                    : outOfBoundsVal
+
+                gtMaxVpValue = converter.valueConverter(
+                  outOfBoundsVal as CXVisualPropertyValue,
+                )
                 max = {
                   value: cxMapping.definition.map[numMapEntries - 1]
                     .min as ValueType,
-                  vpValue: converter.valueConverter(inBoundsVal as CXVisualPropertyValue),
+                  vpValue: converter.valueConverter(
+                    inBoundsVal as CXVisualPropertyValue,
+                  ),
                   inclusive:
                     cxMapping.definition.map[numMapEntries - 1].includeMin,
                 }
@@ -384,4 +397,3 @@ export const createVisualStyleFromCx = (cx: Cx2): VisualStyle => {
 export const createVisualStyleOptionsFromCx = (cx: Cx2): VisualStyleOptions => {
   return cxUtil.getVisualEditorProperties(cx) ?? {}
 }
-

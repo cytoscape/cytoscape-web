@@ -95,7 +95,13 @@ describe('colorUtils', () => {
     })
 
     it('should return middle element for count === 1', () => {
-      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
+      const base: ColorPalette = [
+        '#ff0000',
+        '#00ff00',
+        '#0000ff',
+        '#ffff00',
+        '#ff00ff',
+      ]
       const result = pickEvenly(base, 1)
       expect(result).toHaveLength(1)
       // For 5 elements, middle is index 2 (Math.floor((5-1)/2) = 2)
@@ -117,7 +123,13 @@ describe('colorUtils', () => {
     })
 
     it('should return evenly distributed elements when count < base length', () => {
-      const base: ColorPalette = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff']
+      const base: ColorPalette = [
+        '#ff0000',
+        '#00ff00',
+        '#0000ff',
+        '#ffff00',
+        '#ff00ff',
+      ]
       const result = pickEvenly(base, 3)
       expect(result).toHaveLength(3)
       // Should pick first, middle, and last
@@ -142,13 +154,13 @@ describe('colorUtils', () => {
       // Start and end should match the base endpoints
       expect(result[0]).toBe('#ff0000')
       expect(result[6]).toBe('#0000ff')
-      
+
       // All values should be valid 6-digit hex colors
       const hexRegex = /^#[0-9a-f]{6}$/i
-      result.forEach(color => {
+      result.forEach((color) => {
         expect(color).toMatch(hexRegex)
       })
-      
+
       // There should be intermediate colors, not just the endpoints
       const uniqueColors = new Set(result)
       expect(uniqueColors.size).toBeGreaterThan(2)
@@ -161,7 +173,13 @@ describe('colorUtils', () => {
     })
 
     it('should distribute evenly across the range', () => {
-      const base: ColorPalette = ['#000000', '#111111', '#222222', '#333333', '#444444']
+      const base: ColorPalette = [
+        '#000000',
+        '#111111',
+        '#222222',
+        '#333333',
+        '#444444',
+      ]
       const result = pickEvenly(base, 5)
       expect(result).toEqual(base)
     })
@@ -188,4 +206,3 @@ describe('colorUtils', () => {
     })
   })
 })
-

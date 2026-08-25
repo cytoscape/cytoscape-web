@@ -73,7 +73,10 @@ export function CustomGraphicRender(props: {
     if (isPieChartProperties(value.properties)) {
       const pieProperties = value.properties
       // Ensure properties have required fields before rendering
-      if (pieProperties.cy_dataColumns && pieProperties.cy_dataColumns.length > 0) {
+      if (
+        pieProperties.cy_dataColumns &&
+        pieProperties.cy_dataColumns.length > 0
+      ) {
         return (
           <Box
             sx={{
@@ -101,7 +104,10 @@ export function CustomGraphicRender(props: {
     if (isRingChartProperties(value.properties)) {
       const ringProperties = value.properties
       // Ensure properties have required fields before rendering
-      if (ringProperties.cy_dataColumns && ringProperties.cy_dataColumns.length > 0) {
+      if (
+        ringProperties.cy_dataColumns &&
+        ringProperties.cy_dataColumns.length > 0
+      ) {
         return (
           <Box
             sx={{
@@ -128,9 +134,7 @@ export function CustomGraphicRender(props: {
     if (isImageProperties(value.properties)) {
       const imageProperties = value.properties
       if (imageProperties.url && imageProperties.url.trim().length > 0) {
-        return (
-          <ImageRender url={imageProperties.url} />
-        )
+        return <ImageRender url={imageProperties.url} />
       }
     }
   }

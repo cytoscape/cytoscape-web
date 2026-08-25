@@ -32,7 +32,7 @@ describe('ServiceApps', () => {
     it('should return edgeList format correctly', () => {
       const scope = SelectedDataScope.all
       const inputNetwork = { format: Format.edgeList, model: Model.network }
-      
+
       const result = createNetworkDataObj(
         scope,
         inputNetwork,
@@ -42,19 +42,19 @@ describe('ServiceApps', () => {
         mockTable,
         undefined,
         undefined,
-        undefined
+        undefined,
       )
 
       expect(result).toEqual({
         columns: [
           { id: 'source', type: 'string' },
           { id: 'target', type: 'string' },
-          { id: 'interaction', type: 'string' }
+          { id: 'interaction', type: 'string' },
         ],
         rows: {
-          'e1': { source: 'n1', target: 'n2', interaction: 'pd' },
-          'e2': { source: 'n2', target: 'n1', interaction: 'pp' }
-        }
+          e1: { source: 'n1', target: 'n2', interaction: 'pd' },
+          e2: { source: 'n2', target: 'n1', interaction: 'pp' },
+        },
       })
     })
 
@@ -69,7 +69,7 @@ describe('ServiceApps', () => {
         nodeViews: {},
         edgeViews: {},
       }
-      
+
       const result = createNetworkDataObj(
         scope,
         inputNetwork,
@@ -79,18 +79,18 @@ describe('ServiceApps', () => {
         mockTable,
         undefined,
         viewModel as any,
-        undefined
+        undefined,
       )
 
       expect(result).toEqual({
         columns: [
           { id: 'source', type: 'string' },
           { id: 'target', type: 'string' },
-          { id: 'interaction', type: 'string' }
+          { id: 'interaction', type: 'string' },
         ],
         rows: {
-          'e1': { source: 'n1', target: 'n2', interaction: 'pd' }
-        }
+          e1: { source: 'n1', target: 'n2', interaction: 'pd' },
+        },
       })
     })
 
@@ -101,10 +101,10 @@ describe('ServiceApps', () => {
         ...mockTable,
         edgeTable: {
           ...mockTable.edgeTable,
-          rows: new Map([['e1', {}]])
-        }
+          rows: new Map([['e1', {}]]),
+        },
       }
-      
+
       const result = createNetworkDataObj(
         scope,
         inputNetwork,
@@ -114,7 +114,7 @@ describe('ServiceApps', () => {
         tableWithMissingInteraction,
         undefined,
         undefined,
-        undefined
+        undefined,
       )
 
       expect((result as any).rows['e1']).toEqual({ source: 'n1', target: 'n2' })

@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { EdgeView,NetworkView, NodeView } from '../ViewModel'
+import { EdgeView, NetworkView, NodeView } from '../ViewModel'
 
 export interface ViewModelState {
   /**

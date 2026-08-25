@@ -258,8 +258,14 @@ export function differenceMerge(
       } as Edge)
     }
   })
-  mergedNodeTable = TableFn.insertRows(mergedNodeTable, Object.entries(initialNodeRows))
-  mergedEdgeTable = TableFn.insertRows(mergedEdgeTable, Object.entries(initialEdgeRows))
+  mergedNodeTable = TableFn.insertRows(
+    mergedNodeTable,
+    Object.entries(initialNodeRows),
+  )
+  mergedEdgeTable = TableFn.insertRows(
+    mergedEdgeTable,
+    Object.entries(initialEdgeRows),
+  )
   return {
     network: mergedNetwork,
     nodeTable: mergedNodeTable,

@@ -37,7 +37,7 @@ export const ValueEditor = ({
   error = false,
   showTypeChip = false,
 }: ValueEditorProps): JSX.Element => {
-  const isListType = 
+  const isListType =
     valueType === ValueTypeName.ListString ||
     valueType === ValueTypeName.ListInteger ||
     valueType === ValueTypeName.ListLong ||

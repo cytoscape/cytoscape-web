@@ -49,7 +49,10 @@ export function EdgeLinePicker(props: {
         {sortedEdgeLines.map((edgeLine: EdgeLineType) => (
           <Box
             sx={{
-              color: (theme) => (localValue === edgeLine ? theme.palette.primary.main : theme.palette.text.secondary),
+              color: (theme) =>
+                localValue === edgeLine
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === edgeLine ? 'bold' : 'normal',
               '&:hover': { cursor: 'pointer' },
             }}
@@ -71,7 +74,9 @@ export function EdgeLinePicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           variant="outlined"
           onClick={() => {

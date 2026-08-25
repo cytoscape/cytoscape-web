@@ -89,7 +89,10 @@ export function EdgeArrowShapePicker(props: {
         {sortedEdgeArrowShapes.map((edgeArrowShape: EdgeArrowShapeType) => (
           <Box
             sx={{
-              color: (theme) => (localValue === edgeArrowShape ? theme.palette.primary.main : theme.palette.text.secondary),
+              color: (theme) =>
+                localValue === edgeArrowShape
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === edgeArrowShape ? 'bold' : 'normal',
               p: 1,
               '&:hover': { cursor: 'pointer' },
@@ -117,7 +120,9 @@ export function EdgeArrowShapePicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           variant="outlined"
           onClick={() => {

@@ -28,7 +28,9 @@ describe('getNdexClient', () => {
   const mockGetNDExBaseUrl = getNDExBaseUrl as import('vitest').MockedFunction<
     typeof getNDExBaseUrl
   >
-  const MockNDExClient = NDExClient as import('vitest').MockedClass<typeof NDExClient>
+  const MockNDExClient = NDExClient as import('vitest').MockedClass<
+    typeof NDExClient
+  >
 
   beforeEach(() => {
     vi.clearAllMocks()

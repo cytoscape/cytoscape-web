@@ -6,7 +6,11 @@ import { parseManifest } from './parseManifest'
 describe('parseManifest', () => {
   it('returns entries for valid manifest with id, url, and author', () => {
     const data = [
-      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', author: 'Dev' },
+      {
+        id: 'app1',
+        url: 'http://localhost:2222/remoteEntry.js',
+        author: 'Dev',
+      },
     ]
     const result = parseManifest(data)
     expect(result).toHaveLength(1)
@@ -34,9 +38,7 @@ describe('parseManifest', () => {
   })
 
   it('skips entry missing both id and name', () => {
-    const data = [
-      { url: 'http://localhost:2222/remoteEntry.js' },
-    ]
+    const data = [{ url: 'http://localhost:2222/remoteEntry.js' }]
     const result = parseManifest(data)
     expect(result).toHaveLength(0)
   })
@@ -58,17 +60,23 @@ describe('parseManifest', () => {
   })
 
   it('skips entry with invalid url', () => {
-    const data = [
-      { id: 'app1', url: 'not-a-url' },
-    ]
+    const data = [{ id: 'app1', url: 'not-a-url' }]
     const result = parseManifest(data)
     expect(result).toHaveLength(0)
   })
 
   it('keeps first occurrence on duplicate id', () => {
     const data = [
-      { id: 'app1', url: 'http://localhost:1111/remoteEntry.js', author: 'First' },
-      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', author: 'Second' },
+      {
+        id: 'app1',
+        url: 'http://localhost:1111/remoteEntry.js',
+        author: 'First',
+      },
+      {
+        id: 'app1',
+        url: 'http://localhost:2222/remoteEntry.js',
+        author: 'Second',
+      },
     ]
     const result = parseManifest(data)
     expect(result).toHaveLength(1)
@@ -153,9 +161,7 @@ describe('parseManifest', () => {
   })
 
   it('omits optional metadata fields when absent', () => {
-    const data = [
-      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js' },
-    ]
+    const data = [{ id: 'app1', url: 'http://localhost:2222/remoteEntry.js' }]
     const result = parseManifest(data)
     expect(result[0].tags).toBeUndefined()
     expect(result[0].icon).toBeUndefined()
@@ -166,7 +172,11 @@ describe('parseManifest', () => {
 
   it('skips entry with invalid icon URL', () => {
     const data = [
-      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', icon: 'not-a-url' },
+      {
+        id: 'app1',
+        url: 'http://localhost:2222/remoteEntry.js',
+        icon: 'not-a-url',
+      },
     ]
     const result = parseManifest(data)
     expect(result).toHaveLength(0)
@@ -174,7 +184,11 @@ describe('parseManifest', () => {
 
   it('skips entry with invalid repository URL', () => {
     const data = [
-      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', repository: 'not-a-url' },
+      {
+        id: 'app1',
+        url: 'http://localhost:2222/remoteEntry.js',
+        repository: 'not-a-url',
+      },
     ]
     const result = parseManifest(data)
     expect(result).toHaveLength(0)

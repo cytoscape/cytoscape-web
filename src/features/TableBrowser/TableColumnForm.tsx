@@ -23,9 +23,7 @@ import * as React from 'react'
 
 import { ValueTypeName } from '../../models/TableModel'
 import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
-import {
-  orderedValueTypeNames,
-} from '../../models/TableModel/impl/valueTypeNameDisplay'
+import { orderedValueTypeNames } from '../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   deserializeValue,
   isListType,
@@ -281,7 +279,11 @@ export function CreateTableColumnForm(
   const submitButton = disabled ? (
     <Tooltip title="Column name must not be empty">
       <Box>
-        <Button data-testid="create-table-column-confirm-button" variant="contained" disabled>
+        <Button
+          data-testid="create-table-column-confirm-button"
+          variant="contained"
+          disabled
+        >
           Confirm
         </Button>
       </Box>
@@ -329,7 +331,11 @@ export function CreateTableColumnForm(
             {orderedValueTypeNames.map((v) => {
               return (
                 <MenuItem key={v} value={v}>
-                  <ValueTypeNameChip type={v} variant="chip-and-text" showTooltip={false} />
+                  <ValueTypeNameChip
+                    type={v}
+                    variant="chip-and-text"
+                    showTooltip={false}
+                  />
                 </MenuItem>
               )
             })}

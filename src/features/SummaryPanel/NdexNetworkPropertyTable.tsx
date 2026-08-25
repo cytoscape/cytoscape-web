@@ -21,11 +21,9 @@ import {
 import React from 'react'
 
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
-import { ValueType,ValueTypeName } from '../../models/TableModel'
+import { ValueType, ValueTypeName } from '../../models/TableModel'
 import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
-import {
-  orderedValueTypeNames,
-} from '../../models/TableModel/impl/valueTypeNameDisplay'
+import { orderedValueTypeNames } from '../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   deserializeValue,
   isListType,
@@ -178,7 +176,7 @@ const NetworkPropertyTable = (props: {
     <Paper
       variant="filled"
       data-testid="ndex-network-property-table"
-      sx={{ 
+      sx={{
         mt: 2,
         px: 2,
         py: 1,
@@ -225,7 +223,11 @@ const NetworkPropertyTable = (props: {
                       {orderedValueTypeNames.map((vtn) => {
                         return (
                           <MenuItem key={vtn} value={vtn}>
-                            <ValueTypeNameChip type={vtn} variant="chip-and-text" showTooltip={false} />
+                            <ValueTypeNameChip
+                              type={vtn}
+                              variant="chip-and-text"
+                              showTooltip={false}
+                            />
                           </MenuItem>
                         )
                       })}
@@ -287,7 +289,9 @@ const NetworkPropertyTable = (props: {
                       data-testid={`ndex-network-property-delete-button-${index}`}
                       onClick={() => deleteNetworkProperty(index)}
                     >
-                      <Delete sx={{ color: (theme) => theme.palette.text.primary }} />
+                      <Delete
+                        sx={{ color: (theme) => theme.palette.text.primary }}
+                      />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -313,8 +317,8 @@ const NetworkPropertyTable = (props: {
           }
           listType={localNetworkProperties[listEditorIndex].dataType}
           value={
-            `${localNetworkProperties[listEditorIndex].value as string}`.length >
-            0
+            `${localNetworkProperties[listEditorIndex].value as string}`
+              .length > 0
               ? deserializeValue(
                   localNetworkProperties[listEditorIndex].dataType,
                   `${localNetworkProperties[listEditorIndex].value as string}`,

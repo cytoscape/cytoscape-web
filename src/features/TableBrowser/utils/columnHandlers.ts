@@ -1,9 +1,7 @@
 import { GridColumn } from '@glideapps/glide-data-grid'
 import { IdType } from '../../../models/IdType'
 import { Table } from '../../../models/TableModel'
-import {
-  TableDisplayConfiguration,
-} from '../../../models/VisualStyleModel/VisualStyleOptions'
+import { TableDisplayConfiguration } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 export interface HandleColumnMoveArgs {
   startIndex: number
@@ -84,7 +82,7 @@ export const handleColumnMove = ({
     currentTable === nodeTable
       ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
       : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
-  
+
   const nextColumnConfig = [...currentConfig.columnConfiguration]
   const [movedColumn] = nextColumnConfig.splice(realStartIndex, 1)
   nextColumnConfig.splice(realEndIndex, 0, movedColumn)
@@ -92,7 +90,7 @@ export const handleColumnMove = ({
   const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({
     columnConfiguration: nextColumnConfig,
   })
-  
+
   setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
   setNetworkModified(networkId, true)
 }
@@ -172,17 +170,15 @@ export const handleColumnResize = ({
     currentTable === nodeTable
       ? (tableDisplayConfiguration?.nodeTable ?? defaultConfig)
       : (tableDisplayConfiguration?.edgeTable ?? defaultConfig)
-      
+
   const nextColumnConfig = currentConfig.columnConfiguration.map((col: any) =>
-    col.attributeName === column.id
-      ? { ...col, columnWidth: newSize }
-      : col,
+    col.attributeName === column.id ? { ...col, columnWidth: newSize } : col,
   )
 
   const newTableDisplayConfiguration = createUpdatedTableDisplayConfiguration({
     columnConfiguration: nextColumnConfig,
   })
-  
+
   setTableDisplayConfiguration(networkId, newTableDisplayConfiguration)
   setNetworkModified(networkId, true)
 }

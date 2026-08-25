@@ -3,14 +3,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
 import ClearIcon from '@mui/icons-material/Clear'
-import {
-  Box,
-  Button,
-  IconButton,
-  Paper,
-  Popover,
-  Tooltip,
-} from '@mui/material'
+import { Box, Button, IconButton, Paper, Popover, Tooltip } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import { AxisBottom } from '@visx/axis'
 import { scaleLinear } from '@visx/scale'
@@ -516,14 +509,10 @@ export function ContinuousDiscreteMappingForm(props: {
                             }
                           }}
                           min={
-                            isMinHandle
-                              ? undefined
-                              : (minState.value as number)
+                            isMinHandle ? undefined : (minState.value as number)
                           }
                           max={
-                            isMaxHandle
-                              ? undefined
-                              : (maxState.value as number)
+                            isMaxHandle ? undefined : (maxState.value as number)
                           }
                         />
                       </Box>
@@ -716,9 +705,7 @@ export function ContinuousDiscreteMappingForm(props: {
                   visualProperty={props.visualProperty}
                   currentNetworkId={props.currentNetworkId}
                   onValueChange={(newValue) =>
-                    setAddHandleFormVpValue(
-                      newValue as VisualPropertyValueType,
-                    )
+                    setAddHandleFormVpValue(newValue as VisualPropertyValueType)
                   }
                 />
               </Box>

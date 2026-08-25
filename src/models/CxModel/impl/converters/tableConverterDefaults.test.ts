@@ -12,16 +12,16 @@ describe('tableConverter defaults', () => {
         attributeDeclarations: [
           {
             nodes: {
-              testAttr: { d: 'string', v: 'default-value' }
-            }
+              testAttr: { d: 'string', v: 'default-value' },
+            },
           } as any,
         ],
       },
       {
         nodes: [
-          { id: 0 },         // no v
-          { id: 1, v: {} },  // empty v
-          { id: 2, v: { testAttr: 'custom' } } // custom v
+          { id: 0 }, // no v
+          { id: 1, v: {} }, // empty v
+          { id: 2, v: { testAttr: 'custom' } }, // custom v
         ],
       },
       {
@@ -47,8 +47,8 @@ describe('tableConverter defaults', () => {
         attributeDeclarations: [
           {
             edges: {
-              edgeAttr: { d: 'integer', v: 42 }
-            }
+              edgeAttr: { d: 'integer', v: 42 },
+            },
           } as any,
         ],
       },
@@ -57,9 +57,9 @@ describe('tableConverter defaults', () => {
       },
       {
         edges: [
-          { id: 0, s: 0, t: 1 },                 // no v
-          { id: 1, s: 0, t: 1, v: {} },          // empty v
-          { id: 2, s: 0, t: 1, v: { edgeAttr: 99 } } // custom v
+          { id: 0, s: 0, t: 1 }, // no v
+          { id: 1, s: 0, t: 1, v: {} }, // empty v
+          { id: 2, s: 0, t: 1, v: { edgeAttr: 99 } }, // custom v
         ],
       },
       {
@@ -83,24 +83,21 @@ describe('tableConverter defaults', () => {
         attributeDeclarations: [
           {
             nodes: {
-              testAttr: { d: 'string' } // no 'v' provided
+              testAttr: { d: 'string' }, // no 'v' provided
             },
             edges: {
-              edgeAttr: { d: 'integer' } // no 'v' provided
-            }
+              edgeAttr: { d: 'integer' }, // no 'v' provided
+            },
           } as any,
         ],
       },
       {
-        nodes: [
-          { id: 0 },         
-          { id: 1, v: {} },  
-        ],
+        nodes: [{ id: 0 }, { id: 1, v: {} }],
       },
       {
         edges: [
-          { id: 0, s: 0, t: 1 },                 
-          { id: 1, s: 0, t: 1, v: {} },          
+          { id: 0, s: 0, t: 1 },
+          { id: 1, s: 0, t: 1, v: {} },
         ],
       },
       {

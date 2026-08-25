@@ -40,9 +40,7 @@ describe('unknown attribute type handling (regression: R2-18)', () => {
     }).not.toThrow()
     expect(result.isValid).toBe(false)
     expect(
-      result.errors.some((e: any) =>
-        /unknown attribute type/i.test(e.message),
-      ),
+      result.errors.some((e: any) => /unknown attribute type/i.test(e.message)),
     ).toBe(true)
   })
 

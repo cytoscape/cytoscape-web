@@ -34,9 +34,9 @@ describe('buildHostRemoteEntryUrl', () => {
     // exactly "/cytoscape" into import.meta.env.BASE_URL. Concatenating that
     // would produce '/cytoscaperemoteEntry.js' — a URL that 404s on a based
     // deployment and cannot occur on a root one, so nothing else would catch it.
-    expect(buildHostRemoteEntryUrl('/cytoscape', 'https://h/y/z', FILENAME)).toBe(
-      'https://h/cytoscape/remoteEntry.js',
-    )
+    expect(
+      buildHostRemoteEntryUrl('/cytoscape', 'https://h/y/z', FILENAME),
+    ).toBe('https://h/cytoscape/remoteEntry.js')
   })
 
   it('produces an absolute URL from a relative page href', () => {

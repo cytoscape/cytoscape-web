@@ -150,10 +150,7 @@ describe('installGate', () => {
     // it. Carrying this field forward unedited must not enable anything.
     it('does nothing when the committed dev value is copied into production', () => {
       const committed = JSON.parse(
-        readFileSync(
-          resolve(__dirname, '../../../assets/config.json'),
-          'utf8',
-        ),
+        readFileSync(resolve(__dirname, '../../../assets/config.json'), 'utf8'),
       ) as { allowsLocalhostAppsOn?: string }
 
       expect(committed.allowsLocalhostAppsOn).toBe(DEV1)
@@ -289,7 +286,11 @@ describe('localhost apps on an opted-in deployment', () => {
     it('does not widen anything beyond localhost', () => {
       serveFrom(DEV1)
       expect(
-        isAllowedOrigin('https://evil.example.com/remoteEntry.js', allowed, DEV1),
+        isAllowedOrigin(
+          'https://evil.example.com/remoteEntry.js',
+          allowed,
+          DEV1,
+        ),
       ).toBe(false)
     })
 
@@ -336,7 +337,9 @@ describe('localhost apps on an opted-in deployment', () => {
   describe('validateManifestUrl', () => {
     it('accepts https anywhere', () => {
       serveFrom(DEV1)
-      expect(validateManifestUrl('https://example.com/apps.json')).toBeUndefined()
+      expect(
+        validateManifestUrl('https://example.com/apps.json'),
+      ).toBeUndefined()
     })
 
     it('accepts http from a localhost page, as before', () => {
@@ -390,7 +393,8 @@ describe('isCatalogEntryAllowed', () => {
   const ALLOWED = ['https://apps.cytoscape.org']
   // What src/assets/apps.json actually ships: an origin deliberately absent
   // from the install allow-list.
-  const BUNDLED = 'https://cytoscape.org/cytoscape-web-app-examples/hello/remoteEntry.js'
+  const BUNDLED =
+    'https://cytoscape.org/cytoscape-web-app-examples/hello/remoteEntry.js'
   const UNLISTED = 'https://evil.example.com/remoteEntry.js'
   const originalLocation = window.location
 

@@ -1,10 +1,6 @@
 import { logStartup } from '../debug'
 import { classifyBootError, type BootError } from './bootError'
-import {
-  BOOT_PHASE_MESSAGE,
-  BootPhase,
-  FATAL_BOOT_PHASES,
-} from './bootPhases'
+import { BOOT_PHASE_MESSAGE, BootPhase, FATAL_BOOT_PHASES } from './bootPhases'
 import { setBootError, setBootMessage } from './bootState'
 import { bootNow, measureBoot } from './metrics/bootMarks'
 

@@ -6,8 +6,11 @@ import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 export const COOKIE_NAME = 'cytoscapeWebCookieConsent'
 
 export const CookieConsentWidget: React.FC = () => {
-  const { consentStatus, accept: acceptCrashReports, decline: declineCrashReports } =
-    useCrashDataConsent()
+  const {
+    consentStatus,
+    accept: acceptCrashReports,
+    decline: declineCrashReports,
+  } = useCrashDataConsent()
 
   const removeAllCookies = () => {
     const allCookies = Cookies.get()

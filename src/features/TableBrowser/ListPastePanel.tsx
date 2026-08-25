@@ -1,9 +1,4 @@
-import {
-  Box,
-  MenuItem,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Box, MenuItem, TextField, Typography } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
@@ -101,7 +96,7 @@ export const ListPastePanel = ({
 
   const items = useMemo(
     () => parsePastedItems(pasteText, delimiter),
-    [pasteText, delimiter]
+    [pasteText, delimiter],
   )
 
   useEffect(() => {
@@ -110,9 +105,7 @@ export const ListPastePanel = ({
 
   const invalidCount = segments.filter(
     (s) =>
-      s.type === 'token' &&
-      s.text.trim().length > 0 &&
-      !isTokenValid(s.text),
+      s.type === 'token' && s.text.trim().length > 0 && !isTokenValid(s.text),
   ).length
 
   const showInvalidLegend = !isStringList
@@ -134,9 +127,7 @@ export const ListPastePanel = ({
         size="small"
         label="Separator"
         value={override}
-        onChange={(e) =>
-          setOverride(e.target.value as 'auto' | PasteDelimiter)
-        }
+        onChange={(e) => setOverride(e.target.value as 'auto' | PasteDelimiter)}
         sx={{ mt: 1, minWidth: 200, display: 'block' }}
         inputProps={{ 'data-testid': 'list-paste-separator-select' }}
       >

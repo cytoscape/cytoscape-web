@@ -55,7 +55,10 @@ export function VisibilityPicker(props: {
           <Box
             data-testid={`visibility-picker-option-${visibility}`}
             sx={{
-              color: (theme) => (localValue === visibility ? theme.palette.primary.main : theme.palette.text.secondary),
+              color: (theme) =>
+                localValue === visibility
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === visibility ? 'bold' : 'normal',
               width: 100,
               p: 1,
@@ -76,7 +79,9 @@ export function VisibilityPicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="visibility-picker-cancel-button"
           variant="outlined"

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
-import { Column,Table } from '../../models/TableModel'
+import { Column, Table } from '../../models/TableModel'
 import TableFn from '../../models/TableModel'
 import { NetworkView } from '../../models/ViewModel'
 import ViewModelFn from '../../models/ViewModel'
@@ -72,7 +72,10 @@ describe('useCreateNode', () => {
     return TableFn.createTable(id, columns)
   }
 
-  const createTestViewModel = (networkId: IdType, network: Network): NetworkView => {
+  const createTestViewModel = (
+    networkId: IdType,
+    network: Network,
+  ): NetworkView => {
     return ViewModelFn.createViewModel(network, networkId)
   }
 
@@ -158,9 +161,7 @@ describe('useCreateNode', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       const network = createTestNetwork(networkId, [])
       const table = createTestTable(networkId)
@@ -222,9 +223,7 @@ describe('useCreateNode', () => {
 
     it('should add node to view model store with correct position', () => {
       const { result: hookResult } = renderHook(() => useCreateNode())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createNode(networkId, [150, 250])
@@ -241,9 +240,7 @@ describe('useCreateNode', () => {
 
     it('should handle 3D position correctly', () => {
       const { result: hookResult } = renderHook(() => useCreateNode())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createNode(networkId, [100, 200, 50])
@@ -279,9 +276,7 @@ describe('useCreateNode', () => {
 
     it('should auto-select the new node by default', () => {
       const { result: hookResult } = renderHook(() => useCreateNode())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createNode(networkId, [100, 200])
@@ -295,9 +290,7 @@ describe('useCreateNode', () => {
 
     it('should not auto-select when autoSelect is false', () => {
       const { result: hookResult } = renderHook(() => useCreateNode())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createNode(networkId, [100, 200], {
@@ -346,17 +339,11 @@ describe('useCreateNode', () => {
       const { result: tableResult } = renderHook(() => useTableStore())
 
       // Create table without name column
-      const columns: Column[] = [
-        { name: 'score', type: 'integer' },
-      ]
+      const columns: Column[] = [{ name: 'score', type: 'integer' }]
       const tableWithoutName = TableFn.createTable(networkId, columns)
 
       act(() => {
-        tableResult.current.add(
-          networkId,
-          tableWithoutName,
-          tableWithoutName,
-        )
+        tableResult.current.add(networkId, tableWithoutName, tableWithoutName)
       })
 
       act(() => {
@@ -403,9 +390,7 @@ describe('useCreateNode', () => {
 
     it('should create nodes at different positions', () => {
       const { result: hookResult } = renderHook(() => useCreateNode())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createNode(networkId, [50, 100])
@@ -431,9 +416,7 @@ describe('useCreateNode', () => {
     it('should create multiple nodes with mixed IDs', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: hookResult } = renderHook(() => useCreateNode())
 
       // Start with a network that has non-sequential IDs
@@ -465,9 +448,7 @@ describe('useCreateNode', () => {
     it('should handle all stores consistently', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: hookResult } = renderHook(() => useCreateNode())
 
       const network = createTestNetwork(networkId, [])
@@ -511,4 +492,3 @@ describe('useCreateNode', () => {
     })
   })
 })
-

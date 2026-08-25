@@ -1,5 +1,5 @@
 import { CyNetwork } from '../models/CyNetworkModel'
-import NetworkFn, { Edge,Network, Node } from '../models/NetworkModel'
+import NetworkFn, { Edge, Network, Node } from '../models/NetworkModel'
 import TableFn, { Table } from '../models/TableModel'
 import { Column } from '../models/TableModel/Column'
 import ViewModelFn, { NetworkView } from '../models/ViewModel'

@@ -70,7 +70,5 @@ export const mergeOpaqueAspects = (
  * Convert an OpaqueAspects map into the array-of-single-key-objects form used
  * by `CyNetwork.otherAspects` and the OpaqueAspect store's `addAll`.
  */
-export const toOpaqueAspectsArray = (
-  aspects: OpaqueAspects,
-): OpaqueAspects[] =>
+export const toOpaqueAspectsArray = (aspects: OpaqueAspects): OpaqueAspects[] =>
   Object.entries(aspects).map(([name, data]) => ({ [name]: data }))

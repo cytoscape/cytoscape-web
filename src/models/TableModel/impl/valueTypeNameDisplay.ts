@@ -116,7 +116,9 @@ export type ValueTypeNameChipColor =
  * MUI Chip color family per data type. List types share one color; numeric
  * types another; strings are neutral; booleans distinct.
  */
-export const valueTypeNameChipColor = (type: ValueTypeName): ValueTypeNameChipColor => {
+export const valueTypeNameChipColor = (
+  type: ValueTypeName,
+): ValueTypeNameChipColor => {
   if (String(type).startsWith('list_of_')) {
     return 'primary'
   }

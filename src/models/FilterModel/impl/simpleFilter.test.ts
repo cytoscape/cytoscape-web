@@ -226,4 +226,3 @@ describe('SimpleFilter', () => {
     })
   })
 })
-

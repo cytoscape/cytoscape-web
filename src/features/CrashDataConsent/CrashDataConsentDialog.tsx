@@ -77,4 +77,3 @@ export const CrashDataConsentDialog: React.FC<CrashDataConsentDialogProps> = ({
     </Dialog>
   )
 }
-

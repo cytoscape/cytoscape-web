@@ -9,7 +9,7 @@ import {
   DialogTitle,
   Typography,
 } from '@mui/material'
-import { ReactElement, useEffect,useState } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../models/IdType'
@@ -19,7 +19,10 @@ import {
   ValueTypeName,
 } from '../../../models/TableModel'
 import { valueTypeNameDescription } from '../../../models/TableModel/impl/valueTypeNameDisplay'
-import { serializedStringIsValid, serializeValue } from '../../../models/TableModel/impl/valueTypeImpl'
+import {
+  serializedStringIsValid,
+  serializeValue,
+} from '../../../models/TableModel/impl/valueTypeImpl'
 import { ValueEditor } from '../../ToolBar/LayoutMenu/ValueEditor/ValueEditor'
 
 interface EdgeCreationDialogProps {
@@ -84,7 +87,8 @@ export const EdgeCreationDialog = ({
       // Set default values based on column type
       if (column.name === 'name') {
         // Default name format: "source (interacts with) target"
-        defaults[column.name] = `${sourceNodeId} (interacts with) ${targetNodeId}`
+        defaults[column.name] =
+          `${sourceNodeId} (interacts with) ${targetNodeId}`
       } else if (
         column.type === ValueTypeName.Integer ||
         column.type === ValueTypeName.Double ||
@@ -95,8 +99,10 @@ export const EdgeCreationDialog = ({
         defaults[column.name] = false
       } else if (column.type === ValueTypeName.ListString) {
         defaults[column.name] = []
-      } else if (column.type === ValueTypeName.ListInteger || 
-                 column.type === ValueTypeName.ListLong) {
+      } else if (
+        column.type === ValueTypeName.ListInteger ||
+        column.type === ValueTypeName.ListLong
+      ) {
         defaults[column.name] = []
       } else if (column.type === ValueTypeName.ListDouble) {
         defaults[column.name] = []
@@ -121,7 +127,11 @@ export const EdgeCreationDialog = ({
   }
 
   // Validate a single attribute value
-  const isAttributeValid = (columnName: string, value: ValueType, valueType: ValueTypeName): boolean => {
+  const isAttributeValid = (
+    columnName: string,
+    value: ValueType,
+    valueType: ValueTypeName,
+  ): boolean => {
     const serializedValue = serializeValue(value)
     return serializedStringIsValid(valueType, serializedValue)
   }
@@ -236,10 +246,12 @@ export const EdgeCreationDialog = ({
                 <>
                   <Alert severity="info" sx={{ mb: 2 }}>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      All fields are optional. Default values are already populated.
+                      All fields are optional. Default values are already
+                      populated.
                     </Typography>
                     <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-                      <strong>List fields:</strong> Enter comma-separated values (e.g., &quot;value1, value2&quot; or &quot;1, 2, 3&quot;).
+                      <strong>List fields:</strong> Enter comma-separated values
+                      (e.g., &quot;value1, value2&quot; or &quot;1, 2, 3&quot;).
                     </Typography>
                   </Alert>
                   <Box
@@ -320,7 +332,11 @@ export const EdgeCreationDialog = ({
                                     column.type === ValueTypeName.ListBoolean
                                   ? []
                                   : ''
-                        const isValid = isAttributeValid(column.name, currentValue, column.type)
+                        const isValid = isAttributeValid(
+                          column.name,
+                          currentValue,
+                          column.type,
+                        )
                         return (
                           <ValueEditor
                             key={column.name}
@@ -408,7 +424,8 @@ export const EdgeCreationDialog = ({
           <Alert severity="error">
             <Typography variant="body2">
               Cannot create edge: The following fields have invalid values:{' '}
-              <strong>{invalidAttributes.join(', ')}</strong>. Please correct these errors before creating the edge.
+              <strong>{invalidAttributes.join(', ')}</strong>. Please correct
+              these errors before creating the edge.
             </Typography>
           </Alert>
         </Box>
@@ -416,8 +433,8 @@ export const EdgeCreationDialog = ({
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onCancel}>Cancel</Button>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           onClick={handleConfirm}
           disabled={hasInvalidAttributes}
         >
@@ -427,4 +444,3 @@ export const EdgeCreationDialog = ({
     </Dialog>
   )
 }
-

@@ -44,11 +44,7 @@ describe('converter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-            { id: 3 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }, { id: 3 }],
         },
         {
           edges: [
@@ -66,9 +62,9 @@ describe('converter', () => {
       expect(cyNetwork.network.id).toBe(networkId)
       expect(cyNetwork.network.nodes).toHaveLength(3)
       expect(cyNetwork.network.edges).toHaveLength(2)
-      expect(cyNetwork.network.nodes.map(n => n.id)).toContain('1')
-      expect(cyNetwork.network.nodes.map(n => n.id)).toContain('2')
-      expect(cyNetwork.network.nodes.map(n => n.id)).toContain('3')
+      expect(cyNetwork.network.nodes.map((n) => n.id)).toContain('1')
+      expect(cyNetwork.network.nodes.map((n) => n.id)).toContain('2')
+      expect(cyNetwork.network.nodes.map((n) => n.id)).toContain('3')
     })
 
     it('should create a CyNetwork with node attributes', () => {
@@ -141,10 +137,7 @@ describe('converter', () => {
           ],
         },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [
@@ -199,7 +192,9 @@ describe('converter', () => {
       if (cyNetwork.networkAttributes) {
         expect(cyNetwork.networkAttributes.attributes.name).toBe('Test Network')
         expect(cyNetwork.networkAttributes.attributes.version).toBe('1.0')
-        expect(cyNetwork.networkAttributes.attributes.description).toBe('A test network')
+        expect(cyNetwork.networkAttributes.attributes.description).toBe(
+          'A test network',
+        )
       }
     })
 
@@ -243,8 +238,13 @@ describe('converter', () => {
 
       expect(cyNetwork.visualStyleOptions).toBeDefined()
       if (cyNetwork.visualStyleOptions) {
-        expect(cyNetwork.visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(true)
-        expect(cyNetwork.visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
+        expect(
+          cyNetwork.visualStyleOptions.visualEditorProperties.nodeSizeLocked,
+        ).toBe(true)
+        expect(
+          cyNetwork.visualStyleOptions.visualEditorProperties
+            .arrowColorMatchesEdge,
+        ).toBe(false)
       }
     })
 
@@ -256,9 +256,7 @@ describe('converter', () => {
           nodes: [{ id: 1 }],
         },
         {
-          customAspect: [
-            { data: 'value' },
-          ],
+          customAspect: [{ data: 'value' }],
         },
         {
           status: [{ success: true }],
@@ -366,9 +364,7 @@ describe('converter', () => {
           ],
         },
         {
-          customAspect: [
-            { data: 'custom value' },
-          ],
+          customAspect: [{ data: 'custom value' }],
         },
         {
           status: [{ success: true }],
@@ -398,15 +394,22 @@ describe('converter', () => {
       // Verify network attributes
       expect(cyNetwork.networkAttributes).toBeDefined()
       if (cyNetwork.networkAttributes) {
-        expect(cyNetwork.networkAttributes.attributes.name).toBe('Complete Test Network')
+        expect(cyNetwork.networkAttributes.attributes.name).toBe(
+          'Complete Test Network',
+        )
         expect(cyNetwork.networkAttributes.attributes.version).toBe('1.0')
       }
 
       // Verify visual style options
       expect(cyNetwork.visualStyleOptions).toBeDefined()
       if (cyNetwork.visualStyleOptions) {
-        expect(cyNetwork.visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(false)
-        expect(cyNetwork.visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge).toBe(true)
+        expect(
+          cyNetwork.visualStyleOptions.visualEditorProperties.nodeSizeLocked,
+        ).toBe(false)
+        expect(
+          cyNetwork.visualStyleOptions.visualEditorProperties
+            .arrowColorMatchesEdge,
+        ).toBe(true)
       }
 
       // Verify optional aspects
@@ -454,4 +457,3 @@ describe('converter', () => {
     })
   })
 })
-

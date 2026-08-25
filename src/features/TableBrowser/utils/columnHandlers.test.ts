@@ -20,10 +20,19 @@ describe('columnHandlers', () => {
     nodeTable: mockNodeTable as any,
     edgeTable: undefined,
     tableDisplayConfiguration: {
-      nodeTable: { columnConfiguration: [], sortColumn: undefined, sortDirection: undefined },
-      edgeTable: { columnConfiguration: [], sortColumn: undefined, sortDirection: undefined },
+      nodeTable: {
+        columnConfiguration: [],
+        sortColumn: undefined,
+        sortDirection: undefined,
+      },
+      edgeTable: {
+        columnConfiguration: [],
+        sortColumn: undefined,
+        sortDirection: undefined,
+      },
     } as any,
-    createUpdatedTableDisplayConfiguration: mockCreateUpdatedTableDisplayConfiguration,
+    createUpdatedTableDisplayConfiguration:
+      mockCreateUpdatedTableDisplayConfiguration,
     setTableDisplayConfiguration: mockSetTableDisplayConfiguration,
     setNetworkModified: mockSetNetworkModified,
   }
@@ -62,7 +71,7 @@ describe('columnHandlers', () => {
 
       // The moveColumn store action should be called
       expect(mockMoveColumn).toHaveBeenCalledWith(networkId, 'node', 0, 2)
-      
+
       // Configuration should be updated with new order
       expect(mockCreateUpdatedTableDisplayConfiguration).toHaveBeenCalledWith({
         columnConfiguration: [
@@ -71,15 +80,15 @@ describe('columnHandlers', () => {
           { attributeName: 'col1', visible: true, columnWidth: 100 },
         ],
       })
-      expect(mockSetTableDisplayConfiguration).toHaveBeenCalledWith(networkId, 'new-config')
+      expect(mockSetTableDisplayConfiguration).toHaveBeenCalledWith(
+        networkId,
+        'new-config',
+      )
       expect(mockSetNetworkModified).toHaveBeenCalledWith(networkId, true)
     })
 
     it('prevents moving virtual columns', () => {
-      const allColumns = [
-        { id: '__id', isVirtual: true },
-        { id: 'col1' },
-      ]
+      const allColumns = [{ id: '__id', isVirtual: true }, { id: 'col1' }]
 
       handleColumnMove({
         ...baseArgs,
@@ -96,10 +105,7 @@ describe('columnHandlers', () => {
 
   describe('handleColumnResize', () => {
     it('resizes a column and updates configuration', () => {
-      const allColumns = [
-        { id: 'col1' },
-        { id: 'col2' },
-      ]
+      const allColumns = [{ id: 'col1' }, { id: 'col2' }]
 
       handleColumnResize({
         ...baseArgs,
@@ -120,7 +126,12 @@ describe('columnHandlers', () => {
         setColumnWidth: mockSetColumnWidth,
       })
 
-      expect(mockSetColumnWidth).toHaveBeenCalledWith(networkId, 'node', 'col1', 200)
+      expect(mockSetColumnWidth).toHaveBeenCalledWith(
+        networkId,
+        'node',
+        'col1',
+        200,
+      )
 
       expect(mockCreateUpdatedTableDisplayConfiguration).toHaveBeenCalledWith({
         columnConfiguration: [
@@ -128,13 +139,14 @@ describe('columnHandlers', () => {
           { attributeName: 'col2', visible: true, columnWidth: 100 },
         ],
       })
-      expect(mockSetTableDisplayConfiguration).toHaveBeenCalledWith(networkId, 'new-config')
+      expect(mockSetTableDisplayConfiguration).toHaveBeenCalledWith(
+        networkId,
+        'new-config',
+      )
     })
 
     it('prevents resizing virtual columns', () => {
-      const allColumns = [
-        { id: '__id', isVirtual: true },
-      ]
+      const allColumns = [{ id: '__id', isVirtual: true }]
 
       handleColumnResize({
         ...baseArgs,

@@ -9,7 +9,11 @@
  * individually. This module holds the framework-agnostic logic for that editor
  * so it can be unit-tested without rendering the grid.
  */
-import { ListOfValueType, SingleValueType, ValueType } from '../../../models/TableModel/ValueType'
+import {
+  ListOfValueType,
+  SingleValueType,
+  ValueType,
+} from '../../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
 import {
   getSingleTypeFromList,
@@ -22,7 +26,9 @@ import {
  * Handles null/undefined (empty list) and a non-array value that was somehow
  * stored in a list column (wrapped into a single element).
  */
-export const toEditableItems = (value: ValueType | null | undefined): string[] => {
+export const toEditableItems = (
+  value: ValueType | null | undefined,
+): string[] => {
   if (value === null || value === undefined) {
     return []
   }
@@ -33,7 +39,10 @@ export const toEditableItems = (value: ValueType | null | undefined): string[] =
 }
 
 /** Append a new (blank by default) element. Returns a new array. */
-export const addItem = (items: string[], value = ''): string[] => [...items, value]
+export const addItem = (items: string[], value = ''): string[] => [
+  ...items,
+  value,
+]
 
 /** Remove the element at `index`. Returns a new array. */
 export const removeItem = (items: string[], index: number): string[] =>

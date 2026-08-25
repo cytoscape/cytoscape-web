@@ -39,7 +39,9 @@ test.describe('TableBrowser Tab Navigation', () => {
     await page.locator('[data-testid="table-browser-edges-tab"]').click()
 
     // TabPanel index 1 (edges): its div[role="tabpanel"] becomes not hidden
-    const panels = page.locator('[data-testid="table-browser"] [role="tabpanel"]')
+    const panels = page.locator(
+      '[data-testid="table-browser"] [role="tabpanel"]',
+    )
     await expect(panels.nth(1)).not.toBeHidden()
     // Nodes panel (index 0) is now hidden
     await expect(panels.first()).toBeHidden()
@@ -50,7 +52,9 @@ test.describe('TableBrowser Tab Navigation', () => {
     await page.locator('[data-testid="table-browser-edges-tab"]').click()
     await page.locator('[data-testid="table-browser-nodes-tab"]').click()
 
-    const panels = page.locator('[data-testid="table-browser"] [role="tabpanel"]')
+    const panels = page.locator(
+      '[data-testid="table-browser"] [role="tabpanel"]',
+    )
     await expect(panels.first()).not.toBeHidden()
     await expect(panels.nth(1)).toBeHidden()
   })

@@ -200,7 +200,8 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: vi.fn()
+        authenticate: vi
+          .fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
         getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
@@ -227,7 +228,8 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: vi.fn()
+        authenticate: vi
+          .fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
         getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
@@ -252,7 +254,8 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: vi.fn()
+        authenticate: vi
+          .fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
         getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
@@ -277,7 +280,8 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: vi.fn()
+        authenticate: vi
+          .fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
         getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
       },
@@ -297,7 +301,8 @@ describe('fetchMyNdexAccountNetworks', () => {
 
     const mockClient = {
       user: {
-        authenticate: vi.fn()
+        authenticate: vi
+          .fn()
           .mockResolvedValue({ externalId: 'user-uuid-123' }),
         getAccountPageNetworks: vi.fn().mockRejectedValue(mockError),
       },

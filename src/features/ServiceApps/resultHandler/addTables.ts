@@ -6,9 +6,8 @@ export const useAddTables = (): (({
   responseObj,
   networkId,
 }: ActionHandlerProps) => void) => {
-  const addTables = useCallback<(props: ActionHandlerProps) => void>(
-    () => {},
-    [],
-  )
+  const addTables = useCallback<
+    (props: ActionHandlerProps) => void
+  >(() => {}, [])
   return addTables
 }

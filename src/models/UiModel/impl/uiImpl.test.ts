@@ -500,9 +500,8 @@ describe('UiImpl', () => {
   describe('deserializeColumnUIKey', () => {
     it('should deserialize column UI key', () => {
       const serialized = '9|network-1|4|node|8|column-1'
-      const [networkId, tableType, columnId] = deserializeColumnUIKey(
-        serialized,
-      )
+      const [networkId, tableType, columnId] =
+        deserializeColumnUIKey(serialized)
 
       expect(networkId).toBe('network-1')
       expect(tableType).toBe('node')
@@ -586,8 +585,16 @@ describe('UiImpl', () => {
 
     it('removes column UI state for the deleted network only', () => {
       const ui = buildUiWithTwoNetworks()
-      const deletedKey = serializeColumnUIKey('network-1', TableType.NODE, 'name')
-      const keptKey = serializeColumnUIKey('network-2', TableType.EDGE, 'weight')
+      const deletedKey = serializeColumnUIKey(
+        'network-1',
+        TableType.NODE,
+        'name',
+      )
+      const keptKey = serializeColumnUIKey(
+        'network-2',
+        TableType.EDGE,
+        'weight',
+      )
 
       const result = deleteNetworkUiState(ui, 'network-1')
 
@@ -614,4 +621,3 @@ describe('UiImpl', () => {
     })
   })
 })
-

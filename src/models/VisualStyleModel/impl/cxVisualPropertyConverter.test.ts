@@ -193,9 +193,7 @@ describe('cxVisualPropertyConverter', () => {
           vpValue: 100,
           inclusive: true,
         },
-        controlPoints: [
-          { value: 50, vpValue: 50 },
-        ],
+        controlPoints: [{ value: 50, vpValue: 50 }],
         ltMinVpValue: 10,
         gtMaxVpValue: 100,
       }
@@ -226,9 +224,7 @@ describe('cxVisualPropertyConverter', () => {
           vpValue: 100,
           inclusive: true,
         },
-        controlPoints: [
-          { value: 50, vpValue: 50 },
-        ],
+        controlPoints: [{ value: 50, vpValue: 50 }],
         ltMinVpValue: 10,
         gtMaxVpValue: 100,
       }
@@ -375,14 +371,18 @@ describe('cxVisualPropertyConverter', () => {
 
   describe('VPCustomGraphicsSizeConverter', () => {
     it('should create a custom graphics size converter', () => {
-      const converter = VPCustomGraphicsSizeConverter('NODE_CUSTOMGRAPHICS_SIZE_1')
+      const converter = VPCustomGraphicsSizeConverter(
+        'NODE_CUSTOMGRAPHICS_SIZE_1',
+      )
 
       expect(converter.cxVPName).toBe('NODE_CUSTOMGRAPHICS_SIZE_1')
       expect(converter.valueConverter(100)).toBe(100)
     })
 
     it('should return default size when value is undefined', () => {
-      const converter = VPCustomGraphicsSizeConverter('NODE_CUSTOMGRAPHICS_SIZE_1')
+      const converter = VPCustomGraphicsSizeConverter(
+        'NODE_CUSTOMGRAPHICS_SIZE_1',
+      )
 
       // valueConverter accepts optional parameter, but we need to cast it
       expect(converter.valueConverter(undefined as any)).toBe(50)
@@ -426,4 +426,3 @@ describe('cxVisualPropertyConverter', () => {
     })
   })
 })
-

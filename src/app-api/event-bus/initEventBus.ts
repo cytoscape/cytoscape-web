@@ -103,10 +103,12 @@ export function initEventBus(): void {
       const prevSet = new Set(prev)
       const currSet = new Set(curr)
       for (const id of currSet) {
-        if (!prevSet.has(id)) dispatchCyWebEvent('network:created', { networkId: id })
+        if (!prevSet.has(id))
+          dispatchCyWebEvent('network:created', { networkId: id })
       }
       for (const id of prevSet) {
-        if (!currSet.has(id)) dispatchCyWebEvent('network:deleted', { networkId: id })
+        if (!currSet.has(id))
+          dispatchCyWebEvent('network:deleted', { networkId: id })
       }
     },
   )
@@ -137,7 +139,11 @@ export function initEventBus(): void {
       }
     },
     ({ networkId, selectedNodes, selectedEdges }) => {
-      dispatchCyWebEvent('selection:changed', { networkId, selectedNodes, selectedEdges })
+      dispatchCyWebEvent('selection:changed', {
+        networkId,
+        selectedNodes,
+        selectedEdges,
+      })
     },
     { equalityFn: selectionEqual },
   )
@@ -239,8 +245,10 @@ export function initEventBus(): void {
         if (prevTables === undefined) continue
         const tableTypes = ['node', 'edge'] as const
         for (const tableType of tableTypes) {
-          const currTable = tableType === 'node' ? tables.nodeTable : tables.edgeTable
-          const prevTable = tableType === 'node' ? prevTables.nodeTable : prevTables.edgeTable
+          const currTable =
+            tableType === 'node' ? tables.nodeTable : tables.edgeTable
+          const prevTable =
+            tableType === 'node' ? prevTables.nodeTable : prevTables.edgeTable
           if (currTable === prevTable) continue
           const rowIds = detectChangedRowIds(currTable, prevTable)
           const { addedColumns, removedColumns } = detectColumnChanges(

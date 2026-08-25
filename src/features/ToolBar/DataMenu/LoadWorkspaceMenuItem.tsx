@@ -5,7 +5,9 @@ import { KeycloakContext } from '@/boot/keycloak'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-export const LoadWorkspaceMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const LoadWorkspaceMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   const client = useContext(KeycloakContext)
   const authenticated: boolean = client?.authenticated ?? false
 

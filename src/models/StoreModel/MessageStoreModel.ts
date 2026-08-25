@@ -6,7 +6,7 @@ export interface MessageState {
 
 export interface MessageAction {
   addMessage: (message: Message) => void
-  resetMessages: () => void 
+  resetMessages: () => void
 }
 
 export type MessageStore = MessageState & MessageAction

@@ -13,7 +13,7 @@ describe('useTableScrollToTop', () => {
 
     const { rerender } = renderHook(
       ({ selected }) => useTableScrollToTop(nodeRef, edgeRef, selected),
-      { initialProps: { selected: emptyArray } }
+      { initialProps: { selected: emptyArray } },
     )
 
     // Initially called on mount

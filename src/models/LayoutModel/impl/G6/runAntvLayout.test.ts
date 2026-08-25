@@ -18,9 +18,14 @@ describe('runAntvLayout', () => {
     'produces finite, non-degenerate positions for %s',
     (name) => {
       let result: Map<string, [number, number]> | undefined
-      runAntvLayout(nodes, edges, (positions) => {
-        result = positions
-      }, G6Algorithms[name])
+      runAntvLayout(
+        nodes,
+        edges,
+        (positions) => {
+          result = positions
+        },
+        G6Algorithms[name],
+      )
 
       expect(result).toBeDefined()
       expect(result?.size).toBe(nodes.length)
@@ -37,23 +42,23 @@ describe('runAntvLayout', () => {
 
   it('reports an empty position map for an empty network', () => {
     let result: Map<string, [number, number]> | undefined
-    runAntvLayout([], [], (positions) => {
-      result = positions
-    }, G6Algorithms.gForce)
+    runAntvLayout(
+      [],
+      [],
+      (positions) => {
+        result = positions
+      },
+      G6Algorithms.gForce,
+    )
     expect(result?.size).toBe(0)
   })
 
   it('throws on an unknown algorithm type', () => {
     expect(() =>
-      runAntvLayout(
-        nodes,
-        edges,
-        () => undefined,
-        {
-          ...G6Algorithms.gForce,
-          parameters: { type: 'not-a-layout' },
-        },
-      ),
+      runAntvLayout(nodes, edges, () => undefined, {
+        ...G6Algorithms.gForce,
+        parameters: { type: 'not-a-layout' },
+      }),
     ).toThrow(/Unknown/)
   })
 })
