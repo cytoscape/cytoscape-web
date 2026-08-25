@@ -29,6 +29,12 @@ interface PendingWrite {
 
 const pendingWrites = new Map<string, PendingWrite>()
 
+// Writes whose `execute()` has started but not settled. A key leaves
+// `pendingWrites` the moment it starts running, so without this a write that
+// fired on its own timer would be invisible to `flushPendingWrites` and a
+// caller could read the row back before the put landed.
+const inFlightWrites = new Set<Promise<void>>()
+
 const runWrite = async (key: string): Promise<void> => {
   const pending = pendingWrites.get(key)
   if (pending === undefined) {
@@ -36,13 +42,22 @@ const runWrite = async (key: string): Promise<void> => {
   }
   pendingWrites.delete(key)
   clearTimeout(pending.timer)
+
+  const write = (async () => {
+    try {
+      await pending.execute()
+    } catch (e) {
+      logStore.error(
+        `[${pending.label}] Failed to persist to IndexedDB (key: ${key})`,
+        e,
+      )
+    }
+  })()
+  inFlightWrites.add(write)
   try {
-    await pending.execute()
-  } catch (e) {
-    logStore.error(
-      `[${pending.label}] Failed to persist to IndexedDB (key: ${key})`,
-      e,
-    )
+    await write
+  } finally {
+    inFlightWrites.delete(write)
   }
 }
 
@@ -79,14 +94,18 @@ export const cancelWrite = (key: string): void => {
  * Execute every pending write immediately. Used on page-hide/unload and
  * by tests.
  *
- * The returned promise settles once every flushed write has finished, so a
- * test can read the row back straight after awaiting it. Unload handlers
- * ignore it — the page is going away either way.
+ * The returned promise settles once every queued write AND every write
+ * already running has finished, so a test can read the row back straight
+ * after awaiting it. The in-flight half matters because a key leaves
+ * `pendingWrites` as soon as its own timer fires: without it, a flush called
+ * a moment too late would settle while the put was still open. Unload
+ * handlers ignore the promise — the page is going away either way.
  */
 export const flushPendingWrites = async (): Promise<void> => {
-  await Promise.all(
-    Array.from(pendingWrites.keys()).map(async (key) => await runWrite(key)),
-  )
+  await Promise.all([
+    ...Array.from(pendingWrites.keys()).map(async (key) => await runWrite(key)),
+    ...Array.from(inFlightWrites),
+  ])
 }
 
 /** Number of writes currently waiting — exposed for tests/debugging. */
