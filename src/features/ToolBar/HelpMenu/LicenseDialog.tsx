@@ -2,7 +2,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -11,6 +10,7 @@ import {
 } from '@mui/material'
 import { ReactElement } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { logUi } from '../../../debug'
 
 interface LicenseDialogProps {
@@ -55,7 +55,8 @@ export const LicenseDialog = ({
   }
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid="license-dialog"
       open={open}
       onClose={handleCloseDialog}
@@ -123,6 +124,6 @@ export const LicenseDialog = ({
           Close
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

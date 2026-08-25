@@ -2,7 +2,6 @@ import SearchIcon from '@mui/icons-material/Search'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -12,6 +11,7 @@ import {
 } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { getStyleSetMetadataFromDb, getVisualStyleSetFromDb } from '@/data/db'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
@@ -308,7 +308,8 @@ export const StylePickerDialog = (
     visiblePresets.length === 0
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       open={open}
       onClose={onClose}
       fullWidth
@@ -473,6 +474,6 @@ export const StylePickerDialog = (
           Close
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

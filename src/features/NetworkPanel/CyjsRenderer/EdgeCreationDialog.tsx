@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -11,6 +10,7 @@ import {
 } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../models/IdType'
 import {
@@ -180,7 +180,8 @@ export const EdgeCreationDialog = ({
   const hasColumns = edgeTable && edgeTable.columns.length > 0
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="form"
       open={open}
       onClose={onCancel}
       maxWidth="lg"
@@ -440,6 +441,6 @@ export const EdgeCreationDialog = ({
           Create Edge
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

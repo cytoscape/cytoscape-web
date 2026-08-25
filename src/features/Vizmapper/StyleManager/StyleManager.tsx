@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   ButtonBase,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -19,6 +18,7 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
@@ -417,7 +417,8 @@ export const StyleManager = (props: {
         onConfirm={handleSaveToLibrary}
         onClose={closeDialog}
       />
-      <Dialog
+      <CyDialog
+        dismiss="lightweight"
         open={dialog === 'delete'}
         onClose={closeDialog}
         data-testid="style-manager-delete-dialog"
@@ -445,7 +446,7 @@ export const StyleManager = (props: {
             Delete
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
       <StyleLibraryDialog
         open={dialog === 'library'}
         onApply={handleApplyTemplate}

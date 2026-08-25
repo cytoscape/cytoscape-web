@@ -2,7 +2,6 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlined'
 import EditIcon from '@mui/icons-material/EditOutlined'
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -16,6 +15,7 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useStyleLibraryStore } from '@/data/hooks/stores/StyleLibraryStore'
 import { IdType } from '@/models/IdType'
 import { StyleTemplate } from '@/models/VisualStyleModel'
@@ -60,7 +60,8 @@ export const StyleLibraryDialog = (
 
   return (
     <>
-      <Dialog
+      <CyDialog
+        dismiss="lightweight"
         open={open}
         onClose={onClose}
         fullWidth
@@ -126,7 +127,7 @@ export const StyleLibraryDialog = (
             Close
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
       <StyleNameDialog
         open={renameTarget !== undefined}
         title="Rename Library Style"
@@ -144,7 +145,8 @@ export const StyleLibraryDialog = (
         library template is workspace-level and there is no undo for it, so a
         misplaced click on a hover-revealed icon destroyed it outright.
       */}
-      <Dialog
+      <CyDialog
+        dismiss="lightweight"
         open={deleteTarget !== undefined}
         onClose={() => setDeleteTargetId(undefined)}
         data-testid="style-library-delete-dialog"
@@ -178,7 +180,7 @@ export const StyleLibraryDialog = (
             Delete
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
     </>
   )
 }

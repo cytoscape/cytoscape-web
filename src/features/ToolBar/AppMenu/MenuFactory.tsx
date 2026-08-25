@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Dialog,
   FormControlLabel,
   MenuItem,
   Radio,
@@ -12,6 +11,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import { CyDialog } from '@/components/CyDialog'
 import { ToolbarMenuItem as NestedMenuItem } from '@/features/ToolBar/menuItemModel'
 import { useState } from 'react'
 import React from 'react'
@@ -485,7 +485,8 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   )
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="form"
       maxWidth="sm"
       fullWidth
       open={open}
@@ -506,7 +507,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
         {parametersSection}
         {submitButton}
       </Box>
-    </Dialog>
+    </CyDialog>
   )
 }
 

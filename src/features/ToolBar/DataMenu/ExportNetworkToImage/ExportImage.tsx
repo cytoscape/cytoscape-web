@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -12,6 +11,7 @@ import {
 } from '@mui/material'
 import { lazy, ReactElement, Suspense, useRef, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 
@@ -94,7 +94,8 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
   const currentExportForm = imageExportContentMap[fileType]
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="form"
       data-testid="export-network-to-image-dialog"
       PaperProps={{
         sx: {
@@ -162,6 +163,6 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
           Confirm
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

@@ -1,7 +1,6 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -31,6 +30,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useSaveCyNetworkCopyToNDEx } from '../../../data/hooks/useSaveCyNetworkCopyToNDEx'
 import { useSaveCyNetworkToNDEx } from '../../../data/hooks/useSaveCyNetworkToNDEx'
 import { logUi } from '../../../debug'
+import { CyDialog } from '@/components/CyDialog'
 import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'
@@ -278,7 +278,8 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
     (summary?.isNdex ? isModified && editPermission : authenticated)
 
   const dialog = (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid="save-to-ndex-sync-dialog"
       onClose={() => {
         setShowConfirmDialog(false)
@@ -317,7 +318,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
           Yes, create copy to NDEx
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 
   return (

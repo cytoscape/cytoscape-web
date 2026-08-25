@@ -1,6 +1,5 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -9,6 +8,7 @@ import {
 } from '@mui/material'
 import { ReactElement } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { HcxValidationResult } from '../../model/HcxValidator'
 
 export interface HcxValidationSaveDialogProps {
@@ -23,7 +23,12 @@ export const HcxValidationSaveDialog = (
 ): ReactElement => {
   const { open, onClose, onSubmit, validationResult } = props
   return (
-    <Dialog open={open} data-testid="hcx-validation-save-dialog">
+    <CyDialog
+      dismiss="lightweight"
+      open={open}
+      onClose={onClose}
+      data-testid="hcx-validation-save-dialog"
+    >
       <DialogTitle>Invalid HCX Network</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -65,6 +70,6 @@ export const HcxValidationSaveDialog = (
           Save To NDEx
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

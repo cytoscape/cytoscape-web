@@ -2,7 +2,6 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -23,6 +22,7 @@ import React, {
   useState,
 } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
   deleteNdexWorkspace,
@@ -221,7 +221,8 @@ export const LoadWorkspaceDialog: React.FC<{
   }
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid="load-workspace-dialog"
       open={open}
       onClose={handleClose}
@@ -316,7 +317,11 @@ export const LoadWorkspaceDialog: React.FC<{
               Open Workspace
             </Button>
           </Box>
-          <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <CyDialog
+            dismiss="lightweight"
+            open={openDialog}
+            onClose={handleCloseDialog}
+          >
             <DialogTitle>Delete Workspace</DialogTitle>
             <DialogContent>
               <DialogContentText>
@@ -337,7 +342,7 @@ export const LoadWorkspaceDialog: React.FC<{
                 Delete
               </Button>
             </DialogActions>
-          </Dialog>
+          </CyDialog>
         </Box>
       </DialogActions>
       <ConfirmationDialog
@@ -354,7 +359,7 @@ export const LoadWorkspaceDialog: React.FC<{
         buttonTitle="Load (cannot be undone)"
         isAlert={true}
       />
-    </Dialog>
+    </CyDialog>
   )
 }
 

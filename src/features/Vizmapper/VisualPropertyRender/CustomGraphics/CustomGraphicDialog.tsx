@@ -16,7 +16,6 @@ import {
   Alert,
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -27,6 +26,7 @@ import {
 } from '@mui/material'
 import * as React from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { IdType } from '../../../../models/IdType'
 import { AttributeName } from '../../../../models/TableModel/AttributeName'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
@@ -267,7 +267,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   }
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="form"
       open={open}
       onClose={onCancel}
       maxWidth="lg"
@@ -1065,6 +1066,6 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
           </Button>
         )}
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

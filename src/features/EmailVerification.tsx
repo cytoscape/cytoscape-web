@@ -1,12 +1,13 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
 } from '@mui/material'
 import React from 'react'
+
+import { CyDialog } from '@/components/CyDialog'
 
 interface EmailVerificationModalProps {
   onVerify: () => void
@@ -22,7 +23,8 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   userEmail,
 }) => {
   return (
-    <Dialog
+    <CyDialog
+      dismiss="blocking"
       data-testid="email-verification-dialog"
       open={true}
       aria-labelledby="email-verification-title"
@@ -70,7 +72,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
           Log Out
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
 

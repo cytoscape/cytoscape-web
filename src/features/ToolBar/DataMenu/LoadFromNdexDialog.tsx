@@ -23,7 +23,6 @@ import {
   Typography,
 } from '@mui/material'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -48,6 +47,7 @@ import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
+import { CyDialog } from '@/components/CyDialog'
 import { KeycloakContext } from '@/boot/keycloak'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -939,7 +939,8 @@ export const LoadFromNdexDialog = (
   const currentTabIndex = availableTabs.indexOf(activeTab)
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="form"
       data-testid="load-from-ndex-dialog"
       PaperProps={{
         sx: {
@@ -1076,6 +1077,6 @@ export const LoadFromNdexDialog = (
           </Button>
         </Box>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Dialog,
   DialogContent,
   DialogTitle,
   IconButton,
@@ -11,6 +10,8 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { ReactNode, useRef, useState } from 'react'
+
+import { CyDialog } from '@/components/CyDialog'
 
 export interface FileRejection {
   file: File
@@ -143,7 +144,8 @@ export const FileDropzoneDialog = (
   const theme = useTheme()
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid={testIds.modal}
       open={show}
       onClose={handleClose}
@@ -170,7 +172,7 @@ export const FileDropzoneDialog = (
           }}
         />
       </DialogContent>
-    </Dialog>
+    </CyDialog>
   )
 }
 

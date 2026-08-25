@@ -1,9 +1,10 @@
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+
+import { CyDialog } from '@/components/CyDialog'
 
 interface ConfirmationDialogProps {
   open: boolean
@@ -31,12 +32,18 @@ export const ConfirmationDialog = (
     confirmDisabled,
   } = props
 
-  const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    e.stopPropagation()
+  // Backdrop click, Escape and the Cancel button all land here, so dismissing
+  // this dialog is always the same as cancelling it.
+  const cancel = (): void => {
     setOpen(false)
     if (onCancel) {
       onCancel()
     }
+  }
+
+  const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation()
+    cancel()
   }
   const handleConfirm = (e: React.MouseEvent<HTMLButtonElement>): void => {
     e.stopPropagation()
@@ -45,9 +52,11 @@ export const ConfirmationDialog = (
   }
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid="confirmation-dialog"
       open={open}
+      onClose={cancel}
       aria-labelledby="confirmation-dialog-title"
       aria-describedby="confirmation-dialog-description"
     >
@@ -81,6 +90,6 @@ export const ConfirmationDialog = (
           {buttonTitle === undefined || buttonTitle === '' ? 'OK' : buttonTitle}
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

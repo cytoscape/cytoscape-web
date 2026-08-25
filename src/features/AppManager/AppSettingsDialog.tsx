@@ -9,7 +9,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
   DialogActions,
   DialogContent,
   IconButton,
@@ -28,6 +27,7 @@ import {
   DEFAULT_MANIFEST_URL,
   EXTERNAL_APPS_ENABLED,
 } from '../../app-api/constants'
+import { CyDialog } from '@/components/CyDialog'
 import { AppConfigContext } from '../../AppConfigContext'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
@@ -221,9 +221,11 @@ export const AppSettingsDialog = ({
   }
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid="app-settings-dialog"
       open={openDialog}
+      onClose={() => setOpenDialog(false)}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -439,7 +441,8 @@ export const AppSettingsDialog = ({
         </Button>
       </DialogActions>
 
-      <Dialog
+      <CyDialog
+        dismiss="lightweight"
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         maxWidth="sm"
@@ -469,7 +472,7 @@ export const AppSettingsDialog = ({
         <DialogActions>
           <Button onClick={() => setPreviewOpen(false)}>Close</Button>
         </DialogActions>
-      </Dialog>
-    </Dialog>
+      </CyDialog>
+    </CyDialog>
   )
 }

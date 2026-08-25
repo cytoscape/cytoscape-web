@@ -3,7 +3,6 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -17,6 +16,7 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { ValueType } from '../../models/TableModel/ValueType'
 import { ValueTypeName } from '../../models/TableModel'
 import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
@@ -126,7 +126,8 @@ export const ListValueEditorDialog = ({
   }
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="form"
       open={open}
       onClose={onCancel}
       maxWidth="sm"
@@ -280,7 +281,7 @@ export const ListValueEditorDialog = ({
           </Button>
         )}
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
 

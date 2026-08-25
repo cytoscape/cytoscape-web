@@ -5,7 +5,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -20,6 +19,7 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { AppCatalogEntry } from '../../models/AppModel/AppCatalogEntry'
 import { AppLoadState } from '../../models/AppModel/AppLoadState'
@@ -321,7 +321,8 @@ export const AppListPanel = () => {
       </Menu>
 
       {/* Uninstall confirmation (§12.5) */}
-      <Dialog
+      <CyDialog
+        dismiss="lightweight"
         open={confirm !== null}
         onClose={() => setConfirm(null)}
         data-testid="app-uninstall-confirm-dialog"
@@ -350,7 +351,7 @@ export const AppListPanel = () => {
             Uninstall
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
     </Box>
   )
 }

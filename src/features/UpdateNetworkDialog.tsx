@@ -1,7 +1,6 @@
 import {
   Button,
   CircularProgress,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -10,6 +9,7 @@ import {
 import { ReactElement, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useUrlNavigation } from '../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
@@ -43,7 +43,8 @@ export const UpdateNetworkDialog = (props: {
   const location = useLocation()
 
   return (
-    <Dialog
+    <CyDialog
+      dismiss="lightweight"
       data-testid="update-network-dialog"
       sx={{ zIndex: 10000 }}
       onClose={() => {
@@ -93,6 +94,6 @@ export const UpdateNetworkDialog = (props: {
           Update
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

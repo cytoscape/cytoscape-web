@@ -14,7 +14,31 @@
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
     "typescript/no-explicit-any": "off",
-    "unicorn/no-empty-file": "off"
+    "unicorn/no-empty-file": "off",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@mui/material",
+            "importNames": ["Dialog"],
+            "message": "Use CyDialog from @/components/CyDialog and declare a dismiss tier. See docs/specifications/DIALOG_DISMISS_POLICY.md."
+          },
+          {
+            "name": "@mui/material/Dialog",
+            "message": "Use CyDialog from @/components/CyDialog and declare a dismiss tier. See docs/specifications/DIALOG_DISMISS_POLICY.md."
+          }
+        ]
+      }
+    ]
   },
-  "ignorePatterns": ["dist/**", "build/**", "ba/**", "coverage/**"]
+  "ignorePatterns": ["dist/**", "build/**", "ba/**", "coverage/**"],
+  "overrides": [
+    {
+      "files": ["src/components/CyDialog.tsx"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
 }
