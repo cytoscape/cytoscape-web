@@ -31,7 +31,9 @@ import TableFn, {
   ValueTypeName,
 } from '../../models/TableModel'
 import { createViewModel } from '../../models/ViewModel/impl/viewModelImpl'
-import VisualStyleFn, { VisualPropertyName } from '../../models/VisualStyleModel'
+import VisualStyleFn, {
+  VisualPropertyName,
+} from '../../models/VisualStyleModel'
 import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
 import { validateNodesExist, validateTableElementsExist } from './validation'
 
@@ -179,7 +181,10 @@ export const networkApi: NetworkApi = {
   }) {
     try {
       if (!name || name.trim() === '') {
-        return fail(AppCodes.INVALID_INPUT, 'name is required and must be non-empty')
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'name is required and must be non-empty',
+        )
       }
       if (!edgeList || edgeList.length === 0) {
         return fail(AppCodes.INVALID_INPUT, 'edgeList must be non-empty')
@@ -282,8 +287,9 @@ export const networkApi: NetworkApi = {
 
       // Copy column schemas and the selected rows from the source tables
       const sourceTables = useTableStore.getState().tables[networkId]
-      const copyColumns = (cols?: Array<{ name: string; type: ValueTypeName }>) =>
-        (cols ?? []).map((c) => ({ name: c.name, type: c.type }))
+      const copyColumns = (
+        cols?: Array<{ name: string; type: ValueTypeName }>,
+      ) => (cols ?? []).map((c) => ({ name: c.name, type: c.type }))
       const copyRows = (
         rows: Map<IdType, Record<AttributeName, ValueType>> | undefined,
         ids: IdType[],
@@ -364,12 +370,14 @@ export const networkApi: NetworkApi = {
 
       // Passthrough label mapping when the copied schema has a name column
       if (nodeTable.columns.some((c) => c.name === 'name')) {
-        useVisualStyleStore.getState().createPassthroughMapping(
-          newNetworkId,
-          VisualPropertyName.NodeLabel,
-          'name',
-          ValueTypeName.String,
-        )
+        useVisualStyleStore
+          .getState()
+          .createPassthroughMapping(
+            newNetworkId,
+            VisualPropertyName.NodeLabel,
+            'name',
+            ValueTypeName.String,
+          )
       }
 
       if (options?.addToWorkspace ?? true) {
@@ -387,7 +395,10 @@ export const networkApi: NetworkApi = {
     try {
       const validation = validateCX2(cxData)
       if (!validation.isValid) {
-        return fail(AppCodes.INVALID_CX2, validation.errorMessage ?? 'CX2 validation failed')
+        return fail(
+          AppCodes.INVALID_CX2,
+          validation.errorMessage ?? 'CX2 validation failed',
+        )
       }
 
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)

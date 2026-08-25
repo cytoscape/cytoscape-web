@@ -106,4 +106,3 @@ describe('File Delimiter Parsing', () => {
     expect(result.data[0]).toHaveProperty('col1,col2,col3')
   })
 })
-

@@ -167,10 +167,7 @@ export const useDeleteNodes = () => {
 
       // Capture visual style bypasses before deletion
       // We need to capture for both nodes and edges (edges will be deleted too)
-      const deletedBypasses = new Map<
-        VisualPropertyName,
-        Map<IdType, any>
-      >()
+      const deletedBypasses = new Map<VisualPropertyName, Map<IdType, any>>()
       const visualStyle = visualStyles[networkId]
       if (visualStyle) {
         // Get all IDs that will be deleted (nodes + their connected edges)
@@ -195,7 +192,10 @@ export const useDeleteNodes = () => {
               }
             })
             if (bypassesForProperty.size > 0) {
-              deletedBypasses.set(vpName as VisualPropertyName, bypassesForProperty)
+              deletedBypasses.set(
+                vpName as VisualPropertyName,
+                bypassesForProperty,
+              )
             }
           }
         })
@@ -203,7 +203,12 @@ export const useDeleteNodes = () => {
 
       // Call the pure function to delete nodes (only existing ones)
       // Pass the network we validated to avoid stale snapshot issues
-      const result = deleteNodesCore(networkId, existingNodeIds, network, storeActions)
+      const result = deleteNodesCore(
+        networkId,
+        existingNodeIds,
+        network,
+        storeActions,
+      )
 
       // Clean up visual style bypasses for deleted nodes and edges
       if (visualStyle) {
@@ -220,7 +225,11 @@ export const useDeleteNodes = () => {
               visualProperty.bypassMap.has(id),
             )
             if (hasBypassesToDelete) {
-              deleteBypass(networkId, vpName as VisualPropertyName, allDeletedIds)
+              deleteBypass(
+                networkId,
+                vpName as VisualPropertyName,
+                allDeletedIds,
+              )
             }
           }
         })

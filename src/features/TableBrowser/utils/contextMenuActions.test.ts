@@ -22,14 +22,18 @@ describe('contextMenuActions', () => {
   mockNodeTableRows.set('node-1', { id: 'node-1', name: 'Node 1', score: 10 })
   mockNodeTableRows.set('node-2', { id: 'node-2', name: 'Node 2', score: 20 })
 
-  const mockNodeTable = { id: 'nodeTable', rows: mockNodeTableRows, columns: [] }
+  const mockNodeTable = {
+    id: 'nodeTable',
+    rows: mockNodeTableRows,
+    columns: [],
+  }
   const networkId = 'test-network-1'
 
   const allColumns = [
     { id: 'name', type: ValueTypeName.String },
     { id: 'score', type: ValueTypeName.Integer },
   ]
-  
+
   const rows = Array.from(mockNodeTableRows.values())
 
   const baseArgs = {
@@ -74,7 +78,7 @@ describe('contextMenuActions', () => {
         'Node 1',
         undefined, // Undefined means all elements
       )
-      
+
       expect(mockSetNetworkModified).toHaveBeenCalledWith(networkId, true)
       expect(mockHandleContextMenuClose).toHaveBeenCalled()
     })
@@ -83,9 +87,7 @@ describe('contextMenuActions', () => {
   describe('handleApplyToSelected', () => {
     it('applies the cell value only to selected rows', () => {
       // The context menu only gets passed the subset of rows that are selected or visible
-      const selectedRowsSubset = [
-        { id: 'node-2', name: 'Node 2', score: 20 },
-      ]
+      const selectedRowsSubset = [{ id: 'node-2', name: 'Node 2', score: 20 }]
 
       handleApplyToSelected({
         ...baseArgs,
@@ -93,9 +95,7 @@ describe('contextMenuActions', () => {
         contextMenuCell: [1, 0], // 'score' column, first selected row ('node-2', score 20)
       })
 
-      const expectedEdits = [
-        { row: 'node-2', column: 'score', value: 20 },
-      ]
+      const expectedEdits = [{ row: 'node-2', column: 'score', value: 20 }]
 
       expect(mockPostEdit).toHaveBeenCalledWith(
         UndoCommandType.APPLY_VALUE_TO_SELECTED,
@@ -111,7 +111,7 @@ describe('contextMenuActions', () => {
         20,
         ['node-2'], // Only applied to these IDs
       )
-      
+
       expect(mockHandleContextMenuClose).toHaveBeenCalled()
     })
   })
@@ -136,14 +136,18 @@ describe('contextMenuActions', () => {
       })
 
       // Select node-2 which is at index 1
-      expect(mockExclusiveSelect).toHaveBeenCalledWith(networkId, ['node-2'], [])
-      
+      expect(mockExclusiveSelect).toHaveBeenCalledWith(
+        networkId,
+        ['node-2'],
+        [],
+      )
+
       expect(mockSetSelection).toHaveBeenCalledWith({
         rows: expect.any(Object),
         columns: mockSelection.columns,
         current: undefined,
       })
-      
+
       expect(mockHandleContextMenuClose).toHaveBeenCalled()
     })
   })

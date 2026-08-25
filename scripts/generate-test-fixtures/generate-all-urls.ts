@@ -116,12 +116,7 @@ async function generateAllURLs(baseUrl: string): Promise<void> {
     {
       name: 'Network ID - Valid',
       type: 'network-id',
-      args: [
-        '--workspace-id',
-        WORKSPACE_ID,
-        '--network-id',
-        VALID_NETWORK_ID,
-      ],
+      args: ['--workspace-id', WORKSPACE_ID, '--network-id', VALID_NETWORK_ID],
       output: join(OUTPUT_DIR, 'network-id-valid.txt'),
       category: 'Network IDs',
       description: 'Direct network access with valid network ID',
@@ -130,12 +125,7 @@ async function generateAllURLs(baseUrl: string): Promise<void> {
     {
       name: 'Network ID - Import Needed',
       type: 'network-id',
-      args: [
-        '--workspace-id',
-        WORKSPACE_ID,
-        '--network-id',
-        NEW_NETWORK_UUID,
-      ],
+      args: ['--workspace-id', WORKSPACE_ID, '--network-id', NEW_NETWORK_UUID],
       output: join(OUTPUT_DIR, 'network-id-import.txt'),
       category: 'Network IDs',
       description: 'Network ID not in workspace - needs import',
@@ -144,12 +134,7 @@ async function generateAllURLs(baseUrl: string): Promise<void> {
     {
       name: 'Network ID - Invalid',
       type: 'network-id',
-      args: [
-        '--workspace-id',
-        WORKSPACE_ID,
-        '--network-id',
-        INVALID_UUID,
-      ],
+      args: ['--workspace-id', WORKSPACE_ID, '--network-id', INVALID_UUID],
       output: join(OUTPUT_DIR, 'network-id-invalid.txt'),
       category: 'Network IDs',
       description: 'Non-existent network with invalid UUID',
@@ -687,4 +672,3 @@ async function main(): Promise<void> {
 }
 
 main()
-

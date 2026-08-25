@@ -6,7 +6,6 @@ import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { DropdownMenuItem } from '../../../ToolBar/DropdownMenu'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
 
-
 export const JoinTableToNetworkMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {

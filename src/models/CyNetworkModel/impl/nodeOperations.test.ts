@@ -71,10 +71,7 @@ describe('deleteNodesCore', () => {
     expect(result.deletedEdgeViews).toHaveLength(1)
 
     // Cascade: node + connecting edge removed from views and tables
-    expect(actions.deleteViewObjects).toHaveBeenCalledWith(NET_ID, [
-      'n1',
-      'e1',
-    ])
+    expect(actions.deleteViewObjects).toHaveBeenCalledWith(NET_ID, ['n1', 'e1'])
     expect(actions.deleteRows).toHaveBeenCalledWith(NET_ID, ['n1', 'e1'])
 
     // Summary counts derive from the PRE-deletion topology (3 nodes, 2 edges)

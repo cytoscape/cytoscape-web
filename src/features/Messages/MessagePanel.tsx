@@ -28,7 +28,7 @@ export const MessagePanel = (props: MessagePanelProps): ReactElement => {
       >
         <h2>{props.message}</h2>
         <h6>{props.subMessage}</h6>
-        {props.showProgress ?? false ? <LinearProgress /> : null}
+        {(props.showProgress ?? false) ? <LinearProgress /> : null}
       </Box>
     </Box>
   )

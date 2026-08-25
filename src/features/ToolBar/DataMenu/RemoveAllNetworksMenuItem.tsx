@@ -5,8 +5,9 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
-export const RemoveAllNetworksMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const RemoveAllNetworksMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
 
   return (

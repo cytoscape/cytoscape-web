@@ -42,6 +42,9 @@ export function whenReadySignal(): Promise<void> {
 // via the window event, still resolve. Installed once at module load;
 // guarded for non-DOM (test/SSR) environments. `markReady` is idempotent,
 // so this composes safely with the explicit call.
-if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+if (
+  typeof window !== 'undefined' &&
+  typeof window.addEventListener === 'function'
+) {
   window.addEventListener('cywebapi:ready', markReady, { once: true })
 }

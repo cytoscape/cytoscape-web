@@ -46,10 +46,12 @@ const seedNetwork = (networkId: string): void => {
   useNetworkStore.getState().add(network)
   useTableStore
     .getState()
-    .add(networkId, createTable(`${networkId}-nodes`), createTable(`${networkId}-edges`))
-  useUndoStore
-    .getState()
-    .addStack(networkId, { undoStack: [], redoStack: [] })
+    .add(
+      networkId,
+      createTable(`${networkId}-nodes`),
+      createTable(`${networkId}-edges`),
+    )
+  useUndoStore.getState().addStack(networkId, { undoStack: [], redoStack: [] })
   useWorkspaceStore.getState().addNetworkIds(networkId)
 }
 
@@ -82,9 +84,7 @@ describe('useDeleteCyNetwork', () => {
     expect(useNetworkStore.getState().networks.has('net-1')).toBe(false)
     expect(useTableStore.getState().tables['net-1']).toBeUndefined()
     expect(useUndoStore.getState().undoRedoStacks['net-1']).toBeUndefined()
-    expect(useWorkspaceStore.getState().workspace.networkIds).toEqual([
-      'net-2',
-    ])
+    expect(useWorkspaceStore.getState().workspace.networkIds).toEqual(['net-2'])
     // Untouched sibling
     expect(useNetworkStore.getState().networks.has('net-2')).toBe(true)
     expect(useTableStore.getState().tables['net-2']).toBeDefined()

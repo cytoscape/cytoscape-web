@@ -1,7 +1,7 @@
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import ImageIcon from '@mui/icons-material/Image'
 import PieChartIcon from '@mui/icons-material/PieChart'
-import { Alert,Box, Typography } from '@mui/material'
+import { Alert, Box, Typography } from '@mui/material'
 import * as React from 'react'
 
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
@@ -58,8 +58,9 @@ export const SelectTypeStep: React.FC<SelectTypeStepProps> = ({
               : k === CustomGraphicsNameType.RingChart
                 ? DonutLargeIcon
                 : ImageIcon
-          
-          const isDisabled = k !== CustomGraphicsNameType.Image && !hasNumericProperties
+
+          const isDisabled =
+            k !== CustomGraphicsNameType.Image && !hasNumericProperties
 
           return (
             <Box

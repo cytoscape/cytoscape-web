@@ -71,4 +71,3 @@ export const getViewport = (
 ): ViewPort | undefined => {
   return state.viewports[rendererId]?.[networkId]
 }
-

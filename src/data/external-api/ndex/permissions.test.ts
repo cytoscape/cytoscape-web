@@ -31,7 +31,8 @@ describe('getNdexNetworkPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -59,7 +60,8 @@ describe('getNdexNetworkPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -83,7 +85,8 @@ describe('getNdexNetworkPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -105,7 +108,8 @@ describe('getNdexNetworkPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -130,7 +134,8 @@ describe('getNdexNetworkPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -186,7 +191,8 @@ describe('hasNdexEditPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -207,7 +213,8 @@ describe('hasNdexEditPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -228,7 +235,8 @@ describe('hasNdexEditPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -247,7 +255,8 @@ describe('hasNdexEditPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }
@@ -287,7 +296,8 @@ describe('hasNdexEditPermission', () => {
 
     const mockClient = {
       networks: {
-        getNetworkPermissionsByUUIDs: vi.fn()
+        getNetworkPermissionsByUUIDs: vi
+          .fn()
           .mockResolvedValue(mockPermissions),
       },
     }

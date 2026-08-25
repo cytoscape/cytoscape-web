@@ -105,7 +105,10 @@ describe('AppSettingsDialog — localhost opt-in wiring', () => {
     fireEvent.click(screen.getByRole('button', { name: /^apply$/i }))
 
     await waitFor(() =>
-      expect(validateManifestUrl).toHaveBeenCalledWith(expect.any(String), DEV1),
+      expect(validateManifestUrl).toHaveBeenCalledWith(
+        expect.any(String),
+        DEV1,
+      ),
     )
   })
 })

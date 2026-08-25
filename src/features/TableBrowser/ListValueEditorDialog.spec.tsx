@@ -7,7 +7,10 @@ import { ListValueEditorDialog } from './ListValueEditorDialog'
 describe('ListValueEditorDialog (CW-563)', () => {
   const setup = (
     props: Partial<React.ComponentProps<typeof ListValueEditorDialog>> = {},
-  ): { onSave: ReturnType<typeof vi.fn>; onCancel: ReturnType<typeof vi.fn> } => {
+  ): {
+    onSave: ReturnType<typeof vi.fn>
+    onCancel: ReturnType<typeof vi.fn>
+  } => {
     const onSave = vi.fn()
     const onCancel = vi.fn()
     render(
@@ -118,8 +121,6 @@ describe('ListValueEditorDialog (CW-563)', () => {
       screen.getByRole('tab', { name: 'Paste' }).getAttribute('aria-selected'),
     ).toBe('true')
   })
-
-
 
   it('calls onCancel without saving', () => {
     const { onSave, onCancel } = setup()

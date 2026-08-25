@@ -227,148 +227,148 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     }
 
     return (
-        <Box
-          sx={{
-            mt: 1,
-            height: 425,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Box sx={{ mb: 0.25 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={fullBg}
-                  onChange={(e) => setFullBg(e.target.checked)}
-                />
-              }
-              label="Export full network image"
-            />
-          </Box>
-          <Box sx={{ mb: 1 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={transparentBg}
-                  onChange={(e) => setTransparentBg(e.target.checked)}
-                />
-              }
-              label="Transparent background"
-            />
-          </Box>
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-              Units
-            </Typography>
-            <Select
-              size="small"
-              labelId="label"
-              value={unit}
-              onChange={handleUnitChange}
-            >
-              <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
-              <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
-            </Select>
-          </Box>
-          <Box sx={{ mb: 1.5 }}>
-            <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
-              Size
-            </Typography>
-            {unit === 'pixels' ? (
-              <Box sx={{ display: 'flex', pt: 0.5 }}>
-                <NumberField
-                  min={0}
-                  max={maxWidth}
-                  value={customWidth}
-                  onChange={handleWidthChange}
-                  label="Width (pixels)"
-                />
-                <NumberField
-                  min={0}
-                  max={maxHeight}
-                  value={customHeight}
-                  onChange={handleHeightChange}
-                  label="Height (pixels)"
-                />
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center', pt: 0.5 }}>
-                <NumberField
-                  min={0}
-                  max={maxWidthInches}
-                  step={0.01}
-                  value={widthInches}
-                  onChange={handleWidthInchesChange}
-                  label="Width (inches)"
-                />
-                <NumberField
-                  min={0}
-                  max={maxHeightInches}
-                  step={0.01}
-                  value={heightInches}
-                  onChange={handleHeightInchesChange}
-                  label="Height (inches)"
-                />
-                <FormControl sx={{ ml: 1, mt: 3 }}>
-                  <InputLabel id="dpi-label">DPI</InputLabel>
-                  <Select
-                    defaultValue={72}
-                    labelId="dpi-label"
-                    label="DPI"
-                    sx={{ width: 100 }}
-                    size="small"
-                    onChange={(e) => handleDpiChange(e.target.value as number)}
-                  >
-                    <MenuItem value={72}>72</MenuItem>
-                    <MenuItem value={100}>100</MenuItem>
-                    <MenuItem value={150}>150</MenuItem>
-                    <MenuItem value={300}>300</MenuItem>
-                    <MenuItem value={600}>600</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
-          </Box>
-          <Box>
-            <Box>Zoom</Box>
-            <Slider
-              sx={{ ml: 1.5, width: '85%' }}
-              value={zoom}
-              min={MIN_ZOOM}
-              max={MAX_ZOOM}
-              step={0.1}
-              valueLabelDisplay="auto"
-              onChange={handleZoomChange}
-              marks={[
-                {
-                  value: MIN_ZOOM,
-                  label: '0%',
-                },
-                {
-                  value: 1,
-                  label: '100%',
-                },
-                {
-                  value: 2,
-                  label: '200%',
-                },
-                {
-                  value: 3,
-                  label: '300%',
-                },
-                {
-                  value: 4,
-                  label: '400%',
-                },
-                {
-                  value: MAX_ZOOM,
-                  label: '500%',
-                },
-              ]}
-            />
-          </Box>
+      <Box
+        sx={{
+          mt: 1,
+          height: 425,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box sx={{ mb: 0.25 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={fullBg}
+                onChange={(e) => setFullBg(e.target.checked)}
+              />
+            }
+            label="Export full network image"
+          />
         </Box>
+        <Box sx={{ mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={transparentBg}
+                onChange={(e) => setTransparentBg(e.target.checked)}
+              />
+            }
+            label="Transparent background"
+          />
+        </Box>
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
+            Units
+          </Typography>
+          <Select
+            size="small"
+            labelId="label"
+            value={unit}
+            onChange={handleUnitChange}
+          >
+            <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
+            <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
+          </Select>
+        </Box>
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
+            Size
+          </Typography>
+          {unit === 'pixels' ? (
+            <Box sx={{ display: 'flex', pt: 0.5 }}>
+              <NumberField
+                min={0}
+                max={maxWidth}
+                value={customWidth}
+                onChange={handleWidthChange}
+                label="Width (pixels)"
+              />
+              <NumberField
+                min={0}
+                max={maxHeight}
+                value={customHeight}
+                onChange={handleHeightChange}
+                label="Height (pixels)"
+              />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', pt: 0.5 }}>
+              <NumberField
+                min={0}
+                max={maxWidthInches}
+                step={0.01}
+                value={widthInches}
+                onChange={handleWidthInchesChange}
+                label="Width (inches)"
+              />
+              <NumberField
+                min={0}
+                max={maxHeightInches}
+                step={0.01}
+                value={heightInches}
+                onChange={handleHeightInchesChange}
+                label="Height (inches)"
+              />
+              <FormControl sx={{ ml: 1, mt: 3 }}>
+                <InputLabel id="dpi-label">DPI</InputLabel>
+                <Select
+                  defaultValue={72}
+                  labelId="dpi-label"
+                  label="DPI"
+                  sx={{ width: 100 }}
+                  size="small"
+                  onChange={(e) => handleDpiChange(e.target.value as number)}
+                >
+                  <MenuItem value={72}>72</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                  <MenuItem value={150}>150</MenuItem>
+                  <MenuItem value={300}>300</MenuItem>
+                  <MenuItem value={600}>600</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
+        <Box>
+          <Box>Zoom</Box>
+          <Slider
+            sx={{ ml: 1.5, width: '85%' }}
+            value={zoom}
+            min={MIN_ZOOM}
+            max={MAX_ZOOM}
+            step={0.1}
+            valueLabelDisplay="auto"
+            onChange={handleZoomChange}
+            marks={[
+              {
+                value: MIN_ZOOM,
+                label: '0%',
+              },
+              {
+                value: 1,
+                label: '100%',
+              },
+              {
+                value: 2,
+                label: '200%',
+              },
+              {
+                value: 3,
+                label: '300%',
+              },
+              {
+                value: 4,
+                label: '400%',
+              },
+              {
+                value: MAX_ZOOM,
+                label: '500%',
+              },
+            ]}
+          />
+        </Box>
+      </Box>
     )
   },
 )

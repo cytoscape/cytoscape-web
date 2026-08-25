@@ -214,21 +214,38 @@ export const MatchingTableComp = React.memo(
     return (
       <TableContainer
         key={`${tableView}-tablecontainer`}
-        sx={{ maxHeight: 500, overflow: 'auto', border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}
+        sx={{
+          maxHeight: 500,
+          overflow: 'auto',
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          borderRadius: 1,
+        }}
       >
         <Table sx={{ minWidth: 400 }} aria-label="simple table">
           <TableHead>
             {netLst.length > 0 ? (
-              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.subtle }}>
+              <TableRow
+                sx={{
+                  backgroundColor: (theme) => theme.palette.background.subtle,
+                }}
+              >
                 {netLst.map((net) => (
-                  <TableCell key={net[1]} sx={{ py: 1 }}>{net[0]}</TableCell>
+                  <TableCell key={net[1]} sx={{ py: 1 }}>
+                    {net[0]}
+                  </TableCell>
                 ))}
                 <TableCell sx={{ py: 1 }}>Merged Network</TableCell>
                 <TableCell sx={{ py: 1 }}>Type</TableCell>
               </TableRow>
             ) : (
               <TableRow>
-                <TableCell sx={{ textAlign: 'center', color: (theme) => theme.palette.text.disabled, fontWeight: 'normal' }}>
+                <TableCell
+                  sx={{
+                    textAlign: 'center',
+                    color: (theme) => theme.palette.text.disabled,
+                    fontWeight: 'normal',
+                  }}
+                >
                   -- Please select networks to merge --
                 </TableCell>
               </TableRow>
@@ -281,10 +298,7 @@ export const MatchingTableComp = React.memo(
                         />
                       </TableCell>
                     ))}
-                    <TableCell
-                      key={`${row.id}-mergedNetwork`}
-                      sx={{ py: 0.5 }}
-                    >
+                    <TableCell key={`${row.id}-mergedNetwork`} sx={{ py: 0.5 }}>
                       {row.id === 0 && tableView === TableView.node ? (
                         <Tooltip
                           key={`${row.id}-mergedNetwork-tooltip`}
@@ -325,10 +339,7 @@ export const MatchingTableComp = React.memo(
                         />
                       )}
                     </TableCell>
-                    <TableCell
-                      key={`${row.id}-type`}
-                      sx={{ py: 0.5 }}
-                    >
+                    <TableCell key={`${row.id}-type`} sx={{ py: 0.5 }}>
                       <TypeDropDownTemplate
                         type={tableView}
                         rowData={row}

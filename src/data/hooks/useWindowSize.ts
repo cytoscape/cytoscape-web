@@ -37,4 +37,3 @@ export const useWindowSize = (): WindowSize => {
 
   return size
 }
-

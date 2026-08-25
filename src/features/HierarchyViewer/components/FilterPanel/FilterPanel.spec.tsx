@@ -13,11 +13,11 @@ import { GraphObjectType } from '../../../../models/NetworkModel'
 
 // Mock child components to isolate the test to FilterPanel's useEffect behavior
 vi.mock('./AttributeSelector', () => ({
-  AttributeSelector: () => <div data-testid="mock-attr-selector" />
+  AttributeSelector: () => <div data-testid="mock-attr-selector" />,
 }))
 
 vi.mock('./CheckboxFilter', () => ({
-  CheckboxFilter: () => <div data-testid="mock-checkbox-filter" />
+  CheckboxFilter: () => <div data-testid="mock-checkbox-filter" />,
 }))
 
 describe('FilterPanel', () => {
@@ -28,19 +28,19 @@ describe('FilterPanel', () => {
     useUiStateStore.setState({ ui: { activeNetworkView: '' } as any })
     useVisualStyleStore.setState({ visualStyles: {} })
     useWorkspaceStore.setState({ workspace: { currentNetworkId: '' } as any })
-    
+
     // Clear mocks
     vi.clearAllMocks()
   })
 
   it('does not infinitely loop when visual mapping has not changed', () => {
     const targetNetworkId = 'net1_sub1'
-    
+
     // Setup Zustand stores with initial state to trigger the condition
     useUiStateStore.setState({
       ui: { activeNetworkView: targetNetworkId } as any,
     })
-    
+
     const visualMappingForStore = {
       type: 'discrete',
       attribute: 'interaction',
@@ -78,18 +78,18 @@ describe('FilterPanel', () => {
       visualStyles: {
         [targetNetworkId]: {
           edgeLineColor: {
-            mapping: visualMappingForStyle
-          }
+            mapping: visualMappingForStyle,
+          },
         } as any,
       },
     })
-    
+
     const updateSpy = vi.spyOn(useFilterStore.getState(), 'updateFilterConfig')
 
     render(
       <MemoryRouter>
         <FilterPanel />
-      </MemoryRouter>
+      </MemoryRouter>,
     )
 
     // The component should mount without calling updateFilterConfig

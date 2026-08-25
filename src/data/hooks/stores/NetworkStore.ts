@@ -62,7 +62,10 @@ export const useNetworkStore = create(
             network,
           )
           state.networks = newState.networks
-          NetworkStoreImpl.bumpTopologyVersion(state.topologyVersions, networkId)
+          NetworkStoreImpl.bumpTopologyVersion(
+            state.topologyVersions,
+            networkId,
+          )
           return state
         })
         persistNetwork(networkId)
@@ -219,7 +222,10 @@ export const useNetworkStore = create(
           newTargetId,
         )
         set((state) => {
-          NetworkStoreImpl.bumpTopologyVersion(state.topologyVersions, networkId)
+          NetworkStoreImpl.bumpTopologyVersion(
+            state.topologyVersions,
+            networkId,
+          )
           state.lastUpdated = {
             networkId,
             type: UpdateEventType.ADD,

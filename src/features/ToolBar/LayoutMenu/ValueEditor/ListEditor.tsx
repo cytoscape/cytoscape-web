@@ -22,7 +22,13 @@ interface ListEditorProps {
   value: ValueType
   setValue: (optionName: string, value: ValueType) => void
   typeLabel?: string
-  typeColor: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  typeColor:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
   tableLayout?: boolean
   error?: boolean
 }

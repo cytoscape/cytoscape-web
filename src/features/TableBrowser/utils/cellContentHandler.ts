@@ -2,7 +2,10 @@ import { GridCell, GridCellKind, Item } from '@glideapps/glide-data-grid'
 import type { Theme } from '@mui/material'
 
 import { ValueTypeName } from '../../../models/TableModel'
-import { isListType, valueDisplay } from '../../../models/TableModel/impl/valueTypeImpl'
+import {
+  isListType,
+  valueDisplay,
+} from '../../../models/TableModel/impl/valueTypeImpl'
 import { isValidUrl } from '../../../utils/urlUtil'
 
 export const getCellKind = (type: ValueTypeName): GridCellKind => {

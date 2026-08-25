@@ -109,7 +109,9 @@ describe('boot shell recovery actions', () => {
       button.click()
       button.click()
     }).not.toThrow()
-    expect(button.classList.contains('boot-shell-error-button-armed')).toBe(false)
+    expect(button.classList.contains('boot-shell-error-button-armed')).toBe(
+      false,
+    )
   })
 
   it('survives a repaint of the shell', () => {

@@ -7,8 +7,12 @@ import { normalizeEnumValue } from './enumValueNormalization'
 // to run these: npx vitest src/models/VisualStyleModel/impl/enumValueNormalization.test.ts
 
 describe('normalizeEnumValue (CW-517)', () => {
-  const { NodeShape, EdgeLine, NodeBorderLine, String: StringType } =
-    VisualPropertyValueTypeName
+  const {
+    NodeShape,
+    EdgeLine,
+    NodeBorderLine,
+    String: StringType,
+  } = VisualPropertyValueTypeName
 
   it('passes canonical node shapes through unchanged', () => {
     expect(normalizeEnumValue(NodeShape, 'diamond')).toBe('diamond')

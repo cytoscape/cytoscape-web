@@ -64,13 +64,15 @@ function changedDetails(): any[] {
 }
 
 const addNetwork = (id: string): void => {
-  useNetworkStore.getState().add(
-    NetworkFn.createNetworkFromLists(
-      id,
-      [{ id: 'n1' }, { id: 'n2' }],
-      [{ id: 'e1', s: 'n1', t: 'n2' }],
-    ),
-  )
+  useNetworkStore
+    .getState()
+    .add(
+      NetworkFn.createNetworkFromLists(
+        id,
+        [{ id: 'n1' }, { id: 'n2' }],
+        [{ id: 'e1', s: 'n1', t: 'n2' }],
+      ),
+    )
 }
 
 // initEventBus() has no teardown, so it is wired exactly once for the whole

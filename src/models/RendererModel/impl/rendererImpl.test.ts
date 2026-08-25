@@ -123,7 +123,12 @@ describe('RendererImpl', () => {
       const networkId: IdType = 'network-1'
       const viewport = createTestViewport()
 
-      const stateWithViewport = setViewport(state, rendererId, networkId, viewport)
+      const stateWithViewport = setViewport(
+        state,
+        rendererId,
+        networkId,
+        viewport,
+      )
 
       const retrievedViewport = getViewport(
         stateWithViewport,
@@ -154,7 +159,12 @@ describe('RendererImpl', () => {
       const originalViewports = original.viewports
 
       let state = add(original, createTestRenderer('renderer-1'))
-      state = setViewport(state, 'renderer-1', 'network-1' as IdType, createTestViewport())
+      state = setViewport(
+        state,
+        'renderer-1',
+        'network-1' as IdType,
+        createTestViewport(),
+      )
       state = deleteRenderer(state, 'renderer-1')
 
       // The chained operations produce a new state object
@@ -168,4 +178,3 @@ describe('RendererImpl', () => {
     })
   })
 })
-

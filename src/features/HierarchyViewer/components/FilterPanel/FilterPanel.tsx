@@ -211,7 +211,7 @@ export const FilterPanel = () => {
         const newConfig = { ...currentConfig, visualMapping }
         updateFilterConfig(newConfig.name, newConfig)
       }
-      
+
       searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
       searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
       searchParams.set(

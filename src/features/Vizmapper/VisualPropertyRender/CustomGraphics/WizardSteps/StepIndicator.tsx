@@ -2,7 +2,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
 import PieChartIcon from '@mui/icons-material/PieChart'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { Box, Button,Typography } from '@mui/material'
+import { Box, Button, Typography } from '@mui/material'
 import * as React from 'react'
 
 import { CustomGraphicKind } from './SelectTypeStep'

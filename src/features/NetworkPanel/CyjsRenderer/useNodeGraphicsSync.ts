@@ -24,7 +24,11 @@ import type {
   RegisteredNodeGraphicsHook,
   ResolvedNodeGraphics,
 } from '../../../models/StoreModel/NodeGraphicsStoreModel'
-import type { AttributeName, Table, ValueType } from '../../../models/TableModel'
+import type {
+  AttributeName,
+  Table,
+  ValueType,
+} from '../../../models/TableModel'
 import { detectRowDelta } from '../../../models/TableModel/impl/tableDiff'
 import { NodeVisualPropertyName } from '../../../models/VisualStyleModel/VisualPropertyName'
 import { resolveNodeGraphics } from './nodeGraphicsResolve'

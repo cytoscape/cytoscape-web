@@ -8,10 +8,7 @@ import {
 } from './bootError'
 import { BootPhase } from './bootPhases'
 import { getBootState, resetBootStateForTesting } from './bootState'
-import {
-  getBootSpans,
-  resetBootMetricsForTesting,
-} from './metrics/bootMarks'
+import { getBootSpans, resetBootMetricsForTesting } from './metrics/bootMarks'
 import {
   isBootAborted,
   resetBootRunnerForTesting,
@@ -167,7 +164,10 @@ describe('classifyBootError', () => {
       message: 'Open the newer deployment elsewhere.',
     }))
 
-    const error = classifyBootError(BootPhase.DATABASE, new Error('VersionError'))
+    const error = classifyBootError(
+      BootPhase.DATABASE,
+      new Error('VersionError'),
+    )
 
     expect(error.title).toBe('Newer database')
     expect(error.message).toBe('Open the newer deployment elsewhere.')
@@ -177,8 +177,8 @@ describe('classifyBootError', () => {
     // Classifiers only have to handle what they know about.
     registerBootErrorClassifier(BootPhase.DATABASE, () => undefined)
 
-    expect(classifyBootError(BootPhase.DATABASE, new Error('quota')).title).toBe(
-      'Local storage is unavailable',
-    )
+    expect(
+      classifyBootError(BootPhase.DATABASE, new Error('quota')).title,
+    ).toBe('Local storage is unavailable')
   })
 })

@@ -4,8 +4,9 @@ import { ReactElement } from 'react'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
-export const LoadFromNdexMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const LoadFromNdexMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   return (
     <DropdownMenuItem
       label="Open Network(s) from NDEx..."

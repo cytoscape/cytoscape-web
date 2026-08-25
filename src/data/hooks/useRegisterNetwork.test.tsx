@@ -63,9 +63,7 @@ const makeCyNetwork = (): CyNetwork => {
   }
 }
 
-const makeSummary = (
-  overrides: Partial<NetworkSummary> = {},
-): NetworkSummary =>
+const makeSummary = (overrides: Partial<NetworkSummary> = {}): NetworkSummary =>
   ({
     externalId: NET_ID,
     name: 'Test Network',
@@ -141,11 +139,7 @@ describe('useRegisterNetwork', () => {
     const { result } = renderHook(() => useRegisterNetwork())
 
     act(() => {
-      result.current(
-        NET_ID,
-        makeCyNetwork(),
-        makeSummary({ hasLayout: false }),
-      )
+      result.current(NET_ID, makeCyNetwork(), makeSummary({ hasLayout: false }))
     })
 
     expect(apply).toHaveBeenCalledTimes(1)
@@ -178,8 +172,7 @@ describe('useRegisterNetwork', () => {
       result.current(NET_ID, makeCyNetwork(), hcxSummary)
     })
 
-    const validation =
-      useHcxValidatorStore.getState().validationResults[NET_ID]
+    const validation = useHcxValidatorStore.getState().validationResults[NET_ID]
     expect(validation).toBeDefined()
     expect(validation.isValid).toBe(false)
     expect(

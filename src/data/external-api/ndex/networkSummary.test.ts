@@ -1,5 +1,12 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, type MockedFunction, vi } from 'vitest'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockedFunction,
+  vi,
+} from 'vitest'
 
 import { ValueTypeName } from '../../../models/TableModel/ValueTypeName'
 import { waitSeconds } from '../../../utils/waitSeconds'
@@ -589,8 +596,7 @@ describe('fetchNdexSummaries', () => {
     const mockClient = {
       networks: {
         v2: {
-          getNetworkSummariesByUUIDs: vi.fn()
-            .mockResolvedValue([rawSummary]),
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue([rawSummary]),
         },
       },
     }
@@ -620,8 +626,7 @@ describe('fetchNdexSummaries', () => {
     const mockClient = {
       networks: {
         v2: {
-          getNetworkSummariesByUUIDs: vi.fn()
-            .mockResolvedValue(rawSummaries),
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue(rawSummaries),
         },
       },
     }
@@ -651,8 +656,7 @@ describe('fetchNdexSummaries', () => {
     const mockClient = {
       networks: {
         v2: {
-          getNetworkSummariesByUUIDs: vi.fn()
-            .mockResolvedValue([rawSummary]),
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue([rawSummary]),
         },
       },
     }
@@ -685,8 +689,7 @@ describe('fetchNdexSummaries', () => {
     const mockClient = {
       networks: {
         v2: {
-          getNetworkSummariesByUUIDs: vi.fn()
-            .mockResolvedValue([rawSummary]),
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue([rawSummary]),
         },
       },
     }
@@ -733,8 +736,7 @@ describe('fetchNdexSummaries', () => {
     const mockClient = {
       networks: {
         v2: {
-          getNetworkSummariesByUUIDs: vi.fn()
-            .mockResolvedValue([rawSummary]),
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue([rawSummary]),
         },
       },
     }
@@ -757,8 +759,7 @@ describe('fetchNdexSummaries', () => {
     const mockClient = {
       networks: {
         v2: {
-          getNetworkSummariesByUUIDs: vi.fn()
-            .mockResolvedValue([rawSummary]),
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue([rawSummary]),
         },
       },
     }
@@ -826,18 +827,23 @@ describe('getNetworkValidationStatus', () => {
     validSummary.errorMessage = undefined
 
     // Mock fetchNdexSummaries to return valid summary
-    
+
     const mockFetchSummaries = vi.fn().mockResolvedValue([validSummary])
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     const result = await getNetworkValidationStatus(mockUuid, mockAccessToken)
 
     expect(result).toBe(true)
     expect(mockWaitSeconds).toHaveBeenCalledWith(0.5) // initialDelaySeconds
     expect(mockFetchSummaries).toHaveBeenCalledWith([mockUuid])
-
   })
 
   it('should return false when network validation fails after max attempts', async () => {
@@ -848,10 +854,14 @@ describe('getNetworkValidationStatus', () => {
     invalidSummary.errorMessage = 'Validation failed'
 
     // Mock fetchNdexSummaries to always return invalid
-    
+
     const mockFetchSummaries = vi.fn().mockResolvedValue([invalidSummary])
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     const result = await getNetworkValidationStatus(
       mockUuid,
@@ -876,10 +886,13 @@ describe('getNetworkValidationStatus', () => {
     errorSummary.completed = true
     errorSummary.errorMessage = 'Network has errors'
 
-    
     const mockFetchSummaries = vi.fn().mockResolvedValue([errorSummary])
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     const result = await getNetworkValidationStatus(
       mockUuid,
@@ -901,10 +914,13 @@ describe('getNetworkValidationStatus', () => {
     const mockAccessToken = 'test-token'
     const mockError = new Error('Network fetch failed')
 
-    
     const mockFetchSummaries = vi.fn().mockRejectedValue(mockError)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     const result = await getNetworkValidationStatus(
       mockUuid,
@@ -929,11 +945,16 @@ describe('getNetworkValidationStatus', () => {
     validSummary.externalId = mockUuid
     validSummary.completed = true
 
-    
     const mockFetchSummaries = vi.fn().mockResolvedValue([validSummary])
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     const result = await getNetworkValidationStatus(mockUuid, mockAccessToken)
 
@@ -949,10 +970,13 @@ describe('getNetworkValidationStatus', () => {
     const invalidSummary = createValidSummary()
     invalidSummary.completed = false
 
-    
     const mockFetchSummaries = vi.fn().mockResolvedValue([invalidSummary])
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     await getNetworkValidationStatus(mockUuid, mockAccessToken, undefined, {
       maxAttempts: 2,
@@ -968,11 +992,16 @@ describe('getNetworkValidationStatus', () => {
     const mockUuid = 'empty-summary-uuid'
     const mockAccessToken = 'test-token'
 
-    
     const mockFetchSummaries = vi.fn().mockResolvedValue([])
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
-    mockGetNdexClient.mockReturnValue({ networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } } } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
+    mockGetNdexClient.mockReturnValue({
+      networks: { v2: { getNetworkSummariesByUUIDs: mockFetchSummaries } },
+    } as any)
 
     const result = await getNetworkValidationStatus(
       mockUuid,

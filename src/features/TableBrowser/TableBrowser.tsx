@@ -10,10 +10,7 @@ import {
   Item,
 } from '@glideapps/glide-data-grid'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import {
-  IconButton,
-  Tooltip,
-} from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 import Box from '@mui/material/Box'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
@@ -29,9 +26,7 @@ import { useUndoStack } from '../../data/hooks/useUndoStack'
 import { useWindowSize } from '../../data/hooks/useWindowSize'
 import { IdType } from '../../models/IdType'
 import { Table, ValueTypeName } from '../../models/TableModel'
-import {
-  handleGetCellContent,
-} from './utils/cellContentHandler'
+import { handleGetCellContent } from './utils/cellContentHandler'
 import { handleCellEdit } from './utils/cellEditHandler'
 import { handleColumnMove, handleColumnResize } from './utils/columnHandlers'
 import { handlePaste } from './utils/pasteHandler'
@@ -45,11 +40,14 @@ import { ListValueEditorDialog } from './ListValueEditorDialog'
 
 import NetworkInfoPanel from './NetworkInfoPanel'
 import { TableToolbar } from './components/TableToolbar'
-import { useTableSelection } from './hooks/useTableSelection';
-import { useTableData } from './hooks/useTableData';
-import { useListEditor } from './hooks/useListEditor';
+import { useTableSelection } from './hooks/useTableSelection'
+import { useTableData } from './hooks/useTableData'
+import { useListEditor } from './hooks/useListEditor'
 import { TabPanel } from './components/TabPanel'
-import { TableBrowserTabs, TableBrowserTab } from './components/TableBrowserTabs'
+import {
+  TableBrowserTabs,
+  TableBrowserTab,
+} from './components/TableBrowserTabs'
 import { useTableMinMaxIds } from './hooks/useTableMinMaxIds'
 import { useTableScrollToTop } from './hooks/useTableScrollToTop'
 import { useIsContextCellVirtual } from './hooks/useIsContextCellVirtual'
@@ -72,7 +70,6 @@ const TOOLBAR_HEIGHT = 36
 
 // Adjust Data Grid size
 const GRID_GAP = TABS_HEIGHT + TOOLBAR_HEIGHT + 15
-
 
 export default function TableBrowser(props: {
   currentNetworkId: IdType
@@ -117,15 +114,12 @@ export default function TableBrowser(props: {
     setContextMenu(null)
   }, [])
 
-  const {
-    selection,
-    setSelection,
-    onGridSelectionChange,
-  } = useTableSelection({ currentTabIndex })
+  const { selection, setSelection, onGridSelectionChange } = useTableSelection({
+    currentTabIndex,
+  })
 
   const nodeDataEditorRef = React.useRef<DataEditorRef>(null)
   const edgeDataEditorRef = React.useRef<DataEditorRef>(null)
-
 
   const networkId = props.currentNetworkId
   const visualStyle = useVisualStyleStore(
@@ -134,10 +128,10 @@ export default function TableBrowser(props: {
   const setMapping = useVisualStyleStore((state) => state.setMapping)
 
   const selectedNodes = useViewModelStore(
-    (state) => state.getViewModel(networkId)?.selectedNodes ?? EMPTY_ARRAY
+    (state) => state.getViewModel(networkId)?.selectedNodes ?? EMPTY_ARRAY,
   )
   const selectedEdges = useViewModelStore(
-    (state) => state.getViewModel(networkId)?.selectedEdges ?? EMPTY_ARRAY
+    (state) => state.getViewModel(networkId)?.selectedEdges ?? EMPTY_ARRAY,
   )
 
   const tableDisplayConfiguration = useUiStateStore(
@@ -224,9 +218,6 @@ export default function TableBrowser(props: {
     selectedEdges,
   })
 
-
-  
-
   useTableScrollToTop(nodeDataEditorRef, edgeDataEditorRef, selectedElements)
 
   const handleChange = (
@@ -243,23 +234,18 @@ export default function TableBrowser(props: {
     [rows, allColumns, theme],
   )
 
-
-  const {
-    listEditor,
-    setListEditor,
-    onCellActivated,
-    handleListEditorSave,
-  } = useListEditor({
-    allColumns,
-    rows,
-    currentTable,
-    nodeTable,
-    currentNetworkId: props.currentNetworkId,
-    networkId,
-    postEdit,
-    setCellValue,
-    setNetworkModified,
-  })
+  const { listEditor, setListEditor, onCellActivated, handleListEditorSave } =
+    useListEditor({
+      allColumns,
+      rows,
+      currentTable,
+      nodeTable,
+      currentNetworkId: props.currentNetworkId,
+      networkId,
+      postEdit,
+      setCellValue,
+      setNetworkModified,
+    })
 
   const onColMoved = React.useCallback(
     (startIndex: number, endIndex: number): void => {
@@ -394,7 +380,6 @@ export default function TableBrowser(props: {
     ],
   )
 
-
   const onPaste = React.useCallback(
     (target: Item, values: readonly (readonly string[])[]) => {
       return handlePaste({
@@ -419,14 +404,11 @@ export default function TableBrowser(props: {
       postEdit,
       setValues,
       setNetworkModified,
-
     ],
   )
 
   const selectedColumn =
     selection.columns.length > 0 ? allColumns[selection.columns.first()!] : null
-
-
 
   // scan the visual properties to see if the selected column name is used in any mappings
   const visualPropertiesDependentOnSelectedColumn = React.useMemo(() => {
@@ -448,7 +430,9 @@ export default function TableBrowser(props: {
       rows={rows}
       allColumns={allColumns}
       tableDisplayConfiguration={tableDisplayConfiguration}
-      createUpdatedTableDisplayConfiguration={createUpdatedTableDisplayConfiguration}
+      createUpdatedTableDisplayConfiguration={
+        createUpdatedTableDisplayConfiguration
+      }
       setTableDisplayConfiguration={setTableDisplayConfiguration}
       setNetworkModified={setNetworkModified}
       postEdit={postEdit}
@@ -457,7 +441,9 @@ export default function TableBrowser(props: {
       setColumnName={setColumnName}
       applyValueToElements={applyValueToElemenets}
       exclusiveSelect={exclusiveSelect}
-      visualPropertiesDependentOnSelectedColumn={visualPropertiesDependentOnSelectedColumn}
+      visualPropertiesDependentOnSelectedColumn={
+        visualPropertiesDependentOnSelectedColumn
+      }
       setMapping={setMapping}
       setSort={setSort}
       duplicateColumn={duplicateColumn}
@@ -581,7 +567,9 @@ export default function TableBrowser(props: {
           selection.rows.length === 0 && selection.current === undefined
         }
         currentTableIsNodeTable={currentTable === nodeTable}
-        activeEditorRef={currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef}
+        activeEditorRef={
+          currentTable === nodeTable ? nodeDataEditorRef : edgeDataEditorRef
+        }
         rows={rows}
         allColumns={allColumns}
         currentTable={currentTable}

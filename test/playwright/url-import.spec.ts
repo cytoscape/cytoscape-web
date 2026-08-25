@@ -38,10 +38,7 @@ test.describe('URL Network Import', () => {
       }),
     )
 
-    await gotoAndWaitReady(
-      page,
-      `/?import=${encodeURIComponent(IMPORT_URL)}`,
-    )
+    await gotoAndWaitReady(page, `/?import=${encodeURIComponent(IMPORT_URL)}`)
 
     // The imported network is in the workspace and visible in the UI
     await expect

@@ -3,12 +3,12 @@
  *
  * Manages user consent for sending crash data reports.
  * Uses localStorage to persist consent preference.
- * 
+ *
  * Opt-out model: Consent is granted by default (unknown = accepted).
  * Users can decline if they choose.
  */
 
-import { useCallback,useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const CONSENT_STORAGE_KEY = 'cytoscapeWebCrashDataConsent'
 const CONSENT_EXPIRY_DAYS = 365
@@ -54,7 +54,8 @@ export const setCrashDataConsent = (status: 'accepted' | 'declined'): void => {
   }
 
   try {
-    const expiry = new Date().getTime() + CONSENT_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+    const expiry =
+      new Date().getTime() + CONSENT_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     const consent = {
       status,
       expiry,
@@ -92,7 +93,8 @@ export const useCrashDataConsent = () => {
   }, [])
 
   // Opt-out model: 'unknown' means consent is granted by default
-  const hasConsented = consentStatus === 'accepted' || consentStatus === 'unknown'
+  const hasConsented =
+    consentStatus === 'accepted' || consentStatus === 'unknown'
   // Show dialog only if user hasn't explicitly made a choice (first time)
   const needsConsent = consentStatus === 'unknown'
 
@@ -104,4 +106,3 @@ export const useCrashDataConsent = () => {
     decline,
   }
 }
-

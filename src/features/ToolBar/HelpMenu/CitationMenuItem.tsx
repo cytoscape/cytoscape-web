@@ -19,7 +19,6 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 interface CitationData {
   authors: string
   title: string

@@ -1,6 +1,5 @@
 import { experimental_extendTheme as extendTheme } from '@mui/material/styles'
 
-
 export const lightPalette = {
   primary: {
     // https://maketintsandshades.com/#colors=4B99DE&hashtag=0&steps=10
@@ -28,7 +27,7 @@ export const lightPalette = {
     secondary: 'rgba(0, 0, 0, 0.6)',
     disabled: 'rgba(0, 0, 0, 0.25)',
   },
-};
+}
 
 export const darkPalette = {
   primary: {
@@ -53,14 +52,14 @@ export const darkPalette = {
     secondary: 'rgba(255, 255, 255, 0.5)',
     disabled: 'rgba(255, 255, 255, 0.25)',
   },
-};
+}
 
 export const theme = extendTheme({
   breakpoints: {
     values: {
       xs: 0,
       sm: 600,
-      md: 960,  // MUI 4 value
+      md: 960, // MUI 4 value
       lg: 1280, // MUI 4 value
       xl: 1920, // MUI 4 value
     },
@@ -106,7 +105,7 @@ export const theme = extendTheme({
         root: {
           color: '#3a88fe',
           textDecoration: 'none',
-          "&:hover": {
+          '&:hover': {
             textDecoration: 'underline',
           },
         },
@@ -125,10 +124,10 @@ export const theme = extendTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          fontSize: "0.875em",
+          fontSize: '0.875em',
           maxWidth: 340,
         },
       },
     },
   },
-});
+})

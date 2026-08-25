@@ -152,7 +152,8 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: vi.fn()
+        getAttributesOfSelectedNodes: vi
+          .fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -185,7 +186,8 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: vi.fn()
+        getAttributesOfSelectedNodes: vi
+          .fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -211,7 +213,8 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: vi.fn()
+        getAttributesOfSelectedNodes: vi
+          .fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -238,7 +241,8 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: vi.fn()
+        getAttributesOfSelectedNodes: vi
+          .fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -261,7 +265,8 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: vi.fn()
+        getAttributesOfSelectedNodes: vi
+          .fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }
@@ -292,9 +297,7 @@ describe('fetchGeneNamesFromIds', () => {
     ).rejects.toThrow('Failed to fetch attributes')
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(
-      mockClient.networks.getAttributesOfSelectedNodes,
-    ).toHaveBeenCalled()
+    expect(mockClient.networks.getAttributesOfSelectedNodes).toHaveBeenCalled()
   })
 
   it('should execute an interconnect query with custom NDEx URL', async () => {
@@ -336,7 +339,8 @@ describe('fetchGeneNamesFromIds', () => {
 
     const mockClient = {
       networks: {
-        getAttributesOfSelectedNodes: vi.fn()
+        getAttributesOfSelectedNodes: vi
+          .fn()
           .mockResolvedValue(mockGeneNameMap),
       },
     }

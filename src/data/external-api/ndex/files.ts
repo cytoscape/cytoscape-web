@@ -168,8 +168,10 @@ export const resolveShortcut = async (
  */
 const mapFileListItem = (item: any): NdexFileItem => {
   const attrs = item.attributes ?? {}
-  const nodeCount = item.nodes ?? item.nodeCount ?? attrs.nodes ?? attrs.nodeCount
-  const edgeCount = item.edges ?? item.edgeCount ?? attrs.edges ?? attrs.edgeCount
+  const nodeCount =
+    item.nodes ?? item.nodeCount ?? attrs.nodes ?? attrs.nodeCount
+  const edgeCount =
+    item.edges ?? item.edgeCount ?? attrs.edges ?? attrs.edgeCount
   const cx2FileSize = item.cx2FileSize ?? attrs.cx2FileSize
   const subnetworkIds = item.subnetworkIds ?? attrs.subnetworkIds
 

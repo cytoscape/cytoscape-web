@@ -58,7 +58,11 @@ test.describe('Cell View availability for hierarchies (#630)', () => {
   test('a hierarchy with mixed edge interaction types gets no Cell View tab', async ({
     page,
   }) => {
-    await importNetworkFile(page, MIXED_INTERACTION_HCX, 'Test Network 50 nodes')
+    await importNetworkFile(
+      page,
+      MIXED_INTERACTION_HCX,
+      'Test Network 50 nodes',
+    )
 
     // The network is recognised as a hierarchy: the Sub Network Viewer is open
     // and waiting for a subsystem selection.
@@ -97,9 +101,9 @@ test.describe('Cell View availability for hierarchies (#630)', () => {
     await expect(
       page.locator('[data-testid="circle-packing-unavailable"]'),
     ).toBeVisible({ timeout: 15000 })
-    await expect(page.locator('[data-testid="circle-packing-svg"]')).toHaveCount(
-      0,
-    )
+    await expect(
+      page.locator('[data-testid="circle-packing-svg"]'),
+    ).toHaveCount(0)
 
     expect(pageErrors).toEqual([])
   })

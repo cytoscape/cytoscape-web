@@ -13,19 +13,22 @@ export interface UseTableSelectionResult {
   onGridSelectionChange: (newSelection: GridSelection) => void
 }
 
-export const useTableSelection = ({ currentTabIndex }: UseTableSelectionProps): UseTableSelectionResult => {
+export const useTableSelection = ({
+  currentTabIndex,
+}: UseTableSelectionProps): UseTableSelectionResult => {
   const [nodeSelection, setNodeSelection] = React.useState<GridSelection>({
     columns: CompactSelection.empty(),
     rows: CompactSelection.empty(),
   })
-  
+
   const [edgeSelection, setEdgeSelection] = React.useState<GridSelection>({
     columns: CompactSelection.empty(),
     rows: CompactSelection.empty(),
   })
 
   const selection = currentTabIndex === 0 ? nodeSelection : edgeSelection
-  const updateSelection = currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
+  const updateSelection =
+    currentTabIndex === 0 ? setNodeSelection : setEdgeSelection
 
   const onGridSelectionChange = React.useCallback(
     (newSelection: GridSelection) => {

@@ -3,10 +3,7 @@ import { CollectionReturnValue } from 'cytoscape'
 import { IdType } from '../../IdType'
 import { Edge, Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
-import {
-  NetworkUpdatedEvent,
-  UpdateEventType,
-} from '../NetworkStoreModel'
+import { NetworkUpdatedEvent, UpdateEventType } from '../NetworkStoreModel'
 
 export interface NetworkStoreState {
   networks: Map<IdType, Network>
@@ -143,10 +140,7 @@ export const createDeleteEdgesEvent = (
 /**
  * Add node to a network and return the updated network
  */
-export const addNodeToNetwork = (
-  network: Network,
-  nodeId: IdType,
-): Network => {
+export const addNodeToNetwork = (network: Network, nodeId: IdType): Network => {
   return NetworkFn.addNode(network, nodeId)
 }
 
@@ -218,10 +212,6 @@ export const addEdgeToNetwork = (
 /**
  * Add edges to a network and return the updated network
  */
-export const addEdgesToNetwork = (
-  network: Network,
-  edges: Edge[],
-): Network => {
+export const addEdgesToNetwork = (network: Network, edges: Edge[]): Network => {
   return NetworkFn.addEdges(network, edges)
 }
-

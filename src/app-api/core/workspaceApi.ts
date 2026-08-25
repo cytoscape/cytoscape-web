@@ -165,7 +165,10 @@ export const workspaceApi: WorkspaceApi = {
   switchCurrentNetwork(networkId) {
     try {
       if (!networkId || networkId.trim() === '') {
-        return fail(AppCodes.INVALID_INPUT, 'networkId must be a non-empty string')
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'networkId must be a non-empty string',
+        )
       }
 
       const { workspace } = useWorkspaceStore.getState()

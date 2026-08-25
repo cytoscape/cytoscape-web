@@ -325,7 +325,9 @@ describe('wrapSvgDataUriForSize', () => {
         'data:image/svg+xml,' +
         encodeURIComponent('<svg viewBox="0 0 200 50"><rect/></svg>')
 
-      const wrapped = decodeWrapper(wrapSvgDataUriForSize(url, 100, 40, 'cover'))
+      const wrapped = decodeWrapper(
+        wrapSvgDataUriForSize(url, 100, 40, 'cover'),
+      )
 
       expect(wrapped).toContain('preserveAspectRatio="xMidYMid slice"')
       expect(wrapped).toContain('width="100%" height="100%"')

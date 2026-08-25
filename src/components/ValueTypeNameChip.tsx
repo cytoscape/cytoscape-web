@@ -1,10 +1,17 @@
 import { Box, Tooltip, Typography, useTheme } from '@mui/material'
 
 import { ValueTypeName } from '../models/TableModel/ValueTypeName'
-import { valueTypeNameDescription, valueTypeNameLabel } from '../models/TableModel/impl/valueTypeNameDisplay'
+import {
+  valueTypeNameDescription,
+  valueTypeNameLabel,
+} from '../models/TableModel/impl/valueTypeNameDisplay'
 import { getValueTypeNameSVG } from '../models/TableModel/impl/valueTypeNameIcons'
 
-export type ValueTypeNameChipVariant = 'chip' | 'text' | 'abbreviation' | 'chip-and-text'
+export type ValueTypeNameChipVariant =
+  | 'chip'
+  | 'text'
+  | 'abbreviation'
+  | 'chip-and-text'
 
 interface ValueTypeNameChipProps {
   type: ValueTypeName
@@ -42,20 +49,24 @@ export const ValueTypeNameChip = ({
       : theme.palette.mode === 'dark'
 
   let content: JSX.Element
-  if (variant === 'chip' || variant === 'abbreviation' || variant === 'chip-and-text') {
+  if (
+    variant === 'chip' ||
+    variant === 'abbreviation' ||
+    variant === 'chip-and-text'
+  ) {
     const svgString = getValueTypeNameSVG(type, isDark)
     const chip = (
       <Box
         component="span"
         data-testid={`data-type-chip-${type}`}
         dangerouslySetInnerHTML={{ __html: svgString }}
-        sx={{ 
-          display: 'inline-flex', 
-          alignItems: 'center', 
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
           justifyContent: 'center',
-          height: 24, 
-          overflow: 'hidden', 
-          verticalAlign: 'middle' 
+          height: 24,
+          overflow: 'hidden',
+          verticalAlign: 'middle',
         }}
       />
     )
@@ -99,4 +110,3 @@ export const ValueTypeNameChip = ({
 }
 
 export default ValueTypeNameChip
-

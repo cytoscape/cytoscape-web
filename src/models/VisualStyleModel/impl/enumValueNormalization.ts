@@ -18,7 +18,9 @@ import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 const CANONICAL_SETS: Partial<
   Record<VisualPropertyValueTypeName, Set<string>>
 > = {
-  [VisualPropertyValueTypeName.NodeShape]: new Set(Object.values(NodeShapeType)),
+  [VisualPropertyValueTypeName.NodeShape]: new Set(
+    Object.values(NodeShapeType),
+  ),
   [VisualPropertyValueTypeName.EdgeLine]: new Set(Object.values(EdgeLineType)),
   [VisualPropertyValueTypeName.NodeBorderLine]: new Set(
     Object.values(NodeBorderLineType),
@@ -38,7 +40,10 @@ const ALIASES: Record<string, string> = {
 }
 
 const normalizeKey = (value: string): string =>
-  value.trim().toLowerCase().replace(/[\s_]+/g, '-')
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
 
 /**
  * Return the canonical Web value for a shape / line-type value, or the original

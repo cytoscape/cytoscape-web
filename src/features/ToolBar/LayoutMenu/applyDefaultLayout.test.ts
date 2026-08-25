@@ -6,10 +6,7 @@ import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { applyDefaultLayout } from './applyDefaultLayout'
 
-const makeAlgorithm = (
-  engineName: string,
-  name = 'gForce',
-): LayoutAlgorithm =>
+const makeAlgorithm = (engineName: string, name = 'gForce'): LayoutAlgorithm =>
   ({
     name,
     displayName: 'gForce',

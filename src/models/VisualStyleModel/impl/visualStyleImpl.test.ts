@@ -60,14 +60,21 @@ describe('VisualStyleImpl', () => {
       const elementIds: IdType[] = ['node-1', 'node-2', 'node-3']
       const vpValue = '#FF0000'
 
-      const result = setBypass(visualStyle, 'nodeBackgroundColor', elementIds, vpValue)
+      const result = setBypass(
+        visualStyle,
+        'nodeBackgroundColor',
+        elementIds,
+        vpValue,
+      )
 
       const bypassMap = result.nodeBackgroundColor.bypassMap
       expect(bypassMap.get('node-1')).toBe(vpValue)
       expect(bypassMap.get('node-2')).toBe(vpValue)
       expect(bypassMap.get('node-3')).toBe(vpValue)
       expect(result).not.toBe(visualStyle) // Immutability check
-      expect(visualStyle.nodeBackgroundColor.bypassMap.get('node-1')).toBeUndefined() // Original unchanged
+      expect(
+        visualStyle.nodeBackgroundColor.bypassMap.get('node-1'),
+      ).toBeUndefined() // Original unchanged
     })
 
     it('should update existing bypass values', () => {
@@ -162,7 +169,11 @@ describe('VisualStyleImpl', () => {
         ['node-2', '#00FF00'],
       ])
 
-      const result = setBypassMap(visualStyle, 'nodeBackgroundColor', newBypassMap)
+      const result = setBypassMap(
+        visualStyle,
+        'nodeBackgroundColor',
+        newBypassMap,
+      )
 
       const bypassMap = result.nodeBackgroundColor.bypassMap
       expect(bypassMap.get('node-1')).toBe('#FF0000')
@@ -271,8 +282,18 @@ describe('VisualStyleImpl', () => {
         'type',
         ValueTypeName.String,
       )
-      result = setDiscreteMappingValue(result, 'nodeShape', ['type1'], 'ellipse')
-      result = setDiscreteMappingValue(result, 'nodeShape', ['type1'], 'diamond')
+      result = setDiscreteMappingValue(
+        result,
+        'nodeShape',
+        ['type1'],
+        'ellipse',
+      )
+      result = setDiscreteMappingValue(
+        result,
+        'nodeShape',
+        ['type1'],
+        'diamond',
+      )
 
       const mapping = result.nodeShape.mapping as DiscreteMappingFunction
       expect(mapping.vpValueMap.get('type1')).toBe('diamond')
@@ -303,8 +324,16 @@ describe('VisualStyleImpl', () => {
         'type',
         ValueTypeName.String,
       )
-      result = setDiscreteMappingValue(result, 'nodeShape', ['type1', 'type2'], 'ellipse')
-      result = deleteDiscreteMappingValue(result, 'nodeShape', ['type1', 'type2'])
+      result = setDiscreteMappingValue(
+        result,
+        'nodeShape',
+        ['type1', 'type2'],
+        'ellipse',
+      )
+      result = deleteDiscreteMappingValue(result, 'nodeShape', [
+        'type1',
+        'type2',
+      ])
 
       const mapping = result.nodeShape.mapping as DiscreteMappingFunction
       expect(mapping.vpValueMap.get('type1')).toBeUndefined()
@@ -314,7 +343,9 @@ describe('VisualStyleImpl', () => {
     it('should return unchanged if mapping does not exist', () => {
       const visualStyle = createVisualStyle()
 
-      const result = deleteDiscreteMappingValue(visualStyle, 'nodeShape', ['type1'])
+      const result = deleteDiscreteMappingValue(visualStyle, 'nodeShape', [
+        'type1',
+      ])
 
       expect(result).toBe(visualStyle) // Should return unchanged
     })
@@ -410,7 +441,8 @@ describe('VisualStyleImpl', () => {
         attributeValues,
       )
 
-      const mapping = result.nodeBackgroundColor.mapping as ContinuousMappingFunction
+      const mapping = result.nodeBackgroundColor
+        .mapping as ContinuousMappingFunction
       expect(mapping).toBeDefined()
       expect(mapping.type).toBe(MappingFunctionType.Continuous)
       expect(mapping.attribute).toBe('score')
@@ -613,7 +645,8 @@ describe('VisualStyleImpl', () => {
 
       const result = setMapping(visualStyle, 'nodeWidth', mapping)
 
-      const resultMapping = result.nodeWidth.mapping as ContinuousMappingFunction
+      const resultMapping = result.nodeWidth
+        .mapping as ContinuousMappingFunction
       expect(resultMapping.type).toBe(MappingFunctionType.Continuous)
       expect(resultMapping.attribute).toBe('score')
     })
@@ -629,7 +662,8 @@ describe('VisualStyleImpl', () => {
 
       const result = setMapping(visualStyle, 'nodeLabel', mapping)
 
-      const resultMapping = result.nodeLabel.mapping as PassthroughMappingFunction
+      const resultMapping = result.nodeLabel
+        .mapping as PassthroughMappingFunction
       expect(resultMapping.type).toBe(MappingFunctionType.Passthrough)
       expect(resultMapping.attribute).toBe('name')
     })
@@ -670,8 +704,9 @@ describe('VisualStyleImpl', () => {
       expect(original.nodeShape.defaultValue).toBe(originalDefault)
       expect(original.nodeShape.bypassMap).toBe(originalBypassMap)
       expect(original.nodeShape.mapping).toBeUndefined()
-      expect(original.nodeBackgroundColor.bypassMap.get('node-1')).toBeUndefined()
+      expect(
+        original.nodeBackgroundColor.bypassMap.get('node-1'),
+      ).toBeUndefined()
     })
   })
 })
-

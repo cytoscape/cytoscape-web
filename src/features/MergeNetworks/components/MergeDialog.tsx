@@ -86,7 +86,6 @@ import { DifferenceIcon, IntersectionIcon, UnionIcon } from './Icon'
 import { MatchingColumnTable } from './MatchingColumnTable'
 import { MatchingTableComp } from './MatchingTableComp'
 
-
 const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -120,7 +119,15 @@ const StyledListSubheader = styled(ListSubheader)(({ theme }) => ({
   borderRadius: '4px 4px 0 0',
 }))
 
-const ArrowButton = ({ disabled, children, onClick }: { disabled: boolean; children: React.ReactNode; onClick: () => void; }) => (
+const ArrowButton = ({
+  disabled,
+  children,
+  onClick,
+}: {
+  disabled: boolean
+  children: React.ReactNode
+  onClick: () => void
+}) => (
   <Button
     variant="contained"
     onClick={onClick}
@@ -562,8 +569,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       // Merge opaque (non-core) aspects from the source networks (CW-522):
       // concatenate + dedupe per aspect key.
       const sourceNetworkIds = toMergeNetworksList.map((i) => i[1])
-      const allOpaqueAspects =
-        useOpaqueAspectStore.getState().opaqueAspects
+      const allOpaqueAspects = useOpaqueAspectStore.getState().opaqueAspects
       const mergedOpaqueAspects = mergeOpaqueAspects(
         sourceNetworkIds.map((id) => allOpaqueAspects[id]),
       )
@@ -718,7 +724,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             placement="right"
           >
             <Box>
-              <HelpIcon sx={{ color: (theme) => theme.palette.text.secondary }} />
+              <HelpIcon
+                sx={{ color: (theme) => theme.palette.text.secondary }}
+              />
             </Box>
           </Tooltip>
         </Box>
@@ -760,7 +768,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         <FormControl sx={{ width: '100%' }}>
           <FormLabel
             htmlFor="merged-network-name"
-            sx={{ mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}
+            sx={{
+              mb: 0.5,
+              fontWeight: 'bold',
+              color: (theme) => theme.palette.text.primary,
+            }}
           >
             Merged Network Name:
           </FormLabel>
@@ -772,7 +784,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             fullWidth
             size="small"
             InputProps={{
-              sx: { color: (theme) => isNameDuplicate ? theme.palette.warning.main : 'inherit' },
+              sx: {
+                color: (theme) =>
+                  isNameDuplicate ? theme.palette.warning.main : 'inherit',
+              },
             }}
           />
           <Typography
@@ -782,12 +797,22 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               textAlign: 'left',
               fontSize: '0.875rem',
               ml: 0.5,
-            }}>
-            {isNameDuplicate ? "Warning: A network with this name already exists in your workspace." : "\u00A0"}
+            }}
+          >
+            {isNameDuplicate
+              ? 'Warning: A network with this name already exists in your workspace.'
+              : '\u00A0'}
           </Typography>
         </FormControl>
 
-        <Typography sx={{ mt: 1, mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
+        <Typography
+          sx={{
+            mt: 1,
+            mb: 0.5,
+            fontWeight: 'bold',
+            color: (theme) => theme.palette.text.primary,
+          }}
+        >
           Select Networks to Merge:
         </Typography>
         <Box display="flex" justifyContent="space-between">
@@ -868,7 +893,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                           >
                             <StarIcon
                               viewBox="0 1 24 24"
-                              sx={{ color: (theme) => theme.palette.secondary.light }}
+                              sx={{
+                                color: (theme) => theme.palette.secondary.light,
+                              }}
                             />
                           </Tooltip>
                         )}
@@ -880,7 +907,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                           >
                             <ReportGmailerrorredIcon
                               viewBox="0 0.5 24 24"
-                              sx={{ color: (theme) => theme.palette.warning.main }}
+                              sx={{
+                                color: (theme) => theme.palette.warning.main,
+                              }}
                             />
                           </Tooltip>
                         )}
@@ -915,7 +944,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         </Box>
 
         {Object.values(nodesDuplication).some((v) => v === true) && (
-          <Box display="flex" alignItems="flex-start" gap={1} sx={{ ml: 1, mr: 1 }}>
+          <Box
+            display="flex"
+            alignItems="flex-start"
+            gap={1}
+            sx={{ ml: 1, mr: 1 }}
+          >
             <ReportGmailerrorredIcon
               viewBox="0 0 24 24"
               sx={{ color: (theme) => theme.palette.warning.main }}
@@ -975,13 +1009,21 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             border: (theme) => `1px solid ${theme.palette.divider}`,
             borderRadius: 1,
             boxShadow: 'none',
-          }}>
+          }}
+        >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography>Advanced Options</Typography>
           </AccordionSummary>
 
           <AccordionDetails>
-            <Typography sx={{ mt: 1, mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
+            <Typography
+              sx={{
+                mt: 1,
+                mb: 0.5,
+                fontWeight: 'bold',
+                color: (theme) => theme.palette.text.primary,
+              }}
+            >
               Matching Columns:
             </Typography>
             <MatchingColumnTable
@@ -990,7 +1032,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               matchingCols={matchingCols}
             />
 
-            <Typography sx={{ mt: 2, mb: 0.5, fontWeight: 'bold', color: (theme) => theme.palette.text.primary }}>
+            <Typography
+              sx={{
+                mt: 2,
+                mb: 0.5,
+                fontWeight: 'bold',
+                color: (theme) => theme.palette.text.primary,
+              }}
+            >
               How to merge columns:
             </Typography>
             {tableView !== null && (
@@ -1004,7 +1053,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             )}
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }} >
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                 <ToggleButtonGroup
                   value={tableView}
                   exclusive

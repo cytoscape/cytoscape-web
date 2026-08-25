@@ -4,7 +4,6 @@ import TuneIcon from '@mui/icons-material/Tune'
 import { Box, IconButton } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
-
 interface SearchControlsProps {
   searchTerm: string
   startSearch: () => void

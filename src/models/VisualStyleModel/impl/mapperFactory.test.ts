@@ -191,7 +191,7 @@ describe('MapperFactory', () => {
       // Should normalize boolean values
       expect(mapper(true)).toBe('element')
       expect(mapper(false)).toBe('none')
-      
+
       // Should normalize string boolean values
       expect(mapper('true')).toBe('element')
       expect(mapper('false')).toBe('none')
@@ -215,25 +215,41 @@ describe('MapperFactory', () => {
       it('should parse HTTP/HTTPS URLs to images', () => {
         const url1 = 'https://example.com/img.png'
         const url2 = 'http://example.com/img.png'
-        expect(mapper(url1)).toMatchObject({ type: 'image', properties: { url: url1 } })
-        expect(mapper(url2)).toMatchObject({ type: 'image', properties: { url: url2 } })
+        expect(mapper(url1)).toMatchObject({
+          type: 'image',
+          properties: { url: url1 },
+        })
+        expect(mapper(url2)).toMatchObject({
+          type: 'image',
+          properties: { url: url2 },
+        })
       })
 
       it('should parse data URIs to images', () => {
         const dataUri = 'data:image/png;base64,iVBOR...'
-        expect(mapper(dataUri)).toMatchObject({ type: 'image', properties: { url: dataUri } })
+        expect(mapper(dataUri)).toMatchObject({
+          type: 'image',
+          properties: { url: dataUri },
+        })
       })
 
       it('should parse raw SVGs to images with data URI', () => {
         const svg = '<svg><rect/></svg>'
         const expectedUri = 'data:image/svg+xml,' + encodeURIComponent(svg)
-        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+        expect(mapper(svg)).toMatchObject({
+          type: 'image',
+          properties: { url: expectedUri },
+        })
       })
 
       it('should parse SVGs with leading whitespace', () => {
         const svg = '  <svg><rect/></svg>  '
-        const expectedUri = 'data:image/svg+xml,' + encodeURIComponent('<svg><rect/></svg>')
-        expect(mapper(svg)).toMatchObject({ type: 'image', properties: { url: expectedUri } })
+        const expectedUri =
+          'data:image/svg+xml,' + encodeURIComponent('<svg><rect/></svg>')
+        expect(mapper(svg)).toMatchObject({
+          type: 'image',
+          properties: { url: expectedUri },
+        })
       })
 
       it('should reject file: URLs and return default', () => {
@@ -248,12 +264,21 @@ describe('MapperFactory', () => {
 
       it('should parse valid pie JSON to pie chart', () => {
         const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"]}'
-        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.PieChart', properties: { cy_dataColumns: ["a"] } })
+        expect(mapper(json)).toMatchObject({
+          type: 'chart',
+          name: 'org.cytoscape.PieChart',
+          properties: { cy_dataColumns: ['a'] },
+        })
       })
 
       it('should parse valid ring JSON to ring chart', () => {
-        const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"],"cy_holeSize":0.4}'
-        expect(mapper(json)).toMatchObject({ type: 'chart', name: 'org.cytoscape.RingChart', properties: { cy_holeSize: 0.4 } })
+        const json =
+          '{"cy_dataColumns":["a"],"cy_colors":["#f00"],"cy_holeSize":0.4}'
+        expect(mapper(json)).toMatchObject({
+          type: 'chart',
+          name: 'org.cytoscape.RingChart',
+          properties: { cy_holeSize: 0.4 },
+        })
       })
 
       it('should return default for malformed JSON', () => {
@@ -355,9 +380,7 @@ describe('MapperFactory', () => {
           vpValue: '#FF0000',
           inclusive: true,
         },
-        controlPoints: [
-          { value: 50, vpValue: '#00FF00' },
-        ],
+        controlPoints: [{ value: 50, vpValue: '#00FF00' }],
         ltMinVpValue: '#0000FF',
         gtMaxVpValue: '#FF0000',
       }
@@ -385,9 +408,7 @@ describe('MapperFactory', () => {
           vpValue: 50,
           inclusive: true,
         },
-        controlPoints: [
-          { value: 50, vpValue: 25 },
-        ],
+        controlPoints: [{ value: 50, vpValue: 25 }],
         ltMinVpValue: 5,
         gtMaxVpValue: 50,
       }
@@ -509,4 +530,3 @@ describe('MapperFactory', () => {
     })
   })
 })
-

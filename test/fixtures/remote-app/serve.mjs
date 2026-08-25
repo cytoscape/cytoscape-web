@@ -97,7 +97,8 @@ const server = createServer((req, res) => {
   }
 
   res.writeHead(200, {
-    'Content-Type': CONTENT_TYPES[path.extname(filePath)] ?? 'application/octet-stream',
+    'Content-Type':
+      CONTENT_TYPES[path.extname(filePath)] ?? 'application/octet-stream',
   })
   createReadStream(filePath).pipe(res)
 })

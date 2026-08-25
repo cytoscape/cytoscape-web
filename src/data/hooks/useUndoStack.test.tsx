@@ -82,9 +82,7 @@ describe('useUndoStack', () => {
     })
 
     act(() => {
-      useUndoStore
-        .getState()
-        .setRedoStack(NETWORK_ID, [cellEdit('x', 'y')])
+      useUndoStore.getState().setRedoStack(NETWORK_ID, [cellEdit('x', 'y')])
       for (let i = 0; i < 5; i++) {
         result.current.postEdit(
           UndoCommandType.SET_CELL_VALUE,
@@ -225,9 +223,8 @@ describe('useUndoStack', () => {
     expect(stacks.undoStack).toHaveLength(0)
     expect(stacks.redoStack).toHaveLength(2)
     expect(
-      useTableStore
-        .getState()
-        .tables[NETWORK_ID].nodeTable.rows.get('n1')?.name,
+      useTableStore.getState().tables[NETWORK_ID].nodeTable.rows.get('n1')
+        ?.name,
     ).toBe('original')
   })
 
@@ -253,9 +250,7 @@ describe('useUndoStack', () => {
       result.current.clearStack()
     })
 
-    expect(
-      useUndoStore.getState().undoRedoStacks[NETWORK_ID],
-    ).toBeUndefined()
+    expect(useUndoStore.getState().undoRedoStacks[NETWORK_ID]).toBeUndefined()
   })
 
   describe('SWITCH_STYLE', () => {
@@ -326,7 +321,9 @@ describe('useUndoStack', () => {
 
       // 1. Edit a visual property while "Default" is active, recorded as undoable
       act(() => {
-        useVisualStyleStore.getState().setDefault(NETWORK_ID, 'nodeShape', 'diamond')
+        useVisualStyleStore
+          .getState()
+          .setDefault(NETWORK_ID, 'nodeShape', 'diamond')
         result.current.postEdit(
           UndoCommandType.SET_DEFAULT_VP_VALUE,
           'set node shape',

@@ -10,7 +10,7 @@ describe('pasteHandler', () => {
   const mockPostEdit = vi.fn()
   const mockSetValues = vi.fn()
   const mockSetNetworkModified = vi.fn()
-  
+
   const mockNodeTable = { id: 'nodeTable', rows: new Map(), columns: [] }
 
   const baseArgs = {

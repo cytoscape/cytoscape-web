@@ -27,14 +27,15 @@ export const ColorsForm: React.FC<ColorsFormProps> = ({
   currentNetworkId,
   onUpdate,
 }) => {
-
   // State for palette picker popover
   const [paletteAnchorEl, setPaletteAnchorEl] =
     React.useState<HTMLButtonElement | null>(null)
   const paletteOpen = Boolean(paletteAnchorEl)
 
   // Handle opening palette picker
-  const handleOpenPalettePicker = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleOpenPalettePicker = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     setPaletteAnchorEl(event.currentTarget)
   }
 
@@ -56,7 +57,13 @@ export const ColorsForm: React.FC<ColorsFormProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Palette Selection Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+        }}
+      >
         <Button
           variant="outlined"
           startIcon={<PaletteIcon />}
@@ -89,4 +96,3 @@ export const ColorsForm: React.FC<ColorsFormProps> = ({
     </Box>
   )
 }
-

@@ -126,7 +126,12 @@ describe('getNetworks', () => {
     mockWorkspace.networkModified = { 'net-1': true }
     mockSummaries = {
       'net-1': makeNetworkSummary({ name: 'Alpha', description: 'First' }),
-      'net-2': makeNetworkSummary({ name: 'Beta', description: 'Second', nodeCount: 10, edgeCount: 5 }),
+      'net-2': makeNetworkSummary({
+        name: 'Beta',
+        description: 'Second',
+        nodeCount: 10,
+        edgeCount: 5,
+      }),
       // net-3 intentionally missing
     }
   })
@@ -182,7 +187,12 @@ describe('getNetworkSummary', () => {
     mockWorkspace.networkIds = ['net-1', 'net-2']
     mockWorkspace.networkModified = {}
     mockSummaries = {
-      'net-1': makeNetworkSummary({ name: 'Alpha', description: 'Desc', nodeCount: 5, edgeCount: 4 }),
+      'net-1': makeNetworkSummary({
+        name: 'Alpha',
+        description: 'Desc',
+        nodeCount: 5,
+        edgeCount: 4,
+      }),
     }
   })
 

@@ -5,7 +5,8 @@ import {
   CytoContainerResultStatus,
   ErrorResponse,
   ServerStatus,
-  ServiceAlgorithm} from '../model'
+  ServiceAlgorithm,
+} from '../model'
 
 // get task result function
 export const getTaskResult = async (
@@ -29,7 +30,9 @@ export const getTaskResult = async (
 }
 
 // get all algorithms offered by the service
-export const getAllAlgorithms = async (serviceUrl: string): Promise<ServiceAlgorithm[]> => {
+export const getAllAlgorithms = async (
+  serviceUrl: string,
+): Promise<ServiceAlgorithm[]> => {
   const response = await fetch(serviceUrl, {
     method: 'GET',
     headers: {

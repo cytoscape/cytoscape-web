@@ -43,8 +43,7 @@ function hasSelection(): boolean {
  */
 function isValidComponent(value: unknown): boolean {
   return (
-    typeof value === 'function' ||
-    (typeof value === 'object' && value !== null)
+    typeof value === 'function' || (typeof value === 'object' && value !== null)
   )
 }
 
@@ -62,7 +61,10 @@ export const createResourceApi = (appId: string): ResourceApi => ({
   registerPanel(options) {
     try {
       if (!options.id || options.id.trim() === '') {
-        return fail(AppCodes.INVALID_INPUT, 'id is required and must be non-empty')
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
       }
       if (!isValidComponent(options.component)) {
         return fail(
@@ -104,7 +106,10 @@ export const createResourceApi = (appId: string): ResourceApi => ({
   registerMenuItem(options) {
     try {
       if (!options.id || options.id.trim() === '') {
-        return fail(AppCodes.INVALID_INPUT, 'id is required and must be non-empty')
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
       }
       if (!isValidComponent(options.component)) {
         return fail(

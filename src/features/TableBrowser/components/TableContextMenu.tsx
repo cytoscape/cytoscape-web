@@ -18,7 +18,11 @@ import { Table } from '../../../models/TableModel'
 import { TableColumn } from '../TableBrowser'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { getElementId } from '../idColumn'
-import { handleApplyToEntireColumn, handleApplyToSelected, handleSelectFromSelection } from '../utils/contextMenuActions'
+import {
+  handleApplyToEntireColumn,
+  handleApplyToSelected,
+  handleSelectFromSelection,
+} from '../utils/contextMenuActions'
 
 export interface TableContextMenuProps {
   contextMenu: {
@@ -29,7 +33,7 @@ export interface TableContextMenuProps {
   isContextCellVirtual: boolean
   isSelectionEmpty: boolean
   currentTableIsNodeTable: boolean
-  
+
   // Dependencies for internal actions
   activeEditorRef: React.RefObject<DataEditorRef | null>
   rows: any[]
@@ -37,10 +41,25 @@ export interface TableContextMenuProps {
   currentTable: Table | undefined
   nodeTable: Table | undefined
   currentNetworkId: IdType
-  postEdit: (type: UndoCommandType, name: string, oldVal: any, newVal: any) => void
-  applyValueToElements: (networkId: IdType, tableType: 'node' | 'edge', columnKey: string, value: any, elementIds?: string[]) => void
+  postEdit: (
+    type: UndoCommandType,
+    name: string,
+    oldVal: any,
+    newVal: any,
+  ) => void
+  applyValueToElements: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    columnKey: string,
+    value: any,
+    elementIds?: string[],
+  ) => void
   setNetworkModified: (networkId: IdType, isModified: boolean) => void
-  exclusiveSelect: (networkId: IdType, nodeIds: IdType[], edgeIds: IdType[]) => void
+  exclusiveSelect: (
+    networkId: IdType,
+    nodeIds: IdType[],
+    edgeIds: IdType[],
+  ) => void
   selection: GridSelection
   setSelection: (selection: GridSelection) => void
 }
@@ -78,10 +97,22 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       currentNetworkId,
       postEdit,
       applyValueToElements,
-      setNetworkModified: (id: string, mod: boolean) => setNetworkModified(id, mod),
+      setNetworkModified: (id: string, mod: boolean) =>
+        setNetworkModified(id, mod),
       handleContextMenuClose,
     })
-  }, [contextMenu, rows, allColumns, currentTable, nodeTable, currentNetworkId, postEdit, applyValueToElements, setNetworkModified, handleContextMenuClose])
+  }, [
+    contextMenu,
+    rows,
+    allColumns,
+    currentTable,
+    nodeTable,
+    currentNetworkId,
+    postEdit,
+    applyValueToElements,
+    setNetworkModified,
+    handleContextMenuClose,
+  ])
 
   const onApplyToSelected = React.useCallback(() => {
     if (contextMenu === null) return
@@ -94,10 +125,22 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       currentNetworkId,
       postEdit,
       applyValueToElements,
-      setNetworkModified: (id: string, mod: boolean) => setNetworkModified(id, mod),
+      setNetworkModified: (id: string, mod: boolean) =>
+        setNetworkModified(id, mod),
       handleContextMenuClose,
     })
-  }, [contextMenu, rows, allColumns, currentTable, nodeTable, currentNetworkId, postEdit, applyValueToElements, setNetworkModified, handleContextMenuClose])
+  }, [
+    contextMenu,
+    rows,
+    allColumns,
+    currentTable,
+    nodeTable,
+    currentNetworkId,
+    postEdit,
+    applyValueToElements,
+    setNetworkModified,
+    handleContextMenuClose,
+  ])
 
   const onCopyValue = React.useCallback(() => {
     if (contextMenu === null) return
@@ -144,7 +187,14 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       }
     }
     handleContextMenuClose()
-  }, [contextMenu, rows, currentTableIsNodeTable, currentNetworkId, exclusiveSelect, handleContextMenuClose])
+  }, [
+    contextMenu,
+    rows,
+    currentTableIsNodeTable,
+    currentNetworkId,
+    exclusiveSelect,
+    handleContextMenuClose,
+  ])
 
   const onSelectFromSelection = React.useCallback(() => {
     handleSelectFromSelection({
@@ -157,7 +207,16 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       setSelection,
       handleContextMenuClose,
     })
-  }, [selection, rows, currentTable, nodeTable, currentNetworkId, exclusiveSelect, setSelection, handleContextMenuClose])
+  }, [
+    selection,
+    rows,
+    currentTable,
+    nodeTable,
+    currentNetworkId,
+    exclusiveSelect,
+    setSelection,
+    handleContextMenuClose,
+  ])
 
   return (
     <Menu
@@ -220,7 +279,11 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
       <Divider />
 
-      <MenuItem data-testid="context-menu-copy-selected" disabled={isSelectionEmpty} onClick={onCopySelected}>
+      <MenuItem
+        data-testid="context-menu-copy-selected"
+        disabled={isSelectionEmpty}
+        onClick={onCopySelected}
+      >
         <ListItemIcon>
           <ContentCopy fontSize="small" />
         </ListItemIcon>
@@ -236,7 +299,10 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
       <Divider />
 
-      <MenuItem data-testid="context-menu-select-viewport" onClick={onSelectInViewport}>
+      <MenuItem
+        data-testid="context-menu-select-viewport"
+        onClick={onSelectInViewport}
+      >
         Select This {elementTypeName} in Viewport
       </MenuItem>
 
@@ -248,7 +314,9 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
         <ListItemIcon>
           <CheckBoxOutlinedIcon fontSize="small" />
         </ListItemIcon>
-        <ListItemText>Select {pluralElementTypeName} from selection</ListItemText>
+        <ListItemText>
+          Select {pluralElementTypeName} from selection
+        </ListItemText>
       </MenuItem>
     </Menu>
   )

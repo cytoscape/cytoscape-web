@@ -46,7 +46,7 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
   // Convert start angle to match Cytoscape.js coordinate system
   // Cytoscape uses: (90 - angle) % 360, where 90deg = 12 o'clock
   // We need to apply the same conversion for alignment
-  const cytoscapeStartAngle = ((90 - cy_startAngle) % 360 + 360) % 360
+  const cytoscapeStartAngle = (((90 - cy_startAngle) % 360) + 360) % 360
 
   // Remove stroke for preview charts to prevent gaps (only use stroke for very large charts)
   const useStroke = chartSize > 120
@@ -54,7 +54,9 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
   // Generate SVG path for pie chart slice
   const generateSlicePath = React.useCallback(
     (index: number, color: string) => {
-      const startAngleRad = degreesToRadians(cytoscapeStartAngle + index * sliceAngle)
+      const startAngleRad = degreesToRadians(
+        cytoscapeStartAngle + index * sliceAngle,
+      )
       const endAngleRad = degreesToRadians(
         cytoscapeStartAngle + (index + 1) * sliceAngle,
       )
@@ -127,15 +129,21 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
             // Reverse the render order to match Cytoscape.js
             const reversedIndex = cy_dataColumns.length - 1 - index
             const slicePath = generateSlicePath(reversedIndex, color)
-            
+
             // Add index label if needed
             if (showIndices) {
-              const currentSliceAngle = calculateSliceAngle(cy_dataColumns.length)
-              const sliceAngleRad = degreesToRadians(cytoscapeStartAngle + reversedIndex * currentSliceAngle + currentSliceAngle / 2)
+              const currentSliceAngle = calculateSliceAngle(
+                cy_dataColumns.length,
+              )
+              const sliceAngleRad = degreesToRadians(
+                cytoscapeStartAngle +
+                  reversedIndex * currentSliceAngle +
+                  currentSliceAngle / 2,
+              )
               const labelRadius = outerRadius * 0.6
               const labelX = labelRadius * Math.cos(sliceAngleRad)
               const labelY = labelRadius * Math.sin(sliceAngleRad)
-              
+
               return (
                 <g key={index}>
                   {slicePath}
@@ -154,7 +162,7 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
                 </g>
               )
             }
-            
+
             return slicePath
           })}
         </g>

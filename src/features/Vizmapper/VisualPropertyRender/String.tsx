@@ -29,7 +29,7 @@ export function StringInput(props: {
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          p: 0.25
+          p: 0.25,
         }}
       >
         <Button

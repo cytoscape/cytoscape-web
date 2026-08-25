@@ -59,7 +59,10 @@ const exposesChunk = fs.existsSync(assetsDir)
 
 check('virtual_mf-exposes chunk present', exposesChunk !== undefined)
 if (exposesChunk !== undefined) {
-  const chunkSrc = fs.readFileSync(path.resolve(assetsDir, exposesChunk), 'utf8')
+  const chunkSrc = fs.readFileSync(
+    path.resolve(assetsDir, exposesChunk),
+    'utf8',
+  )
   for (const key of Object.keys(FEDERATION_EXPOSES)) {
     check(`expose key in chunk: "${key}"`, chunkSrc.includes(`"${key}":`))
   }

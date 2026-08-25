@@ -221,10 +221,7 @@ describe('visualStyleConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           nodeBypasses: [
@@ -260,15 +257,10 @@ describe('visualStyleConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           edgeBypasses: [
@@ -324,15 +316,10 @@ describe('visualStyleConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           status: [{ success: true }],
@@ -579,9 +566,15 @@ describe('visualStyleConverter', () => {
 
       expect(visualStyleOptions).toBeDefined()
       expect(visualStyleOptions.visualEditorProperties).toBeDefined()
-      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(true)
-      expect(visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
-      expect(visualStyleOptions.visualEditorProperties.tableDisplayConfiguration).toBeDefined()
+      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(
+        true,
+      )
+      expect(
+        visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
+      expect(
+        visualStyleOptions.visualEditorProperties.tableDisplayConfiguration,
+      ).toBeDefined()
     })
 
     it('should return default visual style options when missing', () => {
@@ -607,8 +600,12 @@ describe('visualStyleConverter', () => {
 
       expect(visualStyleOptions).toBeDefined()
       expect(visualStyleOptions.visualEditorProperties).toBeDefined()
-      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(false)
-      expect(visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
+      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(
+        false,
+      )
+      expect(
+        visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
     })
 
     it('should handle missing visual editor properties', () => {
@@ -643,4 +640,3 @@ describe('visualStyleConverter', () => {
     })
   })
 })
-

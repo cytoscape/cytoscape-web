@@ -1,6 +1,6 @@
 import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 
-import { ValueType,ValueTypeName } from '../../../../models/TableModel'
+import { ValueType, ValueTypeName } from '../../../../models/TableModel'
 import { ColumnAppendState } from '../ColumnAppendState'
 import { ColumnAppendType } from '../ColumnAppendType'
 import { ColumnAssignmentState } from '../ColumnAssignmentState'

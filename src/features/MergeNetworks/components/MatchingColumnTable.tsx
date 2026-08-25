@@ -60,18 +60,37 @@ export const MatchingColumnTable = React.memo(
       }
 
     return (
-      <TableContainer sx={{ overflowY: 'auto', border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
+      <TableContainer
+        sx={{
+          overflowY: 'auto',
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          borderRadius: 1,
+        }}
+      >
         <Table>
           <TableHead>
             {toMergeNetworksList.length > 0 ? (
-              <TableRow sx={{ backgroundColor: (theme) => theme.palette.background.subtle }}>
+              <TableRow
+                sx={{
+                  backgroundColor: (theme) => theme.palette.background.subtle,
+                }}
+              >
                 {toMergeNetworksList.map((net) => (
-                  <TableCell key={net[1]} sx={{ py: 1 }}>{net[0]}</TableCell>
+                  <TableCell key={net[1]} sx={{ py: 1 }}>
+                    {net[0]}
+                  </TableCell>
                 ))}
               </TableRow>
             ) : (
               <TableRow>
-                <TableCell sx={{ textAlign: 'center', color: (theme) => theme.palette.text.disabled, fontWeight: 'normal' }} colSpan={2}>
+                <TableCell
+                  sx={{
+                    textAlign: 'center',
+                    color: (theme) => theme.palette.text.disabled,
+                    fontWeight: 'normal',
+                  }}
+                  colSpan={2}
+                >
                   -- Please select networks to merge --
                 </TableCell>
               </TableRow>

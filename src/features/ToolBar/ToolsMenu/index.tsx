@@ -6,7 +6,6 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { DropdownMenu } from '../DropdownMenu'
 import { MergeNetwork } from './MergeNetwork'
 
-
 export const ToolsMenu = () => {
   const [open, setOpen] = useState(false)
 
@@ -43,9 +42,8 @@ export const ToolsMenu = () => {
         menuItems={menuItems}
         open={open}
         onOpenChange={setOpen}
-              disabled={hasNoNetworks}
-      disabledTooltip="Load or create a network first"
-
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
       />
       {dialogs}
     </>

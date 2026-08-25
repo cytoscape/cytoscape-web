@@ -40,14 +40,22 @@ export const SearchModeSelector = (): JSX.Element => {
           control={
             <Radio data-testid="search-mode-exact-radio" color="primary" />
           }
-          label={<Typography component="span" sx={{ whiteSpace: 'nowrap' }}>Exact Match</Typography>}
+          label={
+            <Typography component="span" sx={{ whiteSpace: 'nowrap' }}>
+              Exact Match
+            </Typography>
+          }
         />
         <FormControlLabel
           value="contains"
           control={
             <Radio data-testid="search-mode-contains-radio" color="primary" />
           }
-          label={<Typography component="span" sx={{ whiteSpace: 'nowrap' }}>Contains</Typography>}
+          label={
+            <Typography component="span" sx={{ whiteSpace: 'nowrap' }}>
+              Contains
+            </Typography>
+          }
         />
       </RadioGroup>
     </FormControl>

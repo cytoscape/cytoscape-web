@@ -13,10 +13,8 @@ const nodeView = (
   values: [string, unknown][] = [],
 ): NodeView => ({ id, x, y, values: new Map(values) }) as unknown as NodeView
 
-const edgeView = (
-  id: string,
-  values: [string, unknown][] = [],
-): EdgeView => ({ id, values: new Map(values) }) as unknown as EdgeView
+const edgeView = (id: string, values: [string, unknown][] = []): EdgeView =>
+  ({ id, values: new Map(values) }) as unknown as EdgeView
 
 describe('addCyElements', () => {
   it('converts node and edge views into cytoscape.js element objects', () => {

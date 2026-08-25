@@ -46,4 +46,3 @@ export const EmptyChartState: React.FC<EmptyChartStateProps> = ({
     </Box>
   )
 }
-

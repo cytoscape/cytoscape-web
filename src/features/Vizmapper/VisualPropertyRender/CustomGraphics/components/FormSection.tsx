@@ -28,4 +28,3 @@ export const FormSection: React.FC<FormSectionProps> = ({
     </Box>
   )
 }
-

@@ -52,9 +52,7 @@ const makeServiceApp = (overrides: Partial<ServiceApp> = {}): ServiceApp =>
   ({
     url: SERVICE_URL,
     name: 'Test Service',
-    parameters: [
-      { displayName: 'threshold', type: 'text', value: '5' },
-    ],
+    parameters: [{ displayName: 'threshold', type: 'text', value: '5' }],
     serviceInputDefinition: {
       type: 'network',
       scope: 'all',
@@ -67,11 +65,7 @@ const makeServiceApp = (overrides: Partial<ServiceApp> = {}): ServiceApp =>
 const seedCurrentNetwork = (
   summaryOverrides: Partial<NetworkSummary> = {},
 ): void => {
-  const network = NetworkFn.createNetworkFromLists(
-    NET_ID,
-    [{ id: 'n1' }],
-    [],
-  )
+  const network = NetworkFn.createNetworkFromLists(NET_ID, [{ id: 'n1' }], [])
   useNetworkStore.getState().add(network)
   useTableStore
     .getState()

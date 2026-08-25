@@ -62,7 +62,8 @@ export function ColumnAssignmentTypeForm(props: ColumnMeaningFormProps) {
                 sx={{
                   ...compactButtonSx,
                   opacity: !validValues.includes(v) ? 0.2 : 1,
-                  backgroundColor: v === value ? 'action.selected' : 'transparent',
+                  backgroundColor:
+                    v === value ? 'action.selected' : 'transparent',
                 }}
                 disabled={!validValues.includes(v)}
                 onClick={() => onChange(v)}

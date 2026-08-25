@@ -85,7 +85,14 @@ async function generateAllTables(): Promise<void> {
     {
       name: 'CSV with Quoted Values',
       type: 'csv',
-      args: ['--with-headers', '--quoted-values', '--rows', '10', '--columns', '5'],
+      args: [
+        '--with-headers',
+        '--quoted-values',
+        '--rows',
+        '10',
+        '--columns',
+        '5',
+      ],
       output: join(OUTPUT_DIR, 'csv-quoted-values.valid.csv'),
       category: 'Valid CSV',
       description: 'CSV file with quoted values',
@@ -105,7 +112,8 @@ async function generateAllTables(): Promise<void> {
       ],
       output: join(OUTPUT_DIR, 'csv-mixed-types.valid.csv'),
       category: 'Valid CSV',
-      description: 'CSV file with mixed data types (string, number, date, boolean)',
+      description:
+        'CSV file with mixed data types (string, number, date, boolean)',
       expectedBehavior: 'Table parses successfully with mixed data types',
     },
     {
@@ -124,8 +132,10 @@ async function generateAllTables(): Promise<void> {
       ],
       output: join(OUTPUT_DIR, 'csv-european-decimal.valid.csv'),
       category: 'Valid CSV',
-      description: 'CSV file with European decimal format (comma as decimal separator)',
-      expectedBehavior: 'Table parses successfully with European decimal format',
+      description:
+        'CSV file with European decimal format (comma as decimal separator)',
+      expectedBehavior:
+        'Table parses successfully with European decimal format',
     },
     {
       name: 'CSV European Format (Semicolon Delimiter)',
@@ -145,8 +155,10 @@ async function generateAllTables(): Promise<void> {
       ],
       output: join(OUTPUT_DIR, 'csv-european-format.valid.csv'),
       category: 'Valid CSV',
-      description: 'European CSV format: semicolon as field delimiter, comma as decimal separator',
-      expectedBehavior: 'Table parses successfully with semicolon delimiter and comma decimals',
+      description:
+        'European CSV format: semicolon as field delimiter, comma as decimal separator',
+      expectedBehavior:
+        'Table parses successfully with semicolon delimiter and comma decimals',
     },
     {
       name: 'CSV European Format with Quoted Values',
@@ -167,8 +179,10 @@ async function generateAllTables(): Promise<void> {
       ],
       output: join(OUTPUT_DIR, 'csv-european-quoted.valid.csv'),
       category: 'Valid CSV',
-      description: 'European CSV format with quoted values (semicolon delimiter, comma decimals)',
-      expectedBehavior: 'Table parses successfully with European format and quoted values',
+      description:
+        'European CSV format with quoted values (semicolon delimiter, comma decimals)',
+      expectedBehavior:
+        'Table parses successfully with European format and quoted values',
     },
 
     // Valid TSV files
@@ -334,4 +348,3 @@ async function main(): Promise<void> {
 }
 
 main()
-

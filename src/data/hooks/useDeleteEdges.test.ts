@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
-import { Column,Table } from '../../models/TableModel'
+import { Column, Table } from '../../models/TableModel'
 import TableFn from '../../models/TableModel'
 import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { NetworkView } from '../../models/ViewModel'
@@ -111,18 +111,20 @@ describe('useDeleteEdges', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: summaryResult } = renderHook(() =>
         useNetworkSummaryStore(),
       )
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-        { id: 'e2', s: '0', t: '2' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+          { id: 'e2', s: '0', t: '2' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -262,15 +264,17 @@ describe('useDeleteEdges', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-        { id: 'e2', s: '0', t: '2' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+          { id: 'e2', s: '0', t: '2' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -282,9 +286,21 @@ describe('useDeleteEdges', () => {
 
         // Add table rows for edges
         const edgeRows = new Map()
-        edgeRows.set('e0', { name: 'Edge 0', interaction: 'inhibits', weight: 0.5 })
-        edgeRows.set('e1', { name: 'Edge 1', interaction: 'activates', weight: 0.8 })
-        edgeRows.set('e2', { name: 'Edge 2', interaction: 'binds', weight: 0.3 })
+        edgeRows.set('e0', {
+          name: 'Edge 0',
+          interaction: 'inhibits',
+          weight: 0.5,
+        })
+        edgeRows.set('e1', {
+          name: 'Edge 1',
+          interaction: 'activates',
+          weight: 0.8,
+        })
+        edgeRows.set('e2', {
+          name: 'Edge 2',
+          interaction: 'binds',
+          weight: 0.3,
+        })
         tableResult.current.editRows(networkId, 'edge', edgeRows)
       })
     })
@@ -322,14 +338,16 @@ describe('useDeleteEdges', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -343,9 +361,7 @@ describe('useDeleteEdges', () => {
 
     it('should delete edge views', () => {
       const { result: hookResult } = renderHook(() => useDeleteEdges())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.deleteEdges(networkId, ['e0'])
@@ -358,9 +374,7 @@ describe('useDeleteEdges', () => {
 
     it('should not delete node views', () => {
       const { result: hookResult } = renderHook(() => useDeleteEdges())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.deleteEdges(networkId, ['e0'])
@@ -377,17 +391,19 @@ describe('useDeleteEdges', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: visualStyleResult } = renderHook(() =>
         useVisualStyleStore(),
       )
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -406,12 +422,7 @@ describe('useDeleteEdges', () => {
           ['e0', 'e1'],
           '#FF0000',
         )
-        visualStyleResult.current.setBypass(
-          networkId,
-          'edgeWidth',
-          ['e0'],
-          5,
-        )
+        visualStyleResult.current.setBypass(networkId, 'edgeWidth', ['e0'], 5)
       })
     })
 
@@ -439,9 +450,7 @@ describe('useDeleteEdges', () => {
     it('should handle complete deletion workflow', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: visualStyleResult } = renderHook(() =>
         useVisualStyleStore(),
       )
@@ -450,11 +459,15 @@ describe('useDeleteEdges', () => {
       )
       const { result: hookResult } = renderHook(() => useDeleteEdges())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2', '3'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-        { id: 'e2', s: '2', t: '3' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2', '3'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+          { id: 'e2', s: '2', t: '3' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -477,9 +490,21 @@ describe('useDeleteEdges', () => {
 
         // Add table data
         const edgeRows = new Map()
-        edgeRows.set('e0', { name: 'Edge 0', interaction: 'inhibits', weight: 0.5 })
-        edgeRows.set('e1', { name: 'Edge 1', interaction: 'activates', weight: 0.8 })
-        edgeRows.set('e2', { name: 'Edge 2', interaction: 'binds', weight: 0.3 })
+        edgeRows.set('e0', {
+          name: 'Edge 0',
+          interaction: 'inhibits',
+          weight: 0.5,
+        })
+        edgeRows.set('e1', {
+          name: 'Edge 1',
+          interaction: 'activates',
+          weight: 0.8,
+        })
+        edgeRows.set('e2', {
+          name: 'Edge 2',
+          interaction: 'binds',
+          weight: 0.3,
+        })
         tableResult.current.editRows(networkId, 'edge', edgeRows)
 
         // Add bypasses
@@ -530,4 +555,3 @@ describe('useDeleteEdges', () => {
     })
   })
 })
-

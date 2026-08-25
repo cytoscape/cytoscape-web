@@ -29,7 +29,11 @@ export {
   degreesToRadians,
 } from './utils/chartRenderUtils'
 export { CHART_CONSTANTS, COLORS, STYLES } from './utils/constants'
-export { isImageProperties, isPieChartProperties, isRingChartProperties } from './utils/typeGuards'
+export {
+  isImageProperties,
+  isPieChartProperties,
+  isRingChartProperties,
+} from './utils/typeGuards'
 
 // Shared components
 export {

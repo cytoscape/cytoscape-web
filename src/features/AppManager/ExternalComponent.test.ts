@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { __resetRemoteState, __setRuntime, loadModule } from './ExternalComponent'
+import {
+  __resetRemoteState,
+  __setRuntime,
+  loadModule,
+} from './ExternalComponent'
 
 // A fake Module Federation runtime: registerRemotes records the remotes, and
 // loadRemote returns whatever the test queued for a given id.
@@ -40,7 +44,13 @@ describe('ExternalComponent MF-runtime loader', () => {
     )
 
     expect(fake.registerRemotes).toHaveBeenCalledWith(
-      [{ name: 'scopeA', entry: 'http://remote/remoteEntry.js', type: 'module' }],
+      [
+        {
+          name: 'scopeA',
+          entry: 'http://remote/remoteEntry.js',
+          type: 'module',
+        },
+      ],
       { force: true },
     )
     // The './' expose prefix is stripped for the runtime's <scope>/<expose> id.

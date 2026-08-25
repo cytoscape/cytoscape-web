@@ -267,11 +267,7 @@ export const ImageForm: React.FC<ImageFormProps> = ({ url, onUpdate }) => {
                 </Typography>
               </Box>
               <Tooltip title="Remove image">
-                <IconButton
-                  onClick={handleRemove}
-                  size="small"
-                  color="error"
-                >
+                <IconButton onClick={handleRemove} size="small" color="error">
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -295,9 +291,7 @@ export const ImageForm: React.FC<ImageFormProps> = ({ url, onUpdate }) => {
                 border: 2,
                 borderStyle: 'dashed',
                 borderColor: isDragOver ? 'primary.main' : 'divider',
-                bgcolor: isDragOver
-                  ? 'action.hover'
-                  : 'background.default',
+                bgcolor: isDragOver ? 'action.hover' : 'background.default',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 minHeight: 140,
@@ -314,9 +308,7 @@ export const ImageForm: React.FC<ImageFormProps> = ({ url, onUpdate }) => {
                   <ImageIcon
                     sx={{
                       fontSize: 40,
-                      color: isDragOver
-                        ? 'primary.main'
-                        : 'text.disabled',
+                      color: isDragOver ? 'primary.main' : 'text.disabled',
                     }}
                   />
                   <Typography variant="body2" color="text.secondary">
@@ -325,8 +317,8 @@ export const ImageForm: React.FC<ImageFormProps> = ({ url, onUpdate }) => {
                       : 'Drag & drop an image, or click to browse'}
                   </Typography>
                   <Typography variant="caption" color="text.disabled">
-                    PNG, JPEG, SVG, GIF, WebP •{' '}
-                    Max {IMAGE_CONSTANTS.MAX_FILE_SIZE_LABEL}
+                    PNG, JPEG, SVG, GIF, WebP • Max{' '}
+                    {IMAGE_CONSTANTS.MAX_FILE_SIZE_LABEL}
                   </Typography>
                 </>
               )}

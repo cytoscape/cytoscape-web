@@ -55,8 +55,7 @@ export const PluginErrorBoundary = ({
 }: PluginErrorBoundaryProps): ReactNode => (
   <ReactErrorBoundary
     FallbackComponent={
-      customFallback ??
-      (() => <PluginFallback appId={appId} slot={slot} />)
+      customFallback ?? (() => <PluginFallback appId={appId} slot={slot} />)
     }
     onError={(error, info) => {
       logApp.error(

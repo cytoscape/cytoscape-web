@@ -327,7 +327,11 @@ export const useAppManager = (): AppManagerCommands => {
   ): Promise<void> => {
     // 1. Trust boundary (§9)
     if (
-      !isAllowedOrigin(entry.url, appInstallAllowedOrigins, allowsLocalhostAppsOn)
+      !isAllowedOrigin(
+        entry.url,
+        appInstallAllowedOrigins,
+        allowsLocalhostAppsOn,
+      )
     ) {
       addMessage({
         message: `Cannot install "${entry.name ?? entry.id}": its URL is not from an allowed origin.`,

@@ -13,32 +13,53 @@ import { forNetwork } from './scopedApi'
 // module-level declarations.
 
 vi.mock('./elementApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
-  return { elementApi: { createNode: echo('createNode'), getNode: echo('getNode') } }
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
+  return {
+    elementApi: { createNode: echo('createNode'), getNode: echo('getNode') },
+  }
 })
 vi.mock('./tableApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
   return { tableApi: { getTable: echo('getTable') } }
 })
 vi.mock('./selectionApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
   return { selectionApi: { exclusiveSelect: echo('exclusiveSelect') } }
 })
 vi.mock('./viewportApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
   return { viewportApi: { fit: echo('fit') } }
 })
 vi.mock('./visualStyleApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
   return { visualStyleApi: { setDefault: echo('setDefault') } }
 })
 vi.mock('./exportApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
   return { exportApi: { exportToCx2: echo('exportToCx2') } }
 })
 vi.mock('./layoutApi', () => {
-  const echo = (name: string) => (...args: any[]) => ({ name, args })
-  return { layoutApi: { applyLayout: echo('applyLayout'), getAvailableLayouts: echo('getAvailableLayouts') } }
+  const echo =
+    (name: string) =>
+    (...args: any[]) => ({ name, args })
+  return {
+    layoutApi: {
+      applyLayout: echo('applyLayout'),
+      getAvailableLayouts: echo('getAvailableLayouts'),
+    },
+  }
 })
 
 // ── Mock WorkspaceStore for current-network resolution ───────────────────────
@@ -74,10 +95,12 @@ describe('forNetwork', () => {
       args: ['net-42', ['n1'], []],
     })
     expect(net.viewport.fit()).toEqual({ name: 'fit', args: ['net-42'] })
-    expect(net.visualStyle.setDefault('NODE_LABEL' as any, 'x' as any)).toEqual({
-      name: 'setDefault',
-      args: ['net-42', 'NODE_LABEL', 'x'],
-    })
+    expect(net.visualStyle.setDefault('NODE_LABEL' as any, 'x' as any)).toEqual(
+      {
+        name: 'setDefault',
+        args: ['net-42', 'NODE_LABEL', 'x'],
+      },
+    )
     expect(net.export.exportToCx2()).toEqual({
       name: 'exportToCx2',
       args: ['net-42'],

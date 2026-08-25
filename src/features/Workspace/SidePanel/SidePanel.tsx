@@ -8,7 +8,6 @@ import { IdType } from '../../../models/IdType'
 import { isSubnetwork } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { renderPanelContents, usePanelEntries } from './TabContents'
 
-
 const TABS_HEIGHT = 40
 
 /**
@@ -71,10 +70,7 @@ export const SidePanel = (): JSX.Element => {
     const subnetworks: IdType[] = []
     networks.forEach((network, networkId) => {
       if (isSubnetwork(networkId)) {
-        if (
-          currentNetworkId &&
-          networkId.startsWith(currentNetworkId + '_')
-        ) {
+        if (currentNetworkId && networkId.startsWith(currentNetworkId + '_')) {
           subnetworks.push(networkId)
         }
       }

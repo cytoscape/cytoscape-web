@@ -19,7 +19,9 @@ export function BooleanSwitch(props: {
         checked={localValue ?? false}
         onChange={(e) => setLocalValue(e.target.checked)}
       ></Switch>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="boolean-switch-cancel-button"
           variant="outlined"
