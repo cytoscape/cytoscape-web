@@ -32,8 +32,8 @@ export const ConfirmationDialog = (
     confirmDisabled,
   } = props
 
-  // Backdrop click, Escape and the Cancel button all land here, so dismissing
-  // this dialog is always the same as cancelling it.
+  // The Cancel button is the only way out: nothing dismisses on backdrop click
+  // or Escape (docs/specifications/DIALOG_DISMISS_POLICY.md).
   const cancel = (): void => {
     setOpen(false)
     if (onCancel) {

@@ -8,8 +8,13 @@
 **A modal closes through one of its own buttons and nothing else.** Backdrop click and
 <kbd>Esc</kbd> are inert on every modal in the app.
 
-**Every modal MUST offer a visible Cancel or Close control.** This is not a style preference —
-it is the only exit. A dialog without one traps the user.
+**Every modal MUST offer a visible control that closes it**, reachable by keyboard. This is not a
+style preference — it is the only exit, and a dialog without one traps the user.
+
+Usually that control is labelled Cancel or Close. The label is not the requirement; leaving without
+committing is. `WelcomeDialog`'s "Explore on my own" and `EmailVerification`'s "Log Out" both
+qualify, and both read better than a generic Cancel would. A Submit or Confirm button does **not**
+qualify — it commits rather than leaves.
 
 Two mechanisms enforce this, one per surface type:
 
@@ -100,10 +105,10 @@ half-filled form, and no dialog closes into a state the user did not choose.
 
 - `src/components/CyDialog.spec.tsx` — asserts backdrop click and <kbd>Esc</kbd> leave the dialog
   open, and that the dialog's own buttons still fire.
-- `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` contains at least
-  one button, and that the four form popovers keep both guard props. This is the check that keeps
-  a dialog from shipping with no exit; it caught the service-app run dialog, which had a Submit
-  button and nothing else.
+- `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` holds a control
+  whose label, `aria-label` or `data-testid` reads as a way out, and that the four form popovers
+  keep both guard props. A Submit-only dialog fails. This is the check that keeps a dialog from
+  shipping with no exit; it caught the service-app run dialog.
 - `test/playwright/dialog-dismiss.spec.ts` — per dialog: <kbd>Esc</kbd> and a backdrop click leave
   it open, its button closes it. Add a row when adding a dialog.
 - `.oxlintrc.json` — `no-restricted-imports` keeps new call sites off `@mui/material`'s `Dialog`.

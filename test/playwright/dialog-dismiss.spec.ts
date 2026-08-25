@@ -140,9 +140,10 @@ test.describe('Dialogs close by button only', () => {
  * The sweep removed root-level guards from eight `<Dialog>` tags. They were
  * added believing `stopPropagation()` blocked dismissal — it does not — but two
  * of them also called `preventDefault()`, and a bubble-phase `preventDefault` on
- * keydown DOES suppress text insertion. That is why the NDEx search field still
- * calls `stopPropagation()` of its own (`LoadFromNdexDialog.tsx`): it existed to
- * escape the root handler. Typing must keep working either way.
+ * keydown DOES suppress text insertion — which is why the NDEx search field
+ * carries a `stopPropagation()` of its own (`LoadFromNdexDialog.tsx`). The root
+ * handler it was escaping is gone, so that guard is now belt-and-braces.
+ * Typing must keep working either way.
  */
 test.describe('Dialog input is not swallowed by root handlers', () => {
   test('NDEx browser accepts typing in its search field', async ({ page }) => {

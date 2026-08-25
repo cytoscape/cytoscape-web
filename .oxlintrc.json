@@ -22,11 +22,17 @@
           {
             "name": "@mui/material",
             "importNames": ["Dialog"],
-            "message": "Use CyDialog from @/components/CyDialog and declare a dismiss tier. See docs/specifications/DIALOG_DISMISS_POLICY.md."
+            "message": "Use CyDialog from @/components/CyDialog. Modals close by button only. See docs/specifications/DIALOG_DISMISS_POLICY.md."
           },
           {
             "name": "@mui/material/Dialog",
-            "message": "Use CyDialog from @/components/CyDialog and declare a dismiss tier. See docs/specifications/DIALOG_DISMISS_POLICY.md."
+            "message": "Use CyDialog from @/components/CyDialog. Modals close by button only. See docs/specifications/DIALOG_DISMISS_POLICY.md."
+          }
+        ],
+        "patterns": [
+          {
+            "group": ["@mui/material/Dialog/**"],
+            "message": "Use CyDialog from @/components/CyDialog. Modals close by button only. See docs/specifications/DIALOG_DISMISS_POLICY.md."
           }
         ]
       }

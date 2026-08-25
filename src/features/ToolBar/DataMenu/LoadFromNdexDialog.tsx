@@ -132,9 +132,6 @@ export const NetworkSearchField = (props: {
     if (event.key === 'Enter') {
       void props.startSearch(searchValue)
     }
-    if (event.key === 'Escape') {
-      props.handleClose()
-    }
   }
 
   return (
