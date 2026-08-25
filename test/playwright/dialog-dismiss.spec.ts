@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import { expect, gotoAndSeedNetwork, test } from './fixtures'
+import { expect, gotoAndSeedNetwork, gotoAndWaitReady, test } from './fixtures'
 
 /**
  * Dialog dismissal policy (#628). See
@@ -22,6 +22,13 @@ interface DialogCase {
   testId: string
   tier: Tier
   open: (page: Page) => Promise<void>
+}
+
+const openNdexBrowser = async (page: Page): Promise<void> => {
+  await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
+  await page
+    .getByRole('menuitem', { name: 'Open Network(s) from NDEx...' })
+    .click()
 }
 
 const CASES: DialogCase[] = [
@@ -70,6 +77,12 @@ const CASES: DialogCase[] = [
       await page.locator('[data-testid="import-table-button"]').click()
     },
   },
+  {
+    name: 'NDEx Network Browser',
+    testId: 'load-from-ndex-dialog',
+    tier: 'form',
+    open: openNdexBrowser,
+  },
 ]
 
 /**
@@ -116,4 +129,29 @@ test.describe('Dialog dismissal policy', () => {
       }
     })
   }
+})
+
+/**
+ * The sweep removed root-level guards from eight `<Dialog>` tags. They were
+ * added believing `stopPropagation()` blocked dismissal — it does not — but two
+ * of them also called `preventDefault()`, and a bubble-phase `preventDefault` on
+ * keydown DOES suppress text insertion. That is why the NDEx search field still
+ * calls `stopPropagation()` of its own (`LoadFromNdexDialog.tsx`): it existed to
+ * escape the root handler. Typing must keep working either way.
+ */
+test.describe('Dialog input is not swallowed by root handlers', () => {
+  test('NDEx browser accepts typing in its search field', async ({ page }) => {
+    await gotoAndWaitReady(page)
+    await openNdexBrowser(page)
+    await expect(
+      page.locator('[data-testid="load-from-ndex-dialog"]'),
+    ).toBeVisible()
+
+    const search = page.locator(
+      '[data-testid="load-from-ndex-search-input"] input',
+    )
+    await search.click()
+    await page.keyboard.type('BRCA1')
+    await expect(search).toHaveValue('BRCA1')
+  })
 })
