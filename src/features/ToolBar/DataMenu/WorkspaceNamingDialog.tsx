@@ -1,6 +1,5 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -9,6 +8,7 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { fetchMyNdexWorkspaces } from '../../../data/external-api/ndex'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
@@ -164,18 +164,7 @@ export const WorkspaceNamingDialog = ({
 
   return (
     <>
-      <Dialog
-        data-testid="workspace-naming-dialog"
-        onClick={(e) => {
-          e.stopPropagation()
-          e.preventDefault()
-        }}
-        onKeyDown={(e) => {
-          e.stopPropagation()
-        }}
-        open={openDialog}
-        onClose={onClose}
-      >
+      <CyDialog data-testid="workspace-naming-dialog" open={openDialog}>
         <DialogTitle>Save Workspace</DialogTitle>
         <DialogContent sx={{ width: '300px' }}>
           <TextField
@@ -218,7 +207,7 @@ export const WorkspaceNamingDialog = ({
             Save
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
       <ConfirmationDialog
         title="Confirm Workspace Overwrite"
         message="A workspace with the same name already exists in NDEx. Do you want to overwrite it?"

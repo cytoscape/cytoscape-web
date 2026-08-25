@@ -1,15 +1,10 @@
 /* eslint-disable react/no-unescaped-entities */
 import BugReportIcon from '@mui/icons-material/BugReport'
 import CloseIcon from '@mui/icons-material/Close'
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-} from '@mui/material'
+import { Button, DialogContent, DialogTitle, IconButton } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import packageInfo from '../../../../package.json'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
@@ -118,12 +113,7 @@ export const BugReportMenuItem = ({
         icon={<BugReportIcon />}
         onClick={handleOpenDialog}
       />
-      <Dialog
-        open={openDialog}
-        onClose={handleDialogClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <CyDialog open={openDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           Report a Bug
           <IconButton
@@ -158,7 +148,7 @@ export const BugReportMenuItem = ({
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </CyDialog>
     </>
   )
 }

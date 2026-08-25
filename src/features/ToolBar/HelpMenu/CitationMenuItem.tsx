@@ -3,7 +3,6 @@ import FormatQuoteIcon from '@mui/icons-material/FormatQuote'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -13,6 +12,7 @@ import {
 } from '@mui/material'
 import { ReactElement, useMemo, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -156,12 +156,7 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
         icon={<FormatQuoteIcon />}
         onClick={handleOpenDialog}
       />
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-      >
+      <CyDialog open={openDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box
             sx={{
@@ -204,7 +199,7 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
             Close
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
     </>
   )
 }

@@ -1,7 +1,6 @@
 import {
   Button,
   Checkbox,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -15,6 +14,7 @@ import {
 import { useEffect, useState } from 'react'
 import Draggable from 'react-draggable'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
@@ -155,12 +155,9 @@ export const LayoutOptionDialog = ({
   const { editables } = engine.algorithms[selected[1]]
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="layout-option-dialog"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
       open={open}
-      onClose={handleClose}
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >
@@ -240,6 +237,6 @@ export const LayoutOptionDialog = ({
           Apply Layout
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

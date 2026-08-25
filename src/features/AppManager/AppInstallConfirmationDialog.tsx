@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Chip,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -13,6 +12,7 @@ import {
   Typography,
 } from '@mui/material'
 
+import { CyDialog } from '@/components/CyDialog'
 import { AppType } from '@/models/AppModel/AppType'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
@@ -66,7 +66,7 @@ export const AppInstallConfirmationDialog = ({
   onCancel,
 }: AppInstallConfirmationDialogProps): JSX.Element => {
   return (
-    <Dialog
+    <CyDialog
       data-testid="app-install-confirmation-dialog"
       open={pending.length > 0}
       maxWidth="sm"
@@ -158,6 +158,6 @@ export const AppInstallConfirmationDialog = ({
           Install
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

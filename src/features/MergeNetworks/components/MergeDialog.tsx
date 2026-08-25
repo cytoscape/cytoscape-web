@@ -16,7 +16,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -40,6 +39,7 @@ import {
 import React, { useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
+import { CyDialog } from '@/components/CyDialog'
 import { putNetworkSummaryToDb } from '../../../data/db'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
@@ -632,19 +632,12 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   }
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="merge-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
       fullScreen={fullScreen}
       maxWidth="md"
       fullWidth={true}
       open={open}
-      onClose={handleClose}
     >
       <Box
         display="flex"
@@ -1125,7 +1118,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
         setOpen={setOpenConfirmation}
         buttonTitle="Yes"
       />
-    </Dialog>
+    </CyDialog>
   )
 }
 

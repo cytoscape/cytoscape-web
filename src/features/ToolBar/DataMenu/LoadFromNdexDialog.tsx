@@ -23,7 +23,6 @@ import {
   Typography,
 } from '@mui/material'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -48,6 +47,7 @@ import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
+import { CyDialog } from '@/components/CyDialog'
 import { KeycloakContext } from '@/boot/keycloak'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -131,9 +131,6 @@ export const NetworkSearchField = (props: {
     event.stopPropagation()
     if (event.key === 'Enter') {
       void props.startSearch(searchValue)
-    }
-    if (event.key === 'Escape') {
-      props.handleClose()
     }
   }
 
@@ -939,16 +936,8 @@ export const LoadFromNdexDialog = (
   const currentTabIndex = availableTabs.indexOf(activeTab)
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="load-from-ndex-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-        e.preventDefault()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-        e.preventDefault()
-      }}
       PaperProps={{
         sx: {
           minHeight: 600,
@@ -957,7 +946,6 @@ export const LoadFromNdexDialog = (
       fullWidth
       maxWidth="lg"
       open={open}
-      onClose={handleClose}
     >
       <DialogTitle>NDEx - Network Browser</DialogTitle>
       <DialogContent>
@@ -1084,6 +1072,6 @@ export const LoadFromNdexDialog = (
           </Button>
         </Box>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -11,6 +10,7 @@ import {
 } from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../models/IdType'
 import {
@@ -157,12 +157,10 @@ export const NodeCreationDialog = ({
   const hasColumns = nodeTable && nodeTable.columns.length > 0
 
   return (
-    <Dialog
+    <CyDialog
       open={open}
-      onClose={onCancel}
       maxWidth="lg"
       fullWidth
-      disableEscapeKeyDown={false}
       keepMounted={false}
       disablePortal={false}
     >
@@ -417,6 +415,6 @@ export const NodeCreationDialog = ({
           Create Node
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

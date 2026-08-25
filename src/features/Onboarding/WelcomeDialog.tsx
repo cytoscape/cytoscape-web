@@ -6,7 +6,6 @@ import TableChartIcon from '@mui/icons-material/TableChart'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -21,6 +20,8 @@ import {
   WELCOME_INTRO,
   WELCOME_TITLE,
 } from './content/concepts'
+
+import { CyDialog } from '@/components/CyDialog'
 
 const ICONS: Record<ConceptSlide['icon'], typeof HubIcon> = {
   Hub: HubIcon,
@@ -62,9 +63,8 @@ export const WelcomeDialog = ({
   }
 
   return (
-    <Dialog
+    <CyDialog
       open={open}
-      onClose={onSkip}
       maxWidth="sm"
       fullWidth
       data-testid="onboarding-welcome-dialog"
@@ -142,6 +142,6 @@ export const WelcomeDialog = ({
           Take the tour
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

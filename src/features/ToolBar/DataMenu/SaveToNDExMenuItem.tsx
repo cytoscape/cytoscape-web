@@ -1,7 +1,6 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -31,6 +30,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useSaveCyNetworkCopyToNDEx } from '../../../data/hooks/useSaveCyNetworkCopyToNDEx'
 import { useSaveCyNetworkToNDEx } from '../../../data/hooks/useSaveCyNetworkToNDEx'
 import { logUi } from '../../../debug'
+import { CyDialog } from '@/components/CyDialog'
 import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'
@@ -278,14 +278,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
     (summary?.isNdex ? isModified && editPermission : authenticated)
 
   const dialog = (
-    <Dialog
-      data-testid="save-to-ndex-sync-dialog"
-      onClose={() => {
-        setShowConfirmDialog(false)
-        props.onClick()
-      }}
-      open={showConfirmDialog}
-    >
+    <CyDialog data-testid="save-to-ndex-sync-dialog" open={showConfirmDialog}>
       <DialogTitle>Networks out of sync</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -295,6 +288,19 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
+        {/* Nothing dismisses on backdrop click or Escape, so without this the
+            dialog would force a write to NDEx either way
+            (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Button
+          data-testid="save-to-ndex-cancel-button"
+          variant="outlined"
+          onClick={() => {
+            setShowConfirmDialog(false)
+            props.onClick()
+          }}
+        >
+          Cancel
+        </Button>
         <Button
           data-testid="save-to-ndex-overwrite-button"
           variant="outlined"
@@ -317,7 +323,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
           Yes, create copy to NDEx
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 
   return (

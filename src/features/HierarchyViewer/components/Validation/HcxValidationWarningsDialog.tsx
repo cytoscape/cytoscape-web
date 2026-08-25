@@ -1,6 +1,5 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -9,6 +8,7 @@ import {
 } from '@mui/material'
 import { ReactElement } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { HcxValidationResult } from '../../model/HcxValidator'
 
 export interface HcxValidationWarningsDialogProps {
@@ -27,7 +27,7 @@ export const HcxValidationWarningsDialog = (
   const isValid: boolean = validationResult?.isValid ?? false
 
   return (
-    <Dialog open={open} data-testid="hcx-validation-warnings-dialog">
+    <CyDialog open={open} data-testid="hcx-validation-warnings-dialog">
       <DialogTitle>
         {isValid ? 'HCX Network Warnings' : 'Invalid HCX Network'}
       </DialogTitle>
@@ -63,6 +63,6 @@ export const HcxValidationWarningsDialog = (
           Close
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

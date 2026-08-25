@@ -4,7 +4,6 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   Link,
@@ -14,6 +13,7 @@ import {
 } from '@mui/material'
 import React from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import logo from '../../../assets/cytoscape.svg'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../data/db'
@@ -81,7 +81,7 @@ export const AboutCytoscapeWebMenuItem = (
         icon={<InfoOutlinedIcon />}
         onClick={handleOpenDialog}
       />
-      <Dialog open={open} onClose={handleCloseDialog}>
+      <CyDialog open={open}>
         <DialogContent sx={{ minWidth: 360 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
             <img
@@ -148,7 +148,7 @@ export const AboutCytoscapeWebMenuItem = (
             Close
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
     </>
   )
 }

@@ -547,6 +547,8 @@ export function MappingForm(props: {
         data-testid="mapping-form-popover"
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
+        disableEscapeKeyDown={true}
+        hideBackdrop={true}
         onClose={() => showForm(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
@@ -565,6 +567,28 @@ export function MappingForm(props: {
             </Box>
           </Box>
         )}
+
+        {/* The only way out: this popover blocks click-away and Escape so a
+            half-built mapping is never lost to a stray click
+            (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+            px: 2,
+            py: 1,
+          }}
+        >
+          <Button
+            data-testid="mapping-form-close-button"
+            variant="outlined"
+            size="small"
+            onClick={() => showForm(null)}
+          >
+            Close
+          </Button>
+        </Box>
       </Popover>
     </Box>
   )

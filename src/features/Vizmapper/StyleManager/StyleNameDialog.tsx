@@ -1,12 +1,13 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   TextField,
 } from '@mui/material'
 import { useEffect, useState } from 'react'
+
+import { CyDialog } from '@/components/CyDialog'
 
 interface StyleNameDialogProps {
   open: boolean
@@ -44,9 +45,8 @@ export const StyleNameDialog = (
   }
 
   return (
-    <Dialog
+    <CyDialog
       open={open}
-      onClose={onClose}
       fullWidth
       maxWidth="xs"
       data-testid="style-name-dialog"
@@ -83,6 +83,6 @@ export const StyleNameDialog = (
           {confirmLabel}
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

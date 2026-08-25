@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Dialog,
   FormControlLabel,
   MenuItem,
   Radio,
@@ -12,6 +11,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import { CyDialog } from '@/components/CyDialog'
 import { ToolbarMenuItem as NestedMenuItem } from '@/features/ToolBar/menuItemModel'
 import { useState } from 'react'
 import React from 'react'
@@ -458,45 +458,8 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
 
   const shouldAddMarginTop = !inputDefinition && !parametersSection
 
-  const submitButton = !serviceCanBeRun ? (
-    <Tooltip title={submitTooltip}>
-      <Box
-        display="flex"
-        justifyContent="flex-end"
-        sx={{
-          marginTop: shouldAddMarginTop ? '20px' : 0,
-        }}
-      >
-        <Button disabled>Submit</Button>
-      </Box>
-    </Tooltip>
-  ) : (
-    <Box
-      display="flex"
-      justifyContent="flex-end"
-      sx={{
-        marginTop: shouldAddMarginTop ? '20px' : 0,
-      }}
-    >
-      <Button onClick={handleSubmit} color="primary" variant="contained">
-        Submit
-      </Button>
-    </Box>
-  )
-
   return (
-    <Dialog
-      maxWidth="sm"
-      fullWidth
-      open={open}
-      onClose={handleClose}
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-    >
+    <CyDialog maxWidth="sm" fullWidth open={open}>
       <Box sx={{ p: 3.5 }}>
         <Typography variant="h5">{app.name}</Typography>
         {showDescription ? (
@@ -510,9 +473,39 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
         ) : null}
         {inputDefinition}
         {parametersSection}
-        {submitButton}
+        {/* Cancel is the dialog's only exit: nothing dismisses on backdrop
+            click or Escape (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Box
+          display="flex"
+          justifyContent="flex-end"
+          gap={1}
+          sx={{
+            marginTop: shouldAddMarginTop ? '20px' : 0,
+          }}
+        >
+          <Button
+            data-testid="service-app-dialog-cancel-button"
+            variant="outlined"
+            onClick={handleClose}
+          >
+            Cancel
+          </Button>
+          {!serviceCanBeRun ? (
+            <Tooltip title={submitTooltip}>
+              {/* A disabled Button swallows the pointer events Tooltip listens
+                  for, so the span carries them instead. */}
+              <span>
+                <Button disabled>Submit</Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <Button onClick={handleSubmit} color="primary" variant="contained">
+              Submit
+            </Button>
+          )}
+        </Box>
       </Box>
-    </Dialog>
+    </CyDialog>
   )
 }
 

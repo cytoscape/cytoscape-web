@@ -122,8 +122,11 @@ test.describe('Table Browser', () => {
         page.locator('[data-testid="join-table-upload-dropzone"]'),
       ).toBeVisible()
 
-      // Close the dialog by pressing Escape
-      await page.keyboard.press('Escape')
+      // Nothing dismisses on Escape or a backdrop click any more (#628) —
+      // the title bar's Close button is the only exit.
+      await page
+        .locator('[data-testid="join-table-to-network-close-button"]')
+        .click()
       await expect(
         page.locator('[data-testid="join-table-upload-dropzone"]'),
       ).not.toBeVisible()

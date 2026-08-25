@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   ButtonGroup,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -18,6 +17,7 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { LLMModel, models } from '../model/LLMModel'
@@ -64,18 +64,11 @@ export const LLMQueryOptionsDialog = (
   }
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="llm-query-options-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
       maxWidth="sm"
       fullWidth={true}
       open={open}
-      onClose={handleClose}
     >
       <DialogTitle>LLM Query Options</DialogTitle>
       <DialogContent sx={{ p: 1 }}>
@@ -195,6 +188,6 @@ export const LLMQueryOptionsDialog = (
           Confirm
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

@@ -3,7 +3,6 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit'
 import {
   Box,
-  Dialog,
   DialogContent,
   DialogTitle,
   IconButton,
@@ -11,6 +10,8 @@ import {
   Typography,
 } from '@mui/material'
 import { ReactNode, useState } from 'react'
+
+import { CyDialog } from '@/components/CyDialog'
 
 export interface TableLoaderDialogShellProps {
   show: boolean
@@ -36,10 +37,9 @@ export function TableLoaderDialogShell(
   const [fullScreen, setFullScreen] = useState(false)
 
   return (
-    <Dialog
+    <CyDialog
       data-testid={`${testIdPrefix}-modal`}
       open={show}
-      onClose={onClose}
       fullScreen={fullScreen}
       maxWidth={false}
       aria-labelledby={`${testIdPrefix}-dialog-title`}
@@ -83,7 +83,11 @@ export function TableLoaderDialogShell(
               </IconButton>
             </Tooltip>
           )}
-          <IconButton aria-label="Close" onClick={onClose}>
+          <IconButton
+            aria-label="Close"
+            data-testid={`${testIdPrefix}-close-button`}
+            onClick={onClose}
+          >
             <CloseIcon />
           </IconButton>
         </Box>
@@ -91,6 +95,6 @@ export function TableLoaderDialogShell(
       <DialogContent>
         <Box sx={{ minHeight, minWidth, p: 1 }}>{children}</Box>
       </DialogContent>
-    </Dialog>
+    </CyDialog>
   )
 }

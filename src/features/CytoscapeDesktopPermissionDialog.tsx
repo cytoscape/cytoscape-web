@@ -1,12 +1,13 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
 } from '@mui/material'
 import { ReactElement } from 'react'
+
+import { CyDialog } from '@/components/CyDialog'
 
 interface CytoscapeDesktopPermissionDialogProps {
   open: boolean
@@ -26,11 +27,7 @@ export const CytoscapeDesktopPermissionDialog = ({
   onCancel,
 }: CytoscapeDesktopPermissionDialogProps): ReactElement => {
   return (
-    <Dialog
-      open={open}
-      onClose={onCancel}
-      data-testid="cytoscape-desktop-permission-dialog"
-    >
+    <CyDialog open={open} data-testid="cytoscape-desktop-permission-dialog">
       <DialogTitle>Connect to Cytoscape Desktop</DialogTitle>
       <DialogContent>
         <DialogContentText component="div">
@@ -55,6 +52,6 @@ export const CytoscapeDesktopPermissionDialog = ({
           Continue
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

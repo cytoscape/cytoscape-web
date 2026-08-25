@@ -12,7 +12,6 @@ import {
   Select,
   TextField,
 } from '@mui/material'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -21,6 +20,7 @@ import Radio from '@mui/material/Radio'
 import Tooltip from '@mui/material/Tooltip'
 import * as React from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { ValueTypeName } from '../../models/TableModel'
 import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
 import { orderedValueTypeNames } from '../../models/TableModel/impl/valueTypeNameDisplay'
@@ -86,12 +86,11 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
   )
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="edit-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Rename Column</DialogTitle>
       <DialogContent>
@@ -162,7 +161,7 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
           Confirm
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
 
@@ -184,12 +183,11 @@ export function DeleteTableColumnForm(
     [props.dependentVisualProperties, columnHasDependentProperties],
   )
   return (
-    <Dialog
+    <CyDialog
       data-testid="delete-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Delete Column</DialogTitle>
       <DialogContent>
@@ -251,7 +249,7 @@ export function DeleteTableColumnForm(
           Delete
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
 
@@ -302,12 +300,11 @@ export function CreateTableColumnForm(
   )
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="create-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Create New Column</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -413,6 +410,6 @@ export function CreateTableColumnForm(
         </Button>
         {submitButton}
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
