@@ -162,7 +162,6 @@ export const NodeCreationDialog = ({
       onClose={onCancel}
       maxWidth="lg"
       fullWidth
-      disableEscapeKeyDown={false}
       keepMounted={false}
       disablePortal={false}
     >

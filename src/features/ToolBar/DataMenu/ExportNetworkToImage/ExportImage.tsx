@@ -96,12 +96,6 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
   return (
     <Dialog
       data-testid="export-network-to-image-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
       PaperProps={{
         sx: {
           height: 'auto',

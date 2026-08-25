@@ -66,12 +66,6 @@ export const LLMQueryOptionsDialog = (
   return (
     <Dialog
       data-testid="llm-query-options-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
       maxWidth="sm"
       fullWidth={true}
       open={open}

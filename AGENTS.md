@@ -72,6 +72,9 @@ need when you get there — do not read it all up front.
 - New JSX transform (`react-jsx`) — do NOT add `import React from 'react'` in component files
 - Use the `@/` alias for imports rooted at `src/`; relative imports remain appropriate for nearby files in the same feature or model.
 
+**Dialogs:**
+Never import `Dialog` from `@mui/material` — render modals through `CyDialog` (`src/components/CyDialog.tsx`) and declare a `dismiss` tier: `lightweight` (backdrop + Esc dismiss), `form` (Esc only), or `blocking` (neither). Lint enforces the import. See `docs/specifications/DIALOG_DISMISS_POLICY.md` for how to pick a tier and why `stopPropagation()` on a `<Dialog>` does not block either path.
+
 **Logging:**
 Use the structured `debug` logger from `src/debug.ts`, not `console.log`. Production builds use Vite's Oxc minifier to strip direct `console.*()` calls.
 Available loggers (each has `.info`, `.warn`, `.error`): `logDb`, `logStore`, `logApi`, `logApp`, `logUi`, `logStartup`, `logPerformance`, `logHistory`, `logModel`.
@@ -224,6 +227,7 @@ Read these before working in related areas:
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
 - `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, style library
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
+- `docs/specifications/DIALOG_DISMISS_POLICY.md` — dialog dismissal tiers, the `CyDialog` wrapper, blocking exemptions
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules
 - `docs/specifications/MODEL_CREATION_PATTERN.md` — How to create new model domains

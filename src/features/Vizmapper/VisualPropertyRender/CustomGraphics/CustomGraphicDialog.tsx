@@ -272,7 +272,6 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
       onClose={onCancel}
       maxWidth="lg"
       fullWidth
-      disableEscapeKeyDown={false}
     >
       <DialogTitle
         sx={{

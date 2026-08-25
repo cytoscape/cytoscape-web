@@ -185,7 +185,6 @@ export const EdgeCreationDialog = ({
       onClose={onCancel}
       maxWidth="lg"
       fullWidth
-      disableEscapeKeyDown={false}
     >
       <DialogTitle
         sx={{

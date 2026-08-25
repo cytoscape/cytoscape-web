@@ -490,12 +490,6 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
       fullWidth
       open={open}
       onClose={handleClose}
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
     >
       <Box sx={{ p: 3.5 }}>
         <Typography variant="h5">{app.name}</Typography>

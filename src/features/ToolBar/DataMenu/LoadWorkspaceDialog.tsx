@@ -223,8 +223,6 @@ export const LoadWorkspaceDialog: React.FC<{
   return (
     <Dialog
       data-testid="load-workspace-dialog"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
       open={open}
       onClose={handleClose}
       fullWidth

@@ -157,8 +157,6 @@ export const LayoutOptionDialog = ({
   return (
     <Dialog
       data-testid="layout-option-dialog"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
       open={open}
       onClose={handleClose}
       PaperComponent={DraggablePaper}

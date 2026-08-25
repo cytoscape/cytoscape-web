@@ -166,13 +166,6 @@ export const WorkspaceNamingDialog = ({
     <>
       <Dialog
         data-testid="workspace-naming-dialog"
-        onClick={(e) => {
-          e.stopPropagation()
-          e.preventDefault()
-        }}
-        onKeyDown={(e) => {
-          e.stopPropagation()
-        }}
         open={openDialog}
         onClose={onClose}
       >

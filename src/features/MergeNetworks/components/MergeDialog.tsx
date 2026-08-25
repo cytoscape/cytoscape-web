@@ -634,12 +634,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   return (
     <Dialog
       data-testid="merge-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
       fullScreen={fullScreen}
       maxWidth="md"
       fullWidth={true}
