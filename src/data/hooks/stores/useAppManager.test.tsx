@@ -70,7 +70,11 @@ const entry = (id: string, version = '1.0.0'): AppCatalogEntry => ({
 })
 
 const wrapper = ({ children }: { children: ReactNode }) =>
-  createElement(AppConfigContext.Provider, { value: defaultAppConfig }, children)
+  createElement(
+    AppConfigContext.Provider,
+    { value: defaultAppConfig },
+    children,
+  )
 
 const installed = () =>
   useWorkspaceStore.getState().workspace.installedApps ?? []
@@ -257,11 +261,11 @@ describe('useAppManager — install / uninstall', () => {
   // G-6: the catalog was the one install path with no origin check, so a
   // user-set Manifest Source could name any URL and it would be loaded.
   describe('activateApp — catalog trust boundary', () => {
-    const seedCatalog = (source: 'manifest' | 'appstore' = 'manifest'): void => {
+    const seedCatalog = (
+      source: 'manifest' | 'appstore' = 'manifest',
+    ): void => {
       act(() => {
-        useAppStore
-          .getState()
-          .setCatalog([entry('remote')], { remote: source })
+        useAppStore.getState().setCatalog([entry('remote')], { remote: source })
       })
     }
 

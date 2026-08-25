@@ -28,7 +28,7 @@ describe('handleCellEdit', () => {
   it('updates cell value for standard string column', () => {
     const rows = [{ id: 'node-1', name: 'Node 1' }]
     const allColumns = [{ id: 'name', type: ValueTypeName.String }]
-    
+
     handleCellEdit({
       ...baseArgs,
       cell: [0, 0] as Item,
@@ -61,7 +61,7 @@ describe('handleCellEdit', () => {
       { id: 'selected', type: ValueTypeName.Boolean },
       { id: 'name', type: ValueTypeName.String },
     ]
-    
+
     // User edits the 'selected' column which is index 1 in allColumns
     handleCellEdit({
       ...baseArgs,
@@ -83,7 +83,7 @@ describe('handleCellEdit', () => {
   it('blocks updating integer column with float value', () => {
     const rows = [{ id: 'node-1', score: 10 }]
     const allColumns = [{ id: 'score', type: ValueTypeName.Integer }]
-    
+
     handleCellEdit({
       ...baseArgs,
       cell: [0, 0] as Item,
@@ -100,7 +100,7 @@ describe('handleCellEdit', () => {
   it('deserializes list types before setting value', () => {
     const rows = [{ id: 'node-1', aliases: [] }]
     const allColumns = [{ id: 'aliases', type: ValueTypeName.ListString }]
-    
+
     handleCellEdit({
       ...baseArgs,
       cell: [0, 0] as Item,

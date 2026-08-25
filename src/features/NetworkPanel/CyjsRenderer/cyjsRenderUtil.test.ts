@@ -69,9 +69,7 @@ describe('createCyjsDataMapper', () => {
     )
 
     expect(selected).toBeDefined()
-    expect(Object.values(selected!.style)).toContain(
-      'data(nodeSelectedPaint)',
-    )
+    expect(Object.values(selected!.style)).toContain('data(nodeSelectedPaint)')
   })
 
   it('expands node label position into five style mappings', () => {

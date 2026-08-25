@@ -140,11 +140,7 @@ describe('RendererFunctionImpl', () => {
     it('should return undefined if function does not exist', () => {
       const state = createDefaultState()
 
-      const retrievedFn = getFunction(
-        state,
-        'non-existent',
-        'non-existent',
-      )
+      const retrievedFn = getFunction(state, 'non-existent', 'non-existent')
 
       expect(retrievedFn).toBeUndefined()
     })
@@ -156,16 +152,19 @@ describe('RendererFunctionImpl', () => {
       const originalRendererFunctions = original.rendererFunctions
       const originalByNetworkId = original.rendererFunctionsByNetworkId
 
-      setFunction(original, 'renderer-1', 'function-1', () => 'test', 'network-1')
+      setFunction(
+        original,
+        'renderer-1',
+        'function-1',
+        () => 'test',
+        'network-1',
+      )
 
       // Verify original is unchanged
       expect(original.rendererFunctions).toBe(originalRendererFunctions)
       expect(original.rendererFunctionsByNetworkId).toBe(originalByNetworkId)
       expect(original.rendererFunctions.has('renderer-1')).toBe(false)
-      expect(original.rendererFunctionsByNetworkId.has('network-1')).toBe(
-        false,
-      )
+      expect(original.rendererFunctionsByNetworkId.has('network-1')).toBe(false)
     })
   })
 })
-

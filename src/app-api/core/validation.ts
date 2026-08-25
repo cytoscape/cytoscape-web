@@ -219,8 +219,7 @@ export function validateMappingAttribute(
   options?: { requireNumeric?: boolean },
 ): ApiFailure | undefined {
   const tableRecord = useTableStore.getState().tables[networkId]
-  const table =
-    tableRecord?.[tableType === 'node' ? 'nodeTable' : 'edgeTable']
+  const table = tableRecord?.[tableType === 'node' ? 'nodeTable' : 'edgeTable']
   const column = table?.columns?.find(
     (c: { name: string }) => c.name === attribute,
   )
@@ -248,9 +247,7 @@ const ENUM_VALUES: Partial<Record<string, ReadonlySet<string>>> = {
   [VisualPropertyValueTypeName.NodeShape]: new Set(
     Object.values(NodeShapeType),
   ),
-  [VisualPropertyValueTypeName.EdgeLine]: new Set(
-    Object.values(EdgeLineType),
-  ),
+  [VisualPropertyValueTypeName.EdgeLine]: new Set(Object.values(EdgeLineType)),
   [VisualPropertyValueTypeName.EdgeArrowShape]: new Set(
     Object.values(EdgeArrowShapeType),
   ),
@@ -366,7 +363,11 @@ export function validateVisualPropertyValue(
       return undefined
     case VisualPropertyValueTypeName.Number: {
       if (typeof vpValue !== 'number' || !Number.isFinite(vpValue)) {
-        return fail(StyleCodes.INVALID_NUMBER, vpName, 'expected a finite number')
+        return fail(
+          StyleCodes.INVALID_NUMBER,
+          vpName,
+          'expected a finite number',
+        )
       }
       const isOpacity = String(vpName).toLowerCase().includes('opacity')
       if (isOpacity && (vpValue < 0 || vpValue > 1)) {

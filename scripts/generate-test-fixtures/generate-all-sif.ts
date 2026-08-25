@@ -87,7 +87,8 @@ async function generateAllSIF(): Promise<void> {
       output: join(OUTPUT_DIR, 'multiple-interactions.valid.sif'),
       category: 'Valid SIF',
       description: 'SIF with multiple different interaction types',
-      expectedBehavior: 'SIF file parses successfully with multiple interaction types',
+      expectedBehavior:
+        'SIF file parses successfully with multiple interaction types',
     },
     {
       name: 'With Self-Loops',
@@ -111,20 +112,14 @@ async function generateAllSIF(): Promise<void> {
       args: ['--nodes', '10', '--edges', '15', '--complex-names'],
       output: join(OUTPUT_DIR, 'complex-node-names.valid.sif'),
       category: 'Valid SIF',
-      description: 'SIF with node names containing special characters (spaces, hyphens, underscores, dots)',
+      description:
+        'SIF with node names containing special characters (spaces, hyphens, underscores, dots)',
       expectedBehavior: 'SIF file parses successfully with complex node names',
     },
     {
       name: 'Complex Node Names (Tabs)',
       type: 'complex-names',
-      args: [
-        '--nodes',
-        '10',
-        '--edges',
-        '15',
-        '--complex-names',
-        '--use-tabs',
-      ],
+      args: ['--nodes', '10', '--edges', '15', '--complex-names', '--use-tabs'],
       output: join(OUTPUT_DIR, 'complex-node-names-tabs.valid.sif'),
       category: 'Valid SIF',
       description: 'SIF with complex node names using tabs as delimiter',
@@ -143,8 +138,10 @@ async function generateAllSIF(): Promise<void> {
       ],
       output: join(OUTPUT_DIR, 'various-interactions.valid.sif'),
       category: 'Valid SIF',
-      description: 'SIF with various biological interaction types (pp, pd, etc.)',
-      expectedBehavior: 'SIF file parses successfully with various interaction types',
+      description:
+        'SIF with various biological interaction types (pp, pd, etc.)',
+      expectedBehavior:
+        'SIF file parses successfully with various interaction types',
     },
 
     // Invalid SIF files
@@ -172,7 +169,8 @@ async function generateAllSIF(): Promise<void> {
       args: ['--error', 'missing-interaction'],
       output: join(OUTPUT_DIR, 'missing-interaction.invalid.sif'),
       category: 'Invalid SIF',
-      description: 'SIF file with missing interaction type (only nodes, no interaction)',
+      description:
+        'SIF file with missing interaction type (only nodes, no interaction)',
       expectedBehavior: 'Validation error for missing interaction type',
     },
     {
@@ -216,4 +214,3 @@ async function main(): Promise<void> {
 }
 
 main()
-

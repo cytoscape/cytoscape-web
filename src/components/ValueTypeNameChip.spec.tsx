@@ -6,7 +6,9 @@ import { ValueTypeNameChip } from './ValueTypeNameChip'
 
 describe('ValueTypeNameChip (CW-562)', () => {
   it('renders the svg badge as a chip by default', () => {
-    const { container } = render(<ValueTypeNameChip type={ValueTypeName.ListString} showTooltip={false} />)
+    const { container } = render(
+      <ValueTypeNameChip type={ValueTypeName.ListString} showTooltip={false} />,
+    )
     expect(screen.getByTestId('data-type-chip-list_of_string')).toBeTruthy()
     // It should contain an SVG
     expect(container.querySelector('svg')).toBeTruthy()
@@ -36,9 +38,14 @@ describe('ValueTypeNameChip (CW-562)', () => {
   })
 
   it('never renders the raw enum wire format', () => {
-    render(<ValueTypeNameChip type={ValueTypeName.ListDouble} variant="text" showTooltip={false} />)
+    render(
+      <ValueTypeNameChip
+        type={ValueTypeName.ListDouble}
+        variant="text"
+        showTooltip={false}
+      />,
+    )
     expect(screen.queryByText('list_of_double')).toBeNull()
     expect(screen.getByText('List of floating point numbers')).toBeTruthy()
   })
 })
-

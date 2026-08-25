@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  Divider,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { Box, Button, Divider, Stack, Tooltip, Typography } from '@mui/material'
 import Papa from 'papaparse'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -479,11 +472,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
 
   return (
     <Box sx={{ zIndex: 2001 }}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-      >
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
         <NetworkNameInput />
         <Stack direction="row" spacing={1}>
           <Button

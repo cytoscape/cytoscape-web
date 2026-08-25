@@ -8,9 +8,8 @@ import { useWorkspaceData } from '../../../data/hooks/useWorkspaceData'
 import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
-import { DropdownMenuItem } from '../DropdownMenu';
+import { DropdownMenuItem } from '../DropdownMenu'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
-
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
   props: BaseMenuItemProps,
@@ -108,14 +107,14 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         disabled={!enabled}
         onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
       />
-    {enabled && (
-      <WorkspaceNamingDialog
-        openDialog={openNamingDialog}
-        onClose={onCloseWorkspaceNamingDialog}
-        ndexBaseUrl={ndexBaseUrl}
-        getToken={getToken}
-      />
-    )}
+      {enabled && (
+        <WorkspaceNamingDialog
+          openDialog={openNamingDialog}
+          onClose={onCloseWorkspaceNamingDialog}
+          ndexBaseUrl={ndexBaseUrl}
+          getToken={getToken}
+        />
+      )}
     </>
   )
 }

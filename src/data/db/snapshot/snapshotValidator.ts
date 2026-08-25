@@ -323,7 +323,9 @@ export const sanitizeRecord = (record: any): any => {
     )
   }
   if (record instanceof Set) {
-    return new Set(Array.from(record.values(), (value) => sanitizeRecord(value)))
+    return new Set(
+      Array.from(record.values(), (value) => sanitizeRecord(value)),
+    )
   }
 
   // Create a new object to avoid prototype pollution

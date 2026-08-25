@@ -4,7 +4,10 @@ import { styled } from '@mui/material/styles'
 export const VisualPropertyViewBox = styled(Box)(({ theme }) => ({
   height: 30,
   width: 30,
-  border: theme.palette.mode === 'dark' ? `1px solid ${theme.palette.divider}` : 'none',
+  border:
+    theme.palette.mode === 'dark'
+      ? `1px solid ${theme.palette.divider}`
+      : 'none',
   borderRadius: '20%',
   boxShadow: theme.shadows[2],
   '&:hover': {

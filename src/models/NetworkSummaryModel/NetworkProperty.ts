@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { ValueType,ValueTypeName } from '../TableModel'
+import { ValueType, ValueTypeName } from '../TableModel'
 
 export interface NetworkProperty {
   subNetworkId: IdType | null

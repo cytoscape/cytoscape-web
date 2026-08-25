@@ -492,12 +492,12 @@ export function generateRandomColor(): ColorType {
  */
 export function pickEvenly(base: ColorPalette, count: number): ColorPalette {
   if (!base.length || count <= 0) return []
-  
+
   const normalizedBase = base.map((c) => c.toLowerCase() as ColorType)
   const n = normalizedBase.length
 
   if (count === 1) return [normalizedBase[Math.floor((n - 1) / 2)]]
-  
+
   if (n === 1) {
     return Array.from({ length: count }, () => normalizedBase[0])
   }
@@ -508,10 +508,12 @@ export function pickEvenly(base: ColorPalette, count: number): ColorPalette {
       return normalizedBase[idx]
     })
   }
-  
+
   // Use chroma.js to interpret base as a scale and sample it evenly
   const scale = chroma.scale(normalizedBase).mode('lab')
   return Array.from({ length: count }, (_, i) => {
-    return scale(i / (count - 1)).hex().toLowerCase() as ColorType
+    return scale(i / (count - 1))
+      .hex()
+      .toLowerCase() as ColorType
   })
 }

@@ -100,11 +100,21 @@ const trueEdgeCount = (): number =>
 const summaryEdgeCount = (): number =>
   useNetworkSummaryStore.getState().summaries[NET_ID].edgeCount
 
-const createEdge = (edgeId: IdType, sourceId: IdType, targetId: IdType): void => {
+const createEdge = (
+  edgeId: IdType,
+  sourceId: IdType,
+  targetId: IdType,
+): void => {
   const storeActions = makeRealStoreActions()
   act(() => {
     createEdgesCore(
-      { networkId: NET_ID, edgeIds: [edgeId], sourceId, targetId, attributes: {} },
+      {
+        networkId: NET_ID,
+        edgeIds: [edgeId],
+        sourceId,
+        targetId,
+        attributes: {},
+      },
       storeActions,
     )
   })
@@ -145,7 +155,9 @@ describe('createEdgesCore summary bookkeeping (real stores)', () => {
   it('keeps the node count unchanged when edges are added', () => {
     createEdge('e1', 'n0', 'n1')
 
-    expect(useNetworkSummaryStore.getState().summaries[NET_ID].nodeCount).toBe(2)
+    expect(useNetworkSummaryStore.getState().summaries[NET_ID].nodeCount).toBe(
+      2,
+    )
   })
 
   it('counts a multi-edge batch exactly once', () => {

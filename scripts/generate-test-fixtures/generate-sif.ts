@@ -38,7 +38,11 @@ type SIFType =
   | 'various-interactions'
   | 'invalid'
 
-type ErrorType = 'empty' | 'malformed' | 'missing-interaction' | 'invalid-syntax'
+type ErrorType =
+  | 'empty'
+  | 'malformed'
+  | 'missing-interaction'
+  | 'invalid-syntax'
 
 interface GenerateSIFOptions {
   nodeCount: number
@@ -282,8 +286,11 @@ function main(): void {
       case 'multiple-interactions': {
         const nodeCount = args.nodes || DEFAULT_NODES
         const edgeCount = args.edges || DEFAULT_EDGES
-        const interactionTypes =
-          args.interactionTypes || ['binds', 'regulates', 'activates']
+        const interactionTypes = args.interactionTypes || [
+          'binds',
+          'regulates',
+          'activates',
+        ]
 
         sifContent = generateValidSIF({
           nodeCount,
@@ -337,8 +344,12 @@ function main(): void {
       case 'various-interactions': {
         const nodeCount = args.nodes || DEFAULT_NODES
         const edgeCount = args.edges || DEFAULT_EDGES
-        const interactionTypes =
-          args.interactionTypes || ['pp', 'pd', 'controls', 'catalyzes']
+        const interactionTypes = args.interactionTypes || [
+          'pp',
+          'pd',
+          'controls',
+          'catalyzes',
+        ]
 
         sifContent = generateValidSIF({
           nodeCount,
@@ -382,4 +393,3 @@ function main(): void {
 }
 
 main()
-

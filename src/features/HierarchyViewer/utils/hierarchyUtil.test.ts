@@ -127,7 +127,9 @@ describe('isHCX / getHcxMetadata', () => {
   it('tolerates undefined summaries and empty property lists', () => {
     expect(isHCX(undefined as unknown as NetworkSummary)).toBe(false)
     expect(isHCX(summaryWith({}))).toBe(false)
-    expect(getHcxMetadata(undefined as unknown as NetworkSummary)).toBeUndefined()
+    expect(
+      getHcxMetadata(undefined as unknown as NetworkSummary),
+    ).toBeUndefined()
   })
 })
 
@@ -233,4 +235,3 @@ describe('applyCpLayout', () => {
     ).toBe(0)
   })
 })
-

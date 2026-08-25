@@ -16,7 +16,6 @@ import { LicenseMenuItem } from './LicenseMenuItem'
 import { TakeATourMenuItem } from './TakeATourMenuItem'
 import { TutorialMenuItem } from './TutorialMenuItem'
 
-
 export const HelpMenu = () => {
   const [open, setOpen] = useState<boolean>(false)
   const [openLicenseDialog, setOpenLicenseDialog] = useState<boolean>(false)
@@ -59,7 +58,7 @@ export const HelpMenu = () => {
     },
     {
       label: 'Developer',
-      icon: <CodeIcon sx={{mr: 1}} />,
+      icon: <CodeIcon sx={{ mr: 1 }} />,
       items: [
         {
           template: <DeveloperMenuItem onClick={handleClose} />,
@@ -108,7 +107,10 @@ export const HelpMenu = () => {
         minWidth={300}
         onOpenChange={setOpen}
       />
-      <LicenseDialog open={openLicenseDialog} onClose={handleCloseLicenseDialog} />
+      <LicenseDialog
+        open={openLicenseDialog}
+        onClose={handleCloseLicenseDialog}
+      />
       {dialogs}
     </>
   )

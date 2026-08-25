@@ -4,7 +4,6 @@ import React, { lazy, Suspense } from 'react'
 import { BaseMenuItemProps } from '../../BaseMenuItemProps'
 import { DropdownMenuItem } from '../../DropdownMenu'
 
-
 // Lazy load the ExportImageMenuItem component
 const ExportImageMenuItem = lazy(() =>
   import('./ExportNetworkToImageMenuItem').then((module) => ({
@@ -14,14 +13,14 @@ const ExportImageMenuItem = lazy(() =>
 
 // Loading component
 const LoadingMenuItem = () => (
-  <DropdownMenuItem
-    label="Loading export options..."
-    disabled
-  />
+  <DropdownMenuItem label="Loading export options..." disabled />
 )
 
 // Error boundary component
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
   constructor(props: { children: React.ReactNode }) {
     super(props)
     this.state = { hasError: false }

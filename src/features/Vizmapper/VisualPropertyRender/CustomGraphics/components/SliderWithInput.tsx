@@ -62,4 +62,3 @@ export const SliderWithInput: React.FC<SliderWithInputProps> = ({
     </Box>
   )
 }
-

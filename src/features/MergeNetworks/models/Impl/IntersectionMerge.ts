@@ -279,7 +279,10 @@ export function intersectionMerge(
   //Add intersection edges to nodeTable and network
   for (const [edgeKey, edgeIds] of edgeMap) {
     edgeIds.forEach((edgeId) => {
-      mergedEdgeTable = TableFn.insertRow(mergedEdgeTable, [edgeId, initialEdgeRows[edgeId]])
+      mergedEdgeTable = TableFn.insertRow(mergedEdgeTable, [
+        edgeId,
+        initialEdgeRows[edgeId],
+      ])
       NetworkFn.addEdge(mergedNetwork, {
         id: edgeId,
         s: edgeKey.split('-')[0],

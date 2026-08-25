@@ -1,15 +1,15 @@
 import { AttributeName, ValueType } from '../../../models'
 import { ServiceAppAction } from '../../../models/AppModel/ServiceAppAction'
 
-type JsonValue = string | number | boolean | JsonObject | JsonArray;
+type JsonValue = string | number | boolean | JsonObject | JsonArray
 
 export interface JsonObject {
-  [key: string]: JsonValue;
+  [key: string]: JsonValue
 }
 
 type JsonArray = Array<JsonValue>
 
-export type JsonNode = JsonObject | JsonArray;
+export type JsonNode = JsonObject | JsonArray
 
 enum ServerStatusType {
   ok = 'ok',
@@ -40,7 +40,7 @@ enum AlgorithmParameterType {
   edgeColumn = 'edgeColumn',
 }
 
-export enum ScopeType{
+export enum ScopeType {
   dynamic = 'dynamic',
   selected = 'selected',
   all = 'all',
@@ -53,7 +53,7 @@ export enum InputDataType {
 }
 
 export enum ResultStatus {
-  submitted= 'submitted',
+  submitted = 'submitted',
   processing = 'processing',
   complete = 'complete',
   failed = 'failed',
@@ -91,17 +91,17 @@ interface AlgorithmParameter {
   maxValue: number
 }
 
-export interface CyWebMenuItem{
-  root: string,
+export interface CyWebMenuItem {
+  root: string
   path: CyWebMenuItemPath[]
 }
 
-export interface CyWebMenuItemPath{
+export interface CyWebMenuItemPath {
   name: string
   gravity: number
 }
 
-export interface InputColumn{
+export interface InputColumn {
   name: string
   description: string
   dataType: string
@@ -114,9 +114,9 @@ export interface InputNetwork {
   format: inputNetworkFormat
 }
 
-export interface ServiceInputDefinition{
-  type: string,
-  scope: string,
+export interface ServiceInputDefinition {
+  type: string
+  scope: string
   inputColumns: InputColumn[]
   inputNetworks: InputNetwork[]
 }

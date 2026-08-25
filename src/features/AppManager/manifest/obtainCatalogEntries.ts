@@ -32,7 +32,10 @@ export async function obtainCatalogEntries(
     const data = JSON.parse(source.content)
     return parseManifest(data)
   } catch (error) {
-    logApp.warn('[obtainCatalogEntries]: Failed to parse inline manifest:', error)
+    logApp.warn(
+      '[obtainCatalogEntries]: Failed to parse inline manifest:',
+      error,
+    )
     return []
   }
 }

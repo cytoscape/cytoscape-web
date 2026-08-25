@@ -13,10 +13,7 @@ const network = {
   edges: [{ id: 'e1', s: 'n1', t: 'n2' }],
 } as unknown as Network
 
-const viewWith = (
-  nodeIds: string[],
-  edgeIds: string[],
-): NetworkView =>
+const viewWith = (nodeIds: string[], edgeIds: string[]): NetworkView =>
   ({
     nodeViews: Object.fromEntries(nodeIds.map((id) => [id, { id }])),
     edgeViews: Object.fromEntries(edgeIds.map((id) => [id, { id }])),
@@ -40,9 +37,9 @@ describe('isValidNetworkAndViews', () => {
     expect(isValidNetworkAndViews(network, [viewWith(['n1'], ['e1'])])).toBe(
       false,
     )
-    expect(
-      isValidNetworkAndViews(network, [viewWith(['n1', 'n2'], [])]),
-    ).toBe(false)
+    expect(isValidNetworkAndViews(network, [viewWith(['n1', 'n2'], [])])).toBe(
+      false,
+    )
   })
 
   it('rejects views whose IDs differ even when counts match', () => {

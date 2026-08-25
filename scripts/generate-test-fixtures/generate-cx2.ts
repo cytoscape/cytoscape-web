@@ -71,7 +71,10 @@ function generateInteractionType(index: number): string {
 /**
  * Generate deterministic coordinates
  */
-function generateCoordinates(index: number, nodeCount: number): { x: number; y: number } {
+function generateCoordinates(
+  index: number,
+  nodeCount: number,
+): { x: number; y: number } {
   // Generate a deterministic grid layout
   const cols = Math.ceil(Math.sqrt(nodeCount))
   const row = Math.floor(index / cols)
@@ -310,7 +313,9 @@ export function generateValidCx2(options: GenerateCx2Options): any[] {
  * generated network.
  */
 export function moveStatusLast(cx2: any[]): any[] {
-  const statusIndex = cx2.findIndex((aspect: any) => aspect.status !== undefined)
+  const statusIndex = cx2.findIndex(
+    (aspect: any) => aspect.status !== undefined,
+  )
   if (statusIndex < 0 || statusIndex === cx2.length - 1) {
     return cx2
   }
@@ -572,4 +577,3 @@ function main() {
 if (require.main === module) {
   main()
 }
-

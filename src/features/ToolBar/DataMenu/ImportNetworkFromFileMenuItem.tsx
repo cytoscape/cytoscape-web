@@ -4,8 +4,9 @@ import { ReactElement } from 'react'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
-export const UploadNetworkMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const UploadNetworkMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   return (
     <DropdownMenuItem
       label="Network from File..."

@@ -15,7 +15,6 @@ import { SearchBox } from './Search'
 import { ThemeToggleButton } from './ThemeToggleButton'
 import { ToolsMenu } from './ToolsMenu'
 
-
 export const ToolBar = (): JSX.Element => {
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -28,9 +27,12 @@ export const ToolBar = (): JSX.Element => {
         <Toolbar
           data-testid="toolbar"
           variant="dense"
-          sx={{ 
+          sx={{
             justifyContent: 'space-between',
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.grey[900],
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? theme.palette.background.default
+                : theme.palette.grey[900],
             borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >

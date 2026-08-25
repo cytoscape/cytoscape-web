@@ -280,13 +280,13 @@ export function ContinuousNumberMappingForm(props: {
   const setHandle = (id: number, value: number, vpValue: number): void => {
     const newHandles = editHandle(handles, id, value, vpValue)
     setHandles(newHandles)
-      updateContinuousMapping(
+    updateContinuousMapping(
       minState,
       maxState,
       newHandles,
-        m.ltMinVpValue,
-        m.gtMaxVpValue,
-      )
+      m.ltMinVpValue,
+      m.gtMaxVpValue,
+    )
   }
 
   // when someone changes a handle, the new handle values may contain a new min/max value

@@ -247,7 +247,9 @@ export const ListValueEditorDialog = ({
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button data-testid="list-value-editor-cancel" onClick={onCancel}>Cancel</Button>
+        <Button data-testid="list-value-editor-cancel" onClick={onCancel}>
+          Cancel
+        </Button>
         {tab === 0 ? (
           <>
             <Button

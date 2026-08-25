@@ -18,7 +18,13 @@ interface NumberEditorProps {
   valueType?: ValueTypeName
   setValue: (optionName: string, value: number) => void
   typeLabel?: string
-  typeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  typeColor?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
   tableLayout?: boolean
   error?: boolean
 }
@@ -38,8 +44,7 @@ export const NumberEditor = ({
     const parsed = event.target.valueAsNumber
     if (Number.isNaN(parsed)) return
     const coerced =
-      valueType === ValueTypeName.Integer ||
-      valueType === ValueTypeName.Long
+      valueType === ValueTypeName.Integer || valueType === ValueTypeName.Long
         ? Math.trunc(parsed)
         : parsed
     setValue(optionName, coerced)
@@ -57,7 +62,7 @@ export const NumberEditor = ({
             maxWidth: 0,
           }}
         >
-          <Typography 
+          <Typography
             variant="body2"
             sx={{
               overflow: 'hidden',
@@ -78,9 +83,9 @@ export const NumberEditor = ({
           }}
         >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px' }}
             />
@@ -122,11 +127,19 @@ export const NumberEditor = ({
         px: 2,
       }}
       secondaryAction={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: '200px', justifyContent: 'flex-end' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            minWidth: '200px',
+            justifyContent: 'flex-end',
+          }}
+        >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px', flexShrink: 0 }}
             />
@@ -148,8 +161,8 @@ export const NumberEditor = ({
       }
       disablePadding
     >
-      <ListItemText 
-        id={optionName} 
+      <ListItemText
+        id={optionName}
         primary={optionName}
         sx={{ flex: '1 1 auto', minWidth: 0 }}
       />

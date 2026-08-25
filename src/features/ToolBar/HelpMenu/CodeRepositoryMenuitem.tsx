@@ -4,7 +4,9 @@ import { ReactElement } from 'react'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-export const CodeRepositoryMenuItem = (props: BaseMenuItemProps): ReactElement => {
+export const CodeRepositoryMenuItem = (
+  props: BaseMenuItemProps,
+): ReactElement => {
   const handleCodeRepository = (): void => {
     window.open('https://github.com/cytoscape/cytoscape-web', '_blank')
     props.onClick()

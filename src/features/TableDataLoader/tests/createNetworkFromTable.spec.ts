@@ -87,7 +87,11 @@ describe('createNetworkFromTableData', () => {
     expect(result.cyNetwork.nodeTable.rows).toEqual(new Map())
     expect(result.cyNetwork.edgeTable.columns).toEqual([])
     expect(result.cyNetwork.edgeTable.rows).toEqual(new Map())
-    expect(result.cyNetwork.network).toEqual({ id: 'test', edges: [], nodes: [] })
+    expect(result.cyNetwork.network).toEqual({
+      id: 'test',
+      edges: [],
+      nodes: [],
+    })
   })
 
   // Add more test cases as needed

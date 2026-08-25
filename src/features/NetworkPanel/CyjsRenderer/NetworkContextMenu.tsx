@@ -74,18 +74,20 @@ export const NetworkContextMenu = ({
       position: contextMenu.networkPosition,
       eventTarget: event?.target,
     })
-    
+
     if (event) {
       logUi.info('[NetworkContextMenu] handleCreateNode: Stopping propagation')
       event.stopPropagation()
       event.preventDefault()
     }
-    
+
     if (contextMenu.networkPosition) {
       logUi.info('[NetworkContextMenu] handleCreateNode: Calling onCreateNode')
       onCreateNode(contextMenu.networkPosition)
     } else {
-      logUi.warn('[NetworkContextMenu] handleCreateNode: No network position available')
+      logUi.warn(
+        '[NetworkContextMenu] handleCreateNode: No network position available',
+      )
     }
     logUi.info('[NetworkContextMenu] handleCreateNode: Calling onClose')
     onClose()
@@ -96,18 +98,25 @@ export const NetworkContextMenu = ({
       clickedNodeId: contextMenu.clickedNodeId,
       eventTarget: event?.target,
     })
-    
+
     if (event) {
-      logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode: Stopping propagation')
+      logUi.info(
+        '[NetworkContextMenu] handleCreateEdgeFromNode: Stopping propagation',
+      )
       event.stopPropagation()
       event.preventDefault()
     }
-    
+
     if (contextMenu.clickedNodeId) {
-      logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode: Calling onCreateEdgeFromNode with', contextMenu.clickedNodeId)
+      logUi.info(
+        '[NetworkContextMenu] handleCreateEdgeFromNode: Calling onCreateEdgeFromNode with',
+        contextMenu.clickedNodeId,
+      )
       onCreateEdgeFromNode(contextMenu.clickedNodeId)
     } else {
-      logUi.warn('[NetworkContextMenu] handleCreateEdgeFromNode: No clickedNodeId available')
+      logUi.warn(
+        '[NetworkContextMenu] handleCreateEdgeFromNode: No clickedNodeId available',
+      )
     }
     logUi.info('[NetworkContextMenu] handleCreateEdgeFromNode: Calling onClose')
     onClose()
@@ -129,16 +138,27 @@ export const NetworkContextMenu = ({
       clickedEdgeId: contextMenu.clickedEdgeId,
       anchorPosition: contextMenu.anchorPosition,
     })
-  }, [contextMenu.open, clickedOnNode, clickedOnEdge, clickedOnCanvas, contextMenu.clickedNodeId, contextMenu.clickedEdgeId, contextMenu.anchorPosition])
+  }, [
+    contextMenu.open,
+    clickedOnNode,
+    clickedOnEdge,
+    clickedOnCanvas,
+    contextMenu.clickedNodeId,
+    contextMenu.clickedEdgeId,
+    contextMenu.anchorPosition,
+  ])
 
   return (
     <Menu
       open={contextMenu.open}
       onClose={(event, reason) => {
-        logUi.info('[NetworkContextMenu] Menu onClose called', { reason, event })
+        logUi.info('[NetworkContextMenu] Menu onClose called', {
+          reason,
+          event,
+        })
         // Type guard: check if event has stopPropagation method
         if (event && typeof (event as any).stopPropagation === 'function') {
-          (event as any).stopPropagation()
+          ;(event as any).stopPropagation()
         }
         onClose()
       }}
@@ -172,10 +192,12 @@ export const NetworkContextMenu = ({
         root: {
           onMouseDown: (e) => {
             logUi.info(
-              '[NetworkContextMenu] Root mouse down, checking whether to close context menu', {
-              target: e.target,
-              currentTarget: e.currentTarget,
-            })
+              '[NetworkContextMenu] Root mouse down, checking whether to close context menu',
+              {
+                target: e.target,
+                currentTarget: e.currentTarget,
+              },
+            )
             // Only close if clicking outside of menu items (i.e., on the backdrop)
             const target = e.target
             if (
@@ -201,14 +223,17 @@ export const NetworkContextMenu = ({
           placement="left"
         >
           <span>
-            <MenuItem 
+            <MenuItem
               onClick={(e) => {
-                logUi.info('[NetworkContextMenu] Create Node MenuItem onClick fired', {
-                  target: e.target,
-                  currentTarget: e.currentTarget,
-                })
+                logUi.info(
+                  '[NetworkContextMenu] Create Node MenuItem onClick fired',
+                  {
+                    target: e.target,
+                    currentTarget: e.currentTarget,
+                  },
+                )
                 handleCreateNode(e)
-              }} 
+              }}
               disabled={!isCreationEnabled}
             >
               Create Node
@@ -232,10 +257,13 @@ export const NetworkContextMenu = ({
           <span>
             <MenuItem
               onClick={(e) => {
-                logUi.info('[NetworkContextMenu] Create Edge MenuItem onClick fired', {
-                  target: e.target,
-                  currentTarget: e.currentTarget,
-                })
+                logUi.info(
+                  '[NetworkContextMenu] Create Edge MenuItem onClick fired',
+                  {
+                    target: e.target,
+                    currentTarget: e.currentTarget,
+                  },
+                )
                 handleCreateEdgeFromNode(e)
               }}
               disabled={!isCreationEnabled}

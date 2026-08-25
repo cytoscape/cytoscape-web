@@ -20,7 +20,9 @@ function dispatchSelection(detail: {
 
 function dispatchNetworkCreated(networkId: string): void {
   act(() => {
-    window.dispatchEvent(new CustomEvent('network:created', { detail: { networkId } }))
+    window.dispatchEvent(
+      new CustomEvent('network:created', { detail: { networkId } }),
+    )
   })
 }
 
@@ -30,7 +32,11 @@ it('calls handler when a matching event is dispatched', () => {
   const handler = vi.fn()
   renderHook(() => useCyWebEvent('selection:changed', handler))
 
-  dispatchSelection({ networkId: 'n1', selectedNodes: ['a'], selectedEdges: [] })
+  dispatchSelection({
+    networkId: 'n1',
+    selectedNodes: ['a'],
+    selectedEdges: [],
+  })
 
   expect(handler).toHaveBeenCalledTimes(1)
   expect(handler).toHaveBeenCalledWith({
@@ -51,7 +57,9 @@ it('does not call handler for a different event type', () => {
 
 it('removes the listener on unmount (handler not called after)', () => {
   const handler = vi.fn()
-  const { unmount } = renderHook(() => useCyWebEvent('network:created', handler))
+  const { unmount } = renderHook(() =>
+    useCyWebEvent('network:created', handler),
+  )
 
   dispatchNetworkCreated('net1')
   expect(handler).toHaveBeenCalledTimes(1)
@@ -66,7 +74,8 @@ it('calls the latest handler after the handler reference changes', () => {
   let handlerRef = vi.fn()
 
   const { rerender } = renderHook(
-    ({ handler }: { handler: import('vitest').Mock }) => useCyWebEvent('network:created', handler),
+    ({ handler }: { handler: import('vitest').Mock }) =>
+      useCyWebEvent('network:created', handler),
     { initialProps: { handler: handlerRef } },
   )
 

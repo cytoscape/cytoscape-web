@@ -30,7 +30,10 @@ export function FontPicker(props: {
         {sortedFontTypes.map((font: FontType) => (
           <Box
             sx={{
-              color: (theme) => (localValue === font ? theme.palette.primary.main : theme.palette.text.secondary),
+              color: (theme) =>
+                localValue === font
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === font ? 'bold' : 'normal',
               width: 100,
               display: 'flex',
@@ -49,7 +52,9 @@ export function FontPicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           variant="outlined"
           onClick={() => {

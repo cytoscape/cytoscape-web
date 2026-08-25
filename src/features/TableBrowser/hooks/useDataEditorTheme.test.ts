@@ -16,7 +16,7 @@ describe('useDataEditorTheme', () => {
         text: { primary: '#666', secondary: '#777', disabled: '#888' },
         primary: { main: '#999', contrastText: '#aaa' },
         divider: '#bbb',
-      }
+      },
     }
     vi.mocked(muiStyles.useTheme).mockReturnValue(mockTheme as any)
 

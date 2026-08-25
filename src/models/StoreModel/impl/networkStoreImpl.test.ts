@@ -280,4 +280,3 @@ describe('NetworkStoreImpl', () => {
     })
   })
 })
-

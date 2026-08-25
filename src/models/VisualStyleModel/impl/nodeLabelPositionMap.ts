@@ -320,7 +320,10 @@ export const nodeLabelPositionMap: any = {
       bottom: {
         left: { 'text-halign': 'right', 'text-valign': 'bottom-inside' },
         center: { 'text-halign': 'right', 'text-valign': 'bottom-inside' },
-        right: { 'text-halign': 'right-inside', 'text-valign': 'bottom-inside' },
+        right: {
+          'text-halign': 'right-inside',
+          'text-valign': 'bottom-inside',
+        },
       },
     },
   },

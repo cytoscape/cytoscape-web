@@ -2,11 +2,7 @@ import debug from 'debug'
 import hotkeys from 'hotkeys-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  initializeDebug,
-  isDebugEnabled,
-  registerDebugTool,
-} from '@/debug'
+import { initializeDebug, isDebugEnabled, registerDebugTool } from '@/debug'
 
 describe('debug mode', () => {
   let cleanup: (() => void) | undefined

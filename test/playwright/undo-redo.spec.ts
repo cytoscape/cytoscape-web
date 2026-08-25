@@ -67,8 +67,7 @@ test.describe('Undo and Redo', () => {
       const nodes = api?.element.getNodeIds(networkId)
       const firstNode = nodes?.data?.nodeIds[0]
       if (firstNode === undefined) return false
-      return api?.selection.exclusiveSelect(networkId, [firstNode], [])
-        ?.success
+      return api?.selection.exclusiveSelect(networkId, [firstNode], [])?.success
     })
     expect(selected).toBe(true)
 

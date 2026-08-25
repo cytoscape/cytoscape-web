@@ -35,4 +35,3 @@ export const DataTableRow: React.FC<DataTableRowProps> = ({
     </Box>
   )
 }
-

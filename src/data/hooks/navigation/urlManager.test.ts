@@ -144,10 +144,9 @@ describe('urlManager', () => {
         navigate,
       )
 
-      expect(navigate).toHaveBeenLastCalledWith(
-        '/ws-1/networks/net-1?tab=2',
-        { replace: true },
-      )
+      expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks/net-1?tab=2', {
+        replace: true,
+      })
     })
   })
 

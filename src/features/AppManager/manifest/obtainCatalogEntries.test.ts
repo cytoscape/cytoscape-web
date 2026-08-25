@@ -1,5 +1,12 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, type MockedFunction, vi } from 'vitest'
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockedFunction,
+  vi,
+} from 'vitest'
 
 import {
   DEFAULT_MANIFEST_URL,
@@ -17,12 +24,8 @@ vi.mock('./parseManifest', () => ({
   parseManifest: vi.fn(),
 }))
 
-const mockFetchManifest = fetchManifest as MockedFunction<
-  typeof fetchManifest
->
-const mockParseManifest = parseManifest as MockedFunction<
-  typeof parseManifest
->
+const mockFetchManifest = fetchManifest as MockedFunction<typeof fetchManifest>
+const mockParseManifest = parseManifest as MockedFunction<typeof parseManifest>
 
 const entry: AppCatalogEntry = {
   id: 'myApp',

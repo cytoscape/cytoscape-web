@@ -73,7 +73,10 @@ describe('historical snapshot fixtures import into the current schema', () => {
       // Each imported network must be individually readable
       for (const network of networks) {
         const fromDb = await getNetworkFromDb(network.id)
-        expect(fromDb, `network ${network.id} from ${fixtureFile}`).toBeDefined()
+        expect(
+          fromDb,
+          `network ${network.id} from ${fixtureFile}`,
+        ).toBeDefined()
       }
 
       // The imported workspace must be resolvable (not a freshly created one)

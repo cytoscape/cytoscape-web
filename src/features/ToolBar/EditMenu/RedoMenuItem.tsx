@@ -9,7 +9,6 @@ import { IdType } from '../../../models'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 export const RedoMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { redoLastEdit } = useUndoStack()
   const activeNetworkId: IdType = useUiStateStore(

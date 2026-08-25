@@ -2,7 +2,6 @@ import { SvgIcon } from '@mui/material'
 import { SxProps } from '@mui/system'
 import React from 'react'
 
-
 const defaultIconStyle = {
   style: { fontSize: 20, margin: 0 },
   sx: {

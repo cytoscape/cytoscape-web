@@ -103,18 +103,16 @@ describe('menuRouting', () => {
     }
 
     it('groups apps under their requested supported root', () => {
-      expect(Object.keys(filterServiceAppsByRoot(apps, RootMenu.Tools))).toEqual(
-        ['a'],
-      )
+      expect(
+        Object.keys(filterServiceAppsByRoot(apps, RootMenu.Tools)),
+      ).toEqual(['a'])
     })
 
     it('routes unknown and missing roots to the default menu', () => {
       // b (Apps), c (unknown -> Apps), d (missing -> Apps)
-      expect(Object.keys(filterServiceAppsByRoot(apps, RootMenu.Apps))).toEqual([
-        'b',
-        'c',
-        'd',
-      ])
+      expect(Object.keys(filterServiceAppsByRoot(apps, RootMenu.Apps))).toEqual(
+        ['b', 'c', 'd'],
+      )
     })
   })
 

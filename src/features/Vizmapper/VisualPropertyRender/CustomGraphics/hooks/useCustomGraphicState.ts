@@ -117,7 +117,6 @@ export const useCustomGraphicState = ({
     } else {
       setImageProps(defaultImageProps)
     }
-
   }, [open, initialValue])
 
   const currentProps =
@@ -128,7 +127,10 @@ export const useCustomGraphicState = ({
         : imageProps
 
   const updateCurrent = (
-    newProps: PieChartPropertiesType | RingChartPropertiesType | ImagePropertiesType,
+    newProps:
+      | PieChartPropertiesType
+      | RingChartPropertiesType
+      | ImagePropertiesType,
   ) => {
     if (kind === CustomGraphicsNameType.PieChart) {
       setPieProps(newProps as PieChartPropertiesType)

@@ -23,4 +23,3 @@ export * from './mapSerialization'
 
 // Immer serialization (Immer proxy → plain object)
 export { toPlainObject } from './immerSerialization'
-

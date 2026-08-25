@@ -8,7 +8,6 @@ import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
-
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuItemProps,
 ): React.ReactElement => {
@@ -46,14 +45,14 @@ export const SaveWorkspaceToNDExMenuItem = (
         disabled={!enabled}
         onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
       />
-    {enabled && (
-      <WorkspaceNamingDialog
-        openDialog={openDialog}
-        onClose={handleCloseDialog}
-        ndexBaseUrl={ndexBaseUrl}
-        getToken={getToken}
-      />
-    )}
+      {enabled && (
+        <WorkspaceNamingDialog
+          openDialog={openDialog}
+          onClose={handleCloseDialog}
+          ndexBaseUrl={ndexBaseUrl}
+          getToken={getToken}
+        />
+      )}
     </>
   )
 }

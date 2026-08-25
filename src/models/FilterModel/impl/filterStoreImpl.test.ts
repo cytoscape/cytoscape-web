@@ -82,12 +82,10 @@ describe('FilterStoreImpl', () => {
       const state = createDefaultState()
       const networkId: IdType = 'network-1'
 
-      const result = setIndexedColumns(
-        state,
-        networkId,
-        GraphObjectType.NODE,
-        ['col1', 'col2'],
-      )
+      const result = setIndexedColumns(state, networkId, GraphObjectType.NODE, [
+        'col1',
+        'col2',
+      ])
 
       expect(result.search.indexedColumns[networkId]?.node).toEqual([
         'col1',
@@ -117,7 +115,12 @@ describe('FilterStoreImpl', () => {
       const networkId: IdType = 'network-1'
       const index = { key1: ['value1'] }
 
-      const stateWithIndex = setIndex(state, networkId, GraphObjectType.NODE, index)
+      const stateWithIndex = setIndex(
+        state,
+        networkId,
+        GraphObjectType.NODE,
+        index,
+      )
 
       const retrievedIndex = getIndex(
         stateWithIndex,
@@ -275,4 +278,3 @@ describe('FilterStoreImpl', () => {
     })
   })
 })
-

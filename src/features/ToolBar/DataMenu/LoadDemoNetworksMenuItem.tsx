@@ -11,7 +11,6 @@ import { IdType } from '../../../models/IdType'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
-
 export const LoadDemoNetworksMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {

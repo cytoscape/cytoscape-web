@@ -62,7 +62,10 @@ function validateAndRegister(
 ): ApiResult<{ itemId: string }> {
   try {
     if (!config.label || config.label.trim() === '') {
-      return fail(AppCodes.INVALID_INPUT, 'label is required and must be non-empty')
+      return fail(
+        AppCodes.INVALID_INPUT,
+        'label is required and must be non-empty',
+      )
     }
 
     const itemId = uuidv4()

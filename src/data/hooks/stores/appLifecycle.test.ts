@@ -7,10 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AppContext } from '../../../app-api/types/AppContext'
 import type { CyApp } from '../../../models/AppModel/CyApp'
-import {
-  _resetCleanupRegistry,
-  registerAppCleanup,
-} from './AppCleanupRegistry'
+import { _resetCleanupRegistry, registerAppCleanup } from './AppCleanupRegistry'
 import { mountApp, unmountAllApps, unmountApp } from './appLifecycle'
 
 const context = {} as AppContext

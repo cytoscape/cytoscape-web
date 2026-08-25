@@ -1,1 +1,4 @@
-export { FeatureAvailabilityProvider,useFeatureAvailability } from './FeatureAvailabilityProvider'
+export {
+  FeatureAvailabilityProvider,
+  useFeatureAvailability,
+} from './FeatureAvailabilityProvider'

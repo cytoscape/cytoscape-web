@@ -36,14 +36,15 @@ export const columnAssingmentType2Label = {
 // Sourced from the shared data-type display module (CW-562) so labels stay
 // consistent with the rest of the app. Kept as an object map for existing
 // `valueTypeName2Label[type]` call sites.
-export const valueTypeName2Label: Record<ValueTypeName, string> =
-  Object.values(ValueTypeName).reduce(
-    (acc, t) => {
-      acc[t] = valueTypeNameLabel(t)
-      return acc
-    },
-    {} as Record<ValueTypeName, string>,
-  )
+export const valueTypeName2Label: Record<ValueTypeName, string> = Object.values(
+  ValueTypeName,
+).reduce(
+  (acc, t) => {
+    acc[t] = valueTypeNameLabel(t)
+    return acc
+  },
+  {} as Record<ValueTypeName, string>,
+)
 
 export const validValueTypes = (cat: ColumnAssignmentType): ValueTypeName[] => {
   switch (cat) {

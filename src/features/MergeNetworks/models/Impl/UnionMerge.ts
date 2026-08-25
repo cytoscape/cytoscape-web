@@ -174,8 +174,14 @@ export function unionMerge(
   })
 
   //clone the table rows(columns have already been initialized in the preprocess step)
-  mergedNodeTable = TableFn.insertRows(mergedNodeTable, Object.entries(initialNodeRows))
-  mergedEdgeTable = TableFn.insertRows(mergedEdgeTable, Object.entries(initialEdgeRows))
+  mergedNodeTable = TableFn.insertRows(
+    mergedNodeTable,
+    Object.entries(initialNodeRows),
+  )
+  mergedEdgeTable = TableFn.insertRows(
+    mergedEdgeTable,
+    Object.entries(initialEdgeRows),
+  )
 
   // merge nodes
   // loop over the networks to merge (the first network is base network)
@@ -290,7 +296,10 @@ export function unionMerge(
           }
           const isMatch =
             originalRow.interaction === castedRecord.interaction ||
-            (!Object.prototype.hasOwnProperty.call(originalRow, 'interaction') &&
+            (!Object.prototype.hasOwnProperty.call(
+              originalRow,
+              'interaction',
+            ) &&
               !Object.prototype.hasOwnProperty.call(
                 castedRecord,
                 'interaction',
@@ -307,7 +316,10 @@ export function unionMerge(
         shouldAddEdge = !hasMatched
       }
       if (shouldAddEdge) {
-        mergedEdgeTable = TableFn.insertRow(mergedEdgeTable, [newEdgeId, castedRecord])
+        mergedEdgeTable = TableFn.insertRow(mergedEdgeTable, [
+          newEdgeId,
+          castedRecord,
+        ])
         NetworkFn.addEdge(mergedNetwork, {
           id: newEdgeId,
           s: sourceId,

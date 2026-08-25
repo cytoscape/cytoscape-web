@@ -27,7 +27,6 @@ import { DropdownMenuItem } from '../DropdownMenu'
 export const RELEASE_NOTES_URL =
   'https://github.com/cytoscape/cytoscape-web/releases'
 
-
 const formatDateForHash = (dateString: string): string => {
   const date = new Date(dateString)
 
@@ -145,10 +144,7 @@ export const AboutCytoscapeWebMenuItem = (
           </Paper>
         </DialogContent>
         <DialogActions>
-          <Button
-            variant="contained"
-            onClick={handleCloseDialog}
-          >
+          <Button variant="contained" onClick={handleCloseDialog}>
             Close
           </Button>
         </DialogActions>

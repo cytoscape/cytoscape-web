@@ -49,10 +49,10 @@ export const handleApplyToEntireColumn = ({
 
   const columnKey = column.id
   const cellValue = (rowData as any)?.[columnKey]
-  
+
   const cellEdits: CellEdit[] = []
   const prevColumnValues: CellEdit[] = []
-  
+
   Array.from(currentTable.rows.entries()).forEach(([k, v]) => {
     cellEdits.push({
       row: k,
@@ -74,7 +74,7 @@ export const handleApplyToEntireColumn = ({
     [currentNetworkId, elementType, prevColumnValues],
     [currentNetworkId, elementType, cellEdits],
   )
-  
+
   applyValueToElements(
     currentNetworkId,
     elementType,
@@ -82,7 +82,7 @@ export const handleApplyToEntireColumn = ({
     cellValue,
     undefined,
   )
-  
+
   setNetworkModified(currentNetworkId, true)
   handleContextMenuClose()
 }
@@ -108,10 +108,10 @@ export const handleApplyToSelected = ({
 
   const columnKey = column.id
   const cellValue = (rowData as any)?.[columnKey]
-  
+
   const cellEdits: CellEdit[] = []
   const prevColumnValues: CellEdit[] = []
-  
+
   rows.forEach((r) => {
     const rowId = r.id
     cellEdits.push({
@@ -134,7 +134,7 @@ export const handleApplyToSelected = ({
     [currentNetworkId, elementType, prevColumnValues],
     [currentNetworkId, elementType, cellEdits],
   )
-  
+
   applyValueToElements(
     currentNetworkId,
     elementType,
@@ -142,7 +142,7 @@ export const handleApplyToSelected = ({
     cellValue,
     rows.map((r) => r.id),
   )
-  
+
   setNetworkModified(currentNetworkId, true)
   handleContextMenuClose()
 }
@@ -192,17 +192,17 @@ export const handleSelectFromSelection = ({
   const rowIds = Array.from(rowsToSelect)
     .map((r) => rows?.[r]?.id)
     .filter((id) => id !== undefined)
-    
+
   if (currentTable === nodeTable) {
     exclusiveSelect(currentNetworkId, rowIds as string[], [])
   } else {
     exclusiveSelect(currentNetworkId, [], rowIds as string[])
   }
-  
+
   setSelection({
     ...selection,
     rows: CompactSelection.empty(),
   })
-  
+
   handleContextMenuClose()
 }

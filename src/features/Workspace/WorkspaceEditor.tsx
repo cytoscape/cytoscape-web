@@ -106,9 +106,7 @@ const WorkSpaceEditor = (): JSX.Element => {
   // writes during render are safe here: the store flag flipping is itself
   // what triggers the re-render that reads them.
   const isJoinFormOpen = useJoinTableToNetworkStore((state) => state.show)
-  const isCreateFormOpen = useCreateNetworkFromTableStore(
-    (state) => state.show,
-  )
+  const isCreateFormOpen = useCreateNetworkFromTableStore((state) => state.show)
   const hasOpenedJoinFormRef = useRef<boolean>(false)
   if (isJoinFormOpen) hasOpenedJoinFormRef.current = true
   const hasOpenedCreateFormRef = useRef<boolean>(false)

@@ -1,4 +1,3 @@
- 
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import { ReactElement } from 'react'
 
@@ -7,7 +6,10 @@ import { DropdownMenuItem } from '../DropdownMenu'
 
 export const DeveloperMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const handleBugReport = (): void => {
-    window.open('https://github.com/cytoscape/cytoscape-web/wiki/Cytoscape-Web-Developer-Tutorial', '_blank')
+    window.open(
+      'https://github.com/cytoscape/cytoscape-web/wiki/Cytoscape-Web-Developer-Tutorial',
+      '_blank',
+    )
     props.onClick()
   }
 

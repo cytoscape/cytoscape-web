@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
-import { LayoutState, setIsRunning, setLayoutOption, setPreferredLayout } from './layoutStoreImpl'
+import {
+  LayoutState,
+  setIsRunning,
+  setLayoutOption,
+  setPreferredLayout,
+} from './layoutStoreImpl'
 
 // Mock the layout selection module
 vi.mock('../../LayoutModel/impl/layoutSelection', () => {
@@ -56,7 +61,11 @@ vi.mock('../../LayoutModel/impl/layoutSelection', () => {
   }
 })
 
-import { defAlgorithm, defHierarchicalAlgorithm, LayoutEngines } from '../../LayoutModel/impl/layoutSelection'
+import {
+  defAlgorithm,
+  defHierarchicalAlgorithm,
+  LayoutEngines,
+} from '../../LayoutModel/impl/layoutSelection'
 
 const createDefaultState = (): LayoutState => {
   return {
@@ -106,9 +115,8 @@ describe('LayoutStoreImpl', () => {
 
       const result = setLayoutOption(state, 'cyjs', 'grid', 'spacing', 100)
 
-      const algorithm = result.layoutEngines.find(
-        (e) => e.name === 'cyjs',
-      )?.algorithms['grid']
+      const algorithm = result.layoutEngines.find((e) => e.name === 'cyjs')
+        ?.algorithms['grid']
       expect(algorithm?.parameters.spacing).toBe(100)
       expect(algorithm?.editables?.spacing?.value).toBe(100)
       expect(result).not.toBe(state) // Immutability check
@@ -149,4 +157,3 @@ describe('LayoutStoreImpl', () => {
     })
   })
 })
-

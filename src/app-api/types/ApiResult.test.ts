@@ -56,7 +56,11 @@ describe('ApiResult helpers', () => {
     })
 
     it('copies severity onto the runtime error, including warning severity', () => {
-      const result = fail(StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED, 'score', 'node')
+      const result = fail(
+        StyleCodes.MAPPING_ATTRIBUTE_UNDECLARED,
+        'score',
+        'node',
+      )
       expect(result.success).toBe(false)
       expect(result.error.severity).toBe('warning')
     })

@@ -12,7 +12,6 @@ import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
 
-
 export const EditMenu = () => {
   const [open, setOpen] = useState(false)
 
@@ -67,9 +66,8 @@ export const EditMenu = () => {
         label="Edit"
         menuItems={menuItems}
         open={open}
-              disabled={hasNoNetworks}
-      disabledTooltip="Load or create a network first"
-
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
         onOpenChange={setOpen}
       />
       {dialogs}

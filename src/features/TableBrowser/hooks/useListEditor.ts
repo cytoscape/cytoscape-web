@@ -21,8 +21,19 @@ export interface UseListEditorProps {
   nodeTable: Table | undefined
   currentNetworkId: IdType
   networkId: IdType
-  postEdit: (type: UndoCommandType, name: string, oldVal: any, newVal: any) => void
-  setCellValue: (networkId: IdType, tableType: 'node' | 'edge', elementId: string, attributeName: string, value: any) => void
+  postEdit: (
+    type: UndoCommandType,
+    name: string,
+    oldVal: any,
+    newVal: any,
+  ) => void
+  setCellValue: (
+    networkId: IdType,
+    tableType: 'node' | 'edge',
+    elementId: string,
+    attributeName: string,
+    value: any,
+  ) => void
   setNetworkModified: (networkId: IdType, isModified: boolean) => void
 }
 
@@ -37,7 +48,9 @@ export const useListEditor = ({
   setCellValue,
   setNetworkModified,
 }: UseListEditorProps) => {
-  const [listEditor, setListEditor] = React.useState<ListEditorState | null>(null)
+  const [listEditor, setListEditor] = React.useState<ListEditorState | null>(
+    null,
+  )
 
   const onCellActivated = React.useCallback(
     (cell: Item): void => {

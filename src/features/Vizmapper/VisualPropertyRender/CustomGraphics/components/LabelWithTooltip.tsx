@@ -1,5 +1,5 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { Box, Tooltip,Typography } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 import * as React from 'react'
 
 interface LabelWithTooltipProps {
@@ -23,4 +23,3 @@ export const LabelWithTooltip: React.FC<LabelWithTooltipProps> = ({
     </Box>
   )
 }
-

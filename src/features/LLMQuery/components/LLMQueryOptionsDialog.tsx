@@ -24,13 +24,14 @@ import { LLMModel, models } from '../model/LLMModel'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { useLLMQueryStore } from '../store'
 
-
 interface LLMQueryOptionsDialogProps {
   open: boolean
   handleClose: () => void
 }
 
-export const LLMQueryOptionsDialog = (props: LLMQueryOptionsDialogProps): JSX.Element => {
+export const LLMQueryOptionsDialog = (
+  props: LLMQueryOptionsDialogProps,
+): JSX.Element => {
   const { open, handleClose } = props
 
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
@@ -43,7 +44,8 @@ export const LLMQueryOptionsDialog = (props: LLMQueryOptionsDialogProps): JSX.El
 
   const [localLLMModel, setLocalLLMModel] = useState<LLMModel>(LLMModel)
   const [localLLMApiKey, setLocalLLMApiKey] = useState<string>('')
-  const [localLLMTemplate, setLocalLLMTemplate] = useState<LLMTemplate>(LLMTemplate)
+  const [localLLMTemplate, setLocalLLMTemplate] =
+    useState<LLMTemplate>(LLMTemplate)
 
   const copyTextToClipboard = async (text: string): Promise<void> => {
     if ('clipboard' in navigator) {

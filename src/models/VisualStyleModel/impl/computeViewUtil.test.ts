@@ -1,15 +1,12 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { Edge,Network, Node } from '../../NetworkModel'
+import { Edge, Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
-import { Column,Table } from '../../TableModel'
+import { Column, Table } from '../../TableModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
 import { VisualStyle } from '../VisualStyle'
-import {
-  createNewNetworkView,
-  updateNetworkView,
-} from './computeViewUtil'
+import { createNewNetworkView, updateNetworkView } from './computeViewUtil'
 import { createVisualStyle } from './visualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/computeViewUtil.test.ts
@@ -22,11 +19,7 @@ describe('compute-view-util', () => {
 
   beforeEach(() => {
     // Create a simple network
-    const nodes: Node[] = [
-      { id: 'n1' },
-      { id: 'n2' },
-      { id: 'n3' },
-    ]
+    const nodes: Node[] = [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }]
     const edges: Edge[] = [
       { id: 'e1', s: 'n1', t: 'n2' },
       { id: 'e2', s: 'n2', t: 'n3' },
@@ -350,4 +343,3 @@ describe('compute-view-util', () => {
     })
   })
 })
-

@@ -27,8 +27,7 @@ import { TabPanel } from './TabPanel'
 
 // ── Builtin panel identity ───────────────────────────────────────
 
-const BUILTIN_SUB_NETWORK_ID =
-  '__builtin__::right-panel::sub-network-viewer'
+const BUILTIN_SUB_NETWORK_ID = '__builtin__::right-panel::sub-network-viewer'
 
 // ── Merged panel entry (manifest + runtime) ──────────────────────
 
@@ -146,7 +145,9 @@ export function renderPanelContents(
   return entries.map((entry, index) => {
     const PanelComponent = entry.component
     const content = entry.appId ? (
-      <AppIdProvider value={{ appId: entry.appId, apis: buildPerAppApis(entry.appId) }}>
+      <AppIdProvider
+        value={{ appId: entry.appId, apis: buildPerAppApis(entry.appId) }}
+      >
         <PluginErrorBoundary
           appId={entry.appId}
           slot="right-panel"

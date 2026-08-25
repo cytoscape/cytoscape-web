@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach,describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { loadModule } from '../ExternalComponent'
@@ -30,7 +30,11 @@ describe('loadRemoteApp', () => {
   it('loads AppConfig through Module Federation and registers the app', async () => {
     mockedLoadModule.mockResolvedValue({ default: remoteApp })
 
-    const result = await loadRemoteApp('myApp', 'http://localhost:2222/remoteEntry.js', appRegistry)
+    const result = await loadRemoteApp(
+      'myApp',
+      'http://localhost:2222/remoteEntry.js',
+      appRegistry,
+    )
 
     expect(mockedLoadModule).toHaveBeenCalledWith(
       'myApp',

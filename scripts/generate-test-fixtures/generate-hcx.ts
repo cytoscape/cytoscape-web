@@ -125,7 +125,9 @@ function generateHcxMembers(nodeIndex: number, totalNodes: number): number[] {
     const memberCount = Math.floor(Math.random() * 5) + 2
     const members: number[] = []
     for (let i = 0; i < memberCount; i++) {
-      const memberId = Math.floor(totalNodes / 2) + (nodeIndex * memberCount + i) % Math.floor(totalNodes / 2)
+      const memberId =
+        Math.floor(totalNodes / 2) +
+        ((nodeIndex * memberCount + i) % Math.floor(totalNodes / 2))
       if (memberId < totalNodes) {
         members.push(memberId)
       }
@@ -139,12 +141,7 @@ function generateHcxMembers(nodeIndex: number, totalNodes: number): number[] {
  * Generate a valid HCX network
  */
 function generateValidHcx(options: GenerateHcxOptions): any[] {
-  const {
-    nodeCount,
-    edgeCount,
-    withFilterWidgets,
-    schemaVersion,
-  } = options
+  const { nodeCount, edgeCount, withFilterWidgets, schemaVersion } = options
 
   // Start with a base CX2 network
   const cx2 = generateValidCx2({
@@ -224,19 +221,26 @@ function generateInvalidHcx(errorType: ErrorType, baseNetwork?: any[]): any {
     case 'missing-metadata':
       // Remove HCX metadata
       const noMetadata = JSON.parse(JSON.stringify(baseNetwork))
-      const networkAttrsIndex = noMetadata.findIndex((a: any) => a.networkAttributes)
+      const networkAttrsIndex = noMetadata.findIndex(
+        (a: any) => a.networkAttributes,
+      )
       if (networkAttrsIndex >= 0) {
         delete noMetadata[networkAttrsIndex].networkAttributes[0].ndexSchema
-        delete noMetadata[networkAttrsIndex].networkAttributes[0]['HCX::modelFileCount']
+        delete noMetadata[networkAttrsIndex].networkAttributes[0][
+          'HCX::modelFileCount'
+        ]
       }
       return noMetadata
 
     case 'invalid-schema-version':
       // Wrong schema version
       const wrongVersion = JSON.parse(JSON.stringify(baseNetwork))
-      const networkAttrsIndex2 = wrongVersion.findIndex((a: any) => a.networkAttributes)
+      const networkAttrsIndex2 = wrongVersion.findIndex(
+        (a: any) => a.networkAttributes,
+      )
       if (networkAttrsIndex2 >= 0) {
-        wrongVersion[networkAttrsIndex2].networkAttributes[0].ndexSchema = 'hierarchy_v2.0'
+        wrongVersion[networkAttrsIndex2].networkAttributes[0].ndexSchema =
+          'hierarchy_v2.0'
       }
       return wrongVersion
 
@@ -402,17 +406,18 @@ function main() {
     const withInteractionUUID =
       args.type === 'with-interaction-uuid' ||
       args.type === 'fully-compliant' ||
-      (args.interactionUUID !== undefined)
+      args.interactionUUID !== undefined
 
     const withFilterWidgets =
-      args.type === 'with-filter-configs' ||
-      args.type === 'fully-compliant'
+      args.type === 'with-filter-configs' || args.type === 'fully-compliant'
 
     hcx = generateValidHcx({
       nodeCount: args.nodeCount || DEFAULT_NODES,
       edgeCount: args.edgeCount || DEFAULT_EDGES,
       withInteractionUUID,
-      interactionUUID: args.interactionUUID || (withInteractionUUID ? 'test-uuid-123' : undefined),
+      interactionUUID:
+        args.interactionUUID ||
+        (withInteractionUUID ? 'test-uuid-123' : undefined),
       interactionHost: args.interactionHost,
       modelFileCount: args.modelFileCount || 1,
       schemaVersion: args.schemaVersion || 'hierarchy_v0.1',
@@ -440,4 +445,3 @@ function main() {
 if (require.main === module) {
   main()
 }
-

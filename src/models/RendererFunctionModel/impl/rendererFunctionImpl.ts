@@ -75,4 +75,3 @@ export const getFunction = (
   }
   return state.rendererFunctions.get(rendererName)?.get(functionName)
 }
-

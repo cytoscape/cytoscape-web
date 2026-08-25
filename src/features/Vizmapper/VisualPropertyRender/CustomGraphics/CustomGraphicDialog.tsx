@@ -87,9 +87,10 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 
   // Wizard step state
   const [activeStep, setActiveStep] = React.useState(0)
-  const steps = kind === CustomGraphicsNameType.Image
-    ? ['Graphic Type', 'Image URL']
-    : ['Graphic Type', 'Attributes', 'Colors', 'Properties']
+  const steps =
+    kind === CustomGraphicsNameType.Image
+      ? ['Graphic Type', 'Image URL']
+      : ['Graphic Type', 'Attributes', 'Colors', 'Properties']
 
   // Determine if this is a new chart or editing existing
   const isNewChart =
@@ -176,7 +177,10 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
         case 0:
           return true
         case 1:
-          return isImageProperties(currentProps) && currentProps.url.trim().length > 0
+          return (
+            isImageProperties(currentProps) &&
+            currentProps.url.trim().length > 0
+          )
         default:
           return false
       }
@@ -187,7 +191,10 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
         case 1:
         case 2:
         case 3:
-          return !isImageProperties(currentProps) && chartProps.cy_dataColumns.length > 0
+          return (
+            !isImageProperties(currentProps) &&
+            chartProps.cy_dataColumns.length > 0
+          )
         default:
           return false
       }
@@ -343,8 +350,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       <Alert severity="warning" sx={{ mb: 3 }}>
                         <Typography variant="body2">
                           This network does not have any numeric properties in
-                          the node table. Pie and donut charts require numeric data
-                          to display values.
+                          the node table. Pie and donut charts require numeric
+                          data to display values.
                         </Typography>
                       </Alert>
                     )}
@@ -370,15 +377,15 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                             : k === CustomGraphicsNameType.RingChart
                               ? 'Donut Chart'
                               : 'Image'
-                        const isDisabled = k !== CustomGraphicsNameType.Image && !hasNumericProperties
+                        const isDisabled =
+                          k !== CustomGraphicsNameType.Image &&
+                          !hasNumericProperties
                         return (
                           <Box
                             key={k}
                             onClick={() => !isDisabled && setKind(k)}
                             sx={{
-                              cursor: !isDisabled
-                                ? 'pointer'
-                                : 'not-allowed',
+                              cursor: !isDisabled ? 'pointer' : 'not-allowed',
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
@@ -447,7 +454,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       </Typography>
                     </Box>
                     <ImageForm
-                      url={isImageProperties(currentProps) ? currentProps.url : ''}
+                      url={
+                        isImageProperties(currentProps) ? currentProps.url : ''
+                      }
                       onUpdate={handleImageUrlUpdate}
                     />
                   </Box>
@@ -547,7 +556,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         holeSize={
                           kind === CustomGraphicsNameType.RingChart &&
                           isRingChartProperties(currentProps)
-                            ? (currentProps as RingChartPropertiesType).cy_holeSize
+                            ? (currentProps as RingChartPropertiesType)
+                                .cy_holeSize
                             : undefined
                         }
                         kind={kind}
@@ -752,14 +762,21 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         }}
                       >
                         <ImageIcon color="primary" />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
                           Image URL
                         </Typography>
                       </Box>
                     </AccordionSummary>
                     <AccordionDetails>
                       <ImageForm
-                        url={isImageProperties(currentProps) ? currentProps.url : ''}
+                        url={
+                          isImageProperties(currentProps)
+                            ? currentProps.url
+                            : ''
+                        }
                         onUpdate={handleImageUrlUpdate}
                       />
                     </AccordionDetails>
@@ -768,140 +785,150 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 
                 {/* Attributes Form */}
                 {kind !== CustomGraphicsNameType.Image && (
-                <Accordion>
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{
-                      '& .MuiAccordionSummary-content': {
-                        alignItems: 'center',
-                      },
-                    }}
-                  >
-                    <Box
+                  <Accordion>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
+                        '& .MuiAccordionSummary-content': {
+                          alignItems: 'center',
+                        },
                       }}
                     >
-                      <ListAltIcon color="primary" />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Attributes
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {chartProps.cy_dataColumns.length === 0 && (
-                      <Alert severity="info" sx={{ mb: 2 }}>
-                        <Typography variant="body2">
-                          {`Select up to ${CHART_CONSTANTS.MAX_SLICES} numeric attributes. Use the arrow buttons to move items between lists. The order in Selected Attributes determines slice order in the chart.`}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <ListAltIcon color="primary" />
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Attributes
                         </Typography>
-                      </Alert>
-                    )}
-                    <AttributesForm
-                      dataColumns={chartProps.cy_dataColumns}
-                      colors={chartProps.cy_colors}
-                      colorScheme={chartProps.cy_colorScheme}
-                      currentNetworkId={currentNetworkId}
-                      onUpdate={handleAttributesUpdateCompact}
-                      hideGuidance={true}
-                    />
-                  </AccordionDetails>
-                </Accordion>
-                )}
-
-                {/* Colors Form */}
-                {kind !== CustomGraphicsNameType.Image && (
-                <Accordion>
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{
-                      '& .MuiAccordionSummary-content': {
-                        alignItems: 'center',
-                      },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <PaletteIcon color="primary" />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Colors
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {chartProps.cy_dataColumns.length === 0 && (
-                      <Alert severity="info" sx={{ mb: 3 }}>
-                        <Typography variant="body2">
-                          Please add attributes first.
-                        </Typography>
-                      </Alert>
-                    )}
-                    {chartProps.cy_dataColumns.length > 0 && (
-                      <ColorsForm
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      {chartProps.cy_dataColumns.length === 0 && (
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          <Typography variant="body2">
+                            {`Select up to ${CHART_CONSTANTS.MAX_SLICES} numeric attributes. Use the arrow buttons to move items between lists. The order in Selected Attributes determines slice order in the chart.`}
+                          </Typography>
+                        </Alert>
+                      )}
+                      <AttributesForm
                         dataColumns={chartProps.cy_dataColumns}
                         colors={chartProps.cy_colors}
                         colorScheme={chartProps.cy_colorScheme}
                         currentNetworkId={currentNetworkId}
-                        onUpdate={handleAttributesAndColorsUpdate}
+                        onUpdate={handleAttributesUpdateCompact}
+                        hideGuidance={true}
                       />
-                    )}
-                  </AccordionDetails>
-                </Accordion>
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Colors Form */}
+                {kind !== CustomGraphicsNameType.Image && (
+                  <Accordion>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{
+                        '& .MuiAccordionSummary-content': {
+                          alignItems: 'center',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <PaletteIcon color="primary" />
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Colors
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      {chartProps.cy_dataColumns.length === 0 && (
+                        <Alert severity="info" sx={{ mb: 3 }}>
+                          <Typography variant="body2">
+                            Please add attributes first.
+                          </Typography>
+                        </Alert>
+                      )}
+                      {chartProps.cy_dataColumns.length > 0 && (
+                        <ColorsForm
+                          dataColumns={chartProps.cy_dataColumns}
+                          colors={chartProps.cy_colors}
+                          colorScheme={chartProps.cy_colorScheme}
+                          currentNetworkId={currentNetworkId}
+                          onUpdate={handleAttributesAndColorsUpdate}
+                        />
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
                 )}
 
                 {/* Properties Form */}
                 {kind !== CustomGraphicsNameType.Image && (
-                <Accordion>
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{
-                      '& .MuiAccordionSummary-content': {
-                        alignItems: 'center',
-                      },
-                    }}
-                  >
-                    <Box
+                  <Accordion>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
+                        '& .MuiAccordionSummary-content': {
+                          alignItems: 'center',
+                        },
                       }}
                     >
-                      <SettingsIcon color="primary" />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Chart Properties
-                      </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {chartProps.cy_dataColumns.length === 0 && (
-                      <Alert severity="info" sx={{ mb: 3 }}>
-                        <Typography variant="body2">
-                          Please add attributes first.
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <SettingsIcon color="primary" />
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Chart Properties
                         </Typography>
-                      </Alert>
-                    )}
-                    {chartProps.cy_dataColumns.length > 0 && (
-                      <PropertiesForm
-                        startAngle={chartProps.cy_startAngle}
-                        holeSize={
-                          kind === CustomGraphicsNameType.RingChart &&
-                          isRingChartProperties(currentProps)
-                            ? (currentProps as RingChartPropertiesType).cy_holeSize
-                            : undefined
-                        }
-                        kind={kind}
-                        onUpdate={handlePropertiesUpdate}
-                      />
-                    )}
-                  </AccordionDetails>
-                </Accordion>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      {chartProps.cy_dataColumns.length === 0 && (
+                        <Alert severity="info" sx={{ mb: 3 }}>
+                          <Typography variant="body2">
+                            Please add attributes first.
+                          </Typography>
+                        </Alert>
+                      )}
+                      {chartProps.cy_dataColumns.length > 0 && (
+                        <PropertiesForm
+                          startAngle={chartProps.cy_startAngle}
+                          holeSize={
+                            kind === CustomGraphicsNameType.RingChart &&
+                            isRingChartProperties(currentProps)
+                              ? (currentProps as RingChartPropertiesType)
+                                  .cy_holeSize
+                              : undefined
+                          }
+                          kind={kind}
+                          onUpdate={handlePropertiesUpdate}
+                        />
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
                 )}
               </Box>
             </Box>
@@ -933,7 +960,8 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                 >
                   Preview
                 </Typography>
-                {kind !== CustomGraphicsNameType.Image && chartProps.cy_dataColumns.length === 0 ? (
+                {kind !== CustomGraphicsNameType.Image &&
+                chartProps.cy_dataColumns.length === 0 ? (
                   <Box
                     sx={{
                       display: 'flex',
@@ -948,7 +976,9 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       Add attributes to see preview
                     </Typography>
                   </Box>
-                ) : kind === CustomGraphicsNameType.Image && (!isImageProperties(currentProps) || currentProps.url.trim().length === 0) ? (
+                ) : kind === CustomGraphicsNameType.Image &&
+                  (!isImageProperties(currentProps) ||
+                    currentProps.url.trim().length === 0) ? (
                   <Box
                     sx={{
                       display: 'flex',

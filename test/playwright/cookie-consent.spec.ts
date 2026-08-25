@@ -37,25 +37,33 @@ test.describe('Cookie Consent', () => {
     const banner = page.locator('[data-testid="cookie-consent"]')
     await expect(banner).toBeVisible({ timeout: 10000 })
 
-    await page.locator('[data-testid="cookie-consent"] button:has-text("Accept")').click()
+    await page
+      .locator('[data-testid="cookie-consent"] button:has-text("Accept")')
+      .click()
 
     await expect(banner).not.toBeVisible()
   })
 
   test('consent preference persists across reload', async ({ page }) => {
     await page.goto('/')
+    await expect(page.locator('[data-testid="cookie-consent"]')).toBeVisible({
+      timeout: 10000,
+    })
+
+    await page
+      .locator('[data-testid="cookie-consent"] button:has-text("Accept")')
+      .click()
     await expect(
       page.locator('[data-testid="cookie-consent"]'),
-    ).toBeVisible({ timeout: 10000 })
-
-    await page.locator('[data-testid="cookie-consent"] button:has-text("Accept")').click()
-    await expect(page.locator('[data-testid="cookie-consent"]')).not.toBeVisible()
+    ).not.toBeVisible()
 
     await page.reload()
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
       timeout: 15000,
     })
     // Banner must not reappear after acceptance
-    await expect(page.locator('[data-testid="cookie-consent"]')).not.toBeVisible()
+    await expect(
+      page.locator('[data-testid="cookie-consent"]'),
+    ).not.toBeVisible()
   })
 })
