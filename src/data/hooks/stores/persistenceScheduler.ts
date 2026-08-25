@@ -29,19 +29,21 @@ interface PendingWrite {
 
 const pendingWrites = new Map<string, PendingWrite>()
 
-const runWrite = (key: string): void => {
+const runWrite = async (key: string): Promise<void> => {
   const pending = pendingWrites.get(key)
   if (pending === undefined) {
     return
   }
   pendingWrites.delete(key)
   clearTimeout(pending.timer)
-  void pending.execute().catch((e) => {
+  try {
+    await pending.execute()
+  } catch (e) {
     logStore.error(
       `[${pending.label}] Failed to persist to IndexedDB (key: ${key})`,
       e,
     )
-  })
+  }
 }
 
 /**
@@ -57,7 +59,7 @@ export const scheduleWrite = (
   if (existing !== undefined) {
     clearTimeout(existing.timer)
   }
-  const timer = setTimeout(() => runWrite(key), WRITE_DELAY_MS)
+  const timer = setTimeout(() => void runWrite(key), WRITE_DELAY_MS)
   pendingWrites.set(key, { timer, execute, label })
 }
 
@@ -76,11 +78,15 @@ export const cancelWrite = (key: string): void => {
 /**
  * Execute every pending write immediately. Used on page-hide/unload and
  * by tests.
+ *
+ * The returned promise settles once every flushed write has finished, so a
+ * test can read the row back straight after awaiting it. Unload handlers
+ * ignore it — the page is going away either way.
  */
-export const flushPendingWrites = (): void => {
-  for (const key of Array.from(pendingWrites.keys())) {
-    runWrite(key)
-  }
+export const flushPendingWrites = async (): Promise<void> => {
+  await Promise.all(
+    Array.from(pendingWrites.keys()).map(async (key) => await runWrite(key)),
+  )
 }
 
 /** Number of writes currently waiting — exposed for tests/debugging. */
@@ -92,10 +98,10 @@ export const pendingWriteCount = (): number => pendingWrites.size
 if (typeof window !== 'undefined') {
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-      flushPendingWrites()
+      void flushPendingWrites()
     }
   })
   window.addEventListener('beforeunload', () => {
-    flushPendingWrites()
+    void flushPendingWrites()
   })
 }

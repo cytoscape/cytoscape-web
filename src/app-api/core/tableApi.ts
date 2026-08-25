@@ -18,6 +18,10 @@ import {
 } from '../../models/TableModel'
 import { Column } from '../../models/TableModel/Column'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
+import {
+  ColumnConfiguration,
+  TableConfig,
+} from '../../models/VisualStyleModel/VisualStyleOptions'
 import { AppCodes, ApiResult, ElementCodes, fail, ok } from '../types/ApiResult'
 import { TableCodes } from '../types/ApiResult'
 import {
@@ -193,38 +197,46 @@ function tableKey(tableType: AppTableType): 'nodeTable' | 'edgeTable' {
   return tableType === 'node' ? 'nodeTable' : 'edgeTable'
 }
 
-interface DisplayColumnConfig {
-  attributeName: string
-  visible?: boolean
-  columnWidth?: number
-}
-
 /**
  * Apply an update to one table's columnConfiguration in the
  * tableDisplayConfiguration (UiStateStore).
  *
- * Directly mutates the Immer-managed state. Using
- * setTableDisplayConfiguration triggers toPlainObject + IndexedDB write
- * which can hang inside page.evaluate(). This minimal mutation is safe
- * because the next DB persist cycle will pick it up.
+ * Goes through `setTableDisplayConfiguration` so the change reaches the
+ * `uiState` row in IndexedDB. An earlier version wrote the configuration
+ * with a raw `useUiStateStore.setState`, which the store does not persist:
+ * the column showed up in the Table Browser and then vanished on the next
+ * reload, unless an unrelated setter happened to flush the row first (#685).
+ *
+ * Does nothing when the network has no display configuration — the Table
+ * Browser then falls back to the table's own columns, which are already
+ * correct.
  */
 function updateTableDisplayConfigColumns(
   networkId: IdType,
   tableType: AppTableType,
-  update: (cols: DisplayColumnConfig[]) => DisplayColumnConfig[],
+  update: (cols: ColumnConfiguration[]) => ColumnConfiguration[],
 ): void {
-  const configKey = tableType === 'node' ? 'nodeTable' : 'edgeTable'
-  useUiStateStore.setState((state: any) => {
-    const tdc =
-      state.ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
-        ?.tableDisplayConfiguration
-    if (!tdc?.[configKey]?.columnConfiguration) return state
+  const configKey = tableKey(tableType)
+  const tdc =
+    useUiStateStore.getState().ui?.visualStyleOptions?.[networkId]
+      ?.visualEditorProperties?.tableDisplayConfiguration
+  const tableConfig = tdc?.[configKey]
+  if (tdc === undefined || tableConfig?.columnConfiguration === undefined) {
+    return
+  }
 
-    tdc[configKey].columnConfiguration = update(
-      tdc[configKey].columnConfiguration,
+  const nextTableConfig: TableConfig = {
+    ...tableConfig,
+    columnConfiguration: update(tableConfig.columnConfiguration),
+  }
+  useUiStateStore
+    .getState()
+    .setTableDisplayConfiguration(
+      networkId,
+      configKey === 'nodeTable'
+        ? { ...tdc, nodeTable: nextTableConfig }
+        : { ...tdc, edgeTable: nextTableConfig },
     )
-    return state
-  })
 }
 
 /**
@@ -388,16 +400,7 @@ export const tableApi: TableApi = {
         .getState()
         .createColumn(networkId, tableType, columnName, dataType, defaultValue)
 
-      // Schedule table display config sync asynchronously to avoid
-      // blocking page.evaluate() — the Immer + IndexedDB persist cycle
-      // in UiStateStore can hang when called synchronously from CDP.
-      setTimeout(() => {
-        try {
-          syncColumnToTableDisplayConfig(networkId, tableType, columnName)
-        } catch {
-          // Best-effort
-        }
-      }, 0)
+      syncColumnToTableDisplayConfig(networkId, tableType, columnName)
 
       return ok()
     } catch (e) {
@@ -420,16 +423,9 @@ export const tableApi: TableApi = {
       // Cascade: mappings referencing the column are deleted (CX2 RC3)
       cascadeColumnToMappings(networkId, tableType, columnName)
 
-      // Deferred for the same reason as createColumn (see above)
-      setTimeout(() => {
-        try {
-          updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
-            cols.filter((c) => c.attributeName !== columnName),
-          )
-        } catch {
-          // Best-effort
-        }
-      }, 0)
+      updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+        cols.filter((c) => c.attributeName !== columnName),
+      )
 
       return ok()
     } catch (e) {
@@ -467,20 +463,13 @@ export const tableApi: TableApi = {
       // Cascade: mappings follow the rename so they never dangle (MI1)
       cascadeColumnToMappings(networkId, tableType, currentName, newName)
 
-      // Deferred for the same reason as createColumn (see above)
-      setTimeout(() => {
-        try {
-          updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
-            cols.map((c) =>
-              c.attributeName === currentName
-                ? { ...c, attributeName: newName }
-                : c,
-            ),
-          )
-        } catch {
-          // Best-effort
-        }
-      }, 0)
+      updateTableDisplayConfigColumns(networkId, tableType, (cols) =>
+        cols.map((c) =>
+          c.attributeName === currentName
+            ? { ...c, attributeName: newName }
+            : c,
+        ),
+      )
 
       return ok()
     } catch (e) {
@@ -825,13 +814,7 @@ export const tableApi: TableApi = {
           colTypes.set(colName, inferredType)
           newColumns.push(colName)
           // Sync to Table Browser display config
-          setTimeout(() => {
-            try {
-              syncColumnToTableDisplayConfig(networkId, tableType, colName)
-            } catch {
-              // Best-effort
-            }
-          }, 0)
+          syncColumnToTableDisplayConfig(networkId, tableType, colName)
         }
       }
 

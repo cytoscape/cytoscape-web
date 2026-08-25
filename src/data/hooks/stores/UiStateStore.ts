@@ -7,7 +7,6 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { UiStateStore } from '../../../models/StoreModel/UiStateStoreModel'
@@ -27,6 +26,10 @@ import {
 import { putUiStateToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { scheduleWrite } from './persistenceScheduler'
+
+/** Coalescer key for the single shared `uiState` row. */
+const UI_STATE_WRITE_KEY = 'UiState'
 
 /**
  * Persist UI state, splitting it by ownership.
@@ -36,14 +39,31 @@ import { isHydrating } from './hydrationContext'
  * visual style options, custom tab names — reach the IndexedDB row that all
  * tabs read. See `src/data/tabState/tabViewState.ts` for why the split lives here
  * rather than in the cross-tab hydration path.
+ *
+ * The IndexedDB half goes through the 300 ms write coalescer. It used to run
+ * inside the Immer producer, so every setter paid a whole-row `toPlainObject`
+ * on the main thread — the last un-coalesced full-row write in the
+ * persistence layer, and slow enough that callers avoided the persisting
+ * setters altogether (see #685).
+ *
+ * `scheduleWrite` runs its callback at flush time, so the callback reads the
+ * committed store state instead of the `ui` handed in here: that argument is
+ * derived from the Immer draft, whose proxies are revoked once the producer
+ * returns.
  */
 const persistUiState = (ui: Ui) => {
   saveTabViewState(ui)
-  if (!isHydrating()) {
-    void putUiStateToDb(toPlainObject(withoutTabViewState(ui))).catch((e) => {
-      logStore.error('[UiStateStore]: Failed to persist UI state', e)
-    })
-  }
+  if (isHydrating()) return
+
+  scheduleWrite(UI_STATE_WRITE_KEY, 'UiStateStore', async () => {
+    // Re-checked at flush time: a cross-tab hydration may have started
+    // during the delay, and writing back mid-hydration echoes another
+    // tab's state into the shared row.
+    if (isHydrating()) return
+    await putUiStateToDb(
+      toPlainObject(withoutTabViewState(useUiStateStore.getState().ui)),
+    )
+  })
 }
 
 export const DEFAULT_UI_STATE = {

@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/tableApi.test.ts
 // Plain Jest tests for tableApi core — no renderHook, no React context.
+import { deleteUiStateFromDb, getUiStateFromDb } from '../../data/db'
+import { flushPendingWrites } from '../../data/hooks/stores/persistenceScheduler'
+import {
+  DEFAULT_UI_STATE,
+  useUiStateStore,
+} from '../../data/hooks/stores/UiStateStore'
 import { AppCodes, ElementCodes, TableCodes } from '../types/ApiResult'
 import { tableApi } from './tableApi'
 
@@ -59,25 +65,19 @@ vi.mock('../../data/hooks/stores/VisualStyleStore', () => ({
   },
 }))
 
-// ── Mock: UiStateStore (for tableDisplayConfiguration cascade) ───────────────
+// ── UiStateStore: the REAL store, backed by fake-indexeddb ───────────────────
+//
+// #685: the display-config cascade used to be asserted against a mocked
+// UiStateStore, which recorded the in-memory mutation and nothing else — so a
+// cascade that never reached IndexedDB looked correct. These tests drive the
+// real store and read the persisted `uiState` row back.
 
-let mockUiStoreState: any = { ui: { visualStyleOptions: {} } }
-
-vi.mock('../../data/hooks/stores/UiStateStore', () => ({
-  useUiStateStore: {
-    getState: vi.fn(() => mockUiStoreState),
-    setState: vi.fn((updater: (state: any) => any) => {
-      mockUiStoreState = updater(mockUiStoreState) ?? mockUiStoreState
-    }),
-  },
-}))
-
-/** Build a UiState with a tableDisplayConfiguration for one network */
-function makeUiStateWithColumns(
+/** Seed the store with a tableDisplayConfiguration for one network */
+function seedUiStateWithColumns(
   networkId: string,
   nodeColumns: string[],
   edgeColumns: string[] = [],
-): any {
+): void {
   const toConfig = (names: string[]) => ({
     columnConfiguration: names.map((attributeName) => ({
       attributeName,
@@ -85,11 +85,14 @@ function makeUiStateWithColumns(
       columnWidth: undefined,
     })),
   })
-  return {
+  useUiStateStore.setState({
     ui: {
+      ...DEFAULT_UI_STATE,
       visualStyleOptions: {
         [networkId]: {
           visualEditorProperties: {
+            nodeSizeLocked: false,
+            arrowColorMatchesEdge: false,
             tableDisplayConfiguration: {
               nodeTable: toConfig(nodeColumns),
               edgeTable: toConfig(edgeColumns),
@@ -98,22 +101,36 @@ function makeUiStateWithColumns(
         },
       },
     },
-  }
+  } as any)
 }
 
-/** Read column names back out of the mock display config */
+const columnNamesOf = (ui: any, networkId: string, tableType: string) =>
+  (
+    ui?.visualStyleOptions?.[networkId]?.visualEditorProperties
+      ?.tableDisplayConfiguration?.[tableType]?.columnConfiguration ?? []
+  ).map((c: { attributeName: string }) => c.attributeName)
+
+/** Column names in the in-memory display config */
 function displayConfigColumns(
   networkId: string,
   tableType: 'nodeTable' | 'edgeTable',
 ): string[] {
-  return (
-    mockUiStoreState.ui.visualStyleOptions[networkId]?.visualEditorProperties
-      ?.tableDisplayConfiguration?.[tableType]?.columnConfiguration ?? []
-  ).map((c: { attributeName: string }) => c.attributeName)
+  return columnNamesOf(useUiStateStore.getState().ui, networkId, tableType)
 }
 
-const flushTimers = async (): Promise<void> =>
-  await new Promise((resolve) => setTimeout(resolve, 0))
+/**
+ * Column names in the display config as it exists in IndexedDB.
+ *
+ * Flushes the write coalescer first — this is the assertion that fails when
+ * a cascade mutates the store without persisting.
+ */
+async function persistedDisplayConfigColumns(
+  networkId: string,
+  tableType: 'nodeTable' | 'edgeTable',
+): Promise<string[]> {
+  await flushPendingWrites()
+  return columnNamesOf(await getUiStateFromDb(), networkId, tableType)
+}
 
 // ── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -146,7 +163,7 @@ function registerNet1(nodes: string[], edges: string[] = []): void {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks()
   // Reset any custom mockImplementation set by prior tests
   mockCreateColumn.mockReset()
@@ -161,7 +178,9 @@ beforeEach(() => {
   mockNetworks.clear()
   mockSetMapping.mockReset()
   Object.keys(mockVisualStyles).forEach((k) => delete mockVisualStyles[k])
-  mockUiStoreState = { ui: { visualStyleOptions: {} } }
+  useUiStateStore.setState({ ui: { ...DEFAULT_UI_STATE } } as any)
+  await flushPendingWrites()
+  await deleteUiStateFromDb()
 })
 
 // --- getValue ----------------------------------------------------------------
@@ -384,9 +403,6 @@ describe('createColumn', () => {
     const result = tableApi.createColumn('net1', 'node', 's', 'string', '')
 
     expect(result.success).toBe(true)
-    // Drain the deferred display-config sync so it cannot leak into
-    // a later test's mockUiStoreState
-    await flushTimers()
   })
 
   it('rejects prototype-pollution column names', () => {
@@ -496,9 +512,67 @@ describe('createColumn', () => {
     expect(
       tableApi.createColumn('net1', 'node', 'label', 'string', '').success,
     ).toBe(true)
-    // Drain deferred display-config syncs so they cannot leak into
-    // a later test's mockUiStoreState
-    await flushTimers()
+  })
+
+  // #685 — the column reached cyTables but the display config it needs to be
+  // rendered stayed in memory, so the Table Browser lost it on reload.
+  describe('tableDisplayConfiguration (#685)', () => {
+    it('adds the new column to the persisted display config', async () => {
+      mockTables['net1'] = makeTableRecord()
+      seedUiStateWithColumns('net1', ['name'], ['weight'])
+
+      expect(
+        tableApi.createColumn('net1', 'node', 'MCODE_Cluster', 'integer', 0)
+          .success,
+      ).toBe(true)
+
+      expect(displayConfigColumns('net1', 'nodeTable')).toEqual([
+        'MCODE_Cluster',
+        'name',
+      ])
+      expect(await persistedDisplayConfigColumns('net1', 'nodeTable')).toEqual([
+        'MCODE_Cluster',
+        'name',
+      ])
+    })
+
+    it('persists with no later UiStateStore setter call', async () => {
+      // The exact condition that failed: nothing touches the store between
+      // the app's write and the reload, so no unrelated setter flushes the
+      // shared `ui` row on its behalf.
+      mockTables['net1'] = makeTableRecord()
+      seedUiStateWithColumns('net1', ['name'])
+
+      tableApi.createColumn('net1', 'node', 'MCODE_Score', 'double', 0)
+
+      await flushPendingWrites()
+      const persisted = await getUiStateFromDb()
+      expect(columnNamesOf(persisted, 'net1', 'nodeTable')).toEqual([
+        'MCODE_Score',
+        'name',
+      ])
+    })
+
+    it('leaves the edge display config alone for a node column', async () => {
+      mockTables['net1'] = makeTableRecord()
+      seedUiStateWithColumns('net1', ['name'], ['weight'])
+
+      tableApi.createColumn('net1', 'node', 'MCODE_Cluster', 'integer', 0)
+
+      expect(await persistedDisplayConfigColumns('net1', 'edgeTable')).toEqual([
+        'weight',
+      ])
+    })
+
+    it('does nothing when the network has no display config', async () => {
+      mockTables['net1'] = makeTableRecord()
+
+      expect(
+        tableApi.createColumn('net1', 'node', 'MCODE_Cluster', 'integer', 0)
+          .success,
+      ).toBe(true)
+      expect(displayConfigColumns('net1', 'nodeTable')).toEqual([])
+    })
   })
 })
 
@@ -582,17 +656,16 @@ describe('deleteColumn', () => {
     mockTables['net1'] = makeTableRecord(undefined, undefined, [
       { name: 'score', type: 'double' },
     ])
-    mockUiStoreState = makeUiStateWithColumns(
-      'net1',
-      ['name', 'score'],
-      ['weight'],
-    )
+    seedUiStateWithColumns('net1', ['name', 'score'], ['weight'])
 
     tableApi.deleteColumn('net1', 'node', 'score')
-    await flushTimers()
 
     expect(displayConfigColumns('net1', 'nodeTable')).toEqual(['name'])
     expect(displayConfigColumns('net1', 'edgeTable')).toEqual(['weight'])
+    // #685: the removal must survive a reload
+    expect(await persistedDisplayConfigColumns('net1', 'nodeTable')).toEqual([
+      'name',
+    ])
   })
 })
 
@@ -701,12 +774,16 @@ describe('renameColumn', () => {
     mockTables['net1'] = makeTableRecord(undefined, undefined, [
       { name: 'oldName', type: 'string' },
     ])
-    mockUiStoreState = makeUiStateWithColumns('net1', ['name', 'oldName'])
+    seedUiStateWithColumns('net1', ['name', 'oldName'])
 
     tableApi.renameColumn('net1', 'node', 'oldName', 'newName')
-    await flushTimers()
 
     expect(displayConfigColumns('net1', 'nodeTable')).toEqual([
+      'name',
+      'newName',
+    ])
+    // #685: the rename must survive a reload
+    expect(await persistedDisplayConfigColumns('net1', 'nodeTable')).toEqual([
       'name',
       'newName',
     ])
@@ -1293,6 +1370,21 @@ describe('importTableFromTsv', () => {
       0,
     )
     expect(mockSetValues).toHaveBeenCalled()
+  })
+
+  it('persists the display config for each new column (#685)', async () => {
+    const nodeRows = new Map([['n1', { name: 'Alice' }]])
+    const columns = [{ name: 'name', type: 'string' }]
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, columns)
+    registerNet1(['n1'])
+    seedUiStateWithColumns('net1', ['name'])
+
+    const tsv = 'id\tname\tscore\trank\nn1\tAlice\t0.9\t2'
+    expect(tableApi.importTableFromTsv('net1', 'node', tsv).success).toBe(true)
+
+    expect(
+      (await persistedDisplayConfigColumns('net1', 'nodeTable')).sort(),
+    ).toEqual(['name', 'rank', 'score'])
   })
 
   it('treats source and target as ordinary columns on a node table', () => {
