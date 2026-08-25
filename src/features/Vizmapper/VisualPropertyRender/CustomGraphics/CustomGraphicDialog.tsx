@@ -267,13 +267,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
   }
 
   return (
-    <CyDialog
-      dismiss="form"
-      open={open}
-      onClose={onCancel}
-      maxWidth="lg"
-      fullWidth
-    >
+    <CyDialog open={open} maxWidth="lg" fullWidth>
       <DialogTitle
         sx={{
           display: 'flex',

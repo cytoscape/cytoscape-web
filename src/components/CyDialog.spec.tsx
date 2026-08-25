@@ -1,12 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  CyDialog,
-  DialogCloseReason,
-  DialogDismiss,
-  shouldDismiss,
-} from './CyDialog'
+import { CyDialog } from './CyDialog'
 
 /**
  * `handleMouseDown` lives on `.MuiDialog-container` and only arms the backdrop
@@ -23,80 +18,41 @@ const clickBackdrop = (): void => {
   fireEvent.click(container)
 }
 
-const pressEscape = (): void => {
-  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
-}
-
-describe('shouldDismiss (#628 dialog dismissal policy)', () => {
-  const cases: Array<[DialogDismiss, DialogCloseReason, boolean]> = [
-    ['lightweight', 'backdropClick', true],
-    ['lightweight', 'escapeKeyDown', true],
-    ['form', 'backdropClick', false],
-    ['form', 'escapeKeyDown', true],
-    ['blocking', 'backdropClick', false],
-    ['blocking', 'escapeKeyDown', false],
-  ]
-
-  it.each(cases)('%s + %s -> %s', (dismiss, reason, expected) => {
-    expect(shouldDismiss(dismiss, reason)).toBe(expected)
-  })
-})
-
-describe('CyDialog', () => {
-  const renderDialog = (dismiss: DialogDismiss) => {
-    const onClose = vi.fn()
+describe('CyDialog (#628 — buttons are the only exit)', () => {
+  const renderDialog = () => {
+    const onCloseButton = vi.fn()
     render(
-      <CyDialog
-        data-testid="cy-dialog"
-        open
-        dismiss={dismiss}
-        onClose={onClose}
-      >
+      <CyDialog data-testid="cy-dialog" open>
         <span>body</span>
+        <button onClick={onCloseButton}>Close</button>
       </CyDialog>,
     )
-    return onClose
+    return onCloseButton
   }
 
   it('forwards the remaining Dialog props', () => {
-    renderDialog('lightweight')
+    renderDialog()
     expect(screen.getByTestId('cy-dialog')).toBeTruthy()
     expect(screen.getByText('body')).toBeTruthy()
   })
 
-  it('lightweight dismisses on backdrop click', () => {
-    const onClose = renderDialog('lightweight')
+  it('stays open on a backdrop click', () => {
+    renderDialog()
     clickBackdrop()
-    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('cy-dialog')).toBeTruthy()
+    expect(screen.getByText('body')).toBeTruthy()
   })
 
-  it('lightweight dismisses on Escape', () => {
-    const onClose = renderDialog('lightweight')
-    pressEscape()
-    expect(onClose).toHaveBeenCalledTimes(1)
+  it('stays open on Escape', () => {
+    renderDialog()
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.getByTestId('cy-dialog')).toBeTruthy()
+    expect(screen.getByText('body')).toBeTruthy()
   })
 
-  it('form ignores a backdrop click', () => {
-    const onClose = renderDialog('form')
-    clickBackdrop()
-    expect(onClose).not.toHaveBeenCalled()
-  })
-
-  it('form dismisses on Escape', () => {
-    const onClose = renderDialog('form')
-    pressEscape()
-    expect(onClose).toHaveBeenCalledTimes(1)
-  })
-
-  it('blocking ignores a backdrop click', () => {
-    const onClose = renderDialog('blocking')
-    clickBackdrop()
-    expect(onClose).not.toHaveBeenCalled()
-  })
-
-  it('blocking ignores Escape', () => {
-    const onClose = renderDialog('blocking')
-    pressEscape()
-    expect(onClose).not.toHaveBeenCalled()
+  it('leaves the dialog’s own buttons working', () => {
+    const onCloseButton = renderDialog()
+    fireEvent.click(screen.getByText('Close'))
+    expect(onCloseButton).toHaveBeenCalledTimes(1)
   })
 })

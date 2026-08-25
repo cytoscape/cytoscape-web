@@ -27,12 +27,7 @@ export const CytoscapeDesktopPermissionDialog = ({
   onCancel,
 }: CytoscapeDesktopPermissionDialogProps): ReactElement => {
   return (
-    <CyDialog
-      dismiss="lightweight"
-      open={open}
-      onClose={onCancel}
-      data-testid="cytoscape-desktop-permission-dialog"
-    >
+    <CyDialog open={open} data-testid="cytoscape-desktop-permission-dialog">
       <DialogTitle>Connect to Cytoscape Desktop</DialogTitle>
       <DialogContent>
         <DialogContentText component="div">

@@ -278,15 +278,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
     (summary?.isNdex ? isModified && editPermission : authenticated)
 
   const dialog = (
-    <CyDialog
-      dismiss="lightweight"
-      data-testid="save-to-ndex-sync-dialog"
-      onClose={() => {
-        setShowConfirmDialog(false)
-        props.onClick()
-      }}
-      open={showConfirmDialog}
-    >
+    <CyDialog data-testid="save-to-ndex-sync-dialog" open={showConfirmDialog}>
       <DialogTitle>Networks out of sync</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -296,6 +288,19 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
+        {/* Nothing dismisses on backdrop click or Escape, so without this the
+            dialog would force a write to NDEx either way
+            (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Button
+          data-testid="save-to-ndex-cancel-button"
+          variant="outlined"
+          onClick={() => {
+            setShowConfirmDialog(false)
+            props.onClick()
+          }}
+        >
+          Cancel
+        </Button>
         <Button
           data-testid="save-to-ndex-overwrite-button"
           variant="outlined"

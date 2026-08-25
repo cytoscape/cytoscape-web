@@ -156,13 +156,7 @@ export const CitationMenuItem = (props: BaseMenuItemProps): ReactElement => {
         icon={<FormatQuoteIcon />}
         onClick={handleOpenDialog}
       />
-      <CyDialog
-        dismiss="lightweight"
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-      >
+      <CyDialog open={openDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box
             sx={{

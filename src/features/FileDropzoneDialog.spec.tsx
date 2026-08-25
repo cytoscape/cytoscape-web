@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { FileDropzoneDialog } from './FileDropzoneDialog'
 
 /**
- * This dialog replaced the Mantine `<Modal>` the upload surfaces used. It holds
- * nothing the user typed — a file is either dropped or it is not — so it is
- * `lightweight` tier: backdrop click and Escape both dismiss (#628).
+ * This dialog replaced the Mantine `<Modal>` the upload surfaces used, whose
+ * `closeOnClickOutside` defaulted to true. Under the dismissal policy (#628)
+ * only its own Close button ends it.
  */
 describe('FileDropzoneDialog dismissal', () => {
   const testIds = {
@@ -33,18 +33,24 @@ describe('FileDropzoneDialog dismissal', () => {
     return handleClose
   }
 
-  it('closes on a backdrop click', () => {
+  it('ignores a backdrop click', () => {
     const handleClose = renderDialog()
     const container = document.querySelector('.MuiDialog-container')
     expect(container).not.toBeNull()
     fireEvent.mouseDown(container as Element)
     fireEvent.click(container as Element)
-    expect(handleClose).toHaveBeenCalledTimes(1)
+    expect(handleClose).not.toHaveBeenCalled()
   })
 
-  it('closes on Escape', () => {
+  it('ignores Escape', () => {
     const handleClose = renderDialog()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(handleClose).not.toHaveBeenCalled()
+  })
+
+  it('closes through its own Close button', () => {
+    const handleClose = renderDialog()
+    fireEvent.click(screen.getByLabelText('Close'))
     expect(handleClose).toHaveBeenCalledTimes(1)
   })
 

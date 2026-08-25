@@ -87,12 +87,10 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="edit-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Rename Column</DialogTitle>
       <DialogContent>
@@ -186,12 +184,10 @@ export function DeleteTableColumnForm(
   )
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid="delete-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Delete Column</DialogTitle>
       <DialogContent>
@@ -305,12 +301,10 @@ export function CreateTableColumnForm(
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="create-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Create New Column</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>

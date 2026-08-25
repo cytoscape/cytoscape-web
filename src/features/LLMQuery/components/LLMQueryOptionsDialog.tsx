@@ -65,12 +65,10 @@ export const LLMQueryOptionsDialog = (
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="llm-query-options-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={open}
-      onClose={handleClose}
     >
       <DialogTitle>LLM Query Options</DialogTitle>
       <DialogContent sx={{ p: 1 }}>

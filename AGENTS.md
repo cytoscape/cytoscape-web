@@ -73,7 +73,7 @@ need when you get there — do not read it all up front.
 - Use the `@/` alias for imports rooted at `src/`; relative imports remain appropriate for nearby files in the same feature or model.
 
 **Dialogs:**
-Never import `Dialog` from `@mui/material` — render modals through `CyDialog` (`src/components/CyDialog.tsx`) and declare a `dismiss` tier: `lightweight` (backdrop + Esc dismiss), `form` (Esc only), or `blocking` (neither). Lint enforces the import. See `docs/specifications/DIALOG_DISMISS_POLICY.md` for how to pick a tier and why `stopPropagation()` on a `<Dialog>` does not block either path.
+Modals close through their own buttons only — backdrop click and Esc are inert everywhere. Never import `Dialog` from `@mui/material`; render through `CyDialog` (`src/components/CyDialog.tsx`), which lint enforces. **Every dialog must have a visible Cancel or Close button — it is the only exit.** Modal form popovers use `disableEscapeKeyDown={true}` + `hideBackdrop={true}` instead. See `docs/specifications/DIALOG_DISMISS_POLICY.md`, including why `stopPropagation()` on a `<Dialog>` does not block either path.
 
 **Logging:**
 Use the structured `debug` logger from `src/debug.ts`, not `console.log`. Production builds use Vite's Oxc minifier to strip direct `console.*()` calls.
@@ -227,7 +227,7 @@ Read these before working in related areas:
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
 - `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, style library
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
-- `docs/specifications/DIALOG_DISMISS_POLICY.md` — dialog dismissal tiers, the `CyDialog` wrapper, blocking exemptions
+- `docs/specifications/DIALOG_DISMISS_POLICY.md` — button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules
 - `docs/specifications/MODEL_CREATION_PATTERN.md` — How to create new model domains

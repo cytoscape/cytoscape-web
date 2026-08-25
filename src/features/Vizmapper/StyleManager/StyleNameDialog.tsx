@@ -46,9 +46,7 @@ export const StyleNameDialog = (
 
   return (
     <CyDialog
-      dismiss="form"
       open={open}
-      onClose={onClose}
       fullWidth
       maxWidth="xs"
       data-testid="style-name-dialog"

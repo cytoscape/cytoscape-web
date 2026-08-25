@@ -53,10 +53,8 @@ export const ConfirmationDialog = (
 
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid="confirmation-dialog"
       open={open}
-      onClose={cancel}
       aria-labelledby="confirmation-dialog-title"
       aria-describedby="confirmation-dialog-description"
     >

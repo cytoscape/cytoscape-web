@@ -156,10 +156,8 @@ export const LayoutOptionDialog = ({
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="layout-option-dialog"
       open={open}
-      onClose={handleClose}
       PaperComponent={DraggablePaper}
       aria-labelledby="draggable-dialog-title"
     >

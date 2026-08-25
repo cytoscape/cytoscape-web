@@ -81,7 +81,7 @@ export const AboutCytoscapeWebMenuItem = (
         icon={<InfoOutlinedIcon />}
         onClick={handleOpenDialog}
       />
-      <CyDialog dismiss="lightweight" open={open} onClose={handleCloseDialog}>
+      <CyDialog open={open}>
         <DialogContent sx={{ minWidth: 360 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
             <img

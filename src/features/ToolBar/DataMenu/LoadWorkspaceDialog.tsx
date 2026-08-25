@@ -222,10 +222,8 @@ export const LoadWorkspaceDialog: React.FC<{
 
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid="load-workspace-dialog"
       open={open}
-      onClose={handleClose}
       fullWidth
       maxWidth="lg"
     >
@@ -317,11 +315,7 @@ export const LoadWorkspaceDialog: React.FC<{
               Open Workspace
             </Button>
           </Box>
-          <CyDialog
-            dismiss="lightweight"
-            open={openDialog}
-            onClose={handleCloseDialog}
-          >
+          <CyDialog open={openDialog}>
             <DialogTitle>Delete Workspace</DialogTitle>
             <DialogContent>
               <DialogContentText>

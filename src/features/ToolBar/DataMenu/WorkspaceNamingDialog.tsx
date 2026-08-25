@@ -164,12 +164,7 @@ export const WorkspaceNamingDialog = ({
 
   return (
     <>
-      <CyDialog
-        dismiss="form"
-        data-testid="workspace-naming-dialog"
-        open={openDialog}
-        onClose={onClose}
-      >
+      <CyDialog data-testid="workspace-naming-dialog" open={openDialog}>
         <DialogTitle>Save Workspace</DialogTitle>
         <DialogContent sx={{ width: '300px' }}>
           <TextField

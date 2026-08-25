@@ -67,10 +67,8 @@ export const AppInstallConfirmationDialog = ({
 }: AppInstallConfirmationDialogProps): JSX.Element => {
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid="app-install-confirmation-dialog"
       open={pending.length > 0}
-      onClose={onCancel}
       maxWidth="sm"
       fullWidth
       aria-labelledby="app-install-confirmation-dialog-title"

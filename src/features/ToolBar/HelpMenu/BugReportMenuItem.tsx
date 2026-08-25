@@ -113,13 +113,7 @@ export const BugReportMenuItem = ({
         icon={<BugReportIcon />}
         onClick={handleOpenDialog}
       />
-      <CyDialog
-        dismiss="lightweight"
-        open={openDialog}
-        onClose={handleDialogClose}
-        maxWidth="md"
-        fullWidth
-      >
+      <CyDialog open={openDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           Report a Bug
           <IconButton

@@ -4,20 +4,27 @@ import path from 'path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Keeps `docs/specifications/DIALOG_DISMISS_POLICY.md` honest about the code.
+ * Enforces the two halves of `docs/specifications/DIALOG_DISMISS_POLICY.md`
+ * that the type system cannot reach.
  *
- * `blocking` is the one tier a user cannot escape, so the policy names every
- * dialog allowed to use it. Nothing else pins the doc to reality — TypeScript
- * only checks that a tier is present, not that a `blocking` one was argued for.
- * Adding a blocking dialog without a row in the exemption table fails here, as
- * does leaving a row behind after a dialog changes tier or is deleted.
+ * Nothing in the app dismisses on backdrop click or Escape any more, so a
+ * dialog without a button of its own traps the user with no way out. That is
+ * the failure this file exists to prevent — it caught the service-app run
+ * dialog, which shipped with a Submit button and nothing else.
+ *
+ * The modal form popovers are the same policy expressed through different
+ * props, since `Popover` has no `CyDialog` to route through.
  */
 
 const SRC = path.resolve(__dirname, '..')
-const POLICY = path.resolve(
-  __dirname,
-  '../../docs/specifications/DIALOG_DISMISS_POLICY.md',
-)
+
+/** Modal (non-anchored) form popovers. Anchored menus are out of scope. */
+const FORM_POPOVERS = [
+  'features/Vizmapper/Forms/VisualPropertyValueForm.tsx',
+  'features/Vizmapper/Forms/MappingForm/index.tsx',
+  'features/Vizmapper/Forms/BypassForm.tsx',
+  'features/SummaryPanel/NetworkPropertyEditor.tsx',
+]
 
 const walk = (dir: string): string[] =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -28,42 +35,52 @@ const walk = (dir: string): string[] =>
       : []
   })
 
-/** Paths of every source file that renders a `blocking` dialog, `src/`-rooted. */
-const blockingDialogFiles = (): string[] =>
-  walk(SRC)
-    .filter((file) =>
-      fs.readFileSync(file, 'utf8').includes('dismiss="blocking"'),
-    )
-    .map((file) => path.relative(SRC, file))
-
-/** The `.tsx` paths named in the "Blocking exemptions" section, that section only. */
-const exemptedInPolicy = (): string[] => {
-  const policy = fs.readFileSync(POLICY, 'utf8')
-  const start = policy.indexOf('## Blocking exemptions')
-  expect(start).toBeGreaterThan(-1)
-  const rest = policy.slice(start + 1)
-  const end = rest.indexOf('\n## ')
-  const section = end === -1 ? rest : rest.slice(0, end)
-  return [...section.matchAll(/`([\w/-]+\.tsx)`/g)].map((match) => match[1])
+/** Every `<CyDialog …>…</CyDialog>` block in the app, with its location. */
+const dialogBlocks = (): Array<{ where: string; body: string }> => {
+  const blocks: Array<{ where: string; body: string }> = []
+  for (const file of walk(SRC)) {
+    const source = fs.readFileSync(file, 'utf8')
+    if (!source.includes('<CyDialog')) continue
+    const lines = source.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+      if (!/<CyDialog([\s>]|$)/.test(lines[i])) continue
+      let end = lines.length - 1
+      for (let j = i; j < lines.length; j++) {
+        if (lines[j].includes('</CyDialog>')) {
+          end = j
+          break
+        }
+      }
+      blocks.push({
+        where: `${path.relative(SRC, file)}:${i + 1}`,
+        body: lines.slice(i, end + 1).join('\n'),
+      })
+    }
+  }
+  return blocks
 }
 
 describe('dialog dismissal policy', () => {
-  it('documents every blocking dialog in the exemption table', () => {
-    const exempted = exemptedInPolicy()
-    const undocumented = blockingDialogFiles().filter(
-      (file) => !exempted.some((listed) => file.endsWith(listed)),
-    )
-    expect(undocumented).toEqual([])
+  it('finds every dialog in the app', () => {
+    // A guard on the guard: a broken parser would vacuously pass the rest.
+    expect(dialogBlocks().length).toBeGreaterThanOrEqual(40)
   })
 
-  it('lists no exemption that no longer uses the blocking tier', () => {
-    const exempted = exemptedInPolicy()
-    expect(exempted.length).toBeGreaterThan(0)
+  it('gives every dialog at least one button to leave by', () => {
+    const trapped = dialogBlocks()
+      .filter(({ body }) => !/<(Button|IconButton)[\s>]/.test(body))
+      .map(({ where }) => where)
+    expect(trapped).toEqual([])
+  })
 
-    const actual = blockingDialogFiles()
-    const stale = exempted.filter(
-      (listed) => !actual.some((file) => file.endsWith(listed)),
-    )
-    expect(stale).toEqual([])
+  it('keeps the modal form popovers on the same rule', () => {
+    const unguarded = FORM_POPOVERS.filter((rel) => {
+      const source = fs.readFileSync(path.join(SRC, rel), 'utf8')
+      return (
+        !source.includes('disableEscapeKeyDown={true}') ||
+        !source.includes('hideBackdrop={true}')
+      )
+    })
+    expect(unguarded).toEqual([])
   })
 })

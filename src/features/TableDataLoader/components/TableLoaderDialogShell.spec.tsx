@@ -6,8 +6,8 @@ import { TableLoaderDialogShell } from './TableLoaderDialogShell'
 /**
  * This shell replaced the Mantine `<Modal>` the two table-loader wizards used,
  * whose `closeOnClickOutside` defaulted to true. Both wizards are multi-step
- * forms, so they are `form` tier: Escape dismisses, a stray backdrop click must
- * not (#628).
+ * forms, and under the dismissal policy (#628) only the title bar's Close
+ * button may end them.
  */
 describe('TableLoaderDialogShell dismissal', () => {
   const renderShell = () => {
@@ -37,9 +37,15 @@ describe('TableLoaderDialogShell dismissal', () => {
     expect(screen.getByTestId('join-table-to-network-modal')).toBeTruthy()
   })
 
-  it('closes on Escape', () => {
+  it('ignores Escape', () => {
     const onClose = renderShell()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes through the title bar button', () => {
+    const onClose = renderShell()
+    fireEvent.click(screen.getByLabelText('Close'))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

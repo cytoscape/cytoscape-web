@@ -127,9 +127,7 @@ export const ListValueEditorDialog = ({
 
   return (
     <CyDialog
-      dismiss="form"
       open={open}
-      onClose={onCancel}
       maxWidth="sm"
       fullWidth
       data-testid="list-value-editor-dialog"

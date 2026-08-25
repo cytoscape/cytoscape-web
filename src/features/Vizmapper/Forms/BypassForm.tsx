@@ -637,6 +637,8 @@ export function BypassForm(props: {
         data-testid="bypass-form-popover"
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
+        disableEscapeKeyDown={true}
+        hideBackdrop={true}
         onClose={() => {
           showForm(null)
         }}
@@ -644,6 +646,28 @@ export function BypassForm(props: {
         transformOrigin={{ vertical: 'top', horizontal: 55 }}
       >
         <BypassFormContent {...props} repositionPopover={repositionPopover} />
+
+        {/* The only way out: this popover blocks click-away and Escape so a
+            half-built bypass edit is never lost to a stray click
+            (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+            px: 2,
+            py: 1,
+          }}
+        >
+          <Button
+            data-testid="bypass-form-close-button"
+            variant="outlined"
+            size="small"
+            onClick={() => showForm(null)}
+          >
+            Close
+          </Button>
+        </Box>
       </Popover>
     </Box>
   )

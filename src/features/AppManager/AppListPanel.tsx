@@ -322,9 +322,7 @@ export const AppListPanel = () => {
 
       {/* Uninstall confirmation (§12.5) */}
       <CyDialog
-        dismiss="lightweight"
         open={confirm !== null}
-        onClose={() => setConfirm(null)}
         data-testid="app-uninstall-confirm-dialog"
       >
         <DialogTitle>Uninstall app</DialogTitle>

@@ -180,13 +180,7 @@ export const EdgeCreationDialog = ({
   const hasColumns = edgeTable && edgeTable.columns.length > 0
 
   return (
-    <CyDialog
-      dismiss="form"
-      open={open}
-      onClose={onCancel}
-      maxWidth="lg"
-      fullWidth
-    >
+    <CyDialog open={open} maxWidth="lg" fullWidth>
       <DialogTitle
         sx={{
           display: 'flex',

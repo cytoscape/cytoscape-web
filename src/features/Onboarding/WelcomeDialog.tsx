@@ -64,9 +64,7 @@ export const WelcomeDialog = ({
 
   return (
     <CyDialog
-      dismiss="lightweight"
       open={open}
-      onClose={onSkip}
       maxWidth="sm"
       fullWidth
       data-testid="onboarding-welcome-dialog"

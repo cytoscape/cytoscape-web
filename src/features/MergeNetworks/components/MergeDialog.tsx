@@ -633,13 +633,11 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="merge-dialog"
       fullScreen={fullScreen}
       maxWidth="md"
       fullWidth={true}
       open={open}
-      onClose={handleClose}
     >
       <Box
         display="flex"

@@ -61,9 +61,7 @@ export const StyleLibraryDialog = (
   return (
     <>
       <CyDialog
-        dismiss="lightweight"
         open={open}
-        onClose={onClose}
         fullWidth
         maxWidth="sm"
         data-testid="style-library-dialog"
@@ -146,9 +144,7 @@ export const StyleLibraryDialog = (
         misplaced click on a hover-revealed icon destroyed it outright.
       */}
       <CyDialog
-        dismiss="lightweight"
         open={deleteTarget !== undefined}
-        onClose={() => setDeleteTargetId(undefined)}
         data-testid="style-library-delete-dialog"
       >
         <DialogTitle>Delete Library Style</DialogTitle>

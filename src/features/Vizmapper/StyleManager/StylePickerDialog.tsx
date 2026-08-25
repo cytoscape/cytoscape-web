@@ -309,9 +309,7 @@ export const StylePickerDialog = (
 
   return (
     <CyDialog
-      dismiss="lightweight"
       open={open}
-      onClose={onClose}
       fullWidth
       maxWidth="md"
       data-testid="style-picker-dialog"

@@ -24,7 +24,6 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 }) => {
   return (
     <CyDialog
-      dismiss="blocking"
       data-testid="email-verification-dialog"
       open={true}
       aria-labelledby="email-verification-title"

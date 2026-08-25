@@ -38,10 +38,8 @@ export function TableLoaderDialogShell(
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid={`${testIdPrefix}-modal`}
       open={show}
-      onClose={onClose}
       fullScreen={fullScreen}
       maxWidth={false}
       aria-labelledby={`${testIdPrefix}-dialog-title`}
@@ -85,7 +83,11 @@ export function TableLoaderDialogShell(
               </IconButton>
             </Tooltip>
           )}
-          <IconButton aria-label="Close" onClick={onClose}>
+          <IconButton
+            aria-label="Close"
+            data-testid={`${testIdPrefix}-close-button`}
+            onClick={onClose}
+          >
             <CloseIcon />
           </IconButton>
         </Box>

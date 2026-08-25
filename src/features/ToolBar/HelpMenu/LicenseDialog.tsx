@@ -55,12 +55,7 @@ export const LicenseDialog = ({
   }
 
   return (
-    <CyDialog
-      dismiss="lightweight"
-      data-testid="license-dialog"
-      open={open}
-      onClose={handleCloseDialog}
-    >
+    <CyDialog data-testid="license-dialog" open={open}>
       <DialogTitle>MIT License</DialogTitle>
       <DialogContent>
         <Paper

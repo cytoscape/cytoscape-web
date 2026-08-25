@@ -27,12 +27,7 @@ export const HcxValidationWarningsDialog = (
   const isValid: boolean = validationResult?.isValid ?? false
 
   return (
-    <CyDialog
-      dismiss="lightweight"
-      open={open}
-      onClose={onClose}
-      data-testid="hcx-validation-warnings-dialog"
-    >
+    <CyDialog open={open} data-testid="hcx-validation-warnings-dialog">
       <DialogTitle>
         {isValid ? 'HCX Network Warnings' : 'Invalid HCX Network'}
       </DialogTitle>

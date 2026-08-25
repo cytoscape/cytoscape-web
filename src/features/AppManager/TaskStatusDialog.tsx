@@ -42,7 +42,6 @@ export const TaskStatusDialog = ({
 
   return (
     <CyDialog
-      dismiss="blocking"
       data-testid="task-status-dialog"
       open={open}
       aria-labelledby="confirmation-dialog-title"

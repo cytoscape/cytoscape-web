@@ -1,41 +1,22 @@
 # Dialog Dismissal Policy
 
-> Which dialogs close on a backdrop click, which close on <kbd>Esc</kbd>, and why.
+> How modal surfaces close, and the one thing every modal must therefore provide.
 > Origin: [#628](https://github.com/cytoscape/cytoscape-web/issues/628).
 
 ## Policy Statement
 
-**Every modal `<Dialog>` in `src/` MUST be rendered through `CyDialog`
-(`src/components/CyDialog.tsx`) and MUST declare a `dismiss` tier.**
+**A modal closes through one of its own buttons and nothing else.** Backdrop click and
+<kbd>Esc</kbd> are inert on every modal in the app.
 
-Direct `Dialog` imports from `@mui/material` are blocked by lint.
+**Every modal MUST offer a visible Cancel or Close control.** This is not a style preference —
+it is the only exit. A dialog without one traps the user.
 
-## The three tiers
+Two mechanisms enforce this, one per surface type:
 
-| Tier          | Backdrop click | <kbd>Esc</kbd> | Use when                                                                                |
-| ------------- | -------------- | -------------- | --------------------------------------------------------------------------------------- |
-| `lightweight` | dismisses      | dismisses      | The dialog holds no user-entered state, or only state that costs nothing to rebuild.    |
-| `form`        | ignored        | dismisses      | The dialog holds typed or multi-step state that reopening does not restore.             |
-| `blocking`    | ignored        | ignored        | Dismissal is not a valid outcome — an in-progress task, or a gate the user must answer. |
-
-### Choosing a tier
-
-Ask one question: **if this dialog vanished right now, what would the user have to redo?**
-
-- Nothing, or one click — `lightweight`. Read-only panels (About, License, Citations), confirms,
-  list selection, previews, file dropzones.
-- Typing, or steps through a wizard — `form`. Merge, Custom Graphics, the table-loader wizards,
-  column forms, service-app run dialogs, layout options, export options.
-- The question itself must be answered — `blocking`. See the exemption list below.
-
-<kbd>Esc</kbd> stays live on `form` because it is deliberate; a backdrop click is the one people
-hit by accident, reaching for a field near the edge or refocusing the window.
-
-### Dismissal means cancel
-
-For `lightweight` and `form`, `onClose` MUST run exactly what the Cancel / Close button runs —
-never the Confirm path. A dialog whose dismissal writes data, grants consent, or applies a change
-is a bug, not a tier choice.
+| Surface                | Mechanism                                                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `<Dialog>`             | Render through `CyDialog` (`src/components/CyDialog.tsx`). Direct `Dialog` imports from `@mui/material` are blocked by lint. |
+| Modal form `<Popover>` | `disableEscapeKeyDown={true}` + `hideBackdrop={true}` on the popover.                                                        |
 
 ## Usage
 
@@ -43,38 +24,49 @@ is a bug, not a tier choice.
 import { CyDialog } from '@/components/CyDialog'
 
 return (
-  <CyDialog
-    data-testid="my-dialog"
-    open={open}
-    dismiss="form"
-    onClose={handleCancel}
-    maxWidth="sm"
-    fullWidth
-  >
+  <CyDialog data-testid="my-dialog" open={open} maxWidth="sm" fullWidth>
     <DialogTitle>…</DialogTitle>
+    <DialogContent>…</DialogContent>
+    <DialogActions>
+      <Button onClick={handleCancel}>Cancel</Button>
+      <Button onClick={handleConfirm} variant="contained">
+        Save
+      </Button>
+    </DialogActions>
   </CyDialog>
 )
 ```
 
-`dismiss` is required and has no default, so the tier is visible in every review. All other
-`DialogProps` forward untouched. For `blocking`, omit `onClose` — it is never called.
+`CyDialog` removes `onClose` from the prop type, so passing one is a type error. The handler
+belongs on a button. Every other `DialogProps` forwards untouched.
 
-## Blocking exemptions
+## Which surfaces this covers
 
-These are the only dialogs permitted to refuse both dismiss paths. Each supplies its own exit
-control. Adding to this list needs a note here saying why.
+**All 40 `<Dialog>` sites**, through `CyDialog`.
 
-| Dialog                            | Why                                                                |
-| --------------------------------- | ------------------------------------------------------------------ |
-| `AppManager/TaskStatusDialog.tsx` | A remote service call is in flight; Cancel is the only valid exit. |
-| `EmailVerification.tsx`           | Account gate — `open` is hard-coded true until the user verifies.  |
+**The four modal form popovers.** These are anchored but behave as modal editors, so they follow
+the same rule through their own props:
+
+| Popover                                       | Editing                     |
+| --------------------------------------------- | --------------------------- |
+| `Vizmapper/Forms/VisualPropertyValueForm.tsx` | a visual property's value   |
+| `Vizmapper/Forms/MappingForm/index.tsx`       | a visual property's mapping |
+| `Vizmapper/Forms/BypassForm.tsx`              | per-element bypasses        |
+| `SummaryPanel/NetworkPropertyEditor.tsx`      | the network summary         |
+
+`MappingForm` and `BypassForm` joined this list in the #628 sweep; before it they closed on
+click-away and had no button of their own, which is exactly the inconsistency the policy exists to
+remove. Both now carry a Close button.
+
+**Out of scope: anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette
+pickers, nested toolbar menus. Click-away dismissal is correct for a menu; see
+`PopupPanel_docs/PopupPanel.md` and `EditMenu_docs/EditMenu.md`.
 
 ## Why a wrapper is required
 
 MUI decides both dismiss paths from a single switch: pass `onClose` and backdrop click _and_
-<kbd>Esc</kbd> close the dialog; omit it and neither does. `CyDialog` filters on the `reason`
-argument MUI supplies (`'backdropClick'` | `'escapeKeyDown'`), which is what makes "Esc yes,
-backdrop no" expressible at all.
+<kbd>Esc</kbd> close the dialog; omit it and neither does. Nothing filters the `reason` argument
+MUI supplies, so the behaviour was previously whatever each author happened to pass.
 
 Two guards that look like they work and do not — do not reintroduce them:
 
@@ -85,22 +77,33 @@ Two guards that look like they work and do not — do not reintroduce them:
   `@mui/material/Dialog/Dialog.js` calls the user `onClick`, then fires
   `onClose(event, 'backdropClick')` regardless.
 
+Worse, the `preventDefault()` some of those handlers paired with the `stopPropagation()` _did_
+have an effect — a bubble-phase `preventDefault` on keydown suppresses text insertion, which is
+why `LoadFromNdexDialog`'s search field carries a `stopPropagation()` of its own to escape it.
+
 `disableEscapeKeyDown={false}` is also the default and does nothing. `CyDialog` sets the real one.
 
-## Out of scope
+## What the rule costs
 
-- **Anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette pickers,
-  mapping-form popovers, nested toolbar menus. Click-away dismissal is correct for menus; see
-  `PopupPanel_docs/PopupPanel.md` and `EditMenu_docs/EditMenu.md`.
-- **The two modal form popovers from PR #249** — `Vizmapper/Forms/VisualPropertyValueForm.tsx`
-  and `SummaryPanel/NetworkPropertyEditor.tsx`. They use `disableEscapeKeyDown` + `hideBackdrop`
-  so a visual property is committed only through confirm/cancel, which keeps undo entries whole
-  (`Vizmapper/Forms/Forms_docs/Forms.md`). Changing them means revisiting that rationale.
+Stated plainly so it is a decision on record rather than an oversight:
+
+- **Keyboard users lose the standard modal escape hatch.** <kbd>Esc</kbd> closing a dialog is a
+  widely-held expectation and a WCAG-friendly default. Every dialog must therefore keep its Cancel
+  or Close button reachable by keyboard.
+- **Read-only dialogs pay the same tax as forms.** About, License and Citations could safely close
+  on a stray click; under this policy they do not.
+
+The gain is that dismissal is never ambiguous and never destructive: no click discards a
+half-filled form, and no dialog closes into a state the user did not choose.
 
 ## Tests
 
-- `src/components/CyDialog.spec.tsx` — pins `shouldDismiss` over all six tier × reason pairs, and
-  asserts the rendered behavior for backdrop click and <kbd>Esc</kbd> at each tier.
-- `test/playwright/dialog-dismiss.spec.ts` — table-driven over representative dialogs; add a row
-  when adding a dialog.
+- `src/components/CyDialog.spec.tsx` — asserts backdrop click and <kbd>Esc</kbd> leave the dialog
+  open, and that the dialog's own buttons still fire.
+- `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` contains at least
+  one button, and that the four form popovers keep both guard props. This is the check that keeps
+  a dialog from shipping with no exit; it caught the service-app run dialog, which had a Submit
+  button and nothing else.
+- `test/playwright/dialog-dismiss.spec.ts` — per dialog: <kbd>Esc</kbd> and a backdrop click leave
+  it open, its button closes it. Add a row when adding a dialog.
 - `.oxlintrc.json` — `no-restricted-imports` keeps new call sites off `@mui/material`'s `Dialog`.

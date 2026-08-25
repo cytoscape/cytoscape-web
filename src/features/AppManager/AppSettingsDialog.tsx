@@ -222,10 +222,8 @@ export const AppSettingsDialog = ({
 
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid="app-settings-dialog"
       open={openDialog}
-      onClose={() => setOpenDialog(false)}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -441,13 +439,7 @@ export const AppSettingsDialog = ({
         </Button>
       </DialogActions>
 
-      <CyDialog
-        dismiss="lightweight"
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <CyDialog open={previewOpen} maxWidth="sm" fullWidth>
         <DialogContent>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             {previewTitle}

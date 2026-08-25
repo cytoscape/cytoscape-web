@@ -44,12 +44,8 @@ export const UpdateNetworkDialog = (props: {
 
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid="update-network-dialog"
       sx={{ zIndex: 10000 }}
-      onClose={() => {
-        props.onClose()
-      }}
       open={props.open}
     >
       <DialogTitle>Networks out of sync</DialogTitle>

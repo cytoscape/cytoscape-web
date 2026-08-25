@@ -940,7 +940,6 @@ export const LoadFromNdexDialog = (
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="load-from-ndex-dialog"
       PaperProps={{
         sx: {
@@ -950,7 +949,6 @@ export const LoadFromNdexDialog = (
       fullWidth
       maxWidth="lg"
       open={open}
-      onClose={handleClose}
     >
       <DialogTitle>NDEx - Network Browser</DialogTitle>
       <DialogContent>

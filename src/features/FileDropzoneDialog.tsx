@@ -145,10 +145,8 @@ export const FileDropzoneDialog = (
 
   return (
     <CyDialog
-      dismiss="lightweight"
       data-testid={testIds.modal}
       open={show}
-      onClose={handleClose}
       maxWidth="sm"
       fullWidth
       sx={{ zIndex: 2000 }}

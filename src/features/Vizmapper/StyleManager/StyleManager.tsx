@@ -418,9 +418,7 @@ export const StyleManager = (props: {
         onClose={closeDialog}
       />
       <CyDialog
-        dismiss="lightweight"
         open={dialog === 'delete'}
-        onClose={closeDialog}
         data-testid="style-manager-delete-dialog"
       >
         <DialogTitle>Delete Style</DialogTitle>

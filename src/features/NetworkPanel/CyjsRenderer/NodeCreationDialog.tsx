@@ -158,9 +158,7 @@ export const NodeCreationDialog = ({
 
   return (
     <CyDialog
-      dismiss="form"
       open={open}
-      onClose={onCancel}
       maxWidth="lg"
       fullWidth
       keepMounted={false}

@@ -95,7 +95,6 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
 
   return (
     <CyDialog
-      dismiss="form"
       data-testid="export-network-to-image-dialog"
       PaperProps={{
         sx: {
@@ -105,7 +104,6 @@ export const ExportImage = (props: ExportImageProps): ReactElement => {
       fullWidth
       maxWidth="sm"
       open={props.open}
-      onClose={props.handleClose}
     >
       <DialogTitle>Export Network To Image</DialogTitle>
       <DialogContent sx={{ pl: 4, pr: 0, pb: 0.5 }}>

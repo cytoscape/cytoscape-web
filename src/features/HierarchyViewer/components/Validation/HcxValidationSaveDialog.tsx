@@ -23,12 +23,7 @@ export const HcxValidationSaveDialog = (
 ): ReactElement => {
   const { open, onClose, onSubmit, validationResult } = props
   return (
-    <CyDialog
-      dismiss="lightweight"
-      open={open}
-      onClose={onClose}
-      data-testid="hcx-validation-save-dialog"
-    >
+    <CyDialog open={open} data-testid="hcx-validation-save-dialog">
       <DialogTitle>Invalid HCX Network</DialogTitle>
       <DialogContent>
         <DialogContentText>
