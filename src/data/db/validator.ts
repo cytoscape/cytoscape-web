@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { AppDataRow } from '../../models/AppDataModel/AppData'
+import type { AppDataRow } from '@/models/AppDataModel/AppData'
 import type { CyApp } from '../../models/AppModel/CyApp'
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
@@ -417,13 +417,29 @@ const OpaqueAspectsSchema = z.record(z.array(z.unknown()))
 // app-scoped entries use the empty id as their scope (APP_DATA_GLOBAL_SCOPE).
 // `value` is whatever the app stored — the app API guarantees only that it
 // survived a JSON round trip.
-const AppDataRowSchema = z.object({
-  id: z.string().min(1),
-  appId: z.string().min(1),
-  networkId: z.string(),
-  key: z.string().min(1),
-  value: z.unknown(),
-})
+const AppDataRowSchema = z
+  .object({
+    id: z.string().min(1),
+    appId: z.string().min(1),
+    networkId: z.string(),
+    // Never '__proto__' — hydration assigns rows into a plain object, where
+    // that name would replace the prototype instead of storing a value. The
+    // app API rejects it on write; this is the read-path half.
+    key: z
+      .string()
+      .min(1)
+      .refine((key) => key !== '__proto__', {
+        message: 'key "__proto__" is reserved',
+      }),
+    value: z.unknown(),
+  })
+  // z.unknown() is optional in Zod, so a row with no `value` at all would
+  // otherwise validate and hydrate as undefined — indistinguishable from the
+  // absent key that APP11 exists to report.
+  .refine((row) => row.value !== undefined, {
+    message: 'value must be defined',
+    path: ['value'],
+  })
 
 const EditSchema = z.object({
   undoCommand: z.string(),

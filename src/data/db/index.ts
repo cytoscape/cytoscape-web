@@ -4,7 +4,7 @@ import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
 import { getTabId } from '@/data/tabState/tabId'
-import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '../../models/AppDataModel'
+import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '@/models/AppDataModel'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'

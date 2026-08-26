@@ -1750,11 +1750,14 @@ app data.
 
 - **Per app.** One app can neither read nor overwrite another app's keys, and
   `getAll` / `keys` never report them. Two apps may use the same key name.
-- **Survives disable.** Entries are _not_ dropped when the app is disabled —
-  results the user paid compute for outlive a toggle. Use `remove` to discard
-  them.
+- **Survives disable.** Neither network-scoped nor app-scoped entries are
+  dropped when the app is disabled — results the user paid compute for outlive
+  a toggle. Discarding them is the app's call:
+  `remove(networkId, key)` for network entries, `removeGlobal(key)` for
+  app-scoped ones.
 - **Deleted with the network.** Both tiers are dropped when the network is
-  deleted. App-scoped entries (`setGlobal`) survive an emptied workspace.
+  deleted. App-scoped entries (`setGlobal`) are tied to no network, so they
+  survive an emptied workspace.
 - **Not synced across tabs.** A second tab sees what was persisted at its own
   boot, not later writes from the first.
 
@@ -1767,7 +1770,7 @@ stored.
 | Condition                                            | Code    |
 | ---------------------------------------------------- | ------- |
 | `undefined` value (use `remove` instead)             | `APP9`  |
-| Empty `key`                                          | `APP9`  |
+| Empty `key`, or the reserved key `__proto__`         | `APP9`  |
 | `networkId` not in the workspace (writes only)       | `APP1`  |
 | Cyclic value, `BigInt`, bare function or symbol      | `APP12` |
 | JSON encoding over 5 MB (`MAX_APP_DATA_VALUE_BYTES`) | `APP13` |

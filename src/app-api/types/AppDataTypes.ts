@@ -2,7 +2,7 @@
 //
 // Public types for the per-app data domain (`AppContext.apis.appData`).
 
-import type { IdType } from '../../models/IdType'
+import type { IdType } from '@/models/IdType'
 import type { ApiResult } from './ApiResult'
 
 /** Largest JSON-encoded value one entry may hold, in bytes. */

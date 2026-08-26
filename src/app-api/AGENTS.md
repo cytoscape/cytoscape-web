@@ -97,7 +97,9 @@ src/app-api/
 12. **`appData` is per-app but NOT cleaned up on disable** — every other
     `buildPerAppApis` domain registers with `AppCleanupRegistry`; `appData` must
     not. Its entries are results the user paid compute for and have to survive an
-    enable/disable toggle. Apps discard them with `appData.remove()`.
+    enable/disable toggle. Apps discard them explicitly:
+    `appData.remove(networkId, key)` for network entries, and
+    `appData.removeGlobal(key)` for app-scoped ones written with `setGlobal`.
 13. **The local app-data tier is hydrated in full at boot** — in
     `loadWorkspaceState`, before `publishWorkspace` marks the API ready. That is
     what lets `appData.get()` be synchronous and still answer for a workspace

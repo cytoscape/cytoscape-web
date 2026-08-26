@@ -1531,6 +1531,41 @@ describe('app data storage (DB v12)', () => {
     expect(rows.map((r) => r.id)).toEqual(['good'])
   })
 
+  it('drops a row with no value, which would hydrate as undefined', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putAppDataToDb(row('good', 'n1', 'k', 1))
+    // z.unknown() is optional in Zod, so this validated before the row-level
+    // refinement — and an undefined value is indistinguishable from the absent
+    // key APP11 exists to report.
+    await db.appData.put({
+      id: 'no-value',
+      appId: 'analyzer',
+      networkId: 'n1',
+      key: 'k2',
+    } as any)
+
+    expect((await getAllAppDataFromDb()).map((r) => r.id)).toEqual(['good'])
+  })
+
+  it('drops a row whose key is the reserved __proto__', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putAppDataToDb(row('good', 'n1', 'k', 1))
+    // Unreachable through the app API, which rejects the key on write. If such
+    // a row existed, hydration's `entries[row.key] = row.value` would replace
+    // the scope object's prototype instead of storing a value.
+    await db.appData.put({
+      id: 'proto',
+      appId: 'analyzer',
+      networkId: 'n1',
+      key: '__proto__',
+      value: { polluted: true },
+    } as any)
+
+    expect((await getAllAppDataFromDb()).map((r) => r.id)).toEqual(['good'])
+  })
+
   it('deletes one row by id', async () => {
     await setupFreshDb()
     await putAppDataToDb(row('one', 'n1', 'a', 1))
@@ -1541,7 +1576,7 @@ describe('app data storage (DB v12)', () => {
     expect((await getAllAppDataFromDb()).map((r) => r.id)).toEqual(['two'])
   })
 
-  it('sweeps every app\'s rows for one network via the networkId index', async () => {
+  it("sweeps every app's rows for one network via the networkId index", async () => {
     await setupFreshDb()
     await putAppDataToDb(row('a-n1', 'n1', 'k', 1, 'analyzer'))
     await putAppDataToDb(row('b-n1', 'n1', 'k', 2, 'enrichment'))

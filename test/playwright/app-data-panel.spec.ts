@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 
+import type { Page } from '@playwright/test'
+
 import { expect, gotoAndWaitReady, test } from './fixtures'
 
 // The app-api storage domain (#684), end to end against the real bundle and a
@@ -49,9 +51,7 @@ const networkPath = (currentUrl: string, networkId: string): string => {
 }
 
 /** Click the open-panel button if the right panel is closed. */
-const openRightPanel = async (
-  page: import('@playwright/test').Page,
-): Promise<void> => {
+const openRightPanel = async (page: Page): Promise<void> => {
   const openButton = page.locator('[data-testid="side-panel-open-button"]')
   if ((await openButton.count()) > 0) {
     await openButton.click()
@@ -62,7 +62,7 @@ const openRightPanel = async (
 }
 
 /** The workspace's network ids, in workspace order. */
-const networkIds = (page: import('@playwright/test').Page): Promise<string[]> =>
+const networkIds = (page: Page): Promise<string[]> =>
   page.evaluate(() => {
     const result = (
       window as unknown as ApiWindow
@@ -71,9 +71,7 @@ const networkIds = (page: import('@playwright/test').Page): Promise<string[]> =>
   })
 
 /** The workspace's current network id, or '' when there is none. */
-const currentNetworkId = (
-  page: import('@playwright/test').Page,
-): Promise<string> =>
+const currentNetworkId = (page: Page): Promise<string> =>
   page.evaluate(() => {
     const result = (
       window as unknown as ApiWindow
@@ -81,10 +79,7 @@ const currentNetworkId = (
     return result.success ? result.data.networkId : ''
   })
 
-const switchTo = (
-  page: import('@playwright/test').Page,
-  networkId: string,
-): Promise<void> =>
+const switchTo = (page: Page, networkId: string): Promise<void> =>
   page.evaluate(
     (id) =>
       (window as unknown as ApiWindow).CyWebApi.workspace.switchCurrentNetwork(

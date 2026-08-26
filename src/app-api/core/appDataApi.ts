@@ -138,6 +138,27 @@ const localEntries = (
   useAppDataStore.getState().appData[networkId]?.[appId] ?? {}
 
 /**
+ * Own-property test, never `in`.
+ *
+ * Entries live in a plain object, so `'toString' in entries` is true for every
+ * scope and `key in` would report inherited `Object.prototype` members as
+ * stored values — `get(networkId, 'toString')` returned the function itself.
+ */
+const hasEntry = (entries: Record<string, unknown>, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(entries, key)
+
+/**
+ * The one key name app data cannot hold.
+ *
+ * Boot hydration rebuilds the store with `entries[row.key] = row.value`, and a
+ * plain assignment to `__proto__` runs the Object.prototype setter — it would
+ * replace the scope object's prototype instead of storing a value. Rejected on
+ * write, and by `AppDataRowSchema` on read, so neither path can reach that
+ * assignment.
+ */
+const RESERVED_KEY = '__proto__'
+
+/**
  * Create a per-app AppDataApi bound to `appId`.
  */
 export const createAppDataApi = (appId: string): AppDataApi => {
@@ -154,6 +175,9 @@ export const createAppDataApi = (appId: string): AppDataApi => {
         'key is required and must be non-empty',
       )
     }
+    if (key === RESERVED_KEY) {
+      return fail(AppCodes.INVALID_INPUT, `key "${RESERVED_KEY}" is reserved`)
+    }
     const normalized = normalizeValue(key, value)
     if (!normalized.ok) {
       return normalized.failure
@@ -167,7 +191,7 @@ export const createAppDataApi = (appId: string): AppDataApi => {
       })
       // A key lives in exactly one tier; moving it must not leave the old
       // copy behind for get() to find.
-      if (key in localEntries(networkId, appId)) {
+      if (hasEntry(localEntries(networkId, appId), key)) {
         useAppDataStore.getState().remove(networkId, appId, key)
       }
     } else {
@@ -188,7 +212,7 @@ export const createAppDataApi = (appId: string): AppDataApi => {
     key: string,
   ): ApiResult<{ value: unknown }> => {
     const local = localEntries(networkId, appId)
-    if (key in local) {
+    if (hasEntry(local, key)) {
       return ok({ value: local[key] })
     }
     const record = exportedRecords(networkId).find(
@@ -200,8 +224,27 @@ export const createAppDataApi = (appId: string): AppDataApi => {
     return fail(AppCodes.APP_DATA_NOT_FOUND, key)
   }
 
+  /**
+   * This app's entries for a scope, both tiers merged.
+   *
+   * A local function, not `this.getAll()`: the API object is handed to apps and
+   * `const { keys } = ctx.apis.appData` is ordinary usage, which leaves `this`
+   * undefined and turned `keys()` into an APP3 failure.
+   */
+  const allEntries = (networkId: IdType): Record<string, unknown> => {
+    const entries: Record<string, unknown> = {
+      ...localEntries(networkId, appId),
+    }
+    for (const record of exportedRecords(networkId)) {
+      if (ownedBy(record, appId)) {
+        entries[record.key] = record.value
+      }
+    }
+    return entries
+  }
+
   const removeEntry = (networkId: IdType, key: string): ApiResult => {
-    if (key in localEntries(networkId, appId)) {
+    if (hasEntry(localEntries(networkId, appId), key)) {
       useAppDataStore.getState().remove(networkId, appId, key)
     }
     if (
@@ -238,15 +281,7 @@ export const createAppDataApi = (appId: string): AppDataApi => {
 
     getAll(networkId): ApiResult<{ entries: Record<string, unknown> }> {
       try {
-        const entries: Record<string, unknown> = {
-          ...localEntries(networkId, appId),
-        }
-        for (const record of exportedRecords(networkId)) {
-          if (ownedBy(record, appId)) {
-            entries[record.key] = record.value
-          }
-        }
-        return ok({ entries })
+        return ok({ entries: allEntries(networkId) })
       } catch (e) {
         return fail(AppCodes.OPERATION_FAILED, String(e))
       }
@@ -262,10 +297,7 @@ export const createAppDataApi = (appId: string): AppDataApi => {
 
     keys(networkId): ApiResult<{ keys: string[] }> {
       try {
-        const result = this.getAll(networkId)
-        return result.success
-          ? ok({ keys: Object.keys(result.data.entries) })
-          : result
+        return ok({ keys: Object.keys(allEntries(networkId)) })
       } catch (e) {
         return fail(AppCodes.OPERATION_FAILED, String(e))
       }

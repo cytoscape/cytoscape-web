@@ -15,11 +15,11 @@ import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
 
-import { AppDataRow } from '../../../models/AppDataModel'
-import * as AppDataImpl from '../../../models/AppDataModel/impl/appDataImpl'
-import { appDataRowId } from '../../../models/AppDataModel/impl/appDataImpl'
-import { IdType } from '../../../models/IdType'
-import { AppDataStore } from '../../../models/StoreModel/AppDataStoreModel'
+import { AppDataRow } from '@/models/AppDataModel'
+import * as AppDataImpl from '@/models/AppDataModel/impl/appDataImpl'
+import { appDataRowId } from '@/models/AppDataModel/impl/appDataImpl'
+import { IdType } from '@/models/IdType'
+import { AppDataStore } from '@/models/StoreModel/AppDataStoreModel'
 import {
   clearAppDataFromDb,
   deleteAppDataFromDb,

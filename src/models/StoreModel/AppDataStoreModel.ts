@@ -3,7 +3,7 @@ import { IdType } from '../IdType'
 
 export interface AppDataState {
   /** Local-tier entries: networkId → appId → key → value. */
-  appData: AppDataEntries
+  readonly appData: AppDataEntries
 }
 
 export interface AppDataActions {
@@ -15,23 +15,28 @@ export interface AppDataActions {
    * network in the workspace — including ones whose network data has not been
    * loaded yet.
    */
-  hydrate: () => Promise<void>
+  readonly hydrate: () => Promise<void>
 
-  set: (networkId: IdType, appId: string, key: string, value: unknown) => void
+  readonly set: (
+    networkId: IdType,
+    appId: string,
+    key: string,
+    value: unknown,
+  ) => void
 
-  remove: (networkId: IdType, appId: string, key: string) => void
+  readonly remove: (networkId: IdType, appId: string, key: string) => void
 
   /** Drop every app's entries for one network. */
-  deleteNetwork: (networkId: IdType) => void
+  readonly deleteNetwork: (networkId: IdType) => void
 
   /**
    * Drop every network-scoped entry, keeping the app-scoped ones — emptying
    * the workspace says nothing about data stored with `setGlobal`.
    */
-  deleteAllNetworks: () => void
+  readonly deleteAllNetworks: () => void
 
   /** Drop every entry, app-scoped ones included. */
-  deleteAll: () => void
+  readonly deleteAll: () => void
 }
 
 export type AppDataStore = AppDataState & AppDataActions

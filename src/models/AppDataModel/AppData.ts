@@ -63,9 +63,9 @@ export interface AppDataEntries {
  */
 export interface AppDataRow {
   /** Primary key — see `appDataRowId`. */
-  id: string
-  appId: string
-  networkId: IdType
-  key: string
-  value: unknown
+  readonly id: string
+  readonly appId: string
+  readonly networkId: IdType
+  readonly key: string
+  readonly value: unknown
 }

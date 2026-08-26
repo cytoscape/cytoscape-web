@@ -7,7 +7,7 @@ import { IdType } from '../../IdType'
 import { APP_DATA_GLOBAL_SCOPE, AppDataEntries, AppDataRow } from '../AppData'
 
 export interface AppDataState {
-  appData: AppDataEntries
+  readonly appData: AppDataEntries
 }
 
 /**

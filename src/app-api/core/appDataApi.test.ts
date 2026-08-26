@@ -159,6 +159,18 @@ describe('createAppDataApi — local tier', () => {
     expect(api.remove(NET_A, 'results').success).toBe(true)
   })
 
+  it('reports keys when destructured off the API object', () => {
+    // `const { keys } = ctx.apis.appData` is ordinary usage, and it leaves
+    // `this` undefined — keys() used to return an APP3 failure.
+    const api = createAppDataApi('analyzer')
+    api.set(NET_A, 'a', 1)
+    const { keys } = api
+
+    const result = keys(NET_A)
+
+    expect(result.success && result.data.keys).toEqual(['a'])
+  })
+
   it('reports keys and entries for one network only', () => {
     const api = createAppDataApi('analyzer')
     api.set(NET_A, 'a', 1)
@@ -224,9 +236,14 @@ describe('createAppDataApi — app isolation', () => {
 
 describe('createAppDataApi — exported tier', () => {
   it('writes exactly one cyAppData record', () => {
-    createAppDataApi('analyzer').set(NET_A, 'results', { degree: 3 }, {
-      export: true,
-    })
+    createAppDataApi('analyzer').set(
+      NET_A,
+      'results',
+      { degree: 3 },
+      {
+        export: true,
+      },
+    )
 
     expect(records(NET_A)).toEqual([
       { appId: 'analyzer', key: 'results', value: { degree: 3 } },
@@ -419,6 +436,35 @@ describe('createAppDataApi — input validation', () => {
     expect(!result.success && result.error.code).toBe(
       AppCodes.INVALID_INPUT.code,
     )
+  })
+
+  it('rejects the reserved key __proto__', () => {
+    // Boot hydration assigns rows into a plain object, where that name would
+    // replace the prototype instead of storing a value.
+    const api = createAppDataApi('analyzer')
+
+    const result = api.set(NET_A, '__proto__', { polluted: true })
+
+    expect(!result.success && result.error.code).toBe(
+      AppCodes.INVALID_INPUT.code,
+    )
+    expect(mockAppDataActions.set).not.toHaveBeenCalled()
+    expect(api.setGlobal('__proto__', { polluted: true }).success).toBe(false)
+  })
+
+  it('does not report an inherited Object.prototype member as a stored value', () => {
+    // `'toString' in entries` is true for every scope, so a membership test
+    // with `in` returned the function itself as the stored value.
+    const api = createAppDataApi('analyzer')
+
+    for (const key of ['toString', 'constructor', '__proto__']) {
+      const result = api.get(NET_A, key)
+      expect(!result.success && result.error.code).toBe(
+        AppCodes.APP_DATA_NOT_FOUND.code,
+      )
+    }
+    const all = api.getAll(NET_A)
+    expect(all.success && all.data.entries).toEqual({})
   })
 
   it('rejects undefined and points at remove()', () => {
