@@ -75,9 +75,15 @@ const RESULTS_DIR = join(DIR, 'results')
 //
 // `--suite <substr>` filters any of them, which is how a single sweep
 // gets run and re-rendered on its own.
-const QUICK_JOBS = [{ file: 'load.mjs', n: 2000 }]
+const QUICK_JOBS = [
+  { file: 'load.mjs', n: 2000 },
+  { file: 'serialization.mjs', n: 2000 },
+  { file: 'table-edit.mjs', n: 2000 },
+  { file: 'network-edit.mjs', n: 2000 },
+  { file: 'render-transform.mjs', n: 2000 },
+]
 
-const STANDALONE_JOBS = []
+const STANDALONE_JOBS = [{ file: 'db.mjs', n: 2000 }]
 
 const FULL_JOBS = [500, 10000].flatMap((n) =>
   QUICK_JOBS.map((j) => ({ ...j, n })),

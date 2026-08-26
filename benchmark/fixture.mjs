@@ -92,11 +92,56 @@ export function makeCyModels(opts) {
   let models = modelCache.get(key)
 
   if (models == null) {
-    models = createCyNetworkFromCx2('bench-network', makeCx2(opts))
+    models = createCyNetworkFromCx2(opts?.id ?? 'bench-network', makeCx2(opts))
     modelCache.set(key, models)
   }
 
   return models
+}
+
+/**
+ * The converted default visual style with one mapping of each kind installed
+ * (the generated CX2's own style has none): passthrough on the name column,
+ * discrete on `type`, continuous on `score`. This is what makes the
+ * render-transform suite's mapping hot loop evaluate real mappers instead of
+ * defaults-only.
+ */
+export function makeMappedVisualStyle(opts) {
+  const style = structuredClone(makeCyModels(opts).visualStyle)
+
+  style.nodeLabel.mapping = {
+    type: 'passthrough',
+    attribute: 'n',
+    visualPropertyType: 'string',
+    defaultValue: '',
+  }
+  style.nodeBackgroundColor.mapping = {
+    type: 'discrete',
+    attribute: 'type',
+    visualPropertyType: 'color',
+    defaultValue: '#999999',
+    vpValueMap: new Map([
+      ['protein', '#4488CC'],
+      ['gene', '#CC8844'],
+    ]),
+  }
+  style.nodeHeight.mapping = {
+    type: 'continuous',
+    attribute: 'score',
+    visualPropertyType: 'number',
+    attributeType: 'double',
+    defaultValue: 40,
+    min: { value: 0, vpValue: 10, inclusive: true },
+    max: { value: 1000, vpValue: 80, inclusive: true },
+    controlPoints: [
+      { value: 0, vpValue: 10, inclusive: true },
+      { value: 1000, vpValue: 80, inclusive: true },
+    ],
+    gtMaxVpValue: 80,
+    ltMinVpValue: 10,
+  }
+
+  return style
 }
 
 let realCx2 = null
