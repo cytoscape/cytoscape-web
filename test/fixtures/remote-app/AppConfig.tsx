@@ -53,6 +53,44 @@ function MenuMarker(): JSX.Element {
   return <span data-testid="remote-menu-marker">{shared}</span>
 }
 
+// State shared between the search options panel and the submit handler —
+// the app owns its extra parameters; the host only renders the panel.
+let exactMatch = false
+
+// Registered as the search provider's optionsComponent — the HOST renders it
+// inside the "More Options" popover in its OWN React tree (hooks prove the
+// shared React instance, like MenuMarker above).
+function SearchOptionsPanel(): JSX.Element {
+  const [checked, setChecked] = useState(exactMatch)
+  return (
+    <label data-testid="remote-search-options">
+      <input
+        type="checkbox"
+        data-testid="remote-search-exact-checkbox"
+        checked={checked}
+        onChange={(e) => {
+          exactMatch = e.target.checked
+          setChecked(e.target.checked)
+        }}
+      />
+      Exact match
+    </label>
+  )
+}
+
+// The submit handler writes what it received into a DOM marker the E2E can
+// assert on: the trimmed query from the host plus the app-owned option.
+function runFixtureSearch(query: { query: string }): void {
+  let el = document.getElementById('remote-search-result')
+  if (el === null) {
+    el = document.createElement('div')
+    el.id = 'remote-search-result'
+    el.setAttribute('data-testid', 'remote-search-result')
+    document.body.appendChild(el)
+  }
+  el.textContent = `query:${query.query};exact:${exactMatch}`
+}
+
 const TestRemoteApp = {
   id: 'testRemoteApp',
   name: 'Test Remote App',
@@ -67,6 +105,14 @@ const TestRemoteApp = {
           id: string
           title?: string
           component: unknown
+        }) => unknown
+        registerNetworkSearchProvider: (opts: {
+          id: string
+          name: string
+          description?: string
+          placeholder?: string
+          optionsComponent?: unknown
+          onSubmit: (query: { query: string }) => void
         }) => unknown
       }
     }
@@ -84,10 +130,23 @@ const TestRemoteApp = {
       title: 'Remote Marker',
       component: MenuMarker,
     })
+
+    // (3) Register a network search provider — the host's Workspace-tab
+    // search bar only appears once a provider exists, so this both proves
+    // the registration path and gives the E2E a provider to drive.
+    context.apis.resource.registerNetworkSearchProvider({
+      id: 'fixture-search',
+      name: 'Fixture Search',
+      description: 'E2E fixture network search provider.',
+      placeholder: 'Fixture query...',
+      optionsComponent: SearchOptionsPanel,
+      onSubmit: runFixtureSearch,
+    })
   },
 
   unmount(): void {
     document.getElementById('remote-app-root')?.remove()
+    document.getElementById('remote-search-result')?.remove()
   },
 }
 
