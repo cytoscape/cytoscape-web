@@ -101,8 +101,8 @@ export const NetworkSearchBar = (): JSX.Element | null => {
         <IconButton
           data-testid="network-search-provider-button"
           size="small"
-          sx={{ borderRadius: 1, px: 0.25 }}
           onClick={(e) => setProviderMenuAnchor(e.currentTarget)}
+          sx={{ borderRadius: 1, px: 0.25, color: (theme) => theme.palette.text.primary }}
         >
           {selected !== null && <NetworkSearchProviderIcon provider={selected} />}
           <ArrowDropDownIcon fontSize="small" />
@@ -131,10 +131,10 @@ export const NetworkSearchBar = (): JSX.Element | null => {
           <IconButton
             data-testid="network-search-options-button"
             size="small"
-            color={optionsAnchor !== null ? 'primary' : 'default'}
             onClick={(e) =>
               setOptionsAnchor(optionsAnchor === null ? e.currentTarget : null)
             }
+            sx={{ color: (theme) => theme.palette.text.primary }}
           >
             <TuneIcon fontSize="small" />
           </IconButton>
@@ -149,6 +149,7 @@ export const NetworkSearchBar = (): JSX.Element | null => {
             size="small"
             disabled={!canSearch}
             onClick={() => void handleSubmit()}
+            sx={{ color: (theme) => theme.palette.text.primary }}
           >
             {isRunning ? (
               <CircularProgress size={18} />

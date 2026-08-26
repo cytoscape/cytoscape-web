@@ -69,6 +69,7 @@ export const NetworkSearchProviderMenu = ({
                   e.stopPropagation()
                   window.open(provider.website, '_blank', 'noopener,noreferrer')
                 }}
+                sx={{ color: (theme) => theme.palette.primary.main }}
               >
                 <OpenInNewIcon fontSize="inherit" />
               </IconButton>

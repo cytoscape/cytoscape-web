@@ -37,7 +37,7 @@ export const NetworkSearchProviderIcon = ({
       width: size,
       height: size,
       fontSize: size * 0.55,
-      bgcolor: colorFromId(provider.resourceId),
+      bgcolor: (theme) => theme.palette.common.white,
     }}
   >
     {provider.name.charAt(0).toUpperCase()}
