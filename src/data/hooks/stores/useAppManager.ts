@@ -5,6 +5,7 @@ import { createResourceApi } from '../../../app-api/core/resourceApi'
 import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
 import type {
   RegisterMenuItemOptions,
+  RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
 } from '../../../app-api/types/AppResourceTypes'
 import { AppConfigContext } from '../../../AppConfigContext'
@@ -68,9 +69,16 @@ function processDeclarativeResources(cyApp: CyApp): void {
       resourceApi.registerPanel(entry as RegisterPanelOptions)
     } else if (entry.slot === 'apps-menu') {
       resourceApi.registerMenuItem(entry as RegisterMenuItemOptions)
+    } else if (entry.slot === 'search-bar') {
+      resourceApi.registerNetworkSearchProvider(
+        entry as RegisterNetworkSearchProviderOptions,
+      )
     } else {
+      // Statically unreachable (the union is exhaustive), but declarations
+      // can arrive from untyped JS apps with any slot string at runtime.
+      const unknownSlot = (entry as { slot: string }).slot
       logApp.warn(
-        `[useAppManager]: Unsupported slot '${entry.slot}' in declarative resources for ${cyApp.id}`,
+        `[useAppManager]: Unsupported slot '${unknownSlot}' in declarative resources for ${cyApp.id}`,
       )
     }
   }

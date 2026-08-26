@@ -17,12 +17,17 @@ import { AppCodes, fail, ok } from '../types/ApiResult'
 import type {
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
+  RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
   ResourceApi,
   ResourceVisibilityResult,
 } from '../types/AppResourceTypes'
 
-const SUPPORTED_SLOTS: ResourceSlot[] = ['right-panel', 'apps-menu']
+const SUPPORTED_SLOTS: ResourceSlot[] = [
+  'right-panel',
+  'apps-menu',
+  'search-bar',
+]
 
 /** True when the current network's view has at least one selected element. */
 function hasSelection(): boolean {
@@ -45,6 +50,25 @@ function isValidComponent(value: unknown): boolean {
   return (
     typeof value === 'function' || (typeof value === 'object' && value !== null)
   )
+}
+
+/**
+ * True when the value is an http(s) URL. Rejects everything else —
+ * notably `javascript:` URIs, which must never reach `window.open` or an
+ * `<img src>`.
+ */
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/** True when the value is an http(s) URL or an inline data:image URI. */
+function isValidIconUri(value: string): boolean {
+  return isHttpUrl(value) || value.startsWith('data:image/')
 }
 
 /**
@@ -149,6 +173,80 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     }
   },
 
+  registerNetworkSearchProvider(options) {
+    try {
+      if (!options.id || options.id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!options.name || options.name.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'name is required and must be non-empty',
+        )
+      }
+      if (typeof options.onSubmit !== 'function') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `onSubmit must be a function, got ${typeof options.onSubmit}`,
+        )
+      }
+      if (
+        options.optionsComponent !== undefined &&
+        !isValidComponent(options.optionsComponent)
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `optionsComponent must be a React component (function or object like React.lazy), got ${typeof options.optionsComponent}`,
+        )
+      }
+      if (options.icon !== undefined && !isValidIconUri(options.icon)) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'icon must be an http(s) URL or a data:image URI',
+        )
+      }
+      if (options.website !== undefined && !isHttpUrl(options.website)) {
+        return fail(AppCodes.INVALID_INPUT, 'website must be an http(s) URL')
+      }
+      const store = useAppResourceStore.getState()
+      store.upsertResource({
+        id: options.id,
+        appId,
+        slot: 'search-bar',
+        title: options.name,
+        description: options.description,
+        icon: options.icon,
+        website: options.website,
+        placeholder: options.placeholder,
+        component: options.optionsComponent as unknown,
+        onSubmit: options.onSubmit as unknown,
+        errorFallback: options.errorFallback as unknown,
+      })
+      return ok({ resourceId: `${appId}::search-bar::${options.id}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  unregisterNetworkSearchProvider(providerId) {
+    try {
+      const store = useAppResourceStore.getState()
+      if (!store.hasResource(appId, 'search-bar', providerId)) {
+        return fail(
+          AppCodes.RESOURCE_NOT_FOUND,
+          `Network search provider '${providerId}'`,
+        )
+      }
+      store.removeResource(appId, 'search-bar', providerId)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
   unregisterAll() {
     try {
       useAppResourceStore.getState().removeAllByAppId(appId)
@@ -174,14 +272,21 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         result = this.registerPanel(entry as RegisterPanelOptions)
       } else if (entry.slot === 'apps-menu') {
         result = this.registerMenuItem(entry as RegisterMenuItemOptions)
+      } else if (entry.slot === 'search-bar') {
+        result = this.registerNetworkSearchProvider(
+          entry as RegisterNetworkSearchProviderOptions,
+        )
       } else {
+        // Statically unreachable (the union is exhaustive), but entries can
+        // arrive from untyped JS apps with any slot string at runtime.
+        const unknownEntry = entry as { id: string; slot: ResourceSlot }
         errors.push({
-          id: entry.id,
-          slot: entry.slot,
+          id: unknownEntry.id,
+          slot: unknownEntry.slot,
           error: {
             code: AppCodes.INVALID_INPUT.code,
             severity: AppCodes.INVALID_INPUT.severity,
-            message: `Unsupported slot: ${entry.slot}`,
+            message: `Unsupported slot: ${unknownEntry.slot}`,
           },
         })
         continue
