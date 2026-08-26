@@ -57,6 +57,10 @@ declare module 'cyweb/ScopedApi' {
   ): import('./index').ScopedCyWebApi
 }
 
+declare module 'cyweb/AppDataApi' {
+  export function useAppDataApi(): import('./index').AppDataApi | null
+}
+
 declare module 'cyweb/EventBus' {
   export function useCyWebEvent<K extends keyof import('./index').CyWebEvents>(
     eventType: K,

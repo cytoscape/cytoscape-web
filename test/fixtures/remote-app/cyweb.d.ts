@@ -38,3 +38,42 @@ declare module 'cyweb/WorkspaceApi' {
     getWorkspaceInfo: () => ApiResult<WorkspaceInfo>
   }
 }
+
+// The app-data E2E adds two more modules. Same rule: match the real shapes.
+// Source of truth: src/app-api/AppIdContext.tsx, src/app-api/types/AppDataTypes.ts,
+// src/app-api/useCyWebEvent.ts, src/app-api/event-bus/CyWebEvents.ts
+
+declare module 'cyweb/AppIdContext' {
+  import type { ApiResult } from 'cyweb/WorkspaceApi'
+
+  export interface AppDataApi {
+    set(
+      networkId: string,
+      key: string,
+      value: unknown,
+      options?: { readonly export?: boolean },
+    ): ApiResult<void>
+    get(networkId: string, key: string): ApiResult<{ value: unknown }>
+    remove(networkId: string, key: string): ApiResult<void>
+  }
+
+  export function useAppContext(): {
+    readonly appId: string
+    readonly apis: {
+      readonly appData: AppDataApi
+      readonly workspace: {
+        getCurrentNetworkId: () => ApiResult<{ networkId: string }>
+      }
+    }
+  } | null
+}
+
+declare module 'cyweb/EventBus' {
+  export function useCyWebEvent(
+    eventType: 'network:switched',
+    handler: (detail: {
+      readonly networkId: string
+      readonly previousId: string
+    }) => void,
+  ): void
+}

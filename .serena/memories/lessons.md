@@ -33,6 +33,8 @@
 ## Testing
 
 - [2026-08-03] jsdom drops CSS values it cannot parse: `getComputedStyle` returns `auto` for `width: min(500px, calc(100% - 32px))` while `calc(100% - 32px)` resolves fine. Layout-assertion unit tests must stick to values jsdom's cssstyle understands, or assert in Playwright instead.
+- [2026-08-26] Playwright `getByRole` name matching is SUBSTRING by default: `getByRole('button', { name: 'Close' })` also matches the side panel's "Close panel" button, so `.last().click()` closed the panel the test needed open instead of the dialog. Close dialogs by their `data-testid` (e.g. `app-settings-dialog-close-button`), or pass `{ exact: true }`.
+- [2026-08-26] E2E: an app-api `switchCurrentNetwork` does NOT move the address bar, and boot resolves the current network from the URL first (`resolveInitialNetworkId`). A test that switches through the API and then reloads `page.url()` comes back on the OLD network. Rebuild the path with the intended network id (anchor on the `networks` segment — a based deployment prefixes it). Likewise, do not assume `?import=` order decides which network boot leaves current.
 - [2026-08-25] MUI dialog dismissal: `stopPropagation()` on a `<Dialog>`'s own `onClick`/`onKeyDown` blocks NEITHER backdrop click nor Escape — MUI runs the user handler first and dismisses regardless. A paired `preventDefault()` DOES break typing inside the dialog. `disableEscapeKeyDown={false}` is the default and does nothing. Modals now close by button only: render through `CyDialog` (`src/components/CyDialog.tsx`), and every dialog needs a visible Cancel/Close or the user is trapped. See `docs/specifications/DIALOG_DISMISS_POLICY.md`.
 
 ## Agent Workflow

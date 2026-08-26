@@ -4,6 +4,7 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import type { CyWebApiType } from '../core'
 import type { ContextMenuApi } from '../core/contextMenuApi'
 import type { NodeGraphicsApi } from '../core/nodeGraphicsApi'
+import type { AppDataApi } from './AppDataTypes'
 import type { ResourceApi, ResourceDeclaration } from './AppResourceTypes'
 
 /**
@@ -30,6 +31,11 @@ export interface AppContextApis extends CyWebApiType {
    * Overrides the anonymous nodeGraphics from CyWebApiType.
    */
   readonly nodeGraphics: NodeGraphicsApi
+  /**
+   * Per-app key/value storage (factory-bound to this app's ID), for results
+   * keyed to a network id. Entries are NOT dropped when the app is disabled.
+   */
+  readonly appData: AppDataApi
 }
 
 /**

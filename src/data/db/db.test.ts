@@ -39,6 +39,7 @@ import type { VisualStyleOptions } from '../../models/VisualStyleModel/VisualSty
 import type { Workspace } from '../../models/WorkspaceModel'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import {
+  clearAppDataFromDb,
   clearNetworksFromDb,
   clearNetworkSummaryFromDb,
   clearNetworkViewsFromDb,
@@ -49,10 +50,12 @@ import {
   clearVisualStyleFromDb,
   closeDb,
   CyNetworkCacheMissError,
+  deleteAppDataFromDb,
   deleteAppFromDb,
   deleteAppSettingFromDb,
   deleteDb,
   deleteFilterFromDb,
+  deleteNetworkAppDataFromDb,
   deleteNetworkFromDb,
   deleteNetworkSummaryFromDb,
   deleteNetworkViewsFromDb,
@@ -63,6 +66,8 @@ import {
   deleteUiStateFromDb,
   deleteUndoRedoStackFromDb,
   deleteVisualStyleFromDb,
+  deleteNetworkScopedAppDataFromDb,
+  getAllAppDataFromDb,
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
   getAllStyleTemplatesFromDb,
@@ -87,6 +92,7 @@ import {
   LEGACY_STYLE_ID,
   getWorkspaceFromDb,
   initializeDb,
+  putAppDataToDb,
   putAppSettingToDb,
   putAppToDb,
   putFilterToDb,
@@ -1482,5 +1488,88 @@ describe('view selection storage (DB v11)', () => {
     ).length
 
     expect(after).toBe(before)
+  })
+})
+
+describe('app data storage (DB v12)', () => {
+  const row = (
+    id: string,
+    networkId: string,
+    key: string,
+    value: unknown,
+    appId = 'analyzer',
+  ) => ({ id, appId, networkId, key, value })
+
+  it('round-trips a row and reads every row back', async () => {
+    await setupFreshDb()
+
+    expect(await getAllAppDataFromDb()).toEqual([])
+
+    await putAppDataToDb(row('a::n1::results', 'n1', 'results', { score: 1 }))
+
+    expect(await getAllAppDataFromDb()).toEqual([
+      {
+        id: 'a::n1::results',
+        appId: 'analyzer',
+        networkId: 'n1',
+        key: 'results',
+        value: { score: 1 },
+      },
+    ])
+  })
+
+  it('drops a malformed row on read instead of failing the whole hydration', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putAppDataToDb(row('good', 'n1', 'k', 1))
+    // A row with no appId — impossible through putAppDataToDb, reachable via
+    // a hand-edited or older-shape database.
+    await db.appData.put({ id: 'bad', networkId: 'n1', key: 'k' } as any)
+
+    const rows = await getAllAppDataFromDb()
+
+    expect(rows.map((r) => r.id)).toEqual(['good'])
+  })
+
+  it('deletes one row by id', async () => {
+    await setupFreshDb()
+    await putAppDataToDb(row('one', 'n1', 'a', 1))
+    await putAppDataToDb(row('two', 'n1', 'b', 2))
+
+    await deleteAppDataFromDb('one')
+
+    expect((await getAllAppDataFromDb()).map((r) => r.id)).toEqual(['two'])
+  })
+
+  it('sweeps every app\'s rows for one network via the networkId index', async () => {
+    await setupFreshDb()
+    await putAppDataToDb(row('a-n1', 'n1', 'k', 1, 'analyzer'))
+    await putAppDataToDb(row('b-n1', 'n1', 'k', 2, 'enrichment'))
+    await putAppDataToDb(row('a-n2', 'n2', 'k', 3, 'analyzer'))
+
+    await deleteNetworkAppDataFromDb('n1')
+
+    expect((await getAllAppDataFromDb()).map((r) => r.id)).toEqual(['a-n2'])
+  })
+
+  it('keeps app-scoped rows when every network-scoped row is dropped', async () => {
+    await setupFreshDb()
+    await putAppDataToDb(row('scoped', 'n1', 'k', 1))
+    // networkId '' is APP_DATA_GLOBAL_SCOPE — an appData.setGlobal entry.
+    await putAppDataToDb(row('global', '', 'prefs', { theme: 'dark' }))
+
+    await deleteNetworkScopedAppDataFromDb()
+
+    expect((await getAllAppDataFromDb()).map((r) => r.id)).toEqual(['global'])
+  })
+
+  it('clears every row, app-scoped ones included', async () => {
+    await setupFreshDb()
+    await putAppDataToDb(row('scoped', 'n1', 'k', 1))
+    await putAppDataToDb(row('global', '', 'prefs', 1))
+
+    await clearAppDataFromDb()
+
+    expect(await getAllAppDataFromDb()).toEqual([])
   })
 })

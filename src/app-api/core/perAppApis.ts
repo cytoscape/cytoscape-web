@@ -11,6 +11,7 @@
 
 import type { AppContextApis } from '../types/AppContext'
 import { CyWebApi } from './index'
+import { createAppDataApi } from './appDataApi'
 import { createContextMenuApi } from './contextMenuApi'
 import { createNodeGraphicsApi } from './nodeGraphicsApi'
 import { createResourceApi } from './resourceApi'
@@ -22,6 +23,11 @@ import { createResourceApi } from './resourceApi'
  * whose registrations must be attributed to an app and cleaned up when that app
  * is disabled. Anything registered through these factories carries `appId` and
  * is removed by `AppCleanupRegistry` on deactivation.
+ *
+ * `appData` is the one exception: it is per-app but deliberately NOT registered
+ * for cleanup. Its entries are results the user paid compute for, and they must
+ * outlive an enable/disable toggle — an app discards them with
+ * `appData.remove()`.
  */
 export function buildPerAppApis(appId: string): AppContextApis {
   return {
@@ -29,5 +35,6 @@ export function buildPerAppApis(appId: string): AppContextApis {
     resource: createResourceApi(appId),
     contextMenu: createContextMenuApi(appId),
     nodeGraphics: createNodeGraphicsApi(appId),
+    appData: createAppDataApi(appId),
   }
 }

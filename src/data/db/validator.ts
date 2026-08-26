@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import type { AppDataRow } from '../../models/AppDataModel/AppData'
 import type { CyApp } from '../../models/AppModel/CyApp'
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
@@ -412,6 +413,18 @@ const OpaqueAspectsDbSchema = z.object({
 
 const OpaqueAspectsSchema = z.record(z.array(z.unknown()))
 
+// One local-tier app-data row. `networkId` is a plain string, not IdTypeSchema:
+// app-scoped entries use the empty id as their scope (APP_DATA_GLOBAL_SCOPE).
+// `value` is whatever the app stored — the app API guarantees only that it
+// survived a JSON round trip.
+const AppDataRowSchema = z.object({
+  id: z.string().min(1),
+  appId: z.string().min(1),
+  networkId: z.string(),
+  key: z.string().min(1),
+  value: z.unknown(),
+})
+
 const EditSchema = z.object({
   undoCommand: z.string(),
   description: z.string(),
@@ -538,6 +551,9 @@ export const validateOpaqueAspectsDb = (value: unknown): OpaqueAspectsDB =>
 
 export const validateOpaqueAspects = (value: unknown): OpaqueAspects =>
   OpaqueAspectsSchema.parse(value) as OpaqueAspects
+
+export const validateAppDataRow = (value: unknown): AppDataRow =>
+  AppDataRowSchema.parse(value) as AppDataRow
 
 export const validateUndoRedoStackDb = (value: unknown): UndoRedoStackDB =>
   UndoRedoStackDbSchema.parse(value) as UndoRedoStackDB

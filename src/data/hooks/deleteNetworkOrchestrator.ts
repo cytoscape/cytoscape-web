@@ -1,5 +1,6 @@
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { IdType } from '../../models/IdType'
+import { useAppDataStore } from './stores/AppDataStore'
 import { useFilterStore } from './stores/FilterStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
@@ -44,6 +45,7 @@ export const deleteNetworkFromAllStores = (
   useTableStore.getState().delete(networkId)
   useWorkspaceStore.getState().deleteNetworkModifiedStatus(networkId)
   useOpaqueAspectStore.getState().delete(networkId)
+  useAppDataStore.getState().deleteNetwork(networkId)
   useUndoStore.getState().deleteStack(networkId)
   useUiStateStore.getState().deleteNetworkUiState(networkId)
   useFilterStore.getState().deleteNetworkIndex(networkId)
@@ -82,6 +84,9 @@ export const deleteAllNetworksFromAllStores = (): void => {
   useVisualStyleStore.getState().deleteAll()
   useTableStore.getState().deleteAll()
   useOpaqueAspectStore.getState().deleteAll()
+  // deleteAllNetworks, not deleteAll: app-scoped entries (appData.setGlobal)
+  // are not tied to a network and must survive an emptied workspace.
+  useAppDataStore.getState().deleteAllNetworks()
   useUndoStore.getState().deleteAllStacks()
   useWorkspaceStore.getState().deleteAllNetworkModifiedStatuses()
   useHcxValidatorStore.getState().deleteAllValidationResults()

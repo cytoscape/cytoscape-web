@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep'
 
 import { getUiStateFromDb, getWorkspaceFromDb } from '@/data/db'
+import { useAppDataStore } from '@/data/hooks/stores/AppDataStore'
 import {
   DEFAULT_UI_STATE,
   useUiStateStore,
@@ -79,9 +80,13 @@ export const loadWorkspaceState = async (
 
   // The UI state read does not depend on either of the other two, so it
   // overlaps them rather than adding a third round-trip to the boot path.
+  // App data is hydrated here, in the same overlapped read, because
+  // `appData.get()` is synchronous: every entry an app might ask for has to be
+  // in the store before the app API is marked ready in publishWorkspace().
   const [workspace, dbUiState] = await Promise.all([
     getWorkspaceFromDb(),
     getUiStateFromDb(),
+    useAppDataStore.getState().hydrate(),
   ])
   const summaries = await ctx.loadNetworkSummaries(workspace.networkIds)
 

@@ -22,6 +22,14 @@ describe('buildPerAppApis', () => {
     expect(CyWebApi).not.toHaveProperty('resource')
   })
 
+  it('adds appData, which window.CyWebApi deliberately lacks', () => {
+    // Anonymous window.CyWebApi has no app identity to scope entries to.
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.appData).toBeDefined()
+    expect(CyWebApi).not.toHaveProperty('appData')
+  })
+
   it('overrides contextMenu with a per-app instance', () => {
     const apis = buildPerAppApis('app-a')
 
@@ -36,6 +44,7 @@ describe('buildPerAppApis', () => {
     expect(a.resource).not.toBe(b.resource)
     expect(a.contextMenu).not.toBe(b.contextMenu)
     expect(a.nodeGraphics).not.toBe(b.nodeGraphics)
+    expect(a.appData).not.toBe(b.appData)
   })
 
   it('registers context menu items under the calling app', () => {

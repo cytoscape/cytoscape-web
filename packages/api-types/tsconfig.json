@@ -9,7 +9,11 @@
     "lib": ["ES2022", "DOM"],
     "jsx": "preserve",
     "paths": {
-      "src/app-api/types": ["../../src/app-api/types/index.ts"]
+      "src/app-api/types": ["../../src/app-api/types/index.ts"],
+      // The app source uses the `@/` alias rooted at src/. Without this the
+      // dts build fails on the first aliased import it walks into (TS2307 on
+      // `@/models/NetworkModel` from VisualStyleModel/VisualStyleFn.ts).
+      "@/*": ["../../src/*"]
     }
   },
   "include": ["src/**/*.ts"],

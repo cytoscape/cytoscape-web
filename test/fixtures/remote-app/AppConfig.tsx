@@ -9,7 +9,12 @@
 // Self-contained apart from the ONE federated import below — it does not pull
 // in the host source tree; `cyweb/WorkspaceApi` is declared locally in
 // cyweb.d.ts and resolved at runtime through the federation runtime.
-import { useState, version as reactVersion } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  version as reactVersion,
+} from 'react'
 import { createRoot } from 'react-dom/client'
 
 // A RUNTIME import, not `import type`. A type-only import is erased at build
@@ -17,6 +22,8 @@ import { createRoot } from 'react-dom/client'
 // makes the remote consume a host API, which is the direction the runtime host
 // resolution (mfRuntimePlugin.ts) exists to make work.
 import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+import { useAppContext, type AppDataApi } from 'cyweb/AppIdContext'
+import { useCyWebEvent } from 'cyweb/EventBus'
 
 // Rendered by the remote into its OWN React root (mount). Proves the federated
 // bundle loaded and its React works — independent of host↔remote sharing.
@@ -53,6 +60,63 @@ function MenuMarker(): JSX.Element {
   return <span data-testid="remote-menu-marker">{shared}</span>
 }
 
+// ── App data panel (right-panel slot) ────────────────────────────────────────
+//
+// The read pattern the app-data API documents, in a component the HOST renders
+// and keeps mounted across a network switch. Two reads, not one:
+//
+//   1. At mount, from workspace.getCurrentNetworkId() — no event fires for the
+//      network that is already current when an app mounts.
+//   2. On every `network:switched` — the panel is keyed by its resource id, not
+//      by network, so React never remounts it and never re-reads for us.
+//
+// Any regression in either half shows up as a stale or empty value in the E2E.
+const RESULTS_KEY = 'results'
+
+function AppDataPanel(): JSX.Element {
+  const ctx = useAppContext()
+  const appData: AppDataApi | undefined = ctx?.apis.appData
+  const [networkId, setNetworkId] = useState('')
+  const [value, setValue] = useState('')
+
+  const load = useCallback(
+    (id: string) => {
+      setNetworkId(id)
+      if (appData === undefined || id === '') return setValue('')
+      const result = appData.get(id, RESULTS_KEY)
+      setValue(result.success ? String(result.data.value) : '')
+    },
+    [appData],
+  )
+
+  useEffect(() => {
+    if (ctx === null) return
+    const current = ctx.apis.workspace.getCurrentNetworkId()
+    load(current.success ? current.data.networkId : '')
+  }, [ctx, load])
+
+  useCyWebEvent(
+    'network:switched',
+    useCallback((detail) => load(detail.networkId), [load]),
+  )
+
+  return (
+    <div data-testid="remote-app-data-panel">
+      <span data-testid="remote-app-data-network">{networkId}</span>
+      <span data-testid="remote-app-data-value">{value}</span>
+      <button
+        data-testid="remote-app-data-write"
+        onClick={() => {
+          appData?.set(networkId, RESULTS_KEY, `results-for-${networkId}`)
+          load(networkId)
+        }}
+      >
+        write
+      </button>
+    </div>
+  )
+}
+
 const TestRemoteApp = {
   id: 'testRemoteApp',
   name: 'Test Remote App',
@@ -64,6 +128,11 @@ const TestRemoteApp = {
     apis: {
       resource: {
         registerMenuItem: (opts: {
+          id: string
+          title?: string
+          component: unknown
+        }) => unknown
+        registerPanel: (opts: {
           id: string
           title?: string
           component: unknown
@@ -83,6 +152,16 @@ const TestRemoteApp = {
       id: 'marker',
       title: 'Remote Marker',
       component: MenuMarker,
+    })
+
+    // (3) A right-panel component that reads per-network app data — the
+    // storage-domain proof. Registered through the resource API rather than
+    // declared in the manifest so the panel and the appData instance come from
+    // the same per-app context object.
+    context.apis.resource.registerPanel({
+      id: 'appdata',
+      title: 'App Data',
+      component: AppDataPanel,
     })
   },
 

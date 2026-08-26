@@ -327,6 +327,27 @@ export const AppCodes = {
     message: (name: string, tableType: string) =>
       `Column "${name}" does not exist in the ${tableType} table`,
   },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app11 */
+  APP_DATA_NOT_FOUND: {
+    code: 'APP11',
+    severity: 'error',
+    message: (key: string) => `No app data stored under key "${key}"`,
+  },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app12 */
+  APP_DATA_NOT_SERIALIZABLE: {
+    code: 'APP12',
+    severity: 'error',
+    message: (key: string, detail: string) =>
+      `Value for app data key "${key}" is not JSON-serializable: ${detail}`,
+  },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app13 */
+  APP_DATA_TOO_LARGE: {
+    code: 'APP13',
+    severity: 'error',
+    message: (key: string, size: number, limit: number) =>
+      `Value for app data key "${key}" is ${size} bytes, over the ` +
+      `${limit}-byte per-entry limit`,
+  },
 } as const satisfies Record<string, ApiErrorCodeDef>
 
 /**
