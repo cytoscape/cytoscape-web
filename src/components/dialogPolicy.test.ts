@@ -24,6 +24,7 @@ const FORM_POPOVERS = [
   'features/Vizmapper/Forms/MappingForm/index.tsx',
   'features/Vizmapper/Forms/BypassForm.tsx',
   'features/SummaryPanel/NetworkPropertyEditor.tsx',
+  'features/NetworkSearch/NetworkSearchOptionsPopover.tsx',
 ]
 
 /**
