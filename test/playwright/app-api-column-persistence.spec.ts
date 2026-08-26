@@ -66,19 +66,34 @@ const idbGet = async (
     [store, key],
   )
 
+/** Narrow one step down an unknown object graph; undefined when absent. */
+const prop = (value: unknown, key: string): unknown =>
+  typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)[key]
+    : undefined
+
 /**
  * Node column names in the `uiState` row as it exists in IndexedDB — the row
- * the app reloads from.
+ * the app reloads from. Returns an empty list when the row, the network's
+ * entry, or the configuration is absent or malformed.
  */
 const persistedNodeColumns = async (
   page: Page,
   networkId: string,
 ): Promise<string[]> => {
-  const row = (await idbGet(page, 'uiState', 'uistate')) as any
-  const columns =
-    row?.visualStyleOptions?.[networkId]?.visualEditorProperties
-      ?.tableDisplayConfiguration?.nodeTable?.columnConfiguration ?? []
-  return columns.map((c: { attributeName: string }) => c.attributeName)
+  const row = await idbGet(page, 'uiState', 'uistate')
+  const columns = [
+    'visualStyleOptions',
+    networkId,
+    'visualEditorProperties',
+    'tableDisplayConfiguration',
+    'nodeTable',
+    'columnConfiguration',
+  ].reduce(prop, row as unknown)
+  if (!Array.isArray(columns)) return []
+  return columns
+    .map((c) => prop(c, 'attributeName'))
+    .filter((name): name is string => typeof name === 'string')
 }
 
 /**
