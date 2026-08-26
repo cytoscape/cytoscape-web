@@ -215,7 +215,7 @@ function main(argv) {
   if (source == null || !existsSync(source) || !statSync(source).isFile()) {
     console.error(
       source == null
-        ? 'no results file to publish.  Run `npm run benchmark:report` first,'
+        ? 'no results file to publish.  Run `npm run benchmark` first,'
         : `not a results file: ${source}`,
     )
     console.error(

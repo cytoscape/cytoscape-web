@@ -64,7 +64,8 @@
     "benchmark:all": "node benchmark/report.mjs --all",
     "benchmark:full": "node benchmark/report.mjs --full",
     "benchmark:browser": "node --import tsx benchmark/browser-bench.mjs",
-    "benchmark:publish": "node scripts/benchmark-publish.mjs"
+    "benchmark:publish": "node scripts/benchmark-publish.mjs",
+    "benchmark:compare": "node scripts/benchmark-compare.mjs"
   },
   "devDependencies": {
     "@faker-js/faker": "^7.6.0",
