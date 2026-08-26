@@ -49,19 +49,22 @@ belongs on a button. Every other `DialogProps` forwards untouched.
 
 **All 40 `<Dialog>` sites**, through `CyDialog`.
 
-**The four modal form popovers.** These are anchored but behave as modal editors, so they follow
+**The five modal form popovers.** These are anchored but behave as modal editors, so they follow
 the same rule through their own props:
 
-| Popover                                       | Editing                     |
-| --------------------------------------------- | --------------------------- |
-| `Vizmapper/Forms/VisualPropertyValueForm.tsx` | a visual property's value   |
-| `Vizmapper/Forms/MappingForm/index.tsx`       | a visual property's mapping |
-| `Vizmapper/Forms/BypassForm.tsx`              | per-element bypasses        |
-| `SummaryPanel/NetworkPropertyEditor.tsx`      | the network summary         |
+| Popover                                          | Editing                              |
+| ------------------------------------------------ | ------------------------------------ |
+| `Vizmapper/Forms/VisualPropertyValueForm.tsx`    | a visual property's value            |
+| `Vizmapper/Forms/MappingForm/index.tsx`          | a visual property's mapping          |
+| `Vizmapper/Forms/BypassForm.tsx`                 | per-element bypasses                 |
+| `SummaryPanel/NetworkPropertyEditor.tsx`         | the network summary                  |
+| `NetworkSearch/NetworkSearchOptionsPopover.tsx`  | a search provider's extra parameters |
 
 `MappingForm` and `BypassForm` joined this list in the #628 sweep; before it they closed on
 click-away and had no button of their own, which is exactly the inconsistency the policy exists to
-remove. Both now carry a Close button.
+remove. Both now carry a Close button. `NetworkSearchOptionsPopover` (#688) hosts app-provided
+forms, so the host renders the Close button itself — every search provider's options panel gets
+its exit for free.
 
 **Out of scope: anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette
 pickers, nested toolbar menus. Click-away dismissal is correct for a menu; see
@@ -106,7 +109,7 @@ half-filled form, and no dialog closes into a state the user did not choose.
 - `src/components/CyDialog.spec.tsx` — asserts backdrop click and <kbd>Esc</kbd> leave the dialog
   open, and that the dialog's own buttons still fire.
 - `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` holds a control
-  whose label, `aria-label` or `data-testid` reads as a way out, and that the four form popovers
+  whose label, `aria-label` or `data-testid` reads as a way out, and that the form popovers listed above
   keep both guard props. A Submit-only dialog fails. This is the check that keeps a dialog from
   shipping with no exit; it caught the service-app run dialog.
 - `test/playwright/dialog-dismiss.spec.ts` — per dialog: <kbd>Esc</kbd> and a backdrop click leave
