@@ -35,6 +35,10 @@
       "Bash(npm run test:checks:quiet)",
       "Bash(npm run test:coverage:quiet)",
       "Bash(npm run e2e:spec:*)",
+      "Bash(npm run benchmark)",
+      "Bash(npm run benchmark:*)",
+      "Bash(node benchmark/report.mjs:*)",
+      "Bash(node --import tsx benchmark/:*)",
       "Bash(npx vitest run:*)"
     ]
   }
