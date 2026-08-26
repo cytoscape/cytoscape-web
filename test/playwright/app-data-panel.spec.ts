@@ -79,6 +79,14 @@ const currentNetworkId = (page: Page): Promise<string> =>
     return result.success ? result.data.networkId : ''
   })
 
+/**
+ * Switch the workspace to `networkId` through the public API.
+ *
+ * Deliberately not a UI control: the assertions that follow are about
+ * `network:switched` reaching the panel, not about any particular way of
+ * driving the switch. Note this does NOT move the address bar — see
+ * `networkPath` for why the reload leg has to rebuild the URL itself.
+ */
 const switchTo = (page: Page, networkId: string): Promise<void> =>
   page.evaluate(
     (id) =>
