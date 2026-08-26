@@ -44,3 +44,6 @@ src/assets/config-dev3.json
 cyweb.tgz
 build-dev3.sh
 scratch
+
+# benchmark runs (promoted runs live in benchmark/published/, which is tracked)
+/benchmark/results/
