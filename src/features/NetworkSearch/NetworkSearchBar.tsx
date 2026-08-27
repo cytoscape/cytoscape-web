@@ -11,6 +11,7 @@ import TuneIcon from '@mui/icons-material/Tune'
 import {
   Box,
   CircularProgress,
+  Divider,
   IconButton,
   TextField,
   Tooltip,
@@ -86,7 +87,6 @@ export const NetworkSearchBar = (): JSX.Element | null => {
         width: '100%',
         gap: 0.25,
         px: 0.5,
-        py: 0.25,
         backgroundColor: (theme) => theme.palette.background.paper,
         borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
       }}
@@ -108,9 +108,10 @@ export const NetworkSearchBar = (): JSX.Element | null => {
           <ArrowDropDownIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-
+      <Divider orientation="vertical" flexItem sx={{ mx: 0, my: 'auto', height: 25 }} />
       <TextField
         size="small"
+        margin="none"
         fullWidth
         value={query}
         placeholder={selected?.placeholder ?? DEFAULT_PLACEHOLDER}
@@ -124,8 +125,24 @@ export const NetworkSearchBar = (): JSX.Element | null => {
           'data-testid': 'network-search-input',
           'aria-label': 'Network search query',
         }}
+        sx={{
+          "& .MuiOutlinedInput-root": {
+            "& fieldset": {
+              border: "none", // Removes default border
+            },
+            "&:hover fieldset": {
+              border: "none", // Removes hover border
+            },
+            "&.Mui-focused fieldset": {
+              border: "none", // Removes focus border
+            },
+          },
+          "& .MuiInputBase-input": {
+            p: 1,
+          },
+        }}
       />
-
+      <Divider orientation="vertical" flexItem sx={{ mx: 0, my: 'auto', height: 25 }} />
       {selected?.optionsComponent !== undefined && (
         <Tooltip title="More Options...">
           <IconButton
@@ -136,11 +153,10 @@ export const NetworkSearchBar = (): JSX.Element | null => {
             }
             sx={{ color: (theme) => theme.palette.text.primary }}
           >
-            <TuneIcon fontSize="small" />
+            <TuneIcon />
           </IconButton>
         </Tooltip>
       )}
-
       <Tooltip title="Search Network">
         {/* span keeps the tooltip alive while the button is disabled */}
         <span>
@@ -154,7 +170,7 @@ export const NetworkSearchBar = (): JSX.Element | null => {
             {isRunning ? (
               <CircularProgress size={18} />
             ) : (
-              <SearchIcon fontSize="small" />
+              <SearchIcon />
             )}
           </IconButton>
         </span>
