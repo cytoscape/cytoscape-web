@@ -13,6 +13,7 @@ import type {
 } from '../../app-api/types/AppResourceTypes'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import type { RegisteredAppResource } from '../../models/AppModel/RegisteredAppResource'
+import { BUILTIN_APP_ID } from './builtin/registerNdexNetworkSearchProvider'
 import { useNetworkSearchProviderSelectionStore } from './store/networkSearchProviderSelectionStore'
 
 /** A registered network search provider, resolved for rendering. */
@@ -53,7 +54,11 @@ export function useNetworkSearchProviders(): UseNetworkSearchProvidersResult {
   const providers: NetworkSearchProvider[] = resources
     .filter(
       (r: RegisteredAppResource) =>
-        r.slot === 'search-bar' && apps[r.appId]?.status === AppStatus.Active,
+        r.slot === 'search-bar' &&
+        // Host-provided (builtin) providers have no app lifecycle and are
+        // always visible; app providers require their app to be active.
+        (r.appId === BUILTIN_APP_ID ||
+          apps[r.appId]?.status === AppStatus.Active),
     )
     .map(
       (r: RegisteredAppResource): NetworkSearchProvider => ({

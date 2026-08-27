@@ -57,6 +57,15 @@ describe('useNetworkSearchProviders', () => {
     expect(result.current.selected).toBeNull()
   })
 
+  it('always includes builtin (__builtin__) providers, with no app entry', () => {
+    seed([makeSearchResource({ id: 'ndex', appId: '__builtin__' })], {})
+
+    const { result } = renderHook(() => useNetworkSearchProviders())
+    expect(result.current.providers.map((p) => p.resourceId)).toEqual([
+      '__builtin__::search-bar::ndex',
+    ])
+  })
+
   it('only includes search-bar resources of active apps', () => {
     seed(
       [

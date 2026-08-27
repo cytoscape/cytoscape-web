@@ -57,6 +57,12 @@ import { dateFormatter } from '../../../utils/dateFormat'
 interface LoadFromNdexDialogProps {
   open: boolean
   handleClose: () => void
+  /**
+   * Query to prefill into the search field and run as soon as the dialog
+   * opens (used by the network search bar's NDEx provider). Omit for the
+   * plain browse mode the Data menu opens.
+   */
+  initialQuery?: string
 }
 
 interface BreadcrumbItem {
@@ -122,8 +128,20 @@ const truncationNoticeSx = { textAlign: 'center', py: 2 } as const
 export const NetworkSearchField = (props: {
   startSearch: (searchValue: string) => Promise<void>
   handleClose: () => void
+  /** Whether the hosting dialog is open. Drives the reset/prefill below. */
+  open?: boolean
+  /** Text to prefill when the dialog opens. */
+  initialValue?: string
 }): ReactElement => {
-  const [searchValue, setSearchValue] = useState<string>('')
+  const { open = true, initialValue = '' } = props
+  const [searchValue, setSearchValue] = useState<string>(initialValue)
+
+  // Follow the dialog lifecycle: adopt the initial value each time the
+  // dialog opens (even the same text twice), clear when it closes so a
+  // reopen never shows a stale query.
+  useEffect(() => {
+    setSearchValue(open ? initialValue : '')
+  }, [open, initialValue])
 
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
@@ -325,7 +343,7 @@ const FolderSection = (props: {
 export const LoadFromNdexDialog = (
   props: LoadFromNdexDialogProps,
 ): ReactElement => {
-  const { open, handleClose } = props
+  const { open, handleClose, initialQuery } = props
 
   const {
     ndexBaseUrl,
@@ -617,10 +635,12 @@ export const LoadFromNdexDialog = (
     void navigateToFolder(folderId)
   }
 
-  // Reset state when dialog opens/closes
+  // Reset state when dialog opens/closes. Opening runs a search right away:
+  // the caller's initialQuery when one was provided (the network search
+  // bar), otherwise the empty browse-mode listing.
   useEffect(() => {
     if (open) {
-      void executeSearch('')
+      void executeSearch(initialQuery ?? '')
     } else {
       setLastSearchQuery('')
       setSelectedNetworks([])
@@ -953,6 +973,8 @@ export const LoadFromNdexDialog = (
         <NetworkSearchField
           startSearch={executeSearch}
           handleClose={handleClose}
+          open={open}
+          initialValue={initialQuery ?? ''}
         />
 
         {/* Only mine checkbox + Tabs */}
