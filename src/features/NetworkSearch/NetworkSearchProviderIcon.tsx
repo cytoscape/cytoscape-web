@@ -29,7 +29,7 @@ export const NetworkSearchProviderIcon = ({
       bgcolor: (theme) => theme.palette.common.white,
       // Avatar's default text color is near-white; the fallback initial
       // needs an explicit color to stay visible on the white tile.
-      color: (theme) => theme.palette.text.secondary,
+      color: (theme) => theme.palette.getContrastText(theme.palette.common.white),
       // Avatar crops (object-fit: cover) by default; provider logos come in
       // arbitrary aspect ratios and must be letterboxed, not cropped.
       '& img': { objectFit: 'contain' },
