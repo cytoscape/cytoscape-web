@@ -1,23 +1,57 @@
 import { expect, test } from './fixtures'
 
-// The network search bar (#688). The bar at the top of the Workspace tab is
-// hidden until an active app registers a 'search-bar' provider, so this
-// spec drives the whole path through the fixture remote
-// (test/fixtures/remote-app/): register + activate the app, watch the bar
-// appear with the provider's placeholder, exercise the More Options popover
-// (a modal form popover: Escape is inert, its Close button is the exit),
-// and submit a query the provider echoes into a DOM marker.
+// The network search bar (#688). NDEx ships as a built-in provider
+// (registered at boot under the '__builtin__' appId), so the bar is always
+// present in the Workspace tab. The first test drives the built-in NDEx
+// flow: submit opens the NDEx - Network Browser dialog with the query
+// prefilled and the search already running (the NDEx API is route-mocked to
+// keep the test hermetic). The second drives an app-registered provider
+// end-to-end through the fixture remote (test/fixtures/remote-app/),
+// including the provider menu and the More Options popover.
 
 const FIXTURE_MANIFEST_URL = 'http://localhost:4191/manifest.json'
 
 test.describe('network search bar', () => {
-  test('appears with a provider, runs a search, options close by button only', async ({
+  test('built-in NDEx provider opens the NDEx dialog with the query running', async ({
+    page,
+  }) => {
+    // Hermetic: answer every NDEx API call with an empty result set.
+    await page.route(/ndexbio\.org/, (route) =>
+      route.fulfill({ json: { files: [], numFound: 0 } }),
+    )
+
+    await page.goto('/')
+
+    // The bar is present from the start, with NDEx as the default provider.
+    await expect(page.getByTestId('network-search-bar')).toBeVisible()
+    const input = page.getByTestId('network-search-input')
+    await expect(input).toHaveAttribute('placeholder', 'Search NDEx')
+    // NDEx registers no options panel, so there is no More Options button.
+    await expect(page.getByTestId('network-search-options-button')).toHaveCount(
+      0,
+    )
+
+    // Submit a query → the NDEx - Network Browser dialog opens with the
+    // trimmed text prefilled and the search already executed.
+    await input.fill('  BRCA1  ')
+    await page.getByTestId('network-search-submit-button').click()
+
+    const dialog = page.locator('[data-testid="load-from-ndex-dialog"]')
+    await expect(dialog).toBeVisible()
+    await expect(
+      page.getByTestId('load-from-ndex-search-input').locator('input'),
+    ).toHaveValue('BRCA1')
+    await expect(dialog.getByText('Search: "BRCA1"')).toBeVisible()
+
+    // The dialog owns the rest of the flow; Cancel hands control back.
+    await page.getByTestId('load-from-ndex-cancel-button').click()
+    await expect(dialog).not.toBeVisible()
+  })
+
+  test('app provider: menu selection, options popover, and submit', async ({
     page,
   }) => {
     await page.goto('/')
-
-    // No provider registered → no search bar.
-    await expect(page.getByTestId('network-search-bar')).toHaveCount(0)
 
     // Register + activate the fixture remote (same arrangement as
     // remote-app-load.spec.ts).
@@ -37,10 +71,18 @@ test.describe('network search bar', () => {
     )
     await page.getByTestId('app-settings-dialog-close-button').click()
 
-    // The bar appears in the Workspace tab, carrying the provider's
-    // placeholder (which proves the provider metadata reached the host).
+    // Both providers are listed in the provider menu; pick the fixture one.
+    await page.getByTestId('network-search-provider-button').click()
+    await expect(
+      page.getByTestId('network-search-provider-item-__builtin__-ndex'),
+    ).toBeVisible()
+    await page
+      .getByTestId('network-search-provider-item-testRemoteApp-fixture-search')
+      .click()
+
+    // The bar now carries the fixture provider's placeholder (which proves
+    // the provider metadata reached the host).
     const input = page.getByTestId('network-search-input')
-    await expect(page.getByTestId('network-search-bar')).toBeVisible()
     await expect(input).toHaveAttribute('placeholder', 'Fixture query...')
 
     // Search is gated on a non-empty query.
