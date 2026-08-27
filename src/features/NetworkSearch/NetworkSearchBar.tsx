@@ -124,21 +124,31 @@ export const NetworkSearchBar = (): JSX.Element | null => {
         inputProps={{
           'data-testid': 'network-search-input',
           'aria-label': 'Network search query',
+          autoComplete: 'new-password', // Standard "off" is often ignored by modern browsers
         }}
         sx={{
           "& .MuiOutlinedInput-root": {
+            border: 'none',
+            borderRadius: 0,
             "& fieldset": {
-              border: "none", // Removes default border
+              border: "none",
             },
             "&:hover fieldset": {
-              border: "none", // Removes hover border
+              border: "none",
             },
             "&.Mui-focused fieldset": {
-              border: "none", // Removes focus border
+              border: "none",
             },
           },
           "& .MuiInputBase-input": {
             p: 1,
+          },
+          // Prevent browser autofill from breaking the layout/colors
+          '& input:-webkit-autofill': {
+            WebkitBoxShadow: (theme) => `0 0 0 100px ${theme.palette.background.paper} inset !important`, // Removes background color on autofill
+            WebkitTextFillColor: (theme) => `${theme.palette.text.primary} !important`, // Ensures text color is correct on autofill
+            caretColor: (theme) => `${theme.palette.text.primary} !important`,
+            WebkitBorderImage: 'none !important',
           },
         }}
       />
@@ -168,7 +178,7 @@ export const NetworkSearchBar = (): JSX.Element | null => {
             sx={{ color: (theme) => theme.palette.text.primary }}
           >
             {isRunning ? (
-              <CircularProgress size={18} />
+              <CircularProgress size={24} />
             ) : (
               <SearchIcon />
             )}
