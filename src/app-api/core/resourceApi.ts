@@ -66,9 +66,17 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-/** True when the value is an http(s) URL or an inline data:image URI. */
+/**
+ * True when the value is an http(s) URL, an inline data:image URI, or a
+ * root-relative path (a bundled asset served by the host — how built-in
+ * providers reference their logos).
+ */
 function isValidIconUri(value: string): boolean {
-  return isHttpUrl(value) || value.startsWith('data:image/')
+  return (
+    isHttpUrl(value) ||
+    value.startsWith('data:image/') ||
+    value.startsWith('/')
+  )
 }
 
 /**

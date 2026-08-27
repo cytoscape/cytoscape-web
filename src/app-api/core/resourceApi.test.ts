@@ -512,6 +512,18 @@ describe('createResourceApi', () => {
       expect(result.success).toBe(true)
     })
 
+    it('accepts a root-relative icon path (bundled host asset)', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        icon: '/assets/ndex-logo.svg',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(true)
+    })
+
     it('upserts on second call with same id (no error)', () => {
       const api = createResourceApi('app1')
       api.registerNetworkSearchProvider({

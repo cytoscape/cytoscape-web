@@ -1629,7 +1629,7 @@ interface RegisterNetworkSearchProviderOptions {
   id: string
   name: string // display name, required non-empty
   description?: string
-  icon?: string // http(s) or data:image URI
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path
   website?: string // http(s) URL
   placeholder?: string // for the host-owned search input
   optionsComponent?: React.ComponentType<NetworkSearchOptionsHostProps>
@@ -1723,7 +1723,7 @@ component. A provider contributes:
 
 | Error Code | Condition                                                         |
 | ---------- | ----------------------------------------------------------------- |
-| `APP9`     | `id`/`name` empty, `onSubmit` not a function, `optionsComponent` not a valid React type, `icon` not http(s)/data:image, `website` not http(s) |
+| `APP9`     | `id`/`name` empty, `onSubmit` not a function, `optionsComponent` not a valid React type, `icon` not http(s)/data:image/root-relative, `website` not http(s) |
 
 ```typescript
 mount(context) {
