@@ -1,11 +1,10 @@
 // src/features/NetworkSearch/NetworkSearchOptionsPopover.tsx
 //
-// The "More Options" popup for the selected network search provider. It
-// hosts an app-provided form, so it is a MODAL FORM POPOVER under
-// docs/specifications/DIALOG_DISMISS_POLICY.md: backdrop click and Escape
-// are inert (disableEscapeKeyDown + hideBackdrop) and the host-rendered
-// header carries the one visible exit — a Close button — so every app's
-// options panel gets a way out without having to provide one.
+// The "More Options" popup for the selected network search provider. An
+// anchored, non-modal surface: backdrop click and Escape dismiss it (the
+// out-of-scope class in docs/specifications/DIALOG_DISMISS_POLICY.md), and
+// the host-rendered header additionally carries a Close button so every
+// app's options panel has an explicit exit without providing one.
 
 import CloseIcon from '@mui/icons-material/Close'
 import { Box, IconButton, Popover, Tooltip, Typography } from '@mui/material'

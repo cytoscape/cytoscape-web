@@ -49,22 +49,24 @@ belongs on a button. Every other `DialogProps` forwards untouched.
 
 **All 40 `<Dialog>` sites**, through `CyDialog`.
 
-**The five modal form popovers.** These are anchored but behave as modal editors, so they follow
+**The four modal form popovers.** These are anchored but behave as modal editors, so they follow
 the same rule through their own props:
 
-| Popover                                          | Editing                              |
-| ------------------------------------------------ | ------------------------------------ |
-| `Vizmapper/Forms/VisualPropertyValueForm.tsx`    | a visual property's value            |
-| `Vizmapper/Forms/MappingForm/index.tsx`          | a visual property's mapping          |
-| `Vizmapper/Forms/BypassForm.tsx`                 | per-element bypasses                 |
-| `SummaryPanel/NetworkPropertyEditor.tsx`         | the network summary                  |
-| `NetworkSearch/NetworkSearchOptionsPopover.tsx`  | a search provider's extra parameters |
+| Popover                                       | Editing                     |
+| --------------------------------------------- | --------------------------- |
+| `Vizmapper/Forms/VisualPropertyValueForm.tsx` | a visual property's value   |
+| `Vizmapper/Forms/MappingForm/index.tsx`       | a visual property's mapping |
+| `Vizmapper/Forms/BypassForm.tsx`              | per-element bypasses        |
+| `SummaryPanel/NetworkPropertyEditor.tsx`      | the network summary         |
 
 `MappingForm` and `BypassForm` joined this list in the #628 sweep; before it they closed on
 click-away and had no button of their own, which is exactly the inconsistency the policy exists to
-remove. Both now carry a Close button. `NetworkSearchOptionsPopover` (#688) hosts app-provided
-forms, so the host renders the Close button itself — every search provider's options panel gets
-its exit for free.
+remove. Both now carry a Close button.
+
+The network search bar's "More Options" popup (`NetworkSearch/NetworkSearchOptionsPopover.tsx`,
+#688) is deliberately in the **out-of-scope** class instead: it behaves like the bar's other
+anchored surfaces and dismisses on click-away or Escape, while still carrying a host-rendered
+Close button as an explicit exit.
 
 **Out of scope: anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette
 pickers, nested toolbar menus. Click-away dismissal is correct for a menu; see

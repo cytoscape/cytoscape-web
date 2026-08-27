@@ -49,11 +49,14 @@ test.describe('network search bar', () => {
     await input.fill('  BRCA1  ')
     await expect(submit).toBeEnabled()
 
-    // More Options: the app's panel renders in the host tree; Escape leaves
-    // the popover open (dialog dismissal policy); the Close button closes it.
+    // More Options: the app's panel renders in the host tree. The popover is
+    // an anchored non-modal surface — Escape dismisses it — and it also
+    // carries a host-rendered Close button as an explicit exit.
     await page.getByTestId('network-search-options-button').click()
     await expect(page.getByTestId('remote-search-options')).toBeVisible()
     await page.keyboard.press('Escape')
+    await expect(page.getByTestId('remote-search-options')).toHaveCount(0)
+    await page.getByTestId('network-search-options-button').click()
     await expect(page.getByTestId('remote-search-options')).toBeVisible()
     await page.getByTestId('remote-search-exact-checkbox').check()
     await page.getByTestId('network-search-options-close-button').click()
