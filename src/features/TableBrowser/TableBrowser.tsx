@@ -16,6 +16,7 @@ import * as React from 'react'
 import { useEffect, useRef } from 'react'
 import { useTheme } from '@mui/material/styles'
 
+import { useContainerWidth } from '../../data/hooks/useContainerWidth'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -77,7 +78,14 @@ export default function TableBrowser(props: {
   height: number // current height of the panel that contains the table browser -- needed to sync to the dataeditor
 }): React.ReactElement {
   const theme = useTheme()
-  const { width } = useWindowSize()
+  const { width: windowWidth } = useWindowSize()
+  // The browser's pane is narrower than the window whenever the right side
+  // panel is open, and Allotment drags never fire a window resize — so the
+  // grids must be sized to the measured container, not the window. The
+  // window width only covers the first render, before the ref is measured.
+  const containerRef = useRef<HTMLDivElement>(null)
+  const containerWidth = useContainerWidth(containerRef)
+  const width = containerWidth > 0 ? containerWidth : windowWidth
   const { postEdit } = useUndoStack()
   const ui: Ui = useUiStateStore((state) => state.ui)
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
@@ -458,6 +466,7 @@ export default function TableBrowser(props: {
   return (
     <Box
       data-testid="table-browser"
+      ref={containerRef}
       sx={{
         width: '100%',
         height: '100%',

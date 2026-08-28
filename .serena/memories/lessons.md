@@ -36,6 +36,7 @@
 ## Testing
 
 - [2026-08-03] jsdom drops CSS values it cannot parse: `getComputedStyle` returns `auto` for `width: min(500px, calc(100% - 32px))` while `calc(100% - 32px)` resolves fine. Layout-assertion unit tests must stick to values jsdom's cssstyle understands, or assert in Playwright instead.
+- [2026-08-28] Allotment.Pane drops unknown props: `data-testid` on `<Allotment.Pane>` (and the `<Allotment>` root) never reaches the DOM — the component only forwards its declared props. The pane testids in `WorkspaceEditor.tsx` are inert; Playwright must target content INSIDE the pane (e.g. `side-panel`) instead.
 - [2026-08-25] MUI dialog dismissal: `stopPropagation()` on a `<Dialog>`'s own `onClick`/`onKeyDown` blocks NEITHER backdrop click nor Escape — MUI runs the user handler first and dismisses regardless. A paired `preventDefault()` DOES break typing inside the dialog. `disableEscapeKeyDown={false}` is the default and does nothing. Modals now close by button only: render through `CyDialog` (`src/components/CyDialog.tsx`), and every dialog needs a visible Cancel/Close or the user is trapped. See `docs/specifications/DIALOG_DISMISS_POLICY.md`.
 
 ## Agent Workflow
