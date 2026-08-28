@@ -98,9 +98,12 @@ export type {
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
   MenuItemHostProps,
+  NetworkSearchOptionsHostProps,
+  NetworkSearchQuery,
   PanelHostProps,
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
+  RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
   RegisterResourceEntry,
   ResourceApi,

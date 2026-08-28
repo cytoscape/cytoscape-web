@@ -82,12 +82,16 @@ describe('createResourceApi', () => {
   // ── getSupportedSlots ───────────────────────────────────────────
 
   describe('getSupportedSlots', () => {
-    it('returns right-panel and apps-menu', () => {
+    it('returns right-panel, apps-menu and search-bar', () => {
       const api = createResourceApi('app1')
       const result = api.getSupportedSlots()
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.slots).toEqual(['right-panel', 'apps-menu'])
+        expect(result.data.slots).toEqual([
+          'right-panel',
+          'apps-menu',
+          'search-bar',
+        ])
       }
     })
 
@@ -343,6 +347,255 @@ describe('createResourceApi', () => {
     })
   })
 
+  // ── registerNetworkSearchProvider ───────────────────────────────
+
+  describe('registerNetworkSearchProvider', () => {
+    const onSubmit = vi.fn()
+
+    it('returns ok with correct resourceId for search-bar slot', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.resourceId).toBe('app1::search-bar::S1')
+      }
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'S1',
+          appId: 'app1',
+          slot: 'search-bar',
+          title: 'My Search',
+          onSubmit,
+        }),
+      )
+    })
+
+    it('stores name as title and passes all provider fields to the store', () => {
+      const api = createResourceApi('app1')
+      api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        description: 'Searches things',
+        icon: 'https://example.org/icon.png',
+        website: 'https://example.org',
+        placeholder: 'Enter gene names...',
+        optionsComponent: DummyComponent,
+        onSubmit,
+      })
+
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'My Search',
+          description: 'Searches things',
+          icon: 'https://example.org/icon.png',
+          website: 'https://example.org',
+          placeholder: 'Enter gene names...',
+          component: DummyComponent,
+          onSubmit,
+        }),
+      )
+    })
+
+    it('returns fail(InvalidInput) for empty id', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: '',
+        name: 'My Search',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('returns fail(InvalidInput) for whitespace-only name', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: '   ',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('returns fail(InvalidInput), not OperationFailed, for non-string id/name/icon/website', () => {
+      // Malformed shapes from untyped JS apps must hit the typeof guards,
+      // not throw inside .trim()/URL parsing and surface as APP3.
+      const api = createResourceApi('app1')
+      const cases = [
+        { id: 42 as any, name: 'My Search' },
+        { id: 'S1', name: null as any },
+        { id: 'S1', name: 'My Search', icon: {} as any },
+        { id: 'S1', name: 'My Search', website: 123 as any },
+      ]
+      for (const overrides of cases) {
+        const result = api.registerNetworkSearchProvider({
+          onSubmit,
+          ...overrides,
+        })
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe('APP9')
+        }
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
+    it('returns fail(InvalidInput) when onSubmit is not a function', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        onSubmit: 'not-a-function' as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('returns fail(InvalidInput) for a primitive optionsComponent', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        optionsComponent: 'nope' as any,
+        onSubmit,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('accepts a provider without optionsComponent', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(true)
+    })
+
+    it('rejects a javascript: icon URI', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        icon: 'javascript:alert(1)',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('rejects a non-http(s) website URL', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        website: 'javascript:alert(1)',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('accepts a data:image icon and an https website', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        icon: 'data:image/png;base64,iVBORw0KGgo=',
+        website: 'https://example.org/about',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(true)
+    })
+
+    it('accepts a root-relative icon path (bundled host asset)', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'My Search',
+        icon: '/assets/ndex-logo.svg',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(true)
+    })
+
+    it('upserts on second call with same id (no error)', () => {
+      const api = createResourceApi('app1')
+      api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'Old',
+        onSubmit,
+      })
+      const result = api.registerNetworkSearchProvider({
+        id: 'S1',
+        name: 'New',
+        onSubmit,
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockStore.upsertResource).toHaveBeenCalledTimes(2)
+      expect(mockStore.upsertResource).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: 'S1', title: 'New' }),
+      )
+    })
+  })
+
+  // ── unregisterNetworkSearchProvider ─────────────────────────────
+
+  describe('unregisterNetworkSearchProvider', () => {
+    it('returns ok when provider exists', () => {
+      mockStore.hasResource.mockReturnValue(true)
+      const api = createResourceApi('app1')
+      const result = api.unregisterNetworkSearchProvider('S1')
+
+      expect(result.success).toBe(true)
+      expect(mockStore.removeResource).toHaveBeenCalledWith(
+        'app1',
+        'search-bar',
+        'S1',
+      )
+    })
+
+    it('returns fail(ResourceNotFound) when provider does not exist', () => {
+      mockStore.hasResource.mockReturnValue(false)
+      const api = createResourceApi('app1')
+      const result = api.unregisterNetworkSearchProvider('ghost')
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP7')
+      }
+    })
+  })
+
   // ── unregisterAll ───────────────────────────────────────────────
 
   describe('unregisterAll', () => {
@@ -371,11 +624,17 @@ describe('createResourceApi', () => {
           id: 'M1',
           component: DummyComponent,
         },
+        {
+          slot: 'search-bar',
+          id: 'S1',
+          name: 'My Search',
+          onSubmit: vi.fn(),
+        },
       ])
 
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.registered).toHaveLength(2)
+        expect(result.data.registered).toHaveLength(3)
         expect(result.data.errors).toHaveLength(0)
       }
     })

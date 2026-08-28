@@ -9,7 +9,8 @@
     "lib": ["ES2022", "DOM"],
     "jsx": "preserve",
     "paths": {
-      "src/app-api/types": ["../../src/app-api/types/index.ts"]
+      "src/app-api/types": ["../../src/app-api/types/index.ts"],
+      "@/*": ["../../src/*"]
     }
   },
   "include": ["src/**/*.ts"],

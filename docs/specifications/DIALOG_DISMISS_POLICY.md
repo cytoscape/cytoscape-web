@@ -63,6 +63,11 @@ the same rule through their own props:
 click-away and had no button of their own, which is exactly the inconsistency the policy exists to
 remove. Both now carry a Close button.
 
+The network search bar's "More Options" popup — #688,
+`NetworkSearch/NetworkSearchOptionsPopover.tsx` — is deliberately in the **out-of-scope** class
+instead: it behaves like the bar's other anchored surfaces and dismisses on click-away or Escape,
+while still carrying a host-rendered Close button as an explicit exit.
+
 **Out of scope: anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette
 pickers, nested toolbar menus. Click-away dismissal is correct for a menu; see
 `PopupPanel_docs/PopupPanel.md` and `EditMenu_docs/EditMenu.md`.
@@ -106,7 +111,7 @@ half-filled form, and no dialog closes into a state the user did not choose.
 - `src/components/CyDialog.spec.tsx` — asserts backdrop click and <kbd>Esc</kbd> leave the dialog
   open, and that the dialog's own buttons still fire.
 - `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` holds a control
-  whose label, `aria-label` or `data-testid` reads as a way out, and that the four form popovers
+  whose label, `aria-label` or `data-testid` reads as a way out, and that the form popovers listed above
   keep both guard props. A Submit-only dialog fails. This is the check that keeps a dialog from
   shipping with no exit; it caught the service-app run dialog.
 - `test/playwright/dialog-dismiss.spec.ts` — per dialog: <kbd>Esc</kbd> and a backdrop click leave

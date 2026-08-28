@@ -11,14 +11,15 @@ import type { ApiError, ApiResult } from './ApiResult'
 /**
  * Identifies a specific host-managed UI location that plugins can occupy.
  *
- * Current slots (first rollout):
+ * Current slots:
  *   'right-panel'  — tabbed side panel on the right
  *   'apps-menu'    — dropdown in the Apps toolbar button
+ *   'search-bar'   — network search bar at the top of the Workspace tab
  *
  * Reserved for future rollouts:
  *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar', 'modal-launcher'
  */
-export type ResourceSlot = 'right-panel' | 'apps-menu'
+export type ResourceSlot = 'right-panel' | 'apps-menu' | 'search-bar'
 
 // ── Per-slot host props ─────────────────────────────────────────
 
@@ -92,26 +93,70 @@ export interface RegisterMenuItemOptions {
   }>
 }
 
-/** Entry for batch registration via registerAll(). */
-export interface RegisterResourceEntry {
-  slot: ResourceSlot
+// ── Network search provider registration ────────────────────────
+
+/** The query submitted through the host's network search bar. */
+export interface NetworkSearchQuery {
+  /** The trimmed text the user submitted. */
+  readonly query: string
+}
+
+/** Props injected by the host into every 'search-bar' optionsComponent. */
+export interface NetworkSearchOptionsHostProps {
+  /** Closes the "More Options" popover. */
+  requestClose: () => void
+}
+
+/**
+ * Options for registering a network search provider in the 'search-bar'
+ * slot. The host owns the search input; the provider supplies metadata,
+ * an optional extra-parameters panel, and the submit handler.
+ */
+export interface RegisterNetworkSearchProviderOptions {
   id: string
-  title?: string
-  order?: number
-  group?: string
-  requires?: {
-    network?: boolean
-    selection?: boolean
-  }
-  component: React.ComponentType<any>
-  /** Custom error fallback. */
+  /** Display name shown in the provider selector. Required, non-empty. */
+  name: string
+  /** Short text describing what this provider searches. Shown as a tooltip. */
+  description?: string
+  /**
+   * http(s) or data:image URI rendered at a fixed size next to the search
+   * input. If omitted, the host renders a fallback avatar with the
+   * provider's initial.
+   */
+  icon?: string
+  /** http(s) URL opened in a new tab from the provider list. */
+  website?: string
+  /** Placeholder text for the host-owned search input. */
+  placeholder?: string
+  /**
+   * Optional panel with extra search parameters, shown in the
+   * "More Options" popover. Mandatory input stays in the host search field;
+   * anything else the search needs belongs here, backed by the app's own
+   * state so onSubmit can read it.
+   */
+  optionsComponent?: React.ComponentType<NetworkSearchOptionsHostProps>
+  /**
+   * Invoked when the user submits a non-empty query. While a returned
+   * promise is pending the host shows progress and disables the search
+   * button; a rejection is logged and surfaced as an error message.
+   */
+  onSubmit: (query: NetworkSearchQuery) => void | Promise<void>
+  /** Custom error fallback for the options popover (same as RegisterPanelOptions.errorFallback). */
   errorFallback?: React.ComponentType<{
     error: Error
     resetErrorBoundary: () => void
   }>
-  /** For 'apps-menu' only: auto-close after action. */
-  closeOnAction?: boolean
 }
+
+/**
+ * Entry for batch registration via registerAll(). Discriminated by `slot`,
+ * since each slot has its own registration options ('search-bar' entries
+ * have no `component`, for example).
+ */
+export type RegisterResourceEntry =
+  | ({ slot: 'right-panel' } & RegisterPanelOptions)
+  | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
+  | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
 
 // ── Introspection types ─────────────────────────────────────────
 
@@ -143,26 +188,10 @@ export interface ResourceVisibilityResult {
 
 /**
  * Declarative resource entry used in CyAppWithLifecycle.resources.
- * Same fields as RegisterResourceEntry — the host registers these
+ * Same shape as RegisterResourceEntry — the host registers these
  * automatically when the app is loaded.
  */
-export interface ResourceDeclaration {
-  slot: ResourceSlot
-  id: string
-  title?: string
-  order?: number
-  group?: string
-  requires?: {
-    network?: boolean
-    selection?: boolean
-  }
-  component: React.ComponentType<any>
-  errorFallback?: React.ComponentType<{
-    error: Error
-    resetErrorBoundary: () => void
-  }>
-  closeOnAction?: boolean
-}
+export type ResourceDeclaration = RegisterResourceEntry
 
 // ── Public API interface ────────────────────────────────────────
 
@@ -205,6 +234,17 @@ export interface ResourceApi {
   ): ApiResult<{ resourceId: string }>
 
   unregisterMenuItem(menuItemId: string): ApiResult
+
+  /**
+   * Register a network search provider in the 'search-bar' slot. Uses
+   * upsert semantics. The host renders the search bar in the Workspace
+   * tab once at least one provider is registered by an active app.
+   */
+  registerNetworkSearchProvider(
+    options: RegisterNetworkSearchProviderOptions,
+  ): ApiResult<{ resourceId: string }>
+
+  unregisterNetworkSearchProvider(providerId: string): ApiResult
 
   unregisterAll(): ApiResult
 

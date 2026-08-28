@@ -1582,9 +1582,9 @@ pie → stripe → images(over)), and matches how two Vizmapper slots already be
 
 ## ResourceApi (`cyweb/AppIdContext`)
 
-Per-app resource registration API for panels and menu items. Available via
-`useAppContext().apis.resource` in plugin components or `context.apis.resource`
-in `mount()`. Not available on `window.CyWebApi`.
+Per-app resource registration API for panels, menu items, and network search
+providers. Available via `useAppContext().apis.resource` in plugin components
+or `context.apis.resource` in `mount()`. Not available on `window.CyWebApi`.
 
 ```typescript
 import { useAppContext } from 'cyweb/AppIdContext'
@@ -1600,10 +1600,17 @@ function MyComponent() {
 ### Types
 
 ```typescript
-type ResourceSlot = 'right-panel' | 'apps-menu'
+type ResourceSlot = 'right-panel' | 'apps-menu' | 'search-bar'
 
-interface ResourceDeclaration {
-  slot: ResourceSlot
+// Discriminated by slot: 'right-panel' and 'apps-menu' entries take the
+// panel/menu fields below; 'search-bar' entries take
+// RegisterNetworkSearchProviderOptions (no `component`).
+type ResourceDeclaration =
+  | ({ slot: 'right-panel' } & RegisterPanelOptions)
+  | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
+  | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
+
+interface RegisterPanelOptions {
   id: string
   title?: string
   order?: number
@@ -1614,7 +1621,31 @@ interface ResourceDeclaration {
     error: Error
     resetErrorBoundary: () => void
   }>
-  closeOnAction?: boolean // apps-menu only
+}
+
+// RegisterMenuItemOptions = RegisterPanelOptions + closeOnAction?: boolean
+
+interface RegisterNetworkSearchProviderOptions {
+  id: string
+  name: string // display name, required non-empty
+  description?: string
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path
+  website?: string // http(s) URL
+  placeholder?: string // for the host-owned search input
+  optionsComponent?: React.ComponentType<NetworkSearchOptionsHostProps>
+  onSubmit: (query: NetworkSearchQuery) => void | Promise<void>
+  errorFallback?: React.ComponentType<{
+    error: Error
+    resetErrorBoundary: () => void
+  }>
+}
+
+interface NetworkSearchQuery {
+  readonly query: string // the trimmed text the user submitted
+}
+
+interface NetworkSearchOptionsHostProps {
+  requestClose: () => void // closes the "More Options" popover
 }
 
 interface RegisteredResourceInfo {
@@ -1641,7 +1672,8 @@ interface ResourceVisibilityResult {
 
 #### `getSupportedSlots(): ApiResult<{ slots: ResourceSlot[] }>`
 
-Returns the slots the host supports. Currently `['right-panel', 'apps-menu']`.
+Returns the slots the host supports. Currently
+`['right-panel', 'apps-menu', 'search-bar']`.
 
 #### `registerPanel(options): ApiResult<{ resourceId: string }>`
 
@@ -1665,6 +1697,58 @@ error codes as `registerPanel`.
 #### `unregisterMenuItem(menuItemId): ApiResult`
 
 Removes a menu item. Returns `APP7` if the menu item is not registered.
+
+#### `registerNetworkSearchProvider(options): ApiResult<{ resourceId: string }>`
+
+Registers a network search provider in the `'search-bar'` slot. Uses upsert
+semantics. The host renders the search bar at the top of the Workspace tab
+once at least one provider is registered by an active app; with several
+providers the user picks one from the bar's provider menu (sorted by name,
+last choice remembered across sessions).
+
+The host owns the query input — providers cannot supply their own query
+component. A provider contributes:
+
+- `placeholder` for the host's search field.
+- `optionsComponent`, rendered inside the "More Options" popover the host
+  opens next to the search field. Mandatory input stays in the search field;
+  any extra parameters belong here, backed by the app's own state so
+  `onSubmit` can read them. The popover is an anchored non-modal surface:
+  click-away and Escape dismiss it, the host injects `requestClose`, and the
+  host also renders the popover's Close button as an explicit exit.
+- `onSubmit`, invoked with the trimmed query when the user presses Enter or
+  the Search button (enabled only while the query is non-empty). While a
+  returned promise is pending the bar shows progress and blocks re-submit; a
+  rejection is logged and surfaced to the user as an error message.
+
+| Error Code | Condition                                                         |
+| ---------- | ----------------------------------------------------------------- |
+| `APP9`     | `id`/`name` empty, `onSubmit` not a function, `optionsComponent` not a valid React type, `icon` not http(s)/data:image/root-relative, `website` not http(s) |
+
+```typescript
+mount(context) {
+  const { apis } = context
+  apis.resource.registerNetworkSearchProvider({
+    id: 'gene-search',
+    name: 'My Gene Search',
+    description: 'Find networks related to the given genes',
+    icon: 'https://example.org/logo.png',
+    website: 'https://example.org',
+    placeholder: 'Enter gene names...',
+    optionsComponent: SearchOptionsPanel,
+    onSubmit: async ({ query }) => {
+      const cx2 = await fetchNetworkFor(query)
+      apis.network.createNetworkFromCx2(cx2)
+    },
+  })
+}
+```
+
+#### `unregisterNetworkSearchProvider(providerId): ApiResult`
+
+Removes a network search provider. Returns `APP7` if it is not registered.
+When an app's last provider goes away (unregistration or app deactivation),
+the host hides the search bar again.
 
 #### `unregisterAll(): ApiResult`
 
