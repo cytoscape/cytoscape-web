@@ -1792,6 +1792,14 @@ wired to the same close path as `requestClose`, so every app modal has an
 exit even if the app renders none; wire your own Cancel/Done buttons to
 `requestClose`.
 
+Do NOT treat the component's unmount as a "modal closed" signal (e.g. an
+effect cleanup that discards the modal's pending payload): the host runs
+under `React.StrictMode`, whose dev-mode double-mount runs every effect
+cleanup once immediately after mount — such a cleanup fires while the modal
+is still open and blanks it. Put close side effects on the buttons that
+close, and make reopening self-healing by (re)writing the payload before
+each `openModal(id)` call.
+
 | Error Code | Condition                                                                       |
 | ---------- | ------------------------------------------------------------------------------- |
 | `APP9`     | `id` empty, `component` not a valid React type, invalid `maxWidth`/`fullWidth` |
