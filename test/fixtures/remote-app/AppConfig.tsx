@@ -53,6 +53,49 @@ function MenuMarker(): JSX.Element {
   return <span data-testid="remote-menu-marker">{shared}</span>
 }
 
+// The resource API parked at mount() time, so plain module-level callbacks
+// (like the menu item's onClick below) can open modals imperatively — the
+// exact usage pattern the 'modal-launcher' slot exists for.
+let parkedResource: {
+  openModal: (id: string) => unknown
+} | null = null
+
+// Registered as a 'modal-launcher' resource — the HOST renders this inside
+// its own dialog shell when openModal('fixture-modal') is called. Hooks
+// prove the shared React instance, like MenuMarker above.
+function FixtureModal({
+  requestClose,
+}: {
+  requestClose: () => void
+}): JSX.Element {
+  const [state] = useState('modal-hooks-ok')
+  return (
+    <div data-testid="remote-modal-marker">
+      Fixture Modal: {state}
+      <button data-testid="remote-modal-cancel" onClick={requestClose}>
+        Cancel
+      </button>
+    </div>
+  )
+}
+
+// An apps-menu item whose click opens the registered modal. Registered with
+// closeOnAction: true, so the dropdown closes (and this component unmounts)
+// right after the click — the modal surviving that unmount is the contract
+// the E2E asserts.
+function OpenModalMenuItem(): JSX.Element {
+  return (
+    <button
+      data-testid="remote-open-modal-menu-item"
+      onClick={() => {
+        parkedResource?.openModal('fixture-modal')
+      }}
+    >
+      Open Fixture Modal
+    </button>
+  )
+}
+
 // State shared between the search options panel and the submit handler —
 // the app owns its extra parameters; the host only renders the panel.
 let exactMatch = false
@@ -105,6 +148,7 @@ const TestRemoteApp = {
           id: string
           title?: string
           component: unknown
+          closeOnAction?: boolean
         }) => unknown
         registerNetworkSearchProvider: (opts: {
           id: string
@@ -114,6 +158,13 @@ const TestRemoteApp = {
           optionsComponent?: unknown
           onSubmit: (query: { query: string }) => void
         }) => unknown
+        registerModal: (opts: {
+          id: string
+          component: unknown
+          maxWidth?: string | false
+          fullWidth?: boolean
+        }) => unknown
+        openModal: (id: string) => unknown
       }
     }
   }): void {
@@ -142,11 +193,29 @@ const TestRemoteApp = {
       optionsComponent: SearchOptionsPanel,
       onSubmit: runFixtureSearch,
     })
+
+    // (4) Register a modal and a menu item that opens it imperatively —
+    // the 'modal-launcher' contract: the host renders the modal in its own
+    // dialog shell, and it outlives the dropdown that launched it.
+    parkedResource = context.apis.resource
+    context.apis.resource.registerModal({
+      id: 'fixture-modal',
+      component: FixtureModal,
+      maxWidth: 'sm',
+      fullWidth: true,
+    })
+    context.apis.resource.registerMenuItem({
+      id: 'open-modal',
+      title: 'Open Fixture Modal',
+      component: OpenModalMenuItem,
+      closeOnAction: true,
+    })
   },
 
   unmount(): void {
     document.getElementById('remote-app-root')?.remove()
     document.getElementById('remote-search-result')?.remove()
+    parkedResource = null
   },
 }
 

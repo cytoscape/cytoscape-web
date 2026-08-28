@@ -94,6 +94,46 @@ const CASES: DialogCase[] = [
       await page.locator('[data-testid="load-from-ndex-cancel-button"]').click()
     },
   },
+  {
+    // App modals rendered through the modal-launcher slot share one host
+    // dialog shell (ModalLauncherHost), so this single row covers every app
+    // modal. The open flow registers and activates the fixture remote —
+    // the slowest row in the table, and the only way to have an app modal
+    // here. Selectors mirror remote-app-load.spec.ts.
+    name: 'App modal (modal-launcher)',
+    testId: 'modal-launcher-dialog-testRemoteApp-fixture-modal',
+    open: async (page) => {
+      await page
+        .locator('[data-testid="toolbar-apps-menu-menu-button"]')
+        .click()
+      await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
+      await page.getByText('Manifest Source').click()
+      await page
+        .getByLabel('Custom manifest URL')
+        .fill('http://localhost:4191/manifest.json')
+      await page.getByRole('button', { name: 'Apply' }).click()
+      const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
+      await expect(toggle).toBeVisible({ timeout: 15_000 })
+      await toggle.click()
+      await expect(
+        page.locator('[data-testid="remote-app-marker"]'),
+      ).toBeVisible({ timeout: 15_000 })
+      await page.getByTestId('app-settings-dialog-close-button').click()
+      await page
+        .locator('[data-testid="toolbar-apps-menu-menu-button"]')
+        .click()
+      await page
+        .locator('[data-testid="remote-open-modal-menu-item"]')
+        .click()
+    },
+    close: async (page) => {
+      // The host shell's structural Close "X" — the exit the slot itself
+      // guarantees, independent of the app content.
+      await page
+        .locator('[data-testid="modal-launcher-close-button"]')
+        .click()
+    },
+  },
 ]
 
 /**
