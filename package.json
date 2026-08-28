@@ -43,8 +43,8 @@
     "test:e2e:chromium": "run-s build:test-remote \"e2e:run -- --project=chromium\"",
     "test:e2e:chromium:quiet": "run-s build:test-remote:quiet \"e2e:run:quiet -- --project=chromium\"",
     "e2e:spec": "run-s build:test-remote:quiet \"e2e:spec:run -- {@}\" --",
-  "e2e:spec:run": "node scripts/run-playwright.mjs --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts",
-  "e2e:run": "node scripts/run-playwright.mjs",
+    "e2e:spec:run": "node scripts/run-playwright.mjs --project=chromium --quiet --reporter=test/playwright/quiet-reporter.ts",
+    "e2e:run": "node scripts/run-playwright.mjs",
     "e2e:run:quiet": "node scripts/run-playwright.mjs --quiet --reporter=test/playwright/quiet-reporter.ts",
     "build:test-remote": "vite build --config test/fixtures/remote-app/vite.config.ts",
     "build:test-remote:quiet": "vite build --config test/fixtures/remote-app/vite.config.ts --logLevel error",
@@ -59,7 +59,13 @@
     "lint:oxlint": "oxlint src",
     "lint:tsc": "tsc --noEmit",
     "lint:fix": "oxlint --fix src",
-    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\""
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+    "benchmark": "node benchmark/report.mjs",
+    "benchmark:all": "node benchmark/report.mjs --all",
+    "benchmark:full": "node benchmark/report.mjs --full",
+    "benchmark:browser": "node --import tsx benchmark/browser-bench.mjs",
+    "benchmark:publish": "node scripts/benchmark-publish.mjs",
+    "benchmark:compare": "node scripts/benchmark-compare.mjs"
   },
   "devDependencies": {
     "@faker-js/faker": "^7.6.0",
@@ -95,6 +101,7 @@
     "fake-indexeddb": "^4.0.0",
     "isomorphic-fetch": "^3.0.0",
     "jsdom": "^29.1.1",
+    "mitata": "^1.0.34",
     "node-fetch": "^3.2.10",
     "npm-run-all": "^4.1.5",
     "oxlint": "^1.73.0",
@@ -103,6 +110,7 @@
     "rollup-plugin-visualizer": "^7.0.1",
     "ts-morph": "^27.0.2",
     "ts-node": "^10.9.1",
+    "tsx": "^4.23.12",
     "typescript": "^5.5.4",
     "vite": "8.0.13",
     "vitest": "^4.1.8"

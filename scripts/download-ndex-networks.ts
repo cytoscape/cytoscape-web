@@ -6,7 +6,7 @@
 
 import { writeFileSync } from 'fs'
 import { join } from 'path'
-import { fetchNdexNetwork } from '../src/api/ndex/network'
+import { fetchNdexNetwork } from '../src/data/external-api/ndex/network'
 
 const OUTPUT_DIR = join(__dirname, '../test/fixtures/ndex')
 

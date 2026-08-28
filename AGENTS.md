@@ -176,6 +176,14 @@ server the user started, ask before stopping it; never kill it silently. Use
 `E2E_DEV=1` to run against an existing dev server instead, at the cost of a
 flakier suite. See `test/playwright/README.md`.
 
+**Benchmarks:**
+
+- `npm run benchmark` - Quick benchmark profile (5 model-layer suites, ~2 min); `--all` adds the db sweep, `--full` the 500/10k size matrix, `--repeat 3` for anything published
+- `npm run benchmark:browser` - Real-browser pass over the built `dist/` (boot milestones + CX2 import)
+- `npm run benchmark:publish` / `benchmark:compare` - Promote a run into the tracked `benchmark/published/` archive; render cross-run comparison pages
+
+**Read [`docs/agents/benchmarking.md`](docs/agents/benchmarking.md) before adding a benchmark row or acting on one.** Runs need Node 24 (mise/nvm). Results land in `benchmark/results/` (gitignored); published runs are compared only within one machine fingerprint and one harness epoch.
+
 **Code Quality:**
 
 - `npm run lint` - Lint TypeScript/JavaScript files in src/
@@ -241,6 +249,7 @@ Read these before working in related areas:
 - `src/app-api/AGENTS.md` — App API architecture, two-layer pattern, event bus
 - `docs/agents/architecture.md` — naming conventions, directory map, feature/model/store patterns, routing table
 - `docs/agents/environment.md` — build system, runtime config files, repo scripts
+- `docs/agents/benchmarking.md` — the benchmark harness (a cytoscape.js v4 port), methodology rules, publish/compare workflow
 
 ---
 

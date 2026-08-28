@@ -328,21 +328,26 @@ export function moveStatusLast(cx2: any[]): any[] {
 /**
  * Generate an invalid CX2 based on error type
  */
-function generateInvalidCx2(errorType: ErrorType, baseNetwork?: any[]): any {
-  if (!baseNetwork) {
-    // Generate a minimal valid network first
-    const valid = generateValidCx2({
-      nodeCount: 2,
-      edgeCount: 1,
-      withLayout: false,
-      withVisualStyle: false,
-      withAttributes: false,
-      withOpaqueAspects: false,
-      withNetworkAttributes: false,
-      withAttributeDeclarations: false,
-    })
-    baseNetwork = JSON.parse(JSON.stringify(valid))
-  }
+function generateInvalidCx2(errorType: ErrorType, base?: any[]): any {
+  // Generate a minimal valid network when none is given. Assigning the
+  // JSON.parse result (type `any`) to the optional parameter would reset its
+  // narrowing back to `any[] | undefined`, so bind the non-optional value.
+  const baseNetwork: any[] =
+    base ??
+    JSON.parse(
+      JSON.stringify(
+        generateValidCx2({
+          nodeCount: 2,
+          edgeCount: 1,
+          withLayout: false,
+          withVisualStyle: false,
+          withAttributes: false,
+          withOpaqueAspects: false,
+          withNetworkAttributes: false,
+          withAttributeDeclarations: false,
+        }),
+      ),
+    )
 
   switch (errorType) {
     case 'missing-cxversion':

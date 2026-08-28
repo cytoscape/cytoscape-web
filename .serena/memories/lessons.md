@@ -30,6 +30,9 @@
 
 ## Build & CI
 
+- [2026-08-26] tsx + `export *` barrels: An `.mjs` script run via `node --import tsx` cannot named-import from a TS barrel that uses `export *` (compiles to CJS `__exportStar`, invisible to the ESM lexer — e.g. `@/data/db/serialization`); import the concrete module instead. Explicit named re-export barrels (`@/models/CxModel/impl`) are fine.
+- [2026-08-26] Standalone scripts creating a `styleEnabled: true` cytoscape instance never exit on their own — an animation timer keeps the event loop alive; end them with `process.exit(0)`.
+
 - [2026-03-04] Import sorting: Import sorting is no longer lint-enforced after the oxlint migration; keep imports sorted by convention.
 - [2026-03-04] No `console.log`: Production builds strip direct `console.*()` calls through Vite's Oxc minifier. Use the `debug` logger from `src/debug.ts`.
 
