@@ -431,13 +431,17 @@ const WorkSpaceEditor = (): JSX.Element => {
   // Return the main component including the network panel, network view, and the table browser
   return (
     <Box
+      data-testid="workspace-editor"
       sx={{
         height: '100%',
         width: '100%',
         overflow: 'hidden',
       }}
     >
-      <Allotment data-testid="workspace-editor">
+      {/* Allotment / Allotment.Pane only forward their declared props, so a
+          data-testid put on them never reaches the DOM. Test ids live on the
+          wrapper Boxes inside each pane instead. */}
+      <Allotment>
         <Allotment
           vertical
           onChange={(sizes: number[]) => {
@@ -511,16 +515,23 @@ const WorkSpaceEditor = (): JSX.Element => {
                 </Box>
               )}
             </Allotment.Pane>
-            <Allotment.Pane data-testid="workspace-editor-center-pane">
-              <Outlet />
-              <NetworkPanel
-                networkId={currentNetworkId}
-                failedToLoad={failedToLoad}
-              />
+            <Allotment.Pane>
+              {/* Always mounted whether or not a network is loaded — the
+                  onboarding tour anchors its canvas step here (see
+                  tours/visibleSteps.ts). */}
+              <Box
+                data-testid="workspace-editor-center-pane"
+                sx={{ height: '100%', width: '100%' }}
+              >
+                <Outlet />
+                <NetworkPanel
+                  networkId={currentNetworkId}
+                  failedToLoad={failedToLoad}
+                />
+              </Box>
             </Allotment.Pane>
           </Allotment>
           <Allotment.Pane
-            data-testid="workspace-editor-bottom-pane"
             minSize={28}
             preferredSize={'25%'} // percentage of the total height of the workspace
             maxSize={
@@ -528,64 +539,72 @@ const WorkSpaceEditor = (): JSX.Element => {
               panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 28
             }
           >
-            {panels.bottom === PanelState.CLOSED ? (
-              <Tooltip title="Open table panel" arrow placement="top">
+            <Box
+              data-testid="workspace-editor-bottom-pane"
+              sx={{ height: '100%', width: '100%' }}
+            >
+              {panels.bottom === PanelState.CLOSED ? (
+                <Tooltip title="Open table panel" arrow placement="top">
+                  <Box
+                    data-testid="workspace-editor-bottom-panel-closed"
+                    onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+                    sx={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: (theme) =>
+                        theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.secondary,
+                      borderTop: (theme) =>
+                        `2px solid ${theme.palette.divider}`,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        color: (theme) => theme.palette.text.primary,
+                      },
+                    }}
+                  >
+                    <ExpandLessIcon />
+                  </Box>
+                </Tooltip>
+              ) : (
                 <Box
-                  data-testid="workspace-editor-bottom-panel-closed"
-                  onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+                  data-testid="workspace-editor-bottom-panel-open"
                   sx={{
-                    width: '100%',
+                    height: '100%',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: (theme) => theme.palette.background.paper,
-                    color: (theme) => theme.palette.text.secondary,
-                    borderTop: (theme) => `2px solid ${theme.palette.divider}`,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      color: (theme) => theme.palette.text.primary,
-                    },
+                    borderTop: (theme) => `4px solid ${theme.palette.divider}`,
                   }}
                 >
-                  <ExpandLessIcon />
-                </Box>
-              </Tooltip>
-            ) : (
-              <Box
-                data-testid="workspace-editor-bottom-panel-open"
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  borderTop: (theme) => `4px solid ${theme.palette.divider}`,
-                }}
-              >
-                <Suspense
-                  fallback={
-                    <div data-testid="workspace-editor-table-browser-loading">
-                      {`Loading from NDEx`}
-                    </div>
-                  }
-                  key={currentNetworkId}
-                >
-                  <TableBrowser
-                    setHeight={setTableBrowserHeight}
-                    height={tableBrowserHeight}
-                    currentNetworkId={
-                      activeNetworkView === undefined ||
-                      activeNetworkView === ''
-                        ? currentNetworkId
-                        : activeNetworkView
+                  <Suspense
+                    fallback={
+                      <div data-testid="workspace-editor-table-browser-loading">
+                        {`Loading from NDEx`}
+                      </div>
                     }
-                  />
-                </Suspense>
-              </Box>
-            )}
+                    key={currentNetworkId}
+                  >
+                    <TableBrowser
+                      setHeight={setTableBrowserHeight}
+                      height={tableBrowserHeight}
+                      currentNetworkId={
+                        activeNetworkView === undefined ||
+                        activeNetworkView === ''
+                          ? currentNetworkId
+                          : activeNetworkView
+                      }
+                    />
+                  </Suspense>
+                </Box>
+              )}
+            </Box>
           </Allotment.Pane>
         </Allotment>
 
         {panels.right === PanelState.OPEN && (
-          <Allotment.Pane data-testid="workspace-editor-right-pane">
+          <Allotment.Pane>
             <Box
+              data-testid="workspace-editor-right-pane"
               sx={{
                 width: '100%',
                 height: '100%',
