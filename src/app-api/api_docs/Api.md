@@ -1582,9 +1582,10 @@ pie → stripe → images(over)), and matches how two Vizmapper slots already be
 
 ## ResourceApi (`cyweb/AppIdContext`)
 
-Per-app resource registration API for panels, menu items, and network search
-providers. Available via `useAppContext().apis.resource` in plugin components
-or `context.apis.resource` in `mount()`. Not available on `window.CyWebApi`.
+Per-app resource registration API for panels, menu items, network search
+providers, and modal dialogs. Available via `useAppContext().apis.resource`
+in plugin components or `context.apis.resource` in `mount()`. Not available
+on `window.CyWebApi`.
 
 ```typescript
 import { useAppContext } from 'cyweb/AppIdContext'
@@ -1600,15 +1601,21 @@ function MyComponent() {
 ### Types
 
 ```typescript
-type ResourceSlot = 'right-panel' | 'apps-menu' | 'search-bar'
+type ResourceSlot =
+  | 'right-panel'
+  | 'apps-menu'
+  | 'search-bar'
+  | 'modal-launcher'
 
 // Discriminated by slot: 'right-panel' and 'apps-menu' entries take the
 // panel/menu fields below; 'search-bar' entries take
-// RegisterNetworkSearchProviderOptions (no `component`).
+// RegisterNetworkSearchProviderOptions (no `component`); 'modal-launcher'
+// entries take RegisterModalOptions.
 type ResourceDeclaration =
   | ({ slot: 'right-panel' } & RegisterPanelOptions)
   | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
   | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
+  | ({ slot: 'modal-launcher' } & RegisterModalOptions)
 
 interface RegisterPanelOptions {
   id: string
@@ -1648,6 +1655,21 @@ interface NetworkSearchOptionsHostProps {
   requestClose: () => void // closes the "More Options" popover
 }
 
+interface RegisterModalOptions {
+  id: string
+  component: React.ComponentType<ModalHostProps>
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false // default 'sm'
+  fullWidth?: boolean // default false
+  errorFallback?: React.ComponentType<{
+    error: Error
+    resetErrorBoundary: () => void
+  }>
+}
+
+interface ModalHostProps {
+  requestClose: () => void // closes this modal (same path as the host's Close "X")
+}
+
 interface RegisteredResourceInfo {
   resourceId: string // identity triple: appId::slot::id
   slot: ResourceSlot
@@ -1673,7 +1695,7 @@ interface ResourceVisibilityResult {
 #### `getSupportedSlots(): ApiResult<{ slots: ResourceSlot[] }>`
 
 Returns the slots the host supports. Currently
-`['right-panel', 'apps-menu', 'search-bar']`.
+`['right-panel', 'apps-menu', 'search-bar', 'modal-launcher']`.
 
 #### `registerPanel(options): ApiResult<{ resourceId: string }>`
 
@@ -1750,9 +1772,74 @@ Removes a network search provider. Returns `APP7` if it is not registered.
 When an app's last provider goes away (unregistration or app deactivation),
 the host hides the search bar again.
 
+#### `registerModal(options): ApiResult<{ resourceId: string }>`
+
+Registers a modal in the `'modal-launcher'` slot. Uses upsert semantics.
+Registration only declares the modal — nothing renders until `openModal(id)`
+is called.
+
+The host renders the component inside its own React tree, wrapped in its
+dialog shell (`CyDialog`), so the modal inherits the host theme, error
+isolation (`errorFallback` or the default plugin fallback), and a `Suspense`
+boundary with a loading spinner for `React.lazy` content. The component
+renders the dialog *contents* — `DialogTitle`, `DialogContent`,
+`DialogActions` — and receives `ModalHostProps`.
+
+Dismissal follows the host's dialog policy
+(`docs/specifications/DIALOG_DISMISS_POLICY.md`): backdrop click and Escape
+are inert. The host shell always renders a Close "X" in the top-right corner
+wired to the same close path as `requestClose`, so every app modal has an
+exit even if the app renders none; wire your own Cancel/Done buttons to
+`requestClose`.
+
+| Error Code | Condition                                                                       |
+| ---------- | ------------------------------------------------------------------------------- |
+| `APP9`     | `id` empty, `component` not a valid React type, invalid `maxWidth`/`fullWidth` |
+
+#### `unregisterModal(modalId): ApiResult`
+
+Removes a modal registration. If the modal is currently open, it is closed
+first. Returns `APP7` if it is not registered.
+
+#### `openModal(id): ApiResult`
+
+Opens a registered `'modal-launcher'` resource. Payload-less by design —
+carry any payload in your app's own state, set before the call. Idempotent
+when the modal is already open. Open modals survive the launching
+component's unmount (a closing menu dropdown, an options popover) and are
+closed automatically when the app is deactivated.
+
+Because modals are usually launched from app logic with no mounted
+component, `openModal` is typically called through the `AppContext` parked
+at `mount()` time:
+
+```typescript
+mount(context) {
+  setAppContext(context) // module-level singleton owned by the app
+}
+
+// Later, e.g. inside a search provider's onSubmit:
+async function runSearch(query: string) {
+  const candidates = await fetchCandidates(query)
+  myStore.setPending(candidates) // payload first...
+  getAppContext().apis.resource.openModal('select-sources') // ...then open
+}
+```
+
+| Error Code | Condition                                    |
+| ---------- | -------------------------------------------- |
+| `APP7`     | No modal with this `id` is registered        |
+| `APP9`     | `id` empty or not a string                   |
+
+#### `closeModal(id): ApiResult`
+
+Closes an open modal — the same path as the injected `requestClose` and the
+host's Close "X". Idempotent when the modal is not open. Returns `APP7` if
+the modal is not registered.
+
 #### `unregisterAll(): ApiResult`
 
-Removes all resources registered by this app.
+Removes all resources registered by this app, closing any open modals.
 
 #### `registerAll(entries): ApiResult<{ registered, errors }>`
 

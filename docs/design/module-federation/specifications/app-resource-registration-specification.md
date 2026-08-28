@@ -176,7 +176,10 @@ both resource type and placement:
  *   'apps-menu'    — dropdown in the Apps toolbar button
  *
  * Reserved for future rollouts:
- *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar', 'modal-launcher'
+ *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar'
+ *   ('search-bar' shipped in #688 and 'modal-launcher' in #690; this block
+ *   is the first-rollout snapshot — see AppResourceTypes.ts for the
+ *   current union.)
  */
 type ResourceSlot = 'right-panel' | 'apps-menu'
 ```

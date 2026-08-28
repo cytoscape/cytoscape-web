@@ -49,6 +49,16 @@ belongs on a button. Every other `DialogProps` forwards untouched.
 
 **All 40 `<Dialog>` sites**, through `CyDialog`.
 
+**Every app modal, structurally.** Third-party apps open dialogs through the
+`modal-launcher` resource slot (#690): the host renders the app's content inside its own
+`CyDialog` shell (`AppManager/ModalLauncherHost.tsx`), so backdrop and <kbd>Esc</kbd> are
+inert without the app doing anything — and cannot be re-enabled by the app. The shell also
+always renders a Close "X" in the top-right corner wired to the same close path as the
+injected `requestClose`, so the "visible exit" requirement holds even when an app modal
+renders no button of its own (or crashes into its error fallback). Apps should still wire
+their own Cancel/Close buttons to `requestClose`; the host X is the structural guarantee,
+not a substitute.
+
 **The four modal form popovers.** These are anchored but behave as modal editors, so they follow
 the same rule through their own props:
 
