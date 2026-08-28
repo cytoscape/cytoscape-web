@@ -9,7 +9,11 @@
  * Duplicated from AppResourceTypes.ts to keep the model layer free of
  * app-api imports. Must stay in sync.
  */
-export type ResourceSlot = 'right-panel' | 'apps-menu' | 'search-bar'
+export type ResourceSlot =
+  | 'right-panel'
+  | 'apps-menu'
+  | 'search-bar'
+  | 'modal-launcher'
 
 /**
  * A registered app resource — the internal representation stored in
@@ -86,4 +90,13 @@ export interface RegisteredAppResource {
    * `(query: NetworkSearchQuery) => void | Promise<void>` at the call site.
    */
   readonly onSubmit?: unknown
+
+  // ── 'modal-launcher' slot only ─────────────────────────────────
+  // Plain literals rather than MUI's Breakpoint type: the model layer
+  // stays MUI-free. The host's dialog shell forwards them to CyDialog.
+
+  /** Maximum dialog width. Defaults to 'sm' when undefined. */
+  readonly maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false
+  /** Stretch the dialog to `maxWidth`. Defaults to false when undefined. */
+  readonly fullWidth?: boolean
 }

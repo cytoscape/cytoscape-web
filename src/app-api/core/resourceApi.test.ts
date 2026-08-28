@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import { useModalLauncherStore } from '../../data/hooks/stores/ModalLauncherStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { AppStatus } from '../../models/AppModel/AppStatus'
@@ -19,6 +20,10 @@ enableMapSet()
 
 vi.mock('../../data/hooks/stores/AppResourceStore', () => ({
   useAppResourceStore: { getState: vi.fn() },
+}))
+
+vi.mock('../../data/hooks/stores/ModalLauncherStore', () => ({
+  useModalLauncherStore: { getState: vi.fn() },
 }))
 
 vi.mock('../../data/hooks/stores/AppStore', () => ({
@@ -58,12 +63,26 @@ function makeMockResourceStore(
   }
 }
 
+function makeMockModalLauncherStore() {
+  return {
+    openModals: [] as Array<{ appId: string; id: string }>,
+    openModal: vi.fn(),
+    closeModal: vi.fn(),
+    closeAllByAppId: vi.fn(),
+  }
+}
+
 describe('createResourceApi', () => {
   let mockStore: ReturnType<typeof makeMockResourceStore>
+  let mockModalStore: ReturnType<typeof makeMockModalLauncherStore>
 
   beforeEach(() => {
     mockStore = makeMockResourceStore()
     vi.mocked(useAppResourceStore.getState).mockReturnValue(mockStore as any)
+    mockModalStore = makeMockModalLauncherStore()
+    vi.mocked(useModalLauncherStore.getState).mockReturnValue(
+      mockModalStore as any,
+    )
     vi.mocked(useAppStore.getState).mockReturnValue({
       apps: { app1: { status: AppStatus.Active } },
     } as any)
@@ -82,7 +101,7 @@ describe('createResourceApi', () => {
   // ── getSupportedSlots ───────────────────────────────────────────
 
   describe('getSupportedSlots', () => {
-    it('returns right-panel, apps-menu and search-bar', () => {
+    it('returns right-panel, apps-menu, search-bar and modal-launcher', () => {
       const api = createResourceApi('app1')
       const result = api.getSupportedSlots()
       expect(result.success).toBe(true)
@@ -91,6 +110,7 @@ describe('createResourceApi', () => {
           'right-panel',
           'apps-menu',
           'search-bar',
+          'modal-launcher',
         ])
       }
     })
@@ -596,6 +616,249 @@ describe('createResourceApi', () => {
     })
   })
 
+  // ── registerModal ───────────────────────────────────────────────
+
+  describe('registerModal', () => {
+    it('returns ok with correct resourceId', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: DummyComponent,
+      })
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.resourceId).toBe('app1::modal-launcher::D1')
+      }
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'D1',
+          appId: 'app1',
+          slot: 'modal-launcher',
+        }),
+      )
+    })
+
+    it('passes maxWidth and fullWidth to store', () => {
+      const api = createResourceApi('app1')
+      api.registerModal({
+        id: 'D1',
+        component: DummyComponent,
+        maxWidth: 'md',
+        fullWidth: true,
+      })
+
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({ maxWidth: 'md', fullWidth: true }),
+      )
+    })
+
+    it('returns fail(InvalidInput) for missing id', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        component: DummyComponent,
+      } as any)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
+    it('returns fail(InvalidInput) for non-string id (number)', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 42,
+        component: DummyComponent,
+      } as any)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('returns fail(InvalidInput) for primitive component (string)', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: 'not-a-component',
+      } as any)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('component')
+      }
+    })
+
+    it('accepts a React.lazy-like object component', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: { $$typeof: Symbol.for('react.lazy') } as any,
+      })
+
+      expect(result.success).toBe(true)
+    })
+
+    it('returns fail(InvalidInput) for an invalid maxWidth', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: DummyComponent,
+        maxWidth: 'enormous' as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('maxWidth')
+      }
+    })
+
+    it('accepts maxWidth: false', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: DummyComponent,
+        maxWidth: false,
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({ maxWidth: false }),
+      )
+    })
+
+    it('returns fail(InvalidInput) for a non-boolean fullWidth', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: DummyComponent,
+        fullWidth: 'yes' as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('fullWidth')
+      }
+    })
+
+    it('upserts on repeated registration with the same id', () => {
+      const api = createResourceApi('app1')
+      api.registerModal({ id: 'D1', component: DummyComponent })
+      const result = api.registerModal({
+        id: 'D1',
+        component: DummyComponent,
+        maxWidth: 'lg',
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockStore.upsertResource).toHaveBeenCalledTimes(2)
+      expect(mockStore.upsertResource).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: 'D1', maxWidth: 'lg' }),
+      )
+    })
+  })
+
+  // ── unregisterModal ─────────────────────────────────────────────
+
+  describe('unregisterModal', () => {
+    it('returns ok and closes the modal when it exists', () => {
+      mockStore.hasResource.mockReturnValue(true)
+      const api = createResourceApi('app1')
+      const result = api.unregisterModal('D1')
+
+      expect(result.success).toBe(true)
+      expect(mockStore.removeResource).toHaveBeenCalledWith(
+        'app1',
+        'modal-launcher',
+        'D1',
+      )
+      expect(mockModalStore.closeModal).toHaveBeenCalledWith('app1', 'D1')
+    })
+
+    it('returns fail(ResourceNotFound) when modal does not exist', () => {
+      mockStore.hasResource.mockReturnValue(false)
+      const api = createResourceApi('app1')
+      const result = api.unregisterModal('ghost')
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP7')
+      }
+      expect(mockModalStore.closeModal).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── openModal ───────────────────────────────────────────────────
+
+  describe('openModal', () => {
+    it('opens a registered modal under the bound appId', () => {
+      mockStore.hasResource.mockReturnValue(true)
+      const api = createResourceApi('app1')
+      const result = api.openModal('D1')
+
+      expect(result.success).toBe(true)
+      expect(mockStore.hasResource).toHaveBeenCalledWith(
+        'app1',
+        'modal-launcher',
+        'D1',
+      )
+      expect(mockModalStore.openModal).toHaveBeenCalledWith('app1', 'D1')
+    })
+
+    it('returns fail(ResourceNotFound) when the modal is not registered', () => {
+      mockStore.hasResource.mockReturnValue(false)
+      const api = createResourceApi('app1')
+      const result = api.openModal('ghost')
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP7')
+      }
+      expect(mockModalStore.openModal).not.toHaveBeenCalled()
+    })
+
+    it('returns fail(InvalidInput) for a non-string id', () => {
+      const api = createResourceApi('app1')
+      const result = api.openModal(42 as any)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+  })
+
+  // ── closeModal ──────────────────────────────────────────────────
+
+  describe('closeModal', () => {
+    it('closes a registered modal under the bound appId', () => {
+      mockStore.hasResource.mockReturnValue(true)
+      const api = createResourceApi('app1')
+      const result = api.closeModal('D1')
+
+      expect(result.success).toBe(true)
+      expect(mockModalStore.closeModal).toHaveBeenCalledWith('app1', 'D1')
+    })
+
+    it('returns fail(ResourceNotFound) when the modal is not registered', () => {
+      mockStore.hasResource.mockReturnValue(false)
+      const api = createResourceApi('app1')
+      const result = api.closeModal('ghost')
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP7')
+      }
+      expect(mockModalStore.closeModal).not.toHaveBeenCalled()
+    })
+  })
+
   // ── unregisterAll ───────────────────────────────────────────────
 
   describe('unregisterAll', () => {
@@ -605,6 +868,13 @@ describe('createResourceApi', () => {
 
       expect(result.success).toBe(true)
       expect(mockStore.removeAllByAppId).toHaveBeenCalledWith('app1')
+    })
+
+    it('closes any open modals of the bound appId', () => {
+      const api = createResourceApi('app1')
+      api.unregisterAll()
+
+      expect(mockModalStore.closeAllByAppId).toHaveBeenCalledWith('app1')
     })
   })
 
@@ -630,12 +900,20 @@ describe('createResourceApi', () => {
           name: 'My Search',
           onSubmit: vi.fn(),
         },
+        {
+          slot: 'modal-launcher',
+          id: 'D1',
+          component: DummyComponent,
+        },
       ])
 
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.registered).toHaveLength(3)
+        expect(result.data.registered).toHaveLength(4)
         expect(result.data.errors).toHaveLength(0)
+        expect(result.data.registered[3].resourceId).toBe(
+          'app1::modal-launcher::D1',
+        )
       }
     })
 
@@ -876,6 +1154,19 @@ describe('createResourceApi', () => {
       api.unregisterAll()
 
       expect(mockStore.removeAllByAppId).toHaveBeenCalledWith('app1')
+    })
+
+    it('openModal resolves the id against the bound appId only', () => {
+      mockStore.hasResource.mockImplementation(
+        (appId: string) => appId === 'app1',
+      )
+      const api1 = createResourceApi('app1')
+      const api2 = createResourceApi('app2')
+
+      expect(api1.openModal('D1').success).toBe(true)
+      expect(api2.openModal('D1').success).toBe(false)
+      expect(mockModalStore.openModal).toHaveBeenCalledTimes(1)
+      expect(mockModalStore.openModal).toHaveBeenCalledWith('app1', 'D1')
     })
   })
 })

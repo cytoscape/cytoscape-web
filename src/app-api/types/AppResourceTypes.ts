@@ -12,14 +12,19 @@ import type { ApiError, ApiResult } from './ApiResult'
  * Identifies a specific host-managed UI location that plugins can occupy.
  *
  * Current slots:
- *   'right-panel'  — tabbed side panel on the right
- *   'apps-menu'    — dropdown in the Apps toolbar button
- *   'search-bar'   — network search bar at the top of the Workspace tab
+ *   'right-panel'    — tabbed side panel on the right
+ *   'apps-menu'      — dropdown in the Apps toolbar button
+ *   'search-bar'     — network search bar at the top of the Workspace tab
+ *   'modal-launcher' — host-rendered modal dialogs, opened imperatively
  *
  * Reserved for future rollouts:
- *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar', 'modal-launcher'
+ *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar'
  */
-export type ResourceSlot = 'right-panel' | 'apps-menu' | 'search-bar'
+export type ResourceSlot =
+  | 'right-panel'
+  | 'apps-menu'
+  | 'search-bar'
+  | 'modal-launcher'
 
 // ── Per-slot host props ─────────────────────────────────────────
 
@@ -148,6 +153,61 @@ export interface RegisterNetworkSearchProviderOptions {
   }>
 }
 
+// ── Modal registration ──────────────────────────────────────────
+
+/**
+ * Props injected by the host into every 'modal-launcher' component.
+ *
+ * The component renders the dialog *contents* — DialogTitle,
+ * DialogContent, DialogActions — while the host owns the Dialog shell
+ * itself (its CyDialog wrapper plus a structural Close button). Backdrop
+ * click and Escape are inert per
+ * docs/specifications/DIALOG_DISMISS_POLICY.md, so the component's own
+ * buttons (and the host's Close "X") are the only exits.
+ */
+export interface ModalHostProps {
+  /**
+   * Closes this modal — the same close path as the host-rendered
+   * Close "X". Wire Cancel/Done buttons to this.
+   */
+  requestClose: () => void
+}
+
+/**
+ * Options for registering a modal in the 'modal-launcher' slot.
+ *
+ * Registration only declares the modal; nothing renders until the app
+ * calls `openModal(id)` — typically from app logic with no mounted
+ * component, such as a search provider's onSubmit or a menu action.
+ * The host renders the component inside its own React tree (host theme,
+ * error boundary, Suspense) wrapped in the host's dialog shell, and
+ * closes it automatically when the app is deactivated.
+ */
+export interface RegisterModalOptions {
+  id: string
+  /**
+   * Renders the dialog contents (DialogTitle/DialogContent/DialogActions)
+   * inside the host's dialog shell. May be React.lazy — the host shows a
+   * loading fallback while the chunk resolves.
+   */
+  component: React.ComponentType<ModalHostProps>
+  /**
+   * Maximum dialog width (MUI Dialog `maxWidth`).
+   * @default 'sm'
+   */
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false
+  /**
+   * Stretch the dialog to `maxWidth` (MUI Dialog `fullWidth`).
+   * @default false
+   */
+  fullWidth?: boolean
+  /** Custom error fallback (same as RegisterPanelOptions.errorFallback). */
+  errorFallback?: React.ComponentType<{
+    error: Error
+    resetErrorBoundary: () => void
+  }>
+}
+
 /**
  * Entry for batch registration via registerAll(). Discriminated by `slot`,
  * since each slot has its own registration options ('search-bar' entries
@@ -157,6 +217,7 @@ export type RegisterResourceEntry =
   | ({ slot: 'right-panel' } & RegisterPanelOptions)
   | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
   | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
+  | ({ slot: 'modal-launcher' } & RegisterModalOptions)
 
 // ── Introspection types ─────────────────────────────────────────
 
@@ -245,6 +306,31 @@ export interface ResourceApi {
   ): ApiResult<{ resourceId: string }>
 
   unregisterNetworkSearchProvider(providerId: string): ApiResult
+
+  /**
+   * Register a modal in the 'modal-launcher' slot. Uses upsert semantics.
+   * Nothing renders until `openModal(id)` is called.
+   */
+  registerModal(options: RegisterModalOptions): ApiResult<{ resourceId: string }>
+
+  /** Unregister a modal. If it is currently open, it is closed first. */
+  unregisterModal(modalId: string): ApiResult
+
+  /**
+   * Open a registered 'modal-launcher' resource. Payload-less by design —
+   * apps carry any payload in their own stores. Idempotent when the modal
+   * is already open. Fails with RESOURCE_NOT_FOUND when no modal with
+   * this id is registered by this app. Open modals are closed
+   * automatically when the app is deactivated.
+   */
+  openModal(id: string): ApiResult
+
+  /**
+   * Close a modal opened by this app — the same path as the injected
+   * `requestClose` and the host's Close "X". Idempotent when not open;
+   * fails with RESOURCE_NOT_FOUND when the modal is not registered.
+   */
+  closeModal(id: string): ApiResult
 
   unregisterAll(): ApiResult
 

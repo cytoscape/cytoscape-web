@@ -6,6 +6,7 @@
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import { useModalLauncherStore } from '../../data/hooks/stores/ModalLauncherStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../debug'
@@ -17,6 +18,7 @@ import { AppCodes, fail, ok } from '../types/ApiResult'
 import type {
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
+  RegisterModalOptions,
   RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
   ResourceApi,
@@ -27,7 +29,10 @@ const SUPPORTED_SLOTS: ResourceSlot[] = [
   'right-panel',
   'apps-menu',
   'search-bar',
+  'modal-launcher',
 ]
+
+const MODAL_MAX_WIDTHS = ['xs', 'sm', 'md', 'lg', 'xl'] as const
 
 /** True when the current network's view has at least one selected element. */
 function hasSelection(): boolean {
@@ -264,9 +269,115 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     }
   },
 
+  registerModal(options) {
+    try {
+      // typeof guards before any string method: entries can arrive from
+      // untyped JS apps with any shape, and a thrown TypeError would come
+      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      if (typeof options.id !== 'string' || options.id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!isValidComponent(options.component)) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
+        )
+      }
+      if (
+        options.maxWidth !== undefined &&
+        options.maxWidth !== false &&
+        !MODAL_MAX_WIDTHS.includes(options.maxWidth)
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          "maxWidth must be one of 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false",
+        )
+      }
+      if (
+        options.fullWidth !== undefined &&
+        typeof options.fullWidth !== 'boolean'
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `fullWidth must be a boolean, got ${typeof options.fullWidth}`,
+        )
+      }
+      const store = useAppResourceStore.getState()
+      store.upsertResource({
+        id: options.id,
+        appId,
+        slot: 'modal-launcher',
+        maxWidth: options.maxWidth,
+        fullWidth: options.fullWidth,
+        component: options.component as unknown,
+        errorFallback: options.errorFallback as unknown,
+      })
+      return ok({ resourceId: `${appId}::modal-launcher::${options.id}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  unregisterModal(modalId) {
+    try {
+      const store = useAppResourceStore.getState()
+      if (!store.hasResource(appId, 'modal-launcher', modalId)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${modalId}'`)
+      }
+      store.removeResource(appId, 'modal-launcher', modalId)
+      // An unregistered modal must not stay on screen (or resurface if the
+      // same id is re-registered later).
+      useModalLauncherStore.getState().closeModal(appId, modalId)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  openModal(id) {
+    try {
+      if (typeof id !== 'string' || id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${id}'`)
+      }
+      useModalLauncherStore.getState().openModal(appId, id)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  closeModal(id) {
+    try {
+      if (typeof id !== 'string' || id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${id}'`)
+      }
+      useModalLauncherStore.getState().closeModal(appId, id)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
   unregisterAll() {
     try {
       useAppResourceStore.getState().removeAllByAppId(appId)
+      // Unregistered modals must not stay on screen.
+      useModalLauncherStore.getState().closeAllByAppId(appId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -293,6 +404,8 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         result = this.registerNetworkSearchProvider(
           entry as RegisterNetworkSearchProviderOptions,
         )
+      } else if (entry.slot === 'modal-launcher') {
+        result = this.registerModal(entry as RegisterModalOptions)
       } else {
         // Statically unreachable (the union is exhaustive), but entries can
         // arrive from untyped JS apps with any slot string at runtime.

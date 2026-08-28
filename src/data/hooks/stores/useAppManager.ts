@@ -5,6 +5,7 @@ import { createResourceApi } from '../../../app-api/core/resourceApi'
 import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
 import type {
   RegisterMenuItemOptions,
+  RegisterModalOptions,
   RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
 } from '../../../app-api/types/AppResourceTypes'
@@ -59,7 +60,7 @@ export interface AppManagerCommands {
  * entry in AppResourceStore before mountApp is called, so declarative
  * resources are available to renderers immediately.
  */
-function processDeclarativeResources(cyApp: CyApp): void {
+export function processDeclarativeResources(cyApp: CyApp): void {
   const lifecycle = cyApp as CyAppWithLifecycle
   if (!lifecycle.resources || lifecycle.resources.length === 0) return
 
@@ -73,6 +74,8 @@ function processDeclarativeResources(cyApp: CyApp): void {
       resourceApi.registerNetworkSearchProvider(
         entry as RegisterNetworkSearchProviderOptions,
       )
+    } else if (entry.slot === 'modal-launcher') {
+      resourceApi.registerModal(entry as RegisterModalOptions)
     } else {
       // Statically unreachable (the union is exhaustive), but declarations
       // can arrive from untyped JS apps with any slot string at runtime.

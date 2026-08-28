@@ -29,7 +29,7 @@ src/app-api/
 │   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   ├── nodeGraphicsApi.ts      ← node-graphics render hook registry (NodeGraphicsStore)
-│   ├── resourceApi.ts          ← per-app panel/menu/search-provider registry (AppResourceStore)
+│   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal registry (AppResourceStore; modal open-state in ModalLauncherStore)
 │   ├── perAppApis.ts           ← buildPerAppApis(appId): the ONLY place AppContextApis is assembled
 │   ├── ready.ts                ← isReady / whenReadySignal / markReady
 │   ├── undo.ts                 ← corePostEdit
