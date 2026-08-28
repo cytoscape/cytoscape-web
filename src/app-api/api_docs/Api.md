@@ -1713,9 +1713,9 @@ component. A provider contributes:
 - `optionsComponent`, rendered inside the "More Options" popover the host
   opens next to the search field. Mandatory input stays in the search field;
   any extra parameters belong here, backed by the app's own state so
-  `onSubmit` can read them. The host injects `requestClose` and provides the
-  popover's Close button (backdrop click and Escape are inert, per the
-  dialog dismissal policy).
+  `onSubmit` can read them. The popover is an anchored non-modal surface:
+  click-away and Escape dismiss it, the host injects `requestClose`, and the
+  host also renders the popover's Close button as an explicit exit.
 - `onSubmit`, invoked with the trimmed query when the user presses Enter or
   the Search button (enabled only while the query is non-empty). While a
   returned promise is pending the bar shows progress and blocks re-submit; a

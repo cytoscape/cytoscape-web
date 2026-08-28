@@ -183,13 +183,16 @@ export const createResourceApi = (appId: string): ResourceApi => ({
 
   registerNetworkSearchProvider(options) {
     try {
-      if (!options.id || options.id.trim() === '') {
+      // typeof guards before any string method: entries can arrive from
+      // untyped JS apps with any shape, and a thrown TypeError would come
+      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      if (typeof options.id !== 'string' || options.id.trim() === '') {
         return fail(
           AppCodes.INVALID_INPUT,
           'id is required and must be non-empty',
         )
       }
-      if (!options.name || options.name.trim() === '') {
+      if (typeof options.name !== 'string' || options.name.trim() === '') {
         return fail(
           AppCodes.INVALID_INPUT,
           'name is required and must be non-empty',
@@ -210,13 +213,19 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           `optionsComponent must be a React component (function or object like React.lazy), got ${typeof options.optionsComponent}`,
         )
       }
-      if (options.icon !== undefined && !isValidIconUri(options.icon)) {
+      if (
+        options.icon !== undefined &&
+        (typeof options.icon !== 'string' || !isValidIconUri(options.icon))
+      ) {
         return fail(
           AppCodes.INVALID_INPUT,
           'icon must be an http(s) URL or a data:image URI',
         )
       }
-      if (options.website !== undefined && !isHttpUrl(options.website)) {
+      if (
+        options.website !== undefined &&
+        (typeof options.website !== 'string' || !isHttpUrl(options.website))
+      ) {
         return fail(AppCodes.INVALID_INPUT, 'website must be an http(s) URL')
       }
       const store = useAppResourceStore.getState()

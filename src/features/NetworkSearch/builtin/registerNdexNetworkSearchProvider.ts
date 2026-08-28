@@ -9,10 +9,10 @@
 // with the text prefilled and the search already running; everything after
 // that (result browsing, selection, loading) is the dialog's job.
 
-import { createResourceApi } from '../../../app-api/core/resourceApi'
-import type { NetworkSearchQuery } from '../../../app-api/types/AppResourceTypes'
-import ndexLogo from '../../../assets/ndex-logo.svg'
-import { useLoadFromNdexDialogStore } from '../../ToolBar/DataMenu/store/loadFromNdexDialogStore'
+import { createResourceApi } from '@/app-api/core/resourceApi'
+import type { NetworkSearchQuery } from '@/app-api/types/AppResourceTypes'
+import ndexLogo from '@/assets/ndex-logo.svg'
+import { useLoadFromNdexDialogStore } from '@/features/ToolBar/DataMenu/store/loadFromNdexDialogStore'
 
 /**
  * Reserved appId for host-provided resources. Not a real app: it has no

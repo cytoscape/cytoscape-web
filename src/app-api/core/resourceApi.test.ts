@@ -429,6 +429,29 @@ describe('createResourceApi', () => {
       }
     })
 
+    it('returns fail(InvalidInput), not OperationFailed, for non-string id/name/icon/website', () => {
+      // Malformed shapes from untyped JS apps must hit the typeof guards,
+      // not throw inside .trim()/URL parsing and surface as APP3.
+      const api = createResourceApi('app1')
+      const cases = [
+        { id: 42 as any, name: 'My Search' },
+        { id: 'S1', name: null as any },
+        { id: 'S1', name: 'My Search', icon: {} as any },
+        { id: 'S1', name: 'My Search', website: 123 as any },
+      ]
+      for (const overrides of cases) {
+        const result = api.registerNetworkSearchProvider({
+          onSubmit,
+          ...overrides,
+        })
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe('APP9')
+        }
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
     it('returns fail(InvalidInput) when onSubmit is not a function', () => {
       const api = createResourceApi('app1')
       const result = api.registerNetworkSearchProvider({

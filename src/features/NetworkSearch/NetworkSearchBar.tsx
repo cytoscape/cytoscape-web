@@ -18,9 +18,9 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
-import { logApp } from '../../debug'
-import { MessageSeverity } from '../../models/MessageModel'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { logApp } from '@/debug'
+import { MessageSeverity } from '@/models/MessageModel'
 import { NetworkSearchOptionsPopover } from './NetworkSearchOptionsPopover'
 import { NetworkSearchProviderIcon } from './NetworkSearchProviderIcon'
 import { NetworkSearchProviderMenu } from './NetworkSearchProviderMenu'
@@ -127,20 +127,20 @@ export const NetworkSearchBar = (): JSX.Element | null => {
           autoComplete: 'new-password', // Standard "off" is often ignored by modern browsers
         }}
         sx={{
-          "& .MuiOutlinedInput-root": {
+          '& .MuiOutlinedInput-root': {
             border: 'none',
             borderRadius: 0,
-            "& fieldset": {
-              border: "none",
+            '& fieldset': {
+              border: 'none',
             },
-            "&:hover fieldset": {
-              border: "none",
+            '&:hover fieldset': {
+              border: 'none',
             },
-            "&.Mui-focused fieldset": {
-              border: "none",
+            '&.Mui-focused fieldset': {
+              border: 'none',
             },
           },
-          "& .MuiInputBase-input": {
+          '& .MuiInputBase-input': {
             p: 1,
           },
           // Prevent browser autofill from breaking the layout/colors

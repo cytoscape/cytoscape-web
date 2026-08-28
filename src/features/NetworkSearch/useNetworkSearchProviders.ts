@@ -5,14 +5,14 @@
 // is active, sorts them by display name, and resolves the current selection
 // (last user choice if that provider still exists, first provider otherwise).
 
-import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
-import { useAppStore } from '../../data/hooks/stores/AppStore'
+import { useAppResourceStore } from '@/data/hooks/stores/AppResourceStore'
+import { useAppStore } from '@/data/hooks/stores/AppStore'
 import type {
   NetworkSearchOptionsHostProps,
   NetworkSearchQuery,
-} from '../../app-api/types/AppResourceTypes'
-import { AppStatus } from '../../models/AppModel/AppStatus'
-import type { RegisteredAppResource } from '../../models/AppModel/RegisteredAppResource'
+} from '@/app-api/types/AppResourceTypes'
+import { AppStatus } from '@/models/AppModel/AppStatus'
+import type { RegisteredAppResource } from '@/models/AppModel/RegisteredAppResource'
 import { BUILTIN_APP_ID } from './builtin/registerNdexNetworkSearchProvider'
 import { useNetworkSearchProviderSelectionStore } from './store/networkSearchProviderSelectionStore'
 

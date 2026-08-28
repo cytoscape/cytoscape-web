@@ -8,15 +8,15 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
-import { useAppStore } from '../../data/hooks/stores/AppStore'
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
-import { AppStatus } from '../../models/AppModel/AppStatus'
-import type { RegisteredAppResource } from '../../models/AppModel/RegisteredAppResource'
+import { useAppResourceStore } from '@/data/hooks/stores/AppResourceStore'
+import { useAppStore } from '@/data/hooks/stores/AppStore'
+import { useMessageStore } from '@/data/hooks/stores/MessageStore'
+import { AppStatus } from '@/models/AppModel/AppStatus'
+import type { RegisteredAppResource } from '@/models/AppModel/RegisteredAppResource'
 import { NetworkSearchBar } from './NetworkSearchBar'
 import { useNetworkSearchProviderSelectionStore } from './store/networkSearchProviderSelectionStore'
 
-vi.mock('../../data/hooks/stores/AppStore', async () => {
+vi.mock('@/data/hooks/stores/AppStore', async () => {
   const { create } = await vi.importActual<typeof import('zustand')>('zustand')
   return {
     useAppStore: create(() => ({

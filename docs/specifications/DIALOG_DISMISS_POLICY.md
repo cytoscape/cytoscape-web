@@ -63,10 +63,10 @@ the same rule through their own props:
 click-away and had no button of their own, which is exactly the inconsistency the policy exists to
 remove. Both now carry a Close button.
 
-The network search bar's "More Options" popup (`NetworkSearch/NetworkSearchOptionsPopover.tsx`,
-#688) is deliberately in the **out-of-scope** class instead: it behaves like the bar's other
-anchored surfaces and dismisses on click-away or Escape, while still carrying a host-rendered
-Close button as an explicit exit.
+The network search bar's "More Options" popup — #688,
+`NetworkSearch/NetworkSearchOptionsPopover.tsx` — is deliberately in the **out-of-scope** class
+instead: it behaves like the bar's other anchored surfaces and dismisses on click-away or Escape,
+while still carrying a host-rendered Close button as an explicit exit.
 
 **Out of scope: anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette
 pickers, nested toolbar menus. Click-away dismissal is correct for a menu; see

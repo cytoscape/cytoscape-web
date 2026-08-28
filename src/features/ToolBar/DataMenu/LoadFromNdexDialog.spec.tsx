@@ -8,10 +8,10 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { searchNdexFiles } from '../../../data/external-api/ndex'
+import { searchNdexFiles } from '@/data/external-api/ndex'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
 
-vi.mock('../../../data/external-api/ndex', () => ({
+vi.mock('@/data/external-api/ndex', () => ({
   searchNdexFiles: vi.fn(async () => ({ files: [], numFound: 0 })),
   fetchNdexSummaries: vi.fn(async () => []),
   fetchFolderContents: vi.fn(async () => []),
