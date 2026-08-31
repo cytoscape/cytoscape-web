@@ -1064,7 +1064,7 @@ the remaining items each require their own design document.
     **Design complete:** [runtime-app-registration-specification.md](specifications/runtime-app-registration-specification.md).
     See also Section 1.4 for a summary of key design decisions.
 11. Chrome Extension bridge reference implementation (MCP Bridge Server + Adapter content script using `window.CyWebApi`)
-12. Expand UI slots: `'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`
+12. Expand UI slots: `'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'` (`'modal-launcher'` shipped — #690)
 13. Non-component resource registration (keyboard shortcuts, commands) via `resources` declarative field
 14. Inter-app communication protocol
 15. Security sandbox evaluation
@@ -1206,7 +1206,7 @@ and selective loading. Implementation follows a 9-step migration strategy
 #### Remaining Items (Design Required)
 
 - Chrome Extension bridge (MCP Bridge Server + Adapter content script)
-- Expanded UI slots (`'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`, `'modal-launcher'`)
+- Expanded UI slots (`'left-panel'`, `'bottom-panel'`, `'tools-menu'`, `'status-bar'`; `'modal-launcher'` shipped — #690)
 - Non-component resource registration (keyboard shortcuts, commands)
 - Inter-app communication protocol
 - Security sandbox evaluation
