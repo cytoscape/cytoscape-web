@@ -98,7 +98,7 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
   - "Remove Current Network" (disabled if no network)
   - "Remove All Networks" (disabled if no networks)
   - Separator
-  - "Reset Local Workspace" → "Clear Local Workspace"
+  - "Clear Local Workspace..."
 
 #### 2.2 Open Sample Networks
 **Steps:**
@@ -239,7 +239,7 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
 **Steps:**
 1. Load one or more networks
 2. Click "Data" menu
-3. Click "Reset Local Workspace" → "Clear Local Workspace"
+3. Click "Clear Local Workspace..."
 4. Confirm action if prompted
 5. Refresh page
 

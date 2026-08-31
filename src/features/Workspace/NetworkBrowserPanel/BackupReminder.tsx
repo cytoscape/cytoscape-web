@@ -81,7 +81,10 @@ export const BackupReminder = (): ReactElement | null => {
       severity="info"
       variant="outlined"
       sx={{ m: 1, py: 0.5, fontSize: 12, alignItems: 'flex-start' }}
-      onClose={() => dismissHint(BACKUP_REMINDER_HINT_ID)}
+      // Both dismissal routes are withdrawn while an export is running: a
+      // dismissal that lands before a FAILED export would persist, hiding the
+      // reminder from someone who now has no backup at all.
+      onClose={exporting ? undefined : () => dismissHint(BACKUP_REMINDER_HINT_ID)}
     >
       This workspace lives in this browser. Clearing site data, switching
       browsers or profiles, and private windows all lose it. Keep a copy you
@@ -99,6 +102,7 @@ export const BackupReminder = (): ReactElement | null => {
         <Button
           data-testid="backup-reminder-dismiss"
           size="small"
+          disabled={exporting}
           onClick={() => dismissHint(BACKUP_REMINDER_HINT_ID)}
         >
           Not now

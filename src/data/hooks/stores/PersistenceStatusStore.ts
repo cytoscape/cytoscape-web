@@ -42,9 +42,14 @@ const clearHold = (): void => {
  * - burst ended, at least one write failed -> `failed`, `lastError` kept
  *
  * A failure therefore stays visible until a later burst completes cleanly,
- * which is the point at which saving demonstrably works again. Deletes are not
- * tracked: a database that cannot accept a delete cannot accept a put either,
- * so the puts already report the condition.
+ * which is the point at which saving demonstrably works again.
+ *
+ * Every IndexedDB mutation reports, deletes and clears included. An earlier
+ * version tracked puts alone, on the reasoning that a database too broken to
+ * delete is too broken to write — true, but beside the point: a delete that
+ * fails on its own leaves memory and disk disagreeing, and the row the user
+ * just removed comes back on reload. That is exactly what this indicator
+ * exists to tell them.
  */
 export const usePersistenceStatusStore = create(
   immer<PersistenceStatusStore>((set, get) => ({

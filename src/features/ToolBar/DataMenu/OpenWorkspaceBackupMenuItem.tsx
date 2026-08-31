@@ -83,12 +83,12 @@ export const OpenWorkspaceBackupMenuItem = (
       }
     } catch (error) {
       logUi.error(
-        `[${OpenWorkspaceBackupMenuItem.name}]:[${handleImport.name}] Failed to import database snapshot`,
+        `[${OpenWorkspaceBackupMenuItem.name}]:[${handleImport.name}] Failed to open the workspace backup`,
         error,
       )
       addMessage({
         message:
-          'Failed to import database snapshot. Please check the file format and try again.',
+          'Failed to open the workspace backup. Please check the file and try again.',
         duration: 5000,
         severity: MessageSeverity.ERROR,
       })

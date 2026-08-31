@@ -157,6 +157,19 @@ describe('trackWrite', () => {
     )
   })
 
+  it('reports a failed delete, not only a failed put', async () => {
+    // A delete that fails on its own leaves memory and disk disagreeing, and
+    // the removed row returns on reload — the case the indicator exists for.
+    await trackWrite(Promise.reject(new Error('delete blocked'))).catch(
+      () => {},
+    )
+
+    expect(statusOf()).toBe('failed')
+    expect(usePersistenceStatusStore.getState().lastError).toBe(
+      'delete blocked',
+    )
+  })
+
   it('re-throws so the caller keeps its own error handling', async () => {
     const onError = vi.fn()
 

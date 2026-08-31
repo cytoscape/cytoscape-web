@@ -50,7 +50,7 @@ const removeAspects = (networkId: IdType): void => {
   if (isHydrating()) {
     return
   }
-  void deleteOpaqueAspectsFromDb(networkId).catch((e) => {
+  void trackWrite(deleteOpaqueAspectsFromDb(networkId)).catch((e) => {
     logStore.error(
       `[${useOpaqueAspectStore.name}]: Failed to delete opaque aspects for ${networkId}`,
       e,
@@ -62,7 +62,7 @@ const removeAllAspects = (): void => {
   if (isHydrating()) {
     return
   }
-  void clearOpaqueAspectsFromDb().catch((e) => {
+  void trackWrite(clearOpaqueAspectsFromDb()).catch((e) => {
     logStore.error(
       `[${useOpaqueAspectStore.name}]: Failed to clear opaque aspects`,
       e,

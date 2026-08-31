@@ -113,7 +113,7 @@ a) Remove the current network and also remove multiple selections via Workspace;
 
 ### **1.10 Clear Local Workspace**
 
-a) Data → Clear Local Workspace. Confirm the app resets (networks, apps/service apps, and local settings cleared).
+a) Data → Clear Local Workspace…. Confirm the app resets (networks, apps/service apps, and local settings cleared).
 
 b) Reopen app and confirm a clean slate.
 
@@ -497,7 +497,7 @@ a) Select a row; click SELECT NODES (or SELECT EDGES); verify network view selec
 
 ### **16.3 Clear Local Workspace**
 
-\- As a last resort, Data → Clear Local Workspace; confirm the environment resets to a clean state.
+\- As a last resort, Data → Clear Local Workspace…; confirm the environment resets to a clean state.
 
 ### **16.4 Bug Reporting**
 

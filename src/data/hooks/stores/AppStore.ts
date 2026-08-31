@@ -122,7 +122,7 @@ export const useAppStore = create(
     removeService: (url: string) => {
       set((state) => {
         const newState = AppStoreImpl.removeService(state, url)
-        deleteServiceAppFromDb(url).catch((error) => {
+        trackWrite(deleteServiceAppFromDb(url)).catch((error) => {
           logStore.error(
             `[${useAppStore.name}]: Failed to delete service metadata from ${url}`,
             error,
@@ -314,7 +314,7 @@ export const useAppStore = create(
           },
         )
       } else {
-        deleteAppSettingFromDb('manifestSource').catch((error) => {
+        trackWrite(deleteAppSettingFromDb('manifestSource')).catch((error) => {
           logStore.error(
             `[${useAppStore.name}]:[setManifestSource] Failed to delete:`,
             error,
@@ -330,7 +330,7 @@ export const useAppStore = create(
         state.loadStates = newState.loadStates
         return state
       })
-      deleteAppFromDb(id).catch((error) => {
+      trackWrite(deleteAppFromDb(id)).catch((error) => {
         logStore.error(
           `[${useAppStore.name}]:[remove] Failed to delete app ${id} from DB:`,
           error,

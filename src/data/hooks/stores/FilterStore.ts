@@ -171,7 +171,7 @@ export const useFilterStore = create(
         // being filled FROM the database, and deleting the row back out would
         // mint a change record every peer tab then hydrates in turn.
         if (!isHydrating()) {
-          void deleteFilterFromDb(name).catch((e) => {
+          void trackWrite(deleteFilterFromDb(name)).catch((e) => {
             logStore.error(
               `[${useFilterStore.name}]: Failed to delete the filter from db: ${name}`,
               e,

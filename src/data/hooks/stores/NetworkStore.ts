@@ -320,7 +320,7 @@ export const useNetworkStore = create(
           // A stale pending put must never resurrect the deleted row
           cancelWrite(`NetworkStore:${networkId}`)
           if (!isHydrating()) {
-            void deleteNetworkFromDb(networkId).then(() => {
+            void trackWrite(deleteNetworkFromDb(networkId)).then(() => {
               logStore.info(
                 `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
               )
@@ -335,7 +335,7 @@ export const useNetworkStore = create(
           }
           const newState = NetworkStoreImpl.deleteAll(state)
           if (!isHydrating()) {
-            clearNetworksFromDb()
+            trackWrite(clearNetworksFromDb())
               .then(() => {
                 logStore.info(
                   `[${useNetworkStore.name}]: Deleted all networks from db`,

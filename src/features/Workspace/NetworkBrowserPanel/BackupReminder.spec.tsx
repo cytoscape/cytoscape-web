@@ -52,6 +52,24 @@ describe('BackupReminder', () => {
     expect(screen.queryByTestId('backup-reminder')).toBeNull()
   })
 
+  it('withdraws dismissal while an export is running', () => {
+    seedNetworks(3)
+    render(<BackupReminder />)
+
+    fireEvent.click(screen.getByTestId('backup-reminder-export'))
+
+    // Dismissing mid-export would persist even if the export then failed,
+    // hiding the reminder from someone who now has no backup at all.
+    const dismiss = screen.getByTestId(
+      'backup-reminder-dismiss',
+    ) as HTMLButtonElement
+    expect(dismiss.disabled).toBe(true)
+    fireEvent.click(dismiss)
+    expect(useOnboardingStore.getState().dismissedHints).not.toContain(
+      BACKUP_REMINDER_HINT_ID,
+    )
+  })
+
   it('stays hidden when the hint was dismissed in an earlier session', () => {
     seedNetworks(3)
     act(() => {

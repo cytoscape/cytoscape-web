@@ -69,7 +69,7 @@ export const useNetworkSummaryStore = create(
         delete state.summaries[networkId]
       })
       if (!isHydrating()) {
-        void deleteNetworkSummaryFromDb(networkId)
+        void trackWrite(deleteNetworkSummaryFromDb(networkId))
           .then(() => {
             logStore.info(`[${STORE_LABEL}]: Summary deleted: ${networkId}`)
           })
@@ -83,7 +83,7 @@ export const useNetworkSummaryStore = create(
         state.summaries = {}
       })
       if (!isHydrating()) {
-        void clearNetworkSummaryFromDb()
+        void trackWrite(clearNetworkSummaryFromDb())
           .then((val) => {
             logStore.info(`[${STORE_LABEL}]: Summary cleared: ${val}`)
           })
