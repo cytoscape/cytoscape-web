@@ -39,6 +39,7 @@ import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Valida
 import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+import { useNdexGate } from './ndexAvailability'
 
 export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -276,6 +277,7 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const enabled =
     currentNetworkId !== '' &&
     (summary?.isNdex ? isModified && editPermission : authenticated)
+  const ndex = useNdexGate(enabled, tooltipText)
 
   const dialog = (
     <CyDialog data-testid="save-to-ndex-sync-dialog" open={showConfirmDialog}>
@@ -330,9 +332,9 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
     <>
       <DropdownMenuItem
         label="Save Network to NDEx"
-        tooltip={tooltipText}
+        tooltip={ndex.tooltip}
         icon={<CloudUploadIcon />}
-        disabled={!enabled}
+        disabled={ndex.disabled}
         onClick={handleClick}
       />
       {enabled && (

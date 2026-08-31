@@ -30,6 +30,7 @@ import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Valida
 import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+import { useNdexGate } from './ndexAvailability'
 
 export const CopyNetworkToNDExMenuItem = (
   props: BaseMenuItemProps,
@@ -166,14 +167,15 @@ export const CopyNetworkToNDExMenuItem = (
   if (!authenticated && currentNetworkId !== '') {
     tooltipTitle = 'Login to save a copy of the current network to NDEx'
   }
+  const ndex = useNdexGate(enabled, tooltipTitle)
 
   return (
     <>
       <DropdownMenuItem
         label="Save Copy to NDEx"
         icon={<CloudUploadIcon />}
-        tooltip={tooltipTitle}
-        disabled={!enabled}
+        tooltip={ndex.tooltip}
+        disabled={ndex.disabled}
         onClick={handleClick}
       />
       {enabled && (
