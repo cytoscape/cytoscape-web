@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
-import { getSaveButtonState, getSaveMenuItemState } from './networkSaveStatus'
+import {
+  getNetworkProvenance,
+  getSaveButtonState,
+  getSaveMenuItemState,
+} from './networkSaveStatus'
 
 describe('getSaveButtonState (CW-488)', () => {
   it('shows the up-to-date state when there are no changes', () => {
@@ -139,5 +143,57 @@ describe('getSaveMenuItemState', () => {
       isCurrentNetwork: false,
     })
     expect(state.hint).toBe('Sign in to save to NDEx')
+  })
+})
+
+describe('getNetworkProvenance', () => {
+  it('reports an unmodified NDEx network as NDEx with nothing outstanding', () => {
+    const result = getNetworkProvenance({
+      networkModified: false,
+      isNdex: true,
+    })
+
+    expect(result.origin).toBe('NDEx')
+    expect(result.modifiedLabel).toBeUndefined()
+  })
+
+  it('reports an unmodified local network as Local with nothing outstanding', () => {
+    const result = getNetworkProvenance({
+      networkModified: false,
+      isNdex: false,
+    })
+
+    expect(result.origin).toBe('Local')
+    expect(result.modifiedLabel).toBeUndefined()
+  })
+
+  it('names the divergence from NDEx, not just "modified"', () => {
+    // The consequential fact about an edited NDEx network is that the remote
+    // copy is untouched — the row has to say so without a hover.
+    const result = getNetworkProvenance({ networkModified: true, isNdex: true })
+
+    expect(result.origin).toBe('NDEx')
+    expect(result.modifiedLabel).toBe('Changes not saved to NDEx')
+    expect(result.modifiedTooltip).toContain('unchanged until you save')
+  })
+
+  it('marks an edited local network as modified locally', () => {
+    const result = getNetworkProvenance({
+      networkModified: true,
+      isNdex: false,
+    })
+
+    expect(result.origin).toBe('Local')
+    expect(result.modifiedLabel).toBe('Modified locally')
+  })
+
+  it('keeps origin independent of modification state', () => {
+    // The chip says where the network came from; it must not flip to 'Local'
+    // just because an NDEx network has unsaved edits.
+    for (const networkModified of [true, false]) {
+      expect(
+        getNetworkProvenance({ networkModified, isNdex: true }).origin,
+      ).toBe('NDEx')
+    }
   })
 })

@@ -95,3 +95,54 @@ export const getSaveMenuItemState = ({
 
   return { label, hint, disabled: hint !== undefined }
 }
+
+export interface NetworkProvenance {
+  /** Where the network came from. Short enough for a chip. */
+  origin: 'NDEx' | 'Local'
+  /** Tooltip for the origin chip. */
+  originTooltip: string
+  /**
+   * Visible label for local edits that are not in the network's remote copy,
+   * or undefined when there is nothing unsaved.
+   */
+  modifiedLabel?: string
+  /** Tooltip for that label. */
+  modifiedTooltip?: string
+}
+
+/**
+ * Origin and local-modification state of one network row (#697).
+ *
+ * `networkModified` already drove the save icon's colour and tooltip, which
+ * left the most consequential fact about an NDEx-backed network — that editing
+ * it here does not touch the copy in NDEx — visible only on hover. This returns
+ * the same state as text the row can render at rest.
+ *
+ * Origin and modification are reported separately on purpose: the chip says
+ * where the network came from, not where its current contents are.
+ */
+export const getNetworkProvenance = ({
+  networkModified,
+  isNdex,
+}: {
+  networkModified: boolean
+  isNdex: boolean
+}): NetworkProvenance => {
+  const origin: NetworkProvenance['origin'] = isNdex ? 'NDEx' : 'Local'
+  const originTooltip = isNdex
+    ? 'Opened from the NDEx database (ndexbio.org). Your working copy is stored in this browser.'
+    : 'Created or imported here. This network exists only in this browser until you save it to NDEx or export it.'
+
+  if (!networkModified) {
+    return { origin, originTooltip }
+  }
+
+  return {
+    origin,
+    originTooltip,
+    modifiedLabel: isNdex ? 'Changes not saved to NDEx' : 'Modified locally',
+    modifiedTooltip: isNdex
+      ? 'Edited since it was opened from NDEx. The copy in NDEx is unchanged until you save to it.'
+      : 'Edited since it was created or imported. The changes are saved in this browser only.',
+  }
+}
