@@ -87,6 +87,27 @@ describe('useAppDataStore', () => {
       expect(Object.isFrozen(row.value)).toBe(false)
     })
 
+    it('holds the value frozen, so an app must copy what it reads', () => {
+      // Immer's autofreeze is never disabled, so what `appData.get()` hands an
+      // app is this frozen object, not a copy. An app that mutates what it
+      // read gets a TypeError. Documented on `AppDataApi.get` and in Api.md;
+      // asserted here because this store is where the freeze happens.
+      const { result } = renderHook(() => useAppDataStore())
+
+      act(() => {
+        result.current.set('n1', 'analyzer', 'results', { clusters: [['a']] })
+      })
+
+      const value = result.current.appData.n1.analyzer.results as {
+        clusters: string[][]
+      }
+      expect(Object.isFrozen(value)).toBe(true)
+      expect(Object.isFrozen(value.clusters[0])).toBe(true)
+      expect(() => {
+        value.clusters[0] = ['b']
+      }).toThrow(TypeError)
+    })
+
     it('keeps sibling keys and other apps intact', () => {
       const { result } = renderHook(() => useAppDataStore())
 

@@ -1767,6 +1767,23 @@ Values must survive a JSON round trip. What is stored is the round-tripped
 copy, so mutating the object you passed in afterwards does not change what is
 stored.
 
+**A read returns a frozen object.** `get`, `getGlobal` and the values inside
+`getAll` hand back the object the host holds — the stores behind both tiers are
+Immer-backed with autofreeze on, so the value is deeply frozen and writing to
+it throws a `TypeError`. Copy before mutating:
+
+```typescript
+const read = ctx.apis.appData.get(networkId, 'results')
+if (read.success) {
+  const results = structuredClone(read.data.value) // or a JSON round trip
+  results.clusters[0].thumbnail = png // safe; the stored copy is untouched
+}
+```
+
+Reading, iterating and rendering the value need no copy. The copy matters for
+an app that stores records it later edits in place — writing the mutated copy
+back with `set` is what updates storage.
+
 | Condition                                            | Code    |
 | ---------------------------------------------------- | ------- |
 | `undefined` value (use `remove` instead)             | `APP9`  |

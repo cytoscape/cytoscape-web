@@ -100,14 +100,21 @@ src/app-api/
     enable/disable toggle. Apps discard them explicitly:
     `appData.remove(networkId, key)` for network entries, and
     `appData.removeGlobal(key)` for app-scoped ones written with `setGlobal`.
-13. **The local app-data tier is hydrated in full at boot** — in
+13. **App data reads hand back the host's frozen object** — both `appData` tiers
+    live in Immer-backed stores with autofreeze on, so `get`/`getGlobal` return
+    the stored object itself, deeply frozen. An app that mutates what it read
+    gets a `TypeError`; the contract is documented on `AppDataApi.get` and in
+    `api_docs/Api.md`, and the freeze is asserted in `AppDataStore.spec.ts`.
+    Writes are the mirror image and already detached: `set` stores a JSON round
+    trip of the caller's value.
+14. **The local app-data tier is hydrated in full at boot** — in
     `loadWorkspaceState`, before `publishWorkspace` marks the API ready. That is
     what lets `appData.get()` be synchronous and still answer for a workspace
     network whose network data has not been loaded, and it is why
     `MAX_APP_DATA_VALUE_BYTES` exists. The exported tier needs no wiring: it is
     the `cyAppData` opaque aspect, so import, export, NDEx save, clone, merge and
     per-network delete all already handle it.
-14. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
+15. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
     written to `VisualStyleStore` or `ViewModelStore`: both serialize (to CX2 and to IndexedDB
     respectively). They live in the non-persisted `NodeGraphicsStore` and reach Cytoscape.js as
     element style bypasses. Guarded by `src/models/CxModel/impl/exporter.nodeGraphics.test.ts`;

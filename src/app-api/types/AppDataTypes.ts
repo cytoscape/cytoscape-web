@@ -35,6 +35,9 @@ export interface SetAppDataOptions {
  * Values must survive a JSON round trip. They are stored as the round-tripped
  * copy, so later mutation of the object you passed in does not change what is
  * stored. Each value is capped at `MAX_APP_DATA_VALUE_BYTES`.
+ *
+ * Reads are the mirror image: a read hands back the stored object itself,
+ * which the host holds frozen. Copy it before mutating — see `get`.
  */
 export interface AppDataApi {
   // ── Network-scoped ────────────────────────────────────────────
@@ -57,10 +60,20 @@ export interface AppDataApi {
    *
    * Fails with `APP11` when nothing is stored under `key` — an absent key and
    * a stored `null` are distinguishable.
+   *
+   * **The returned value is deeply frozen.** It is the object the host holds,
+   * not a copy: the stores behind both tiers are Immer-backed with autofreeze
+   * on. Writing to it throws a `TypeError`, so copy before mutating —
+   * `structuredClone(value)`, or the JSON round trip the value already
+   * survives. Reading, iterating and rendering it need no copy.
    */
   get(networkId: IdType, key: string): ApiResult<{ value: unknown }>
 
-  /** Every key this app stored for `networkId`, both tiers merged. */
+  /**
+   * Every key this app stored for `networkId`, both tiers merged.
+   *
+   * The `entries` object is fresh; the values in it are frozen, as in `get`.
+   */
   getAll(networkId: IdType): ApiResult<{ entries: Record<string, unknown> }>
 
   /** Remove one key for `networkId`. Succeeds even if the key was absent. */
@@ -78,7 +91,11 @@ export interface AppDataApi {
    */
   setGlobal(key: string, value: unknown): ApiResult
 
-  /** Read one app-scoped key. Fails with `APP11` when absent. */
+  /**
+   * Read one app-scoped key. Fails with `APP11` when absent.
+   *
+   * The returned value is frozen, as in `get`.
+   */
   getGlobal(key: string): ApiResult<{ value: unknown }>
 
   /** Remove one app-scoped key. Succeeds even if the key was absent. */
