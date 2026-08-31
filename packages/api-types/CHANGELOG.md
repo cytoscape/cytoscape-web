@@ -2,7 +2,7 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
-## 1.0.0-beta.5 (2026-08-28)
+## 1.0.0-beta.4 (unpublished)
 
 ### Added
 
@@ -18,15 +18,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   action). Open modals survive the launching component's unmount and are
   closed automatically on app deactivation; `unregisterModal` and
   `unregisterAll` close what they remove.
-- **`'search-bar'` resource slot** (#688 — shipped earlier without a
-  changelog entry). `RegisterNetworkSearchProviderOptions`,
+- **`'search-bar'` resource slot** (#688 — landed after the entries below
+  were written). `RegisterNetworkSearchProviderOptions`,
   `NetworkSearchQuery`, `NetworkSearchOptionsHostProps`; `ResourceApi`
   gained `registerNetworkSearchProvider` / `unregisterNetworkSearchProvider`.
-
-## 1.0.0-beta.4 (2026-07-19)
-
-### Added
-
 - **Readiness promise.** `CyWebApi.whenReady()` resolves with the API once
   startup completes (immediately if already ready); `CyWebApi.isReady()`
   returns the current boolean. Wraps the one-shot `cywebapi:ready` event.
