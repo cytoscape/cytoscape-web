@@ -18,6 +18,7 @@ import {
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 const STORE_LABEL = 'NetworkSummaryStore'
 
 export const useNetworkSummaryStore = create(
@@ -28,11 +29,13 @@ export const useNetworkSummaryStore = create(
         state.summaries[networkId] = summary
       })
       if (!isHydrating()) {
-        void putNetworkSummaryToDb(toPlainObject(summary)).catch((err) => {
-          logStore.error(
-            `[${STORE_LABEL}]: Failed to save summary ${networkId}: ${err}`,
-          )
-        })
+        void trackWrite(putNetworkSummaryToDb(toPlainObject(summary))).catch(
+          (err) => {
+            logStore.error(
+              `[${STORE_LABEL}]: Failed to save summary ${networkId}: ${err}`,
+            )
+          },
+        )
       }
     },
     addAll: (summaries: Record<IdType, NetworkSummary>) => {
@@ -48,7 +51,7 @@ export const useNetworkSummaryStore = create(
       // Convert Immer proxy to plain object before saving
       const updatedSummary = toPlainObject({ ...summary, ...summaryUpdate })
       if (!isHydrating()) {
-        void putNetworkSummaryToDb(updatedSummary).catch((err) => {
+        void trackWrite(putNetworkSummaryToDb(updatedSummary)).catch((err) => {
           logStore.error(
             `[${STORE_LABEL}]: Failed to update summary ${networkId}: ${err}`,
           )

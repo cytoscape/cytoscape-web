@@ -14,6 +14,7 @@ import { ValueType } from '../../../models/TableModel'
 import { deleteFilterFromDb, putFilterToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 
 /**
  * The store for both search and filter.
@@ -146,7 +147,7 @@ export const useFilterStore = create(
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
         if (!isHydrating()) {
-          void putFilterToDb(plainFilter)
+          void trackWrite(putFilterToDb(plainFilter))
             .then(() => {
               logStore.info(
                 `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
@@ -187,7 +188,7 @@ export const useFilterStore = create(
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
         if (!isHydrating()) {
-          void putFilterToDb(plainFilter).catch((e) => {
+          void trackWrite(putFilterToDb(plainFilter)).catch((e) => {
             logStore.error(
               `[${useFilterStore.name}]: Failed to update the filter in db: ${name}`,
               e,
@@ -209,7 +210,7 @@ export const useFilterStore = create(
           // Convert Immer proxy to plain object before saving
           const plainFilter = toPlainObject(newFilter)
           if (!isHydrating()) {
-            putFilterToDb(plainFilter)
+            trackWrite(putFilterToDb(plainFilter))
               .then(() => {
                 logStore.info(
                   `[${useFilterStore.name}]: Range updated in db: ${name}`,

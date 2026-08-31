@@ -46,6 +46,7 @@ import {
 import { isHydrating } from './hydrationContext'
 import { persistNetworkSlices } from './persistNetworkSlices'
 import { useUndoStore } from './UndoStore'
+import { trackWrite } from './trackWrite'
 
 /**
  * Assemble the complete VisualStyleSet of a network from store state.
@@ -123,7 +124,7 @@ const isStyleSetAtCap = (styles: Record<IdType, unknown>): boolean =>
 const persistStyleSetOf = (networkId: IdType): void => {
   const assembled = assembleStyleSet(useVisualStyleStore.getState(), networkId)
   if (assembled !== undefined) {
-    void putVisualStyleSetToDb(networkId, assembled).catch((e) => {
+    void trackWrite(putVisualStyleSetToDb(networkId, assembled)).catch((e) => {
       logStore.error(
         `[VisualStyleStore]: Failed to persist style set of network ${networkId}: ${e}`,
       )
@@ -139,10 +140,12 @@ const persistStyleSetOf = (networkId: IdType): void => {
  */
 const clearUndoHistoryOf = (networkId: IdType): void => {
   useUndoStore.getState().addStack(networkId, { undoStack: [], redoStack: [] })
-  void putUndoRedoStackToDb(networkId, {
-    undoStack: [],
-    redoStack: [],
-  }).catch((e) => {
+  void trackWrite(
+    putUndoRedoStackToDb(networkId, {
+      undoStack: [],
+      redoStack: [],
+    }),
+  ).catch((e) => {
     logStore.error(
       `[VisualStyleStore]: Failed to persist cleared undo stack of network ${networkId}: ${e}`,
     )

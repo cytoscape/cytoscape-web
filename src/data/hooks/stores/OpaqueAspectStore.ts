@@ -20,6 +20,7 @@ import {
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 
 /**
  * Persistence helpers that stand down during cross-tab hydration.
@@ -37,7 +38,7 @@ const persistAspects = (networkId: IdType, aspects: OpaqueAspects): void => {
   if (isHydrating()) {
     return
   }
-  void putOpaqueAspectsToDb(networkId, aspects).catch((e) => {
+  void trackWrite(putOpaqueAspectsToDb(networkId, aspects)).catch((e) => {
     logStore.error(
       `[${useOpaqueAspectStore.name}]: Failed to persist opaque aspects for ${networkId}`,
       e,

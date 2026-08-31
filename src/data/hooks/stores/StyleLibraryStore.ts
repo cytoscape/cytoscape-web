@@ -17,6 +17,7 @@ import {
   getAllStyleTemplatesFromDb,
   putStyleTemplateToDb,
 } from '../../db'
+import { trackWrite } from './trackWrite'
 
 /**
  * Workspace-level visual style template library.
@@ -79,7 +80,7 @@ export const useStyleLibraryStore = create(
       // Outside the recipe: an Immer producer must be pure, and a write issued
       // from inside one runs before the draft is finalized.
       if (created !== undefined) {
-        void putStyleTemplateToDb(created).catch((e) => {
+        void trackWrite(putStyleTemplateToDb(created)).catch((e) => {
           logStore.error(
             `[${STORE_LABEL}]: Failed to persist template ${id}: ${e}`,
           )
@@ -110,7 +111,7 @@ export const useStyleLibraryStore = create(
         return state
       })
       if (persisted !== undefined) {
-        void putStyleTemplateToDb(persisted).catch((e) => {
+        void trackWrite(putStyleTemplateToDb(persisted)).catch((e) => {
           logStore.error(
             `[${STORE_LABEL}]: Failed to persist template ${id}: ${e}`,
           )

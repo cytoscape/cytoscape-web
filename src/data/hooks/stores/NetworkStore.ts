@@ -23,6 +23,7 @@ import {
 } from '../../db'
 import { cancelWrite, scheduleWrite } from './persistenceScheduler'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 
 /**
  * Persist one network to IndexedDB, keyed by the network that was actually
@@ -43,6 +44,7 @@ const persistNetwork = (networkId: IdType): void => {
       // Deleted while the write was pending
       return Promise.resolve()
     }
+    // No trackWrite here: the scheduler reports every write it runs.
     return putNetworkToDb(network)
   })
 }
@@ -300,7 +302,7 @@ export const useNetworkStore = create(
             network.id,
           )
           if (!isHydrating()) {
-            void putNetworkToDb(network)
+            void trackWrite(putNetworkToDb(network))
               .then(() => {
                 logStore.info(`New network has been added to DB: ${network.id}`)
               })

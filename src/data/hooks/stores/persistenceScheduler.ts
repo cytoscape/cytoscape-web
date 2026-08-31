@@ -1,4 +1,5 @@
 import { logStore } from '../../../debug'
+import { trackWrite } from './trackWrite'
 
 /**
  * Trailing write coalescer for IndexedDB persistence (REVIEW.md A2).
@@ -45,7 +46,7 @@ const runWrite = async (key: string): Promise<void> => {
 
   const write = (async () => {
     try {
-      await pending.execute()
+      await trackWrite(pending.execute())
     } catch (e) {
       logStore.error(
         `[${pending.label}] Failed to persist to IndexedDB (key: ${key})`,

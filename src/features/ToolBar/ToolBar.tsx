@@ -12,6 +12,7 @@ import { EditMenu } from './EditMenu'
 import { HelpMenu } from './HelpMenu'
 import { LayoutMenu } from './LayoutMenu'
 import { SearchBox } from './Search'
+import { StorageIndicator } from './StorageIndicator'
 import { ThemeToggleButton } from './ThemeToggleButton'
 import { ToolsMenu } from './ToolsMenu'
 
@@ -48,6 +49,7 @@ export const ToolBar = (): JSX.Element => {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <StorageIndicator />
             <DebugIndicator />
             <SearchBox />
             <ThemeToggleButton />
