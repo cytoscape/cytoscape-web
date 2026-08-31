@@ -21,9 +21,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 export const useRemountKeyOnReveal = (): number => {
   const [remountKey, setRemountKey] = useState(0)
   const attachedOnceRef = useRef(false)
-  // Set by a passive effect, which only runs once the mount commit finished.
-  // StrictMode's dev-only double invoke of effects happens inside the mount
-  // commit, before passive effects — this guard keeps it from bumping the key.
+  // Settled only via a microtask queued from the passive effect: StrictMode's
+  // dev-only replay (destroy + re-create of every effect) runs synchronously
+  // inside the same flush as the first passive effects, so its re-created
+  // layout effect still sees an unsettled mount and does not bump the key.
+  // A real Suspense hide/reveal happens in later, separate commits — long
+  // after the microtask ran.
   const mountSettledRef = useRef(false)
 
   useLayoutEffect(() => {
@@ -36,7 +39,9 @@ export const useRemountKeyOnReveal = (): number => {
   }, [])
 
   useEffect(() => {
-    mountSettledRef.current = true
+    queueMicrotask(() => {
+      mountSettledRef.current = true
+    })
   }, [])
 
   return remountKey

@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import { Allotment } from 'allotment'
-import { ReactElement, Suspense } from 'react'
+import { ReactElement, StrictMode, Suspense } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { useRemountKeyOnReveal } from './useRemountKeyOnReveal'
@@ -176,6 +176,61 @@ describe('useRemountKeyOnReveal', () => {
     rerender(<Probe />)
     rerender(<Probe />)
     expect(new Set(keys).size).toBe(1)
+  })
+
+  // The production app runs under StrictMode, whose dev double invoke replays
+  // effect cleanup + setup inside the mount commit — in the layout phase this
+  // is indistinguishable from a Suspense reveal. The passive-effect
+  // mount-settled gate is what keeps it from bumping the key at mount.
+  it('keeps the key at 0 through a StrictMode mount', () => {
+    const keys: number[] = []
+    const Probe = (): null => {
+      keys.push(useRemountKeyOnReveal())
+      return null
+    }
+    const { rerender } = render(
+      <StrictMode>
+        <Probe />
+      </StrictMode>,
+    )
+    rerender(
+      <StrictMode>
+        <Probe />
+      </StrictMode>,
+    )
+    expect(keys.length).toBeGreaterThan(0)
+    expect(keys.every((key) => key === 0)).toBe(true)
+  })
+
+  it('still changes the key after a hide/reveal cycle under StrictMode', async () => {
+    const keys: number[] = []
+    const Probe = (): null => {
+      keys.push(useRemountKeyOnReveal())
+      return null
+    }
+    const ProbeHarness = ({
+      suspended,
+    }: {
+      suspended: boolean
+    }): ReactElement => (
+      <StrictMode>
+        <Suspense fallback={null}>
+          <Gate suspended={suspended} />
+          <Probe />
+        </Suspense>
+      </StrictMode>
+    )
+    const { rerender } = render(<ProbeHarness suspended={false} />)
+    expect(keys[keys.length - 1]).toBe(0)
+
+    rerender(<ProbeHarness suspended={true} />)
+    await act(async () => {
+      releaseGate?.()
+      await gate
+    })
+    rerender(<ProbeHarness suspended={false} />)
+
+    expect(keys[keys.length - 1]).toBe(1)
   })
 
   it('changes the key after a Suspense hide/reveal cycle', async () => {
