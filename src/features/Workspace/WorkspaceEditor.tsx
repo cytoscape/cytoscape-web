@@ -18,6 +18,7 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
+import { useRemountKeyOnReveal } from '../../data/hooks/useRemountKeyOnReveal'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
@@ -199,6 +200,15 @@ const WorkSpaceEditor = (): JSX.Element => {
       setNetworkModified(currentNetworkId, true)
     }
   })
+
+  // allotment's split-view bookkeeping does not survive a Suspense
+  // hide/reveal of this subtree (an ancestor boundary re-suspending, e.g. on
+  // a lazy app component): the reveal re-runs its layout effects, which
+  // recreate the split view empty while its previous-children refs survive,
+  // and the next conditional pane unmount then throws "Index out of bounds"
+  // in removeView. Remount the whole pane layout on reveal instead — see
+  // useRemountKeyOnReveal and its regression test.
+  const allotmentRemountKey = useRemountKeyOnReveal()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
@@ -441,7 +451,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       {/* Allotment / Allotment.Pane only forward their declared props, so a
           data-testid put on them never reaches the DOM. Test ids live on the
           wrapper Boxes inside each pane instead. */}
-      <Allotment>
+      <Allotment key={allotmentRemountKey}>
         <Allotment
           vertical
           onChange={(sizes: number[]) => {
