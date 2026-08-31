@@ -17,8 +17,8 @@ export function DatabaseSnapshotFileUpload(
       handleClose={handleClose}
       onFileSelect={onFileSelect}
       acceptedFileTypes={['json']}
-      title="Import Database Snapshot"
-      description="Drag database snapshot file here"
+      title="Open Workspace Backup"
+      description="Drag a workspace backup file here"
       supportedFileTypesText="Supported file type: .json"
       maxFileSizeMB={100}
       testIds={{

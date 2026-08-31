@@ -16,4 +16,15 @@ export interface ToolbarMenuItem {
   separator?: boolean
   disabled?: boolean
   command?: () => void
+  /**
+   * Heading naming the group of rows that follows. Not focusable and not
+   * activatable — arrow navigation skips it.
+   */
+  sectionHeader?: string
+  /**
+   * Non-interactive content row, e.g. a footnote closing the menu. Skipped by
+   * arrow navigation like `sectionHeader`; use `template` for a row the user
+   * can actually click.
+   */
+  staticContent?: ReactNode
 }

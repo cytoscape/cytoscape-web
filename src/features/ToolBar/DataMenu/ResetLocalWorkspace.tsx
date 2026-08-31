@@ -9,7 +9,7 @@ export const ResetLocalWorkspaceMenuItem = (
 ): ReactElement => {
   return (
     <DropdownMenuItem
-      label="Clear Local Database"
+      label="Clear Local Workspace..."
       icon={<CancelOutlinedIcon />}
       onClick={props.onClick}
     />

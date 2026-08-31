@@ -18,8 +18,6 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
   - `AboutCytoscapeWebMenuItem`: Shows application information (version, links, etc.).
   - `TutorialMenuItem`: Links to end-user tutorials.
   - `DeveloperMenuItem`: Links to developer guide and technical docs.
-  - `ExportDatabaseMenuItem`: Exports the internal Dexie/IndexedDB database to a file.
-  - `ImportDatabaseMenuItem`: Imports a database snapshot into the local cache.
   - `CodeRepositoryMenuItem`: Links to the GitHub repository.
   - `CitationMenuItem`: Shows citation instructions for Cytoscape Web.
   - `BugReportMenuItem`: Links to issue tracker or bug-reporting form.

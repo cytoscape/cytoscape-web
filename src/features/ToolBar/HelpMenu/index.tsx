@@ -9,8 +9,6 @@ import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationMenuItem } from './CitationMenuItem'
 import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
 import { DeveloperMenuItem } from './DeveloperMenuItem'
-import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
-import { ImportDatabaseMenuItem } from './ImportDatabaseMenuItem'
 import { LicenseDialog } from './LicenseDialog'
 import { LicenseMenuItem } from './LicenseMenuItem'
 import { TakeATourMenuItem } from './TakeATourMenuItem'
@@ -65,15 +63,6 @@ export const HelpMenu = () => {
         },
         {
           template: <CodeRepositoryMenuItem onClick={handleClose} />,
-        },
-        {
-          separator: true,
-        },
-        {
-          template: <ExportDatabaseMenuItem onClick={handleClose} />,
-        },
-        {
-          template: <ImportDatabaseMenuItem onClick={handleClose} />,
         },
       ],
     },

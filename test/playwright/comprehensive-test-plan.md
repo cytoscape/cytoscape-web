@@ -98,7 +98,7 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
   - "Remove Current Network" (disabled if no network)
   - "Remove All Networks" (disabled if no networks)
   - Separator
-  - "Reset Local Workspace" → "Clear Local Database"
+  - "Reset Local Workspace" → "Clear Local Workspace"
 
 #### 2.2 Open Sample Networks
 **Steps:**
@@ -235,11 +235,11 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
 **Negative Test:**
 - Attempt download with no network → verify button disabled
 
-#### 2.8 Clear Local Database
+#### 2.8 Clear Local Workspace
 **Steps:**
 1. Load one or more networks
 2. Click "Data" menu
-3. Click "Reset Local Workspace" → "Clear Local Database"
+3. Click "Reset Local Workspace" → "Clear Local Workspace"
 4. Confirm action if prompted
 5. Refresh page
 

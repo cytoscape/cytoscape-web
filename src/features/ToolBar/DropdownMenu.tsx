@@ -124,6 +124,47 @@ function MenuLevel({
           return <Divider key={index} sx={{ my: 0.5 }} />
         }
 
+        // Non-interactive rows carry no role="menuitem", which is exactly what
+        // keeps focusableRows() from stopping on them.
+        if (item.sectionHeader !== undefined) {
+          return (
+            <Box
+              key={index}
+              data-testid={`menu-section-${item.sectionHeader}`}
+              sx={{
+                px: 2,
+                pt: 1,
+                pb: 0.5,
+                color: theme.palette.text.secondary,
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                userSelect: 'none',
+              }}
+            >
+              {item.sectionHeader}
+            </Box>
+          )
+        }
+
+        if (item.staticContent !== undefined) {
+          return (
+            <Box
+              key={index}
+              sx={{
+                px: 2,
+                py: 1,
+                color: theme.palette.text.secondary,
+                fontSize: 12,
+                userSelect: 'none',
+              }}
+            >
+              {item.staticContent}
+            </Box>
+          )
+        }
+
         const hasChildren = (item.items?.length ?? 0) > 0
         if (!hasChildren && item.template !== undefined) {
           // The row, not the template inside it, is the one focusable

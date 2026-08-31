@@ -102,7 +102,7 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   return (
     <>
       <DropdownMenuItem
-        label="Save Workspace"
+        label="Save Workspace to NDEx"
         tooltip={tooltipTitle}
         disabled={!enabled}
         onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}

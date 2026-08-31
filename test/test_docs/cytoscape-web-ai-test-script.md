@@ -91,7 +91,7 @@ a) Data → Save Network to NDEx (overwrite). Expect success only when user owns
 
 b) Data → Save Copy to NDEx; confirm a new network in NDEx “My Networks” with distinct UUID.
 
-c) Data → Save Workspace; then modify something and Data → Save Workspace As…; confirm both appear under “My Workspaces”.
+c) Data → Save Workspace to NDEx; then modify something and Data → Save Workspace to NDEx As…; confirm both appear under “My Workspaces”.
 
 ### **1.7 Download Current Network (.cx2)**
 
@@ -111,9 +111,9 @@ d) Toggle “Export full network image” on/off; compare full vs viewport-only 
 
 a) Remove the current network and also remove multiple selections via Workspace; confirm removal from Workspace list.
 
-### **1.10 Clear Local Database**
+### **1.10 Clear Local Workspace**
 
-a) Data → Clear Local Database. Confirm the app resets (networks, apps/service apps, and local settings cleared).
+a) Data → Clear Local Workspace. Confirm the app resets (networks, apps/service apps, and local settings cleared).
 
 b) Reopen app and confirm a clean slate.
 
@@ -215,7 +215,7 @@ b) For a network with a node column containing gene symbols list(s), run enrichm
 
 a) Save Workspace; reload Cytoscape Web and open that workspace; confirm Apps and Service Apps are restored.
 
-b) Clear Local Database; confirm Apps/Service Apps are cleared.
+b) Clear Local Workspace; confirm Apps/Service Apps are cleared.
 
 ## **7\) Help Menu**
 
@@ -239,7 +239,7 @@ a) Data → Open Network(s) from NDEx → MY NETWORKS tab is available and corre
 
 b) Data → Open Workspace from NDEx shows your workspaces.
 
-c) Data → Save Network/Save Copy/Save Workspace/Save Workspace As… succeed.
+c) Data → Save Network/Save Copy/Save Workspace to NDEx/Save Workspace to NDEx As… succeed.
 
 ### **8.3 Sign Out**
 
@@ -495,9 +495,9 @@ a) Select a row; click SELECT NODES (or SELECT EDGES); verify network view selec
 
 \- Clear cache per browser docs; reopen Cytoscape Web; confirm normal operation resumes.
 
-### **16.3 Clear Local Database**
+### **16.3 Clear Local Workspace**
 
-\- As a last resort, Data → Clear Local Database; confirm the environment resets to a clean state.
+\- As a last resort, Data → Clear Local Workspace; confirm the environment resets to a clean state.
 
 ### **16.4 Bug Reporting**
 
