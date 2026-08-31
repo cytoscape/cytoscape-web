@@ -196,9 +196,13 @@ export const Error = (): ReactElement => {
       logDb.info('[Error] Error report sent successfully')
     } catch (e: unknown) {
       logDb.error('[Error] Failed to send error report:', e)
+      // globalThis.Error: this component shadows the Error constructor for
+      // the whole module, and `instanceof <arrow function>` throws a
+      // TypeError ("Function has non-object prototype 'undefined'") — which
+      // used to replace the report-failure message with a second crash.
       setReportError(
-        e instanceof Error
-          ? (e as Error).message
+        e instanceof globalThis.Error
+          ? e.message
           : 'Failed to send error report',
       )
     } finally {
