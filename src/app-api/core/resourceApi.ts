@@ -46,15 +46,30 @@ function hasSelection(): boolean {
 }
 
 /**
+ * React element markers. An element instance (`<Foo />`) carries one of
+ * these as its `$$typeof` — a common registration mistake ("pass the
+ * component, not the rendered element") that must be rejected here, since
+ * it would otherwise only explode much later, inside the host renderer.
+ * 'react.transitional.element' is the React 19 name for 'react.element'.
+ */
+const REACT_ELEMENT_MARKERS = new Set<symbol>([
+  Symbol.for('react.element'),
+  Symbol.for('react.transitional.element'),
+  Symbol.for('react.portal'),
+])
+
+/**
  * Check if a value is a valid React component type.
- * Accepts function components, class components, React.lazy(), React.memo(),
- * and React.forwardRef() — all of which are either functions or non-null objects.
- * Rejects primitives (string, number, boolean, null, undefined).
+ * Accepts function components and class components (functions), and the
+ * exotic object component types — React.lazy(), React.memo(),
+ * React.forwardRef() — which are objects branded with a symbol `$$typeof`.
+ * Rejects primitives, plain objects (`{}`), and React element instances.
  */
 function isValidComponent(value: unknown): boolean {
-  return (
-    typeof value === 'function' || (typeof value === 'object' && value !== null)
-  )
+  if (typeof value === 'function') return true
+  if (typeof value !== 'object' || value === null) return false
+  const marker = (value as { $$typeof?: unknown }).$$typeof
+  return typeof marker === 'symbol' && !REACT_ELEMENT_MARKERS.has(marker)
 }
 
 /**

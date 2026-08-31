@@ -703,6 +703,41 @@ describe('createResourceApi', () => {
       expect(result.success).toBe(true)
     })
 
+    it('returns fail(InvalidInput) for a plain object component ({})', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerModal({
+        id: 'D1',
+        component: {} as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('component')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
+    it('returns fail(InvalidInput) for a React element instance', () => {
+      const api = createResourceApi('app1')
+      // What `<Foo />` compiles to — the element, not the component.
+      const element = {
+        $$typeof: Symbol.for('react.element'),
+        type: DummyComponent,
+        props: {},
+      }
+      const result = api.registerModal({
+        id: 'D1',
+        component: element as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
     it('returns fail(InvalidInput) for an invalid maxWidth', () => {
       const api = createResourceApi('app1')
       const result = api.registerModal({
