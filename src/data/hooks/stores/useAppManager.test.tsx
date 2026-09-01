@@ -208,6 +208,29 @@ describe('useAppManager — install / uninstall', () => {
       expect(installed()).toHaveLength(0)
       expect(useAppStore.getState().catalog['hello']).toBeUndefined()
     })
+
+    // #699: uninstalling a manifest app cannot stick — recomposeCatalog
+    // re-adds it from the manifest — so the command refuses instead of
+    // silently discarding the pinned record.
+    it('refuses to uninstall an app the manifest still ships', async () => {
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+      act(() => {
+        useAppStore
+          .getState()
+          .setCatalog([entry('hello')], { hello: 'appstore' }, ['hello'])
+      })
+
+      await act(async () => {
+        await result.current.uninstallApp('hello')
+      })
+
+      expect(installed()).toHaveLength(1)
+      expect(useAppStore.getState().catalog['hello']).toBeDefined()
+    })
   })
 
   describe('status reconciliation', () => {

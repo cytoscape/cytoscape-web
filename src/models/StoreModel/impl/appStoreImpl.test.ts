@@ -14,6 +14,7 @@ import {
   clearCurrentTask,
   removeService,
   restore,
+  setCatalog,
   setCurrentTask,
   setStatus,
   updateInputColumn,
@@ -27,6 +28,7 @@ const createDefaultState = (): AppState => {
     currentTask: undefined,
     catalog: {},
     catalogSources: {},
+    manifestIds: [],
     loadStates: {},
     manifestSource: undefined,
   }
@@ -434,6 +436,48 @@ describe('AppStoreImpl', () => {
       expect(original.apps).toEqual({})
       expect(original.serviceApps).toEqual({})
       expect(original.currentTask).toBeUndefined()
+    })
+  })
+  describe('setCatalog', () => {
+    const catalogEntry = (id: string) => ({
+      id,
+      url: `https://apps.cytoscape.org/web/${id}/remoteEntry.js`,
+      author: 'Test',
+    })
+
+    it('defaults every source to manifest when sources is omitted', () => {
+      const state = setCatalog(createDefaultState(), [
+        catalogEntry('a'),
+        catalogEntry('b'),
+      ])
+      expect(state.catalogSources).toEqual({ a: 'manifest', b: 'manifest' })
+    })
+
+    it('derives manifestIds from the manifest sources when omitted', () => {
+      const state = setCatalog(
+        createDefaultState(),
+        [catalogEntry('a'), catalogEntry('z')],
+        { a: 'manifest', z: 'appstore' },
+      )
+      expect(state.manifestIds).toEqual(['a'])
+    })
+
+    it('keeps an explicit manifestIds even when the source is shadowed', () => {
+      const state = setCatalog(
+        createDefaultState(),
+        [catalogEntry('hello')],
+        { hello: 'snapshot' },
+        ['hello'],
+      )
+      expect(state.catalogSources.hello).toBe('snapshot')
+      expect(state.manifestIds).toEqual(['hello'])
+    })
+
+    it('replaces the previous catalog and manifestIds', () => {
+      const first = setCatalog(createDefaultState(), [catalogEntry('a')])
+      const second = setCatalog(first, [catalogEntry('b')], undefined, ['b'])
+      expect(Object.keys(second.catalog)).toEqual(['b'])
+      expect(second.manifestIds).toEqual(['b'])
     })
   })
 })

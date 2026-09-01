@@ -139,11 +139,11 @@ export const useAppManager = (): AppManagerCommands => {
    */
   const recomposeCatalog = (): void => {
     const installed = useWorkspaceStore.getState().workspace.installedApps ?? []
-    const { entries, sources } = composeCatalog(
+    const { entries, sources, manifestIds } = composeCatalog(
       manifestEntriesRef.current,
       installed,
     )
-    setCatalog(entries, sources)
+    setCatalog(entries, sources, manifestIds)
   }
 
   /**
@@ -318,8 +318,11 @@ export const useAppManager = (): AppManagerCommands => {
     manifestEntriesRef.current = manifestEntries
     const installedApps =
       useWorkspaceStore.getState().workspace.installedApps ?? []
-    const { entries, sources } = composeCatalog(manifestEntries, installedApps)
-    setCatalog(entries, sources)
+    const { entries, sources, manifestIds } = composeCatalog(
+      manifestEntries,
+      installedApps,
+    )
+    setCatalog(entries, sources, manifestIds)
     logApp.info(
       `[useAppManager]: Catalog refreshed with ${entries.length} entries`,
     )
@@ -389,8 +392,19 @@ export const useAppManager = (): AppManagerCommands => {
    * Uninstall a workspace-installed app (§12.7). Deactivates it if running,
    * removes it from workspace.installedApps, clears session state, and drops
    * it from the catalog.
+   *
+   * Manifest apps are refused (§12.3): `recomposeCatalog` re-adds them from
+   * the manifest, so the uninstall would only discard the pinned URL and leave
+   * the row in place. `AppListPanel` hides the affordance; this guards the
+   * command for every other caller.
    */
   const uninstallApp = async (id: string): Promise<void> => {
+    if (useAppStore.getState().manifestIds.includes(id)) {
+      logApp.warn(
+        `[useAppManager]: uninstallApp refused "${id}" — it is provided by the manifest and can only be disabled`,
+      )
+      return
+    }
     await deactivateApp(id)
     useWorkspaceStore.getState().removeInstalledApp(id)
     removeApp(id)
@@ -443,11 +457,11 @@ export const useAppManager = (): AppManagerCommands => {
           useWorkspaceStore.getState().workspace.installedApps ?? []
 
         // 4. Populate catalog in AppStore as manifest ∪ installedApps (§8.1)
-        const { entries, sources } = composeCatalog(
+        const { entries, sources, manifestIds } = composeCatalog(
           manifestEntries,
           installedApps,
         )
-        setCatalog(entries, sources)
+        setCatalog(entries, sources, manifestIds)
         logApp.info(
           `[${useAppManager.name}]: Catalog loaded with ${entries.length} entries`,
         )

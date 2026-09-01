@@ -82,4 +82,44 @@ describe('composeCatalog', () => {
     )
     expect(entries.filter((e) => e.id === 'hello')).toHaveLength(1)
   })
+
+  describe('manifestIds', () => {
+    it('lists every manifest id', () => {
+      const { manifestIds } = composeCatalog([entry('a'), entry('b')], [])
+      expect(manifestIds.sort()).toEqual(['a', 'b'])
+    })
+
+    it('is empty when the manifest is empty', () => {
+      const { manifestIds } = composeCatalog([], [installed('z', 'appstore')])
+      expect(manifestIds).toEqual([])
+    })
+
+    it('excludes installed-only ids', () => {
+      const { manifestIds } = composeCatalog(
+        [entry('a')],
+        [installed('z', 'snapshot')],
+      )
+      expect(manifestIds).toEqual(['a'])
+    })
+
+    it('keeps a manifest id that a pinned appstore install shadows', () => {
+      const { sources, manifestIds } = composeCatalog(
+        [entry('hello', '1.0.0')],
+        [installed('hello', 'appstore', '2.0.0')],
+      )
+      // The pinned entry wins the merge, so `sources` no longer says
+      // 'manifest' — but the manifest still ships the app.
+      expect(sources.hello).toBe('appstore')
+      expect(manifestIds).toEqual(['hello'])
+    })
+
+    it('keeps a manifest id that a snapshot restore shadows', () => {
+      const { sources, manifestIds } = composeCatalog(
+        [entry('hello', '1.0.0')],
+        [installed('hello', 'snapshot', '2.0.0')],
+      )
+      expect(sources.hello).toBe('snapshot')
+      expect(manifestIds).toEqual(['hello'])
+    })
+  })
 })

@@ -47,6 +47,16 @@ interface AppDisplayEntry {
 }
 
 /**
+ * Chip marking where a row's entry came from. Manifest rows carry no chip —
+ * that is the default and needs no label.
+ */
+function sourceChipLabel(source: AppSource | undefined): string | undefined {
+  if (source === 'snapshot') return 'Snapshot'
+  if (source === 'appstore') return 'App Store'
+  return undefined
+}
+
+/**
  * Determine the primary action for an app based on its catalog/load/status.
  */
 function getAction(
@@ -76,6 +86,7 @@ export const AppListPanel = () => {
   const catalogSources: Record<string, AppSource> = useAppStore(
     (state) => state.catalogSources,
   )
+  const manifestIds: string[] = useAppStore((state) => state.manifestIds)
   const loadStates: Record<string, AppLoadState> = useAppStore(
     (state) => state.loadStates,
   )
@@ -92,12 +103,14 @@ export const AppListPanel = () => {
   // Build merged display list: catalog entries + orphan apps
   const displayEntries: AppDisplayEntry[] = []
   const seenIds = new Set<string>()
+  const manifestIdSet = new Set(manifestIds)
 
   // 1. All catalog entries
   for (const entry of Object.values(catalog)) {
     seenIds.add(entry.id)
     const app = apps[entry.id]
     const source = catalogSources[entry.id]
+    const inManifest = manifestIdSet.has(entry.id)
     displayEntries.push({
       id: entry.id,
       name: entry.name ?? entry.id,
@@ -108,9 +121,13 @@ export const AppListPanel = () => {
       loadState: loadStates[entry.id],
       status: app?.status,
       source,
-      // Only workspace-installed apps are uninstallable; manifest apps are
-      // disable-only (§12.3).
-      removable: source === 'appstore' || source === 'snapshot',
+      // Only workspace-installed apps are uninstallable; anything the manifest
+      // still ships is disable-only (§12.3). A pinned App Store or snapshot
+      // install shadows the manifest source tag, so `source` alone is not the
+      // test — uninstalling such a row would drop the pinned URL and
+      // immediately re-add the app from the manifest.
+      removable:
+        !inManifest && (source === 'appstore' || source === 'snapshot'),
     })
   }
 
@@ -152,6 +169,7 @@ export const AppListPanel = () => {
         >
           {displayEntries.map((entry) => {
             const action = getAction(entry)
+            const chipLabel = sourceChipLabel(entry.source)
             const isActive =
               entry.loadState === 'loaded' && entry.status === AppStatus.Active
             return (
@@ -209,11 +227,9 @@ export const AppListPanel = () => {
                         sx={{ height: 20, fontSize: '0.7rem' }}
                       />
                     )}
-                    {entry.removable && (
+                    {chipLabel !== undefined && (
                       <Chip
-                        label={
-                          entry.source === 'snapshot' ? 'Snapshot' : 'App Store'
-                        }
+                        label={chipLabel}
                         size="small"
                         variant="outlined"
                         sx={{ height: 20, fontSize: '0.7rem' }}
