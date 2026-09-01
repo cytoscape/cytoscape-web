@@ -3,6 +3,7 @@ import { StateCreator, StoreApi } from 'zustand'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { cancelWrite, scheduleWrite } from './persistenceScheduler'
+import { trackWrite } from './trackWrite'
 import { isHydrating } from './hydrationContext'
 
 /**
@@ -88,7 +89,7 @@ export const persistNetworkSlices =
             // A stale pending put must never resurrect a deleted row
             cancelWrite(`${options.label}:${networkId}`)
             if (options.removeSlice !== undefined) {
-              void options.removeSlice(networkId).catch((e) => {
+              void trackWrite(options.removeSlice(networkId)).catch((e) => {
                 logStore.error(
                   `[${options.label}] Failed to delete from IndexedDB`,
                   e,

@@ -26,6 +26,8 @@ export const CONCEPT_SLIDES: ConceptSlide[] = [
     body: [
       'Your workspace holds every network you are working with, along with their tables and visual styles.',
       'It is saved automatically in this browser, so your networks are still here when you come back. Networks in a workspace are shared across browser tabs on this computer.',
+      'Nothing is uploaded to NDEx — or anywhere else — unless you ask for it. Editing a network you opened from NDEx leaves the copy in NDEx untouched.',
+      'Browser storage is not a backup: clearing site data, switching browsers or profiles, and private windows all lose it. Use Data › Export Workspace Backup, or save to NDEx, for a copy that outlives this browser.',
     ],
   },
   {

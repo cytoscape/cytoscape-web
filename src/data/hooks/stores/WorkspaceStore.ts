@@ -19,6 +19,7 @@ import { announceDatabaseReset } from '@/data/db/lifecycle'
 import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -89,7 +90,7 @@ const persist =
               toPlainObject(withoutTabNetworkId(lastWorkspace)),
             )
           ) {
-            void putWorkspaceToDb(plainWorkspace).catch((e) => {
+            void trackWrite(putWorkspaceToDb(plainWorkspace)).catch((e) => {
               logStore.error(
                 `[${useWorkspaceStore.name}]: Failed to persist workspace`,
                 e,

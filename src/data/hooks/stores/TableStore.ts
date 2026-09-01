@@ -27,6 +27,7 @@ import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualProp
 import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
 import { isHydrating } from './hydrationContext'
 import { persistNetworkSlices } from './persistNetworkSlices'
+import { trackWrite } from './trackWrite'
 
 const persist = (config: StateCreator<TableStore>) =>
   persistNetworkSlices<TableStore, TableRecord>(config, {
@@ -354,7 +355,7 @@ export const useTableStore = create(
             // Skip during cross-tab hydration: the peer tab already deleted
             // this row, so re-deleting it only mints another change record.
             if (!isHydrating()) {
-              void deleteTablesFromDb(networkId)
+              void trackWrite(deleteTablesFromDb(networkId))
                 .then(() => {
                   logStore.info(
                     `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
@@ -374,7 +375,7 @@ export const useTableStore = create(
           set((state) => {
             state.tables = {}
             if (!isHydrating()) {
-              clearTablesFromDb()
+              trackWrite(clearTablesFromDb())
                 .then(() => {
                   logStore.info(
                     `[${useTableStore.name}]: Deleted all network tables from db`,

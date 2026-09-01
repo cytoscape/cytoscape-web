@@ -175,6 +175,50 @@ describe('DropdownMenu keyboard access', () => {
     expect(skipped).not.toHaveBeenCalled()
   })
 
+  it('renders section headers and footnotes without making them menu items', () => {
+    const run = vi.fn()
+    renderOpenMenu([
+      { sectionHeader: 'Open' },
+      { template: <DropdownMenuItem label="From NDEx..." onClick={run} /> },
+      { sectionHeader: 'Manage' },
+      { template: <DropdownMenuItem label="Remove Network" onClick={run} /> },
+      { staticContent: 'Stored in this browser.' },
+    ])
+
+    expect(screen.getByText('Open')).toBeTruthy()
+    expect(screen.getByText('Manage')).toBeTruthy()
+    expect(screen.getByText('Stored in this browser.')).toBeTruthy()
+
+    // Only the two real entries are menu items; a header the keyboard could
+    // land on reads to a screen reader as an action that does nothing.
+    const rows = screen.getAllByRole('menuitem')
+    expect(rows).toHaveLength(2)
+  })
+
+  it('skips section headers when arrowing through the menu', () => {
+    renderOpenMenu([
+      { sectionHeader: 'Open' },
+      { label: 'From NDEx...', command: vi.fn() },
+      { sectionHeader: 'Manage' },
+      { label: 'Remove Network', command: vi.fn() },
+      { staticContent: 'Stored in this browser.' },
+    ])
+
+    const menu = screen.getByRole('menu')
+    const rows = screen.getAllByRole('menuitem')
+
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(rows[0])
+
+    // The 'Manage' header sits between them and must not take a stop.
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(rows[1])
+
+    // Wraps past the footnote back to the first entry.
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(rows[0])
+  })
+
   it("points the trigger's aria-controls at the rendered menu", () => {
     renderOpenMenu([{ label: 'Run', command: vi.fn() }])
 

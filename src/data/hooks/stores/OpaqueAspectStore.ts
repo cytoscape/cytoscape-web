@@ -20,6 +20,7 @@ import {
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 
 /**
  * Persistence helpers that stand down during cross-tab hydration.
@@ -37,7 +38,7 @@ const persistAspects = (networkId: IdType, aspects: OpaqueAspects): void => {
   if (isHydrating()) {
     return
   }
-  void putOpaqueAspectsToDb(networkId, aspects).catch((e) => {
+  void trackWrite(putOpaqueAspectsToDb(networkId, aspects)).catch((e) => {
     logStore.error(
       `[${useOpaqueAspectStore.name}]: Failed to persist opaque aspects for ${networkId}`,
       e,
@@ -49,7 +50,7 @@ const removeAspects = (networkId: IdType): void => {
   if (isHydrating()) {
     return
   }
-  void deleteOpaqueAspectsFromDb(networkId).catch((e) => {
+  void trackWrite(deleteOpaqueAspectsFromDb(networkId)).catch((e) => {
     logStore.error(
       `[${useOpaqueAspectStore.name}]: Failed to delete opaque aspects for ${networkId}`,
       e,
@@ -61,7 +62,7 @@ const removeAllAspects = (): void => {
   if (isHydrating()) {
     return
   }
-  void clearOpaqueAspectsFromDb().catch((e) => {
+  void trackWrite(clearOpaqueAspectsFromDb()).catch((e) => {
     logStore.error(
       `[${useOpaqueAspectStore.name}]: Failed to clear opaque aspects`,
       e,

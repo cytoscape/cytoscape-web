@@ -25,6 +25,7 @@ import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { NetworkSearchBar } from '../../NetworkSearch'
 import { prefetchOnIdle } from '@/utils/idlePrefetch'
 import { Summaries as SummaryList } from '../../SummaryPanel'
+import { BackupReminder } from './BackupReminder'
 import { WorkspaceNamePanel } from './WorkspaceNamePanel'
 
 // Lazy tab contents: Vizmapper alone drags in visx, d3 and react-color, so
@@ -236,6 +237,9 @@ export const NetworkBrowserPanel = ({
           }}
         >
           <WorkspaceNamePanel />
+        </Box>
+        <Box hidden={currentTabIndex !== 0} sx={{ width: '100%' }}>
+          <BackupReminder />
         </Box>
         <Box
           sx={{

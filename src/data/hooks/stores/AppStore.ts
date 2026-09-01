@@ -24,6 +24,7 @@ import {
   putAppSettingToDb,
   putServiceAppToDb,
 } from '../../db'
+import { trackWrite } from './trackWrite'
 
 export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
   // Fetch the service app metadata from the given URL
@@ -110,7 +111,7 @@ export const useAppStore = create(
         return
       }
       const serviceApp = await serviceFetcher(url)
-      await putServiceAppToDb(serviceApp)
+      await trackWrite(putServiceAppToDb(serviceApp))
 
       set((state) => {
         const newState = AppStoreImpl.addService(state, serviceApp)
@@ -122,7 +123,7 @@ export const useAppStore = create(
     removeService: (url: string) => {
       set((state) => {
         const newState = AppStoreImpl.removeService(state, url)
-        deleteServiceAppFromDb(url).catch((error) => {
+        trackWrite(deleteServiceAppFromDb(url)).catch((error) => {
           logStore.error(
             `[${useAppStore.name}]: Failed to delete service metadata from ${url}`,
             error,
@@ -141,7 +142,7 @@ export const useAppStore = create(
         return
       }
       const serviceApp = await serviceFetcher(url)
-      await putServiceAppToDb(serviceApp)
+      await trackWrite(putServiceAppToDb(serviceApp))
 
       set((state) => {
         const newState = AppStoreImpl.refreshService(state, serviceApp)
@@ -156,7 +157,7 @@ export const useAppStore = create(
         urls.map(async (url) => {
           try {
             const serviceApp = await serviceFetcher(url)
-            await putServiceAppToDb(serviceApp)
+            await trackWrite(putServiceAppToDb(serviceApp))
             set((state) => {
               const newState = AppStoreImpl.refreshService(state, serviceApp)
               state.serviceApps = newState.serviceApps
@@ -221,7 +222,7 @@ export const useAppStore = create(
         state.serviceApps = newState.serviceApps
 
         // Update the cached service app
-        putServiceAppToDb({ ...newState.serviceApps[url] })
+        trackWrite(putServiceAppToDb({ ...newState.serviceApps[url] }))
           .then(() => {
             logStore.info(
               `[${useAppStore.name}]: Target column updated for service app: ${url}`,
@@ -261,7 +262,7 @@ export const useAppStore = create(
         state.serviceApps = newState.serviceApps
 
         // Update the cached service app
-        putServiceAppToDb({ ...newState.serviceApps[url] })
+        trackWrite(putServiceAppToDb({ ...newState.serviceApps[url] }))
           .then(() => {
             logStore.info(
               `[${useAppStore.name}]: Target column updated for service app: ${url}`,
@@ -312,14 +313,16 @@ export const useAppStore = create(
       })
       // Persist to IndexedDB
       if (source !== undefined) {
-        putAppSettingToDb('manifestSource', source).catch((error) => {
-          logStore.error(
-            `[${useAppStore.name}]:[setManifestSource] Failed to persist:`,
-            error,
-          )
-        })
+        trackWrite(putAppSettingToDb('manifestSource', source)).catch(
+          (error) => {
+            logStore.error(
+              `[${useAppStore.name}]:[setManifestSource] Failed to persist:`,
+              error,
+            )
+          },
+        )
       } else {
-        deleteAppSettingFromDb('manifestSource').catch((error) => {
+        trackWrite(deleteAppSettingFromDb('manifestSource')).catch((error) => {
           logStore.error(
             `[${useAppStore.name}]:[setManifestSource] Failed to delete:`,
             error,
@@ -335,7 +338,7 @@ export const useAppStore = create(
         state.loadStates = newState.loadStates
         return state
       })
-      deleteAppFromDb(id).catch((error) => {
+      trackWrite(deleteAppFromDb(id)).catch((error) => {
         logStore.error(
           `[${useAppStore.name}]:[remove] Failed to delete app ${id} from DB:`,
           error,

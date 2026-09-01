@@ -43,7 +43,11 @@ import { KeycloakContext } from '@/boot/keycloak'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { getRowActionStates } from './networkRowActions'
-import { getSaveButtonState, getSaveMenuItemState } from './networkSaveStatus'
+import {
+  getNetworkProvenance,
+  getSaveButtonState,
+  getSaveMenuItemState,
+} from './networkSaveStatus'
 
 // Lazy load the heavy network property editor with rich text editing capabilities
 const NetworkPropertyEditor = lazy(() => import('./NetworkPropertyEditor'))
@@ -150,6 +154,11 @@ export const NetworkPropertyPanel = ({
     networkModified,
     isNdex: summary.isNdex,
     authenticated,
+  })
+
+  const provenance = getNetworkProvenance({
+    networkModified,
+    isNdex: summary.isNdex,
   })
 
   const saveMenuItemState = getSaveMenuItemState({
@@ -544,20 +553,15 @@ export const NetworkPropertyPanel = ({
               gap: 1,
             }}
           >
-            <Tooltip
-              title={
-                summary.isNdex
-                  ? 'A network stored in the NDEx database (ndexbio.org)'
-                  : 'A network stored on your local machine'
-              }
-            >
+            <Tooltip title={provenance.originTooltip}>
               <Chip
+                data-testid="network-origin-chip"
                 color={summary.isNdex ? 'primary' : 'success'}
                 size="small"
                 sx={{ opacity: 0.8 }}
                 label={
                   <Typography sx={{ fontSize: 10 }} variant="caption">
-                    {summary.isNdex ? 'NDEx' : 'Local'}
+                    {provenance.origin}
                   </Typography>
                 }
               />
@@ -570,6 +574,25 @@ export const NetworkPropertyPanel = ({
             </Typography>
             {networkActionsMenuButton}
           </Box>
+          {provenance.modifiedLabel !== undefined && (
+            <Tooltip
+              title={provenance.modifiedTooltip}
+              placement="bottom-start"
+            >
+              <Typography
+                data-testid="network-modified-label"
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  color: theme.palette.warning.main,
+                  ml: 0.5,
+                  fontSize: 10,
+                }}
+              >
+                {provenance.modifiedLabel}
+              </Typography>
+            </Tooltip>
+          )}
           {summary.sourcePath && (
             <Tooltip
               title="Import path from NDEx. This location is a snapshot and may not reflect recent moves or folder changes in NDEx."

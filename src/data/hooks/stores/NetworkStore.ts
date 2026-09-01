@@ -23,6 +23,7 @@ import {
 } from '../../db'
 import { cancelWrite, scheduleWrite } from './persistenceScheduler'
 import { isHydrating } from './hydrationContext'
+import { trackWrite } from './trackWrite'
 
 /**
  * Persist one network to IndexedDB, keyed by the network that was actually
@@ -43,6 +44,7 @@ const persistNetwork = (networkId: IdType): void => {
       // Deleted while the write was pending
       return Promise.resolve()
     }
+    // No trackWrite here: the scheduler reports every write it runs.
     return putNetworkToDb(network)
   })
 }
@@ -300,7 +302,7 @@ export const useNetworkStore = create(
             network.id,
           )
           if (!isHydrating()) {
-            void putNetworkToDb(network)
+            void trackWrite(putNetworkToDb(network))
               .then(() => {
                 logStore.info(`New network has been added to DB: ${network.id}`)
               })
@@ -318,7 +320,7 @@ export const useNetworkStore = create(
           // A stale pending put must never resurrect the deleted row
           cancelWrite(`NetworkStore:${networkId}`)
           if (!isHydrating()) {
-            void deleteNetworkFromDb(networkId).then(() => {
+            void trackWrite(deleteNetworkFromDb(networkId)).then(() => {
               logStore.info(
                 `[${useNetworkStore.name}]: Deleted network from db: ${networkId}`,
               )
@@ -333,7 +335,7 @@ export const useNetworkStore = create(
           }
           const newState = NetworkStoreImpl.deleteAll(state)
           if (!isHydrating()) {
-            clearNetworksFromDb()
+            trackWrite(clearNetworksFromDb())
               .then(() => {
                 logStore.info(
                   `[${useNetworkStore.name}]: Deleted all networks from db`,

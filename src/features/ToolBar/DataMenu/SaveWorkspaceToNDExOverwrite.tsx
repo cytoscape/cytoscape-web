@@ -9,6 +9,7 @@ import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+import { useNdexGate } from './ndexAvailability'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
@@ -98,13 +99,14 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   } else if (allNetworkId.length > 0) {
     tooltipTitle = 'Login to save/overwrite the current workspace to NDEx'
   }
+  const ndex = useNdexGate(enabled, tooltipTitle)
 
   return (
     <>
       <DropdownMenuItem
-        label="Save Workspace"
-        tooltip={tooltipTitle}
-        disabled={!enabled}
+        label="Save Workspace to NDEx"
+        tooltip={ndex.tooltip}
+        disabled={ndex.disabled}
         onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
       />
       {enabled && (

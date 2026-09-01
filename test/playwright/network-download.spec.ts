@@ -10,9 +10,12 @@ test.describe('Network Download', () => {
   test('downloads the current network as a CX2 file', async ({ page }) => {
     await gotoAndSeedNetwork(page)
 
-    // Open Data ▸ Export ▸ Download Network File (.cx2)
+    // Data ▸ Local Workspace ▸ Download Network File (.cx2). The download entry
+    // sits at the top level; the `Export` submenu holds image export alone.
+    // Exact: `Export Workspace Backup...` is a sibling entry that a substring
+    // locator for `Export` also matches (#697).
     await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
-    await page.getByRole('menuitem', { name: 'Export' }).click()
+    await page.getByRole('menuitem', { name: 'Export', exact: true }).click()
     const downloadPromise = page.waitForEvent('download')
     await page
       .getByRole('menuitem', { name: 'Download Network File (.cx2)' })

@@ -23,12 +23,14 @@ import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { DuplicateNetworkMenuItem } from './DuplicateNetworkMenuItem'
 import { ExportImageMenuItem } from './ExportNetworkToImage/DynamicExportImageMenuItem'
+import { ExportWorkspaceBackupMenuItem } from './ExportWorkspaceBackupMenuItem'
 import { UploadNetworkMenuItem } from './ImportNetworkFromFileMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
 import LoadWorkspaceDialog from './LoadWorkspaceDialog'
 import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
+import { OpenWorkspaceBackupMenuItem } from './OpenWorkspaceBackupMenuItem'
 import { useLoadFromNdexDialogStore } from './store/loadFromNdexDialogStore'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
@@ -167,7 +169,14 @@ export const DataMenu = () => {
     })
   }
 
+  /**
+   * Grouped around the local-first storage model (#697): what comes IN, what
+   * lives in this browser, what is deliberately pushed OUT to NDEx, and what
+   * destroys local data. Every NDEx entry names NDEx, so nothing in the menu
+   * can be read as the save that keeps ordinary edits — that already happened.
+   */
   const menuItems: MenuItem[] = [
+    { sectionHeader: 'Open' },
     {
       template: <LoadFromNdexMenuItem onClick={handleOpenNdexDialog} />,
     },
@@ -175,10 +184,10 @@ export const DataMenu = () => {
       template: <LoadWorkspaceMenuItem onClick={handleOpenWorkspaceDialog} />,
     },
     {
-      template: <LoadDemoNetworksMenuItem onClick={handleClose} />,
+      template: <OpenWorkspaceBackupMenuItem onClick={handleClose} />,
     },
     {
-      template: <OpenNetworkInCytoscapeMenuItem onClick={handleClose} />,
+      template: <LoadDemoNetworksMenuItem onClick={handleClose} />,
     },
     {
       label: 'Import',
@@ -192,26 +201,19 @@ export const DataMenu = () => {
         },
       ],
     },
-    {
-      separator: true,
-    },
+
+    { sectionHeader: 'Local Workspace' },
     {
       template: <DuplicateNetworkMenuItem onClick={handleClose} />,
-    },
-    {
-      template: <SaveToNDExMenuItem onClick={handleClose} />,
-    },
-    {
-      template: <CopyNetworkToNDExMenuItem onClick={handleClose} />,
     },
     {
       template: <DownloadNetworkMenuItem onClick={handleClose} />,
     },
     {
-      template: <SaveWorkspaceToNDExOverwriteMenuItem onClick={handleClose} />,
+      template: <ExportWorkspaceBackupMenuItem onClick={handleClose} />,
     },
     {
-      template: <SaveWorkspaceToNDExMenuItem onClick={handleClose} />,
+      template: <OpenNetworkInCytoscapeMenuItem onClick={handleClose} />,
     },
     {
       label: 'Export',
@@ -222,9 +224,22 @@ export const DataMenu = () => {
         },
       ],
     },
+
+    { sectionHeader: 'Publish / Share' },
     {
-      separator: true,
+      template: <SaveToNDExMenuItem onClick={handleClose} />,
     },
+    {
+      template: <CopyNetworkToNDExMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <SaveWorkspaceToNDExOverwriteMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <SaveWorkspaceToNDExMenuItem onClick={handleClose} />,
+    },
+
+    { sectionHeader: 'Manage' },
     {
       template: (
         <RemoveNetworkMenuItem onClick={handleOpenDeleteNetworkDialog} />
@@ -238,9 +253,6 @@ export const DataMenu = () => {
       ),
     },
     {
-      separator: true,
-    },
-    {
       template: (
         <ResetLocalWorkspaceMenuItem
           onClick={handleOpenResetLocalWorkspaceDialog}
@@ -248,8 +260,15 @@ export const DataMenu = () => {
       ),
     },
     ...(serviceMenuItems.length > 0
-      ? [{ separator: true }, ...serviceMenuItems]
+      ? [{ sectionHeader: 'Apps' }, ...serviceMenuItems]
       : []),
+    {
+      separator: true,
+    },
+    {
+      staticContent:
+        'Your workspace stays in this browser until you clear it or export a backup.',
+    },
   ]
 
   return (
@@ -297,12 +316,12 @@ export const DataMenu = () => {
         isAlert
       />
       <ConfirmationDialog
-        title="Reset Local Workspace (for developers)"
-        message="Are you sure you want to reset all workspace data? (This deletes all of the local cache)"
+        title="Clear Local Workspace"
+        message="Delete everything stored in this browser — all networks, tables, styles and the workspace itself? Anything you have not saved to NDEx or exported as a workspace backup is gone for good."
         onConfirm={handleResetLocalWorkspace}
         open={openResetLocalWorkspaceDialog}
         setOpen={setOpenResetLocalWorkspaceDialog}
-        buttonTitle="Reset Workspace (cannot be undone)"
+        buttonTitle="Clear Workspace (cannot be undone)"
         isAlert
       />
       {dialogs}

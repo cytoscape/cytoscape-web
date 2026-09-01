@@ -22,6 +22,7 @@ import {
 import { isHydrating } from './hydrationContext'
 import { persistNetworkSlices } from './persistNetworkSlices'
 import { scheduleWrite } from './persistenceScheduler'
+import { trackWrite } from './trackWrite'
 
 // Re-export for compatibility
 export const DEF_VIEW_TYPE = ViewModelImpl.DEF_VIEW_TYPE
@@ -325,7 +326,7 @@ export const useViewModelStore = create(
           // Skip during cross-tab hydration: the peer tab already deleted this
           // row, so re-deleting it locally only mints another change record.
           if (!isHydrating()) {
-            void deleteNetworkViewsFromDb(networkId)
+            void trackWrite(deleteNetworkViewsFromDb(networkId))
               .then(() => {
                 logStore.info(
                   `[ViewModelStore]: Deleted network views from db: ${networkId}`,
@@ -345,7 +346,7 @@ export const useViewModelStore = create(
         },
         deleteAll() {
           if (!isHydrating()) {
-            void clearNetworkViewsFromDb()
+            void trackWrite(clearNetworkViewsFromDb())
               .then(() => {
                 logStore.info('[ViewModelStore]: Deleted all network views')
               })

@@ -16,7 +16,14 @@ const DatabaseSnapshotFileUpload = lazy(() =>
   })),
 )
 
-export const ImportDatabaseMenuItem = (
+/**
+ * Restores a workspace previously written by `ExportWorkspaceBackupMenuItem`,
+ * replacing the local workspace wholesale.
+ *
+ * Named for what it is to a user rather than for the storage underneath
+ * (#697); this was `Import Database Snapshot` under Help > Developer.
+ */
+export const OpenWorkspaceBackupMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {
   const [showUpload, setShowUpload] = useState(false)
@@ -54,7 +61,7 @@ export const ImportDatabaseMenuItem = (
           0,
         )
         addMessage({
-          message: `Database snapshot imported successfully. ${totalImported} records imported.`,
+          message: `Workspace backup opened. ${totalImported} records restored.`,
           duration: 5000,
           severity: MessageSeverity.SUCCESS,
         })
@@ -66,7 +73,7 @@ export const ImportDatabaseMenuItem = (
       } else {
         const errorMsg = result.errors?.join(', ') || 'Unknown error'
         addMessage({
-          message: `Database snapshot import completed with errors: ${errorMsg}`,
+          message: `Workspace backup opened with errors: ${errorMsg}`,
           duration: 7000,
           severity: MessageSeverity.WARNING,
         })
@@ -76,12 +83,12 @@ export const ImportDatabaseMenuItem = (
       }
     } catch (error) {
       logUi.error(
-        `[${ImportDatabaseMenuItem.name}]:[${handleImport.name}] Failed to import database snapshot`,
+        `[${OpenWorkspaceBackupMenuItem.name}]:[${handleImport.name}] Failed to open the workspace backup`,
         error,
       )
       addMessage({
         message:
-          'Failed to import database snapshot. Please check the file format and try again.',
+          'Failed to open the workspace backup. Please check the file and try again.',
         duration: 5000,
         severity: MessageSeverity.ERROR,
       })
@@ -106,7 +113,7 @@ export const ImportDatabaseMenuItem = (
   return (
     <>
       <DropdownMenuItem
-        label="Import Database Snapshot..."
+        label="Open Workspace Backup..."
         icon={<UploadIcon />}
         onClick={handleMenuItemClick}
       />
@@ -122,13 +129,13 @@ export const ImportDatabaseMenuItem = (
         </Suspense>
       )}
       <ConfirmationDialog
-        title="Import Database Snapshot"
-        message={`Are you sure you want to import the database snapshot from "${file?.name}"? This will replace all existing data in the database. This action cannot be undone.`}
+        title="Open Workspace Backup"
+        message={`Open the workspace backup "${file?.name}"? Everything currently in your local workspace — networks, tables and styles — is replaced. This cannot be undone.`}
         onConfirm={handleImport}
         onCancel={handleCancel}
         open={showConfirm}
         setOpen={setShowConfirm}
-        buttonTitle="Import (cannot be undone)"
+        buttonTitle="Open Backup (cannot be undone)"
         isAlert={true}
       />
     </>

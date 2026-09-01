@@ -21,18 +21,64 @@ test.describe('Toolbar Menus', () => {
   }) => {
     await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
 
-    // TieredMenu root items: "Import" and "Export" are visible
-    await expect(page.getByRole('menuitem', { name: 'Import' })).toBeVisible()
-    await expect(page.getByRole('menuitem', { name: 'Export' })).toBeVisible()
+    // Exact: "Export Workspace Backup..." is a sibling entry that would
+    // otherwise also match a substring locator for "Export" (#697).
+    await expect(
+      page.getByRole('menuitem', { name: 'Import', exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('menuitem', { name: 'Export', exact: true }),
+    ).toBeVisible()
+  })
+
+  test('Data menu groups entries under local-first section headings', async ({
+    page,
+  }) => {
+    await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
+
+    for (const section of [
+      'Open',
+      'Local Workspace',
+      'Publish / Share',
+      'Manage',
+    ]) {
+      await expect(
+        page.locator(`[data-testid="menu-section-${section}"]`),
+      ).toBeVisible()
+    }
+
+    // Workspace backup moved out of Help > Developer and was renamed for what
+    // it is to a user (#697).
+    await expect(
+      page.getByRole('menuitem', { name: 'Export Workspace Backup...' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('menuitem', { name: 'Open Workspace Backup...' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('menuitem', { name: 'Clear Local Workspace...' }),
+    ).toBeVisible()
+  })
+
+  test('Data menu section headings are not menu items', async ({ page }) => {
+    await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
+
+    const heading = page.locator('[data-testid="menu-section-Manage"]')
+    await expect(heading).toBeVisible()
+    // No role="menuitem", which is what keeps arrow navigation from stopping
+    // on a heading that does nothing (see DropdownMenu.spec.tsx).
+    expect(await heading.getAttribute('role')).toBeNull()
   })
 
   test('Data menu closes on Escape', async ({ page }) => {
     await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
-    await expect(page.getByRole('menuitem', { name: 'Import' })).toBeVisible()
+    await expect(
+      page.getByRole('menuitem', { name: 'Import', exact: true }),
+    ).toBeVisible()
 
     await page.keyboard.press('Escape')
     await expect(
-      page.getByRole('menuitem', { name: 'Import' }),
+      page.getByRole('menuitem', { name: 'Import', exact: true }),
     ).not.toBeVisible()
   })
 

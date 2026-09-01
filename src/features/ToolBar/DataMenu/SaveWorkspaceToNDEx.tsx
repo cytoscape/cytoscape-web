@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { KeycloakContext } from '@/boot/keycloak'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+import { useNdexGate } from './ndexAvailability'
 import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
 export const SaveWorkspaceToNDExMenuItem = (
@@ -36,13 +37,14 @@ export const SaveWorkspaceToNDExMenuItem = (
   if (!enabled && allNetworkId.length > 0) {
     tooltipTitle = 'Login to save a copy of the current workspace to NDEx'
   }
+  const ndex = useNdexGate(enabled, tooltipTitle)
 
   return (
     <>
       <DropdownMenuItem
-        label="Save Workspace As..."
-        tooltip={tooltipTitle}
-        disabled={!enabled}
+        label="Save Workspace to NDEx As..."
+        tooltip={ndex.tooltip}
+        disabled={ndex.disabled}
         onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
       />
       {enabled && (

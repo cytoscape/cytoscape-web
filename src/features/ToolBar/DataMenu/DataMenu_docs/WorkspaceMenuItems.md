@@ -138,7 +138,7 @@ Dialog component for naming a workspace before saving to NDEx.
 
 ### Saving a Workspace (New)
 
-1. User clicks "Save Workspace As..." menu item
+1. User clicks "Save Workspace to NDEx As..." menu item
 2. Naming dialog opens
 3. User enters workspace name
 4. System checks for duplicate names
