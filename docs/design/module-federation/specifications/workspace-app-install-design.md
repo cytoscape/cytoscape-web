@@ -780,11 +780,11 @@ orphan `removeOrphan` remains unconfirmed; only true uninstall is confirmed.)
 
 | File | Change |
 | --- | --- |
-| `AppListPanel.tsx` | `AppDisplayEntry` gains `source` and `removable`; `getAction()` is split into a primary-action selector and a `removable` predicate; add the overflow menu and the confirmation dialog |
+| `AppListPanel.tsx` | `AppDisplayEntry` gains `source` and `removable`; `getAction()` is split into a primary-action selector and a `removable` predicate; add the overflow menu and the confirmation dialog. `removable` reads `AppStore.manifestIds`, not `source` (§12.3) |
 | `AppSettingsDialog.tsx` | Add the **Install from URL** action on the Apps tab (§12.8), distinct from the existing manifest-source controls |
 | `useAppManager.ts` | Implement `uninstallApp(id)`; add `installApp`/`uninstallApp` to `AppManagerCommands` |
 | `WorkspaceStore.ts` | `removeInstalledApp(id)` / `setInstalledAppStatus(id, status)` actions (§10.2) |
-| catalog merge (§8.1) | Propagate `source` onto each merged catalog entry so the panel can decide removability |
+| catalog merge (§8.1) | Return `manifestIds` alongside `entries` and `sources`. The panel decides removability from `manifestIds` (§12.3); `source` only drives the provenance chip |
 
 `AppManagerCommandsContext` needs no change — it spreads the hook's command
 surface, so the new commands flow through automatically.
