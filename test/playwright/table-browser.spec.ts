@@ -132,4 +132,37 @@ test.describe('Table Browser', () => {
       ).not.toBeVisible()
     })
   })
+
+  test.describe('7. Grid Sizing', () => {
+    test('7.1 Grid shrinks to fit when the side panel opens', async ({
+      page,
+    }) => {
+      // Regression: the grids were sized with window.innerWidth, so opening
+      // the right side panel (which fires no window resize) left the grid
+      // window-wide — its last columns stuck behind the panel, unreachable
+      // by horizontal scrolling.
+      await gotoAndSeedNetwork(page)
+
+      const nodeEditor = page.locator(
+        '[data-testid="table-browser-node-editor"]',
+      )
+      await expect(nodeEditor).toBeVisible()
+
+      await page.click('[data-testid="side-panel-open-button"]')
+      // Allotment.Pane does not forward data-testid to the DOM, so target
+      // the panel's own content instead of the pane wrapper.
+      const sidePanel = page.locator('[data-testid="side-panel"]')
+      await expect(sidePanel).toBeVisible()
+
+      // The ResizeObserver update is async — poll until the grid's right
+      // edge no longer extends under the side panel.
+      await expect(async () => {
+        const grid = await nodeEditor.boundingBox()
+        const panel = await sidePanel.boundingBox()
+        expect(grid).not.toBeNull()
+        expect(panel).not.toBeNull()
+        expect(grid!.x + grid!.width).toBeLessThanOrEqual(panel!.x + 1)
+      }).toPass({ timeout: 5000 })
+    })
+  })
 })

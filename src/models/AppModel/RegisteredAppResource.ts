@@ -9,7 +9,11 @@
  * Duplicated from AppResourceTypes.ts to keep the model layer free of
  * app-api imports. Must stay in sync.
  */
-export type ResourceSlot = 'right-panel' | 'apps-menu'
+export type ResourceSlot =
+  | 'right-panel'
+  | 'apps-menu'
+  | 'search-bar'
+  | 'modal-launcher'
 
 /**
  * A registered app resource — the internal representation stored in
@@ -49,9 +53,11 @@ export interface RegisteredAppResource {
    * The React component to render. Typed as `unknown` here to keep the store
    * model free of React imports. Host renderers cast to the appropriate
    * slot-specific prop type at the call site.
-   * Must be a function (validated at registration time).
+   * Required for 'right-panel' and 'apps-menu' (validated at registration
+   * time). For 'search-bar' it holds the optional "More Options" panel
+   * (optionsComponent) and may be absent.
    */
-  readonly component: unknown
+  readonly component?: unknown
   /**
    * Optional custom error fallback component. Typed as `unknown` here;
    * renderers cast to React.ComponentType<{ error: Error; resetErrorBoundary: () => void }>.
@@ -64,4 +70,33 @@ export interface RegisteredAppResource {
    * @default false
    */
   readonly closeOnAction?: boolean
+
+  // ── 'search-bar' slot only ─────────────────────────────────────
+  // A network search provider stores its display name in `title` and its
+  // optionsComponent in `component`; the fields below carry the rest of
+  // its registration metadata.
+
+  /** Short text describing what this provider searches. */
+  readonly description?: string
+  /** http(s) or data:image URI for the provider icon. */
+  readonly icon?: string
+  /** http(s) URL of the provider's website. */
+  readonly website?: string
+  /** Placeholder text for the host-owned search input. */
+  readonly placeholder?: string
+  /**
+   * The provider's submit handler. Typed as `unknown` to keep the model
+   * layer free of app-api imports; the host casts to
+   * `(query: NetworkSearchQuery) => void | Promise<void>` at the call site.
+   */
+  readonly onSubmit?: unknown
+
+  // ── 'modal-launcher' slot only ─────────────────────────────────
+  // Plain literals rather than MUI's Breakpoint type: the model layer
+  // stays MUI-free. The host's dialog shell forwards them to CyDialog.
+
+  /** Maximum dialog width. Defaults to 'sm' when undefined. */
+  readonly maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false
+  /** Stretch the dialog to `maxWidth`. Defaults to false when undefined. */
+  readonly fullWidth?: boolean
 }

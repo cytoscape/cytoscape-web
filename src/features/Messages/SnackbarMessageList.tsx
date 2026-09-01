@@ -66,11 +66,18 @@ export const SnackbarMessageList = (): React.ReactElement => {
   return (
     <Snackbar
       data-testid="snackbar-message-list"
-      sx={{ zIndex: 9999999, top: '64px !important' }}
       open={open}
       onClose={handleSnackbarClose}
       autoHideDuration={autoHideDuration}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      sx={{
+        zIndex: 9999999,
+        top: '64px !important',
+        '& .MuiPaper-root': {
+          borderRadius: 2,
+          boxShadow: 6,
+        },
+      }}
     >
       <Alert
         severity={currentMessage?.severity ?? MessageSeverity.INFO}

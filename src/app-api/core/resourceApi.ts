@@ -6,6 +6,7 @@
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import { useModalLauncherStore } from '../../data/hooks/stores/ModalLauncherStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { logApp } from '../../debug'
@@ -17,12 +18,21 @@ import { AppCodes, fail, ok } from '../types/ApiResult'
 import type {
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
+  RegisterModalOptions,
+  RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
   ResourceApi,
   ResourceVisibilityResult,
 } from '../types/AppResourceTypes'
 
-const SUPPORTED_SLOTS: ResourceSlot[] = ['right-panel', 'apps-menu']
+const SUPPORTED_SLOTS: ResourceSlot[] = [
+  'right-panel',
+  'apps-menu',
+  'search-bar',
+  'modal-launcher',
+]
+
+const MODAL_MAX_WIDTHS = ['xs', 'sm', 'md', 'lg', 'xl'] as const
 
 /** True when the current network's view has at least one selected element. */
 function hasSelection(): boolean {
@@ -36,14 +46,56 @@ function hasSelection(): boolean {
 }
 
 /**
+ * React element markers. An element instance (`<Foo />`) carries one of
+ * these as its `$$typeof` — a common registration mistake ("pass the
+ * component, not the rendered element") that must be rejected here, since
+ * it would otherwise only explode much later, inside the host renderer.
+ * 'react.transitional.element' is the React 19 name for 'react.element'.
+ */
+const REACT_ELEMENT_MARKERS = new Set<symbol>([
+  Symbol.for('react.element'),
+  Symbol.for('react.transitional.element'),
+  Symbol.for('react.portal'),
+])
+
+/**
  * Check if a value is a valid React component type.
- * Accepts function components, class components, React.lazy(), React.memo(),
- * and React.forwardRef() — all of which are either functions or non-null objects.
- * Rejects primitives (string, number, boolean, null, undefined).
+ * Accepts function components and class components (functions), and the
+ * exotic object component types — React.lazy(), React.memo(),
+ * React.forwardRef() — which are objects branded with a symbol `$$typeof`.
+ * Rejects primitives, plain objects (`{}`), and React element instances.
  */
 function isValidComponent(value: unknown): boolean {
+  if (typeof value === 'function') return true
+  if (typeof value !== 'object' || value === null) return false
+  const marker = (value as { $$typeof?: unknown }).$$typeof
+  return typeof marker === 'symbol' && !REACT_ELEMENT_MARKERS.has(marker)
+}
+
+/**
+ * True when the value is an http(s) URL. Rejects everything else —
+ * notably `javascript:` URIs, which must never reach `window.open` or an
+ * `<img src>`.
+ */
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * True when the value is an http(s) URL, an inline data:image URI, or a
+ * root-relative path (a bundled asset served by the host — how built-in
+ * providers reference their logos).
+ */
+function isValidIconUri(value: string): boolean {
   return (
-    typeof value === 'function' || (typeof value === 'object' && value !== null)
+    isHttpUrl(value) ||
+    value.startsWith('data:image/') ||
+    value.startsWith('/')
   )
 }
 
@@ -149,9 +201,198 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     }
   },
 
+  registerNetworkSearchProvider(options) {
+    try {
+      // typeof guards before any string method: entries can arrive from
+      // untyped JS apps with any shape, and a thrown TypeError would come
+      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      if (typeof options.id !== 'string' || options.id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (typeof options.name !== 'string' || options.name.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'name is required and must be non-empty',
+        )
+      }
+      if (typeof options.onSubmit !== 'function') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `onSubmit must be a function, got ${typeof options.onSubmit}`,
+        )
+      }
+      if (
+        options.optionsComponent !== undefined &&
+        !isValidComponent(options.optionsComponent)
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `optionsComponent must be a React component (function or object like React.lazy), got ${typeof options.optionsComponent}`,
+        )
+      }
+      if (
+        options.icon !== undefined &&
+        (typeof options.icon !== 'string' || !isValidIconUri(options.icon))
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'icon must be an http(s) URL or a data:image URI',
+        )
+      }
+      if (
+        options.website !== undefined &&
+        (typeof options.website !== 'string' || !isHttpUrl(options.website))
+      ) {
+        return fail(AppCodes.INVALID_INPUT, 'website must be an http(s) URL')
+      }
+      const store = useAppResourceStore.getState()
+      store.upsertResource({
+        id: options.id,
+        appId,
+        slot: 'search-bar',
+        title: options.name,
+        description: options.description,
+        icon: options.icon,
+        website: options.website,
+        placeholder: options.placeholder,
+        component: options.optionsComponent as unknown,
+        onSubmit: options.onSubmit as unknown,
+        errorFallback: options.errorFallback as unknown,
+      })
+      return ok({ resourceId: `${appId}::search-bar::${options.id}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  unregisterNetworkSearchProvider(providerId) {
+    try {
+      const store = useAppResourceStore.getState()
+      if (!store.hasResource(appId, 'search-bar', providerId)) {
+        return fail(
+          AppCodes.RESOURCE_NOT_FOUND,
+          `Network search provider '${providerId}'`,
+        )
+      }
+      store.removeResource(appId, 'search-bar', providerId)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  registerModal(options) {
+    try {
+      // typeof guards before any string method: entries can arrive from
+      // untyped JS apps with any shape, and a thrown TypeError would come
+      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      if (typeof options.id !== 'string' || options.id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!isValidComponent(options.component)) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
+        )
+      }
+      if (
+        options.maxWidth !== undefined &&
+        options.maxWidth !== false &&
+        !MODAL_MAX_WIDTHS.includes(options.maxWidth)
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          "maxWidth must be one of 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false",
+        )
+      }
+      if (
+        options.fullWidth !== undefined &&
+        typeof options.fullWidth !== 'boolean'
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `fullWidth must be a boolean, got ${typeof options.fullWidth}`,
+        )
+      }
+      const store = useAppResourceStore.getState()
+      store.upsertResource({
+        id: options.id,
+        appId,
+        slot: 'modal-launcher',
+        maxWidth: options.maxWidth,
+        fullWidth: options.fullWidth,
+        component: options.component as unknown,
+        errorFallback: options.errorFallback as unknown,
+      })
+      return ok({ resourceId: `${appId}::modal-launcher::${options.id}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  unregisterModal(modalId) {
+    try {
+      const store = useAppResourceStore.getState()
+      if (!store.hasResource(appId, 'modal-launcher', modalId)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${modalId}'`)
+      }
+      store.removeResource(appId, 'modal-launcher', modalId)
+      // An unregistered modal must not stay on screen (or resurface if the
+      // same id is re-registered later).
+      useModalLauncherStore.getState().closeModal(appId, modalId)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  openModal(id) {
+    try {
+      if (typeof id !== 'string' || id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${id}'`)
+      }
+      useModalLauncherStore.getState().openModal(appId, id)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  closeModal(id) {
+    try {
+      if (typeof id !== 'string' || id.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'id is required and must be non-empty',
+        )
+      }
+      if (!useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${id}'`)
+      }
+      useModalLauncherStore.getState().closeModal(appId, id)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
   unregisterAll() {
     try {
       useAppResourceStore.getState().removeAllByAppId(appId)
+      // Unregistered modals must not stay on screen.
+      useModalLauncherStore.getState().closeAllByAppId(appId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -174,14 +415,23 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         result = this.registerPanel(entry as RegisterPanelOptions)
       } else if (entry.slot === 'apps-menu') {
         result = this.registerMenuItem(entry as RegisterMenuItemOptions)
+      } else if (entry.slot === 'search-bar') {
+        result = this.registerNetworkSearchProvider(
+          entry as RegisterNetworkSearchProviderOptions,
+        )
+      } else if (entry.slot === 'modal-launcher') {
+        result = this.registerModal(entry as RegisterModalOptions)
       } else {
+        // Statically unreachable (the union is exhaustive), but entries can
+        // arrive from untyped JS apps with any slot string at runtime.
+        const unknownEntry = entry as { id: string; slot: ResourceSlot }
         errors.push({
-          id: entry.id,
-          slot: entry.slot,
+          id: unknownEntry.id,
+          slot: unknownEntry.slot,
           error: {
             code: AppCodes.INVALID_INPUT.code,
             severity: AppCodes.INVALID_INPUT.severity,
-            message: `Unsupported slot: ${entry.slot}`,
+            message: `Unsupported slot: ${unknownEntry.slot}`,
           },
         })
         continue

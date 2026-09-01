@@ -1,5 +1,6 @@
 import { markReady } from '@/app-api/core/ready'
 import { initEventBus } from '@/app-api/event-bus/initEventBus'
+import { registerNdexNetworkSearchProvider } from '@/features/NetworkSearch/builtin/registerNdexNetworkSearchProvider'
 import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
@@ -33,6 +34,10 @@ export const publishWorkspace = (draft: WorkspaceDraft): void => {
   useNetworkSummaryStore.getState().addAll(summaries)
   useWorkspaceStore.getState().set(workspace)
   markBoot('workspace-hydrated')
+
+  // Host-provided resources (store seeding only — no UI imports). Registered
+  // here so the workspace renders with its built-in search provider in place.
+  registerNdexNetworkSearchProvider()
 
   // After hydration, so store subscriptions do not emit spurious
   // network:created / network:switched events for the initial state.

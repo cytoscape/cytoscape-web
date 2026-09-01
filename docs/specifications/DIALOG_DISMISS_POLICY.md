@@ -49,6 +49,16 @@ belongs on a button. Every other `DialogProps` forwards untouched.
 
 **All 40 `<Dialog>` sites**, through `CyDialog`.
 
+**Every app modal, structurally.** Third-party apps open dialogs through the
+`modal-launcher` resource slot (#690): the host renders the app's content inside its own
+`CyDialog` shell (`AppManager/ModalLauncherHost.tsx`), so backdrop and <kbd>Esc</kbd> are
+inert without the app doing anything — and cannot be re-enabled by the app. The shell also
+always renders a Close "X" in the top-right corner wired to the same close path as the
+injected `requestClose`, so the "visible exit" requirement holds even when an app modal
+renders no button of its own (or crashes into its error fallback). Apps should still wire
+their own Cancel/Close buttons to `requestClose`; the host X is the structural guarantee,
+not a substitute.
+
 **The four modal form popovers.** These are anchored but behave as modal editors, so they follow
 the same rule through their own props:
 
@@ -62,6 +72,11 @@ the same rule through their own props:
 `MappingForm` and `BypassForm` joined this list in the #628 sweep; before it they closed on
 click-away and had no button of their own, which is exactly the inconsistency the policy exists to
 remove. Both now carry a Close button.
+
+The network search bar's "More Options" popup — #688,
+`NetworkSearch/NetworkSearchOptionsPopover.tsx` — is deliberately in the **out-of-scope** class
+instead: it behaves like the bar's other anchored surfaces and dismisses on click-away or Escape,
+while still carrying a host-rendered Close button as an explicit exit.
 
 **Out of scope: anchored, non-modal `<Menu>` / `<Popover>` surfaces** — context menus, palette
 pickers, nested toolbar menus. Click-away dismissal is correct for a menu; see
@@ -106,7 +121,7 @@ half-filled form, and no dialog closes into a state the user did not choose.
 - `src/components/CyDialog.spec.tsx` — asserts backdrop click and <kbd>Esc</kbd> leave the dialog
   open, and that the dialog's own buttons still fire.
 - `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` holds a control
-  whose label, `aria-label` or `data-testid` reads as a way out, and that the four form popovers
+  whose label, `aria-label` or `data-testid` reads as a way out, and that the form popovers listed above
   keep both guard props. A Submit-only dialog fails. This is the check that keeps a dialog from
   shipping with no exit; it caught the service-app run dialog.
 - `test/playwright/dialog-dismiss.spec.ts` — per dialog: <kbd>Esc</kbd> and a backdrop click leave

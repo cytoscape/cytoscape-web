@@ -2,10 +2,26 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
-## 1.0.0-beta.4 (2026-07-19)
+## 1.0.0-beta.4 (unpublished)
 
 ### Added
 
+- **`'modal-launcher'` resource slot** (#690). Apps register modal dialog
+  content the host renders inside its own React tree — host theme, error
+  isolation, Suspense for lazy chunks, and the host's dialog shell with its
+  button-only dismissal policy and structural Close "X". New types
+  `RegisterModalOptions` and `ModalHostProps`; `ResourceSlot` and
+  `ResourceDeclaration`/`RegisterResourceEntry` gained the slot; and
+  `ResourceApi` gained `registerModal`, `unregisterModal`, and the
+  imperative `openModal(id)` / `closeModal(id)` — callable from app logic
+  with no mounted component (a search provider's `onSubmit`, a menu
+  action). Open modals survive the launching component's unmount and are
+  closed automatically on app deactivation; `unregisterModal` and
+  `unregisterAll` close what they remove.
+- **`'search-bar'` resource slot** (#688 — landed after the entries below
+  were written). `RegisterNetworkSearchProviderOptions`,
+  `NetworkSearchQuery`, `NetworkSearchOptionsHostProps`; `ResourceApi`
+  gained `registerNetworkSearchProvider` / `unregisterNetworkSearchProvider`.
 - **Readiness promise.** `CyWebApi.whenReady()` resolves with the API once
   startup completes (immediately if already ready); `CyWebApi.isReady()`
   returns the current boolean. Wraps the one-shot `cywebapi:ready` event.

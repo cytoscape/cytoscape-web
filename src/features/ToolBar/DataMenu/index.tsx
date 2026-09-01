@@ -29,6 +29,7 @@ import { LoadFromNdexDialog } from './LoadFromNdexDialog'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
 import LoadWorkspaceDialog from './LoadWorkspaceDialog'
 import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
+import { useLoadFromNdexDialogStore } from './store/loadFromNdexDialogStore'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
@@ -39,7 +40,6 @@ import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverw
 
 export const DataMenu = () => {
   const [open, setOpen] = useState(false)
-  const [openNdexDialog, setOpenNdexDialog] = useState(false)
   const [openWorkspaceDialog, setOpenWorkspaceDialog] = useState(false)
   const [openFileUpload, setOpenFileUpload] = useState(false)
   // Mount latch for the lazy FileUpload dialog: stays true after the first
@@ -65,13 +65,22 @@ export const DataMenu = () => {
     onBeforeRun,
   )
 
-  // NDEx loading handlers
+  // NDEx dialog state lives in a store: the network search bar's NDEx
+  // provider opens the same dialog (with a query to run) from outside
+  // this menu.
+  const openNdexDialog = useLoadFromNdexDialogStore((state) => state.isOpen)
+  const ndexInitialQuery = useLoadFromNdexDialogStore(
+    (state) => state.initialQuery,
+  )
+  const openNdexDialogAction = useLoadFromNdexDialogStore(
+    (state) => state.openDialog,
+  )
+  const handleCloseNdexDialog = useLoadFromNdexDialogStore(
+    (state) => state.closeDialog,
+  )
   const handleOpenNdexDialog = (): void => {
     handleClose()
-    setOpenNdexDialog(true)
-  }
-  const handleCloseNdexDialog = (): void => {
-    setOpenNdexDialog(false)
+    openNdexDialogAction()
   }
 
   // Workspace loading handlers
@@ -255,6 +264,7 @@ export const DataMenu = () => {
       <LoadFromNdexDialog
         open={openNdexDialog}
         handleClose={handleCloseNdexDialog}
+        initialQuery={ndexInitialQuery ?? undefined}
       />
       <LoadWorkspaceDialog
         open={openWorkspaceDialog}

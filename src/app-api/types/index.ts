@@ -102,9 +102,14 @@ export { MAX_APP_DATA_VALUE_BYTES } from './AppDataTypes'
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
   MenuItemHostProps,
+  ModalHostProps,
+  NetworkSearchOptionsHostProps,
+  NetworkSearchQuery,
   PanelHostProps,
   RegisteredResourceInfo,
   RegisterMenuItemOptions,
+  RegisterModalOptions,
+  RegisterNetworkSearchProviderOptions,
   RegisterPanelOptions,
   RegisterResourceEntry,
   ResourceApi,

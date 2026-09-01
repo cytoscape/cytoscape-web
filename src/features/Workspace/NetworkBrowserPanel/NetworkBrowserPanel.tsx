@@ -22,6 +22,7 @@ import { Ui } from '../../../models/UiModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
+import { NetworkSearchBar } from '../../NetworkSearch'
 import { prefetchOnIdle } from '@/utils/idlePrefetch'
 import { Summaries as SummaryList } from '../../SummaryPanel'
 import { WorkspaceNamePanel } from './WorkspaceNamePanel'
@@ -223,6 +224,9 @@ export const NetworkBrowserPanel = ({
               onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
             />
           )}
+        </Box>
+        <Box hidden={currentTabIndex !== 0} sx={{ width: '100%' }}>
+          <NetworkSearchBar />
         </Box>
         <Box
           hidden={currentTabIndex !== 0}

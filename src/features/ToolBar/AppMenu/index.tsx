@@ -1,6 +1,6 @@
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AppIdProvider } from '../../../app-api/AppIdContext'
 import { buildPerAppApis } from '../../../app-api/core/perAppApis'
@@ -96,6 +96,12 @@ export const AppMenu = () => {
         const MenuComponent = r.component as React.ComponentType<any>
         const perAppApis = buildPerAppApis(r.appId)
 
+        // Local Suspense is required: registered components may be
+        // React.lazy(), and without a boundary here the first open would
+        // suspend all the way up to the app-level boundary, hiding the whole
+        // shell behind the boot screen — which also corrupts allotment's
+        // split-view state in the workspace editor (see
+        // useRemountKeyOnReveal).
         const wrapped = r.closeOnAction ? (
           <div
             key={`${r.appId}::apps-menu::${r.id}`}
@@ -109,7 +115,9 @@ export const AppMenu = () => {
                 slot="apps-menu"
                 customFallback={r.errorFallback as any}
               >
-                <MenuComponent handleClose={handleClose} />
+                <Suspense fallback={null}>
+                  <MenuComponent handleClose={handleClose} />
+                </Suspense>
               </PluginErrorBoundary>
             </AppIdProvider>
           </div>
@@ -123,7 +131,9 @@ export const AppMenu = () => {
               slot="apps-menu"
               customFallback={r.errorFallback as any}
             >
-              <MenuComponent handleClose={handleClose} />
+              <Suspense fallback={null}>
+                <MenuComponent handleClose={handleClose} />
+              </Suspense>
             </PluginErrorBoundary>
           </AppIdProvider>
         )
@@ -152,8 +162,15 @@ export const AppMenu = () => {
           freshComponent?.component ??
           component.component ??
           ExternalComponent(appId, './' + component.id)
+        // ExternalComponent returns a React.lazy() — the same missing-boundary
+        // hazard as the runtime branch above, and the branch that suspended the
+        // whole shell in practice (manifest menu chunks load on first open).
         const menuItem: MenuItem = {
-          template: <MenuComponent key={index} handleClose={handleClose} />,
+          template: (
+            <Suspense key={index} fallback={null}>
+              <MenuComponent handleClose={handleClose} />
+            </Suspense>
+          ),
         }
         return menuItem
       })

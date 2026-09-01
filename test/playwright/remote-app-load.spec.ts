@@ -121,6 +121,56 @@ test.describe('host loads a real federated remote', () => {
     )
     expect(hookErrors).toEqual([])
   })
+  test('modal-launcher: a host-rendered modal outlives the dropdown that opened it', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    // Register the fixture remote and activate it.
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
+    await page.getByText('Manifest Source').click()
+    await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
+    await page.getByRole('button', { name: 'Apply' }).click()
+    const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
+    await expect(toggle).toBeVisible({ timeout: 15_000 })
+    await toggle.click()
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible(
+      { timeout: 15_000 },
+    )
+    await page.getByTestId('app-settings-dialog-close-button').click()
+
+    // Open the modal from the fixture's apps-menu item. The item is
+    // registered with closeOnAction: true, so the dropdown closes — and
+    // unmounts the launching component — right after the click.
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    const menuItem = page.locator(
+      '[data-testid="remote-open-modal-menu-item"]',
+    )
+    await expect(menuItem).toBeVisible({ timeout: 10_000 })
+    await menuItem.click()
+
+    // The dropdown (and with it the launcher) is gone...
+    await expect(menuItem).not.toBeVisible()
+
+    // ...but the modal is host-rendered under AppShell and survives. Its
+    // content is a hooks-using component from the remote bundle, rendered
+    // inside the host's dialog shell (modal-launcher wrapper stack).
+    const dialog = page.locator(
+      '[data-testid="modal-launcher-dialog-testRemoteApp-fixture-modal"]',
+    )
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await expect(
+      page.locator('[data-testid="remote-modal-marker"]'),
+    ).toContainText('modal-hooks-ok')
+
+    // The injected requestClose (wired to the app's Cancel button) closes it.
+    // (Close-on-deactivation is covered at the unit level: the cleanup
+    // registry cannot be driven from here once the modal covers the UI.)
+    await page.locator('[data-testid="remote-modal-cancel"]').click()
+    await expect(dialog).not.toBeVisible()
+  })
+
   // G-6: activateApp reached loadRemoteApp with no origin check, so a manifest
   // the *user* pointed at could name any URL and the host would fetch and
   // execute it. The two tests above still pass because host and app are both on
