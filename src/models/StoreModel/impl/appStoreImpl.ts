@@ -51,6 +51,7 @@ export interface AppState {
   currentTask?: ServiceAppTask
   catalog: Record<string, AppCatalogEntry>
   catalogSources: Record<string, AppSource>
+  manifestIds: string[]
   loadStates: Record<string, AppLoadState>
   manifestSource?: ManifestSource
 }
@@ -332,11 +333,17 @@ export const updateInputColumn = (
  * Replace the entire catalog with entries keyed by id, along with each
  * entry's provenance. When `sources` is omitted, every entry defaults to
  * `'manifest'`.
+ *
+ * `manifestIds` is the set of ids the manifest itself carries. It is kept
+ * apart from `catalogSources` because a pinned install shadows the manifest
+ * source tag on a collision (composeCatalog §8.1). When omitted it falls back
+ * to the entries whose resolved source is `'manifest'`.
  */
 export const setCatalog = (
   state: AppState,
   entries: AppCatalogEntry[],
   sources?: Record<string, AppSource>,
+  manifestIds?: string[],
 ): AppState => {
   const catalog: Record<string, AppCatalogEntry> = {}
   const catalogSources: Record<string, AppSource> = {}
@@ -348,6 +355,11 @@ export const setCatalog = (
     ...state,
     catalog,
     catalogSources,
+    manifestIds:
+      manifestIds ??
+      Object.keys(catalogSources).filter(
+        (id) => catalogSources[id] === 'manifest',
+      ),
   }
 }
 

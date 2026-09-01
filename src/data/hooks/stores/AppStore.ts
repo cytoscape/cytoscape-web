@@ -71,6 +71,7 @@ export const useAppStore = create(
     currentTask: undefined,
     catalog: {},
     catalogSources: {},
+    manifestIds: [],
     loadStates: {},
     manifestSource: undefined,
 
@@ -279,11 +280,18 @@ export const useAppStore = create(
     setCatalog: (
       entries: AppCatalogEntry[],
       sources?: Record<string, AppSource>,
+      manifestIds?: string[],
     ) => {
       set((state) => {
-        const newState = AppStoreImpl.setCatalog(state, entries, sources)
+        const newState = AppStoreImpl.setCatalog(
+          state,
+          entries,
+          sources,
+          manifestIds,
+        )
         state.catalog = newState.catalog
         state.catalogSources = newState.catalogSources
+        state.manifestIds = newState.manifestIds
         return state
       })
     },

@@ -709,15 +709,34 @@ Two distinct operations must be visually separated:
 Uninstall removes the app from the workspace and therefore from any future
 workspace snapshot, so it is treated as destructive and requires confirmation.
 
-### 12.3 Removability by source
+### 12.3 Removability by manifest membership
 
-Whether a row can be uninstalled is driven by `InstalledApp.source`:
+Whether a row can be uninstalled is driven by **manifest membership**, not by
+`InstalledApp.source`:
 
-| Source | Uninstall? | Rationale |
+| Row | Uninstall? | Rationale |
 | --- | --- | --- |
-| `manifest` | No — disable only | Removal is meaningless; `Refresh` would re-add it from `apps.json` |
-| `appstore` / `snapshot` | Yes | Lives in `workspace.installedApps`; removing it is a real uninstall |
+| id present in the resolved manifest | No — disable only | Removal is meaningless; `recomposeCatalog` re-adds it from `apps.json` |
+| id absent from the manifest, `source: appstore` / `snapshot` | Yes | Lives only in `workspace.installedApps`; removing it is a real uninstall |
 | orphan (legacy) | Yes (fallback) | Existing `removeOrphan` retained for pre-migration leftovers |
+
+`source` alone is the wrong test. On an id collision `composeCatalog` (§8.1)
+lets a pinned `appstore`/`snapshot` record win and overwrite the `'manifest'`
+tag, and both stamping sites apply their source unconditionally: a snapshot
+restore tags every restored entry `'snapshot'`, an App Store install tags every
+install `'appstore'`. Keying off `source` therefore offered **Uninstall** on
+`apps.json` apps, and confirming it only discarded the pinned URL before the
+manifest entry returned (issue #699).
+
+`composeCatalog` returns `manifestIds` alongside `entries` and `sources`;
+`AppStore.manifestIds` holds it, `AppListPanel` reads it, and `uninstallApp`
+refuses any id it contains.
+
+**Cost:** a pinned App Store version installed over a manifest id can no longer
+be reverted to the manifest version from the UI. Reverting was never labelled
+as such — it was an **Uninstall** that appeared to fail — so nothing
+discoverable is lost. A dedicated `Revert to manifest version` action is the
+place to add it back.
 
 ### 12.4 Row layout
 
@@ -736,15 +755,17 @@ through an **overflow (kebab) menu**:
                                                              • Report a bug  (future)
 ```
 
-- The overflow menu appears only when the row is removable (§12.3). Manifest
-  rows show the toggle alone.
+- The overflow menu appears only when the row is removable (§12.3). Rows the
+  manifest still ships show the toggle alone.
 - `Uninstall` works regardless of active/inactive: an active app is deactivated
   first, then removed.
 - The menu is the extension point for future App Store metadata actions
   (`App details`, `Report a bug` → `repository` issues link), per
   [app-store-design.md](./app-store-design.md) §13.
-- A small `App Store` indicator chip marks installed (non-manifest) rows so the
-  presence of the menu is self-explanatory (optional).
+- A small `App Store` / `Snapshot` indicator chip marks rows whose entry did not
+  come from the manifest. The chip tracks `source`, not removability, so a
+  pinned install shadowing a manifest id still shows where its URL came from
+  even though it has no menu.
 
 ### 12.5 Confirmation
 

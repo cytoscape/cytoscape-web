@@ -20,8 +20,13 @@ export interface AppState {
   catalog: Record<string, AppCatalogEntry>
 
   // Provenance of each merged catalog entry (manifest | appstore | snapshot),
-  // session-local; consumed by the App Manager UI to decide removability
+  // session-local; records which entry won the merge, not whether the manifest
+  // still ships the app
   catalogSources: Record<string, AppSource>
+
+  // Ids the resolved manifest carries, independent of which entry won the
+  // merge; consumed by the App Manager UI to decide removability (§12.3)
+  manifestIds: string[]
 
   // Per-app runtime load state (session-local, not persisted)
   loadStates: Record<string, AppLoadState>
@@ -123,10 +128,13 @@ export interface AppAction {
   /**
    * Replace the entire catalog with new entries plus their provenance.
    * When `sources` is omitted, every entry defaults to `'manifest'`.
+   * When `manifestIds` is omitted, it falls back to the entries whose
+   * resolved source is `'manifest'`.
    */
   setCatalog: (
     entries: AppCatalogEntry[],
     sources?: Record<string, AppSource>,
+    manifestIds?: string[],
   ) => void
 
   /**

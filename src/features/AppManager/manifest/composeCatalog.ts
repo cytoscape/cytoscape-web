@@ -14,12 +14,22 @@ import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
  *
  * Manifest-only ids are tagged `'manifest'` in the sources map.
  *
- * @returns the merged entries and a parallel `sources` map keyed by id.
+ * `manifestIds` records which ids the manifest itself carries, independent of
+ * which entry won the collision. A pinned install shadows the manifest source
+ * tag, so `sources` alone cannot answer "does the manifest still ship this
+ * app?" — which is what removability turns on (§12.3).
+ *
+ * @returns the merged entries, a parallel `sources` map keyed by id, and the
+ * ids present in the manifest.
  */
 export function composeCatalog(
   manifestEntries: AppCatalogEntry[],
   installedApps: InstalledApp[] = [],
-): { entries: AppCatalogEntry[]; sources: Record<string, AppSource> } {
+): {
+  entries: AppCatalogEntry[]
+  sources: Record<string, AppSource>
+  manifestIds: string[]
+} {
   const entryById = new Map<string, AppCatalogEntry>()
   const sources: Record<string, AppSource> = {}
 
@@ -28,6 +38,8 @@ export function composeCatalog(
     entryById.set(entry.id, entry)
     sources[entry.id] = 'manifest'
   }
+
+  const manifestIds = Array.from(entryById.keys())
 
   // Overlay the workspace's installed apps
   for (const installed of installedApps) {
@@ -49,5 +61,5 @@ export function composeCatalog(
     }
   }
 
-  return { entries: Array.from(entryById.values()), sources }
+  return { entries: Array.from(entryById.values()), sources, manifestIds }
 }
