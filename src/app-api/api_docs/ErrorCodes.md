@@ -138,7 +138,7 @@ reused as an attribute column.
 A cell value did not match its column's declared type. Checked strictly — no
 coercion (e.g. `1.5` is rejected for an `integer` column). For `createColumn`,
 the `defaultValue` is validated against the column's declared `dataType` under
-the same rule. Writes to *undeclared* columns pass through unchecked
+the same rule. Writes to _undeclared_ columns pass through unchecked
 (declaration policy is a separate, not-yet-implemented concern).
 
 Note `importTableFromTsv` does **not** raise A1: unparseable cells are skipped
@@ -350,7 +350,7 @@ validation rule.
 The specified `networkId` does not exist in the relevant store (network,
 table, visual style, or view model — `exportToCx2` collapses all four checks
 to this one code, since externally there's nothing actionable in knowing
-*which* store was missing versus that the network isn't fully available).
+_which_ store was missing versus that the network isn't fully available).
 
 ### APP2 — `NO_CURRENT_NETWORK`
 
@@ -438,3 +438,38 @@ message is `Column "<name>" does not exist in the <tableType> table`.
 This is a runtime/registry concern with no CX2 equivalent — a static CX2
 document has no notion of a live "does this column exist right now" query — so
 it lives in the `APP*` namespace rather than reusing a CX2 column code.
+
+### APP11 — `APP_DATA_NOT_FOUND`
+
+**Severity:** error
+**Returned by:** `appData.get`, `appData.getGlobal`
+
+Nothing is stored under that key for the calling app, in either the local or
+the exported tier. A distinct code rather than a successful `undefined` value:
+`appData` stores arbitrary JSON, so a stored `null` is a legitimate value and
+must be distinguishable from an absent key. Reads are scoped to the calling
+`appId`, so another app's key of the same name also reads as absent.
+
+### APP12 — `APP_DATA_NOT_SERIALIZABLE`
+
+**Severity:** error
+**Returned by:** `appData.set`, `appData.setGlobal`
+
+The value cannot be JSON-encoded — a cycle, a `BigInt`, or a bare function or
+symbol at the top level. Both tiers require it: the local tier is
+structure-cloned into IndexedDB, and the exported tier becomes a CX2 aspect.
+The message carries the underlying reason. Note that a function or symbol
+_nested inside_ an object is dropped silently by `JSON.stringify` and does not
+produce this code.
+
+### APP13 — `APP_DATA_TOO_LARGE`
+
+**Severity:** error
+**Returned by:** `appData.set`, `appData.setGlobal`
+
+The value's JSON encoding is over `MAX_APP_DATA_VALUE_BYTES` (5 MB). The cap is
+per entry, measured on the encoded form. It exists because the local tier is
+read in full at boot to keep `appData.get()` synchronous, and because the
+failure it replaces — IndexedDB quota exhaustion on a fire-and-forget write —
+is invisible to the calling app. The message reports the actual size and the
+limit.

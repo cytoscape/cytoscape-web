@@ -95,6 +95,10 @@ export type {
   NodeGraphicsResult,
 } from '../core/nodeGraphicsApi'
 
+// ── App data storage types ───────────────────────────────────────
+export type { AppDataApi, SetAppDataOptions } from './AppDataTypes'
+export { MAX_APP_DATA_VALUE_BYTES } from './AppDataTypes'
+
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
   MenuItemHostProps,

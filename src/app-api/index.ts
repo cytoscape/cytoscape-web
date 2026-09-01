@@ -6,6 +6,7 @@ export * from './types'
 // ── App API hooks ────────────────────────────────────────────────
 // Note: Context menu access is via AppContext.apis.contextMenu (per-app
 // factory in mount()) or window.CyWebApi.contextMenu (anonymous singleton).
+export { useAppDataApi } from './useAppDataApi' // Per-app storage
 export { useCyWebEvent } from './useCyWebEvent' // Event Bus
 export { useElementApi } from './useElementApi' // Phase 1a
 export { useExportApi } from './useExportApi' // Phase 1e

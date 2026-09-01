@@ -4,6 +4,7 @@ import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
 import { getTabId } from '@/data/tabState/tabId'
+import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '@/models/AppDataModel'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
@@ -37,6 +38,7 @@ import { registerMigrations } from './migrations'
 import { toPlainObject } from './serialization'
 import { decodeRichValues, encodeRichValues } from './serialization/richValues'
 import {
+  validateAppDataRow,
   validateCyApp,
   validateNetwork,
   validateNetworkSummary,
@@ -71,7 +73,9 @@ export const DB_NAME: string = 'cyweb-db'
 // `cyNetworkViews` row — see ViewModelStore). It is a separate version rather
 // than an edit to v10 because v10 already shipped to branch deploys, and Dexie
 // will not re-run a version whose number a client already has on disk.
-export const currentVersion: number = 11
+// v12 adds the `appData` store (the app API's local per-app data tier — see
+// AppDataStore).
+export const currentVersion: number = 12
 
 /**
  * Predefined object store names.
@@ -107,6 +111,9 @@ export const ObjectStoreNames = {
 
   // From v11
   ViewSelections: 'viewSelections',
+
+  // From v12
+  AppData: 'appData',
 } as const
 
 // The type derived from the names of object stores
@@ -142,6 +149,10 @@ const Keys = {
   [ObjectStoreNames.StyleLibrary]: 'id',
 
   [ObjectStoreNames.ViewSelections]: 'id',
+
+  // Rows are keyed by appDataRowId(appId, networkId, key); `networkId` is
+  // indexed so a network deletion can sweep every app's entries in one query.
+  [ObjectStoreNames.AppData]: 'id, networkId',
 } as const
 
 /**
@@ -217,7 +228,10 @@ class CyDB extends Dexie {
   [ObjectStoreNames.StyleLibrary]!: DxTable<any>;
 
   // From v11
-  [ObjectStoreNames.ViewSelections]!: DxTable<any>
+  [ObjectStoreNames.ViewSelections]!: DxTable<any>;
+
+  // From v12
+  [ObjectStoreNames.AppData]!: DxTable<AppDataRow>
 
   constructor(dbName: string) {
     super(dbName)
@@ -1587,6 +1601,73 @@ export const deleteOpaqueAspectsFromDb = async (
 export const clearOpaqueAspectsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.opaqueAspects, async () => {
     await db.opaqueAspects.clear()
+  })
+}
+
+// App data (the app API's local per-app tier — see AppDataStore)
+
+export const putAppDataToDb = async (row: AppDataRow): Promise<void> => {
+  try {
+    await db.transaction('rw', db.appData, async () => {
+      await db.appData.put(toPlainObject(row))
+    })
+  } catch (e) {
+    logDb.error('[putAppDataToDb] error:', e, row.id)
+    throw e
+  }
+}
+
+/**
+ * Every persisted local-tier row, for the one boot-time hydration read.
+ *
+ * Read in full rather than per network: `appData.get()` is synchronous, so
+ * every row an app might ask for has to be in the store before the app API is
+ * marked ready. The per-entry size cap in `appDataApi` is what bounds this.
+ */
+export const getAllAppDataFromDb = async (): Promise<AppDataRow[]> => {
+  try {
+    const rows = await db.appData.toArray()
+    return rows.filter((row) => {
+      try {
+        validateAppDataRow(row)
+        return true
+      } catch (e) {
+        logDb.warn('[getAllAppDataFromDb] dropping malformed row:', row, e)
+        return false
+      }
+    })
+  } catch (e) {
+    logDb.warn('[getAllAppDataFromDb] Failed to read app data', e)
+    return []
+  }
+}
+
+export const deleteAppDataFromDb = async (id: string): Promise<void> => {
+  await db.appData.delete(id)
+}
+
+/** Drop every app's entries for one network. Called by the delete cascade. */
+export const deleteNetworkAppDataFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.appData, async () => {
+    await db.appData.where('networkId').equals(networkId).delete()
+  })
+}
+
+/**
+ * Drop every network-scoped row, keeping the app-scoped ones (networkId
+ * `APP_DATA_GLOBAL_SCOPE`). Called by the "delete all networks" cascade.
+ */
+export const deleteNetworkScopedAppDataFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.appData, async () => {
+    await db.appData.where('networkId').notEqual(APP_DATA_GLOBAL_SCOPE).delete()
+  })
+}
+
+export const clearAppDataFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.appData, async () => {
+    await db.appData.clear()
   })
 }
 

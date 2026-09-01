@@ -23,6 +23,7 @@ const EXPECTED_EXPOSE_KEYS = [
   './ExportApi',
   './WorkspaceApi',
   './ScopedApi',
+  './AppDataApi',
   './AppIdContext',
   './EventBus',
   './CredentialStore',

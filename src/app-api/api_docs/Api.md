@@ -65,6 +65,7 @@ guards that narrow an `ApiResult<T>` to its success or failure branch (handy in
 | `cyweb/ExportApi`      | `useExportApi()`      | `.export`                | 1e    |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`   | `.workspace`             | 1f    |
 | `cyweb/ScopedApi`      | `useScopedApi(id?)`   | `.forNetwork(id?)`       | 1g    |
+| `cyweb/AppDataApi`     | `useAppDataApi()`     | _(per-app only)_         | 3     |
 | `cyweb/EventBus`       | `useCyWebEvent()`     | _(window events)_        | 1g    |
 
 All hooks are thin React wrappers around framework-agnostic core objects.
@@ -1876,6 +1877,186 @@ Returns the visibility evaluation for a specific resource. Evaluates:
 2. `requires.network` — hidden when no network is loaded
 3. `requires.selection` — hidden when nothing is selected, evaluated against the
    current network's live selection
+
+---
+
+## AppDataApi (`cyweb/AppDataApi`)
+
+Per-app key/value storage for results an app computes — an analyzer's degree
+table, an enrichment panel's term list. Available via
+`useAppContext().apis.appData` in plugin components or `context.apis.appData` in
+`mount()`. Not available on `window.CyWebApi`: entries are scoped by `appId`,
+and the anonymous surface has no app identity to scope them to.
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+
+function ResultsPanel() {
+  const ctx = useAppContext()
+  if (!ctx) return null
+  const { appData } = ctx.apis
+  // appData.set(networkId, 'results', ...), appData.get(networkId, 'results')
+}
+```
+
+### Two tiers
+
+`options.export` picks where an entry lives. It defaults to `false`, so derived
+caches stay out of every network the user shares; an app opts in per key for
+results that are meant to follow the network.
+
+| `export`          | Storage                                          | Travels to NDEx / CX2 download | Marks network modified |
+| ----------------- | ------------------------------------------------ | ------------------------------ | ---------------------- |
+| `false` (default) | Local, network-keyed (`appData` IndexedDB store) | No                             | No                     |
+| `true`            | The network's `cyAppData` opaque aspect          | Yes                            | Yes                    |
+
+A key lives in exactly one tier. Setting an existing key with the other
+`export` value moves it rather than leaving a stale copy behind, so `get`
+never has two answers.
+
+Exported entries from every app share one `cyAppData` aspect, so apps cannot
+collide in the CX2 aspect namespace:
+
+```json
+{ "cyAppData": [{ "appId": "analyzer", "key": "results", "value": {} }] }
+```
+
+Records whose `appId` is not installed here are read, written and exported
+untouched — a round trip through Cytoscape Web does not destroy another host's
+app data.
+
+### Scoping and lifetime
+
+- **Per app.** One app can neither read nor overwrite another app's keys, and
+  `getAll` / `keys` never report them. Two apps may use the same key name.
+- **Survives disable.** Neither network-scoped nor app-scoped entries are
+  dropped when the app is disabled — results the user paid compute for outlive
+  a toggle. Discarding them is the app's call:
+  `remove(networkId, key)` for network entries, `removeGlobal(key)` for
+  app-scoped ones.
+- **Deleted with the network.** Both tiers are dropped when the network is
+  deleted. App-scoped entries (`setGlobal`) are tied to no network, so they
+  survive an emptied workspace.
+- **Not synced across tabs.** A second tab sees what was persisted at its own
+  boot, not later writes from the first.
+
+### Value rules
+
+Values must survive a JSON round trip. What is stored is the round-tripped
+copy, so mutating the object you passed in afterwards does not change what is
+stored.
+
+**A read returns a frozen object.** `get`, `getGlobal` and the values inside
+`getAll` hand back the object the host holds — the stores behind both tiers are
+Immer-backed with autofreeze on, so the value is deeply frozen and writing to
+it throws a `TypeError`. Copy before mutating:
+
+```typescript
+const read = ctx.apis.appData.get(networkId, 'results')
+if (read.success) {
+  const results = structuredClone(read.data.value) // or a JSON round trip
+  results.clusters[0].thumbnail = png // safe; the stored copy is untouched
+}
+```
+
+Reading, iterating and rendering the value need no copy. The copy matters for
+an app that stores records it later edits in place — writing the mutated copy
+back with `set` is what updates storage.
+
+| Condition                                            | Code    |
+| ---------------------------------------------------- | ------- |
+| `undefined` value (use `remove` instead)             | `APP9`  |
+| Empty `key`, or the reserved key `__proto__`         | `APP9`  |
+| `networkId` not in the workspace (writes only)       | `APP1`  |
+| Cyclic value, `BigInt`, bare function or symbol      | `APP12` |
+| JSON encoding over 5 MB (`MAX_APP_DATA_VALUE_BYTES`) | `APP13` |
+| `get` / `getGlobal` on a key that was never written  | `APP11` |
+
+`APP11` rather than an `undefined` value means a stored `null` and an absent
+key are distinguishable.
+
+### Types
+
+```typescript
+/** Largest JSON-encoded value one entry may hold, in bytes. */
+const MAX_APP_DATA_VALUE_BYTES: number // 5 * 1024 * 1024
+
+interface SetAppDataOptions {
+  readonly export?: boolean // default false
+}
+```
+
+### Methods
+
+| Method                                 | Returns                                           |
+| -------------------------------------- | ------------------------------------------------- |
+| `set(networkId, key, value, options?)` | `ApiResult`                                       |
+| `get(networkId, key)`                  | `ApiResult<{ value: unknown }>`                   |
+| `getAll(networkId)`                    | `ApiResult<{ entries: Record<string, unknown> }>` |
+| `remove(networkId, key)`               | `ApiResult`                                       |
+| `keys(networkId)`                      | `ApiResult<{ keys: string[] }>`                   |
+| `setGlobal(key, value)`                | `ApiResult`                                       |
+| `getGlobal(key)`                       | `ApiResult<{ value: unknown }>`                   |
+| `removeGlobal(key)`                    | `ApiResult`                                       |
+
+`get`, `getAll` and `keys` read both tiers. `remove` succeeds whether or not
+the key existed. `setGlobal` / `getGlobal` / `removeGlobal` store app-scoped
+data with no network attached; they are always local, since there is no network
+for the entry to travel with.
+
+### Reading on mount and on network switch
+
+Two reads, not one. No event fires for the network that is already current when
+an app mounts, and a registered right-panel component is keyed by its resource
+id rather than by network — it stays mounted across a switch, so a React
+remount will not re-read for you.
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useCallback, useEffect, useState } from 'react'
+
+function ResultsPanel() {
+  const ctx = useAppContext()
+  const [results, setResults] = useState<unknown>(null)
+
+  const load = useCallback(
+    (networkId: string) => {
+      if (!ctx || networkId === '') return setResults(null)
+      const result = ctx.apis.appData.get(networkId, 'results')
+      setResults(result.success ? result.data.value : null)
+    },
+    [ctx],
+  )
+
+  // 1. The network that is already current at mount.
+  useEffect(() => {
+    if (!ctx) return
+    const current = ctx.apis.workspace.getCurrentNetworkId()
+    if (current.success) load(current.data.networkId)
+  }, [ctx, load])
+
+  // 2. Every switch after that.
+  useCyWebEvent(
+    'network:switched',
+    useCallback((detail) => load(detail.networkId), [load]),
+  )
+
+  return results === null ? <p>No results for this network.</p> : <Results data={results} />
+}
+```
+
+Computing and storing results, exported so they reach NDEx with the network:
+
+```typescript
+const scores = computeDegrees(networkId)
+const result = ctx.apis.appData.set(networkId, 'results', scores, {
+  export: true,
+})
+if (!result.success) {
+  console.error(result.error.code, result.error.message)
+}
+```
 
 ---
 

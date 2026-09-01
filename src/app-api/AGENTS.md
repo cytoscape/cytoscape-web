@@ -30,6 +30,7 @@ src/app-api/
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   ├── nodeGraphicsApi.ts      ← node-graphics render hook registry (NodeGraphicsStore)
 │   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal registry (AppResourceStore; modal open-state in ModalLauncherStore)
+│   ├── appDataApi.ts           ← per-app key/value storage (AppDataStore + the cyAppData opaque aspect)
 │   ├── perAppApis.ts           ← buildPerAppApis(appId): the ONLY place AppContextApis is assembled
 │   ├── ready.ts                ← isReady / whenReadySignal / markReady
 │   ├── undo.ts                 ← corePostEdit
@@ -50,12 +51,14 @@ src/app-api/
 ├── useExportApi.ts
 ├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
 ├── useScopedApi.ts              ← React Hook: forNetwork(id?) memoized per networkId
+├── useAppDataApi.ts             ← React Hook: the calling app's appData, or null outside AppIdProvider
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
 ├── types/
 │   ├── ApiResult.ts             ← ApiResult<T>, ApiError, error code catalogs (ElementCodes, TableCodes, StyleCodes, AppCodes)
 │   ├── AppContext.ts            ← AppContext, CyAppWithLifecycle
+│   ├── AppDataTypes.ts          ← AppDataApi, SetAppDataOptions, MAX_APP_DATA_VALUE_BYTES
 │   ├── ElementTypes.ts          ← Curated re-exports of public model types
 │   └── index.ts                 ← Barrel export
 └── index.ts                     ← Barrel export
@@ -91,7 +94,27 @@ src/app-api/
     `buildPerAppApis(appId)`. Adding a per-app domain means editing that one function. Do NOT
     spread `CyWebApi` and override factories inline at a call site; three sites used to do that
     and a missed one produced an app silently lacking the new domain.
-12. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
+12. **`appData` is per-app but NOT cleaned up on disable** — every other
+    `buildPerAppApis` domain registers with `AppCleanupRegistry`; `appData` must
+    not. Its entries are results the user paid compute for and have to survive an
+    enable/disable toggle. Apps discard them explicitly:
+    `appData.remove(networkId, key)` for network entries, and
+    `appData.removeGlobal(key)` for app-scoped ones written with `setGlobal`.
+13. **App data reads hand back the host's frozen object** — both `appData` tiers
+    live in Immer-backed stores with autofreeze on, so `get`/`getGlobal` return
+    the stored object itself, deeply frozen. An app that mutates what it read
+    gets a `TypeError`; the contract is documented on `AppDataApi.get` and in
+    `api_docs/Api.md`, and the freeze is asserted in `AppDataStore.spec.ts`.
+    Writes are the mirror image and already detached: `set` stores a JSON round
+    trip of the caller's value.
+14. **The local app-data tier is hydrated in full at boot** — in
+    `loadWorkspaceState`, before `publishWorkspace` marks the API ready. That is
+    what lets `appData.get()` be synchronous and still answer for a workspace
+    network whose network data has not been loaded, and it is why
+    `MAX_APP_DATA_VALUE_BYTES` exists. The exported tier needs no wiring: it is
+    the `cyAppData` opaque aspect, so import, export, NDEx save, clone, merge and
+    per-network delete all already handle it.
+15. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
     written to `VisualStyleStore` or `ViewModelStore`: both serialize (to CX2 and to IndexedDB
     respectively). They live in the non-persisted `NodeGraphicsStore` and reach Cytoscape.js as
     element style bypasses. Guarded by `src/models/CxModel/impl/exporter.nodeGraphics.test.ts`;
@@ -117,8 +140,7 @@ export const elementApi: ElementApi = {
     try {
       // 1. Validate inputs using .getState() — no React context needed
       const network = useNetworkStore.getState().networks.get(networkId)
-      if (!network)
-        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      if (!network) return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       // 2. Coordinate stores directly
       // ...
       return ok({ nodeId })
@@ -372,12 +394,12 @@ export const FEDERATION_EXPOSES = {
 
 ## Import Constraints
 
-| From `core/` files, you CAN import                          | You CANNOT import                               |
-| ----------------------------------------------------------- | ----------------------------------------------- |
+| From `core/` files, you CAN import                                                                              | You CANNOT import                               |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | `src/data/hooks/stores/*.ts` (via `useXxxStore.getState()`) — including `WorkspaceStore`, `NetworkSummaryStore` | Anything from `react` or `react-dom`            |
-| `src/models/` (types and pure functions)                    | Internal React hooks (`src/data/hooks/use*.ts`) |
-| `./types/` (barrel export)                                  | React components (`src/features/`)              |
-| `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)   | Other app API hooks (no cross-dependencies)     |
+| `src/models/` (types and pure functions)                                                                        | Internal React hooks (`src/data/hooks/use*.ts`) |
+| `./types/` (barrel export)                                                                                      | React components (`src/features/`)              |
+| `./event-bus/dispatchCyWebEvent` (in `layoutApi.ts` only)                                                       | Other app API hooks (no cross-dependencies)     |
 
 | From `use<Domain>Api.ts` files, you CAN import | You CANNOT import                     |
 | ---------------------------------------------- | ------------------------------------- |
@@ -399,19 +421,19 @@ export const FEDERATION_EXPOSES = {
 
 ## Files to Read Per Phase
 
-| Phase                             | Read before implementing                                                                                                                                                                                                                                                                                                                                 |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase                             | Read before implementing                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Phase 0** (types)               | [phase0-shared-types-design.md](../../docs/design/module-federation/specifications/phase0-shared-types-design.md), [ADR 0001](../../docs/design/module-federation/adr/0001-api-result-discriminated-union.md), [ADR 0002](../../docs/design/module-federation/adr/0002-public-type-reexport-strategy.md), [ADR 0003](../../docs/design/module-federation/adr/0003-framework-agnostic-core-layer.md), `src/models/AppModel/CyApp.ts` |
-| **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                                                                                  |
-| **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                                                                                        |
-| **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                                                                                  |
-| **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                                                                                     |
-| **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                                                                                          |
-| **Phase 1f** (Workspace)          | `src/models/StoreModel/WorkspaceStoreModel.ts`, `src/models/StoreModel/NetworkSummaryStoreModel.ts`, `src/models/WorkspaceModel/Workspace.ts`, app-api-spec §1.5.10 + §3.9                                                                                                                                                                               |
-| **Phase 1a+** (Element bypass)    | `src/app-api/core/elementApi.ts`, `src/app-api/core/visualStyleApi.ts`, app-api-spec §1.5.1 (CreateNodeOptions/CreateEdgeOptions)                                                                                                                                                                                                                        |
-| **Phase 1h** (Context Menu)       | `src/data/hooks/stores/` (any store for pattern), context menu components in `src/features/`, app-api-spec §1.5.11, `src/models/StoreModel/ContextMenuItemStoreModel.ts` (to be created)                                                                                                                                                                 |
-| **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                   |
-| **Phase 3.6** (Graph Traversal)   | `src/app-api/core/elementApi.ts` (getNodeIds, getEdgeIds, getConnectedEdges, getConnectedNodes, getOutgoers, getIncomers, getSuccessors, getPredecessors, getRoots, getLeaves), `src/app-api/api_docs/Api.md` §Graph Traversal                                                                                                                         |
+| **Phase 1a** (Element)            | `src/data/hooks/useCreateNode.ts` (226L), `useCreateEdge.ts` (255L), `useDeleteNodes.ts` (271L), `useDeleteEdges.ts` (240L), app-api-spec §3.1 + §3.1.1                                                                                                                                                                                                                                                                             |
+| **Phase 1b** (Network)            | `src/data/task/useCreateNetworkFromCx2.tsx` (127L), `src/data/task/useCreateNetwork.tsx` (236L), `src/data/hooks/useDeleteCyNetwork.ts` (171L), app-api-spec §3.2                                                                                                                                                                                                                                                                   |
+| **Phase 1c** (Selection+Viewport) | `src/models/StoreModel/ViewModelStoreModel.ts` (165L), `src/data/hooks/stores/RendererFunctionStore.ts` (64L), app-api-spec §3.3 + §3.7                                                                                                                                                                                                                                                                                             |
+| **Phase 1d** (Table+VisualStyle)  | `src/models/StoreModel/TableStoreModel.ts` (106L), `src/models/StoreModel/VisualStyleStoreModel.ts` (115L), app-api-spec §3.4 + §3.5                                                                                                                                                                                                                                                                                                |
+| **Phase 1e** (Layout+Export)      | `src/models/LayoutModel/LayoutEngine.ts` (30L), `src/models/CxModel/impl/exporter.ts`, app-api-spec §3.6 + §3.8                                                                                                                                                                                                                                                                                                                     |
+| **Phase 1f** (Workspace)          | `src/models/StoreModel/WorkspaceStoreModel.ts`, `src/models/StoreModel/NetworkSummaryStoreModel.ts`, `src/models/WorkspaceModel/Workspace.ts`, app-api-spec §1.5.10 + §3.9                                                                                                                                                                                                                                                          |
+| **Phase 1a+** (Element bypass)    | `src/app-api/core/elementApi.ts`, `src/app-api/core/visualStyleApi.ts`, app-api-spec §1.5.1 (CreateNodeOptions/CreateEdgeOptions)                                                                                                                                                                                                                                                                                                   |
+| **Phase 1h** (Context Menu)       | `src/data/hooks/stores/` (any store for pattern), context menu components in `src/features/`, app-api-spec §1.5.11, `src/models/StoreModel/ContextMenuItemStoreModel.ts` (to be created)                                                                                                                                                                                                                                            |
+| **Step 2** (Event Bus)            | [event-bus-specification.md](../../docs/design/module-federation/specifications/event-bus-specification.md), `src/data/hooks/stores/WorkspaceStore.ts`, `src/data/hooks/stores/ViewModelStore.ts`, `src/data/hooks/stores/VisualStyleStore.ts`, `src/data/hooks/stores/TableStore.ts`, `src/init.tsx` (for init order)                                                                                                              |
+| **Phase 3.6** (Graph Traversal)   | `src/app-api/core/elementApi.ts` (getNodeIds, getEdgeIds, getConnectedEdges, getConnectedNodes, getOutgoers, getIncomers, getSuccessors, getPredecessors, getRoots, getLeaves), `src/app-api/api_docs/Api.md` §Graph Traversal                                                                                                                                                                                                      |
 
 ## Parent Documents
 

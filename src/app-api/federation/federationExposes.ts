@@ -21,6 +21,7 @@ export const FEDERATION_EXPOSES = {
   './ExportApi': './src/app-api/useExportApi.ts',
   './WorkspaceApi': './src/app-api/useWorkspaceApi.ts',
   './ScopedApi': './src/app-api/useScopedApi.ts',
+  './AppDataApi': './src/app-api/useAppDataApi.ts',
   './AppIdContext': './src/app-api/AppIdContext.tsx',
   './EventBus': './src/app-api/useCyWebEvent.ts',
   './CredentialStore': './src/data/hooks/stores/CredentialStore.ts',
