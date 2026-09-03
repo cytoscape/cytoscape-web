@@ -5,6 +5,7 @@
 // options, and the public ResourceApi interface.
 
 import type { ApiError, ApiResult } from './ApiResult'
+import type { AppContextApis } from './AppContext'
 
 // ── Slot model ──────────────────────────────────────────────────
 
@@ -34,21 +35,6 @@ export interface PanelHostProps {
   // Empty in first rollout. Future: isActive, requestFocus, closePanel.
 }
 
-/**
- * Props injected by the host into every 'apps-menu' component.
- *
- * When `closeOnAction: true` on the registration, the host wraps the
- * component in a click-capturing container that auto-closes the dropdown
- * via `queueMicrotask`. Plugins do NOT need to call `handleClose` in
- * that case — it is still injected for edge cases.
- *
- * When `closeOnAction: false` (default), the plugin MUST call
- * `handleClose` manually when appropriate.
- */
-export interface MenuItemHostProps {
-  handleClose: () => void
-}
-
 // ── Registration options ────────────────────────────────────────
 
 export interface RegisterPanelOptions {
@@ -74,28 +60,63 @@ export interface RegisterPanelOptions {
   }>
 }
 
+/**
+ * Registers one entry in the shared Apps dropdown. Deliberately has no
+ * `component` field: the host renders every 'apps-menu' entry itself as a
+ * standard menu row, so an app can never put arbitrary React — and with it
+ * arbitrary sizing, fonts, or colors — into a menu every other app shares.
+ *
+ * For anything beyond a plain action (a parameter form, a progress modal,
+ * custom hooks or state) call `apis.dialog.open(...)` from `onClick`, or
+ * open a registered 'modal-launcher' resource. Both render in a separate
+ * modal layer whose chrome the host owns, never inline in the menu.
+ */
 export interface RegisterMenuItemOptions {
   id: string
-  /** Display label for the menu item. Falls back to `id` if omitted. */
-  title?: string
+  /** Text shown in the menu. Required, non-empty. */
+  label: string
+  /** Optional hover text. */
+  tooltip?: string
+  /**
+   * Optional icon: an http(s) URL, a `data:image` URI, or a root-relative
+   * host asset path — the same contract as the 'search-bar' `icon`, rendered
+   * by the host at a fixed size. SVG icons (`data:image/svg+xml` or a
+   * `.svg` path) are painted in the row's text color: only the shape
+   * matters, so they follow the light/dark theme and the disabled state with
+   * no effort from the app, and multi-color SVG artwork becomes a monochrome
+   * silhouette. Raster icons (PNG, JPEG, ...) are shown unchanged — ship one
+   * to keep a logo's colors. A cross-origin http(s) SVG needs CORS headers
+   * (CSS masks are fetched in CORS mode); an inlined SVG `data:` URI is the
+   * easy choice. Plain data — never a component.
+   */
+  icon?: string
   order?: number
   group?: string
+  /**
+   * Declarative enablement. `network: true` greys the item out until a
+   * network is loaded; `selection: true` until at least one element is
+   * selected. Evaluated by the host from its own stores.
+   */
   requires?: {
     network?: boolean
     selection?: boolean
   }
-  component: React.ComponentType<MenuItemHostProps>
   /**
-   * If true, the host automatically closes the Apps dropdown after the menu
-   * item component's onClick handler completes.
-   * @default false
+   * Called with this app's per-app API object when the item is clicked.
+   * The host closes the dropdown first (as its own built-in items do), so
+   * the handler never runs inside the menu; anything it opens — typically
+   * `apis.dialog.open(...)` — lives in its own render tree. A returned
+   * Promise is awaited only to log a rejection; the UI never blocks on it.
    */
-  closeOnAction?: boolean
-  /** Custom error fallback (same as RegisterPanelOptions.errorFallback). */
-  errorFallback?: React.ComponentType<{
-    error: Error
-    resetErrorBoundary: () => void
-  }>
+  onClick: (apis: AppContextApis) => void | Promise<void>
+  /**
+   * Optional extra enablement check the host calls right before the menu
+   * is shown — a plain function snapshot, not a reactive hook. Combined
+   * with `requires`. Prefer `requires` for the common cases; reach for
+   * `isEnabled` only for conditions it cannot express. A throwing
+   * `isEnabled` is logged and treated as `false`.
+   */
+  isEnabled?: (apis: AppContextApis) => boolean
 }
 
 // ── Network search provider registration ────────────────────────
@@ -124,9 +145,13 @@ export interface RegisterNetworkSearchProviderOptions {
   /** Short text describing what this provider searches. Shown as a tooltip. */
   description?: string
   /**
-   * http(s) or data:image URI rendered at a fixed size next to the search
-   * input. If omitted, the host renders a fallback avatar with the
-   * provider's initial.
+   * http(s) URL, data:image URI, or root-relative host asset path, rendered
+   * at a fixed size next to the search input. An SVG icon is painted in the
+   * surrounding text color (only its shape matters, so it follows the
+   * light/dark theme; multi-color SVG artwork becomes a silhouette, and a
+   * cross-origin http(s) SVG needs CORS headers). A raster logo is shown
+   * unchanged on a white tile. If omitted, the host renders a fallback
+   * avatar with the provider's initial.
    */
   icon?: string
   /** http(s) URL opened in a new tab from the provider list. */
@@ -161,14 +186,14 @@ export interface RegisterNetworkSearchProviderOptions {
  * The component renders the dialog *contents* — DialogTitle,
  * DialogContent, DialogActions — while the host owns the Dialog shell
  * itself (its CyDialog wrapper plus a structural Close button). Backdrop
- * click and Escape are inert per
- * docs/specifications/DIALOG_DISMISS_POLICY.md, so the component's own
- * buttons (and the host's Close "X") are the only exits.
+ * click is inert per docs/specifications/DIALOG_DISMISS_POLICY.md; the
+ * component's own buttons, the host's Close "X" and the Escape key (the
+ * documented exception for app dialogs) are the exits.
  */
 export interface ModalHostProps {
   /**
    * Closes this modal — the same close path as the host-rendered
-   * Close "X". Wire Cancel/Done buttons to this.
+   * Close "X" and the Escape key. Wire Cancel/Done buttons to this.
    */
   requestClose: () => void
 }
@@ -210,8 +235,8 @@ export interface RegisterModalOptions {
 
 /**
  * Entry for batch registration via registerAll(). Discriminated by `slot`,
- * since each slot has its own registration options ('search-bar' entries
- * have no `component`, for example).
+ * since each slot has its own registration options ('apps-menu' and
+ * 'search-bar' entries have no `component`, for example).
  */
 export type RegisterResourceEntry =
   | ({ slot: 'right-panel' } & RegisterPanelOptions)
@@ -311,7 +336,9 @@ export interface ResourceApi {
    * Register a modal in the 'modal-launcher' slot. Uses upsert semantics.
    * Nothing renders until `openModal(id)` is called.
    */
-  registerModal(options: RegisterModalOptions): ApiResult<{ resourceId: string }>
+  registerModal(
+    options: RegisterModalOptions,
+  ): ApiResult<{ resourceId: string }>
 
   /** Unregister a modal. If it is currently open, it is closed first. */
   unregisterModal(modalId: string): ApiResult
@@ -359,8 +386,13 @@ export interface ResourceApi {
   /**
    * Returns the visibility evaluation result for a resource registered
    * by this app. The `id` parameter is the slot-local id passed to
-   * `registerPanel` / `registerMenuItem`. `requires.selection` is
-   * evaluated against the current network's live selection.
+   * `registerPanel` / `registerMenuItem`; pass `slot` too when the same id
+   * is used in more than one slot (ids are only unique per slot), otherwise
+   * the first match in registration order is evaluated. `requires.selection`
+   * is evaluated against the current network's live selection.
    */
-  getResourceVisibility(id: string): ApiResult<ResourceVisibilityResult>
+  getResourceVisibility(
+    id: string,
+    slot?: ResourceSlot,
+  ): ApiResult<ResourceVisibilityResult>
 }

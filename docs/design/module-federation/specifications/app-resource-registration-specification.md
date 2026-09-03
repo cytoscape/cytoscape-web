@@ -15,6 +15,17 @@ For the current App API design, see
 Federation roadmap, see
 [module-federation-design.md](../module-federation-design.md).
 
+> **Superseded for the `'apps-menu'` slot (9/2026).** Everything below that
+> describes menu items as React components — `MenuItemHostProps`,
+> `handleClose`, `closeOnAction`, `errorFallback` on menu items — no longer
+> applies. Menu entries are plain data (`label`, `tooltip`, `icon` as an image
+> URI, `onClick(apis)`, `isEnabled(apis)`, `requires`) that the host renders
+> itself, so no app can distort the shared dropdown; custom UI opens through the
+> per-app Dialog API (`apis.dialog.open`) or a `'modal-launcher'` resource. The
+> `'right-panel'` design is unchanged. The living contract is
+> `src/app-api/api_docs/Api.md`; the example is
+> [app-resource-registration-minimal-app.md](../examples/app-resource-registration-minimal-app.md).
+
 ---
 
 ## 1. Overview

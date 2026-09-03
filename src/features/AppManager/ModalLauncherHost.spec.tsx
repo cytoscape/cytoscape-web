@@ -2,7 +2,7 @@
 //
 // Host renderer behavior: nothing without open entries, one CyDialog per
 // open modal with the registered component and injected requestClose, the
-// structural host Close "X", stale-entry and inactive-app filtering,
+// structural host Close "X", Escape, stale-entry and inactive-app filtering,
 // maxWidth/fullWidth forwarding, error isolation, and lazy components.
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -98,6 +98,17 @@ describe('ModalLauncherHost', () => {
     render(<ModalLauncherHost />)
 
     fireEvent.click(screen.getByTestId('modal-launcher-close-button'))
+
+    expect(useModalLauncherStore.getState().openModals).toHaveLength(0)
+    expect(screen.queryByTestId('modal-launcher-dialog-app1-D1')).toBeNull()
+  })
+
+  it('closes the modal on Escape — the documented exception for app dialogs', () => {
+    seedModal({ id: 'D1' })
+    openModal('app1', 'D1')
+    render(<ModalLauncherHost />)
+
+    fireEvent.keyDown(screen.getByTestId('modal-content'), { key: 'Escape' })
 
     expect(useModalLauncherStore.getState().openModals).toHaveLength(0)
     expect(screen.queryByTestId('modal-launcher-dialog-app1-D1')).toBeNull()

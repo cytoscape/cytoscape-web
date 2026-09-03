@@ -30,6 +30,15 @@ describe('buildPerAppApis', () => {
     expect(CyWebApi).not.toHaveProperty('appData')
   })
 
+  it('adds dialog, which window.CyWebApi deliberately lacks', () => {
+    // A dialog is owned by (and closed with) the app that opened it, so the
+    // anonymous surface has nothing to bind it to.
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.dialog).toBeDefined()
+    expect(CyWebApi).not.toHaveProperty('dialog')
+  })
+
   it('overrides contextMenu with a per-app instance', () => {
     const apis = buildPerAppApis('app-a')
 
@@ -45,6 +54,7 @@ describe('buildPerAppApis', () => {
     expect(a.contextMenu).not.toBe(b.contextMenu)
     expect(a.nodeGraphics).not.toBe(b.nodeGraphics)
     expect(a.appData).not.toBe(b.appData)
+    expect(a.dialog).not.toBe(b.dialog)
   })
 
   it('registers context menu items under the calling app', () => {

@@ -68,7 +68,7 @@ describe('processDeclarativeResources', () => {
     processDeclarativeResources(
       makeApp([
         { slot: 'right-panel', id: 'P1', component: DummyComponent },
-        { slot: 'apps-menu', id: 'M1', component: DummyComponent },
+        { slot: 'apps-menu', id: 'M1', label: 'M1', onClick: () => {} },
         { slot: 'search-bar', id: 'S1', name: 'Search', onSubmit: vi.fn() },
         { slot: 'modal-launcher', id: 'D1', component: DummyComponent },
       ]),
