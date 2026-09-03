@@ -15,9 +15,9 @@ import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredA
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import ExternalComponent from '../../AppManager/ExternalComponent'
-import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
-import { DropdownMenu } from '../DropdownMenu'
+import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
 import { useMenuBarMenu } from '../MenuBar'
+import { MenuItemIcon } from './MenuItemIcon'
 import { useServiceAppMenu } from './useServiceAppMenu'
 
 export const AppMenu = () => {

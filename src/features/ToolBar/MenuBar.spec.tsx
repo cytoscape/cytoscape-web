@@ -80,10 +80,12 @@ describe('MenuBar', () => {
     expect(menuOf('Help')).not.toBeNull()
   })
 
-  it('does not switch on touch, where a tap fires hover before click', () => {
+  it('switches only for a mouse: a touch or pen tap fires hover before click', () => {
     renderMenuBar()
     fireEvent.click(button('data'))
     fireEvent.pointerEnter(button('layout'), { pointerType: 'touch' })
+    fireEvent.pointerEnter(button('layout'), { pointerType: 'pen' })
+    fireEvent.pointerEnter(button('layout'))
     expect(menuOf('Data')).not.toBeNull()
     expect(menuOf('Layout')).toBeNull()
   })

@@ -201,6 +201,22 @@ describe('DropdownMenu keyboard access', () => {
     expect(skipped).not.toHaveBeenCalled()
   })
 
+  it('takes a template row out of the tab order when the model disables it', () => {
+    const run = vi.fn()
+    renderOpenMenu([
+      {
+        disabled: true,
+        template: <DropdownMenuItem label="Merge" onClick={run} />,
+      },
+    ])
+
+    const row = screen.getByRole('menuitem', { name: 'Merge' })
+    expect(row.tabIndex).toBe(-1)
+    expect(row.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(run).not.toHaveBeenCalled()
+  })
+
   it("points the trigger's aria-controls at the rendered menu", () => {
     renderOpenMenu([{ label: 'Run', command: vi.fn() }])
 

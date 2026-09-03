@@ -221,10 +221,14 @@ function MenuLevel({
             <Box
               key={index}
               role="menuitem"
-              tabIndex={0}
+              tabIndex={item.disabled === true ? -1 : 0}
+              aria-disabled={item.disabled === true ? true : undefined}
               onMouseEnter={() => setOpenSubmenu(null)}
               onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
-                if (event.key !== 'Enter' && event.key !== ' ') {
+                if (
+                  item.disabled === true ||
+                  (event.key !== 'Enter' && event.key !== ' ')
+                ) {
                   return
                 }
                 event.preventDefault()
@@ -506,15 +510,15 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             }}
             onPointerEnter={(event: React.PointerEvent<HTMLButtonElement>) => {
               // Desktop menubar behaviour: once any menu is open, the pointer
-              // carries it across the bar. A tap on touch devices fires
-              // pointerenter right before its click, which would open here
-              // and then toggle closed again, so hover is mouse-only.
+              // carries it across the bar. A tap (touch or pen) fires pointerenter
+              // right before its click, which would open here and then toggle
+              // closed again, so hover is mouse-only.
               if (
                 disabled ||
                 isOpen ||
                 menuBar === null ||
                 menuBar.openId === null ||
-                event.pointerType === 'touch'
+                event.pointerType !== 'mouse'
               ) {
                 return
               }
