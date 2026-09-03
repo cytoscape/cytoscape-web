@@ -34,7 +34,7 @@ src/app-api/
 │   ├── appDataApi.ts           ← per-app key/value storage (AppDataStore + the cyAppData opaque aspect)
 │   ├── perAppApis.ts           ← buildPerAppApis(appId): the ONLY place AppContextApis is assembled
 │   ├── ready.ts                ← isReady / whenReadySignal / markReady
-│   ├── undo.ts                 ← corePostEdit
+│   ├── undo.ts                 ← corePostEdit, markNetworkModified
 │   ├── validation.ts
 │   ├── scopedApi.ts            ← forNetwork(id?): network-scoped domains with networkId pre-bound
 │   └── index.ts                 ← Assembles CyWebApi object (incl. forNetwork); assigned to window.CyWebApi
@@ -115,7 +115,19 @@ src/app-api/
     `MAX_APP_DATA_VALUE_BYTES` exists. The exported tier needs no wiring: it is
     the `cyAppData` opaque aspect, so import, export, NDEx save, clone, merge and
     per-network delete all already handle it.
-15. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
+15. **Every write marks the network modified** — `markNetworkModified(networkId)` in
+    `core/undo.ts` is the single choke point for `WorkspaceStore`'s `networkModified` flag,
+    which decides whether Save Workspace uploads a network and whether Save to NDEx is
+    enabled. `corePostEdit` calls it, so a mutator that records undo gets it for free.
+    A mutator that records none must call it explicitly — `tableApi.createColumn`,
+    `importTableFromTsv`, all of `visualStyleApi`, and `viewportApi.updateNodePositions`
+    do. Mark on the `networkId` the caller passed, never on `currentNetworkId`: networks
+    stay resident in the stores after a switch, so app writes routinely target one that is
+    not on screen. Do NOT mark when the write changed nothing — a rejected write, an empty
+    edit list, a `deleteBypass` for an element that had none. A spurious flag shows the
+    user unsaved changes that do not exist. Added in #680, which is also why no store
+    subscription watches for this any more.
+16. **App-supplied node graphics are renderer-only** — A render hook's images must NEVER be
     written to `VisualStyleStore` or `ViewModelStore`: both serialize (to CX2 and to IndexedDB
     respectively). They live in the non-persisted `NodeGraphicsStore` and reach Cytoscape.js as
     element style bypasses. Guarded by `src/models/CxModel/impl/exporter.nodeGraphics.test.ts`;
