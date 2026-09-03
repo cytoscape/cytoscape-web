@@ -1,10 +1,11 @@
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { CreateEdgeMenuItem } from './CreateEdgeMenuItem'
 import { CreateNodeMenuItem } from './CreateNodeMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
@@ -13,7 +14,7 @@ import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
 
 export const EditMenu = () => {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen } = useMenuBarMenu('edit-menu')
 
   const hasNoNetworks =
     useWorkspaceStore((state) => state.workspace.networkIds).length === 0
@@ -24,7 +25,7 @@ export const EditMenu = () => {
 
   const onBeforeRun = useCallback((): void => {
     setOpen(false)
-  }, [])
+  }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Edit menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(

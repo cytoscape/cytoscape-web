@@ -16,10 +16,11 @@ import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
 import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { useServiceAppMenu } from './useServiceAppMenu'
 
 export const AppMenu = () => {
-  const [open, setOpen] = useState<boolean>(false)
+  const { open, setOpen } = useMenuBarMenu('apps-menu')
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
@@ -33,7 +34,7 @@ export const AppMenu = () => {
 
   const handleClose = useCallback((): void => {
     setOpen(false)
-  }, [])
+  }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Apps menu (this also
   // catches apps with a missing or unsupported root, which fall back here).

@@ -23,6 +23,7 @@ import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPan
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { ToolbarMenuItem } from '../menuItemModel'
 import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
@@ -54,7 +55,7 @@ interface LayoutGroupDivider {
 type LayoutMenuEntry = LayoutAlgorithmEntry | LayoutGroupDivider
 
 export const LayoutMenu = (): JSX.Element => {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen } = useMenuBarMenu('layout-menu')
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   // Counter to trigger fit function after layout is applied
@@ -137,7 +138,7 @@ export const LayoutMenu = (): JSX.Element => {
 
   const onBeforeRun = useCallback((): void => {
     setOpen(false)
-  }, [])
+  }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Layout menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
