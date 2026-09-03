@@ -4,8 +4,46 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ## 1.0.0-beta.4 (unpublished)
 
+### Changed
+
+- **BREAKING — `'apps-menu'` entries are plain data, not components.**
+  `RegisterMenuItemOptions` lost `component`, `closeOnAction`, `errorFallback`
+  and `title`; it now takes `label` (required), `tooltip`, `icon` (an image
+  URI — http(s), `data:image`, or a root-relative host asset path, exactly as
+  for a `'search-bar'` provider; never a component — an SVG is painted by the
+  host in the row's text color, a raster image shown as-is), `onClick(apis)` and
+  `isEnabled(apis)`, alongside the unchanged `order`/`group`/`requires`. The
+  host renders every entry itself as a standard menu row, so no app can change
+  the shared dropdown's size, font or colors. `MenuItemHostProps` is gone with
+  the component it described. Registering with a `component` now fails with
+  `APP9` and a migration message. Move an old component's action into
+  `onClick`; move its form or other UI into `apis.dialog.open({ render })` (or
+  a `'modal-launcher'` registration) called from `onClick`. `'right-panel'`
+  registrations are unchanged.
+
 ### Added
 
+- **Dialog API** — `AppContextApis.dialog` (`DialogApi`, `OpenDialogOptions`,
+  `DialogRenderProps`). `apis.dialog.open({ title, render, id?, maxWidth?,
+  fullWidth? })` shows a modal whose frame (title bar, Close "X", dismissal
+  policy, error and Suspense boundaries) the host owns and whose body the app
+  renders; `render` receives `close`. `close(dialogId?)` closes one dialog, or
+  the app's most recent one. Per-app: dialogs are closed automatically when
+  the app is disabled. The escape hatch for `'apps-menu'` items that need
+  custom UI. Not on `window.CyWebApi`.
+- **SVG icons are tinted by the host; raster icons are shown unchanged.** The
+  `icon` of a `'search-bar'` provider and of an `'apps-menu'` entry follows one
+  rule: an SVG (`data:image/svg+xml`, or a path ending in `.svg`) is painted as
+  a CSS mask in the surrounding text color — only its shape matters, it follows
+  the light/dark theme and the disabled state, multi-color SVG artwork renders
+  as a monochrome silhouette, and a cross-origin http(s) SVG needs CORS
+  headers. A raster image (PNG, JPEG, ...) keeps its colors; ship one to keep a
+  logo's colors. An inlined SVG `data:` URI is the easy choice for a glyph.
+- **`ResourceApi.getResourceVisibility(id, slot?)`** takes an optional slot,
+  since ids are unique per slot rather than per app.
+- **Escape closes app dialogs.** Both `'modal-launcher'` modals and Dialog API
+  dialogs now close on Escape (the backdrop stays inert), through the same
+  path as `requestClose` / `close` and the host's Close "X".
 - **`'modal-launcher'` resource slot** (#690). Apps register modal dialog
   content the host renders inside its own React tree — host theme, error
   isolation, Suspense for lazy chunks, and the host's dialog shell with its

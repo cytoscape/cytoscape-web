@@ -13,6 +13,7 @@ import type { AppContextApis } from '../types/AppContext'
 import { CyWebApi } from './index'
 import { createAppDataApi } from './appDataApi'
 import { createContextMenuApi } from './contextMenuApi'
+import { createDialogApi } from './dialogApi'
 import { createNodeGraphicsApi } from './nodeGraphicsApi'
 import { createResourceApi } from './resourceApi'
 
@@ -36,5 +37,6 @@ export function buildPerAppApis(appId: string): AppContextApis {
     contextMenu: createContextMenuApi(appId),
     nodeGraphics: createNodeGraphicsApi(appId),
     appData: createAppDataApi(appId),
+    dialog: createDialogApi(appId),
   }
 }

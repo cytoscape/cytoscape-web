@@ -1,6 +1,10 @@
 # App Resource Registration — Minimal App Examples
 
-- **Rev. 2 (3/14/2026): Keiichiro ONO and Claude Opus 4.6** — Updated to match
+- **Rev. 3 (9/3/2026): Christian Lopes and Claude** — `'apps-menu'` entries
+  are plain data (`label`/`tooltip`/`icon` as an image URI/`onClick`), never a component;
+  custom menu UI opens through `apis.dialog.open(...)`. `closeOnAction` and
+  `MenuItemHostProps` are gone. Current contract: `src/app-api/api_docs/Api.md`.
+- Rev. 2 (3/14/2026): Keiichiro ONO and Claude Opus 4.6 — Updated to match
   spec Rev. 4: `title` (not `label`), `useAppContext()` as primary pattern,
   declarative `resources`, `closeOnAction`, `registerAll`, corrected API calls
 - Rev. 1 (3/14/2026): Keiichiro ONO and Claude Sonnet 4.6
@@ -44,7 +48,7 @@ src/
 ├── panels/
 │   └── MyPanel.tsx          ← React component rendered in the right panel
 └── menuItems/
-    └── MyMenuItem.tsx       ← React component rendered in the Apps menu
+    └── openSettingsDialog.tsx ← apps-menu onClick + the dialog body it opens
 ```
 
 Context menu items do not need a component — they register a handler function.
@@ -60,6 +64,8 @@ them automatically. No `mount()` or `unmount()` needed.
 // src/index.ts
 import { lazy } from 'react'
 import type { CyAppWithLifecycle } from 'cyweb/ApiTypes'
+
+import { openSettingsDialog } from './menuItems/openSettingsDialog'
 
 const app: CyAppWithLifecycle = {
   id: 'my-plugin',
@@ -77,9 +83,9 @@ const app: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'main-menu',
-      title: 'My Plugin',
-      component: lazy(() => import('./menuItems/MyMenuItem')),
-      closeOnAction: true,                             // host auto-closes dropdown after action
+      label: 'My Plugin',                              // host renders the row — no component
+      requires: { network: true },                     // greyed out when no network loaded
+      onClick: openSettingsDialog,                     // see §5 — opens a host-framed dialog
     },
   ],
   // No mount() or unmount() — host manages everything
@@ -104,7 +110,7 @@ per-resource error handling:
 // src/index.ts
 import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
 import MyPanel from './panels/MyPanel'
-import MyMenuItem from './menuItems/MyMenuItem'
+import { openSettingsDialog } from './menuItems/openSettingsDialog'
 
 const app: CyAppWithLifecycle = {
   id: 'my-plugin',
@@ -126,9 +132,8 @@ const app: CyAppWithLifecycle = {
       {
         slot: 'apps-menu',
         id: 'main-menu',
-        title: 'My Plugin',
-        component: MyMenuItem,
-        closeOnAction: true,
+        label: 'My Plugin',
+        onClick: openSettingsDialog, // see §5
       },
     ])
     // registerAll always returns ok(); check errors array for partial failures
@@ -167,7 +172,7 @@ For apps that need capability negotiation or per-call error handling:
 // src/index.ts
 import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
 import MyPanel from './panels/MyPanel'
-import MyMenuItem from './menuItems/MyMenuItem'
+import { openSettingsDialog } from './menuItems/openSettingsDialog'
 
 const app: CyAppWithLifecycle = {
   id: 'my-plugin',
@@ -195,9 +200,8 @@ const app: CyAppWithLifecycle = {
     if (apis.resource.getSupportedSlots().includes('apps-menu')) {
       const menuResult = apis.resource.registerMenuItem({
         id: 'main-menu',
-        title: 'My Plugin',
-        component: MyMenuItem,
-        closeOnAction: true,
+        label: 'My Plugin',
+        onClick: openSettingsDialog, // see §5
         order: 100,
       })
       if (!menuResult.success) {
@@ -276,42 +280,43 @@ export default MyPanel
 
 ---
 
-## 5. `menuItems/MyMenuItem.tsx` — apps-menu component
+## 5. `menuItems/openSettingsDialog.tsx` — apps-menu action + dialog body
 
-Apps-menu item components receive `MenuItemHostProps` with
-`handleClose: () => void`. When the resource is registered with
-`closeOnAction: true`, the host auto-closes the dropdown after any click — the
-plugin does not need to call `handleClose` manually.
-
-When `closeOnAction: false` (default), the plugin must call `handleClose`
-explicitly — typically after a Dialog closes, not before (calling it immediately
-would unmount the Dialog).
+An apps-menu entry is plain data: the host renders the row from `label`,
+`tooltip` and `icon`, closes the dropdown, and calls `onClick(apis)`. No
+component crosses the boundary, so the shared menu always looks the same for
+every app. Anything that needs real UI — a form, progress, component state —
+opens in a host-framed dialog through `apis.dialog.open(...)` (the host owns
+the title bar and the Close "X"; the app supplies only the body).
 
 ```tsx
-// src/menuItems/MyMenuItem.tsx
+// src/menuItems/openSettingsDialog.tsx
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
-import type { MenuItemHostProps } from 'cyweb/ApiTypes'
+import type { AppContextApis, DialogRenderProps } from 'cyweb/ApiTypes'
 
-/** When closeOnAction: true — handleClose is auto-called by the host. */
-const MyMenuItem = ({ handleClose }: MenuItemHostProps): JSX.Element => {
-  return (
-    <Box sx={{ p: 1 }}>
-      <Typography variant="overline" color="text.secondary">
-        My Plugin
-      </Typography>
-      <Typography variant="body2" sx={{ mb: 1 }}>
-        Open the My Plugin panel from the right-panel tab.
-      </Typography>
-      <Button variant="outlined" size="small" disabled>
-        Settings (coming soon)
-      </Button>
-    </Box>
-  )
+/** The dialog body. `close` is the same path as the host's Close "X". */
+const SettingsForm = ({ close }: DialogRenderProps): JSX.Element => (
+  <Box sx={{ p: 1 }}>
+    <Typography variant="body2" sx={{ mb: 1 }}>
+      Open the My Plugin panel from the right-panel tab.
+    </Typography>
+    <Button variant="outlined" size="small" onClick={close}>
+      Done
+    </Button>
+  </Box>
+)
+
+/** The 'apps-menu' onClick. Also usable from mount() via context.apis. */
+export const openSettingsDialog = (apis: AppContextApis): void => {
+  apis.dialog.open({
+    id: 'settings', // stable id: reopening replaces, never stacks
+    title: 'My Plugin',
+    maxWidth: 'xs',
+    render: ({ close }) => <SettingsForm close={close} />,
+  })
 }
-
-export default MyMenuItem
 ```
 
 ---

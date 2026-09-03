@@ -1608,8 +1608,9 @@ type ResourceSlot =
   | 'search-bar'
   | 'modal-launcher'
 
-// Discriminated by slot: 'right-panel' and 'apps-menu' entries take the
-// panel/menu fields below; 'search-bar' entries take
+// Discriminated by slot: 'right-panel' entries take RegisterPanelOptions;
+// 'apps-menu' entries take RegisterMenuItemOptions (plain data, no
+// `component`); 'search-bar' entries take
 // RegisterNetworkSearchProviderOptions (no `component`); 'modal-launcher'
 // entries take RegisterModalOptions.
 type ResourceDeclaration =
@@ -1631,13 +1632,26 @@ interface RegisterPanelOptions {
   }>
 }
 
-// RegisterMenuItemOptions = RegisterPanelOptions + closeOnAction?: boolean
+// Plain data — never a component. The host renders every 'apps-menu' row
+// itself, so an app cannot change the shared dropdown's size, font, or
+// colors. For custom UI, open a dialog from onClick (see DialogApi).
+interface RegisterMenuItemOptions {
+  id: string
+  label: string // text shown in the menu, required non-empty
+  tooltip?: string
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path; SVG is tinted, raster shown as-is
+  order?: number
+  group?: string
+  requires?: { network?: boolean; selection?: boolean } // greys the item out
+  onClick: (apis: AppContextApis) => void | Promise<void>
+  isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per open
+}
 
 interface RegisterNetworkSearchProviderOptions {
   id: string
   name: string // display name, required non-empty
   description?: string
-  icon?: string // http(s) URL, data:image URI, or root-relative host asset path
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path; SVG is tinted, raster shown as-is
   website?: string // http(s) URL
   placeholder?: string // for the host-owned search input
   optionsComponent?: React.ComponentType<NetworkSearchOptionsHostProps>
@@ -1714,8 +1728,67 @@ Removes a panel. Returns `APP7` if the panel is not registered.
 
 #### `registerMenuItem(options): ApiResult<{ resourceId: string }>`
 
-Registers a menu item in the `'apps-menu'` slot. Uses upsert semantics. Same
-error codes as `registerPanel`.
+Registers one entry in the shared Apps dropdown. Uses upsert semantics.
+
+The entry is **plain data**: `label`, optional `tooltip` and `icon`, an
+`onClick` handler, and enablement rules. There is no `component` — the host
+renders every entry as one of its own standard menu rows, so every app's item
+has the same size, font, and style as every other app's and as the host's
+built-in items. (Before 1.0 this slot took a React component; see
+"Migrating a component-based menu item" below.)
+
+- **`onClick(apis)`** receives the app's per-app API object (the same
+  `AppContextApis` passed to `mount()`). The host closes the dropdown first,
+  then calls the handler. Do the work directly, or open a dialog with
+  `apis.dialog.open(...)` / `apis.resource.openModal(id)` for anything that
+  needs a form, progress, or component state. A returned Promise is awaited
+  only to log a rejection.
+- **`requires`** — `{ network: true }` greys the item out until a network is
+  loaded; `{ selection: true }` until at least one element is selected.
+  Evaluated by the host from its own stores each time the menu opens.
+- **`isEnabled(apis)`** — optional extra check the host calls right before
+  the menu is shown, for conditions `requires` cannot express. A plain
+  function, not a hook; a throw is logged and counts as `false`.
+- **`icon`** — an image URI, exactly as for a `'search-bar'` provider: an
+  http(s) URL, a `data:image` URI (an inlined SVG works well), or a
+  root-relative host asset path, rendered by the host at a fixed size in the
+  row's icon slot. **SVG icons are painted in the row's text color; raster
+  icons are shown unchanged.** An SVG (`data:image/svg+xml`, or a path ending
+  in `.svg`) contributes only its shape, so it follows the light/dark theme
+  and the disabled state with no effort from the app — and multi-color SVG
+  artwork becomes a monochrome silhouette; ship a PNG to keep a logo's
+  colors. A cross-origin http(s) SVG needs CORS headers (CSS masks are
+  fetched in CORS mode). Never a component.
+
+```typescript
+apis.resource.registerMenuItem({
+  id: 'analyze',
+  label: 'Analyze Network',
+  tooltip: 'Calculates degree, centrality, and clustering',
+  icon: 'data:image/svg+xml,' + encodeURIComponent(LOGO_SVG),
+  requires: { network: true },
+  onClick: (apis) => {
+    apis.dialog.open({
+      id: 'analyze',
+      title: 'Network Analyzer',
+      maxWidth: 'xs',
+      render: ({ close }) => <AnalyzeForm onDone={close} />,
+    })
+  },
+})
+```
+
+| Error Code | Condition                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| `APP9`     | `id` or `label` empty, `onClick`/`isEnabled` not a function, `icon` not a valid URI, or a `component` |
+
+**Migrating a component-based menu item.** Replace `component` (and
+`closeOnAction`/`errorFallback`/`title`) with `label` + `onClick`. If the old
+component just ran an action, move that logic into `onClick`. If it showed a
+form or other UI, move that JSX into `apis.dialog.open({ render })` (or a
+`'modal-launcher'` registration) called from `onClick`. Right-panel
+registrations need no change. Registering with a `component` now fails with
+`APP9` and a message that says so.
 
 #### `unregisterMenuItem(menuItemId): ApiResult`
 
@@ -1747,6 +1820,14 @@ component. A provider contributes:
 | Error Code | Condition                                                         |
 | ---------- | ----------------------------------------------------------------- |
 | `APP9`     | `id`/`name` empty, `onSubmit` not a function, `optionsComponent` not a valid React type, `icon` not http(s)/data:image/root-relative, `website` not http(s) |
+
+The `icon` follows the same rule as an `'apps-menu'` icon: **an SVG is painted
+in the surrounding text color, a raster image is shown unchanged.** An SVG
+(`data:image/svg+xml`, or a path ending in `.svg`) contributes only its shape,
+so it follows the light/dark theme; multi-color SVG artwork becomes a monochrome
+silhouette, and a cross-origin http(s) SVG needs CORS headers. A raster logo
+keeps its colors on a white tile. Without an `icon` the host shows the
+provider's initial on that tile.
 
 ```typescript
 mount(context) {
@@ -1787,11 +1868,11 @@ renders the dialog *contents* — `DialogTitle`, `DialogContent`,
 `DialogActions` — and receives `ModalHostProps`.
 
 Dismissal follows the host's dialog policy
-(`docs/specifications/DIALOG_DISMISS_POLICY.md`): backdrop click and Escape
-are inert. The host shell always renders a Close "X" in the top-right corner
-wired to the same close path as `requestClose`, so every app modal has an
-exit even if the app renders none; wire your own Cancel/Done buttons to
-`requestClose`.
+(`docs/specifications/DIALOG_DISMISS_POLICY.md`): backdrop click is inert.
+The host shell always renders a Close "X" in the top-right corner and closes
+on Escape (the documented exception for app dialogs), both wired to the same
+close path as `requestClose`, so every app modal has an exit even if the app
+renders none; wire your own Cancel/Done buttons to `requestClose`.
 
 Do NOT treat the component's unmount as a "modal closed" signal (e.g. an
 effect cleanup that discards the modal's pending payload): the host runs
@@ -1858,7 +1939,7 @@ partial failures.
 ```typescript
 const result = apis.resource.registerAll([
   { slot: 'right-panel', id: 'Panel', component: MyPanel },
-  { slot: 'apps-menu', id: 'Menu', component: MyMenu },
+  { slot: 'apps-menu', id: 'Menu', label: 'My Action', onClick: runAction },
 ])
 if (result.success && result.data.errors.length > 0) {
   console.warn('Partial failures:', result.data.errors)
@@ -1869,7 +1950,11 @@ if (result.success && result.data.errors.length > 0) {
 
 Returns all resources registered by this app. Useful for debugging.
 
-#### `getResourceVisibility(id): ApiResult<ResourceVisibilityResult>`
+#### `getResourceVisibility(id, slot?): ApiResult<ResourceVisibilityResult>`
+
+Ids are unique per slot, not per app. Pass `slot` when the same id is used in
+more than one slot; without it the first registration with that id (in
+registration order) is evaluated.
 
 Returns the visibility evaluation for a specific resource. Evaluates:
 
@@ -2332,6 +2417,83 @@ window.addEventListener('cywebapi:ready', () => {
 
 ---
 
+## DialogApi (`AppContext.apis.dialog`)
+
+The escape hatch for `'apps-menu'` items — and for any other app code holding
+the per-app API object — that need more than a label and a click: a settings
+form, a progress indicator, a multi-step wizard, anything with its own
+component state. `open()` shows a modal in which the host owns the frame
+(title bar, Close "X", padding) and the app supplies only the body.
+
+Per-app: the factory is bound to the calling app, so an app can only close
+its own dialogs, and every dialog it opened is closed automatically when the
+app is disabled. Available via `apis.dialog` in `mount()`, as the `apis`
+argument of an `'apps-menu'` `onClick`, and via `useAppContext().apis.dialog`
+inside any host-rendered app component. **Not** on `window.CyWebApi`.
+
+**Relationship to `'modal-launcher'`.** Both render app content inside the
+same host dialog shell. `'modal-launcher'` is declarative — register a
+component by id, open it later with `openModal(id)`, render your own
+`DialogTitle` — and suits modals launched from several places. The Dialog API
+is imperative — pass a render function and a title right now — and suits a
+menu item that opens one form. Pick whichever fits the call site.
+
+### Types
+
+```typescript
+interface OpenDialogOptions {
+  id?: string // stable id: reopening with the same id replaces, never stacks
+  title: string // host-rendered title bar, required non-empty
+  render: (props: DialogRenderProps) => ReactNode // the body
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false // default 'sm'
+  fullWidth?: boolean // default false
+}
+
+interface DialogRenderProps {
+  close: () => void // closes this dialog (same path as the host's Close "X")
+}
+
+interface DialogApi {
+  open(options: OpenDialogOptions): ApiResult<{ dialogId: string }>
+  close(dialogId?: string): ApiResult
+}
+```
+
+### Methods
+
+#### `open(options): ApiResult<{ dialogId: string }>`
+
+Opens a dialog and returns its id (generated when `options.id` is omitted).
+The body renders under the app's context (`useAppContext()` works), an error
+boundary, and a `Suspense` boundary with a spinner, so `render` may return
+`React.lazy` content. A throwing body is replaced by the host's plugin
+fallback; the title bar and Close "X" remain.
+
+Dismissal follows `docs/specifications/DIALOG_DISMISS_POLICY.md`: backdrop
+click is inert; the host always renders a Close "X" in the title bar and
+closes on Escape (the documented exception for app dialogs). Wire your own
+Cancel/Done buttons to the injected `close`.
+
+```typescript
+onClick: (apis) => {
+  apis.dialog.open({
+    id: 'settings',
+    title: 'Analysis Settings',
+    render: ({ close }) => <AnalysisSettingsForm onDone={close} />,
+  })
+}
+```
+
+| Error Code | Condition                                                                 |
+| ---------- | ------------------------------------------------------------------------- |
+| `APP9`     | `title` empty, `render` not a function, empty `id`, invalid `maxWidth`/`fullWidth` |
+
+#### `close(dialogId?): ApiResult`
+
+Closes a dialog. With no argument, closes this app's most recently opened
+dialog that is still open — the common case. Idempotent for an id that is not
+open; returns `APP7` when called without an id and the app has no dialog open.
+
 ## App Lifecycle
 
 ### `AppContext`
@@ -2347,14 +2509,16 @@ interface AppContext {
 
 ### `AppContextApis`
 
-Per-app API object. Adds `resource`, and replaces two shared domains with
-factories bound to the calling app:
+Per-app API object. Adds `resource`, `appData` and `dialog`, and replaces two
+shared domains with factories bound to the calling app:
 
 ```typescript
 interface AppContextApis extends CyWebApiType {
   readonly resource: ResourceApi // per-app resource registration
   readonly contextMenu: ContextMenuApi // per-app, auto-cleaned on disable
   readonly nodeGraphics: NodeGraphicsApi // per-app, auto-cleaned on disable
+  readonly appData: AppDataApi // per-app storage, survives disable
+  readonly dialog: DialogApi // per-app dialogs, closed on disable
 }
 ```
 
@@ -2421,6 +2585,7 @@ import { lazy } from 'react'
 import type { CyAppWithLifecycle, AppContext } from '@cytoscape-web/api-types'
 
 let _networkHandler: ((e: Event) => void) | null = null
+const LazyMyActionForm = lazy(() => import('./components/MyActionForm'))
 
 export const MyApp: CyAppWithLifecycle = {
   id: 'myApp',
@@ -2440,9 +2605,16 @@ export const MyApp: CyAppWithLifecycle = {
     {
       slot: 'apps-menu',
       id: 'MyMenuItem',
-      title: 'My Action',
-      component: lazy(() => import('./components/MyMenuItem')),
-      closeOnAction: true,
+      label: 'My Action',
+      requires: { network: true },
+      // Plain data: the host renders the row. Custom UI goes in a dialog.
+      onClick: (apis) => {
+        apis.dialog.open({
+          id: 'my-action',
+          title: 'My Action',
+          render: ({ close }) => <LazyMyActionForm onDone={close} />,
+        })
+      },
     },
   ],
 
