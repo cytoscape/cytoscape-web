@@ -472,6 +472,9 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     }
     const nextId = next.getAttribute(MENU_BAR_TRIGGER_ATTR)
     if (openTarget && nextId !== null) {
+      // Focus goes into the new menu, not onto its trigger, so the trigger's
+      // focus handler never runs: hand it the tab stop here.
+      menuBar.setActiveId(nextId)
       menuBar.openMenu(nextId, 'keyboard')
     } else {
       next.focus()

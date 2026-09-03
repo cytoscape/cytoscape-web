@@ -161,6 +161,24 @@ describe('MenuBar', () => {
     expect(button('help').tabIndex).toBe(-1)
   })
 
+  it('moves the tab stop with an arrow-key switch between open menus', () => {
+    renderMenuBar()
+    fireEvent.click(button('data'))
+    expect(button('data').tabIndex).toBe(0)
+
+    // The switch puts focus on Layout's first row, never on its trigger, so
+    // the trigger's own focus handler cannot claim the stop.
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(menuOf('Layout'))
+    expect(button('layout').tabIndex).toBe(0)
+    expect(button('data').tabIndex).toBe(-1)
+
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(menuOf('Data'))
+    expect(button('data').tabIndex).toBe(0)
+    expect(button('layout').tabIndex).toBe(-1)
+  })
+
   it('moves the tab stop to the first enabled trigger when its own is disabled', () => {
     const Harness = () => {
       const [layoutDisabled, setLayoutDisabled] = useState(false)
