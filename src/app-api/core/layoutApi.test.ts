@@ -98,7 +98,7 @@ const mockSetNetworkModified = vi.fn()
 vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
     getState: vi.fn(() => ({
-      workspace: { currentNetworkId: 'net1' },
+      workspace: { currentNetworkId: 'net1', networkModified: {} },
       setNetworkModified: mockSetNetworkModified,
     })),
   },

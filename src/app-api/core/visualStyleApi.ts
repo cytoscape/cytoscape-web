@@ -511,8 +511,20 @@ export const visualStyleApi: VisualStyleApi = {
       if (visualStyles[networkId] === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      // Read before the delete: `visualStyleImpl.deleteBypass` drops the ids
+      // from the map whether or not they were in it, so afterwards there is
+      // nothing left to tell a real removal from a no-op. An app that clears
+      // bypasses speculatively (on every selection change, say) must not
+      // dirty a clean network.
+      const bypassMap = visualStyles[networkId][vpName]?.bypassMap
+      const removedAny = elementIds.some(
+        (elementId) => bypassMap?.has(elementId) === true,
+      )
+
       useVisualStyleStore.getState().deleteBypass(networkId, vpName, elementIds)
-      markNetworkModified(networkId)
+      if (removedAny) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -678,8 +690,13 @@ export const visualStyleApi: VisualStyleApi = {
       if (visualStyles[networkId] === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      // Removing an absent mapping changes nothing, so it must not mark.
+      const hadMapping = visualStyles[networkId][vpName]?.mapping !== undefined
+
       useVisualStyleStore.getState().removeMapping(networkId, vpName)
-      markNetworkModified(networkId)
+      if (hadMapping) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

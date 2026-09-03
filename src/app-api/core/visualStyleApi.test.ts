@@ -1539,13 +1539,33 @@ describe('networkModified (#680)', () => {
     expectMarked()
   })
 
-  it('deleteBypass marks the written network', () => {
+  it('deleteBypass marks the written network when a bypass is removed', () => {
+    mockVisualStyles[NET][VPN.NodeBackgroundColor].bypassMap = new Map([
+      ['n1', '#ff0000'],
+    ])
+
     const result = visualStyleApi.deleteBypass(NET, VPN.NodeBackgroundColor, [
       'n1',
     ])
 
     expect(result.success).toBe(true)
     expectMarked()
+  })
+
+  it('deleteBypass marks nothing when no element had a bypass', () => {
+    // `visualStyleImpl.deleteBypass` drops ids whether or not they were
+    // present, so a speculative clear must not dirty a clean network.
+    mockVisualStyles[NET][VPN.NodeBackgroundColor].bypassMap = new Map([
+      ['n2', '#ff0000'],
+    ])
+
+    const result = visualStyleApi.deleteBypass(NET, VPN.NodeBackgroundColor, [
+      'n1',
+    ])
+
+    expect(result.success).toBe(true)
+    expect(mockDeleteBypass).toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 
   it('createDiscreteMapping marks the written network', () => {
@@ -1584,11 +1604,24 @@ describe('networkModified (#680)', () => {
     expectMarked()
   })
 
-  it('deleteMapping marks the written network', () => {
+  it('deleteMapping marks the written network when a mapping existed', () => {
+    mockVisualStyles[NET][VPN.NodeBackgroundColor].mapping = {
+      attribute: 'type',
+      type: 'discrete',
+    }
+
     const result = visualStyleApi.deleteMapping(NET, VPN.NodeBackgroundColor)
 
     expect(result.success).toBe(true)
     expectMarked()
+  })
+
+  it('deleteMapping marks nothing when there was no mapping', () => {
+    const result = visualStyleApi.deleteMapping(NET, VPN.NodeBackgroundColor)
+
+    expect(result.success).toBe(true)
+    expect(mockRemoveMapping).toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 
   it('does not mark when the write is rejected', () => {

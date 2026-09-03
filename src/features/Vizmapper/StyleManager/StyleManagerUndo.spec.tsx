@@ -76,6 +76,15 @@ describe('StyleManager undo, end to end through the Edit menu', () => {
       // The app's steady state: the Vizmapper's networkId prop and the network
       // the Edit menu infers are the same.
       useWorkspaceStore.getState().setCurrentNetworkId(NETWORK_ID)
+      // networkModified is a module-level singleton too, and postEdit now
+      // writes it (#680) — without the reset one test's flag leaks into the
+      // next and the assertions below pass vacuously.
+      useWorkspaceStore.setState({
+        workspace: {
+          ...useWorkspaceStore.getState().workspace,
+          networkModified: {},
+        },
+      })
       useUiStateStore.getState().setActiveNetworkView('')
       publicationId = useVisualStyleStore
         .getState()
@@ -106,6 +115,42 @@ describe('StyleManager undo, end to end through the Edit menu', () => {
     expect(screen.getByTestId('fake-undo').textContent).toBe(
       'Switch style to "Publication"',
     )
+  })
+
+  const isModified = (networkId: IdType): boolean | undefined =>
+    useWorkspaceStore.getState().workspace.networkModified[networkId]
+
+  it('marks the network modified through postEdit (#680)', () => {
+    // The choke point, against the real stores: StyleManager.handleSwitch no
+    // longer calls setNetworkModified itself, so the flag can only come from
+    // useUndoStack.postEdit.
+    render(
+      <>
+        <StyleManager networkId={NETWORK_ID} />
+        <FakeEditMenu />
+      </>,
+    )
+    expect(isModified(NETWORK_ID)).toBeUndefined()
+
+    switchViaPicker(publicationId)
+
+    expect(isModified(NETWORK_ID)).toBe(true)
+  })
+
+  it('leaves the network modified after undoing a switch (#680)', () => {
+    // Undo replays a store action, so the network still differs from what
+    // NDEx holds. Clearing the flag here would hide unsaved work.
+    render(
+      <>
+        <StyleManager networkId={NETWORK_ID} />
+        <FakeEditMenu />
+      </>,
+    )
+
+    switchViaPicker(publicationId)
+    fireEvent.click(screen.getByTestId('fake-undo'))
+
+    expect(isModified(NETWORK_ID)).toBe(true)
   })
 
   it('reverts the active style when Undo is clicked', () => {

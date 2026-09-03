@@ -29,11 +29,26 @@ const UNDO_STACK_SIZE: number = appConfig.undoStackSize
  * (NetworkStore evicts only on delete), so a write to one that is not on
  * screen must still mark that network and not the one the user is looking at.
  *
- * Idempotent — the store write is a plain assignment, so calling it on an
- * already-modified network is free.
+ * Returns without touching the store when the network is already marked. The
+ * guard is not cosmetic: `workspaceImpl.setNetworkModified` rebuilds the
+ * workspace object, so a redundant call changes its identity and re-renders
+ * all ~16 components selecting `state.workspace` (NetworkPanel and every
+ * summary row among them), and WorkspaceStore's persist middleware
+ * JSON-stringifies the whole workspace twice to decide it need not write. This
+ * runs on every recorded edit — a node drag posts one per mouse-up — so the
+ * deleted WorkspaceEditor subscriptions guarded it the same way.
  */
 export function markNetworkModified(networkId: IdType): void {
-  useWorkspaceStore.getState().setNetworkModified(networkId, true)
+  const { workspace, setNetworkModified } = useWorkspaceStore.getState()
+  // Optional-chained on purpose: `postEdit` calls this from click handlers
+  // that do not catch, and it runs AFTER the store mutation it accompanies.
+  // A throw here would leave the edit applied with no undo entry, so an
+  // unexpectedly shaped workspace has to fall through to the write (which
+  // rebuilds `networkModified` from scratch) rather than raise.
+  if (workspace?.networkModified?.[networkId] === true) {
+    return
+  }
+  setNetworkModified(networkId, true)
 }
 
 /**

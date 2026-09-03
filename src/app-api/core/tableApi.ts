@@ -14,6 +14,7 @@ import {
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import {
   AttributeName,
+  Table,
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
@@ -298,7 +299,7 @@ function cascadeColumnToMappings(
  * the in-app table paths hand to `postEdit` for an empty cell.
  */
 function previousCellEdits(
-  table: { rows: Map<IdType, Record<AttributeName, ValueType>> } | undefined,
+  table: Table | undefined,
   edits: Array<{ row: IdType; column: AttributeName }>,
 ): StoreCellEdit[] {
   return edits.map(({ row, column }) => ({
@@ -448,22 +449,18 @@ export const tableApi: TableApi = {
       // whole pre-delete table (`setTable`) on undo and re-deletes by
       // `params[3].id` on redo, which is the contract the in-app
       // DeleteTableColumnForm uses.
+      const params = [
+        networkId,
+        tableType,
+        tableRecord[tableKey(tableType)],
+        { id: columnName },
+      ]
       corePostEdit(
         networkId,
         UndoCommandType.DELETE_COLUMN,
         `Delete ${tableType} column ${columnName}`,
-        [
-          networkId,
-          tableType,
-          tableRecord[tableKey(tableType)],
-          { id: columnName },
-        ],
-        [
-          networkId,
-          tableType,
-          tableRecord[tableKey(tableType)],
-          { id: columnName },
-        ],
+        params,
+        params,
       )
 
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
