@@ -26,6 +26,10 @@ export interface RegisteredAppResource {
   readonly id: string
   readonly appId: string
   readonly slot: ResourceSlot
+  /**
+   * 'right-panel': the tab title (falls back to `id`). 'apps-menu': the
+   * menu label. 'search-bar': the provider's display name.
+   */
   readonly title?: string
   /**
    * Sort key within the slot. Lower values appear first.
@@ -53,9 +57,11 @@ export interface RegisteredAppResource {
    * The React component to render. Typed as `unknown` here to keep the store
    * model free of React imports. Host renderers cast to the appropriate
    * slot-specific prop type at the call site.
-   * Required for 'right-panel' and 'apps-menu' (validated at registration
-   * time). For 'search-bar' it holds the optional "More Options" panel
-   * (optionsComponent) and may be absent.
+   * Required for 'right-panel' and 'modal-launcher' (validated at
+   * registration time). For 'search-bar' it holds the optional "More
+   * Options" panel (optionsComponent) and may be absent. Never present for
+   * 'apps-menu': the host renders every menu entry itself from the fields
+   * below.
    */
   readonly component?: unknown
   /**
@@ -64,12 +70,26 @@ export interface RegisteredAppResource {
    * If omitted, the host's default PluginFallback is used.
    */
   readonly errorFallback?: unknown
+
+  // ── 'apps-menu' slot only ──────────────────────────────────────
+  // The label lives in `title` and the icon URI in `icon` (shared with
+  // 'search-bar'). Entries are plain data: the host owns 100% of the
+  // rendering, so a menu item can never distort the shared dropdown.
+
+  /** Optional hover text. */
+  readonly tooltip?: string
   /**
-   * For 'apps-menu' slot only. If true, the host automatically closes the
-   * dropdown when the menu item's onClick handler completes.
-   * @default false
+   * Invoked with the app's per-app API object when the item is clicked.
+   * Typed with an `unknown` argument to keep the model layer free of
+   * app-api imports; the host casts to the real signature at the call site.
    */
-  readonly closeOnAction?: boolean
+  readonly onClick?: (apis: unknown) => void | Promise<void>
+  /**
+   * Optional extra enablement check, called by the host right before the
+   * menu is shown (a plain snapshot). Combined with `requires`. Same
+   * `unknown` convention as `onClick`.
+   */
+  readonly isEnabled?: (apis: unknown) => boolean
 
   // ── 'search-bar' slot only ─────────────────────────────────────
   // A network search provider stores its display name in `title` and its
@@ -78,7 +98,11 @@ export interface RegisteredAppResource {
 
   /** Short text describing what this provider searches. */
   readonly description?: string
-  /** http(s) or data:image URI for the provider icon. */
+  /**
+   * http(s) URL, data:image URI, or root-relative host asset path. Used by
+   * 'search-bar' (provider icon) and 'apps-menu' (menu item icon) alike; the
+   * host renders either through UriIcon (SVG tinted, raster unchanged).
+   */
   readonly icon?: string
   /** http(s) URL of the provider's website. */
   readonly website?: string

@@ -135,11 +135,17 @@ export const MyApp: CyAppWithLifecycle = {
       component: lazy(() => import('./components/MainPanel')),
     },
     {
+      // Plain data — the host renders the row; custom UI opens in a dialog.
       slot: 'apps-menu',
       id: 'QuickAction',
-      title: 'Quick Action',
-      component: lazy(() => import('./components/QuickAction')),
-      closeOnAction: true,
+      label: 'Quick Action',
+      requires: { network: true },
+      onClick: (apis) => {
+        apis.dialog.open({
+          title: 'Quick Action',
+          render: ({ close }) => <QuickActionForm onDone={close} />,
+        })
+      },
     },
   ],
 

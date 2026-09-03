@@ -2,11 +2,12 @@ import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 
-import { AppIdProvider } from '../../../app-api/AppIdContext'
 import { buildPerAppApis } from '../../../app-api/core/perAppApis'
+import type { AppContextApis } from '../../../app-api/types/AppContext'
 import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { appRegistry } from '../../../data/hooks/stores/useAppManager'
+import { logApp } from '../../../debug'
 import { ComponentType, CyApp } from '../../../models/AppModel'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
@@ -94,52 +95,63 @@ export const AppMenu = () => {
         return true
       })
       .map((r: RegisteredAppResource) => {
-        const MenuComponent = r.component as React.ComponentType<any>
-        const perAppApis = buildPerAppApis(r.appId)
+        // 'apps-menu' entries are plain data (label/tooltip/icon/onClick):
+        // the host renders the row itself, so no app component — and no
+        // AppIdProvider, error boundary or Suspense — ever sits inside the
+        // shared dropdown. An app that needs real UI opens it from onClick
+        // through apis.dialog / apis.resource.openModal, in its own layer.
+        const resourceId = `${r.appId}::apps-menu::${r.id}`
+        const perAppApis: AppContextApis = buildPerAppApis(r.appId)
 
-        // Local Suspense is required: registered components may be
-        // React.lazy(), and without a boundary here the first open would
-        // suspend all the way up to the app-level boundary, hiding the whole
-        // shell behind the boot screen — which also corrupts allotment's
-        // split-view state in the workspace editor (see
-        // useRemountKeyOnReveal).
-        const wrapped = r.closeOnAction ? (
-          <div
-            key={`${r.appId}::apps-menu::${r.id}`}
-            onClick={() => {
-              queueMicrotask(() => handleClose())
-            }}
-          >
-            <AppIdProvider value={{ appId: r.appId, apis: perAppApis }}>
-              <PluginErrorBoundary
-                appId={r.appId}
-                slot="apps-menu"
-                customFallback={r.errorFallback as any}
-              >
-                <Suspense fallback={null}>
-                  <MenuComponent handleClose={handleClose} />
-                </Suspense>
-              </PluginErrorBoundary>
-            </AppIdProvider>
-          </div>
-        ) : (
-          <AppIdProvider
-            key={`${r.appId}::apps-menu::${r.id}`}
-            value={{ appId: r.appId, apis: perAppApis }}
-          >
-            <PluginErrorBoundary
-              appId={r.appId}
-              slot="apps-menu"
-              customFallback={r.errorFallback as any}
-            >
-              <Suspense fallback={null}>
-                <MenuComponent handleClose={handleClose} />
-              </Suspense>
-            </PluginErrorBoundary>
-          </AppIdProvider>
+        // `requires` (network/selection) and app-active state come from
+        // getResourceVisibility — the same rule 'right-panel' uses.
+        // `isEnabled` is an extra imperative snapshot. Both are taken at
+        // menu-build time; see the `open` dependency below.
+        const visibility = perAppApis.resource.getResourceVisibility(
+          r.id,
+          'apps-menu',
         )
+        const visible = visibility.success ? visibility.data.visible : false
+        let customEnabled = true
+        if (typeof r.isEnabled === 'function') {
+          try {
+            customEnabled = r.isEnabled(perAppApis) === true
+          } catch (e) {
+            logApp.error(`[AppMenu]: isEnabled() threw for ${resourceId}`, e)
+            customEnabled = false
+          }
+        }
+        const disabled = !visible || !customEnabled
 
-        return { template: wrapped } as MenuItem
+        const handleClick = (): void => {
+          // Close the dropdown first — every built-in item does. Safe now
+          // that onClick only kicks off work living in a separate render
+          // tree, so closing the menu can never unmount it mid-run.
+          handleClose()
+          try {
+            const result = r.onClick?.(perAppApis)
+            if (result instanceof Promise) {
+              result.catch((e: unknown) => {
+                logApp.error(`[AppMenu]: onClick failed for ${resourceId}`, e)
+              })
+            }
+          } catch (e) {
+            logApp.error(`[AppMenu]: onClick threw for ${resourceId}`, e)
+          }
+        }
+
+        return {
+          template: (
+            <DropdownMenuItem
+              label={r.title ?? r.id}
+              tooltip={r.tooltip}
+              icon={<MenuItemIcon icon={r.icon} />}
+              disabled={disabled}
+              onClick={handleClick}
+              dataTestId={`apps-menu-item-${r.appId}-${r.id}`}
+            />
+          ),
+        } as MenuItem
       })
 
     // Track runtime ids for deduplication
@@ -178,7 +190,12 @@ export const AppMenu = () => {
 
     // 3. Merge: runtime first, then manifest
     return [...runtimeMenuItems, ...manifestMenuItems]
-  }, [runtimeResources, apps, componentList, handleClose])
+    // `open` is a deliberate extra dependency: getResourceVisibility() and
+    // isEnabled() are imperative snapshots, so rebuilding on every open
+    // re-evaluates enablement each time the dropdown is shown (not
+    // reactively while it is open — the same moment built-in menus decide).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open re-snapshots enablement
+  }, [runtimeResources, apps, componentList, handleClose, open])
 
   /**
    * Menu model for the nested menu: legacy app menu items, then service-app

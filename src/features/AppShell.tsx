@@ -21,6 +21,7 @@ import { MessageSeverity } from '../models/MessageModel'
 import { AppInstallConfirmationDialog } from './AppManager/AppInstallConfirmationDialog'
 import { installConfirmedApps } from './AppManager/install/installConfirmedApps'
 import { AppManagerCommandsProvider } from './AppManager/AppManagerCommandsContext'
+import { AppDialogHost } from './AppManager/AppDialogHost'
 import { ModalLauncherHost } from './AppManager/ModalLauncherHost'
 import { markCrossTabSyncReady } from '@/data/sync/crossTabSyncGate'
 import { SyncTabsAction } from './SyncTabs'
@@ -161,6 +162,7 @@ const AppShell = (): ReactElement => {
         onCancel={() => setPendingAppInstalls([])}
       />
       <ModalLauncherHost />
+      <AppDialogHost />
     </AppManagerCommandsProvider>
   )
 }
