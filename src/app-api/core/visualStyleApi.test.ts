@@ -1624,6 +1624,22 @@ describe('networkModified (#680)', () => {
     expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 
+  it('setDefaults marks nothing when given an empty map', () => {
+    const result = visualStyleApi.setDefaults(NET, {})
+
+    expect(result.success).toBe(true)
+    expect(mockSetDefault).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('setBypasses marks nothing when given an empty map', () => {
+    const result = visualStyleApi.setBypasses(NET, ['n1'], {})
+
+    expect(result.success).toBe(true)
+    expect(mockSetBypass).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
   it('does not mark when the write is rejected', () => {
     const result = visualStyleApi.setBypass(
       NET,

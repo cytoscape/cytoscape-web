@@ -178,8 +178,12 @@ export const StyleManager = (props: {
           [networkId, newId],
           networkId,
         )
+      } else {
+        // postEdit marks the network itself, so this only covers the case
+        // where the switch failed and no edit was recorded — the copy still
+        // landed in the style set and has to be saveable.
+        markModified()
       }
-      markModified()
     }
     closeDialog()
   }
@@ -207,8 +211,11 @@ export const StyleManager = (props: {
           [networkId, newId],
           networkId,
         )
+      } else {
+        // As in handleCopyIn: only the failed-switch path needs this, since
+        // postEdit marks the network on the success path.
+        markModified()
       }
-      markModified()
     }
   }
 

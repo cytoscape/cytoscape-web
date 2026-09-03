@@ -96,7 +96,15 @@ export const viewportApi: ViewportApi = {
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      const missingNodes = validateNodesExist(networkId, Object.keys(positions))
+      // An empty record moves no node. Checked after the network lookup, so a
+      // bogus networkId still reports NETWORK_NOT_FOUND rather than silently
+      // succeeding.
+      const nodeIds = Object.keys(positions)
+      if (nodeIds.length === 0) {
+        return ok()
+      }
+
+      const missingNodes = validateNodesExist(networkId, nodeIds)
       if (missingNodes) return missingNodes
 
       // Convert PositionRecord (JSON-serializable) to Map required by store

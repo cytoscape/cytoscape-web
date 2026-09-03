@@ -328,6 +328,28 @@ describe('networkModified (#680)', () => {
     expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 
+  it('does not mark an empty position record', () => {
+    mockNetworks.set('net2', { id: 'net2', nodes: [{ id: 'n1' }], edges: [] })
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+
+    const result = viewportApi.updateNodePositions('net2', {})
+
+    expect(result.success).toBe(true)
+    expect(mockUpdateNodePositions).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('still reports an unknown network for an empty position record', () => {
+    mockGetViewModel.mockReturnValue(undefined)
+
+    const result = viewportApi.updateNodePositions('missing', {})
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+
   it('does not mark when the network has no view model', () => {
     mockGetViewModel.mockReturnValue(undefined)
 

@@ -492,14 +492,19 @@ export const tableApi: TableApi = {
         return fail(AppCodes.COLUMN_NOT_FOUND, currentName, tableType)
       }
 
-      // Self-rename is a harmless no-op; anything else must not collide
-      if (newName !== currentName) {
-        const duplicateName = validateColumnNameAvailable(
-          tableRecord[tableKey(tableType)]?.columns ?? [],
-          newName,
-        )
-        if (duplicateName) return duplicateName
+      // A self-rename is a no-op, and returning here is not just an
+      // optimisation: falling through would record an undo entry, mark the
+      // network modified, and rewrite every dependent mapping to the value it
+      // already holds — three store writes for a rename that changes nothing.
+      if (newName === currentName) {
+        return ok()
       }
+
+      const duplicateName = validateColumnNameAvailable(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        newName,
+      )
+      if (duplicateName) return duplicateName
 
       // Undo swaps the names back; redo replays the rename.
       corePostEdit(

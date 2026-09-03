@@ -391,7 +391,10 @@ export const visualStyleApi: VisualStyleApi = {
       for (const [vpName, vpValue] of entries) {
         setDefault(networkId, vpName, vpValue)
       }
-      markNetworkModified(networkId)
+      // An empty map runs the loop zero times, so nothing changed.
+      if (entries.length > 0) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -498,7 +501,10 @@ export const visualStyleApi: VisualStyleApi = {
       for (const [vpName, vpValue] of entries) {
         setBypass(networkId, vpName, elementIds, vpValue)
       }
-      markNetworkModified(networkId)
+      // An empty map runs the loop zero times, so nothing changed.
+      if (entries.length > 0) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

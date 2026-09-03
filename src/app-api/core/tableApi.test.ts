@@ -2010,6 +2010,28 @@ describe('no-op writes (#680)', () => {
     expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 
+  it('renameColumn to the same name records and marks nothing', () => {
+    // Falling through would record an undo entry, mark the network, and
+    // rewrite every dependent mapping to the value it already holds.
+    mockTables['net1'] = makeTableRecord(new Map(), undefined, [
+      { name: 'score', type: 'long' },
+    ])
+    mockVisualStyles['net1'] = {
+      nodeBackgroundColor: {
+        group: 'node',
+        mapping: { attribute: 'score' },
+      },
+    }
+
+    const result = tableApi.renameColumn('net1', 'node', 'score', 'score')
+
+    expect(result.success).toBe(true)
+    expect(mockSetColumnName).not.toHaveBeenCalled()
+    expect(mockSetMapping).not.toHaveBeenCalled()
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
   it('editRows with no rows records and marks nothing', () => {
     mockTables['net1'] = makeTableRecord(new Map([['n1', { score: 1 }]]))
     registerNet1(['n1'])
