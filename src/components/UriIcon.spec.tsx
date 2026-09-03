@@ -6,7 +6,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { isSvgIconUri, UriIcon } from './UriIcon'
+import { cssUrl, isSvgIconUri, UriIcon } from './UriIcon'
 
 const SVG_DATA = 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E'
 const PNG_DATA = 'data:image/png;base64,iVBORw0KGgo='
@@ -41,6 +41,23 @@ describe('isSvgIconUri', () => {
   })
 })
 
+describe('cssUrl', () => {
+  it('percent-encodes the characters that could end or break a CSS url string', () => {
+    expect(
+      cssUrl('data:image/svg+xml,<svg xmlns="x" a=\'b\'>(1)\\</svg>'),
+    ).toBe(
+      'url("data:image/svg+xml,<svg xmlns=%22x%22 a=%27b%27>%281%29%5C</svg>")',
+    )
+  })
+
+  it('leaves an already-encoded URI untouched', () => {
+    expect(cssUrl(SVG_DATA)).toBe(`url("${SVG_DATA}")`)
+    expect(cssUrl('/images/logo.svg?v=1#a')).toBe(
+      'url("/images/logo.svg?v=1#a")',
+    )
+  })
+})
+
 describe('UriIcon', () => {
   it('paints an SVG as a mask in the text color, not an <img>', () => {
     render(<UriIcon src={SVG_DATA} size={20} data-testid="icon" />)
@@ -53,6 +70,16 @@ describe('UriIcon', () => {
     const css = emittedCss()
     expect(css).toContain(`mask-image:url("${SVG_DATA}")`)
     expect(css).toContain('background-color:currentColor')
+  })
+
+  it('keeps a raw SVG data URI with literal quotes as one well-formed mask url', () => {
+    const raw = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>'
+    render(<UriIcon src={raw} size={20} data-testid="icon" />)
+
+    const css = emittedCss()
+    expect(css).toContain(
+      'mask-image:url("data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22/>")',
+    )
   })
 
   it('renders a raster image unchanged as a letterboxed <img>', () => {

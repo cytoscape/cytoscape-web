@@ -32,6 +32,17 @@ export const isSvgIconUri = (uri: string): boolean => {
   return /\.svg$/i.test(path)
 }
 
+/**
+ * Wrap a URI for a CSS `url("...")`. A raw (unencoded) SVG data URI is
+ * valid and common — `data:image/svg+xml,<svg xmlns="...">` — but its
+ * literal quotes would end the CSS string early. Percent-encoding the few
+ * CSS-sensitive characters keeps the URI meaning intact (browsers decode
+ * `%22` back to `"` in both data: and http(s) URIs) and the declaration
+ * well-formed.
+ */
+export const cssUrl = (uri: string): string =>
+  `url("${uri.replace(/["'\\\n\r()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`)}")`
+
 interface UriIconProps {
   /** http(s) URL, data:image URI, or root-relative host asset path. */
   src: string
@@ -86,7 +97,7 @@ export const UriIcon = ({
           width: size,
           height: size,
           backgroundColor: 'currentColor',
-          maskImage: `url("${src}")`,
+          maskImage: cssUrl(src),
           maskSize: 'contain',
           maskRepeat: 'no-repeat',
           maskPosition: 'center',

@@ -104,6 +104,20 @@ describe('createDialogApi', () => {
       expect(mockStore.openDialog).not.toHaveBeenCalled()
     })
 
+    it.each([undefined, null, 'My Dialog', 42])(
+      'returns fail(InvalidInput), not OperationFailed, for options %s',
+      (options) => {
+        const api = createDialogApi('app1')
+        const result = api.open(options as any)
+
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe('APP9')
+        }
+        expect(mockStore.openDialog).not.toHaveBeenCalled()
+      },
+    )
+
     it('upserts on second call with the same id (no error)', () => {
       const api = createDialogApi('app1')
       api.open({ id: 'D1', title: 'Old', render: noopRender })

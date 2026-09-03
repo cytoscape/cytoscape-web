@@ -155,9 +155,16 @@ export const createResourceApi = (appId: string): ResourceApi => ({
 
   registerMenuItem(options) {
     try {
-      // typeof guards before any string method: entries can arrive from
-      // untyped JS apps with any shape, and a thrown TypeError would come
-      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      // typeof guards before any property access or string method: entries
+      // can arrive from untyped JS apps with any shape (or none), and a
+      // thrown TypeError would come back as OPERATION_FAILED instead of the
+      // accurate INVALID_INPUT.
+      if (typeof options !== 'object' || options === null) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `options must be an object, got ${options === null ? 'null' : typeof options}`,
+        )
+      }
       if (typeof options.id !== 'string' || options.id.trim() === '') {
         return fail(
           AppCodes.INVALID_INPUT,
@@ -529,11 +536,16 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     }
   },
 
-  getResourceVisibility(id): ApiResult<ResourceVisibilityResult> {
+  getResourceVisibility(id, slot): ApiResult<ResourceVisibilityResult> {
     try {
       const store = useAppResourceStore.getState()
+      // Ids are unique per (appId, slot), not per app: without `slot` an app
+      // that reuses an id across slots gets the first registration.
       const resource = store.resources.find(
-        (r: RegisteredAppResource) => r.appId === appId && r.id === id,
+        (r: RegisteredAppResource) =>
+          r.appId === appId &&
+          r.id === id &&
+          (slot === undefined || r.slot === slot),
       )
       if (!resource) return ok({ registered: false, visible: false })
 

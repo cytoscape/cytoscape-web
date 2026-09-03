@@ -1950,7 +1950,11 @@ if (result.success && result.data.errors.length > 0) {
 
 Returns all resources registered by this app. Useful for debugging.
 
-#### `getResourceVisibility(id): ApiResult<ResourceVisibilityResult>`
+#### `getResourceVisibility(id, slot?): ApiResult<ResourceVisibilityResult>`
+
+Ids are unique per slot, not per app. Pass `slot` when the same id is used in
+more than one slot; without it the first registration with that id (in
+registration order) is evaluated.
 
 Returns the visibility evaluation for a specific resource. Evaluates:
 

@@ -106,7 +106,10 @@ export const AppMenu = () => {
         // getResourceVisibility — the same rule 'right-panel' uses.
         // `isEnabled` is an extra imperative snapshot. Both are taken at
         // menu-build time; see the `open` dependency below.
-        const visibility = perAppApis.resource.getResourceVisibility(r.id)
+        const visibility = perAppApis.resource.getResourceVisibility(
+          r.id,
+          'apps-menu',
+        )
         const visible = visibility.success ? visibility.data.visible : false
         let customEnabled = true
         if (typeof r.isEnabled === 'function') {

@@ -386,8 +386,13 @@ export interface ResourceApi {
   /**
    * Returns the visibility evaluation result for a resource registered
    * by this app. The `id` parameter is the slot-local id passed to
-   * `registerPanel` / `registerMenuItem`. `requires.selection` is
-   * evaluated against the current network's live selection.
+   * `registerPanel` / `registerMenuItem`; pass `slot` too when the same id
+   * is used in more than one slot (ids are only unique per slot), otherwise
+   * the first match in registration order is evaluated. `requires.selection`
+   * is evaluated against the current network's live selection.
    */
-  getResourceVisibility(id: string): ApiResult<ResourceVisibilityResult>
+  getResourceVisibility(
+    id: string,
+    slot?: ResourceSlot,
+  ): ApiResult<ResourceVisibilityResult>
 }

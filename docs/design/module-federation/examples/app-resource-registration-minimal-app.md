@@ -48,7 +48,7 @@ src/
 ├── panels/
 │   └── MyPanel.tsx          ← React component rendered in the right panel
 └── menuItems/
-    └── MyMenuItem.tsx       ← React component rendered in the Apps menu
+    └── openSettingsDialog.tsx ← apps-menu onClick + the dialog body it opens
 ```
 
 Context menu items do not need a component — they register a handler function.
@@ -64,6 +64,8 @@ them automatically. No `mount()` or `unmount()` needed.
 // src/index.ts
 import { lazy } from 'react'
 import type { CyAppWithLifecycle } from 'cyweb/ApiTypes'
+
+import { openSettingsDialog } from './menuItems/openSettingsDialog'
 
 const app: CyAppWithLifecycle = {
   id: 'my-plugin',
@@ -83,13 +85,7 @@ const app: CyAppWithLifecycle = {
       id: 'main-menu',
       label: 'My Plugin',                              // host renders the row — no component
       requires: { network: true },                     // greyed out when no network loaded
-      onClick: (apis) => {                             // host closes the dropdown first
-        apis.dialog.open({
-          id: 'settings',
-          title: 'My Plugin',
-          render: ({ close }) => <LazySettingsForm onDone={close} />,
-        })
-      },
+      onClick: openSettingsDialog,                     // see §5 — opens a host-framed dialog
     },
   ],
   // No mount() or unmount() — host manages everything
@@ -114,7 +110,7 @@ per-resource error handling:
 // src/index.ts
 import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
 import MyPanel from './panels/MyPanel'
-import MyMenuItem from './menuItems/MyMenuItem'
+import { openSettingsDialog } from './menuItems/openSettingsDialog'
 
 const app: CyAppWithLifecycle = {
   id: 'my-plugin',
@@ -176,7 +172,7 @@ For apps that need capability negotiation or per-call error handling:
 // src/index.ts
 import type { CyAppWithLifecycle, AppContext } from 'cyweb/ApiTypes'
 import MyPanel from './panels/MyPanel'
-import MyMenuItem from './menuItems/MyMenuItem'
+import { openSettingsDialog } from './menuItems/openSettingsDialog'
 
 const app: CyAppWithLifecycle = {
   id: 'my-plugin',

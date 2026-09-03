@@ -390,6 +390,20 @@ describe('createResourceApi', () => {
       }
     })
 
+    it.each([undefined, null, 'action', 42])(
+      'returns fail(InvalidInput), not OperationFailed, for options %s',
+      (options) => {
+        const api = createResourceApi('app1')
+        const result = api.registerMenuItem(options as any)
+
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe('APP9')
+        }
+        expect(mockStore.upsertResource).not.toHaveBeenCalled()
+      },
+    )
+
     it('rejects the pre-1.0 component-based shape with a migration hint', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({

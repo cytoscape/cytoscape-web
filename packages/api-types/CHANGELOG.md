@@ -39,6 +39,8 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   as a monochrome silhouette, and a cross-origin http(s) SVG needs CORS
   headers. A raster image (PNG, JPEG, ...) keeps its colors; ship one to keep a
   logo's colors. An inlined SVG `data:` URI is the easy choice for a glyph.
+- **`ResourceApi.getResourceVisibility(id, slot?)`** takes an optional slot,
+  since ids are unique per slot rather than per app.
 - **Escape closes app dialogs.** Both `'modal-launcher'` modals and Dialog API
   dialogs now close on Escape (the backdrop stays inert), through the same
   path as `requestClose` / `close` and the host's Close "X".

@@ -184,11 +184,11 @@ function runFixtureSearch(query: { query: string }): void {
 }
 
 // A 16x16 filled circle, inlined so the fixture needs no static asset.
+// Deliberately NOT percent-encoded: a raw SVG data URI with literal quotes is
+// valid and common, and the host must keep it intact when it becomes a CSS
+// `url("...")` mask. (No `#` in the markup — that would start a fragment.)
 const FIXTURE_ICON_URI =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#1976d2"/></svg>',
-  )
+  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="royalblue"/></svg>'
 
 // The slice of the per-app API object the fixture's menu handlers use. A
 // test double gets exactly the surface it calls (see cyweb.d.ts for why).

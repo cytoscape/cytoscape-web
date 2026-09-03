@@ -20,9 +20,16 @@ const DIALOG_MAX_WIDTHS = ['xs', 'sm', 'md', 'lg', 'xl'] as const
 export const createDialogApi = (appId: string): DialogApi => ({
   open(options: OpenDialogOptions): ApiResult<{ dialogId: string }> {
     try {
-      // typeof guards before any string method: options can arrive from
-      // untyped JS apps with any shape, and a thrown TypeError would come
-      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      // typeof guards before any property access or string method: options
+      // can arrive from untyped JS apps with any shape (or none), and a
+      // thrown TypeError would come back as OPERATION_FAILED instead of the
+      // accurate INVALID_INPUT.
+      if (typeof options !== 'object' || options === null) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `options must be an object, got ${options === null ? 'null' : typeof options}`,
+        )
+      }
       if (typeof options.title !== 'string' || options.title.trim() === '') {
         return fail(
           AppCodes.INVALID_INPUT,
