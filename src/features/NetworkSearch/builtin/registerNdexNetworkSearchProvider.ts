@@ -11,8 +11,10 @@
 
 import { createResourceApi } from '@/app-api/core/resourceApi'
 import type { NetworkSearchQuery } from '@/app-api/types/AppResourceTypes'
+// `?inline` makes Vite hand back a data:image/png;base64 URI for the file, so
+// the bytes come straight from the asset — never from a hand-carried string.
+import ndexLogoPng from '@/assets/ndex-logo.png?inline'
 import { useLoadFromNdexDialogStore } from '@/features/ToolBar/DataMenu/store/loadFromNdexDialogStore'
-import { NDEX_LOGO_PNG_URI } from './ndexLogoPng'
 
 /**
  * Reserved appId for host-provided resources. Not a real app: it has no
@@ -26,9 +28,10 @@ export function registerNdexNetworkSearchProvider(): void {
     name: 'NDEx',
     description:
       'Search NDEx for public and private networks and open them in the workspace.',
-    // A raster PNG so the logo keeps its colors: the search bar paints SVG
-    // icons as a monochrome mask in the text color (see UriIcon).
-    icon: NDEX_LOGO_PNG_URI,
+    // A raster PNG (rendered from src/assets/ndex-logo.svg) so the logo
+    // keeps its colors: the search bar paints SVG icons as a monochrome mask
+    // in the text color (see UriIcon).
+    icon: ndexLogoPng,
     website: 'https://www.ndexbio.org',
     placeholder: 'Search NDEx',
     onSubmit: ({ query }: NetworkSearchQuery) => {
