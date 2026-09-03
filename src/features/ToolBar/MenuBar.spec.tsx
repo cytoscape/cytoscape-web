@@ -114,6 +114,27 @@ describe('MenuBar', () => {
     expect(document.activeElement).toBe(menuOf('Help'))
   })
 
+  it('exposes the bar as a menubar whose triggers are menuitems', () => {
+    renderMenuBar()
+    const bar = screen.getByRole('menubar', { name: 'Main menu' })
+    expect(bar.contains(button('data'))).toBe(true)
+    expect(button('data').getAttribute('role')).toBe('menuitem')
+  })
+
+  it('enters a pointer-opened menu at either end with ArrowUp or ArrowDown', () => {
+    renderMenuBar()
+    fireEvent.click(button('data'))
+    const menu = screen.getByRole('menu')
+    expect(document.activeElement).toBe(menu)
+
+    fireEvent.keyDown(menu, { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitem', { name: 'Data second' }),
+    )
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(menuOf('Data'))
+  })
+
   it('opens the next menu from a closed trigger with ArrowDown', () => {
     renderMenuBar()
     button('help').focus()

@@ -107,9 +107,7 @@ export const MenuBar = ({ children, ...boxProps }: BoxProps): JSX.Element => {
 
   const closeMenu = useCallback((id: string): void => {
     setState((current) =>
-      current.openId === id
-        ? { openId: null, openIntent: 'pointer' }
-        : current,
+      current.openId === id ? { openId: null, openIntent: 'pointer' } : current,
     )
   }, [])
 
@@ -139,7 +137,13 @@ export const MenuBar = ({ children, ...boxProps }: BoxProps): JSX.Element => {
 
   return (
     <MenuBarContext.Provider value={value}>
-      <Box ref={containerRef} data-testid="toolbar-menubar" {...boxProps}>
+      <Box
+        ref={containerRef}
+        role="menubar"
+        aria-label="Main menu"
+        data-testid="toolbar-menubar"
+        {...boxProps}
+      >
         {children}
       </Box>
     </MenuBarContext.Provider>

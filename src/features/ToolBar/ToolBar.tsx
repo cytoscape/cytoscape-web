@@ -37,16 +37,18 @@ export const ToolBar = (): JSX.Element => {
             borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           }}
         >
-          <MenuBar sx={{ display: 'flex' }}>
+          <Box sx={{ display: 'flex' }}>
             <img src={logo} alt="Cytoscape Logo" />
-            <DataMenu />
-            <EditMenu />
-            <LayoutMenu />
-            <AnalysisMenu />
-            <ToolsMenu />
-            <AppMenu />
-            <HelpMenu />
-          </MenuBar>
+            <MenuBar sx={{ display: 'flex' }}>
+              <DataMenu />
+              <EditMenu />
+              <LayoutMenu />
+              <AnalysisMenu />
+              <ToolsMenu />
+              <AppMenu />
+              <HelpMenu />
+            </MenuBar>
+          </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <DebugIndicator />

@@ -122,8 +122,14 @@ function MenuLevel({
       return
     }
     const current = rows.indexOf(document.activeElement as HTMLElement)
+    // From the container (pointer-opened menu, no row focused yet) the
+    // direction picks the entry row: ArrowDown the first, ArrowUp the last.
     const next =
-      current === -1 ? 0 : (current + delta + rows.length) % rows.length
+      current === -1
+        ? delta > 0
+          ? 0
+          : rows.length - 1
+        : (current + delta + rows.length) % rows.length
     rows[next]?.focus()
   }
 
@@ -478,6 +484,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             ref={buttonRef}
             data-testid={`toolbar-${id}-menu-button`}
             {...{ [MENU_BAR_TRIGGER_ATTR]: id }}
+            // A menubar's triggers are its menuitems; standalone the button
+            // keeps its native role, since a menuitem outside a menubar is
+            // invalid ARIA.
+            role={menuBar === null ? undefined : 'menuitem'}
             disabled={disabled}
             sx={{
               color: darkPalette.text.primary,
@@ -580,10 +590,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                   return
                 }
                 const active = document.activeElement
-                if (
-                  active === buttonRef.current ||
-                  isInsideMenu(active, id)
-                ) {
+                if (active === buttonRef.current || isInsideMenu(active, id)) {
                   focusWithinRef.current = true
                   return
                 }
