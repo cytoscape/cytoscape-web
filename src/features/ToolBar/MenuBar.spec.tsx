@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { DropdownMenu } from './DropdownMenu'
@@ -135,6 +136,62 @@ describe('MenuBar', () => {
     )
     fireEvent.keyDown(menu, { key: 'ArrowDown' })
     expect(document.activeElement).toBe(menuOf('Data'))
+  })
+
+  it('is a single tab stop whose position follows focus (roving tabindex)', () => {
+    renderMenuBar()
+    // The first enabled trigger starts as the tab stop; a disabled trigger is
+    // never one.
+    expect(button('data').tabIndex).toBe(0)
+    expect(button('edit').tabIndex).toBe(-1)
+    expect(button('layout').tabIndex).toBe(-1)
+    expect(button('help').tabIndex).toBe(-1)
+
+    // Whichever trigger takes focus (click, or Tab back into the bar) becomes
+    // the tab stop, so leaving and re-entering the bar lands where the user
+    // was.
+    act(() => button('help').focus())
+    expect(button('help').tabIndex).toBe(0)
+    expect(button('data').tabIndex).toBe(-1)
+
+    // The arrow keys move focus, and the tab stop with it.
+    fireEvent.keyDown(button('help'), { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(button('layout'))
+    expect(button('layout').tabIndex).toBe(0)
+    expect(button('help').tabIndex).toBe(-1)
+  })
+
+  it('moves the tab stop to the first enabled trigger when its own is disabled', () => {
+    const Harness = () => {
+      const [layoutDisabled, setLayoutDisabled] = useState(false)
+      return (
+        <>
+          <MenuBar>
+            <TestMenu id="data" label="Data" />
+            <TestMenu id="layout" label="Layout" disabled={layoutDisabled} />
+            <TestMenu id="help" label="Help" />
+          </MenuBar>
+          <button
+            data-testid="toggle"
+            onClick={() => setLayoutDisabled((value) => !value)}
+          />
+        </>
+      )
+    }
+    render(<Harness />)
+
+    act(() => button('layout').focus())
+    expect(button('layout').tabIndex).toBe(0)
+
+    fireEvent.click(screen.getByTestId('toggle'))
+    expect(button('layout').tabIndex).toBe(-1)
+    expect(button('data').tabIndex).toBe(0)
+    expect(button('help').tabIndex).toBe(-1)
+
+    // Re-enabling it does not steal the tab stop back.
+    fireEvent.click(screen.getByTestId('toggle'))
+    expect(button('data').tabIndex).toBe(0)
+    expect(button('layout').tabIndex).toBe(-1)
   })
 
   it('opens the next menu from a closed trigger with ArrowDown', () => {
