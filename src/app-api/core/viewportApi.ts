@@ -7,6 +7,7 @@ import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFuncti
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
+import { markNetworkModified } from './undo'
 import { validateNodesExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -103,6 +104,10 @@ export const viewportApi: ViewportApi = {
         Object.entries(positions) as Array<[IdType, [number, number, number?]]>,
       )
       useViewModelStore.getState().updateNodePositions(networkId, positionMap)
+      // No undo entry: MOVE_NODES is per-node and a batch reposition has no
+      // matching command. layoutApi's own moves already go through
+      // corePostEdit, which marks the network itself.
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

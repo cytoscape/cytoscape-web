@@ -18,7 +18,6 @@ import isEqual from 'lodash/isEqual'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
 import { IdType } from '../../models'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
@@ -43,9 +42,6 @@ const NetworkPropertyEditor = (
 
   const open = anchorEl !== undefined
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
-  const setNetworkModified = useWorkspaceStore(
-    (state) => state.setNetworkModified,
-  )
 
   const editor = useEditor({
     onUpdate: ({ editor }) => {
@@ -203,12 +199,14 @@ const NetworkPropertyEditor = (
                   'Update network summary',
                   [localSummaryState.externalId, summary],
                   [localSummaryState.externalId, localSummaryState],
+                  // Explicit: the network this summary belongs to, which also
+                  // makes postEdit mark the right one as modified (#680).
+                  localSummaryState.externalId,
                 )
                 updateNetworkSummary(
                   localSummaryState.externalId,
                   localSummaryState,
                 )
-                setNetworkModified(localSummaryState.externalId, true)
                 onClose(e)
               }
             }}

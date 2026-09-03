@@ -20,7 +20,6 @@ export interface UseListEditorProps {
   currentTable: Table | undefined
   nodeTable: Table | undefined
   currentNetworkId: IdType
-  networkId: IdType
   postEdit: (
     type: UndoCommandType,
     name: string,
@@ -34,7 +33,6 @@ export interface UseListEditorProps {
     attributeName: string,
     value: any,
   ) => void
-  setNetworkModified: (networkId: IdType, isModified: boolean) => void
 }
 
 export const useListEditor = ({
@@ -43,10 +41,8 @@ export const useListEditor = ({
   currentTable,
   nodeTable,
   currentNetworkId,
-  networkId,
   postEdit,
   setCellValue,
-  setNetworkModified,
 }: UseListEditorProps) => {
   const [listEditor, setListEditor] = React.useState<ListEditorState | null>(
     null,
@@ -90,7 +86,6 @@ export const useListEditor = ({
         columnKey,
         newValue,
       )
-      setNetworkModified(networkId, true)
       setListEditor(null)
     },
     [
@@ -100,8 +95,6 @@ export const useListEditor = ({
       postEdit,
       currentNetworkId,
       setCellValue,
-      setNetworkModified,
-      networkId,
     ],
   )
 

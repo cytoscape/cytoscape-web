@@ -137,6 +137,8 @@ export const useUpdateNetwork = (): (({
           type: networkView.type ?? DEF_VIEW_TYPE,
           viewId: `${networkId}-${networkView.type ?? DEF_VIEW_TYPE}-updatedByService`,
         })
+        // A service-app result replaces the network wholesale and records no
+        // undo entry, so it marks the network here rather than via postEdit.
         setNetworkModified(networkId, true)
       } catch (e) {
         logStore.warn(

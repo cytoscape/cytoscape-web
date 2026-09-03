@@ -29,7 +29,6 @@ export interface HandleCellEditArgs {
     columnKey: string,
     value: ValueType,
   ) => void
-  setNetworkModified: (networkId: IdType, isModified: boolean) => void
 }
 
 export const handleCellEdit = ({
@@ -42,7 +41,6 @@ export const handleCellEdit = ({
   currentNetworkId,
   postEdit,
   setCellValue,
-  setNetworkModified,
 }: HandleCellEditArgs): void => {
   const [columnIndex, rowIndex] = cell
   const rowData = rows?.[rowIndex]
@@ -72,7 +70,6 @@ export const handleCellEdit = ({
         columnKey,
         data as ValueType,
       )
-      setNetworkModified(currentNetworkId, true)
     }
   } else {
     if (
@@ -92,7 +89,6 @@ export const handleCellEdit = ({
         columnKey,
         data as ValueType,
       )
-      setNetworkModified(currentNetworkId, true)
     } else {
       if (Number.isInteger(data)) {
         postEdit(
@@ -114,7 +110,6 @@ export const handleCellEdit = ({
           columnKey,
           parseFloat(data as string),
         )
-        setNetworkModified(currentNetworkId, true)
       } else {
         // the user is trying to assign a double value to a integer column.  Ignore this value.
       }

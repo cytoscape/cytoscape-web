@@ -5,6 +5,7 @@
 import appConfig from '@/assets/config.json'
 
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
+import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 
@@ -17,6 +18,23 @@ import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
  * in-app ones.
  */
 const UNDO_STACK_SIZE: number = appConfig.undoStackSize
+
+/**
+ * Marks a network as locally edited, so Save to NDEx offers it and Save
+ * Workspace includes it.
+ *
+ * This is the single choke point for the flag. It is keyed on the network the
+ * caller actually mutated, never on the focused network: the app API takes an
+ * explicit networkId, and non-current networks stay resident in the stores
+ * (NetworkStore evicts only on delete), so a write to one that is not on
+ * screen must still mark that network and not the one the user is looking at.
+ *
+ * Idempotent — the store write is a plain assignment, so calling it on an
+ * already-modified network is free.
+ */
+export function markNetworkModified(networkId: IdType): void {
+  useWorkspaceStore.getState().setNetworkModified(networkId, true)
+}
 
 /**
  * Framework-agnostic postEdit — records an undo entry on the stack of the
@@ -33,6 +51,10 @@ export function corePostEdit(
   undoParams: any[],
   redoParams: any[],
 ): void {
+  // Before the stack write, not after: a deployment with undoStackSize: 0
+  // disables undo but must still mark the network modified.
+  markNetworkModified(networkId)
+
   const undoState = useUndoStore.getState()
   const stack = undoState.undoRedoStacks[networkId] ?? {
     undoStack: [],

@@ -5,6 +5,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { viewportApi } from './viewportApi'
 
+// ── Mock: WorkspaceStore (markNetworkModified) ───────────────────────────────
+
+const mockSetNetworkModified = vi.fn()
+
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+  useWorkspaceStore: {
+    getState: vi.fn(() => ({
+      workspace: { currentNetworkId: 'net1', networkModified: {} },
+      setNetworkModified: mockSetNetworkModified,
+    })),
+  },
+}))
+
 // ── Mock: RendererFunctionStore ───────────────────────────────────────────────
 
 const mockGetFunction = vi.fn()
@@ -277,5 +290,52 @@ describe('updateNodePositions', () => {
     if (!result.success) {
       expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
     }
+  })
+})
+
+// --- networkModified flag (#680) ---------------------------------------------
+
+describe('networkModified (#680)', () => {
+  beforeEach(() => {
+    // An earlier test leaves a throwing implementation behind — clearAllMocks
+    // clears calls, not implementations.
+    mockUpdateNodePositions.mockReset()
+  })
+
+  it('updateNodePositions marks the written network, not currentNetworkId', () => {
+    // net1 is currentNetworkId in the WorkspaceStore mock
+    mockNetworks.set('net2', { id: 'net2', nodes: [{ id: 'n1' }], edges: [] })
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+
+    const result = viewportApi.updateNodePositions('net2', {
+      n1: [1, 2] as [number, number],
+    })
+
+    expect(result.success).toBe(true)
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net2', true)
+    expect(mockSetNetworkModified).not.toHaveBeenCalledWith('net1', true)
+  })
+
+  it('does not mark when a position names a node that does not exist', () => {
+    mockNetworks.set('net2', { id: 'net2', nodes: [{ id: 'n1' }], edges: [] })
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+
+    const result = viewportApi.updateNodePositions('net2', {
+      ghost: [1, 2] as [number, number],
+    })
+
+    expect(result.success).toBe(false)
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('does not mark when the network has no view model', () => {
+    mockGetViewModel.mockReturnValue(undefined)
+
+    const result = viewportApi.updateNodePositions('net2', {
+      n1: [1, 2] as [number, number],
+    })
+
+    expect(result.success).toBe(false)
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 })

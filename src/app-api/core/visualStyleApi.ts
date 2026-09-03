@@ -28,6 +28,7 @@ import {
   fail,
   ok,
 } from '../types/ApiResult'
+import { markNetworkModified } from './undo'
 import {
   validateBypassTargetScope,
   validateContinuousMappingBounds,
@@ -354,6 +355,7 @@ export const visualStyleApi: VisualStyleApi = {
       if (invalidValue) return invalidValue
 
       useVisualStyleStore.getState().setDefault(networkId, vpName, vpValue)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -389,6 +391,7 @@ export const visualStyleApi: VisualStyleApi = {
       for (const [vpName, vpValue] of entries) {
         setDefault(networkId, vpName, vpValue)
       }
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -433,6 +436,7 @@ export const visualStyleApi: VisualStyleApi = {
       useVisualStyleStore
         .getState()
         .setBypass(networkId, vpName, elementIds, vpValue)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -494,6 +498,7 @@ export const visualStyleApi: VisualStyleApi = {
       for (const [vpName, vpValue] of entries) {
         setBypass(networkId, vpName, elementIds, vpValue)
       }
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -507,6 +512,7 @@ export const visualStyleApi: VisualStyleApi = {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useVisualStyleStore.getState().deleteBypass(networkId, vpName, elementIds)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -557,6 +563,7 @@ export const visualStyleApi: VisualStyleApi = {
         visualPropertyType: visualProperty.type,
         defaultValue: visualProperty.defaultValue,
       })
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -628,6 +635,7 @@ export const visualStyleApi: VisualStyleApi = {
             gtMaxVpValue ?? currentMapping.gtMaxVpValue,
           )
       }
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -657,6 +665,7 @@ export const visualStyleApi: VisualStyleApi = {
       useVisualStyleStore
         .getState()
         .createPassthroughMapping(networkId, vpName, attribute, attributeType)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -670,6 +679,7 @@ export const visualStyleApi: VisualStyleApi = {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       useVisualStyleStore.getState().removeMapping(networkId, vpName)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

@@ -12,7 +12,7 @@ The WorkspaceEditor follows a **container component pattern** where:
 - It uses Allotment for resizable panel layouts
 - It coordinates with multiple Zustand stores for state management
 - It uses React Router's `<Outlet />` for nested routing
-- It subscribes to store changes to detect network modifications
+- It no longer tracks network modifications; `markNetworkModified` does (#680)
 
 ## Component Structure
 
@@ -42,11 +42,11 @@ The main workspace editor component that provides layout and network management.
   - Uses loading ref to prevent concurrent loads
   - Shows error state if network fails to load
 
-- **Modification Tracking:**
-  - Monitors view model changes (excluding selection state)
-  - Monitors visual style changes
-  - Sets `networkModified` flag when changes are detected
-  - Only tracks modifications if network is not already marked as modified
+- **Modification Tracking:** none, as of #680.
+  - This component used to carry two store subscriptions — one diffing the view model of `currentNetworkId` (selection omitted), one diffing its visual style — that set the `networkModified` flag.
+  - They leaked (registered in the component body, one listener added per render) and they keyed on `currentNetworkId`, so an app API write naming any other resident network was never marked.
+  - `markNetworkModified` (`src/app-api/core/undo.ts`) replaces both. It is called from `useUndoStack.postEdit` and from `corePostEdit`, so every recorded edit marks the network it actually mutated.
+  - Paths that record no undo entry mark the network themselves: table column sort/move/resize/duplicate/insert, the Vizmapper lock checkboxes, style duplicate/rename/delete, the table-file join, and a service-app network update.
 
 - **Layout Application:**
   - Automatically applies default layout to networks without layouts
@@ -139,10 +139,10 @@ The WorkspaceEditor integrates with the following stores and services:
 
 ## Modification Detection Flow
 
-1. **Store Subscription:** Subscribe to ViewModelStore and VisualStyleStore changes
-2. **Change Detection:** Compare current and previous values (excluding selection state for view model)
-3. **Modification Check:** Check if network is already marked as modified
-4. **Set Flag:** If changed and not already modified, set `networkModified` flag
+Moved out of this component in #680 — see **Modification Tracking** above.
+The flag is written by `markNetworkModified(networkId)`, called from
+`postEdit`/`corePostEdit`, plus a short list of explicit call sites for
+operations that are not undoable.
 
 ## Layout Application Flow
 
@@ -183,7 +183,7 @@ The WorkspaceEditor integrates with the following stores and services:
 - Table browser loading has `data-testid="workspace-editor-table-browser-loading"`
 - Network loading can be tested by changing URL parameters
 - Panel state can be tested by checking panel visibility
-- Modification detection can be tested by making changes and checking networkModified flag
+- Modification detection is covered by `src/app-api/core/undo.test.ts` and the app API core specs, not here
 
 ## Future Improvements
 

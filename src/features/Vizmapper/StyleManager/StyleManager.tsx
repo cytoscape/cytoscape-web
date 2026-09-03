@@ -97,6 +97,12 @@ export const StyleManager = (props: {
     return <></>
   }
 
+  /**
+   * Style-set operations that record no undo entry mark the network here —
+   * duplicate, rename and delete, plus the copy-in/create paths in the case
+   * where the follow-up switchStyle fails and no postEdit runs. Everything
+   * postEdit covers is marked by postEdit itself (#680).
+   */
   const markModified = (): void => {
     setNetworkModified(networkId, true)
   }
@@ -126,7 +132,6 @@ export const StyleManager = (props: {
     if (!switchStyle(networkId, styleId)) {
       return
     }
-    markModified()
     // Recorded as an undoable edit rather than clearing the history, which is
     // what switchStyle used to do. Undoing this restores the previous style
     // BEFORE any older edit replays, so those edits land on the style they were

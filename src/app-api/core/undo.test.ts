@@ -8,6 +8,16 @@ const mockSetUndoStack = vi.fn()
 const mockSetRedoStack = vi.fn()
 const mockUndoRedoStacks: Record<string, any> = {}
 
+const mockSetNetworkModified = vi.fn()
+
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+  useWorkspaceStore: {
+    getState: vi.fn(() => ({
+      setNetworkModified: mockSetNetworkModified,
+    })),
+  },
+}))
+
 vi.mock('../../data/hooks/stores/UndoStore', () => ({
   useUndoStore: {
     getState: vi.fn(() => ({
@@ -88,5 +98,37 @@ describe('corePostEdit', () => {
     postEdits(corePostEdit, 1)
 
     expect(mockSetRedoStack).toHaveBeenCalledWith('net1', [])
+  })
+
+  it('marks the recorded network modified', async () => {
+    const { corePostEdit } = await coreUndoWithStackSize(20)
+
+    postEdits(corePostEdit, 1)
+
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+
+  it('marks the network modified even when undo is disabled', async () => {
+    // The mark runs before the UNDO_STACK_SIZE branch: a deployment with
+    // undoStackSize: 0 still has to offer the network to Save to NDEx (#680).
+    const { corePostEdit } = await coreUndoWithStackSize(0)
+
+    postEdits(corePostEdit, 1)
+
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+})
+
+describe('markNetworkModified', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('marks the network it is given, never the current one', async () => {
+    const { markNetworkModified } = await coreUndoWithStackSize(20)
+
+    markNetworkModified('net2')
+
+    expect(mockSetNetworkModified).toHaveBeenCalledExactlyOnceWith('net2', true)
   })
 })

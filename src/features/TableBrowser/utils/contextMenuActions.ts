@@ -24,7 +24,6 @@ export interface ContextMenuActionArgs {
     value: any,
     elementIds: string[] | undefined,
   ) => void
-  setNetworkModified: (networkId: IdType, isModified: boolean) => void
   handleContextMenuClose: () => void
 }
 
@@ -37,7 +36,6 @@ export const handleApplyToEntireColumn = ({
   currentNetworkId,
   postEdit,
   applyValueToElements,
-  setNetworkModified,
   handleContextMenuClose,
 }: ContextMenuActionArgs): void => {
   if (currentTable == null) return
@@ -83,7 +81,6 @@ export const handleApplyToEntireColumn = ({
     undefined,
   )
 
-  setNetworkModified(currentNetworkId, true)
   handleContextMenuClose()
 }
 
@@ -96,7 +93,6 @@ export const handleApplyToSelected = ({
   currentNetworkId,
   postEdit,
   applyValueToElements,
-  setNetworkModified,
   handleContextMenuClose,
 }: ContextMenuActionArgs): void => {
   if (rows == null) return
@@ -143,7 +139,6 @@ export const handleApplyToSelected = ({
     rows.map((r) => r.id),
   )
 
-  setNetworkModified(currentNetworkId, true)
   handleContextMenuClose()
 }
 

@@ -122,6 +122,11 @@ export interface TableToolbarProps {
     networkId: IdType,
     config: TableDisplayConfiguration,
   ) => void
+  /**
+   * Sort, duplicate and insert-column record no undo entry, so they mark the
+   * network themselves. Every other write in this toolbar is marked by
+   * `postEdit` (#680).
+   */
   setNetworkModified: (networkId: IdType, modified: boolean) => void
   postEdit: (
     type: UndoCommandType,
@@ -418,7 +423,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 selectedColumn.id,
                 newColumnName,
               )
-              setNetworkModified(currentNetworkId, true)
 
               const defaultConfig = {
                 columnConfiguration:
@@ -451,7 +455,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 currentNetworkId,
                 newTableDisplayConfiguration,
               )
-              setNetworkModified(currentNetworkId, true)
 
               if (mappingUpdateType === 'rename') {
                 visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -503,7 +506,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               currentTable === nodeTable ? 'node' : 'edge',
               selectedColumn.id,
             )
-            setNetworkModified(currentNetworkId, true)
 
             const defaultConfig = {
               columnConfiguration:
@@ -533,7 +535,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               currentNetworkId,
               newTableDisplayConfiguration,
             )
-            setNetworkModified(currentNetworkId, true)
 
             if (mappingUpdateType === 'delete') {
               visualPropertiesDependentOnSelectedColumn.forEach((vp) => {
@@ -601,7 +602,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               columnKey,
               cellValue,
             )
-            setNetworkModified(currentNetworkId, true)
           }}
         >
           Apply Value to Column
@@ -653,7 +653,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               cellValue,
               rows?.map((r) => r.id),
             )
-            setNetworkModified(currentNetworkId, true)
           }}
         >
           {`Apply Value to Selected ${currentTable === nodeTable ? 'Nodes' : 'Edges'}`}

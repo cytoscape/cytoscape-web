@@ -198,7 +198,11 @@ per-style, matching current behavior.
 `src/features/Vizmapper/StyleManager/` — a row at the top of the Vizmapper
 panel showing the active style's **thumbnail and name**, plus a management menu
 (New (copy of current) / Duplicate / Rename / Delete; Save Style to Library /
-Apply Style from Library). All operations mark the network modified.
+Apply Style from Library). All operations mark the network modified — the
+undoable ones through `postEdit`, the rest through an explicit
+`setNetworkModified` in `StyleManager` (#680). "Save Style to Library" is the
+exception: it writes only the browser-local style library and leaves the
+network untouched.
 
 Clicking the row opens **`StylePickerDialog`**, a modal grid of style previews in
 three sections. The sections exist because a style belongs to one network and

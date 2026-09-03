@@ -113,10 +113,13 @@ vi.mock('../../data/hooks/stores/UiStateStore', () => ({
   },
 }))
 
+const mockSetNetworkModified = vi.fn()
+
 vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
     getState: vi.fn(() => ({
       workspace: { currentNetworkId: 'net1' },
+      setNetworkModified: mockSetNetworkModified,
     })),
   },
 }))
@@ -618,6 +621,29 @@ describe('elementApi', () => {
         expect.any(Array),
       )
       expect(mockUndoActions.setRedoStack).toHaveBeenCalledWith('net2', [])
+    })
+
+    it('marks the mutated network modified, not the current one (#680)', () => {
+      // The deleted WorkspaceEditor subscription selected on
+      // `currentNetworkId`, so an app API write to any other resident
+      // network was never marked and Save Workspace skipped it.
+      mockNetworks.set('net2', makeNetwork('net2', [], []))
+      mockTables['net2'] = {
+        nodeTable: { rows: new Map(), columns: [] },
+        edgeTable: { rows: new Map(), columns: [] },
+      }
+
+      elementApi.createNode('net2', [0, 0])
+
+      expect(mockSetNetworkModified).toHaveBeenCalledWith('net2', true)
+      expect(mockSetNetworkModified).not.toHaveBeenCalledWith('net1', true)
+    })
+
+    it('does not mark when the network does not exist (#680)', () => {
+      const result = elementApi.createNode('missing', [0, 0])
+
+      expect(result.success).toBe(false)
+      expect(mockSetNetworkModified).not.toHaveBeenCalled()
     })
 
     it('never passes skipUndo: true to internal stores', () => {

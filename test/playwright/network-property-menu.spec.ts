@@ -286,4 +286,53 @@ test.describe('Network summary overflow menu', () => {
 
     await expect(badge).toBeVisible()
   })
+
+  test('overflow button is badged after an app API table write', async ({
+    page,
+  }) => {
+    // #680: nothing in src/app-api/ set the networkModified flag, so a column
+    // added by an app left the network looking saved — Save Workspace skipped
+    // it and the Save to NDEx entry stayed disabled. The badge is the same
+    // flag, so it is the cheapest end-to-end assertion that the write marks.
+    const badge = page.locator('[data-testid="network-unsaved-badge"]').first()
+
+    await expect(badge).not.toBeVisible()
+
+    // The initial layout clears the flag on completion; a write before that
+    // lands would be wiped by the reset.
+    await waitForInitialLayout(page)
+
+    const result = await page.evaluate(() => {
+      const api = (
+        window as unknown as {
+          CyWebApi: {
+            workspace: {
+              getCurrentNetworkId: () => { data?: { networkId?: string } }
+            }
+            table: {
+              createColumn: (
+                networkId: string,
+                tableType: 'node' | 'edge',
+                columnName: string,
+                dataType: string,
+                defaultValue: unknown,
+              ) => { success: boolean; error?: { message: string } }
+            }
+          }
+        }
+      ).CyWebApi
+      const networkId =
+        api.workspace.getCurrentNetworkId().data?.networkId ?? ''
+      return api.table.createColumn(
+        networkId,
+        'node',
+        'appColumn',
+        'string',
+        'x',
+      )
+    })
+
+    expect(result.success).toBe(true)
+    await expect(badge).toBeVisible()
+  })
 })

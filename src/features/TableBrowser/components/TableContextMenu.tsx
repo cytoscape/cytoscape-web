@@ -54,7 +54,6 @@ export interface TableContextMenuProps {
     value: any,
     elementIds?: string[],
   ) => void
-  setNetworkModified: (networkId: IdType, isModified: boolean) => void
   exclusiveSelect: (
     networkId: IdType,
     nodeIds: IdType[],
@@ -78,7 +77,6 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
   currentNetworkId,
   postEdit,
   applyValueToElements,
-  setNetworkModified,
   exclusiveSelect,
   selection,
   setSelection,
@@ -97,8 +95,6 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       currentNetworkId,
       postEdit,
       applyValueToElements,
-      setNetworkModified: (id: string, mod: boolean) =>
-        setNetworkModified(id, mod),
       handleContextMenuClose,
     })
   }, [
@@ -110,7 +106,6 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
     currentNetworkId,
     postEdit,
     applyValueToElements,
-    setNetworkModified,
     handleContextMenuClose,
   ])
 
@@ -125,8 +120,6 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       currentNetworkId,
       postEdit,
       applyValueToElements,
-      setNetworkModified: (id: string, mod: boolean) =>
-        setNetworkModified(id, mod),
       handleContextMenuClose,
     })
   }, [
@@ -138,7 +131,6 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
     currentNetworkId,
     postEdit,
     applyValueToElements,
-    setNetworkModified,
     handleContextMenuClose,
   ])
 
