@@ -5,6 +5,7 @@ import type { CyWebApiType } from '../core'
 import type { ContextMenuApi } from '../core/contextMenuApi'
 import type { NodeGraphicsApi } from '../core/nodeGraphicsApi'
 import type { AppDataApi } from './AppDataTypes'
+import type { DialogApi } from './AppDialogTypes'
 import type { ResourceApi, ResourceDeclaration } from './AppResourceTypes'
 
 /**
@@ -36,6 +37,13 @@ export interface AppContextApis extends CyWebApiType {
    * keyed to a network id. Entries are NOT dropped when the app is disabled.
    */
   readonly appData: AppDataApi
+  /**
+   * Per-app Dialog API (factory-bound to this app's ID). Opens a host-framed
+   * modal for a form, progress UI, or anything else that needs component
+   * state — the escape hatch for 'apps-menu' items, which are plain data.
+   * Dialogs are closed when the app is disabled.
+   */
+  readonly dialog: DialogApi
 }
 
 /**

@@ -6,7 +6,9 @@
 ## Policy Statement
 
 **A modal closes through one of its own buttons and nothing else.** Backdrop click and
-<kbd>Esc</kbd> are inert on every modal in the app.
+<kbd>Esc</kbd> are inert on every modal in the app — with one documented exception: dialogs
+rendered for third-party apps (see "Every app modal, structurally" below) also close on
+<kbd>Esc</kbd>.
 
 **Every modal MUST offer a visible control that closes it**, reachable by keyboard. This is not a
 style preference — it is the only exit, and a dialog without one traps the user.
@@ -50,14 +52,23 @@ belongs on a button. Every other `DialogProps` forwards untouched.
 **All 40 `<Dialog>` sites**, through `CyDialog`.
 
 **Every app modal, structurally.** Third-party apps open dialogs through the
-`modal-launcher` resource slot (#690): the host renders the app's content inside its own
-`CyDialog` shell (`AppManager/ModalLauncherHost.tsx`), so backdrop and <kbd>Esc</kbd> are
-inert without the app doing anything — and cannot be re-enabled by the app. The shell also
-always renders a Close "X" in the top-right corner wired to the same close path as the
-injected `requestClose`, so the "visible exit" requirement holds even when an app modal
-renders no button of its own (or crashes into its error fallback). Apps should still wire
-their own Cancel/Close buttons to `requestClose`; the host X is the structural guarantee,
-not a substitute.
+`modal-launcher` resource slot (#690) or the per-app Dialog API (`apis.dialog.open`): both
+render the app's content inside the one host-owned `CyDialog` shell
+(`AppManager/AppDialogShell.tsx`, mounted by `ModalLauncherHost.tsx` and `AppDialogHost.tsx`),
+so the backdrop is inert without the app doing anything — and cannot be re-enabled by the
+app. The shell also always renders a Close "X" in the top-right corner wired to the same
+close path as the injected `requestClose` / `close`, so the "visible exit" requirement holds
+even when an app modal renders no button of its own (or crashes into its error fallback).
+Apps should still wire their own Cancel/Close buttons to that callback; the host X is the
+structural guarantee, not a substitute.
+
+**The exception: app dialogs close on <kbd>Esc</kbd>.** The shell listens for the key on the
+dialog root itself (`CyDialog` keeps MUI's own Escape handling off) and runs that same close
+path. App content never controls this — it cannot be turned off from inside the dialog. Because
+of this, app dialogs are not rows in `test/playwright/dialog-dismiss.spec.ts`; their dismissal
+(backdrop inert, Escape and "X" close) is asserted in `remote-app-load.spec.ts`. The Apps dropdown itself takes no app
+components at all any more — `'apps-menu'` entries are plain data the host renders — so a
+menu item cannot smuggle a dialog of its own into the shared menu.
 
 **The four modal form popovers.** These are anchored but behave as modal editors, so they follow
 the same rule through their own props:

@@ -17,9 +17,16 @@ import {
 import { logApp } from '../../debug'
 import type { ResourceSlot } from '../../models/AppModel/RegisteredAppResource'
 
+/**
+ * Where the guarded content came from. Every ResourceSlot, plus 'dialog' for
+ * bodies opened through the Dialog API (AppDialogHost) — not a registered
+ * resource slot, but the same isolation boundary.
+ */
+export type PluginBoundarySlot = ResourceSlot | 'dialog'
+
 interface PluginErrorBoundaryProps {
   appId: string
-  slot: ResourceSlot
+  slot: PluginBoundarySlot
   children: ReactNode
   /**
    * Optional plugin-provided fallback component. If supplied, it is used
@@ -38,7 +45,7 @@ const PluginFallback = ({
   slot,
 }: {
   appId: string
-  slot: ResourceSlot
+  slot: PluginBoundarySlot
 }): ReactNode => (
   <Box sx={{ p: 2, textAlign: 'center' }} role="alert">
     <Typography variant="body2" color="text.secondary">

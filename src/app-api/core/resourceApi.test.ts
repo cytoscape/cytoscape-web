@@ -279,11 +279,13 @@ describe('createResourceApi', () => {
   // ── registerMenuItem ────────────────────────────────────────────
 
   describe('registerMenuItem', () => {
-    it('returns ok with correct resourceId for apps-menu slot', () => {
+    it('returns ok with correct resourceId and stores the label as title', () => {
       const api = createResourceApi('app1')
+      const onClick = vi.fn()
       const result = api.registerMenuItem({
         id: 'M1',
-        component: DummyComponent,
+        label: 'My Action',
+        onClick,
       })
 
       expect(result.success).toBe(true)
@@ -295,20 +297,53 @@ describe('createResourceApi', () => {
           id: 'M1',
           appId: 'app1',
           slot: 'apps-menu',
+          title: 'My Action',
+          onClick,
+        }),
+      )
+      // Menu entries are plain data: no component ever reaches the store.
+      const stored = mockStore.upsertResource.mock.calls[0][0]
+      expect(stored).not.toHaveProperty('component')
+    })
+
+    it('passes tooltip, icon, requires and isEnabled to store', () => {
+      const api = createResourceApi('app1')
+      const isEnabled = () => true
+      api.registerMenuItem({
+        id: 'M1',
+        label: 'My Action',
+        tooltip: 'Does a thing',
+        icon: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E',
+        requires: { network: true },
+        isEnabled,
+        onClick: () => {},
+      })
+
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tooltip: 'Does a thing',
+          icon: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E',
+          requires: { network: true },
+          isEnabled,
         }),
       )
     })
 
-    it('passes closeOnAction to store', () => {
+    it.each([
+      ['an https URL', 'https://example.org/icon.png'],
+      ['a root-relative host asset', '/images/icon.svg'],
+    ])('accepts %s as icon', (_label, icon) => {
       const api = createResourceApi('app1')
-      api.registerMenuItem({
+      const result = api.registerMenuItem({
         id: 'M1',
-        component: DummyComponent,
-        closeOnAction: true,
+        label: 'My Action',
+        onClick: () => {},
+        icon,
       })
 
+      expect(result.success).toBe(true)
       expect(mockStore.upsertResource).toHaveBeenCalledWith(
-        expect.objectContaining({ closeOnAction: true }),
+        expect.objectContaining({ icon }),
       )
     })
 
@@ -316,7 +351,8 @@ describe('createResourceApi', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({
         id: '',
-        component: DummyComponent,
+        label: 'My Action',
+        onClick: () => {},
       })
 
       expect(result.success).toBe(false)
@@ -325,17 +361,87 @@ describe('createResourceApi', () => {
       }
     })
 
-    it('returns fail(InvalidInput) for primitive component (number)', () => {
+    it('returns fail(InvalidInput) for empty label', () => {
       const api = createResourceApi('app1')
       const result = api.registerMenuItem({
         id: 'M1',
-        component: 42 as any,
+        label: '   ',
+        onClick: () => {},
       })
 
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(result.error.code).toBe('APP9')
       }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
+    it('returns fail(InvalidInput) when onClick is not a function', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Action',
+        onClick: 42 as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it('rejects the pre-1.0 component-based shape with a migration hint', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        title: 'Legacy',
+        component: DummyComponent,
+        closeOnAction: true,
+      } as any)
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('no longer accept a component')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
+    it('returns fail(InvalidInput) when isEnabled is not a function', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Action',
+        onClick: () => {},
+        isEnabled: true as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+    })
+
+    it.each([
+      ['a component', DummyComponent],
+      ['SVG path data', { svgPath: 'M0,0 L10,10', viewBox: '0 0 10 10' }],
+      ['a javascript: URI', 'javascript:alert(1)'],
+      ['a bare file name', 'icon.png'],
+      ['an empty string', ''],
+    ])('returns fail(InvalidInput) when icon is %s', (_label, icon) => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Action',
+        onClick: () => {},
+        icon: icon as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
     })
   })
 
@@ -927,7 +1033,8 @@ describe('createResourceApi', () => {
         {
           slot: 'apps-menu',
           id: 'M1',
-          component: DummyComponent,
+          label: 'My Action',
+          onClick: () => {},
         },
         {
           slot: 'search-bar',
@@ -956,7 +1063,7 @@ describe('createResourceApi', () => {
       const api = createResourceApi('app1')
       const result = api.registerAll([
         { slot: 'right-panel', id: '', component: DummyComponent }, // fails: empty id
-        { slot: 'apps-menu', id: 'M1', component: DummyComponent }, // succeeds
+        { slot: 'apps-menu', id: 'M1', label: 'M1', onClick: () => {} }, // succeeds
       ])
 
       expect(result.success).toBe(true)

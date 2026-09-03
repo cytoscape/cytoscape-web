@@ -49,15 +49,24 @@ function Marker(): JSX.Element {
   )
 }
 
-// Registered as an 'apps-menu' resource — the HOST renders this component inside
-// its OWN React tree. Because it calls a hook (useState), it only renders
-// successfully if the remote shares the host's single React instance. With two
-// separate React copies, React throws "invalid hook call" and the host's
-// PluginErrorBoundary swaps in a fallback, so the marker never appears. This is
-// the true shared-singleton assertion (Stage 3).
-function MenuMarker(): JSX.Element {
-  const [shared] = useState('single-react-ok')
-  return <span data-testid="remote-menu-marker">{shared}</span>
+// Rendered by the HOST inside the dialog it opens for the fixture's
+// 'open-dialog' menu item (apis.dialog.open). Because it calls a hook
+// (useState), it only renders successfully if the remote shares the host's
+// single React instance. With two separate React copies, React throws
+// "invalid hook call" and the host's PluginErrorBoundary swaps in a fallback,
+// so the marker never appears. This is the shared-singleton assertion
+// (Stage 3) — it used to live in an 'apps-menu' component, but menu entries
+// are plain data now and the host renders them itself.
+function DialogMarker({ close }: { close: () => void }): JSX.Element {
+  const [shared] = useState('dialog-hooks-ok')
+  return (
+    <div data-testid="remote-dialog-marker">
+      {shared}
+      <button data-testid="remote-dialog-done" onClick={close}>
+        Done
+      </button>
+    </div>
+  )
 }
 
 // ── App data panel (right-panel slot) ────────────────────────────────────────
@@ -117,13 +126,6 @@ function AppDataPanel(): JSX.Element {
   )
 }
 
-// The resource API parked at mount() time, so plain module-level callbacks
-// (like the menu item's onClick below) can open modals imperatively — the
-// exact usage pattern the 'modal-launcher' slot exists for.
-let parkedResource: {
-  openModal: (id: string) => unknown
-} | null = null
-
 // Registered as a 'modal-launcher' resource — the HOST renders this inside
 // its own dialog shell when openModal('fixture-modal') is called. Hooks
 // prove the shared React instance, like MenuMarker above.
@@ -140,23 +142,6 @@ function FixtureModal({
         Cancel
       </button>
     </div>
-  )
-}
-
-// An apps-menu item whose click opens the registered modal. Registered with
-// closeOnAction: true, so the dropdown closes (and this component unmounts)
-// right after the click — the modal surviving that unmount is the contract
-// the E2E asserts.
-function OpenModalMenuItem(): JSX.Element {
-  return (
-    <button
-      data-testid="remote-open-modal-menu-item"
-      onClick={() => {
-        parkedResource?.openModal('fixture-modal')
-      }}
-    >
-      Open Fixture Modal
-    </button>
   )
 }
 
@@ -198,6 +183,29 @@ function runFixtureSearch(query: { query: string }): void {
   el.textContent = `query:${query.query};exact:${exactMatch}`
 }
 
+// A 16x16 filled circle, inlined so the fixture needs no static asset.
+const FIXTURE_ICON_URI =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#1976d2"/></svg>',
+  )
+
+// The slice of the per-app API object the fixture's menu handlers use. A
+// test double gets exactly the surface it calls (see cyweb.d.ts for why).
+interface MountApis {
+  dialog: {
+    open: (opts: {
+      id?: string
+      title: string
+      render: (props: { close: () => void }) => unknown
+      maxWidth?: string | false
+    }) => unknown
+  }
+  resource: {
+    openModal: (id: string) => unknown
+  }
+}
+
 const TestRemoteApp = {
   id: 'testRemoteApp',
   name: 'Test Remote App',
@@ -207,12 +215,21 @@ const TestRemoteApp = {
   // Lifecycle hook the host calls after loading ./AppConfig.
   mount(context: {
     apis: {
+      dialog: {
+        open: (opts: {
+          id?: string
+          title: string
+          render: (props: { close: () => void }) => unknown
+          maxWidth?: string | false
+        }) => unknown
+      }
       resource: {
         registerMenuItem: (opts: {
           id: string
-          title?: string
-          component: unknown
-          closeOnAction?: boolean
+          label: string
+          tooltip?: string
+          icon?: string
+          onClick: (apis: MountApis) => void | Promise<void>
         }) => unknown
         registerPanel: (opts: {
           id: string
@@ -243,12 +260,26 @@ const TestRemoteApp = {
     document.body.appendChild(host)
     createRoot(host).render(<Marker />)
 
-    // (2) Hand the host a hooks-using component to render in its own tree —
-    // shared-single-React proof.
+    // (2) A plain-data menu item: the HOST renders the row from label/tooltip
+    // (no component crosses the boundary), and its click opens a dialog whose
+    // body is a hooks-using component rendered in the host's tree — the
+    // shared-single-React proof. `apis` is the per-app object the host hands
+    // to every onClick; the E2E asserts both the host row and the dialog.
     context.apis.resource.registerMenuItem({
-      id: 'marker',
-      title: 'Remote Marker',
-      component: MenuMarker,
+      id: 'open-dialog',
+      label: 'Open Fixture Dialog',
+      tooltip: 'Opens a host-framed dialog',
+      // An image URI (same contract as a search-bar provider icon) — the
+      // host renders it at a fixed size; no component crosses the boundary.
+      icon: FIXTURE_ICON_URI,
+      onClick: (apis) => {
+        apis.dialog.open({
+          id: 'fixture-dialog',
+          title: 'Fixture Dialog',
+          maxWidth: 'xs',
+          render: ({ close }) => <DialogMarker close={close} />,
+        })
+      },
     })
 
     // (3) A right-panel component that reads per-network app data — the
@@ -275,8 +306,8 @@ const TestRemoteApp = {
 
     // (5) Register a modal and a menu item that opens it imperatively —
     // the 'modal-launcher' contract: the host renders the modal in its own
-    // dialog shell, and it outlives the dropdown that launched it.
-    parkedResource = context.apis.resource
+    // dialog shell, and it outlives the dropdown that launched it (the host
+    // closes the dropdown before running onClick).
     context.apis.resource.registerModal({
       id: 'fixture-modal',
       component: FixtureModal,
@@ -285,16 +316,16 @@ const TestRemoteApp = {
     })
     context.apis.resource.registerMenuItem({
       id: 'open-modal',
-      title: 'Open Fixture Modal',
-      component: OpenModalMenuItem,
-      closeOnAction: true,
+      label: 'Open Fixture Modal',
+      onClick: (apis) => {
+        apis.resource.openModal('fixture-modal')
+      },
     })
   },
 
   unmount(): void {
     document.getElementById('remote-app-root')?.remove()
     document.getElementById('remote-search-result')?.remove()
-    parkedResource = null
   },
 }
 

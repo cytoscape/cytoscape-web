@@ -93,9 +93,7 @@ function isHttpUrl(value: string): boolean {
  */
 function isValidIconUri(value: string): boolean {
   return (
-    isHttpUrl(value) ||
-    value.startsWith('data:image/') ||
-    value.startsWith('/')
+    isHttpUrl(value) || value.startsWith('data:image/') || value.startsWith('/')
   )
 }
 
@@ -157,16 +155,61 @@ export const createResourceApi = (appId: string): ResourceApi => ({
 
   registerMenuItem(options) {
     try {
-      if (!options.id || options.id.trim() === '') {
+      // typeof guards before any string method: entries can arrive from
+      // untyped JS apps with any shape, and a thrown TypeError would come
+      // back as OPERATION_FAILED instead of the accurate INVALID_INPUT.
+      if (typeof options.id !== 'string' || options.id.trim() === '') {
         return fail(
           AppCodes.INVALID_INPUT,
           'id is required and must be non-empty',
         )
       }
-      if (!isValidComponent(options.component)) {
+      // The pre-1.0 shape. Named explicitly so a migrating app gets the
+      // reason instead of a bare "label is required".
+      if ((options as { component?: unknown }).component !== undefined) {
         return fail(
           AppCodes.INVALID_INPUT,
-          `component must be a React component (function or object like React.lazy), got ${typeof options.component}`,
+          "'apps-menu' items no longer accept a component: register label/icon/onClick and open a dialog from onClick (apis.dialog.open) for custom UI",
+        )
+      }
+      if (typeof options.label !== 'string' || options.label.trim() === '') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'label is required and must be non-empty',
+        )
+      }
+      if (typeof options.onClick !== 'function') {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `onClick must be a function, got ${typeof options.onClick}`,
+        )
+      }
+      if (
+        options.isEnabled !== undefined &&
+        typeof options.isEnabled !== 'function'
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `isEnabled must be a function, got ${typeof options.isEnabled}`,
+        )
+      }
+      if (
+        options.tooltip !== undefined &&
+        typeof options.tooltip !== 'string'
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `tooltip must be a string, got ${typeof options.tooltip}`,
+        )
+      }
+      // Same contract as the 'search-bar' icon: a URI, never a component.
+      if (
+        options.icon !== undefined &&
+        (typeof options.icon !== 'string' || !isValidIconUri(options.icon))
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'icon must be an http(s) URL or a data:image URI',
         )
       }
       const store = useAppResourceStore.getState()
@@ -174,13 +217,16 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         id: options.id,
         appId,
         slot: 'apps-menu',
-        title: options.title,
+        title: options.label,
+        tooltip: options.tooltip,
+        icon: options.icon,
         order: options.order,
         group: options.group,
         requires: options.requires,
-        component: options.component as unknown,
-        errorFallback: options.errorFallback as unknown,
-        closeOnAction: options.closeOnAction,
+        onClick: options.onClick as (apis: unknown) => void | Promise<void>,
+        isEnabled: options.isEnabled as
+          | ((apis: unknown) => boolean)
+          | undefined,
       })
       return ok({ resourceId: `${appId}::apps-menu::${options.id}` })
     } catch (e) {
@@ -360,7 +406,9 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           'id is required and must be non-empty',
         )
       }
-      if (!useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)) {
+      if (
+        !useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)
+      ) {
         return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${id}'`)
       }
       useModalLauncherStore.getState().openModal(appId, id)
@@ -378,7 +426,9 @@ export const createResourceApi = (appId: string): ResourceApi => ({
           'id is required and must be non-empty',
         )
       }
-      if (!useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)) {
+      if (
+        !useAppResourceStore.getState().hasResource(appId, 'modal-launcher', id)
+      ) {
         return fail(AppCodes.RESOURCE_NOT_FOUND, `Modal '${id}'`)
       }
       useModalLauncherStore.getState().closeModal(appId, id)

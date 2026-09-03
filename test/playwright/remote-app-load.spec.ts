@@ -107,19 +107,62 @@ test.describe('host loads a real federated remote', () => {
       { timeout: 15_000 },
     )
 
-    // On mount the remote registered an 'apps-menu' resource whose component
-    // calls a React hook. The host renders it inside its OWN React tree — which
-    // only works if the remote shares the host's single React instance.
+    // On mount the remote registered an 'apps-menu' item as plain data. The
+    // HOST renders the row itself — label and tooltip, no remote component —
+    // under a host-owned test id.
     await page.getByTestId('app-settings-dialog-close-button').click()
     await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
-
-    await expect(
-      page.locator('[data-testid="remote-menu-marker"]'),
-    ).toBeVisible({ timeout: 10_000 })
-    await expect(page.locator('[data-testid="remote-menu-marker"]')).toHaveText(
-      'single-react-ok',
+    const menuItem = page.locator(
+      '[data-testid="apps-menu-item-testRemoteApp-open-dialog"]',
     )
+    await expect(menuItem).toBeVisible({ timeout: 10_000 })
+    await expect(menuItem).toHaveText('Open Fixture Dialog')
+    // The registered icon URI renders as a host-tinted mask in the row (no
+    // <img>: the host paints the shape in the row's text color).
+    await expect(menuItem.locator('img')).toHaveCount(0)
+    await expect(
+      menuItem.locator('[data-testid="apps-menu-item-icon"]'),
+    ).toHaveCSS('mask-image', /data:image\/svg\+xml/)
+
+    // Its onClick calls apis.dialog.open(...). The host closes the dropdown
+    // and renders the dialog in its own shell (AppDialogHost): host title
+    // bar, then a hooks-using body from the remote bundle — which only
+    // renders if the remote shares the host's single React instance.
+    await menuItem.click()
+    await expect(menuItem).not.toBeVisible()
+    const dialog = page.locator(
+      '[data-testid="app-dialog-testRemoteApp-fixture-dialog"]',
+    )
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await expect(dialog).toContainText('Fixture Dialog')
+    await expect(
+      page.locator('[data-testid="remote-dialog-marker"]'),
+    ).toContainText('dialog-hooks-ok')
     expect(hookErrors).toEqual([])
+
+    // Three exits, one close path. The backdrop stays inert (dialog policy);
+    // app dialogs are the documented exception that also closes on Escape.
+    // (1) the `close` handed to render, wired to the app's Done button;
+    await page.locator('[data-testid="remote-dialog-done"]').click()
+    await expect(dialog).not.toBeVisible()
+    // (2) Escape — reopening reuses the stable id, never stacking a second;
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await menuItem.click()
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await expect(dialog).toHaveCount(1)
+    await page
+      .locator('.MuiDialog-container')
+      .last()
+      .click({ position: { x: 4, y: 4 } })
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    // (3) the host's own Close "X".
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await menuItem.click()
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await page.locator('[data-testid="app-dialog-close-button"]').click()
+    await expect(dialog).not.toBeVisible()
   })
   test('modal-launcher: a host-rendered modal outlives the dropdown that opened it', async ({
     page,
@@ -140,12 +183,12 @@ test.describe('host loads a real federated remote', () => {
     )
     await page.getByTestId('app-settings-dialog-close-button').click()
 
-    // Open the modal from the fixture's apps-menu item. The item is
-    // registered with closeOnAction: true, so the dropdown closes — and
-    // unmounts the launching component — right after the click.
+    // Open the modal from the fixture's apps-menu item — a host-rendered
+    // row whose onClick calls apis.resource.openModal. The host closes the
+    // dropdown before running the handler.
     await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
     const menuItem = page.locator(
-      '[data-testid="remote-open-modal-menu-item"]',
+      '[data-testid="apps-menu-item-testRemoteApp-open-modal"]',
     )
     await expect(menuItem).toBeVisible({ timeout: 10_000 })
     await menuItem.click()
@@ -168,6 +211,24 @@ test.describe('host loads a real federated remote', () => {
     // (Close-on-deactivation is covered at the unit level: the cleanup
     // registry cannot be driven from here once the modal covers the UI.)
     await page.locator('[data-testid="remote-modal-cancel"]').click()
+    await expect(dialog).not.toBeVisible()
+
+    // Reopened, the shell's own exits: backdrop inert, Escape closes (the
+    // documented exception for app dialogs), and the structural Close "X".
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await menuItem.click()
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await page
+      .locator('.MuiDialog-container')
+      .last()
+      .click({ position: { x: 4, y: 4 } })
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
+    await menuItem.click()
+    await expect(dialog).toBeVisible({ timeout: 10_000 })
+    await page.locator('[data-testid="modal-launcher-close-button"]').click()
     await expect(dialog).not.toBeVisible()
   })
 
