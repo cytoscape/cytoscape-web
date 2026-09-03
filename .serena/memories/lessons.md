@@ -50,6 +50,9 @@
 
 ## Agent Workflow
 
+- [2026-08-24] `modern-web-guidance retrieve` takes one or more guide IDs only (for example, `retrieve security`); it has no `--section all` positional form. Use the IDs returned verbatim by `search`, then retrieve them directly.
+- [2026-08-31] Sandbox validation: Node `child_process` cannot spawn `git` in this workspace (`spawnSync git EPERM`) even though direct Git tool commands work. Run Git reads directly and parse their captured output in the orchestration layer. Ruby and the standalone Node `yaml` package are unavailable; use the repository's Prettier YAML parser for config validation.
+
 - [2026-07-28] Documentation patching: Treat truncated combined command output as diagnostic only; re-read the exact target range before constructing a multi-hunk `apply_patch`, because apparent duplicate lines may be output artifacts rather than file content.
 - [2026-07-20] Commit cadence: Commit each completed, verified round of work immediately with a detailed message — don't batch rounds or wait to be asked (standing instruction from Max).
 - [2026-03-04] Memory consolidation: AGENTS.md is the single source of truth for project context; CLAUDE.md includes it with `@AGENTS.md`. `.serena/memories/` should only contain lessons (this file) and task checklists — not duplicated agent context.
