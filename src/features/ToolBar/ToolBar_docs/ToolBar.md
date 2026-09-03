@@ -33,14 +33,18 @@ The ToolBar is organized into menu categories, each with its own submenu system.
 - **FileUpload**: File upload dialog
 - **GenericFileUploadDialog**: Generic file upload UI
 - **DatabaseSnapshotFileUpload**: Database snapshot upload
-- **DropdownMenu**: Reusable dropdown menu component
+- **MenuBar**: Container for the top-level menus; owns which one is open (`useMenuBarMenu(id)` hands each menu its shared open flag)
+- **DropdownMenu**: Reusable non-modal dropdown menu component with submenus
 - **NestedMenu**: Support for nested menu structures
 
 ## Behavior
 
 ### Menu System
-- Menus open on hover or click (depending on implementation)
-- Submenus support nested structures
+- The bar behaves like a desktop menubar: a click opens a menu, and while any menu is open, hovering another trigger (mouse only, not touch) or pressing ArrowLeft/ArrowRight moves the open menu there in one step
+- `MenuBar` is the single source of truth for which menu is open; each menu reads its flag through `useMenuBarMenu(id)` and keeps `setOpen(false)` for its own close paths
+- Dropdowns are `Popper`s, not `Popover`s: a Popover is a modal whose invisible backdrop ate the click on the next trigger, so every switch used to cost two clicks
+- Keyboard: ArrowDown/Enter/Space open a menu with focus on its first row; ArrowUp/Down, Home/End move within a level; ArrowRight opens a submenu or moves to the next menu; ArrowLeft closes a submenu or moves to the previous menu; Escape closes and returns focus to the trigger; Tab or a click elsewhere closes
+- Submenus open on hover and support nested structures
 - Menu items can be enabled/disabled based on context
 - Menu items trigger actions or open dialogs
 

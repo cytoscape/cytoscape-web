@@ -124,6 +124,32 @@ describe('DropdownMenu keyboard access', () => {
     expect(document.activeElement).toBe(child)
   })
 
+  it('keeps arrow-key focus inside an open submenu', () => {
+    renderOpenMenu([
+      { label: 'Apply', command: vi.fn() },
+      {
+        label: 'Import',
+        items: [
+          { label: 'From file', command: vi.fn() },
+          { label: 'From table', command: vi.fn() },
+        ],
+      },
+    ])
+
+    fireEvent.keyDown(screen.getByRole('menuitem', { name: 'Import' }), {
+      key: 'Enter',
+    })
+    const child = screen.getByRole('menuitem', { name: 'From file' })
+    expect(document.activeElement).toBe(child)
+
+    // The keydown bubbles through the submenu portal to the parent level,
+    // which must not also move focus onto its own first row.
+    fireEvent.keyDown(child, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitem', { name: 'From table' }),
+    )
+  })
+
   it('closes the submenu with Escape and returns focus to the parent', () => {
     renderOpenMenu([
       { label: 'Import', items: [{ label: 'From file', command: vi.fn() }] },
@@ -173,6 +199,22 @@ describe('DropdownMenu keyboard access', () => {
 
     fireEvent.keyDown(rows[1], { key: 'Enter' })
     expect(skipped).not.toHaveBeenCalled()
+  })
+
+  it('takes a template row out of the tab order when the model disables it', () => {
+    const run = vi.fn()
+    renderOpenMenu([
+      {
+        disabled: true,
+        template: <DropdownMenuItem label="Merge" onClick={run} />,
+      },
+    ])
+
+    const row = screen.getByRole('menuitem', { name: 'Merge' })
+    expect(row.tabIndex).toBe(-1)
+    expect(row.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(run).not.toHaveBeenCalled()
   })
 
   it("points the trigger's aria-controls at the rendered menu", () => {

@@ -10,9 +10,10 @@ import { LLMQueryOptionsMenuItem } from '@/features/LLMQuery/components/LLMQuery
 import { RunLLMQueryMenuItem } from '@/features/LLMQuery/components/RunLLMQueryMenuItem'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 
 export const AnalysisMenu = () => {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen } = useMenuBarMenu('analysis-menu')
   const [openDialog, setOpenDialog] = useState(false)
 
   const hasNoNetworks =
@@ -24,7 +25,7 @@ export const AnalysisMenu = () => {
 
   const onBeforeRun = useCallback((): void => {
     setOpen(false)
-  }, [])
+  }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Analysis menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(

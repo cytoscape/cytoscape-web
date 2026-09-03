@@ -10,6 +10,7 @@ import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 
 // Lazy: FileUpload pulls in the import pipeline (CX2/SIF parsing and the
 // dropzone/dialog stack), which would otherwise ship with the eager toolbar
@@ -39,7 +40,7 @@ import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
 
 export const DataMenu = () => {
-  const [open, setOpen] = useState(false)
+  const { open, setOpen } = useMenuBarMenu('data-menu')
   const [openWorkspaceDialog, setOpenWorkspaceDialog] = useState(false)
   const [openFileUpload, setOpenFileUpload] = useState(false)
   // Mount latch for the lazy FileUpload dialog: stays true after the first
@@ -57,7 +58,7 @@ export const DataMenu = () => {
 
   const onBeforeRun = useCallback((): void => {
     setOpen(false)
-  }, [])
+  }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Data menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(

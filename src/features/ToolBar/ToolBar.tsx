@@ -11,6 +11,7 @@ import { DebugIndicator } from './DebugIndicator'
 import { EditMenu } from './EditMenu'
 import { HelpMenu } from './HelpMenu'
 import { LayoutMenu } from './LayoutMenu'
+import { MenuBar } from './MenuBar'
 import { SearchBox } from './Search'
 import { ThemeToggleButton } from './ThemeToggleButton'
 import { ToolsMenu } from './ToolsMenu'
@@ -38,13 +39,15 @@ export const ToolBar = (): JSX.Element => {
         >
           <Box sx={{ display: 'flex' }}>
             <img src={logo} alt="Cytoscape Logo" />
-            <DataMenu />
-            <EditMenu />
-            <LayoutMenu />
-            <AnalysisMenu />
-            <ToolsMenu />
-            <AppMenu />
-            <HelpMenu />
+            <MenuBar sx={{ display: 'flex' }}>
+              <DataMenu />
+              <EditMenu />
+              <LayoutMenu />
+              <AnalysisMenu />
+              <ToolsMenu />
+              <AppMenu />
+              <HelpMenu />
+            </MenuBar>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

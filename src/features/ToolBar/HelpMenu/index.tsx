@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
 import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationMenuItem } from './CitationMenuItem'
@@ -17,7 +18,7 @@ import { TakeATourMenuItem } from './TakeATourMenuItem'
 import { TutorialMenuItem } from './TutorialMenuItem'
 
 export const HelpMenu = () => {
-  const [open, setOpen] = useState<boolean>(false)
+  const { open, setOpen } = useMenuBarMenu('help-menu')
   const [openLicenseDialog, setOpenLicenseDialog] = useState<boolean>(false)
 
   const handleClose = (): void => {
@@ -26,7 +27,7 @@ export const HelpMenu = () => {
 
   const onBeforeRun = useCallback((): void => {
     setOpen(false)
-  }, [])
+  }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Help menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
