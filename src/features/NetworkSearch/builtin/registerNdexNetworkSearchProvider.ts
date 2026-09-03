@@ -11,8 +11,8 @@
 
 import { createResourceApi } from '@/app-api/core/resourceApi'
 import type { NetworkSearchQuery } from '@/app-api/types/AppResourceTypes'
-import ndexLogo from '@/assets/ndex-logo.svg'
 import { useLoadFromNdexDialogStore } from '@/features/ToolBar/DataMenu/store/loadFromNdexDialogStore'
+import { NDEX_LOGO_PNG_URI } from './ndexLogoPng'
 
 /**
  * Reserved appId for host-provided resources. Not a real app: it has no
@@ -26,7 +26,9 @@ export function registerNdexNetworkSearchProvider(): void {
     name: 'NDEx',
     description:
       'Search NDEx for public and private networks and open them in the workspace.',
-    icon: ndexLogo,
+    // A raster PNG so the logo keeps its colors: the search bar paints SVG
+    // icons as a monochrome mask in the text color (see UriIcon).
+    icon: NDEX_LOGO_PNG_URI,
     website: 'https://www.ndexbio.org',
     placeholder: 'Search NDEx',
     onSubmit: ({ query }: NetworkSearchQuery) => {

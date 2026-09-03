@@ -28,9 +28,9 @@ describe('registerNdexNetworkSearchProvider', () => {
     expect(ndex.slot).toBe('search-bar')
     expect(ndex.id).toBe('ndex')
     expect(ndex.title).toBe('NDEx')
-    // The bundled logo resolves to a path/URL string via the asset pipeline.
-    expect(typeof ndex.icon).toBe('string')
-    expect(ndex.icon).toContain('ndex-logo')
+    // An inline raster PNG, not the SVG asset: the search bar paints SVG
+    // icons as a monochrome mask, and the NDEx logo must keep its colors.
+    expect(ndex.icon).toMatch(/^data:image\/png;base64,/)
     expect(ndex.website).toBe('https://www.ndexbio.org')
     expect(ndex.placeholder).toBe('Search NDEx')
     expect(typeof ndex.onSubmit).toBe('function')
