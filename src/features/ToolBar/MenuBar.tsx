@@ -34,6 +34,22 @@ export interface MenuBarContextValue {
   setOpenIntent: (intent: MenuOpenIntent) => void
   /** Enabled top-level triggers, in menubar order. */
   getTriggers: () => HTMLButtonElement[]
+  /**
+   * Id of the one trigger in the Tab order (roving tabindex): the menubar is
+   * a single tab stop, and the arrow keys move between its triggers. Null
+   * until a trigger has registered.
+   */
+  tabStopId: string | null
+  /** A trigger took focus, so it becomes the tab stop. */
+  setActiveId: (id: string) => void
+  /**
+   * Triggers announce themselves (in mount order, which is menubar order)
+   * and whether they are enabled, so the tab stop can start on the first
+   * enabled trigger and leave one that becomes disabled. Returns the
+   * unregister function.
+   */
+  registerTrigger: (id: string) => () => void
+  setTriggerEnabled: (id: string, enabled: boolean) => void
 }
 
 const MenuBarContext = createContext<MenuBarContextValue | null>(null)
@@ -77,11 +93,25 @@ export const useMenuBarMenu = (
   }
 }
 
+/** Registered triggers in menubar order, with whether each is enabled. */
+type TriggerRegistry = Map<string, boolean>
+
+const firstEnabled = (triggers: TriggerRegistry): string | null => {
+  for (const [id, enabled] of triggers) {
+    if (enabled) {
+      return id
+    }
+  }
+  return null
+}
+
 /**
  * Container for the toolbar's top-level menus. It owns which menu is open,
  * which is what makes the bar behave like a desktop menubar: one click opens
  * a menu, and from then on hovering or arrowing across the other triggers
  * moves the open menu with the pointer instead of asking for another click.
+ * It also owns the bar's single Tab stop (roving tabindex), so Tab treats the
+ * whole bar as one control and lands on the trigger last used.
  */
 export const MenuBar = ({ children, ...boxProps }: BoxProps): JSX.Element => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -94,6 +124,14 @@ export const MenuBar = ({ children, ...boxProps }: BoxProps): JSX.Element => {
     openId: string | null
     openIntent: MenuOpenIntent
   }>({ openId: null, openIntent: 'pointer' })
+
+  // Roving tabindex: the registry keeps menubar order (a Map keeps insertion
+  // order, and triggers register in mount order), `activeId` is the trigger
+  // that last had focus. The tab stop is the active trigger while it is
+  // enabled; a trigger that becomes disabled hands the stop to the first
+  // enabled one for good, so re-enabling it does not yank the stop back.
+  const [triggers, setTriggers] = useState<TriggerRegistry>(() => new Map())
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   const setOpenIntent = useCallback((intent: MenuOpenIntent): void => {
     pendingIntentRef.current = intent
@@ -123,6 +161,55 @@ export const MenuBar = ({ children, ...boxProps }: BoxProps): JSX.Element => {
     )
   }, [])
 
+  const registerTrigger = useCallback((id: string): (() => void) => {
+    setTriggers((current) => {
+      if (current.has(id)) {
+        return current
+      }
+      const next = new Map(current)
+      // Enabled until the trigger reports otherwise; setTriggerEnabled runs
+      // right after registration.
+      next.set(id, true)
+      return next
+    })
+    return () => {
+      setTriggers((current) => {
+        if (!current.has(id)) {
+          return current
+        }
+        const next = new Map(current)
+        next.delete(id)
+        return next
+      })
+      setActiveId((current) => (current === id ? null : current))
+    }
+  }, [])
+
+  const setTriggerEnabled = useCallback(
+    (id: string, enabled: boolean): void => {
+      setTriggers((current) => {
+        if (current.get(id) === enabled) {
+          return current
+        }
+        const next = new Map(current)
+        next.set(id, enabled)
+        return next
+      })
+      if (!enabled) {
+        setActiveId((current) => (current === id ? null : current))
+      }
+    },
+    [],
+  )
+
+  const tabStopId = useMemo(
+    () =>
+      activeId !== null && triggers.get(activeId) === true
+        ? activeId
+        : firstEnabled(triggers),
+    [activeId, triggers],
+  )
+
   const value = useMemo<MenuBarContextValue>(
     () => ({
       openId: state.openId,
@@ -131,8 +218,21 @@ export const MenuBar = ({ children, ...boxProps }: BoxProps): JSX.Element => {
       closeMenu,
       setOpenIntent,
       getTriggers,
+      tabStopId,
+      setActiveId,
+      registerTrigger,
+      setTriggerEnabled,
     }),
-    [state, openMenu, closeMenu, setOpenIntent, getTriggers],
+    [
+      state,
+      openMenu,
+      closeMenu,
+      setOpenIntent,
+      getTriggers,
+      tabStopId,
+      registerTrigger,
+      setTriggerEnabled,
+    ],
   )
 
   return (

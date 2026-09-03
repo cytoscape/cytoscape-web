@@ -404,6 +404,17 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     isOpenRef.current = isOpen
   }, [isOpen])
 
+  // Roving tabindex: the menubar needs to know this trigger exists (in
+  // mount order) and whether it can take the tab stop. Registration and the
+  // enabled flag are separate effects so a disabled toggle keeps the
+  // trigger's position in the bar.
+  const registerTrigger = menuBar?.registerTrigger
+  const setTriggerEnabled = menuBar?.setTriggerEnabled
+  useEffect(() => registerTrigger?.(id), [registerTrigger, id])
+  useEffect(() => {
+    setTriggerEnabled?.(id, !disabled)
+  }, [setTriggerEnabled, id, disabled])
+
   // A menu that becomes disabled while open closes rather than lingering
   // behind a disabled trigger.
   useEffect(() => {
@@ -461,6 +472,9 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     }
     const nextId = next.getAttribute(MENU_BAR_TRIGGER_ATTR)
     if (openTarget && nextId !== null) {
+      // Focus goes into the new menu, not onto its trigger, so the trigger's
+      // focus handler never runs: hand it the tab stop here.
+      menuBar.setActiveId(nextId)
       menuBar.openMenu(nextId, 'keyboard')
     } else {
       next.focus()
@@ -492,6 +506,13 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             // keeps its native role, since a menuitem outside a menubar is
             // invalid ARIA.
             role={menuBar === null ? undefined : 'menuitem'}
+            // Roving tabindex: the bar is one Tab stop, on the trigger last used.
+            tabIndex={
+              menuBar === null ? undefined : menuBar.tabStopId === id ? 0 : -1
+            }
+            onFocus={() => {
+              menuBar?.setActiveId(id)
+            }}
             disabled={disabled}
             sx={{
               color: darkPalette.text.primary,
