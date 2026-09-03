@@ -44,3 +44,7 @@ src/assets/config-dev3.json
 cyweb.tgz
 build-dev3.sh
 scratch
+
+# Local code-analysis tool state and generated output
+/.antigravitycli/
+/graphify-out/
