@@ -11,8 +11,9 @@
   Invariants: at least one entry; `activeStyleId` resolves; entry keys match
   entry ids.
 - **Style template** (`StyleTemplate`) — a reusable style in the
-  workspace-level **style library**. Applying a template **copies** it into a
-  network's style set (copy-on-assign). There are no live references between
+  workspace-level **style library**, labelled **Workspace Styles** in the UI
+  (#704; code and DB names keep "library"). Applying a template **copies** it
+  into a network's style set (copy-on-assign). There are no live references between
   the library and networks, so there is nothing to reconcile on import/export
   and no cross-network edit surprises. Templates never contain bypasses
   (bypass entries reference element ids of a specific network).
@@ -197,10 +198,10 @@ per-style, matching current behavior.
 
 `src/features/Vizmapper/StyleManager/` — a row at the top of the Vizmapper
 panel showing the active style's **thumbnail and name**, plus a management menu
-(New (copy of current) / Duplicate / Rename / Delete; Save Style to Library /
-Apply Style from Library). All operations mark the network modified — the
+(New (copy of current) / Duplicate / Rename / Delete; Save Style to Workspace /
+Apply Style from Workspace). All operations mark the network modified — the
 undoable ones through `postEdit`, the rest through an explicit
-`setNetworkModified` in `StyleManager` (#680). "Save Style to Library" is the
+`setNetworkModified` in `StyleManager` (#680). "Save Style to Workspace" is the
 exception: it writes only the browser-local style library and leaves the
 network untouched.
 
@@ -209,11 +210,11 @@ three sections. The sections exist because a style belongs to one network and
 moving one across networks copies it (§1) — they are what tell the user whether a
 click switches or copies:
 
-| Section        | Source                                  | A click…                    |
-| -------------- | --------------------------------------- | --------------------------- |
-| This Network   | `styleSets[networkId]`                  | switches (undoable)         |
-| Other Networks | `getStyleSetMetadataFromDb` (IndexedDB) | copies in via `importStyle` |
-| Library        | `useStyleLibraryStore`                  | copies in via `importStyle` |
+| Section          | Source                                  | A click…                    |
+| ---------------- | --------------------------------------- | --------------------------- |
+| This Network     | `styleSets[networkId]`                  | switches (undoable)         |
+| Other Networks   | `getStyleSetMetadataFromDb` (IndexedDB) | copies in via `importStyle` |
+| Workspace Styles | `useStyleLibraryStore`                  | copies in via `importStyle` |
 
 Cytoscape Desktop pools every style into one flat list instead; it can only do
 that because its styles are session-global and shared live.

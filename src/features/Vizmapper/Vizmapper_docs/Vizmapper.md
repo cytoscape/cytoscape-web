@@ -52,12 +52,13 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 - **StyleManager/StyleManager.tsx**: Selector row rendered above the tabs
   - Dropdown to switch the network's active named style
   - Menu: New Style (copy of current), Duplicate, Rename, Delete,
-    Save Style to Library, Apply Style from Library
+    Save Style to Workspace, Apply Style from Workspace
   - Every operation marks the network as modified
   - Switching styles clears the network's undo/redo history (recorded edits
     reference the previous style)
 - **StyleManager/StyleNameDialog.tsx**: Name prompt shared by create/rename/save
-- **StyleManager/StyleLibraryDialog.tsx**: Workspace-level style library browser;
+- **StyleManager/StyleLibraryDialog.tsx**: Workspace-level style library browser,
+  titled "Workspace Styles" in the UI (#704);
   applying a template copies it into the network's style set (copy-on-assign)
 - See `docs/specifications/MULTIPLE_VISUAL_STYLES.md` for the full model,
   IndexedDB, and CX2/NDEx persistence design

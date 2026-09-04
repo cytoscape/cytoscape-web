@@ -378,7 +378,7 @@ export const StyleManager = (props: {
           }}
           data-testid="style-manager-save-to-library-menu-item"
         >
-          <ListItemText>Save Style to Library…</ListItemText>
+          <ListItemText>Save Style to Workspace…</ListItemText>
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -387,7 +387,7 @@ export const StyleManager = (props: {
           }}
           data-testid="style-manager-open-library-menu-item"
         >
-          <ListItemText>Apply Style from Library…</ListItemText>
+          <ListItemText>Apply Style from Workspace…</ListItemText>
         </MenuItem>
       </Menu>
 
@@ -423,7 +423,7 @@ export const StyleManager = (props: {
       />
       <StyleNameDialog
         open={dialog === 'saveToLibrary'}
-        title="Save Style to Library"
+        title="Save Style to Workspace"
         confirmLabel="Save"
         initialName={activeEntry.name}
         onConfirm={handleSaveToLibrary}

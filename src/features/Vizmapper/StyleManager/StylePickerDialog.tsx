@@ -390,7 +390,7 @@ export const StylePickerDialog = (
 
         {visibleTemplates.length > 0 && (
           <Section
-            title="Library"
+            title="Workspace Styles"
             hint="Click to copy into this network"
             testId="style-picker-section-library"
           >
