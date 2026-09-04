@@ -39,7 +39,7 @@ src/app-api/
 │   ├── scopedApi.ts            ← forNetwork(id?): network-scoped domains with networkId pre-bound
 │   └── index.ts                 ← Assembles CyWebApi object (incl. forNetwork); assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
-│   ├── CyWebEvents.ts           ← CyWebEvents interface (9 event types + detail shapes)
+│   ├── CyWebEvents.ts           ← CyWebEvents interface (10 event types + detail shapes)
 │   ├── dispatchCyWebEvent.ts    ← Generic dispatch helper — sole place new CustomEvent() is called
 │   └── initEventBus.ts          ← Zustand subscribeWithSelector → window.dispatchEvent
 ├── useElementApi.ts             ← React Hook: returns elementApi (thin wrapper)
@@ -79,7 +79,7 @@ src/app-api/
 6. **Hide `skipUndo`** — Hardcode to `false`; external apps must not corrupt the undo stack.
 7. **No React imports in `core/`** — ESLint should flag any `import ... from 'react'` inside
    `src/app-api/core/`.
-8. **`dispatchCyWebEvent` is the only dispatch site** — All 6 store-subscription-driven events go
+8. **`dispatchCyWebEvent` is the only dispatch site** — Every store-subscription-driven event goes
    through `event-bus/dispatchCyWebEvent.ts`. Never call `window.dispatchEvent(new CustomEvent(...))`
    directly anywhere else.
 9. **`initEventBus()` is called once after hydration** — `window.CyWebApi = CyWebApi` is assigned

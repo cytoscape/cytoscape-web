@@ -892,7 +892,7 @@ All methods in this API return `APP1` if the table record for `networkId` is not
 
 ## VisualStyleApi (`cyweb/VisualStyleApi`)
 
-Reads and modifies visual style properties.
+Reads and modifies visual style properties, one at a time or as a whole style.
 
 ```typescript
 import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
@@ -901,6 +901,19 @@ import { VisualPropertyName } from 'cyweb/ApiTypes'
 
 All write methods trigger `style:changed` via the Event Bus (the VisualStyleStore
 subscription in `initEventBus` fires on any property change).
+`applyVisualStyle` also fires `style:switched`.
+
+### A network owns several named styles
+
+A network's visual style is one entry in a set of named styles it owns; the
+active entry is the one rendered and edited, and it is what every method here
+reads and writes. `applyVisualStyle` adds a style to that set and makes it
+active. The set holds at most `MAX_STYLES_PER_NETWORK` (50) entries.
+
+Only a network whose style is loaded in memory can be read or written — a
+workspace network that has never been opened reports `APP1`.
+
+See `docs/specifications/MULTIPLE_VISUAL_STYLES.md` for the model.
 
 ### Types
 
@@ -911,6 +924,11 @@ interface VisualPropertyInfo {
   group: 'node' | 'edge' | 'network'
   type: VisualPropertyValueTypeName // e.g. 'color', 'number', 'string'
   hasMapping: boolean // true when the property has a mapping
+}
+
+/** Options bundle for applyVisualStyle. */
+interface ApplyVisualStyleOptions {
+  name?: string // name of the new named-style entry; default "Imported style"
 }
 
 /** Options bundle for createContinuousMapping. */
@@ -951,6 +969,29 @@ object when the property has no bypasses.
 
 Reads the mapping installed on a property. `mapping` is `undefined` when the
 property has no mapping.
+
+#### `getVisualStyle(networkId): ApiResult<{ visualStyle: VisualStyle }>`
+
+Reads the network's active visual style as one object — every default, mapping
+and bypass, in the shape `applyVisualStyle` accepts. Pair the two to copy a
+style from one network to another.
+
+The returned style is a **detached deep copy**: mutating it changes nothing in
+the network, and later edits to the network do not reach it. Bypass entries
+survive this read; they are stripped by `applyVisualStyle`, not here.
+
+Note that a `VisualStyle` carries `bypassMap` as a `Map`, so the object does
+not survive `JSON.stringify`. Pass it straight to `applyVisualStyle`, or read
+bypasses through `getBypasses`, which returns a plain `Record`.
+
+```typescript
+const read = visualStyleApi.getVisualStyle(sourceNetworkId)
+if (read.success) {
+  visualStyleApi.applyVisualStyle(targetNetworkId, read.data.visualStyle, {
+    name: 'Copied from source',
+  })
+}
+```
 
 **Common errors for read methods:**
 
@@ -1071,6 +1112,74 @@ Creates a passthrough mapping (attribute value used directly as the visual value
 #### `deleteMapping(networkId, vpName): ApiResult`
 
 Removes any mapping for the specified visual property.
+
+#### `applyVisualStyle(networkId, visualStyle, options?): ApiResult<{ styleId }>`
+
+Gives the network a whole visual style, rather than one property at a time.
+The Cytoscape Web equivalent of Desktop's
+`VisualMappingManager.setVisualStyle(style, view)`, and of the Vizmapper's
+"Apply Style".
+
+**A copy, not a shared reference.** This is where Cytoscape Web differs from
+Desktop, and the difference matters. In Desktop a `VisualStyle` is an object
+the `VisualMappingManager` owns; `setVisualStyle` attaches that one object to a
+view, so several views can follow the same style and a later edit to it changes
+all of them. In Cytoscape Web a style has no existence outside a network, so
+applying one always takes a snapshot: the network gets its own deep copy of
+`visualStyle` as it is at the moment of the call, and from then on edits to the
+passed object and edits to the network's copy do not affect each other. There
+is no way to make two networks follow one live style.
+
+What the call does, in order:
+
+1. Validates the network and the shape of `visualStyle`.
+2. Deep-copies the style into the network's named-style set, under
+   `options.name` (default `"Imported style"`, de-duplicated against its
+   siblings — a second copy of "Blue" is stored as "Blue 2").
+   **Bypasses are dropped**: bypass entries are keyed by the source network's
+   node and edge ids, which name nothing in the target.
+3. Makes the copy the active style, so the network re-renders with it.
+4. Records the switch as one undo entry and marks the network modified.
+
+Undo reverts which style is active and leaves the copy in the set, inert until
+selected and deletable — the same behavior as the in-app apply path. The
+style's content is deliberately not carried on the undo stack, which is
+persisted to IndexedDB.
+
+Fires `style:switched`, then one `style:changed` per property that differs from
+the previously active style.
+
+```typescript
+const read = visualStyleApi.getVisualStyle(sourceNetworkId)
+if (read.success) {
+  const applied = visualStyleApi.applyVisualStyle(
+    subnetworkId,
+    read.data.visualStyle,
+  )
+  if (applied.success) {
+    console.log(applied.data.styleId) // the new named-style entry
+  }
+}
+```
+
+| Error Code | Condition                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| `APP1`     | `networkId` has no visual style in memory                                                |
+| `APP9`     | `visualStyle` is not a visual style object (see below)                                   |
+| `APP14`    | the network already owns `MAX_STYLES_PER_NETWORK` (50) styles                            |
+
+Nothing is applied when the call fails; every check runs before the store is
+touched.
+
+`APP9` covers the structural check on `visualStyle`: it must be an object with
+at least one entry keyed by a `VisualPropertyName`, and every such entry must
+carry a valid `group` (`'node'`/`'edge'`/`'network'`), a `type`, a
+`defaultValue`, and — when present — a `mapping` with a known `type`
+(`'passthrough'`/`'discrete'`/`'continuous'`) and an `attribute`. Unknown keys
+are ignored, and `bypassMap` is not checked since bypasses are stripped anyway.
+Property **values** are not validated here — a style read from
+`getVisualStyle` is already valid, and per-property validation belongs to
+`setDefault`, which can say which property failed.
 
 All methods in this API return `APP1` if the visual style for `networkId` is not found.
 
@@ -2310,6 +2419,27 @@ detail: {
 
 Source: VisualStyleStore subscription (full-state diff, no `subscribeWithSelector`).
 
+#### `style:switched`
+
+Fired when a network's **active named style** changes — the Vizmapper's style
+picker, `visualStyleApi.applyVisualStyle`, an undone or redone switch, or
+deleting the active style.
+
+```typescript
+detail: {
+  networkId: IdType
+  styleId: IdType
+  previousStyleId: IdType
+}
+```
+
+A switch replaces the whole active style, so it also produces one
+`style:changed` per property that differs between the two styles — up to ~60
+events. `style:switched` is dispatched first, from the same store update, so a
+listener can tell one switch from N separate property edits.
+
+Source: VisualStyleStore subscription (same callback as `style:changed`).
+
 #### `data:changed`
 
 Fired when table data or schema changes in a network's node or edge table.
@@ -2344,6 +2474,7 @@ Also triggered by TableApi write methods.
 | `selectionApi.exclusiveSelect` / `additiveSelect` / `additiveDeselect` / `toggleSelected` / `clearSelection`               | `selection:changed`                                                                      |
 | `layoutApi.applyLayout`                                                                                                    | `layout:started`, `layout:completed`                                                     |
 | `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `deleteMapping`                            | `style:changed` (×per property)                                                          |
+| `visualStyleApi.applyVisualStyle`                                                                                          | `style:switched`, then `style:changed` (×per property differing between the two styles) |
 | `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `renameColumn` / `applyValueToElements` | `data:changed`                                                                           |
 | `contextMenuApi.addContextMenuItem` / `removeContextMenuItem`                                                              | _(no events — synchronous store mutation only)_                                          |
 

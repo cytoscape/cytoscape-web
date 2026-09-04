@@ -64,6 +64,18 @@ export interface CyWebEvents {
   'style:changed': { networkId: IdType; property: string }
 
   /**
+   * Fired when a network's ACTIVE named style changes — the Vizmapper's
+   * style picker, `visualStyleApi.applyVisualStyle`, an undone switch, or
+   * deleting the active style. One event per switch, ahead of the
+   * `style:changed` burst the replacement causes.
+   */
+  'style:switched': {
+    networkId: IdType
+    styleId: IdType
+    previousStyleId: IdType
+  }
+
+  /**
    * Fired when table data is written to a network's node or edge table.
    * `rowIds` is the set of node/edge IDs whose data changed in this write.
    * `addedColumns`/`removedColumns` carry schema changes (a rename appears

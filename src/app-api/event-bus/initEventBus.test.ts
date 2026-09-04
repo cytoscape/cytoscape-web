@@ -133,8 +133,16 @@ function triggerViewModelSub(curr: any, prev: any): void {
   callback(curr, prev)
 }
 
+/**
+ * The VisualStyleStore subscription reads two slices — `styleSets` for
+ * style:switched and `visualStyles` for style:changed. Fixtures name only
+ * the one under test, so the other defaults to empty.
+ */
 function triggerVisualStyleSub(curr: any, prev: any): void {
-  visualStyleSubs[0](curr, prev)
+  visualStyleSubs[0](
+    { styleSets: {}, visualStyles: {}, ...curr },
+    { styleSets: {}, visualStyles: {}, ...prev },
+  )
 }
 
 function triggerTableSub(curr: any, prev: any): void {
@@ -396,6 +404,75 @@ describe('selection:changed', () => {
     triggerViewModelSub(curr, prev)
 
     expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+})
+
+// ── style:switched ────────────────────────────────────────────────────────────
+
+describe('style:switched', () => {
+  it('dispatches when the active style of a network changes', () => {
+    triggerVisualStyleSub(
+      { styleSets: { net1: { activeStyleId: 's2', styles: {} } } },
+      { styleSets: { net1: { activeStyleId: 's1', styles: {} } } },
+    )
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(1)
+    expect(dispatchedTypes()).toEqual(['style:switched'])
+    expect(dispatchedDetails()[0]).toEqual({
+      networkId: 'net1',
+      styleId: 's2',
+      previousStyleId: 's1',
+    })
+  })
+
+  it('does not dispatch when the active style is unchanged', () => {
+    triggerVisualStyleSub(
+      { styleSets: { net1: { activeStyleId: 's1', styles: {} } } },
+      { styleSets: { net1: { activeStyleId: 's1', styles: {} } } },
+    )
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch for a newly registered network (network:created covers it)', () => {
+    triggerVisualStyleSub(
+      { styleSets: { net1: { activeStyleId: 's1', styles: {} } } },
+      { styleSets: {} },
+    )
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('arrives before the style:changed burst the switch causes', () => {
+    // A switch replaces the whole working copy, so every differing property
+    // also fires style:changed. The coarse event has to come first, or an app
+    // handling the burst cannot tell it apart from N separate property edits.
+    triggerVisualStyleSub(
+      {
+        styleSets: { net1: { activeStyleId: 's2', styles: {} } },
+        visualStyles: {
+          net1: {
+            NODE_BACKGROUND_COLOR: { value: '#000' },
+            EDGE_WIDTH: { value: 2 },
+          },
+        },
+      },
+      {
+        styleSets: { net1: { activeStyleId: 's1', styles: {} } },
+        visualStyles: {
+          net1: {
+            NODE_BACKGROUND_COLOR: { value: '#fff' },
+            EDGE_WIDTH: { value: 1 },
+          },
+        },
+      },
+    )
+
+    expect(dispatchedTypes()).toEqual([
+      'style:switched',
+      'style:changed',
+      'style:changed',
+    ])
   })
 })
 

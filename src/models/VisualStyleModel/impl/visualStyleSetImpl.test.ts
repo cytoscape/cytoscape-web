@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { DEFAULT_STYLE_NAME, VisualStyleSet } from '../VisualStyleSet'
 import { createVisualStyle } from './visualStyleFnImpl'
 import {
@@ -9,6 +10,7 @@ import {
   createStyleSet,
   getActiveStyle,
   isValidStyleSet,
+  isValidVisualStyle,
   stripBypasses,
   uniqueStyleName,
 } from './visualStyleSetImpl'
@@ -152,5 +154,105 @@ describe('uniqueStyleName', () => {
 
   it('should trim whitespace', () => {
     expect(uniqueStyleName('  My Style  ', [])).toBe('My Style')
+  })
+})
+
+describe('isValidVisualStyle', () => {
+  it('should accept a style built by the host', () => {
+    expect(isValidVisualStyle(createVisualStyle())).toBe(true)
+  })
+
+  it('should accept a style carrying a mapping', () => {
+    const style = createVisualStyle()
+    style.nodeLabel.mapping = {
+      type: MappingFunctionType.Passthrough,
+      attribute: 'name',
+      visualPropertyType: 'string',
+      defaultValue: '',
+    }
+    expect(isValidVisualStyle(style)).toBe(true)
+  })
+
+  it('should accept a style carrying unknown extra fields', () => {
+    // A runtime style object does carry fields the VisualStyle type does not
+    // describe; visualStyleApi.getVisualProperties skips them the same way.
+    const style: any = createVisualStyle()
+    style.someInternalField = { whatever: true }
+    expect(isValidVisualStyle(style)).toBe(true)
+  })
+
+  it('should reject non-objects', () => {
+    expect(isValidVisualStyle(undefined)).toBe(false)
+    expect(isValidVisualStyle(null)).toBe(false)
+    expect(isValidVisualStyle('nodeShape')).toBe(false)
+    expect(isValidVisualStyle(42)).toBe(false)
+    expect(isValidVisualStyle([])).toBe(false)
+  })
+
+  it('should reject an object holding no visual property at all', () => {
+    expect(isValidVisualStyle({})).toBe(false)
+    expect(isValidVisualStyle({ someInternalField: 1 })).toBe(false)
+  })
+
+  it('should reject a property that is not an object', () => {
+    expect(isValidVisualStyle({ nodeShape: 'diamond' })).toBe(false)
+  })
+
+  it('should reject a property with a missing or unknown group', () => {
+    expect(
+      isValidVisualStyle({
+        nodeShape: { type: 'nodeShape', defaultValue: 'ellipse' },
+      }),
+    ).toBe(false)
+    expect(
+      isValidVisualStyle({
+        nodeShape: {
+          group: 'hyperedge',
+          type: 'nodeShape',
+          defaultValue: 'ellipse',
+        },
+      }),
+    ).toBe(false)
+  })
+
+  it('should reject a property with no type or no defaultValue', () => {
+    expect(
+      isValidVisualStyle({
+        nodeShape: { group: 'node', defaultValue: 'ellipse' },
+      }),
+    ).toBe(false)
+    expect(
+      isValidVisualStyle({ nodeShape: { group: 'node', type: 'nodeShape' } }),
+    ).toBe(false)
+  })
+
+  it('should reject a malformed mapping', () => {
+    const base = {
+      group: 'node',
+      type: 'string',
+      defaultValue: '',
+    }
+    expect(
+      isValidVisualStyle({ nodeLabel: { ...base, mapping: 'passthrough' } }),
+    ).toBe(false)
+    expect(
+      isValidVisualStyle({
+        nodeLabel: { ...base, mapping: { type: 'quadratic', attribute: 'x' } },
+      }),
+    ).toBe(false)
+    expect(
+      isValidVisualStyle({
+        nodeLabel: {
+          ...base,
+          mapping: { type: MappingFunctionType.Discrete },
+        },
+      }),
+    ).toBe(false)
+  })
+
+  it('should ignore bypassMap, which every consumer strips', () => {
+    const style: any = createVisualStyle()
+    style.nodeShape.bypassMap = { 'not-a': 'map' }
+    expect(isValidVisualStyle(style)).toBe(true)
   })
 })

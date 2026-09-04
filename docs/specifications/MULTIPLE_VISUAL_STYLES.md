@@ -114,6 +114,40 @@ The style library lives in `useStyleLibraryStore`
 mutation, `hydrate()` loads once on first use (called when the library dialog
 opens).
 
+### App API surface
+
+External apps reach the feature through two methods on `visualStyleApi`
+(#702) — `src/app-api/core/visualStyleApi.ts`:
+
+- `getVisualStyle(networkId)` returns a detached deep copy of the ACTIVE
+  style. Only a network whose style is registered in memory can answer; a
+  workspace network never opened reports `APP1`.
+- `applyVisualStyle(networkId, visualStyle, options?)` runs the same two
+  store actions as `StyleManager.handleCopyIn` — `importStyle` then
+  `switchStyle` — and records the same `SWITCH_STYLE` undo entry, so an app's
+  apply is indistinguishable from the user's.
+
+Two things the in-app path gets for free and the API has to do itself:
+
+- **Validate the style.** An app passes an arbitrary object, so
+  `isValidVisualStyle` (`impl/visualStyleSetImpl.ts`) checks it before
+  anything is stored. Without it a malformed style becomes the active one and
+  fails later inside `CyjsRenderer` with nothing naming the caller.
+- **Establish WHY an import failed.** `importStyle` reports both an unknown
+  network and a full set as `undefined`, so the API reads the set size against
+  `MAX_STYLES_PER_NETWORK` itself and returns `APP14` rather than guessing.
+
+Copy semantics are stated in `api_docs/Api.md` because they diverge from
+Desktop: `VisualMappingManager.setVisualStyle` attaches one shared style object
+to a view, while CW deep-copies (§1), so developers arriving from Desktop
+expect live sharing that does not exist here.
+
+The `style:switched` event (`{ networkId, styleId, previousStyleId }`) comes
+from the `styleSets` half of the VisualStyleStore subscription in
+`initEventBus`, so it covers the in-app switch too. It exists because
+replacing the active style fires one `style:changed` per differing property —
+up to ~60 events with nothing marking them as one operation.
+
 ## 3. IndexedDB persistence
 
 DB version 10 (`src/data/db/index.ts`).

@@ -24,6 +24,8 @@ export type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSum
 export { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 export type { VisualPropertyValueType } from '../../models/VisualStyleModel/VisualPropertyValue/VisualPropertyValueType'
 export type { VisualStyle } from '../../models/VisualStyleModel/VisualStyle'
+// The cap applyVisualStyle enforces, so an app can check before it calls.
+export { MAX_STYLES_PER_NETWORK } from '../../models/VisualStyleModel/VisualStyleSet'
 
 // ── View model types ────────────────────────────────────────────
 export type { NetworkView } from '../../models/ViewModel/NetworkView'

@@ -23,6 +23,24 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Added
 
+- **`VisualStyleApi.applyVisualStyle(networkId, visualStyle, options?)` and
+  `getVisualStyle(networkId)`** (#702) — give a network a whole visual style
+  instead of replaying every default, mapping and bypass by hand. Pair the two
+  to copy a style from one network to another. New type
+  `ApplyVisualStyleOptions` (`{ name?: string }`), new error code `APP14`
+  `STYLE_SET_FULL`, and `MAX_STYLES_PER_NETWORK` (50) is now exported.
+  **Copy, not a shared reference:** unlike Desktop's
+  `VisualMappingManager.setVisualStyle`, which attaches one style object to a
+  view, this deep-copies the style into the network's named-style set and makes
+  it active, so later edits to either side are independent. Bypasses are
+  dropped (they name the source network's elements). `getVisualStyle` likewise
+  returns a detached deep copy.
+- **`style:switched` event** — `{ networkId, styleId, previousStyleId }`, fired
+  when a network's active named style changes (the Vizmapper's style picker,
+  `applyVisualStyle`, an undone switch, or deleting the active style). A switch
+  replaces the whole style, so it also fires one `style:changed` per differing
+  property, up to ~60; `style:switched` arrives first and tells one switch
+  apart from N property edits.
 - **Dialog API** — `AppContextApis.dialog` (`DialogApi`, `OpenDialogOptions`,
   `DialogRenderProps`). `apis.dialog.open({ title, render, id?, maxWidth?,
   fullWidth? })` shows a modal whose frame (title bar, Close "X", dismissal

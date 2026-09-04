@@ -473,3 +473,18 @@ read in full at boot to keep `appData.get()` synchronous, and because the
 failure it replaces — IndexedDB quota exhaustion on a fire-and-forget write —
 is invisible to the calling app. The message reports the actual size and the
 limit.
+
+### APP14 — `STYLE_SET_FULL`
+
+**Severity:** error
+**Returned by:** `visualStyle.applyVisualStyle`
+
+The target network already owns `MAX_STYLES_PER_NETWORK` (50) named visual
+styles, so no copy can be added. The cap exists so that any style set built
+locally can round-trip through NDEx: the `cyWebVisualStyles` CX2 aspect
+importer rejects an oversized set. Delete a style the network no longer needs,
+or read the count first — `MAX_STYLES_PER_NETWORK` is exported from
+`cyweb/ApiTypes`.
+
+An `APP*` code rather than a `StyleCodes` one: the cap is a Cytoscape Web
+runtime limit with no corresponding CX2 validation rule.

@@ -4,6 +4,7 @@
 
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { IdType } from '../../models/IdType'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import {
   AttributeName,
   ValueType,
@@ -13,13 +14,19 @@ import {
   ContinuousFunctionControlPoint,
   ContinuousMappingFunction,
   MappingFunctionType,
+  MAX_STYLES_PER_NETWORK,
   VisualMappingFunction,
   VisualProperty,
   VisualPropertyGroup,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualPropertyValueTypeName,
+  VisualStyle,
 } from '../../models/VisualStyleModel'
+import {
+  cloneVisualStyle,
+  isValidVisualStyle,
+} from '../../models/VisualStyleModel/impl/visualStyleSetImpl'
 import {
   AppCodes,
   ApiFailure,
@@ -28,7 +35,7 @@ import {
   fail,
   ok,
 } from '../types/ApiResult'
-import { markNetworkModified } from './undo'
+import { corePostEdit, markNetworkModified } from './undo'
 import {
   validateBypassTargetScope,
   validateContinuousMappingBounds,
@@ -59,6 +66,17 @@ export interface CreateContinuousMappingOptions {
   ltMinVpValue?: VisualPropertyValueType
   /** Value applied above the maximum anchor. */
   gtMaxVpValue?: VisualPropertyValueType
+}
+
+/** Options for applyVisualStyle. */
+export interface ApplyVisualStyleOptions {
+  /**
+   * Name of the new named-style entry in the target network's style set.
+   * De-duplicated against its siblings ("X" → "X 2").
+   *
+   * @default "Imported style"
+   */
+  name?: string
 }
 
 /** One visual property's identity and scope, from getVisualProperties(). */
@@ -114,6 +132,21 @@ export interface VisualStyleApi {
     networkId: IdType,
     vpName: VisualPropertyName,
   ): ApiResult<{ mapping: VisualMappingFunction | undefined }>
+
+  /**
+   * Read the network's active visual style as one object — every default,
+   * mapping and bypass in the shape `applyVisualStyle` accepts.
+   *
+   * The returned style is a detached deep copy: mutating it changes
+   * nothing in the network, and later edits to the network do not reach
+   * it. Bypass entries survive here (they are stripped by
+   * `applyVisualStyle`, not by this read).
+   *
+   * Only a network whose style is loaded in memory can answer — a
+   * workspace network that has never been opened reports
+   * `APP1 NETWORK_NOT_FOUND`.
+   */
+  getVisualStyle(networkId: IdType): ApiResult<{ visualStyle: VisualStyle }>
 
   // --- Write ---
 
@@ -182,6 +215,37 @@ export interface VisualStyleApi {
 
   /** Remove any mapping from a visual property. */
   deleteMapping(networkId: IdType, vpName: VisualPropertyName): ApiResult
+
+  /**
+   * Give the network a whole visual style — the equivalent of Cytoscape
+   * Desktop's `VisualMappingManager.setVisualStyle(style, view)`, and of
+   * the in-app "Apply Style" paths.
+   *
+   * **Copy, not a shared reference.** Desktop attaches one `VisualStyle`
+   * object to a view, so several views can follow it and a later edit to
+   * it changes all of them. In Cytoscape Web a style has no existence
+   * outside a network, so this takes a snapshot: the network gets its own
+   * deep copy of `visualStyle` as it is at this moment, and afterwards
+   * edits to the passed object and to the network's copy are independent.
+   *
+   * The copy is added to the network's named-style set (as if by the
+   * Vizmapper's "Apply Style") and made active. Bypasses are dropped —
+   * they are keyed by the source network's node and edge ids, which name
+   * nothing in the target. The switch is recorded as one undo entry, so
+   * the user can undo it like any other style switch; the copy stays in
+   * the style set after an undo, inert until selected.
+   *
+   * Fires `style:switched`, plus one `style:changed` per property that
+   * differs from the previously active style.
+   *
+   * @returns the id of the new named-style entry within the target
+   *   network's style set.
+   */
+  applyVisualStyle(
+    networkId: IdType,
+    visualStyle: VisualStyle,
+    options?: ApplyVisualStyleOptions,
+  ): ApiResult<{ styleId: IdType }>
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -215,6 +279,9 @@ function checkMappingPreconditions(
     { requireNumeric },
   )
 }
+
+/** Name given to a style copied in by `applyVisualStyle` with no `name`. */
+const DEFAULT_IMPORTED_STYLE_NAME = 'Imported style'
 
 // ── Core implementation ──────────────────────────────────────────────────────
 
@@ -332,6 +399,21 @@ export const visualStyleApi: VisualStyleApi = {
       const resolved = resolveVisualProperty(networkId, vpName)
       if ('failure' in resolved) return resolved.failure
       return ok({ mapping: resolved.property.mapping })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getVisualStyle(networkId): ApiResult<{ visualStyle: VisualStyle }> {
+    try {
+      const style = useVisualStyleStore.getState().visualStyles[networkId]
+      if (style === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      // Detached on purpose. The stored object is deeply frozen by Immer,
+      // so handing it back would give the caller something it cannot touch
+      // (the `appData.get` problem) and would keep changing under it.
+      return ok({ visualStyle: cloneVisualStyle(style) })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -704,6 +786,78 @@ export const visualStyleApi: VisualStyleApi = {
         markNetworkModified(networkId)
       }
       return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  applyVisualStyle(
+    networkId,
+    visualStyle,
+    options,
+  ): ApiResult<{ styleId: IdType }> {
+    try {
+      const store = useVisualStyleStore.getState()
+      if (store.visualStyles[networkId] === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      // The one place an arbitrary object from an app becomes what the
+      // renderer reads. Without this check a malformed style fails later,
+      // inside CyjsRenderer, with nothing naming the caller.
+      if (!isValidVisualStyle(visualStyle)) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'visualStyle is not a visual style: expected an object keyed by ' +
+            'VisualPropertyName whose entries carry group, type and defaultValue',
+        )
+      }
+      const styleSet = store.styleSets[networkId]
+      if (styleSet === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      // Checked here rather than read off importStyle's return value:
+      // importStyle reports both an unknown network and a full set as
+      // `undefined`, so the reason has to be established before the call.
+      if (Object.keys(styleSet.styles).length >= MAX_STYLES_PER_NETWORK) {
+        return fail(AppCodes.STYLE_SET_FULL, networkId, MAX_STYLES_PER_NETWORK)
+      }
+
+      const previousStyleId = styleSet.activeStyleId
+      const styleId = store.importStyle(
+        networkId,
+        options?.name ?? DEFAULT_IMPORTED_STYLE_NAME,
+        visualStyle,
+      )
+      if (styleId === undefined) {
+        return fail(
+          AppCodes.OPERATION_FAILED,
+          `Could not add a visual style to network ${networkId}`,
+        )
+      }
+
+      // Same two steps, in the same order, as the Vizmapper's copy-in path
+      // (StyleManager.handleCopyIn).
+      if (useVisualStyleStore.getState().switchStyle(networkId, styleId)) {
+        // The STORED name, read fresh: importStyle de-duplicates, so a
+        // second copy from the same source is "X 2" and the undo
+        // description has to match what the user sees in the style list.
+        const storedName =
+          useVisualStyleStore.getState().styleSets[networkId]?.styles[styleId]
+            ?.name ?? options?.name
+        corePostEdit(
+          networkId,
+          UndoCommandType.SWITCH_STYLE,
+          `Switch style to "${storedName ?? DEFAULT_IMPORTED_STYLE_NAME}"`,
+          [networkId, previousStyleId],
+          [networkId, styleId],
+        )
+      } else {
+        // corePostEdit marks the network itself, so this only covers the
+        // case where the switch failed: the copy still landed in the style
+        // set and has to be saveable.
+        markNetworkModified(networkId)
+      }
+      return ok({ styleId })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }

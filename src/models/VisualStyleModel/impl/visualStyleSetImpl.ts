@@ -7,6 +7,9 @@
 import { v4 as uuidv4 } from 'uuid'
 
 import { IdType } from '../../IdType'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
+import { VisualPropertyGroup } from '../VisualPropertyGroup'
+import { VisualPropertyName } from '../VisualPropertyName'
 import { VisualStyle } from '../VisualStyle'
 import {
   DEFAULT_STYLE_NAME,
@@ -129,4 +132,83 @@ export const uniqueStyleName = (
     counter += 1
   }
   return `${trimmed} ${counter}`
+}
+
+/**
+ * Every key the runtime treats as a visual property. A style object can also
+ * carry fields the VisualStyle type does not describe (see
+ * `visualStyleApi.getVisualProperties`, which filters them out the same way),
+ * so validation ignores unknown keys instead of rejecting them.
+ */
+const KNOWN_VP_NAMES: ReadonlySet<string> = new Set(
+  Object.values(VisualPropertyName),
+)
+
+const VP_GROUPS: ReadonlySet<string> = new Set(
+  Object.values(VisualPropertyGroup),
+)
+
+const MAPPING_TYPES: ReadonlySet<string> = new Set(
+  Object.values(MappingFunctionType),
+)
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Structural check on a visual style supplied from outside the host —
+ * an app passing one to `visualStyleApi.applyVisualStyle`, say.
+ *
+ * Without it a malformed object becomes a network's active style and the
+ * failure surfaces later, in the renderer, with nothing naming the caller.
+ *
+ * What is checked: every entry whose key is a known `VisualPropertyName`
+ * must be an object with a valid `group`, a `type`, a `defaultValue`, and —
+ * when present — a `mapping` with a known `type` and an `attribute`. At
+ * least one such entry must exist. Unknown keys are ignored (a real style
+ * object carries some).
+ *
+ * What is NOT checked: `bypassMap`, because every consumer of an external
+ * style strips bypasses first (they are keyed by the source network's
+ * element ids), and property VALUES, because `validateVisualPropertyValue`
+ * in the app API owns that per-property and reports which one failed.
+ */
+export const isValidVisualStyle = (value: unknown): value is VisualStyle => {
+  if (!isPlainRecord(value)) {
+    return false
+  }
+  let knownCount = 0
+  for (const [vpName, vp] of Object.entries(value)) {
+    if (!KNOWN_VP_NAMES.has(vpName)) {
+      continue
+    }
+    knownCount += 1
+    if (!isPlainRecord(vp)) {
+      return false
+    }
+    if (typeof vp.group !== 'string' || !VP_GROUPS.has(vp.group)) {
+      return false
+    }
+    if (typeof vp.type !== 'string' || vp.type === '') {
+      return false
+    }
+    if (vp.defaultValue === undefined) {
+      return false
+    }
+    if (vp.mapping !== undefined) {
+      if (!isPlainRecord(vp.mapping)) {
+        return false
+      }
+      if (
+        typeof vp.mapping.type !== 'string' ||
+        !MAPPING_TYPES.has(vp.mapping.type)
+      ) {
+        return false
+      }
+      if (typeof vp.mapping.attribute !== 'string') {
+        return false
+      }
+    }
+  }
+  return knownCount > 0
 }
