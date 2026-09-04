@@ -148,10 +148,29 @@ export function initEventBus(): void {
     { equalityFn: selectionEqual },
   )
 
-  // --- style:changed ---
+  // --- style:switched + style:changed ---
   // VisualStyleStore does not use subscribeWithSelector, so we use the
-  // basic two-argument subscribe form (state, prevState).
+  // basic two-argument subscribe form (state, prevState). Both events come
+  // from one callback so their order is fixed: the coarse signal that the
+  // whole style was replaced arrives before the per-property burst it causes.
   useVisualStyleStore.subscribe((curr, prev) => {
+    // A style switch replaces the active style wholesale, so the loop below
+    // reports it as one style:changed per differing property — up to ~60 of
+    // them, with nothing saying they are one operation. This is that signal.
+    for (const networkId of Object.keys(curr.styleSets) as IdType[]) {
+      const activeStyleId = curr.styleSets[networkId]?.activeStyleId
+      const previousStyleId = prev.styleSets[networkId]?.activeStyleId
+      // A network's first style set (network just registered) is covered by
+      // network:created
+      if (previousStyleId === undefined || activeStyleId === undefined) continue
+      if (activeStyleId === previousStyleId) continue
+      dispatchCyWebEvent('style:switched', {
+        networkId,
+        styleId: activeStyleId,
+        previousStyleId,
+      })
+    }
+
     for (const networkId of Object.keys(curr.visualStyles) as IdType[]) {
       const style = curr.visualStyles[networkId]
       const prevStyle = prev.visualStyles[networkId]

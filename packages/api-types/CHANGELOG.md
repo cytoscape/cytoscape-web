@@ -23,6 +23,35 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Added
 
+- **`VisualStyleApi.applyVisualStyle(networkId, visualStyle, options?)` and
+  `getVisualStyle(networkId)`** (#702) — give a network a whole visual style
+  instead of replaying every default, mapping and bypass by hand. Pair the two
+  to copy a style from one network to another. New type
+  `ApplyVisualStyleOptions` (`{ name?: string }`), new error code `APP14`
+  `STYLE_SET_FULL`, and `MAX_STYLES_PER_NETWORK` (50) is now exported.
+  **Copy, not a shared reference:** unlike Desktop's
+  `VisualMappingManager.setVisualStyle`, which attaches one style object to a
+  view, this deep-copies the style into the network's named-style set and makes
+  it active, so later edits to either side are independent. Bypasses are
+  dropped (they name the source network's elements). `getVisualStyle` likewise
+  returns a detached deep copy. `applyVisualStyle` requires a **complete**
+  style — every `VisualPropertyName` present — and reports `APP9` with what is
+  wrong otherwise; a partial style is rejected rather than merged over the
+  defaults, since applying one would silently drop the properties it omits.
+- **`VisualStyleApi.getStyles(networkId)` and `switchStyle(networkId, styleId)`**
+  (#702) — a network owns a set of named styles; these list it and move between
+  them. New type `NamedStyleInfo` (`{ id, name, active }`) and new error code
+  `APP15` `STYLE_NOT_FOUND`. Style ids are unique within one network's set and
+  mean nothing outside it, so an id from another network reports `APP15` —
+  copy across networks with `getVisualStyle` + `applyVisualStyle`. Switching to
+  the already-active style succeeds and does nothing, so re-asserting a style
+  does not dirty a clean network.
+- **`style:switched` event** — `{ networkId, styleId, previousStyleId }`, fired
+  when a network's active named style changes (the Vizmapper's style picker,
+  `applyVisualStyle`, an undone switch, or deleting the active style). A switch
+  replaces the whole style, so it also fires one `style:changed` per differing
+  property, up to ~60; `style:switched` arrives first and tells one switch
+  apart from N property edits.
 - **Dialog API** — `AppContextApis.dialog` (`DialogApi`, `OpenDialogOptions`,
   `DialogRenderProps`). `apis.dialog.open({ title, render, id?, maxWidth?,
   fullWidth? })` shows a modal whose frame (title bar, Close "X", dismissal

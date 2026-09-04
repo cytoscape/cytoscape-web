@@ -348,6 +348,20 @@ export const AppCodes = {
       `Value for app data key "${key}" is ${size} bytes, over the ` +
       `${limit}-byte per-entry limit`,
   },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app14 */
+  STYLE_SET_FULL: {
+    code: 'APP14',
+    severity: 'error',
+    message: (networkId: string, limit: number) =>
+      `Network ${networkId} already owns the maximum of ${limit} visual styles`,
+  },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app15 */
+  STYLE_NOT_FOUND: {
+    code: 'APP15',
+    severity: 'error',
+    message: (styleId: string, networkId: string) =>
+      `Network ${networkId} owns no visual style "${styleId}"`,
+  },
 } as const satisfies Record<string, ApiErrorCodeDef>
 
 /**
