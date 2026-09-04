@@ -116,16 +116,29 @@ opens).
 
 ### App API surface
 
-External apps reach the feature through two methods on `visualStyleApi`
+External apps reach the feature through four methods on `visualStyleApi`
 (#702) — `src/app-api/core/visualStyleApi.ts`:
 
 - `getVisualStyle(networkId)` returns a detached deep copy of the ACTIVE
   style. Only a network whose style is registered in memory can answer; a
   workspace network never opened reports `APP1`.
+- `getStyles(networkId)` lists the set as `{ id, name, active }` — metadata
+  only, since the active entry's content is the working copy and the rest
+  hold theirs inline.
+- `switchStyle(networkId, styleId)` wraps the store action, records the
+  `SWITCH_STYLE` undo entry, and treats a switch to the already-active style
+  as a successful no-op (an app re-asserting a style must not dirty a clean
+  network). `APP15` for an id the network does not own.
 - `applyVisualStyle(networkId, visualStyle, options?)` runs the same two
   store actions as `StyleManager.handleCopyIn` — `importStyle` then
   `switchStyle` — and records the same `SWITCH_STYLE` undo entry, so an app's
   apply is indistinguishable from the user's.
+
+Not exposed: `createStyle`, `duplicateStyle`, `renameStyle`, `deleteStyle`.
+Each needs care the four above do not — `deleteStyle` clears the network's
+whole undo history and is confirmation-gated in the UI, and the other three
+return `void`, so the API would have to pre-check what the store only warns
+about.
 
 Two things the in-app path gets for free and the API has to do itself:
 

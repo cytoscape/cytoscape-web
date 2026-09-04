@@ -63,6 +63,7 @@ export type { PositionRecord, ViewportApi } from '../core/viewportApi'
 export type {
   ApplyVisualStyleOptions,
   CreateContinuousMappingOptions,
+  NamedStyleInfo,
   VisualPropertyInfo,
   VisualStyleApi,
 } from '../core/visualStyleApi'

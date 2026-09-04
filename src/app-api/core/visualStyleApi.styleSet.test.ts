@@ -407,3 +407,155 @@ describe('applyVisualStyle', () => {
     expect(Object.keys(styleSetOf('net1').styles)).toHaveLength(1)
   })
 })
+
+describe('getStyles', () => {
+  it('fails with APP1 for a network with no style set in memory', () => {
+    const result = visualStyleApi.getStyles('nope')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+
+  it('lists one active style for a freshly registered network', () => {
+    registerNetwork('net1')
+
+    const result = visualStyleApi.getStyles('net1')
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.styles).toEqual([
+      { id: styleSetOf('net1').activeStyleId, name: 'Default', active: true },
+    ])
+  })
+
+  it('marks exactly one style active after an apply', () => {
+    registerNetwork('net1')
+    const applied = visualStyleApi.applyVisualStyle('net1', sourceStyle(), {
+      name: 'Blue',
+    })
+    expect(applied.success).toBe(true)
+    if (!applied.success) return
+
+    const result = visualStyleApi.getStyles('net1')
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.styles).toHaveLength(2)
+    expect(result.data.styles.filter((s) => s.active)).toEqual([
+      { id: applied.data.styleId, name: 'Blue', active: true },
+    ])
+  })
+})
+
+describe('switchStyle', () => {
+  /** A network with a second, non-active style named "Blue". */
+  const withTwoStyles = (): { originalId: IdType; blueId: IdType } => {
+    registerNetwork('net1')
+    const originalId = styleSetOf('net1').activeStyleId
+    const applied = visualStyleApi.applyVisualStyle('net1', sourceStyle(), {
+      name: 'Blue',
+    })
+    if (!applied.success) throw new Error('fixture failed')
+    // Back to the original, so "Blue" is present but not active
+    visualStyleApi.switchStyle('net1', originalId)
+    vi.clearAllMocks()
+    return { originalId, blueId: applied.data.styleId }
+  }
+
+  it('fails with APP1 for a network with no style set in memory', () => {
+    const result = visualStyleApi.switchStyle('nope', 'whatever')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+
+  it('fails with APP15 for a style the network does not own', () => {
+    registerNetwork('net1')
+    const activeStyleId = styleSetOf('net1').activeStyleId
+
+    const result = visualStyleApi.switchStyle('net1', 'not-my-style')
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.STYLE_NOT_FOUND.code)
+    }
+    expect(styleSetOf('net1').activeStyleId).toBe(activeStyleId)
+  })
+
+  it('fails with APP15 for an id belonging to another network', () => {
+    registerNetwork('net1')
+    registerNetwork('net2')
+
+    const result = visualStyleApi.switchStyle(
+      'net2',
+      styleSetOf('net1').activeStyleId,
+    )
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.STYLE_NOT_FOUND.code)
+    }
+  })
+
+  it('makes the target style active and restores its content', () => {
+    const { blueId } = withTwoStyles()
+
+    const result = visualStyleApi.switchStyle('net1', blueId)
+
+    expect(result.success).toBe(true)
+    expect(styleSetOf('net1').activeStyleId).toBe(blueId)
+    expect(activeStyleOf('net1')[VPN.NodeBackgroundColor].defaultValue).toBe(
+      '#123456',
+    )
+  })
+
+  it('records one SWITCH_STYLE undo entry and marks the network modified', () => {
+    const { originalId, blueId } = withTwoStyles()
+
+    visualStyleApi.switchStyle('net1', blueId)
+
+    expect(mockSetUndoStack).toHaveBeenCalledTimes(1)
+    const [networkId, stack] = mockSetUndoStack.mock.calls[0]
+    expect(networkId).toBe('net1')
+    expect(stack[0].undoCommand).toBe(UndoCommandType.SWITCH_STYLE)
+    expect(stack[0].description).toBe('Switch style to "Blue"')
+    expect(stack[0].undoParams).toEqual(['net1', originalId])
+    expect(stack[0].redoParams).toEqual(['net1', blueId])
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+
+  it('succeeds and does nothing when the style is already active', () => {
+    const { originalId } = withTwoStyles()
+
+    const result = visualStyleApi.switchStyle('net1', originalId)
+
+    expect(result.success).toBe(true)
+    // No undo entry and no modified mark: an app re-asserting a style must
+    // not dirty a clean network.
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('switches back and forth without losing either style s edits', () => {
+    const { originalId, blueId } = withTwoStyles()
+    const originalColor =
+      activeStyleOf('net1')[VPN.NodeBackgroundColor].defaultValue
+
+    visualStyleApi.switchStyle('net1', blueId)
+    visualStyleApi.setDefault('net1', VPN.NodeBackgroundColor, '#0000ff')
+    visualStyleApi.switchStyle('net1', originalId)
+
+    expect(activeStyleOf('net1')[VPN.NodeBackgroundColor].defaultValue).toBe(
+      originalColor,
+    )
+
+    visualStyleApi.switchStyle('net1', blueId)
+    expect(activeStyleOf('net1')[VPN.NodeBackgroundColor].defaultValue).toBe(
+      '#0000ff',
+    )
+  })
+})

@@ -488,3 +488,14 @@ or read the count first — `MAX_STYLES_PER_NETWORK` is exported from
 
 An `APP*` code rather than a `StyleCodes` one: the cap is a Cytoscape Web
 runtime limit with no corresponding CX2 validation rule.
+
+### APP15 — `STYLE_NOT_FOUND`
+
+**Severity:** error
+**Returned by:** `visualStyle.switchStyle`
+
+The network owns no named style with that id. Style ids are unique within one
+network's style set and mean nothing outside it, so an id read from one
+network cannot be used against another — copy the style with
+`getVisualStyle` + `applyVisualStyle` instead. Read the network's own ids with
+`getStyles`.

@@ -79,6 +79,16 @@ export interface ApplyVisualStyleOptions {
   name?: string
 }
 
+/** One named style a network owns, from getStyles(). */
+export interface NamedStyleInfo {
+  /** Unique within this network's style set, and meaningless outside it. */
+  id: IdType
+  /** Display name. Unique within the set, but not across networks. */
+  name: string
+  /** True for the one style that is rendered and edited. */
+  active: boolean
+}
+
 /** One visual property's identity and scope, from getVisualProperties(). */
 export interface VisualPropertyInfo {
   name: VisualPropertyName
@@ -147,6 +157,15 @@ export interface VisualStyleApi {
    * `APP1 NETWORK_NOT_FOUND`.
    */
   getVisualStyle(networkId: IdType): ApiResult<{ visualStyle: VisualStyle }>
+
+  /**
+   * List the named styles the network owns, in the order the style set
+   * holds them. Exactly one is `active`.
+   *
+   * Pair with `switchStyle` to move between styles the network already
+   * has, and with `applyVisualStyle` to add one it does not.
+   */
+  getStyles(networkId: IdType): ApiResult<{ styles: NamedStyleInfo[] }>
 
   // --- Write ---
 
@@ -246,6 +265,20 @@ export interface VisualStyleApi {
     visualStyle: VisualStyle,
     options?: ApplyVisualStyleOptions,
   ): ApiResult<{ styleId: IdType }>
+
+  /**
+   * Make one of the network's own named styles the active one. Ids come
+   * from `getStyles` or from `applyVisualStyle`, and mean nothing outside
+   * this network's style set.
+   *
+   * Recorded as one undo entry, like the Vizmapper's style picker.
+   * Switching to the style that is already active succeeds and does
+   * nothing — no undo entry, and the network is not marked modified.
+   *
+   * Fires `style:switched`, plus one `style:changed` per property that
+   * differs between the two styles.
+   */
+  switchStyle(networkId: IdType, styleId: IdType): ApiResult
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -414,6 +447,26 @@ export const visualStyleApi: VisualStyleApi = {
       // so handing it back would give the caller something it cannot touch
       // (the `appData.get` problem) and would keep changing under it.
       return ok({ visualStyle: cloneVisualStyle(style) })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  getStyles(networkId): ApiResult<{ styles: NamedStyleInfo[] }> {
+    try {
+      const styleSet = useVisualStyleStore.getState().styleSets[networkId]
+      if (styleSet === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      // Metadata only. The inactive entries hold their content inline and
+      // the active one's lives in the working copy, so returning content
+      // here would mean cloning the whole set to list two fields of it.
+      const styles = Object.values(styleSet.styles).map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        active: entry.id === styleSet.activeStyleId,
+      }))
+      return ok({ styles })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
@@ -858,6 +911,46 @@ export const visualStyleApi: VisualStyleApi = {
         markNetworkModified(networkId)
       }
       return ok({ styleId })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  switchStyle(networkId, styleId): ApiResult {
+    try {
+      const styleSet = useVisualStyleStore.getState().styleSets[networkId]
+      if (styleSet === undefined) {
+        return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
+      }
+      const target = styleSet.styles[styleId]
+      if (target === undefined) {
+        return fail(AppCodes.STYLE_NOT_FOUND, styleId, networkId)
+      }
+      // Already active: nothing changed, so no undo entry and no modified
+      // mark. An app that re-asserts a style on every event must not dirty
+      // a clean network — same reasoning as deleteBypass.
+      const previousStyleId = styleSet.activeStyleId
+      if (styleId === previousStyleId) {
+        return ok()
+      }
+
+      if (!useVisualStyleStore.getState().switchStyle(networkId, styleId)) {
+        // Both of the store's other refusals — unknown network, unknown
+        // style — are already ruled out above, so this is the entry whose
+        // content is missing: a set that broke its own invariant.
+        return fail(
+          AppCodes.OPERATION_FAILED,
+          `Style ${styleId} of network ${networkId} has no content`,
+        )
+      }
+      corePostEdit(
+        networkId,
+        UndoCommandType.SWITCH_STYLE,
+        `Switch style to "${target.name}"`,
+        [networkId, previousStyleId],
+        [networkId, styleId],
+      )
+      return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }

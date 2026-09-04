@@ -35,6 +35,14 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   it active, so later edits to either side are independent. Bypasses are
   dropped (they name the source network's elements). `getVisualStyle` likewise
   returns a detached deep copy.
+- **`VisualStyleApi.getStyles(networkId)` and `switchStyle(networkId, styleId)`**
+  (#702) — a network owns a set of named styles; these list it and move between
+  them. New type `NamedStyleInfo` (`{ id, name, active }`) and new error code
+  `APP15` `STYLE_NOT_FOUND`. Style ids are unique within one network's set and
+  mean nothing outside it, so an id from another network reports `APP15` —
+  copy across networks with `getVisualStyle` + `applyVisualStyle`. Switching to
+  the already-active style succeeds and does nothing, so re-asserting a style
+  does not dirty a clean network.
 - **`style:switched` event** — `{ networkId, styleId, previousStyleId }`, fired
   when a network's active named style changes (the Vizmapper's style picker,
   `applyVisualStyle`, an undone switch, or deleting the active style). A switch

@@ -906,9 +906,14 @@ subscription in `initEventBus` fires on any property change).
 ### A network owns several named styles
 
 A network's visual style is one entry in a set of named styles it owns; the
-active entry is the one rendered and edited, and it is what every method here
-reads and writes. `applyVisualStyle` adds a style to that set and makes it
-active. The set holds at most `MAX_STYLES_PER_NETWORK` (50) entries.
+active entry is the one rendered and edited, and it is what every per-property
+method here reads and writes. `getStyles` lists the set, `switchStyle` moves
+between styles the network already has, and `applyVisualStyle` adds one it does
+not. The set holds at most `MAX_STYLES_PER_NETWORK` (50) entries.
+
+Style ids are unique within one network's set and mean nothing outside it.
+There is no workspace-wide registry of styles, and no way to make two networks
+follow one live style — see the copy semantics under `applyVisualStyle`.
 
 Only a network whose style is loaded in memory can be read or written — a
 workspace network that has never been opened reports `APP1`.
@@ -929,6 +934,13 @@ interface VisualPropertyInfo {
 /** Options bundle for applyVisualStyle. */
 interface ApplyVisualStyleOptions {
   name?: string // name of the new named-style entry; default "Imported style"
+}
+
+/** One named style a network owns, from getStyles(). */
+interface NamedStyleInfo {
+  id: IdType // unique within this network's style set only
+  name: string // unique within the set, but not across networks
+  active: boolean // true for the one style rendered and edited
 }
 
 /** Options bundle for createContinuousMapping. */
@@ -990,6 +1002,22 @@ if (read.success) {
   visualStyleApi.applyVisualStyle(targetNetworkId, read.data.visualStyle, {
     name: 'Copied from source',
   })
+}
+```
+
+#### `getStyles(networkId): ApiResult<{ styles: NamedStyleInfo[] }>`
+
+Lists the named styles the network owns, in the order the style set holds
+them. Exactly one entry is `active`. Metadata only — read the active style's
+content with `getVisualStyle`.
+
+```typescript
+const listed = visualStyleApi.getStyles(networkId)
+if (listed.success) {
+  const publication = listed.data.styles.find((s) => s.name === 'Publication')
+  if (publication !== undefined) {
+    visualStyleApi.switchStyle(networkId, publication.id)
+  }
 }
 ```
 
@@ -1170,6 +1198,26 @@ if (read.success) {
 
 Nothing is applied when the call fails; every check runs before the store is
 touched.
+
+#### `switchStyle(networkId, styleId): ApiResult`
+
+Makes one of the network's own named styles the active one. Ids come from
+`getStyles` or from `applyVisualStyle`, and mean nothing outside this network's
+style set — an id read from another network reports `APP15`, not a
+cross-network apply. Use `getVisualStyle` + `applyVisualStyle` for that.
+
+Recorded as one undo entry, like the Vizmapper's style picker. Switching to the
+style that is **already active** succeeds and does nothing: no undo entry, and
+the network is not marked modified, so an app that re-asserts a style on every
+event cannot dirty a clean network.
+
+Fires `style:switched`, then one `style:changed` per property that differs
+between the two styles.
+
+| Error Code | Condition                                            |
+| ---------- | ---------------------------------------------------- |
+| `APP1`     | `networkId` has no style set in memory               |
+| `APP15`    | the network owns no style with that `styleId`        |
 
 `APP9` covers the structural check on `visualStyle`: it must be an object with
 at least one entry keyed by a `VisualPropertyName`, and every such entry must
@@ -2474,7 +2522,7 @@ Also triggered by TableApi write methods.
 | `selectionApi.exclusiveSelect` / `additiveSelect` / `additiveDeselect` / `toggleSelected` / `clearSelection`               | `selection:changed`                                                                      |
 | `layoutApi.applyLayout`                                                                                                    | `layout:started`, `layout:completed`                                                     |
 | `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `deleteMapping`                            | `style:changed` (×per property)                                                          |
-| `visualStyleApi.applyVisualStyle`                                                                                          | `style:switched`, then `style:changed` (×per property differing between the two styles) |
+| `visualStyleApi.applyVisualStyle` / `switchStyle`                                                                          | `style:switched`, then `style:changed` (×per property differing between the two styles) |
 | `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `renameColumn` / `applyValueToElements` | `data:changed`                                                                           |
 | `contextMenuApi.addContextMenuItem` / `removeContextMenuItem`                                                              | _(no events — synchronous store mutation only)_                                          |
 

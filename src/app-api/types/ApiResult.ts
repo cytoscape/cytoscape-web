@@ -355,6 +355,13 @@ export const AppCodes = {
     message: (networkId: string, limit: number) =>
       `Network ${networkId} already owns the maximum of ${limit} visual styles`,
   },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app15 */
+  STYLE_NOT_FOUND: {
+    code: 'APP15',
+    severity: 'error',
+    message: (styleId: string, networkId: string) =>
+      `Network ${networkId} owns no visual style "${styleId}"`,
+  },
 } as const satisfies Record<string, ApiErrorCodeDef>
 
 /**
