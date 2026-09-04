@@ -206,7 +206,7 @@ exception: it writes only the browser-local style library and leaves the
 network untouched.
 
 Clicking the row opens **`StylePickerDialog`**, a modal grid of style previews in
-three sections. The sections exist because a style belongs to one network and
+four sections. The sections exist because a style belongs to one network and
 moving one across networks copies it (§1) — they are what tell the user whether a
 click switches or copies:
 
@@ -215,6 +215,7 @@ click switches or copies:
 | This Network     | `styleSets[networkId]`                  | switches (undoable)         |
 | Other Networks   | `getStyleSetMetadataFromDb` (IndexedDB) | copies in via `importStyle` |
 | Workspace Styles | `useStyleLibraryStore`                  | copies in via `importStyle` |
+| General Styles   | `PRESET_VISUAL_STYLES`                  | copies in via `importStyle` |
 
 Cytoscape Desktop pools every style into one flat list instead; it can only do
 that because its styles are session-global and shared live.
