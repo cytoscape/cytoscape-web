@@ -66,7 +66,7 @@ export const StyleLibraryDialog = (
         maxWidth="sm"
         data-testid="style-library-dialog"
       >
-        <DialogTitle>Style Library</DialogTitle>
+        <DialogTitle>Workspace Styles</DialogTitle>
         <DialogContent>
           {templateList.length === 0 ? (
             <Typography
@@ -74,8 +74,9 @@ export const StyleLibraryDialog = (
               sx={{ color: 'text.secondary', py: 2 }}
               data-testid="style-library-empty-message"
             >
-              No styles in the library yet. Use &ldquo;Save Style to
-              Library&rdquo; in the style menu to add the current style.
+              No workspace styles yet. Use &ldquo;Save Style to Workspace&rdquo;
+              in the style menu to add the current style. Workspace styles stay
+              in this browser and are available to every network here.
             </Typography>
           ) : (
             <List dense data-testid="style-library-list">
@@ -128,7 +129,7 @@ export const StyleLibraryDialog = (
       </CyDialog>
       <StyleNameDialog
         open={renameTarget !== undefined}
-        title="Rename Library Style"
+        title="Rename Workspace Style"
         confirmLabel="Rename"
         initialName={renameTarget?.name ?? ''}
         onConfirm={(name) => {
@@ -147,10 +148,10 @@ export const StyleLibraryDialog = (
         open={deleteTarget !== undefined}
         data-testid="style-library-delete-dialog"
       >
-        <DialogTitle>Delete Library Style</DialogTitle>
+        <DialogTitle>Delete Workspace Style</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Delete the library style &ldquo;{deleteTarget?.name}&rdquo;? This
+            Delete the workspace style &ldquo;{deleteTarget?.name}&rdquo;? This
             cannot be undone. Networks already using a copy of it are not
             affected.
           </DialogContentText>

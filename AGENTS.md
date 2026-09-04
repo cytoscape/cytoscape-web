@@ -225,7 +225,7 @@ Read these before working in related areas:
 
 - `docs/specifications/STARTUP_SPECIFICATION.md` — boot phase contract, failure policy, timing milestones
 - `docs/specifications/ROUTING_SPECIFICATION.md` — URL routing rules, navigation patterns, search parameter handling
-- `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, style library
+- `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, workspace styles (style library)
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/DIALOG_DISMISS_POLICY.md` — button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
