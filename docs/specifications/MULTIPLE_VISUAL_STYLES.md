@@ -143,9 +143,16 @@ about.
 Two things the in-app path gets for free and the API has to do itself:
 
 - **Validate the style.** An app passes an arbitrary object, so
-  `isValidVisualStyle` (`impl/visualStyleSetImpl.ts`) checks it before
-  anything is stored. Without it a malformed style becomes the active one and
-  fails later inside `CyjsRenderer` with nothing naming the caller.
+  `visualStyleProblem` (`impl/visualStyleSetImpl.ts`) checks it before anything
+  is stored, and its reason string becomes the `APP9` message. Without it a
+  malformed style becomes the active one and fails later inside `CyjsRenderer`
+  with nothing naming the caller. `VisualStyle` is a TOTAL record over
+  `VisualPropertyName`, so a PARTIAL style is rejected too rather than merged
+  over the defaults — applying one would silently drop every property it omits,
+  and "make B look like A" is not served by substituting CW defaults for what A
+  did not mention. Every style the host produces is complete: `createVisualStyle`,
+  the presets, and `createVisualStyleFromCx` (which starts from the default
+  style) all carry the full set.
 - **Establish WHY an import failed.** `importStyle` reports both an unknown
   network and a full set as `undefined`, so the API reads the set size against
   `MAX_STYLES_PER_NETWORK` itself and returns `APP14` rather than guessing.

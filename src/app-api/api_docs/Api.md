@@ -1199,6 +1199,26 @@ if (read.success) {
 Nothing is applied when the call fails; every check runs before the store is
 touched.
 
+`APP9` covers the structural check on `visualStyle`. It must be a **complete**
+style: every `VisualPropertyName` present, each one an object carrying a valid
+`group` (`'node'`/`'edge'`/`'network'`), a `type`, a `defaultValue`, and — when
+present — a `mapping` with a known `type`
+(`'passthrough'`/`'discrete'`/`'continuous'`) and an `attribute`. The message
+names what is wrong (`"visualStyle missing 65 of 66 visual properties (…)"`,
+`"visualStyle edgeWidth has no defaultValue"`).
+
+A partial style is rejected rather than merged over the defaults. This method
+is "make B look like A", and quietly substituting Cytoscape Web defaults for
+the properties A did not mention would not do that. Every style the host
+produces is complete, so `getVisualStyle` output always passes; build a style
+from scratch with `setDefault` and `create*Mapping` instead of hand-assembling
+one to pass here.
+
+Keys that are not visual property names are ignored, and `bypassMap` is not
+checked since bypasses are stripped anyway. Property **values** are not
+validated here — per-property validation belongs to `setDefault`, which can say
+which property failed.
+
 #### `switchStyle(networkId, styleId): ApiResult`
 
 Makes one of the network's own named styles the active one. Ids come from
@@ -1218,16 +1238,6 @@ between the two styles.
 | ---------- | ---------------------------------------------------- |
 | `APP1`     | `networkId` has no style set in memory               |
 | `APP15`    | the network owns no style with that `styleId`        |
-
-`APP9` covers the structural check on `visualStyle`: it must be an object with
-at least one entry keyed by a `VisualPropertyName`, and every such entry must
-carry a valid `group` (`'node'`/`'edge'`/`'network'`), a `type`, a
-`defaultValue`, and — when present — a `mapping` with a known `type`
-(`'passthrough'`/`'discrete'`/`'continuous'`) and an `attribute`. Unknown keys
-are ignored, and `bypassMap` is not checked since bypasses are stripped anyway.
-Property **values** are not validated here — a style read from
-`getVisualStyle` is already valid, and per-property validation belongs to
-`setDefault`, which can say which property failed.
 
 All methods in this API return `APP1` if the visual style for `networkId` is not found.
 

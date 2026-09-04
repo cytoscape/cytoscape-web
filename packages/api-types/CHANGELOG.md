@@ -34,7 +34,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   view, this deep-copies the style into the network's named-style set and makes
   it active, so later edits to either side are independent. Bypasses are
   dropped (they name the source network's elements). `getVisualStyle` likewise
-  returns a detached deep copy.
+  returns a detached deep copy. `applyVisualStyle` requires a **complete**
+  style — every `VisualPropertyName` present — and reports `APP9` with what is
+  wrong otherwise; a partial style is rejected rather than merged over the
+  defaults, since applying one would silently drop the properties it omits.
 - **`VisualStyleApi.getStyles(networkId)` and `switchStyle(networkId, styleId)`**
   (#702) — a network owns a set of named styles; these list it and move between
   them. New type `NamedStyleInfo` (`{ id, name, active }`) and new error code

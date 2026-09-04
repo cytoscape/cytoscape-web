@@ -135,14 +135,11 @@ export const uniqueStyleName = (
 }
 
 /**
- * Every key the runtime treats as a visual property. A style object can also
- * carry fields the VisualStyle type does not describe (see
- * `visualStyleApi.getVisualProperties`, which filters them out the same way),
- * so validation ignores unknown keys instead of rejecting them.
+ * Every key a `VisualStyle` must carry. `VisualStyle` is a TOTAL record over
+ * `VisualPropertyName`, so a style missing any of these is not one — the
+ * network would silently lose the properties it omits.
  */
-const KNOWN_VP_NAMES: ReadonlySet<string> = new Set(
-  Object.values(VisualPropertyName),
-)
+const REQUIRED_VP_NAMES: readonly string[] = Object.values(VisualPropertyName)
 
 const VP_GROUPS: ReadonlySet<string> = new Set(
   Object.values(VisualPropertyGroup),
@@ -152,63 +149,101 @@ const MAPPING_TYPES: ReadonlySet<string> = new Set(
   Object.values(MappingFunctionType),
 )
 
+/** How many missing property names a rejection message lists before "…". */
+const MAX_NAMES_IN_PROBLEM = 5
+
 const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
- * Structural check on a visual style supplied from outside the host —
- * an app passing one to `visualStyleApi.applyVisualStyle`, say.
+ * Explain why a value is not a usable `VisualStyle`, or return undefined when
+ * it is one. `isValidVisualStyle` is the boolean form; callers that report the
+ * failure to someone (the app API's `applyVisualStyle`) use this one, so the
+ * error names what is actually wrong instead of restating the contract.
  *
- * Without it a malformed object becomes a network's active style and the
- * failure surfaces later, in the renderer, with nothing naming the caller.
+ * The check exists because a style supplied from outside the host — an app
+ * passing one to `applyVisualStyle` — becomes what the renderer reads. Without
+ * it a malformed object fails later, inside `CyjsRenderer`, with nothing
+ * naming the caller.
  *
- * What is checked: every entry whose key is a known `VisualPropertyName`
- * must be an object with a valid `group`, a `type`, a `defaultValue`, and —
- * when present — a `mapping` with a known `type` and an `attribute`. At
- * least one such entry must exist. Unknown keys are ignored (a real style
- * object carries some).
+ * What is checked:
+ *
+ * - Every `VisualPropertyName` is present. A partial style is rejected rather
+ *   than merged over the defaults: this API is "make B look like A", and
+ *   quietly substituting Cytoscape Web defaults for the properties A did not
+ *   mention would not do that. Every style the host produces is complete —
+ *   `createVisualStyle`, the presets, and `createVisualStyleFromCx` (which
+ *   starts from the default style) all carry the full set.
+ * - Every such entry is an object with a valid `group`, a `type`, a
+ *   `defaultValue`, and — when present — a `mapping` with a known `type` and
+ *   an `attribute`.
+ *
+ * Keys that are not visual property names are ignored, not rejected: a stored
+ * style can carry fields the `VisualStyle` type does not describe, and
+ * `visualStyleApi.getVisualProperties` skips them the same way.
  *
  * What is NOT checked: `bypassMap`, because every consumer of an external
- * style strips bypasses first (they are keyed by the source network's
- * element ids), and property VALUES, because `validateVisualPropertyValue`
- * in the app API owns that per-property and reports which one failed.
+ * style strips bypasses first (they are keyed by the source network's element
+ * ids), and property VALUES, because `validateVisualPropertyValue` in the app
+ * API owns that per-property and reports which one failed.
  */
-export const isValidVisualStyle = (value: unknown): value is VisualStyle => {
+export const visualStyleProblem = (value: unknown): string | undefined => {
   if (!isPlainRecord(value)) {
-    return false
+    return 'expected an object keyed by VisualPropertyName'
   }
-  let knownCount = 0
-  for (const [vpName, vp] of Object.entries(value)) {
-    if (!KNOWN_VP_NAMES.has(vpName)) {
-      continue
-    }
-    knownCount += 1
+
+  const missing = REQUIRED_VP_NAMES.filter(
+    (vpName) => value[vpName] === undefined,
+  )
+  if (missing.length > 0) {
+    const listed = missing.slice(0, MAX_NAMES_IN_PROBLEM).join(', ')
+    const rest = missing.length > MAX_NAMES_IN_PROBLEM ? ', …' : ''
+    return (
+      `missing ${missing.length} of ${REQUIRED_VP_NAMES.length} visual ` +
+      `properties (${listed}${rest})`
+    )
+  }
+
+  for (const vpName of REQUIRED_VP_NAMES) {
+    const vp = value[vpName]
     if (!isPlainRecord(vp)) {
-      return false
+      return `${vpName} is not a visual property object`
     }
     if (typeof vp.group !== 'string' || !VP_GROUPS.has(vp.group)) {
-      return false
+      return `${vpName} has no valid group (node, edge or network)`
     }
     if (typeof vp.type !== 'string' || vp.type === '') {
-      return false
+      return `${vpName} has no type`
     }
     if (vp.defaultValue === undefined) {
-      return false
+      return `${vpName} has no defaultValue`
     }
-    if (vp.mapping !== undefined) {
-      if (!isPlainRecord(vp.mapping)) {
-        return false
-      }
-      if (
-        typeof vp.mapping.type !== 'string' ||
-        !MAPPING_TYPES.has(vp.mapping.type)
-      ) {
-        return false
-      }
-      if (typeof vp.mapping.attribute !== 'string') {
-        return false
-      }
+    if (vp.mapping === undefined) {
+      continue
+    }
+    if (!isPlainRecord(vp.mapping)) {
+      return `${vpName} has a mapping that is not an object`
+    }
+    if (
+      typeof vp.mapping.type !== 'string' ||
+      !MAPPING_TYPES.has(vp.mapping.type)
+    ) {
+      return (
+        `${vpName} has a mapping with no valid type ` +
+        '(passthrough, discrete or continuous)'
+      )
+    }
+    if (typeof vp.mapping.attribute !== 'string') {
+      return `${vpName} has a mapping with no attribute`
     }
   }
-  return knownCount > 0
+
+  return undefined
 }
+
+/**
+ * True when `value` is a complete, well-formed `VisualStyle`.
+ * See {@link visualStyleProblem} for what that means and why.
+ */
+export const isValidVisualStyle = (value: unknown): value is VisualStyle =>
+  visualStyleProblem(value) === undefined

@@ -173,41 +173,50 @@ describe('applyVisualStyle', () => {
     }
   })
 
+  /** A complete style with one property replaced by `vp`. */
+  const styleWith = (vpName: string, vp: unknown): unknown => {
+    const style: any = sourceStyle()
+    style[vpName] = vp
+    return style
+  }
+
   it.each([
     ['null', null],
     ['an array', []],
     ['an object with no visual property', { notAProperty: 1 }],
     [
+      'a partial style, however well-formed',
+      { [VPN.NodeShape]: createVisualStyle()[VPN.NodeShape] },
+    ],
+    ['a property that is not an object', styleWith(VPN.NodeShape, 'diamond')],
+    [
       'a property with no group',
-      { [VPN.NodeLabel]: { type: 'string', defaultValue: '' } },
+      styleWith(VPN.NodeLabel, { type: 'string', defaultValue: '' }),
     ],
     [
       'a property with an unknown group',
-      {
-        [VPN.NodeLabel]: {
-          group: 'hyperedge',
-          type: 'string',
-          defaultValue: '',
-        },
-      },
+      styleWith(VPN.NodeLabel, {
+        group: 'hyperedge',
+        type: 'string',
+        defaultValue: '',
+      }),
     ],
     [
       'a property with no defaultValue',
-      { [VPN.NodeLabel]: { group: 'node', type: 'string' } },
+      styleWith(VPN.NodeLabel, { group: 'node', type: 'string' }),
     ],
     [
       'a mapping with an unknown type',
-      {
-        [VPN.NodeLabel]: {
-          group: 'node',
-          type: 'string',
-          defaultValue: '',
-          mapping: { type: 'quadratic', attribute: 'name' },
-        },
-      },
+      styleWith(VPN.NodeLabel, {
+        group: 'node',
+        type: 'string',
+        defaultValue: '',
+        mapping: { type: 'quadratic', attribute: 'name' },
+      }),
     ],
   ])('fails with APP9 for %s', (_label, malformed) => {
     registerNetwork('net1')
+    const activeStyleId = styleSetOf('net1').activeStyleId
     const styleCountBefore = Object.keys(styleSetOf('net1').styles).length
 
     const result = visualStyleApi.applyVisualStyle(
@@ -223,6 +232,31 @@ describe('applyVisualStyle', () => {
     expect(Object.keys(styleSetOf('net1').styles)).toHaveLength(
       styleCountBefore,
     )
+    expect(styleSetOf('net1').activeStyleId).toBe(activeStyleId)
+  })
+
+  it('names the problem in the APP9 message', () => {
+    registerNetwork('net1')
+
+    const partial = visualStyleApi.applyVisualStyle('net1', {
+      [VPN.NodeShape]: createVisualStyle()[VPN.NodeShape],
+    } as unknown as VisualStyle)
+    const broken = visualStyleApi.applyVisualStyle(
+      'net1',
+      styleWith(VPN.EdgeWidth, {
+        group: 'edge',
+        type: 'number',
+      }) as VisualStyle,
+    )
+
+    expect(partial.success).toBe(false)
+    if (!partial.success) {
+      expect(partial.error.message).toContain('missing 65 of 66')
+    }
+    expect(broken.success).toBe(false)
+    if (!broken.success) {
+      expect(broken.error.message).toContain('edgeWidth has no defaultValue')
+    }
   })
 
   it('adds the style to the set and makes it active', () => {

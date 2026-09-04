@@ -25,7 +25,7 @@ import {
 } from '../../models/VisualStyleModel'
 import {
   cloneVisualStyle,
-  isValidVisualStyle,
+  visualStyleProblem,
 } from '../../models/VisualStyleModel/impl/visualStyleSetImpl'
 import {
   AppCodes,
@@ -856,13 +856,11 @@ export const visualStyleApi: VisualStyleApi = {
       }
       // The one place an arbitrary object from an app becomes what the
       // renderer reads. Without this check a malformed style fails later,
-      // inside CyjsRenderer, with nothing naming the caller.
-      if (!isValidVisualStyle(visualStyle)) {
-        return fail(
-          AppCodes.INVALID_INPUT,
-          'visualStyle is not a visual style: expected an object keyed by ' +
-            'VisualPropertyName whose entries carry group, type and defaultValue',
-        )
+      // inside CyjsRenderer, with nothing naming the caller — hence the
+      // reason string rather than a bare boolean.
+      const problem = visualStyleProblem(visualStyle)
+      if (problem !== undefined) {
+        return fail(AppCodes.INVALID_INPUT, `visualStyle ${problem}`)
       }
       const styleSet = store.styleSets[networkId]
       if (styleSet === undefined) {

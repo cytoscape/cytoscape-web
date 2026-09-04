@@ -13,6 +13,7 @@ import {
   isValidVisualStyle,
   stripBypasses,
   uniqueStyleName,
+  visualStyleProblem,
 } from './visualStyleSetImpl'
 
 describe('cloneVisualStyle', () => {
@@ -158,6 +159,13 @@ describe('uniqueStyleName', () => {
 })
 
 describe('isValidVisualStyle', () => {
+  /** A complete style with one property replaced by `vp`. */
+  const styleWith = (vpName: string, vp: unknown): any => {
+    const style: any = createVisualStyle()
+    style[vpName] = vp
+    return style
+  }
+
   it('should accept a style built by the host', () => {
     expect(isValidVisualStyle(createVisualStyle())).toBe(true)
   })
@@ -174,8 +182,8 @@ describe('isValidVisualStyle', () => {
   })
 
   it('should accept a style carrying unknown extra fields', () => {
-    // A runtime style object does carry fields the VisualStyle type does not
-    // describe; visualStyleApi.getVisualProperties skips them the same way.
+    // A stored style can carry fields the VisualStyle type does not describe;
+    // visualStyleApi.getVisualProperties skips them the same way.
     const style: any = createVisualStyle()
     style.someInternalField = { whatever: true }
     expect(isValidVisualStyle(style)).toBe(true)
@@ -194,59 +202,77 @@ describe('isValidVisualStyle', () => {
     expect(isValidVisualStyle({ someInternalField: 1 })).toBe(false)
   })
 
+  it('should reject a PARTIAL style, however well-formed', () => {
+    // VisualStyle is a total record over VisualPropertyName. Applying a
+    // partial one would silently drop every property it omits from the
+    // network's style, with no way back except switching styles.
+    const complete: any = createVisualStyle()
+    const onlyNodeShape = { nodeShape: complete.nodeShape }
+
+    expect(isValidVisualStyle(onlyNodeShape)).toBe(false)
+    expect(visualStyleProblem(onlyNodeShape)).toContain('missing')
+
+    delete complete.edgeWidth
+    expect(isValidVisualStyle(complete)).toBe(false)
+    expect(visualStyleProblem(complete)).toContain('edgeWidth')
+  })
+
   it('should reject a property that is not an object', () => {
-    expect(isValidVisualStyle({ nodeShape: 'diamond' })).toBe(false)
+    expect(isValidVisualStyle(styleWith('nodeShape', 'diamond'))).toBe(false)
   })
 
   it('should reject a property with a missing or unknown group', () => {
     expect(
-      isValidVisualStyle({
-        nodeShape: { type: 'nodeShape', defaultValue: 'ellipse' },
-      }),
+      isValidVisualStyle(
+        styleWith('nodeShape', { type: 'nodeShape', defaultValue: 'ellipse' }),
+      ),
     ).toBe(false)
     expect(
-      isValidVisualStyle({
-        nodeShape: {
+      isValidVisualStyle(
+        styleWith('nodeShape', {
           group: 'hyperedge',
           type: 'nodeShape',
           defaultValue: 'ellipse',
-        },
-      }),
+        }),
+      ),
     ).toBe(false)
   })
 
   it('should reject a property with no type or no defaultValue', () => {
     expect(
-      isValidVisualStyle({
-        nodeShape: { group: 'node', defaultValue: 'ellipse' },
-      }),
+      isValidVisualStyle(
+        styleWith('nodeShape', { group: 'node', defaultValue: 'ellipse' }),
+      ),
     ).toBe(false)
     expect(
-      isValidVisualStyle({ nodeShape: { group: 'node', type: 'nodeShape' } }),
+      isValidVisualStyle(
+        styleWith('nodeShape', { group: 'node', type: 'nodeShape' }),
+      ),
     ).toBe(false)
   })
 
   it('should reject a malformed mapping', () => {
-    const base = {
-      group: 'node',
-      type: 'string',
-      defaultValue: '',
-    }
+    const base = { group: 'node', type: 'string', defaultValue: '' }
     expect(
-      isValidVisualStyle({ nodeLabel: { ...base, mapping: 'passthrough' } }),
+      isValidVisualStyle(
+        styleWith('nodeLabel', { ...base, mapping: 'passthrough' }),
+      ),
     ).toBe(false)
     expect(
-      isValidVisualStyle({
-        nodeLabel: { ...base, mapping: { type: 'quadratic', attribute: 'x' } },
-      }),
+      isValidVisualStyle(
+        styleWith('nodeLabel', {
+          ...base,
+          mapping: { type: 'quadratic', attribute: 'x' },
+        }),
+      ),
     ).toBe(false)
     expect(
-      isValidVisualStyle({
-        nodeLabel: {
+      isValidVisualStyle(
+        styleWith('nodeLabel', {
           ...base,
           mapping: { type: MappingFunctionType.Discrete },
-        },
-      }),
+        }),
+      ),
     ).toBe(false)
   })
 
@@ -254,5 +280,26 @@ describe('isValidVisualStyle', () => {
     const style: any = createVisualStyle()
     style.nodeShape.bypassMap = { 'not-a': 'map' }
     expect(isValidVisualStyle(style)).toBe(true)
+  })
+})
+
+describe('visualStyleProblem', () => {
+  it('should return undefined for a valid style', () => {
+    expect(visualStyleProblem(createVisualStyle())).toBeUndefined()
+  })
+
+  it('should name the offending property', () => {
+    const style: any = createVisualStyle()
+    style.edgeWidth = { group: 'edge', type: 'number' }
+    expect(visualStyleProblem(style)).toBe('edgeWidth has no defaultValue')
+  })
+
+  it('should report how many properties are missing, and name a few', () => {
+    const problem = visualStyleProblem({
+      nodeShape: createVisualStyle().nodeShape,
+    })
+    expect(problem).toMatch(/missing 65 of 66 visual properties \(/)
+    // Truncated rather than listing all 65
+    expect(problem).toContain('…')
   })
 })
