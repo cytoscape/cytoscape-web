@@ -166,36 +166,12 @@ export default function TableBrowser(props: {
   )
   const moveColumn = useTableStore((state) => state.moveColumn)
 
+  // Still needed for the two display-configuration-only paths that record no
+  // undo entry: column move/resize (columnHandlers) and the toolbar's sort,
+  // duplicate and insert-column buttons. Everything else in this component
+  // marks the network through `postEdit` (#680).
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
-
-  // TODO reenable this when we figure out why this sometimes blocks the UI when switching to/from a hcx network
-  // set the network to 'modified' when the table data is modified
-  // useTableStore.subscribe(
-  //   (state) => state.tables[networkId],
-  //   (next: TableRecord, prev: TableRecord) => {
-  //     if (prev === undefined || next === undefined) {
-  //       return
-  //     }
-
-  //     console.log('Table data changed', prev, next)
-  //     // Check if any table data has changed (excluding the selected rows/columns)
-  //     const tableDataChanged =
-  //       !_.isEqual(prev.nodeTable, next.nodeTable) ||
-  //       !_.isEqual(prev.edgeTable, next.edgeTable)
-
-  //     const { networkModified } = workspace
-
-  //     const currentNetworkIsNotModified =
-  //       networkModified[networkId] === undefined ||
-  //       networkModified[networkId] === false
-
-  //     // If table data changed and the network is not already marked as modified, set it to modified
-  //     if (tableDataChanged && currentNetworkIsNotModified) {
-  //       setNetworkModified(networkId, true)
-  //     }
-  //   },
-  // )
 
   const nodeTable = tables[networkId]?.nodeTable
   const edgeTable = tables[networkId]?.edgeTable
@@ -249,10 +225,8 @@ export default function TableBrowser(props: {
       currentTable,
       nodeTable,
       currentNetworkId: props.currentNetworkId,
-      networkId,
       postEdit,
       setCellValue,
-      setNetworkModified,
     })
 
   const onColMoved = React.useCallback(
@@ -373,7 +347,6 @@ export default function TableBrowser(props: {
         currentNetworkId: props.currentNetworkId,
         postEdit,
         setCellValue,
-        setNetworkModified: (id, modified) => setNetworkModified(id, modified),
       })
     },
     [
@@ -382,7 +355,6 @@ export default function TableBrowser(props: {
       rows,
       allColumns,
       postEdit,
-      setNetworkModified,
       nodeTable,
       setCellValue,
     ],
@@ -400,7 +372,6 @@ export default function TableBrowser(props: {
         nodeTable,
         postEdit,
         setValues,
-        setNetworkModified: (id, modified) => setNetworkModified(id, modified),
       })
     },
     [
@@ -411,7 +382,6 @@ export default function TableBrowser(props: {
       nodeTable,
       postEdit,
       setValues,
-      setNetworkModified,
     ],
   )
 
@@ -586,7 +556,6 @@ export default function TableBrowser(props: {
         currentNetworkId={props.currentNetworkId}
         postEdit={postEdit}
         applyValueToElements={applyValueToElemenets}
-        setNetworkModified={(id, mod) => setNetworkModified(id, mod)}
         exclusiveSelect={exclusiveSelect}
         selection={selection}
         setSelection={setSelection}

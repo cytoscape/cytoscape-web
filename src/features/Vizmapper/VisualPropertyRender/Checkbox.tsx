@@ -21,6 +21,9 @@ export const LockSizeCheckbox = (props: { currentNetworkId: IdType }) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newStatus = event.target.checked
     setNodeSizeLockedState(currentNetworkId, newStatus)
+    // Writes visualStyleOptions in UiStateStore, not the visual style, and
+    // records no undo entry — so it marks the network itself rather than
+    // through postEdit (#680).
     setNetworkModified(currentNetworkId, true)
   }
 

@@ -10,10 +10,11 @@ import {
   handleSelectFromSelection,
 } from './contextMenuActions'
 
+// The `networkModified` flag is no longer asserted here: as of #680 it is set
+// by `postEdit` (see `src/app-api/core/undo.test.ts`), not by these handlers.
 describe('contextMenuActions', () => {
   const mockPostEdit = vi.fn()
   const mockApplyValueToElements = vi.fn()
-  const mockSetNetworkModified = vi.fn()
   const mockHandleContextMenuClose = vi.fn()
   const mockExclusiveSelect = vi.fn()
   const mockSetSelection = vi.fn()
@@ -44,7 +45,6 @@ describe('contextMenuActions', () => {
     currentNetworkId: networkId,
     postEdit: mockPostEdit,
     applyValueToElements: mockApplyValueToElements,
-    setNetworkModified: mockSetNetworkModified,
     handleContextMenuClose: mockHandleContextMenuClose,
   }
 
@@ -79,7 +79,6 @@ describe('contextMenuActions', () => {
         undefined, // Undefined means all elements
       )
 
-      expect(mockSetNetworkModified).toHaveBeenCalledWith(networkId, true)
       expect(mockHandleContextMenuClose).toHaveBeenCalled()
     })
   })

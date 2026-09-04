@@ -7,6 +7,7 @@ import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFuncti
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
+import { markNetworkModified } from './undo'
 import { validateNodesExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
@@ -95,7 +96,15 @@ export const viewportApi: ViewportApi = {
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      const missingNodes = validateNodesExist(networkId, Object.keys(positions))
+      // An empty record moves no node. Checked after the network lookup, so a
+      // bogus networkId still reports NETWORK_NOT_FOUND rather than silently
+      // succeeding.
+      const nodeIds = Object.keys(positions)
+      if (nodeIds.length === 0) {
+        return ok()
+      }
+
+      const missingNodes = validateNodesExist(networkId, nodeIds)
       if (missingNodes) return missingNodes
 
       // Convert PositionRecord (JSON-serializable) to Map required by store
@@ -103,6 +112,10 @@ export const viewportApi: ViewportApi = {
         Object.entries(positions) as Array<[IdType, [number, number, number?]]>,
       )
       useViewModelStore.getState().updateNodePositions(networkId, positionMap)
+      // No undo entry: MOVE_NODES is per-node and a batch reposition has no
+      // matching command. layoutApi's own moves already go through
+      // corePostEdit, which marks the network itself.
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

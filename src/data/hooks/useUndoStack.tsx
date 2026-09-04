@@ -1,5 +1,6 @@
 import { useCallback, useContext } from 'react'
 
+import { markNetworkModified } from '../../app-api/core/undo'
 import { AppConfigContext } from '../../AppConfigContext'
 import { logHistory } from '../../debug'
 import {
@@ -178,6 +179,11 @@ export const useUndoStack = () => {
         undoStackSize > 0
           ? [...currentUndoStack, newEdit].slice(-undoStackSize)
           : []
+
+      // Same choke point the app API uses (corePostEdit calls it too), so
+      // every recorded edit marks the network it mutated. Before the stack
+      // write, so undoStackSize: 0 still marks.
+      markNetworkModified(currentTargetNetworkId)
 
       setUndoStack(currentTargetNetworkId, nextUndoStack)
       setRedoStack(currentTargetNetworkId, [])
@@ -520,6 +526,13 @@ export const useUndoStack = () => {
         setUndoStack(latestTargetNetworkId, nextUndoStack)
         return
       }
+      // Replaying an edit leaves the network differing from what NDEx holds,
+      // so undo is itself a modification. It used to be marked as a side
+      // effect of the view-model/visual-style subscriptions in
+      // WorkspaceEditor; those are gone, and undoing after a save would
+      // otherwise leave the network looking saved.
+      markNetworkModified(latestTargetNetworkId)
+
       setRedoStack(latestTargetNetworkId, [...latestRedoStack, lastEdit])
       setUndoStack(latestTargetNetworkId, nextUndoStack)
     }
@@ -891,6 +904,9 @@ export const useUndoStack = () => {
         setRedoStack(latestTargetNetworkId, nextRedoStack)
         return
       }
+      // Redo is a modification for the same reason undo is.
+      markNetworkModified(latestTargetNetworkId)
+
       setRedoStack(latestTargetNetworkId, nextRedoStack)
       setUndoStack(latestTargetNetworkId, [...latestUndoStack, lastEdit])
     }

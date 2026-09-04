@@ -9,10 +9,12 @@ import { expect, gotoAndSeedNetwork, test } from './fixtures'
  * before a test edits the network, or it wipes the unsaved state under test.
  *
  * `hasLayout` in the persisted summary is the observable side of that same
- * completion, so wait on it. The wait is best-effort: a network whose layout
- * already ran (or never runs) simply proceeds.
+ * completion, so wait on it. Resolves `false` rather than throwing when the
+ * wait times out — a network whose layout already ran (or never runs) simply
+ * proceeds. A test whose assertion depends on the reset having landed should
+ * assert the result instead of ignoring it.
  */
-const waitForInitialLayout = async (page: Page): Promise<void> => {
+const waitForInitialLayout = async (page: Page): Promise<boolean> =>
   await page
     .waitForFunction(
       async () => {
@@ -51,8 +53,8 @@ const waitForInitialLayout = async (page: Page): Promise<void> => {
       undefined,
       { timeout: 10000 },
     )
-    .catch(() => undefined)
-}
+    .then(() => true)
+    .catch(() => false)
 
 /** This test suite tests the new overflow menu for the network property panels. */
 
@@ -284,6 +286,57 @@ test.describe('Network summary overflow menu', () => {
       .locator('[data-testid="network-property-editor-confirm-button"]')
       .click()
 
+    await expect(badge).toBeVisible()
+  })
+
+  test('overflow button is badged after an app API table write', async ({
+    page,
+  }) => {
+    // #680: nothing in src/app-api/ set the networkModified flag, so a column
+    // added by an app left the network looking saved — Save Workspace skipped
+    // it and the Save to NDEx entry stayed disabled. The badge is the same
+    // flag, so it is the cheapest end-to-end assertion that the write marks.
+    const badge = page.locator('[data-testid="network-unsaved-badge"]').first()
+
+    await expect(badge).not.toBeVisible()
+
+    // The initial layout clears the flag on completion; a write before that
+    // lands would be wiped by the reset. Asserted rather than ignored: a
+    // silently timed-out wait turns this test into a race whose failure would
+    // read as "the app API does not mark the network".
+    expect(await waitForInitialLayout(page)).toBe(true)
+
+    const result = await page.evaluate(() => {
+      const api = (
+        window as unknown as {
+          CyWebApi: {
+            workspace: {
+              getCurrentNetworkId: () => { data?: { networkId?: string } }
+            }
+            table: {
+              createColumn: (
+                networkId: string,
+                tableType: 'node' | 'edge',
+                columnName: string,
+                dataType: string,
+                defaultValue: unknown,
+              ) => { success: boolean; error?: { message: string } }
+            }
+          }
+        }
+      ).CyWebApi
+      const networkId =
+        api.workspace.getCurrentNetworkId().data?.networkId ?? ''
+      return api.table.createColumn(
+        networkId,
+        'node',
+        'appColumn',
+        'string',
+        'x',
+      )
+    })
+
+    expect(result.success).toBe(true)
     await expect(badge).toBeVisible()
   })
 })

@@ -6,10 +6,11 @@ import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { ValueTypeName } from '../../../models/TableModel'
 import { handleCellEdit } from './cellEditHandler'
 
+// The `networkModified` flag is no longer asserted here: as of #680 it is set
+// by `postEdit` (see `src/app-api/core/undo.test.ts`), not by these handlers.
 describe('handleCellEdit', () => {
   const mockPostEdit = vi.fn()
   const mockSetCellValue = vi.fn()
-  const mockSetNetworkModified = vi.fn()
   const mockNodeTable = { id: 'nodeTable', rows: new Map(), columns: [] }
 
   const baseArgs = {
@@ -18,7 +19,6 @@ describe('handleCellEdit', () => {
     currentNetworkId: 'test-network-1',
     postEdit: mockPostEdit,
     setCellValue: mockSetCellValue,
-    setNetworkModified: mockSetNetworkModified,
   }
 
   beforeEach(() => {
@@ -50,7 +50,6 @@ describe('handleCellEdit', () => {
       'name',
       'Updated Node 1',
     )
-    expect(mockSetNetworkModified).toHaveBeenCalledWith('test-network-1', true)
   })
 
   it('correctly associates column index with the right column using allColumns, ignoring shifted indexes', () => {

@@ -6,10 +6,11 @@ import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { ValueTypeName } from '../../../models/TableModel'
 import { handlePaste } from './pasteHandler'
 
+// The `networkModified` flag is no longer asserted here: as of #680 it is set
+// by `postEdit` (see `src/app-api/core/undo.test.ts`), not by these handlers.
 describe('pasteHandler', () => {
   const mockPostEdit = vi.fn()
   const mockSetValues = vi.fn()
-  const mockSetNetworkModified = vi.fn()
 
   const mockNodeTable = { id: 'nodeTable', rows: new Map(), columns: [] }
 
@@ -19,7 +20,6 @@ describe('pasteHandler', () => {
     currentNetworkId: 'test-network-1',
     postEdit: mockPostEdit,
     setValues: mockSetValues,
-    setNetworkModified: mockSetNetworkModified,
   }
 
   beforeEach(() => {
@@ -65,7 +65,6 @@ describe('pasteHandler', () => {
       expect.any(Array),
       ['test-network-1', 'node', expectedCellEdits],
     )
-    expect(mockSetNetworkModified).toHaveBeenCalledWith('test-network-1', true)
   })
 
   it('skips virtual columns when pasting', () => {

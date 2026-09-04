@@ -27,7 +27,6 @@ export interface HandlePasteArgs {
     tableType: 'node' | 'edge',
     cellEdits: CellEdit[],
   ) => void
-  setNetworkModified: (networkId: IdType, isModified: boolean) => void
 }
 
 export const handlePaste = ({
@@ -40,7 +39,6 @@ export const handlePaste = ({
   nodeTable,
   postEdit,
   setValues,
-  setNetworkModified,
 }: HandlePasteArgs): boolean => {
   const [startCol, startRow] = target
   const cellEdits: CellEdit[] = []
@@ -84,7 +82,6 @@ export const handlePaste = ({
       [currentNetworkId, elementType, cellEdits],
     )
     setValues(currentNetworkId, elementType, cellEdits)
-    setNetworkModified(currentNetworkId, true)
   }
 
   return false

@@ -2,8 +2,6 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { Box, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
-import isEqual from 'lodash/isEqual'
-import omit from 'lodash/omit'
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
@@ -24,7 +22,6 @@ import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { Workspace } from '../../models/WorkspaceModel'
 import { HcxMetaTag } from '../HierarchyViewer/model/HcxMetaTag'
 import { validateHcx } from '../HierarchyViewer/model/impl/hcxValidators'
 import { useHcxValidatorStore } from '../HierarchyViewer/store/HcxValidatorStore'
@@ -55,7 +52,7 @@ import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
-import { CyNetwork, VisualStyle } from '../../models'
+import { CyNetwork } from '../../models'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
@@ -135,7 +132,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const { panels, activeNetworkView } = ui
 
-  const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
@@ -149,57 +145,19 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const addStack = useUndoStore((state) => state.addStack)
 
-  /**
-   * Monitors view model changes to detect network modifications
-   * Excludes selection state changes (selectedNodes, selectedEdges) from modification detection
-   * Sets networkModified flag when view model changes and network is not already marked as modified
-   */
-  useViewModelStore.subscribe(
-    (state) => state.getViewModel(currentNetworkId),
-    (nextViewModel, prevViewModel) => {
-      if (prevViewModel === undefined || nextViewModel === undefined) {
-        return
-      }
-
-      // Compare view models excluding selection state
-      // Selection changes don't count as network modifications
-      const viewModelChanged = !isEqual(
-        omit(prevViewModel, ['selectedNodes', 'selectedEdges']),
-        omit(nextViewModel, ['selectedNodes', 'selectedEdges']),
-      )
-
-      const { networkModified } = workspace
-      const isCurrentNetworkUnmodified =
-        networkModified[currentNetworkId] === undefined ||
-        networkModified[currentNetworkId] === false
-
-      if (viewModelChanged && isCurrentNetworkUnmodified) {
-        setNetworkModified(currentNetworkId, true)
-      }
-    },
-  )
-
-  /**
-   * Monitors visual style changes to detect network modifications
-   * Sets networkModified flag when visual style changes and network is not already marked as modified
-   */
-  useVisualStyleStore.subscribe((next, prev) => {
-    const nextVisualStyle = next.visualStyles[currentNetworkId] as VisualStyle
-    const prevVisualStyle = prev.visualStyles[currentNetworkId] as VisualStyle
-    if (prevVisualStyle === undefined || nextVisualStyle === undefined) {
-      return
-    }
-
-    const visualStyleChanged = !isEqual(prevVisualStyle, nextVisualStyle)
-    const { networkModified } = workspace
-    const isCurrentNetworkUnmodified =
-      networkModified[currentNetworkId] === undefined ||
-      networkModified[currentNetworkId] === false
-
-    if (visualStyleChanged && isCurrentNetworkUnmodified) {
-      setNetworkModified(currentNetworkId, true)
-    }
-  })
+  // The networkModified flag is NOT watched for here.
+  //
+  // This component used to carry two store subscriptions that diffed the view
+  // model and the visual style of `currentNetworkId` and flipped the flag.
+  // They were registered in the component body rather than in an effect, so
+  // every render added a listener and discarded its unsubscribe, and each
+  // listener closed over a render-time `workspace`. They also selected on
+  // `currentNetworkId` while every app API write names its own networkId, so
+  // a write to a resident but off-screen network was never marked (#680).
+  //
+  // Both are replaced by `markNetworkModified` (`src/app-api/core/undo.ts`),
+  // called from `useUndoStack.postEdit` and from `corePostEdit` in the app
+  // API — one choke point, keyed on the network the edit actually mutated.
 
   // allotment's split-view bookkeeping does not survive a Suspense
   // hide/reveal of this subtree (an ancestor boundary re-suspending, e.g. on

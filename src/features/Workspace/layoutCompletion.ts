@@ -47,11 +47,16 @@ export interface LayoutCompletionActions {
  *    layout completion so the unsaved-changes indicator stays visible.
  *
  * Both are reported through the same networkModified flag, so the handler
- * snapshots the flag BEFORE applying its own position update. WorkspaceEditor
- * subscribes to view model changes and flips networkModified to true
- * synchronously, meaning a read taken after `updateNodePositions` would always
- * observe the layout-originated change and could never distinguish it from a
- * user edit.
+ * snapshots the flag BEFORE applying its own position update.
+ *
+ * The snapshot was load-bearing when WorkspaceEditor subscribed to view model
+ * changes and flipped the flag synchronously — a read taken after
+ * `updateNodePositions` observed the layout's own write and could not tell it
+ * from a user edit. That subscription is gone (#680): the flag is now written
+ * only by `markNetworkModified`, from `postEdit`, and the initial layout posts
+ * no edit. The ordering is kept because it is what makes the handler correct
+ * either way, and because a user edit landing DURING the layout still has to
+ * survive the clear below.
  *
  * @param networkId ID of the network the layout was run on
  * @param actions Side effects to run on completion

@@ -28,6 +28,7 @@ import {
   fail,
   ok,
 } from '../types/ApiResult'
+import { markNetworkModified } from './undo'
 import {
   validateBypassTargetScope,
   validateContinuousMappingBounds,
@@ -354,6 +355,7 @@ export const visualStyleApi: VisualStyleApi = {
       if (invalidValue) return invalidValue
 
       useVisualStyleStore.getState().setDefault(networkId, vpName, vpValue)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -388,6 +390,10 @@ export const visualStyleApi: VisualStyleApi = {
       const setDefault = useVisualStyleStore.getState().setDefault
       for (const [vpName, vpValue] of entries) {
         setDefault(networkId, vpName, vpValue)
+      }
+      // An empty map runs the loop zero times, so nothing changed.
+      if (entries.length > 0) {
+        markNetworkModified(networkId)
       }
       return ok()
     } catch (e) {
@@ -433,6 +439,7 @@ export const visualStyleApi: VisualStyleApi = {
       useVisualStyleStore
         .getState()
         .setBypass(networkId, vpName, elementIds, vpValue)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -494,6 +501,10 @@ export const visualStyleApi: VisualStyleApi = {
       for (const [vpName, vpValue] of entries) {
         setBypass(networkId, vpName, elementIds, vpValue)
       }
+      // An empty map runs the loop zero times, so nothing changed.
+      if (entries.length > 0) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -506,7 +517,20 @@ export const visualStyleApi: VisualStyleApi = {
       if (visualStyles[networkId] === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      // Read before the delete: `visualStyleImpl.deleteBypass` drops the ids
+      // from the map whether or not they were in it, so afterwards there is
+      // nothing left to tell a real removal from a no-op. An app that clears
+      // bypasses speculatively (on every selection change, say) must not
+      // dirty a clean network.
+      const bypassMap = visualStyles[networkId][vpName]?.bypassMap
+      const removedAny = elementIds.some(
+        (elementId) => bypassMap?.has(elementId) === true,
+      )
+
       useVisualStyleStore.getState().deleteBypass(networkId, vpName, elementIds)
+      if (removedAny) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -557,6 +581,7 @@ export const visualStyleApi: VisualStyleApi = {
         visualPropertyType: visualProperty.type,
         defaultValue: visualProperty.defaultValue,
       })
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -628,6 +653,7 @@ export const visualStyleApi: VisualStyleApi = {
             gtMaxVpValue ?? currentMapping.gtMaxVpValue,
           )
       }
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -657,6 +683,7 @@ export const visualStyleApi: VisualStyleApi = {
       useVisualStyleStore
         .getState()
         .createPassthroughMapping(networkId, vpName, attribute, attributeType)
+      markNetworkModified(networkId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -669,7 +696,13 @@ export const visualStyleApi: VisualStyleApi = {
       if (visualStyles[networkId] === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
+      // Removing an absent mapping changes nothing, so it must not mark.
+      const hadMapping = visualStyles[networkId][vpName]?.mapping !== undefined
+
       useVisualStyleStore.getState().removeMapping(networkId, vpName)
+      if (hadMapping) {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

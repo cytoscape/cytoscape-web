@@ -8,6 +8,19 @@ import { visualStyleApi } from './visualStyleApi'
 
 const VPN = VisualPropertyName
 
+// ── Mock: WorkspaceStore (markNetworkModified) ───────────────────────────────
+
+const mockSetNetworkModified = vi.fn()
+
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+  useWorkspaceStore: {
+    getState: vi.fn(() => ({
+      workspace: { currentNetworkId: 'net1', networkModified: {} },
+      setNetworkModified: mockSetNetworkModified,
+    })),
+  },
+}))
+
 // ── Mock: VisualStyleStore ────────────────────────────────────────────────────
 
 const mockSetDefault = vi.fn()
@@ -1439,5 +1452,214 @@ describe('deleteMapping', () => {
     if (!result.success) {
       expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
     }
+  })
+})
+
+// --- networkModified flag (#680) ---------------------------------------------
+//
+// Style writes through the app API used to be marked only as a side effect of
+// a WorkspaceEditor subscription that selected on `currentNetworkId`. Every
+// method here takes an explicit networkId, and non-current networks stay
+// resident in the stores, so the mark has to follow the argument.
+
+describe('networkModified (#680)', () => {
+  /** A resident network that is NOT currentNetworkId (the mock reports net1). */
+  const NET = 'net2'
+
+  function setupNet2(): void {
+    mockVisualStyles[NET] = {
+      [VPN.NodeBackgroundColor]: {
+        type: 'color',
+        defaultValue: '#89D0F5',
+        group: 'node',
+      },
+      [VPN.NodeLabel]: { type: 'string', defaultValue: '', group: 'node' },
+      [VPN.NodeHeight]: { type: 'number', defaultValue: 10, group: 'node' },
+    }
+    mockTables[NET] = {
+      nodeTable: {
+        rows: new Map(),
+        columns: [
+          { name: 'type', type: 'string' },
+          { name: 'name', type: 'string' },
+          { name: 'score', type: 'double' },
+        ],
+      },
+      edgeTable: { rows: new Map(), columns: [] },
+    }
+    mockNetworks.set(NET, {
+      id: NET,
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      edges: [],
+    })
+  }
+
+  const expectMarked = (): void => {
+    expect(mockSetNetworkModified).toHaveBeenCalledWith(NET, true)
+    expect(mockSetNetworkModified).not.toHaveBeenCalledWith('net1', true)
+  }
+
+  beforeEach(setupNet2)
+
+  it('setDefault marks the written network', () => {
+    expect(
+      visualStyleApi.setDefault(NET, VPN.NodeBackgroundColor, '#ff0000')
+        .success,
+    ).toBe(true)
+    expectMarked()
+  })
+
+  it('setDefaults marks the written network', () => {
+    const result = visualStyleApi.setDefaults(NET, {
+      [VPN.NodeBackgroundColor]: '#ff0000',
+    })
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('setBypass marks the written network', () => {
+    const result = visualStyleApi.setBypass(
+      NET,
+      VPN.NodeBackgroundColor,
+      ['n1'],
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('setBypasses marks the written network', () => {
+    const result = visualStyleApi.setBypasses(NET, ['n1'], {
+      [VPN.NodeBackgroundColor]: '#ff0000',
+    })
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('deleteBypass marks the written network when a bypass is removed', () => {
+    mockVisualStyles[NET][VPN.NodeBackgroundColor].bypassMap = new Map([
+      ['n1', '#ff0000'],
+    ])
+
+    const result = visualStyleApi.deleteBypass(NET, VPN.NodeBackgroundColor, [
+      'n1',
+    ])
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('deleteBypass marks nothing when no element had a bypass', () => {
+    // `visualStyleImpl.deleteBypass` drops ids whether or not they were
+    // present, so a speculative clear must not dirty a clean network.
+    mockVisualStyles[NET][VPN.NodeBackgroundColor].bypassMap = new Map([
+      ['n2', '#ff0000'],
+    ])
+
+    const result = visualStyleApi.deleteBypass(NET, VPN.NodeBackgroundColor, [
+      'n1',
+    ])
+
+    expect(result.success).toBe(true)
+    expect(mockDeleteBypass).toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('createDiscreteMapping marks the written network', () => {
+    const result = visualStyleApi.createDiscreteMapping(
+      NET,
+      VPN.NodeBackgroundColor,
+      'type',
+      'string',
+    )
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('createContinuousMapping marks the written network', () => {
+    const result = visualStyleApi.createContinuousMapping(NET, VPN.NodeHeight, {
+      vpType: 'number',
+      attribute: 'score',
+      attributeValues: [0, 50, 100],
+      attributeType: 'double',
+    })
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('createPassthroughMapping marks the written network', () => {
+    const result = visualStyleApi.createPassthroughMapping(
+      NET,
+      VPN.NodeLabel,
+      'name',
+      'string',
+    )
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('deleteMapping marks the written network when a mapping existed', () => {
+    mockVisualStyles[NET][VPN.NodeBackgroundColor].mapping = {
+      attribute: 'type',
+      type: 'discrete',
+    }
+
+    const result = visualStyleApi.deleteMapping(NET, VPN.NodeBackgroundColor)
+
+    expect(result.success).toBe(true)
+    expectMarked()
+  })
+
+  it('deleteMapping marks nothing when there was no mapping', () => {
+    const result = visualStyleApi.deleteMapping(NET, VPN.NodeBackgroundColor)
+
+    expect(result.success).toBe(true)
+    expect(mockRemoveMapping).toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('setDefaults marks nothing when given an empty map', () => {
+    const result = visualStyleApi.setDefaults(NET, {})
+
+    expect(result.success).toBe(true)
+    expect(mockSetDefault).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('setBypasses marks nothing when given an empty map', () => {
+    const result = visualStyleApi.setBypasses(NET, ['n1'], {})
+
+    expect(result.success).toBe(true)
+    expect(mockSetBypass).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('does not mark when the write is rejected', () => {
+    const result = visualStyleApi.setBypass(
+      NET,
+      VPN.NodeBackgroundColor,
+      ['ghost'],
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(false)
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('does not mark when the network does not exist', () => {
+    const result = visualStyleApi.setDefault(
+      'missing',
+      VPN.NodeBackgroundColor,
+      '#ff0000',
+    )
+
+    expect(result.success).toBe(false)
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 })

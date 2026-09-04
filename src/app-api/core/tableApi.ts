@@ -11,8 +11,10 @@ import {
   CellEdit as StoreCellEdit,
   TableType,
 } from '../../models/StoreModel/TableStoreModel'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import {
   AttributeName,
+  Table,
   ValueType,
   ValueTypeName,
 } from '../../models/TableModel'
@@ -24,6 +26,7 @@ import {
 } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { AppCodes, ApiResult, ElementCodes, fail, ok } from '../types/ApiResult'
 import { TableCodes } from '../types/ApiResult'
+import { corePostEdit, markNetworkModified } from './undo'
 import {
   validateColumnDefaultValue,
   validateColumnName,
@@ -288,6 +291,24 @@ function cascadeColumnToMappings(
   })
 }
 
+/**
+ * Snapshot of the cells a write is about to overwrite, in the shape
+ * `useUndoStack`'s APPLY_VALUE_TO_SELECTED handler replays (`setValues`).
+ *
+ * A cell with no stored value is recorded as an empty string, matching what
+ * the in-app table paths hand to `postEdit` for an empty cell.
+ */
+function previousCellEdits(
+  table: Table | undefined,
+  edits: Array<{ row: IdType; column: AttributeName }>,
+): StoreCellEdit[] {
+  return edits.map(({ row, column }) => ({
+    row,
+    column,
+    value: table?.rows.get(row)?.[column] ?? '',
+  }))
+}
+
 // ── Core implementation ──────────────────────────────────────────────────────
 
 export const tableApi: TableApi = {
@@ -402,6 +423,11 @@ export const tableApi: TableApi = {
 
       syncColumnToTableDisplayConfig(networkId, tableType, columnName)
 
+      // No CREATE_COLUMN undo command exists (the in-app "Insert new column"
+      // is not undoable either), so mark directly rather than through
+      // corePostEdit.
+      markNetworkModified(networkId)
+
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -418,6 +444,25 @@ export const tableApi: TableApi = {
       if (!columns.some((c) => c.name === columnName)) {
         return fail(AppCodes.COLUMN_NOT_FOUND, columnName, tableType)
       }
+
+      // Recorded BEFORE the delete: the DELETE_COLUMN handler restores the
+      // whole pre-delete table (`setTable`) on undo and re-deletes by
+      // `params[3].id` on redo, which is the contract the in-app
+      // DeleteTableColumnForm uses.
+      const params = [
+        networkId,
+        tableType,
+        tableRecord[tableKey(tableType)],
+        { id: columnName },
+      ]
+      corePostEdit(
+        networkId,
+        UndoCommandType.DELETE_COLUMN,
+        `Delete ${tableType} column ${columnName}`,
+        params,
+        params,
+      )
+
       useTableStore.getState().deleteColumn(networkId, tableType, columnName)
 
       // Cascade: mappings referencing the column are deleted (CX2 RC3)
@@ -447,14 +492,28 @@ export const tableApi: TableApi = {
         return fail(AppCodes.COLUMN_NOT_FOUND, currentName, tableType)
       }
 
-      // Self-rename is a harmless no-op; anything else must not collide
-      if (newName !== currentName) {
-        const duplicateName = validateColumnNameAvailable(
-          tableRecord[tableKey(tableType)]?.columns ?? [],
-          newName,
-        )
-        if (duplicateName) return duplicateName
+      // A self-rename is a no-op, and returning here is not just an
+      // optimisation: falling through would record an undo entry, mark the
+      // network modified, and rewrite every dependent mapping to the value it
+      // already holds — three store writes for a rename that changes nothing.
+      if (newName === currentName) {
+        return ok()
       }
+
+      const duplicateName = validateColumnNameAvailable(
+        tableRecord[tableKey(tableType)]?.columns ?? [],
+        newName,
+      )
+      if (duplicateName) return duplicateName
+
+      // Undo swaps the names back; redo replays the rename.
+      corePostEdit(
+        networkId,
+        UndoCommandType.RENAME_COLUMN,
+        `Rename column '${currentName}' to '${newName}'`,
+        [networkId, tableType, newName, currentName],
+        [networkId, tableType, currentName, newName],
+      )
 
       useTableStore
         .getState()
@@ -494,6 +553,16 @@ export const tableApi: TableApi = {
       )
       if (typeMismatch) return typeMismatch
 
+      const previousValue =
+        tableRecord[tableKey(tableType)]?.rows.get(elementId)?.[column] ?? ''
+      corePostEdit(
+        networkId,
+        UndoCommandType.SET_CELL_VALUE,
+        'Set cell value',
+        [networkId, tableType, elementId, column, previousValue],
+        [networkId, tableType, elementId, column, value],
+      )
+
       useTableStore
         .getState()
         .setValue(networkId, tableType as TableType, elementId, column, value)
@@ -528,6 +597,22 @@ export const tableApi: TableApi = {
         column: edit.column,
         value: edit.value,
       }))
+      // An empty edit list changes nothing, so it records nothing and leaves
+      // the modified flag alone.
+      if (storeCellEdits.length > 0) {
+        corePostEdit(
+          networkId,
+          UndoCommandType.APPLY_VALUE_TO_SELECTED,
+          'Set cell values',
+          [
+            networkId,
+            tableType,
+            previousCellEdits(tableRecord[tableKey(tableType)], storeCellEdits),
+          ],
+          [networkId, tableType, storeCellEdits],
+        )
+      }
+
       useTableStore
         .getState()
         .setValues(networkId, tableType as TableType, storeCellEdits)
@@ -564,6 +649,30 @@ export const tableApi: TableApi = {
           [IdType, Record<AttributeName, ValueType>]
         >,
       )
+      // Replayed as cell edits, not as rows: editRows has no undo command,
+      // and the per-cell form restores exactly the cells this write touched.
+      const editedCells: StoreCellEdit[] = Object.entries(rows).flatMap(
+        ([row, values]) =>
+          Object.entries(values).map(([column, value]) => ({
+            row,
+            column,
+            value,
+          })),
+      )
+      if (editedCells.length > 0) {
+        corePostEdit(
+          networkId,
+          UndoCommandType.APPLY_VALUE_TO_SELECTED,
+          'Edit table rows',
+          [
+            networkId,
+            tableType,
+            previousCellEdits(tableRecord[tableKey(tableType)], editedCells),
+          ],
+          [networkId, tableType, editedCells],
+        )
+      }
+
       useTableStore
         .getState()
         .editRows(networkId, tableType as TableType, rowsMap)
@@ -598,6 +707,32 @@ export const tableApi: TableApi = {
         [{ column: columnName, value }],
       )
       if (typeMismatch) return typeMismatch
+
+      // The store applies to every row only when elementIds is OMITTED
+      // (tableImpl.applyValueToElements branches on `!= null`); an empty
+      // array selects nothing and writes nothing. The undo snapshot has to
+      // cover exactly the rows the store will touch, so the two cases differ.
+      const table = tableRecord[tableKey(tableType)]
+      const appliesToEveryRow = elementIds === undefined
+      const targetIds = appliesToEveryRow
+        ? Array.from(table?.rows.keys() ?? [])
+        : elementIds
+      const appliedCells: StoreCellEdit[] = targetIds.map((row) => ({
+        row,
+        column: columnName,
+        value,
+      }))
+      if (appliedCells.length > 0) {
+        corePostEdit(
+          networkId,
+          appliesToEveryRow
+            ? UndoCommandType.APPLY_VALUE_TO_COLUMN
+            : UndoCommandType.APPLY_VALUE_TO_SELECTED,
+          `Apply value to ${columnName}`,
+          [networkId, tableType, previousCellEdits(table, appliedCells)],
+          [networkId, tableType, appliedCells],
+        )
+      }
 
       useTableStore
         .getState()
@@ -904,6 +1039,18 @@ export const tableApi: TableApi = {
       }
 
       storeState.setValues(networkId, tableType, cellEdits)
+
+      // No undo entry: the import both creates columns and writes cells, and
+      // no single undo command covers both. Recording only the cell edits
+      // would restore the values and leave the new columns behind, which is
+      // worse than leaving the operation outside the stack (the in-app
+      // "Join table to network" path is not undoable either).
+      //
+      // Marked only when something actually changed — an import whose every
+      // key missed the network leaves the data untouched.
+      if (newColumns.length > 0 || cellEdits.length > 0) {
+        markNetworkModified(networkId)
+      }
 
       // Count unique row IDs from cell edits
       const uniqueRows = new Set(cellEdits.map((e) => e.row))

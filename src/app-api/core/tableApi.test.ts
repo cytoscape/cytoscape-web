@@ -11,6 +11,34 @@ import {
 import { AppCodes, ElementCodes, TableCodes } from '../types/ApiResult'
 import { tableApi } from './tableApi'
 
+// ── Mock: WorkspaceStore (markNetworkModified) ───────────────────────────────
+
+const mockSetNetworkModified = vi.fn()
+
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+  useWorkspaceStore: {
+    getState: vi.fn(() => ({
+      workspace: { currentNetworkId: 'net1', networkModified: {} },
+      setNetworkModified: mockSetNetworkModified,
+    })),
+  },
+}))
+
+// ── Mock: UndoStore (corePostEdit) ───────────────────────────────────────────
+
+const mockSetUndoStack = vi.fn()
+const mockSetRedoStack = vi.fn()
+
+vi.mock('../../data/hooks/stores/UndoStore', () => ({
+  useUndoStore: {
+    getState: vi.fn(() => ({
+      undoRedoStacks: {},
+      setUndoStack: mockSetUndoStack,
+      setRedoStack: mockSetRedoStack,
+    })),
+  },
+}))
+
 // ── Mock: TableStore ──────────────────────────────────────────────────────────
 
 const mockCreateColumn = vi.fn()
@@ -1663,5 +1691,355 @@ describe('TSV round-trip', () => {
     expect(edits).toContainEqual({ row: 'n1', column: 'name', value: 'Alice' })
     expect(edits).toContainEqual({ row: 'n1', column: 'score', value: 42 })
     expect(edits).toContainEqual({ row: 'n2', column: 'score', value: 18 })
+  })
+})
+
+// --- networkModified flag (#680) ---------------------------------------------
+//
+// Before #680 no path in src/app-api/ set the flag. An NDEx-backed network
+// with app-added columns was therefore skipped by Save Workspace and offered a
+// disabled "Save to NDEx" entry: the app's write was unreachable.
+//
+// The flag is now written by markNetworkModified, either directly or through
+// corePostEdit. Every write method needs its own case — the defect was one
+// module forgetting one call, and a shared helper test would not catch that.
+
+describe('networkModified (#680)', () => {
+  /** The single networkId every mark in this block must be keyed on. */
+  const NET = 'net2'
+
+  /** Registers `net2` in the stores as a resident, non-current network. */
+  function registerNet2(nodes: string[], columns: any[] = []): void {
+    mockTables[NET] = makeTableRecord(
+      new Map(nodes.map((id) => [id, { name: id, score: 1 }])),
+      undefined,
+      columns,
+    )
+    mockNetworks.set(NET, {
+      id: NET,
+      nodes: nodes.map((id) => ({ id })),
+      edges: [],
+    })
+  }
+
+  const marked = () =>
+    mockSetNetworkModified.mock.calls.filter(
+      ([id, isModified]) => id === NET && isModified === true,
+    ).length
+
+  it('createColumn marks the network', () => {
+    registerNet2(['n1'])
+
+    expect(
+      tableApi.createColumn(NET, 'node', 'newCol', 'string', 'x').success,
+    ).toBe(true)
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('deleteColumn marks the network', () => {
+    registerNet2(['n1'], [{ name: 'score', type: 'long' }])
+
+    expect(tableApi.deleteColumn(NET, 'node', 'score').success).toBe(true)
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('renameColumn marks the network', () => {
+    registerNet2(['n1'], [{ name: 'score', type: 'long' }])
+
+    expect(tableApi.renameColumn(NET, 'node', 'score', 'weight').success).toBe(
+      true,
+    )
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('setValue marks the network', () => {
+    registerNet2(['n1'])
+
+    expect(tableApi.setValue(NET, 'node', 'n1', 'name', 'Bob').success).toBe(
+      true,
+    )
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('setValues marks the network', () => {
+    registerNet2(['n1'])
+
+    const result = tableApi.setValues(NET, 'node', [
+      { id: 'n1', column: 'name', value: 'Bob' },
+    ])
+
+    expect(result.success).toBe(true)
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('editRows marks the network', () => {
+    registerNet2(['n1'])
+
+    const result = tableApi.editRows(NET, 'node', { n1: { name: 'Bob' } })
+
+    expect(result.success).toBe(true)
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('applyValueToElements marks the network', () => {
+    registerNet2(['n1', 'n2'])
+
+    const result = tableApi.applyValueToElements(NET, 'node', 'name', 'x', [
+      'n1',
+    ])
+
+    expect(result.success).toBe(true)
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('importTableFromTsv marks the network', () => {
+    registerNet2(['n1'], [{ name: 'name', type: 'string' }])
+
+    const result = tableApi.importTableFromTsv(
+      NET,
+      'node',
+      'id\tname\nn1\tAlice',
+    )
+
+    expect(result.success).toBe(true)
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  // The case the deleted WorkspaceEditor subscriptions could never cover:
+  // both selected on `currentNetworkId`, while every app API method takes an
+  // explicit networkId and non-current networks stay resident in the stores.
+  it('marks the written network, not currentNetworkId', () => {
+    registerNet2(['n1'])
+
+    tableApi.createColumn(NET, 'node', 'newCol', 'string', 'x')
+
+    expect(mockSetNetworkModified).toHaveBeenCalledWith(NET, true)
+    expect(mockSetNetworkModified).not.toHaveBeenCalledWith('net1', true)
+  })
+
+  it('does not mark when the write fails validation', () => {
+    registerNet2(['n1'])
+
+    // 'ghost' is not in the network — rejected before any store write
+    const result = tableApi.setValue(NET, 'node', 'ghost', 'name', 'Bob')
+
+    expect(result.success).toBe(false)
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('does not mark when the network does not exist', () => {
+    const result = tableApi.createColumn(
+      'missing',
+      'node',
+      'newCol',
+      'string',
+      'x',
+    )
+
+    expect(result.success).toBe(false)
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('does not mark a TSV import whose every key missed the network', () => {
+    registerNet2(['n1'], [{ name: 'name', type: 'string' }])
+
+    const result = tableApi.importTableFromTsv(
+      NET,
+      'node',
+      'id\tname\nghost\tAlice',
+    )
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.skippedRows).toEqual(['ghost'])
+    }
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+})
+
+// --- Undo recording (#680) ---------------------------------------------------
+//
+// Table writes through the app API used to record nothing, so they were not
+// undoable. The params must match what useUndoStack's handlers replay, or
+// undo corrupts the table instead of restoring it.
+
+describe('undo recording (#680)', () => {
+  /** The Edit pushed onto net1's undo stack by the last write. */
+  const lastEdit = () => mockSetUndoStack.mock.calls.at(-1)?.[1].at(-1)
+
+  it('setValue records SET_CELL_VALUE with the overwritten value', () => {
+    mockTables['net1'] = makeTableRecord(new Map([['n1', { name: 'Alice' }]]))
+    registerNet1(['n1'])
+
+    tableApi.setValue('net1', 'node', 'n1', 'name', 'Bob')
+
+    // [networkId, tableType, elementId, column, value] — the shape
+    // useUndoStack's SET_CELL_VALUE handler feeds to setValue
+    expect(lastEdit()).toMatchObject({
+      undoCommand: 'SET_CELL_VALUE',
+      undoParams: ['net1', 'node', 'n1', 'name', 'Alice'],
+      redoParams: ['net1', 'node', 'n1', 'name', 'Bob'],
+    })
+  })
+
+  it('setValue records an empty string for a cell that had no value', () => {
+    mockTables['net1'] = makeTableRecord(new Map([['n1', {}]]))
+    registerNet1(['n1'])
+
+    tableApi.setValue('net1', 'node', 'n1', 'name', 'Bob')
+
+    expect(lastEdit().undoParams[4]).toBe('')
+  })
+
+  it('renameColumn records RENAME_COLUMN with the names swapped for undo', () => {
+    mockTables['net1'] = makeTableRecord(new Map(), undefined, [
+      { name: 'score', type: 'long' },
+    ])
+
+    tableApi.renameColumn('net1', 'node', 'score', 'weight')
+
+    expect(lastEdit()).toMatchObject({
+      undoParams: ['net1', 'node', 'weight', 'score'],
+      redoParams: ['net1', 'node', 'score', 'weight'],
+    })
+  })
+
+  it('deleteColumn records the pre-delete table for undo', () => {
+    const table = makeTableRecord(new Map([['n1', { score: 7 }]]), undefined, [
+      { name: 'score', type: 'long' },
+    ])
+    mockTables['net1'] = table
+
+    tableApi.deleteColumn('net1', 'node', 'score')
+
+    const edit = lastEdit()
+    expect(edit.undoCommand).toBe('DELETE_COLUMN')
+    // params[2] is restored wholesale by setTable; params[3].id is the
+    // column redo deletes again
+    expect(edit.undoParams[2]).toBe(table.nodeTable)
+    expect(edit.redoParams[3]).toEqual({ id: 'score' })
+  })
+
+  it('applyValueToElements with no ids covers every row and uses APPLY_VALUE_TO_COLUMN', () => {
+    mockTables['net1'] = makeTableRecord(
+      new Map([
+        ['n1', { score: 1 }],
+        ['n2', { score: 2 }],
+      ]),
+    )
+
+    tableApi.applyValueToElements('net1', 'node', 'score', 9)
+
+    const edit = lastEdit()
+    expect(edit.undoCommand).toBe('APPLY_VALUE_TO_COLUMN')
+    expect(edit.undoParams[2]).toEqual([
+      { row: 'n1', column: 'score', value: 1 },
+      { row: 'n2', column: 'score', value: 2 },
+    ])
+    expect(edit.redoParams[2]).toEqual([
+      { row: 'n1', column: 'score', value: 9 },
+      { row: 'n2', column: 'score', value: 9 },
+    ])
+  })
+
+  it('editRows records the touched cells only, not whole rows', () => {
+    mockTables['net1'] = makeTableRecord(
+      new Map([['n1', { name: 'Alice', score: 1 }]]),
+    )
+    registerNet1(['n1'])
+
+    tableApi.editRows('net1', 'node', { n1: { score: 5 } })
+
+    const edit = lastEdit()
+    expect(edit.undoParams[2]).toEqual([
+      { row: 'n1', column: 'score', value: 1 },
+    ])
+    expect(edit.redoParams[2]).toEqual([
+      { row: 'n1', column: 'score', value: 5 },
+    ])
+  })
+
+  it('createColumn records no undo entry — no CREATE_COLUMN command exists', () => {
+    mockTables['net1'] = makeTableRecord()
+
+    tableApi.createColumn('net1', 'node', 'newCol', 'string', 'x')
+
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+
+  it('importTableFromTsv records no undo entry — it also creates columns', () => {
+    mockTables['net1'] = makeTableRecord(new Map([['n1', {}]]), undefined, [
+      { name: 'name', type: 'string' },
+    ])
+    registerNet1(['n1'])
+
+    tableApi.importTableFromTsv('net1', 'node', 'id\tname\nn1\tAlice')
+
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+})
+
+// --- No-op writes (#680) -----------------------------------------------------
+//
+// A write that changes nothing must not mark the network. `applyValueToElements`
+// is the sharp edge: omitting elementIds applies to every row, but passing an
+// empty array applies to none (tableImpl branches on `!= null`), so the two
+// cannot share an undo snapshot.
+
+describe('no-op writes (#680)', () => {
+  it('applyValueToElements with an empty id list records and marks nothing', () => {
+    mockTables['net1'] = makeTableRecord(new Map([['n1', { score: 1 }]]))
+
+    const result = tableApi.applyValueToElements('net1', 'node', 'score', 9, [])
+
+    expect(result.success).toBe(true)
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('setValues with no edits records and marks nothing', () => {
+    mockTables['net1'] = makeTableRecord(new Map([['n1', { score: 1 }]]))
+    registerNet1(['n1'])
+
+    const result = tableApi.setValues('net1', 'node', [])
+
+    expect(result.success).toBe(true)
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('renameColumn to the same name records and marks nothing', () => {
+    // Falling through would record an undo entry, mark the network, and
+    // rewrite every dependent mapping to the value it already holds.
+    mockTables['net1'] = makeTableRecord(new Map(), undefined, [
+      { name: 'score', type: 'long' },
+    ])
+    mockVisualStyles['net1'] = {
+      nodeBackgroundColor: {
+        group: 'node',
+        mapping: { attribute: 'score' },
+      },
+    }
+
+    const result = tableApi.renameColumn('net1', 'node', 'score', 'score')
+
+    expect(result.success).toBe(true)
+    expect(mockSetColumnName).not.toHaveBeenCalled()
+    expect(mockSetMapping).not.toHaveBeenCalled()
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+
+  it('editRows with no rows records and marks nothing', () => {
+    mockTables['net1'] = makeTableRecord(new Map([['n1', { score: 1 }]]))
+    registerNet1(['n1'])
+
+    const result = tableApi.editRows('net1', 'node', {})
+
+    expect(result.success).toBe(true)
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 })
