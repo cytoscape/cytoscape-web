@@ -75,3 +75,26 @@ export const getFunction = (
   }
   return state.rendererFunctions.get(rendererName)?.get(functionName)
 }
+
+/**
+ * Delete functions for a network
+ */
+export const deleteFunctionsForNetwork = (
+  state: RendererFunctionState,
+  networkId: IdType,
+): void => {
+  const byNetwork = state.rendererFunctionsByNetworkId.get(networkId)
+  if (byNetwork !== undefined) {
+    for (const [rendererName, fnMap] of byNetwork.entries()) {
+      const globalRendererMap = state.rendererFunctions.get(rendererName)
+      if (globalRendererMap !== undefined) {
+        for (const [functionName, registeredFn] of fnMap.entries()) {
+          if (globalRendererMap.get(functionName) === registeredFn) {
+            globalRendererMap.delete(functionName)
+          }
+        }
+      }
+    }
+    state.rendererFunctionsByNetworkId.delete(networkId)
+  }
+}

@@ -1,0 +1,137 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "nodes",
+        "elementCount": 3
+      },
+      {
+        "name": "edges",
+        "elementCount": 2
+      },
+      {
+        "name": "cartesianLayout",
+        "elementCount": 3
+      },
+      {
+        "name": "visualProperties",
+        "elementCount": 1
+      },
+      {
+        "name": "status",
+        "elementCount": 1
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "Annotated Multi Type Network",
+        "description": "Network with various shape, text, and arrow annotations for testing canvas lifecycle",
+        "__Annotations": [
+          "uuid=shape-1|type=org.cytoscape.view.presentation.annotations.ShapeAnnotation|x=50.0|y=50.0|width=150.0|height=100.0|shapeType=RECTANGLE|fillColor=-65536|edgeColor=-16777216|edgeThickness=2.0",
+          "uuid=text-1|type=org.cytoscape.view.presentation.annotations.TextAnnotation|x=250.0|y=80.0|text=Cluster Alpha|fontSize=18.0|color=-16777216",
+          "uuid=arrow-1|type=org.cytoscape.view.presentation.annotations.ArrowAnnotation|x1=100.0|y1=100.0|x2=250.0|y2=200.0|color=-16776961|width=2.5"
+        ]
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "v": {
+          "name": "Node 1"
+        }
+      },
+      {
+        "id": 1,
+        "v": {
+          "name": "Node 2"
+        }
+      },
+      {
+        "id": 2,
+        "v": {
+          "name": "Node 3"
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "interacts-with"
+        }
+      },
+      {
+        "id": 1,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "interaction": "interacts-with"
+        }
+      }
+    ]
+  },
+  {
+    "cartesianLayout": [
+      {
+        "node": 0,
+        "x": 100.0,
+        "y": 100.0
+      },
+      {
+        "node": 1,
+        "x": 200.0,
+        "y": 200.0
+      },
+      {
+        "node": 2,
+        "x": 300.0,
+        "y": 100.0
+      }
+    ]
+  },
+  {
+    "visualProperties": [
+      {
+        "default": {
+          "network": {
+            "NETWORK_BACKGROUND_COLOR": "#FAFAFA"
+          },
+          "node": {
+            "NODE_BACKGROUND_COLOR": "#0277BD",
+            "NODE_WIDTH": 35.0,
+            "NODE_HEIGHT": 35.0,
+            "NODE_LABEL": "name"
+          },
+          "edge": {
+            "EDGE_LINE_COLOR": "#848484",
+            "EDGE_WIDTH": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  }
+]

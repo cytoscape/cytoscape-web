@@ -26,6 +26,8 @@ interface RendererFunctionActions {
     functionName: string,
     networkId?: IdType,
   ) => RendererFunction | undefined
+
+  deleteFunctionsForNetwork: (networkId: IdType) => void
 }
 
 export const useRendererFunctionStore = create(
@@ -63,6 +65,11 @@ export const useRendererFunctionStore = create(
         functionName,
         networkId,
       )
+    },
+    deleteFunctionsForNetwork(networkId: IdType) {
+      set((state) => {
+        RendererFunctionImpl.deleteFunctionsForNetwork(state, networkId)
+      })
     },
   })),
 )

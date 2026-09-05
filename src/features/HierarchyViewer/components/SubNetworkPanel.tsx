@@ -721,9 +721,12 @@ export const SubNetworkPanel = ({
   }
 
   const filterConfig: FilterConfig | undefined = filterConfigs[queryNetwork.id]
-
   const displayMode: DisplayMode =
     filterConfig?.displayMode ?? DisplayMode.SELECT
+
+  const subNetworkBgColor =
+    (vs[queryNetwork?.id]?.networkBackgroundColor?.defaultValue as string) ??
+    '#FFFFFF'
 
   return (
     <Box
@@ -732,6 +735,7 @@ export const SubNetworkPanel = ({
         boxSizing: 'border-box',
         height: '100%',
         width: '100%',
+        backgroundColor: subNetworkBgColor,
         border:
           activeNetworkView === queryNetwork.id
             ? '3px solid orange'

@@ -800,34 +800,24 @@ export class CxToCyCanvas {
 }
 
 /**
- * Owns the three annotation canvases of one Cytoscape instance.
+ * Owns the two annotation canvases of one Cytoscape instance (zIndex: -1 and zIndex: 1).
  *
  * `cyCanvas()` appends a new `<canvas>` on every call and never reuses one, so
- * creating layers per render left one frozen canvas set behind per render
- * (issue #675). The layers are created once here; each render swaps the
- * annotation data and repaints the same canvases.
- *
- * `renderNetwork` calls `cy.removeAllListeners()`, which drops both the redraw
- * handler and the `resize` handler the extension registers for its canvas.
- * `attach()` re-registers both and is idempotent, so callers run it after every
- * render.
+ * creating layers per render left frozen canvases behind. The layers are created
+ * once here; each render swaps the annotation data and repaints the same canvases.
  *
  * @param {object} cytoscapeInstance a Cytoscape core with `cyCanvas` registered
- * @returns a controller: `attach`, `setAnnotations`, `setBackgroundColor`,
- *          `redraw`, `dispose`
+ * @returns a controller: `attach`, `setAnnotations`, `redraw`, `dispose`
  */
 export const createAnnotationLayers = (cytoscapeInstance) => {
   const painter = new CxToCyCanvas()
 
-  const backgroundLayer = cytoscapeInstance.cyCanvas({ zIndex: -2 })
   const bottomLayer = cytoscapeInstance.cyCanvas({ zIndex: -1 })
   const topLayer = cytoscapeInstance.cyCanvas({ zIndex: 1 })
 
-  const backgroundCanvas = backgroundLayer.getCanvas()
-  const backgroundCtx = backgroundCanvas.getContext('2d')
   const bottomCanvas = bottomLayer.getCanvas()
   const topCanvas = topLayer.getCanvas()
-  const canvases = [backgroundCanvas, bottomCanvas, topCanvas]
+  const canvases = [bottomCanvas, topCanvas]
 
   const layers = {
     bottomLayer,
@@ -837,12 +827,10 @@ export const createAnnotationLayers = (cytoscapeInstance) => {
   }
 
   let annotationElements = []
-  let backgroundColor
 
   // Match the canvases to the container. The extension does this on `resize`
-  // and loses the handler to `removeAllListeners`, and Cytoscape does not emit
-  // `resize` for every layout change that moves the container, so this runs on
-  // every paint instead. Assigning `width` clears a canvas, hence the guard.
+  // and Cytoscape does not emit `resize` for every layout change that moves
+  // the container, so this runs on every paint instead.
   const syncSize = () => {
     const container = cytoscapeInstance.container()
     if (container === null || container === undefined) {
@@ -867,22 +855,6 @@ export const createAnnotationLayers = (cytoscapeInstance) => {
 
   const paint = () => {
     syncSize()
-    if (backgroundColor === undefined) {
-      backgroundCtx.clearRect(
-        0,
-        0,
-        backgroundCanvas.width,
-        backgroundCanvas.height,
-      )
-    } else {
-      backgroundCtx.fillStyle = backgroundColor
-      backgroundCtx.fillRect(
-        0,
-        0,
-        backgroundCanvas.width,
-        backgroundCanvas.height,
-      )
-    }
     painter.paintAnnotations(layers, annotationElements)
   }
 
@@ -900,11 +872,6 @@ export const createAnnotationLayers = (cytoscapeInstance) => {
     /** Replace the annotations drawn from the next paint on. */
     setAnnotations(niceCX) {
       annotationElements = painter.getAnnotationElementsFromNiceCX(niceCX)
-    },
-
-    /** Color of the bottom-most canvas; `undefined` leaves it transparent. */
-    setBackgroundColor(color) {
-      backgroundColor = color
     },
 
     /** Paint now, rather than waiting for the next `render` event. */
