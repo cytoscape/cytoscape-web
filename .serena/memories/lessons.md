@@ -77,3 +77,6 @@
 - [2026-09-07] UI redesign preference: Max wants plain, monochrome default shadcn/ChatGPT styling. Do not introduce a custom green/teal theme or colored decorative accents; apply this to concepts and prototypes alike.
 - [2026-09-07] Nested prototype commands: use explicit working directories and paths relative to that directory. Exclude independent prototype directories from the root TypeScript project so their separate React versions and aliases do not cross into app checks.
 - [2026-09-07] Spreadsheet redesign: center the Nodes/Edges/Network selector within the full spreadsheet width. Both remaining areas of the header toggle visibility.
+
+- [2026-09-07] Sidebar hierarchy: use one font size and fixed disclosure/indent spacing across section, group, and property rows. Scope small action-button typography to the action itself so it cannot shrink the property disclosure label.
+- [2026-09-07] Prototype form surfaces: dropdowns and text/number inputs should have white backgrounds in light mode, including inline mapping controls; retain dark surfaces in dark mode.

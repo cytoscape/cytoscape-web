@@ -236,9 +236,8 @@ small {
 .section-trigger {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 12px 16px;
   font-weight: 600;
 }
 .section-trigger[data-open] > svg:first-child {
@@ -502,8 +501,7 @@ tbody tr:hover {
   top: 23px;
 }
 .section-trigger {
-  padding: 11px 18px;
-  font-size: 13px;
+  padding: 7px 18px;
 }
 .section-trigger > svg {
   color: var(--muted-foreground);
@@ -518,9 +516,8 @@ tbody tr:hover {
   align-items: center;
   gap: 6px;
   width: 100%;
-  font-size: 13px;
   text-align: left;
-  padding: 10px 0;
+  padding: 7px 0;
   font-weight: 500;
 }
 .category-trigger svg {
@@ -1148,7 +1145,7 @@ tbody tr:hover {
 /* Inline mapping editors share the inspector's compact, neutral controls. */
 .mapped-property {
   border-bottom: 1px solid var(--border);
-  padding: 7px 0 10px;
+  padding: 0 0 10px;
 }
 .mapped-property:last-child {
   border-bottom: 0;
@@ -1162,14 +1159,13 @@ tbody tr:hover {
   gap: 8px;
 }
 .mapped-property-heading {
-  min-height: 27px;
+  min-height: 32px;
 }
 .mapped-property-disclosure {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-weight: 500;
-  font-size: 12px;
   flex: 1;
   text-align: left;
 }
@@ -1179,14 +1175,14 @@ tbody tr:hover {
 .mapping-summary {
   font-size: 11px;
   color: var(--muted-foreground);
-  padding: 3px 0 0 17px;
+  padding: 3px 0 0 18px;
   overflow-wrap: anywhere;
 }
 .mapping-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 8px 0 0 17px;
+  padding: 8px 0 0 18px;
   min-width: 0;
 }
 .mapping-field {
@@ -1214,7 +1210,7 @@ tbody tr:hover {
   margin-top: 3px;
 }
 .mapping-caption button,
-.mapped-property-heading button {
+.mapped-property-heading > [data-slot=button] {
   font-size: 10px;
 }
 .mapping-endpoints {
@@ -1335,4 +1331,40 @@ tbody tr:hover {
   display: block;
   font-size: 10px;
   color: var(--muted-foreground);
+}
+
+/* Every tree row shares a type scale and an 18px disclosure/indent step. */
+.section-trigger,
+.category-trigger,
+.mapped-property-disclosure {
+  font-size: 12px;
+  line-height: 18px;
+  min-height: 32px;
+}
+.section-trigger > svg:first-child,
+.category-trigger > svg,
+.mapped-property-disclosure > svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  color: var(--muted-foreground);
+}
+.category-content > .property,
+.category-content > .range-property,
+.category-content > .property-select,
+.category-content > .inspector-hint {
+  margin-left: 18px;
+}
+
+/* Fields use the canvas surface, rather than the tinted sidebar surface. */
+.right-inspector [data-slot='select-trigger'],
+.right-inspector [data-slot='input'],
+.right-inspector input[type='number'],
+.mapping-category-picker [data-slot='input'],
+[data-slot='sidebar-content'] [data-slot='select-trigger'],
+[data-slot='sidebar-content'] [data-slot='input'],
+[data-slot='sidebar-content'] input[type='number'],
+[data-slot='sidebar-content'] input[type='text'] {
+  background-color: var(--background);
+  color: var(--foreground);
 }

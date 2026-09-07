@@ -2,9 +2,6 @@
 import { useState, type ReactNode } from 'react'
 import {
   ChevronRight,
-  Circle,
-  GitBranch,
-  Frame,
   RotateCcw,
   SlidersHorizontal,
   Check,
@@ -252,7 +249,6 @@ export function StyleInspector({
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="section-trigger">
           <ChevronRight size={14} />
-          <Circle size={15} />
           Nodes
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
@@ -442,7 +438,6 @@ export function StyleInspector({
       <Collapsible defaultOpen={mode === 'mappings'}>
         <CollapsibleTrigger className="section-trigger">
           <ChevronRight size={14} />
-          <GitBranch size={15} />
           Edges
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
@@ -498,7 +493,6 @@ export function StyleInspector({
       <Collapsible>
         <CollapsibleTrigger className="section-trigger">
           <ChevronRight size={14} />
-          <Frame size={15} />
           Network
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
