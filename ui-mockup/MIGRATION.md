@@ -14,7 +14,7 @@ area to its right. Keep the sidebar exclusively for style editing, with two
 disclosure levels: Nodes → Labels, Edges → Line, Network → Background.
 
 Adopt Pixelmator's direct property rows: a value field and slider where useful,
-an explicit mapped-state label, and a property-anchored mapping popover. Display
+an explicit mapped-state label, and a collapsible inline mapping editor. Display
 selected-node overrides together with their scope and a reset action. Keep the
 active network/subsystem target visible above the controls.
 
@@ -71,3 +71,30 @@ checks and the targeted e2e specs for each migrated feature.
   edge on the first entered value would be ambiguous.
 - The prototype preserves in-memory edits between networks, but does not prove
   production persistence, performance, or a full Excel keyboard model.
+
+
+## Inline mapping preview findings
+
+The second iteration implements property-local Map toggles for node fill, size,
+label size, edge width/colour, and label passthrough. Mapping configuration stays
+attached to each property and survives disabling. Collapsed summaries retain
+attribute and output information; collapsing a tree group never disables maps.
+
+Discrete mapping rows represent output styles, with searchable multi-selection
+of category values. A category belongs to at most one output row. Reassignment
+moves it, and removing an output row falls back for its previously assigned
+categories. Production adapters can expand these grouped rows into the existing
+per-category discrete map without changing its data semantics.
+
+Continuous previews support numeric and colour interpolation with two endpoints,
+clamping, numeric domain/range fields and sliders, Fit to data, and output
+reversal. Missing/invalid inputs use the property's default. The graph resolves
+selected label overrides after mapping. Mapping slider gestures have one undo
+transaction; production should apply the same transaction behavior to all
+continuous controls.
+
+Do not flatten imported production mappings to two endpoints. Preserve any
+intermediate stops and out-of-range rules; provide an advanced editor or a
+faithful read-only summary until the new UI supports them. Disabling a map in
+this prototype retains its draft configuration; production must decide where to
+retain that disabled draft without changing CX2 semantics.

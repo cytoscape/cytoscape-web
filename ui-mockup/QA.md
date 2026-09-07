@@ -33,3 +33,27 @@ and plugin integrations require production implementation and testing.
 Optional WebMCP scene selection is feature-detected but was not exercised in a
 WebMCP-enabled browser. Generated catalog components are unmodified; lint covers
 the authored app, editor components, and fixture model.
+
+
+## Mapping preview validation
+
+Seven fixture-model tests pass, including continuous interpolation/clamping,
+missing and disabled fallbacks, invalid domains, grayscale interpolation,
+non-mutating category reassignment, discrete fallback, and domain fitting.
+The new tests failed before the mapping implementation existed.
+
+Browser verification in a separate Chrome tab:
+
+- Moving kinase to the second fill row changed RAF1's rendered fill to #bdbdbd.
+- Disabling Fill mapping restored #737373; enabling retained the assignments.
+- Changing width range end from 5 to 9 changed rendered edge widths.
+- A keyboard slider adjustment from 9 to 8.9 was restored to 9 with one Undo.
+- Continuous log2FC colour mapping produced distinct grayscale node fills;
+  Reverse swapped the endpoint output (EGFR changed to #d4d4d4).
+- Collapsing Fill left its Map toggle active.
+- Inline label passthrough changed EGFR's label to receptor using type.
+- The mapping editor and graph were visually reviewed in light and dark themes.
+
+Parent quiet checks passed again: 329 files, 4,219 passing tests, one skipped.
+- Switching to MAPK showed its unmapped Fill; switching back retained EGFR's
+  enabled mapping. Adding and removing a third discrete output row worked.

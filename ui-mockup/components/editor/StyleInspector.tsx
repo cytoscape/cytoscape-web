@@ -5,7 +5,6 @@ import {
   Circle,
   GitBranch,
   Frame,
-  Link2,
   RotateCcw,
   SlidersHorizontal,
   Check,
@@ -34,6 +33,8 @@ import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { type Network, type Style } from '@/lib/editor'
+import { MappingEditor } from './MappingEditor'
+import { resolveMapping } from '@/lib/mappings'
 
 export function Choice({
   label,
@@ -201,7 +202,7 @@ export function StyleInspector({
 }: {
   network: Network
   selected: string[]
-  onStyle: (s: Partial<Style>) => void
+  onStyle: (s: Partial<Style>, transient?: boolean) => void
   mode: string
 }) {
   const s = network.style
@@ -238,6 +239,7 @@ export function StyleInspector({
                   labelSize: 12,
                   opacity: 100,
                   overrides: {},
+                  mappings: {},
                 })
               }
             >
@@ -255,18 +257,27 @@ export function StyleInspector({
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
           <Group title="Appearance" open={mode !== 'styles'}>
-            <label className="property">
-              Fill
-              <span className="color-value">
-                <input
-                  aria-label="Node fill"
-                  type="color"
-                  value={s.fill}
-                  onChange={(e) => onStyle({ fill: e.target.value })}
-                />
-                <span>{s.fill.toUpperCase()}</span>
-              </span>
-            </label>
+            <MappingEditor
+              property="fill"
+              label="Fill"
+              type="color"
+              network={network}
+              onStyle={onStyle}
+              initialOpen
+            >
+              <label className="property">
+                Fill
+                <span className="color-value">
+                  <input
+                    aria-label="Node fill"
+                    type="color"
+                    value={s.fill}
+                    onChange={(e) => onStyle({ fill: e.target.value })}
+                  />
+                  <span>{s.fill.toUpperCase()}</span>
+                </span>
+              </label>
+            </MappingEditor>
             <div className="property">
               Shape
               <Choice
@@ -284,14 +295,25 @@ export function StyleInspector({
             />
           </Group>
           <Group title="Size">
-            <Range
+            <MappingEditor
+              property="size"
               label="Diameter"
-              value={s.size}
               min={8}
               max={64}
               unit="px"
-              onChange={(size) => onStyle({ size })}
-            />
+              network={network}
+              onStyle={onStyle}
+              initialOpen
+            >
+              <Range
+                label="Diameter"
+                value={s.size}
+                min={8}
+                max={64}
+                unit="px"
+                onChange={(size) => onStyle({ size })}
+              />
+            </MappingEditor>
           </Group>
           <Group title="Border">
             <Range
@@ -303,47 +325,15 @@ export function StyleInspector({
               onChange={(border) => onStyle({ border })}
             />
           </Group>
-          <Group title="Labels" open>
-            <div className="property">
-              Text
-              <Popover>
-                <PopoverTrigger
-                  className="mapping-trigger"
-                  aria-label="Map label text"
-                >
-                  <span>{s.mapped ? s.labelAttribute : 'None'}</span>
-                  <span className="mapping-badge">
-                    <Link2 size={10} />
-                    {s.mapped ? 'Mapped' : 'Default'}
-                  </span>
-                </PopoverTrigger>
-                <PopoverContent
-                  side="right"
-                  align="start"
-                  className="mapping-popover"
-                >
-                  <PopoverTitle>Map label text</PopoverTitle>
-                  <p className="muted">Use a node attribute as its label.</p>
-                  <span>Attribute</span>
-                  <Choice
-                    label="Label attribute"
-                    value={s.labelAttribute}
-                    options={['name', 'type', 'log2FC']}
-                    onChange={(labelAttribute) =>
-                      onStyle({ labelAttribute, mapped: true })
-                    }
-                  />
-                  <span>Mapping</span>
-                  <Choice
-                    label="Label mapping"
-                    value={s.mapped ? 'Passthrough' : 'None'}
-                    options={['Passthrough', 'None']}
-                    onChange={(v) => onStyle({ mapped: v === 'Passthrough' })}
-                  />
-                  <small>Changes apply to all nodes. Overrides are kept.</small>
-                </PopoverContent>
-              </Popover>
-            </div>
+          <Group title="Labels" open={mode !== 'mappings'}>
+            <MappingEditor
+              property="labelText"
+              label="Label text"
+              type="text"
+              network={network}
+              onStyle={onStyle}
+              initialOpen
+            />
             <div className="property">
               Font
               <Choice
@@ -353,14 +343,25 @@ export function StyleInspector({
                 onChange={(font) => onStyle({ font })}
               />
             </div>
-            <Range
+            <MappingEditor
+              property="labelSize"
               label="Font size"
-              value={s.labelSize}
               min={8}
               max={24}
               unit="px"
-              onChange={(labelSize) => onStyle({ labelSize })}
-            />
+              network={network}
+              onStyle={onStyle}
+              initialOpen
+            >
+              <Range
+                label="Font size"
+                value={s.labelSize}
+                min={8}
+                max={24}
+                unit="px"
+                onChange={(labelSize) => onStyle({ labelSize })}
+              />
+            </MappingEditor>
             <label className="property">
               Color
               <input
@@ -402,7 +403,16 @@ export function StyleInspector({
                 </div>
                 <Range
                   label="Selected label size"
-                  value={s.overrides[selected[0]] ?? s.labelSize}
+                  value={
+                    s.overrides[selected[0]] ??
+                    Number(
+                      resolveMapping(
+                        s.mappings?.labelSize,
+                        network.nodes.find((n) => n.id === selected[0]) ?? {},
+                        s.labelSize,
+                      ),
+                    )
+                  }
                   min={8}
                   max={28}
                   unit="px"
@@ -429,7 +439,7 @@ export function StyleInspector({
           </Group>
         </CollapsibleContent>
       </Collapsible>
-      <Collapsible>
+      <Collapsible defaultOpen={mode === 'mappings'}>
         <CollapsibleTrigger className="section-trigger">
           <ChevronRight size={14} />
           <GitBranch size={15} />
@@ -437,23 +447,43 @@ export function StyleInspector({
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
           <Group title="Line" open>
-            <Range
+            <MappingEditor
+              property="lineWidth"
               label="Line width"
-              value={s.lineWidth}
-              min={1}
-              max={5}
+              min={0.5}
+              max={12}
               unit="px"
-              onChange={(lineWidth) => onStyle({ lineWidth })}
-            />
-            <label className="property">
-              Color
-              <input
-                type="color"
-                aria-label="Edge color"
-                value={s.lineColor}
-                onChange={(e) => onStyle({ lineColor: e.target.value })}
+              network={network}
+              onStyle={onStyle}
+              initialOpen
+            >
+              <Range
+                label="Line width"
+                value={s.lineWidth}
+                min={1}
+                max={5}
+                unit="px"
+                onChange={(lineWidth) => onStyle({ lineWidth })}
               />
-            </label>
+            </MappingEditor>
+            <MappingEditor
+              property="lineColor"
+              label="Edge colour"
+              type="color"
+              network={network}
+              onStyle={onStyle}
+              initialOpen
+            >
+              <label className="property">
+                Color
+                <input
+                  type="color"
+                  aria-label="Edge color"
+                  value={s.lineColor}
+                  onChange={(e) => onStyle({ lineColor: e.target.value })}
+                />
+              </label>
+            </MappingEditor>
           </Group>
           <Group title="Arrows">
             <Choice

@@ -1,4 +1,5 @@
 'use client'
+import { resolveMapping } from '@/lib/mappings'
 /* oxlint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex -- SVG canvas and nodes provide keyboard navigation; HTML buttons cannot wrap SVG geometry. */
 import { useState, useEffect, useRef } from 'react'
 import {
@@ -74,7 +75,9 @@ export function Graph({
         aria-label={`${network.name} graph`}
         role="application"
         tabIndex={0}
-        onKeyDown={e=>{if(e.key==='Escape')onSelect([])}}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onSelect([])
+        }}
         onClick={() => onSelect([])}
       >
         <defs>
@@ -87,7 +90,7 @@ export function Graph({
             markerHeight="6"
             orient="auto-start-reverse"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill={s.lineColor} />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
           </marker>
         </defs>
         <g
@@ -103,8 +106,12 @@ export function Graph({
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                stroke={s.lineColor}
-                strokeWidth={s.lineWidth}
+                stroke={String(
+                  resolveMapping(s.mappings?.lineColor, e, s.lineColor),
+                )}
+                strokeWidth={Number(
+                  resolveMapping(s.mappings?.lineWidth, e, s.lineWidth),
+                )}
                 strokeDasharray={
                   e.interaction === 'predicted' ? '4 4' : undefined
                 }
@@ -115,7 +122,14 @@ export function Graph({
           })}
           {network.nodes.map((n) => {
             const active = selected.includes(n.id),
-              r = isHierarchy ? 28 : s.size / 2
+              r =
+                Number(
+                  resolveMapping(
+                    s.mappings?.size,
+                    n,
+                    isHierarchy ? 56 : s.size,
+                  ),
+                ) / 2
             return (
               <g
                 key={n.id}
@@ -164,7 +178,7 @@ export function Graph({
                 {s.shape === 'Diamond' ? (
                   <path
                     d={`M 0 ${-r} L ${r} 0 L 0 ${r} L ${-r} 0 Z`}
-                    fill={s.fill}
+                    fill={String(resolveMapping(s.mappings?.fill, n, s.fill))}
                     opacity={s.opacity / 100}
                   />
                 ) : s.shape === 'Rounded rectangle' ? (
@@ -174,19 +188,21 @@ export function Graph({
                     width={r * 2}
                     height={r * 1.44}
                     rx={5}
-                    fill={s.fill}
+                    fill={String(resolveMapping(s.mappings?.fill, n, s.fill))}
                     opacity={s.opacity / 100}
                   />
                 ) : (
                   <circle
                     r={r}
-                    fill={s.fill}
+                    fill={String(resolveMapping(s.mappings?.fill, n, s.fill))}
                     opacity={s.opacity / 100}
                     stroke="color-mix(in srgb, var(--primary), transparent 60%)"
                     strokeWidth={s.border}
                   />
                 )}
-                {s.mapped && (
+                {(s.mappings?.labelText
+                  ? s.mappings.labelText.enabled || s.labelText
+                  : s.mapped) && (
                   <text
                     y={
                       s.labelPosition === 'Below'
@@ -197,7 +213,11 @@ export function Graph({
                     }
                     textAnchor="middle"
                     style={{
-                      fontSize: s.overrides[n.id] ?? s.labelSize,
+                      fontSize:
+                        s.overrides[n.id] ??
+                        Number(
+                          resolveMapping(s.mappings?.labelSize, n, s.labelSize),
+                        ),
                       fill: s.labelColor || undefined,
                       fontFamily:
                         s.font === 'Georgia'
@@ -208,7 +228,13 @@ export function Graph({
                       fontWeight: active ? 600 : 400,
                     }}
                   >
-                    {n[s.labelAttribute]}
+                    {s.mappings?.labelText
+                      ? resolveMapping(
+                          s.mappings.labelText,
+                          n,
+                          s.labelText || '',
+                        )
+                      : n[s.labelAttribute]}
                   </text>
                 )}
               </g>

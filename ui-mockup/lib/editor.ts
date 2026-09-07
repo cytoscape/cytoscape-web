@@ -1,9 +1,12 @@
+import type { Mapping, MappableProperty } from './mappings.ts'
 export type Row = Record<string, string>
 export type Node = Row & { id: string; name: string; x: string; y: string }
 export type Edge = Row & { id: string; source: string; target: string }
 export type TableKind = 'nodes' | 'edges' | 'network'
 export type Column = { key: string; label: string }
 export type Style = {
+  mappings?: Partial<Record<MappableProperty, Mapping>>
+  labelText?: string
   fill: string
   size: number
   opacity: number

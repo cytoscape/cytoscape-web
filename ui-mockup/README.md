@@ -15,11 +15,12 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:5511. The **UI study** menu switches among the three scenes:
+Open http://localhost:5511. The **UI study** menu switches among the four scenes:
 
 - Main workspace: `/`
 - Dark style editor with selected nodes: `/?scene=styles`
 - Drilled-in HiView subsystem: `/?scene=hiview`
+- Inline mappings: `/?scene=mappings`
 
 Generated concepts are in `public/concepts/`. These are visual explorations;
 the running prototype is authoritative for labels, layout, and interaction.
@@ -44,6 +45,28 @@ Import remains in File and is disabled in this fixture prototype. Account,
 application integrations, image/chart styling, and a persistent style library
 are outside this study. The simple SVG graph and DOM table are interaction
 fixtures, not production-scale renderers.
+
+## Mapping preview
+
+Open **UI study → 04 · Inline mappings**. This seeds node fill by `type` and
+edge width by `confidence` the first time; later visits retain your edits.
+
+Supported properties are node fill, diameter, label font size, edge width,
+edge colour, and label text. Each has a Map toggle and a collapsible inline
+editor. Turning Map off uses the default and retains the mapping configuration.
+Collapsing the editor keeps the mapping active.
+
+Continuous numeric and colour mappings use two endpoints, editable domain
+fields, Fit to data, and Reverse. Numeric outputs also have a range slider.
+Missing values use the editable fallback; out-of-domain values clamp.
+Discrete mappings group attribute values under each output value. Select values
+opens a searchable picker with counts. Assigning a category to a different row
+moves it; deleting a row returns its categories to the fallback. Attribute
+changes clear the assignments because they refer to the previous column.
+
+Label passthrough is inline. Selected label-size overrides take precedence over
+mapped sizes. Mapping slider changes update the graph live and commit a single
+undo entry per gesture. Fixture edits are in memory only.
 
 ## Validate
 

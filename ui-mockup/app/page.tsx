@@ -71,21 +71,39 @@ export default function Page() {
   const [undo, setUndo] = useState<Record<string, Network[]>>({})
   const [redo, setRedo] = useState<Record<string, Network[]>>({})
   const network = networks[current]
-  const change = (next: Network) => {
-    setUndo(prev => ({...prev, [next.id]: [...(prev[next.id] ?? []), networks[next.id]].slice(-100)}))
-    setRedo(prev => ({...prev, [next.id]: []}))
-    setNetworks(prev => ({...prev, [next.id]: next}))
+  const mappingGesture = useRef<Network | null>(null)
+  const change = (next: Network, transient = false) => {
+    if (transient) {
+      mappingGesture.current ??= networks[next.id]
+      setNetworks((prev) => ({ ...prev, [next.id]: next }))
+      return
+    }
+    const before =
+      mappingGesture.current?.id === next.id
+        ? mappingGesture.current
+        : networks[next.id]
+    mappingGesture.current = null
+    setUndo((prev) => ({
+      ...prev,
+      [next.id]: [...(prev[next.id] ?? []), before].slice(-100),
+    }))
+    setRedo((prev) => ({ ...prev, [next.id]: [] }))
+    setNetworks((prev) => ({ ...prev, [next.id]: next }))
   }
-  const changeStyle = (style: Partial<Style>) => change({...network, style: {...network.style, ...style}})
+  const changeStyle = (style: Partial<Style>, transient = false) =>
+    change({ ...network, style: { ...network.style, ...style } }, transient)
   function history(direction: 'undo' | 'redo') {
     const from = direction === 'undo' ? undo : redo
     const previous = from[current]?.at(-1)
     if (!previous) return
     const setFrom = direction === 'undo' ? setUndo : setRedo
     const setTo = direction === 'undo' ? setRedo : setUndo
-    setFrom(prev => ({...prev, [current]: prev[current].slice(0, -1)}))
-    setTo(prev => ({...prev, [current]: [...(prev[current] ?? []), network]}))
-    setNetworks(prev => ({...prev, [current]: previous}))
+    setFrom((prev) => ({ ...prev, [current]: prev[current].slice(0, -1) }))
+    setTo((prev) => ({
+      ...prev,
+      [current]: [...(prev[current] ?? []), network],
+    }))
+    setNetworks((prev) => ({ ...prev, [current]: previous }))
   }
   function choose(id: string) {
     setCurrent(id)
@@ -109,6 +127,43 @@ export default function Page() {
   }
   function scene(next: string) {
     setMode(next)
+    if (next === 'mappings') {
+      setNetworks((prev) => ({
+        ...prev,
+        egfr: {
+          ...prev.egfr,
+          style: {
+            ...prev.egfr.style,
+            mappings: {
+              ...prev.egfr.style.mappings,
+              fill: prev.egfr.style.mappings?.fill ?? {
+                enabled: true,
+                kind: 'discrete',
+                attribute: 'type',
+                domain: [-0.42, 2.41],
+                range: ['#d4d4d4', '#404040'],
+                entries: [
+                  {
+                    id: 'dark',
+                    value: '#404040',
+                    categories: ['receptor', 'kinase'],
+                  },
+                  { id: 'light', value: '#bdbdbd', categories: ['adaptor'] },
+                ],
+              },
+              lineWidth: prev.egfr.style.mappings?.lineWidth ?? {
+                enabled: true,
+                kind: 'continuous',
+                attribute: 'confidence',
+                domain: [0.65, 0.95],
+                range: [1, 5],
+                entries: [],
+              },
+            },
+          },
+        },
+      }))
+    }
     setSelected(next === 'styles' ? ['egfr-0', 'egfr-1', 'egfr-2'] : [])
     setDark(next === 'styles')
     setCollapsed(next !== 'workspace')
@@ -124,7 +179,10 @@ export default function Page() {
   }, [dark])
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get('scene')
-    const frame = requestAnimationFrame(() => { if (requested && ['styles', 'hiview'].includes(requested)) scene(requested) })
+    const frame = requestAnimationFrame(() => {
+      if (requested && ['styles', 'hiview', 'mappings'].includes(requested))
+        scene(requested)
+    })
     return () => cancelAnimationFrame(frame)
   }, [])
   useEffect(() => {
@@ -158,7 +216,9 @@ export default function Page() {
     URL.revokeObjectURL(url)
   }
   const apiRef = useRef({ scene, networks, current })
-  useEffect(() => { apiRef.current = { scene, networks, current } })
+  useEffect(() => {
+    apiRef.current = { scene, networks, current }
+  })
   useEffect(() => {
     const context = (
       document as Document & {
@@ -177,13 +237,13 @@ export default function Page() {
         {
           name: 'show_design_scene',
           description:
-            'Show one of the three Cytoscape design scenes; edits remain in memory.',
+            'Show one of the Cytoscape design scenes; edits remain in memory.',
           inputSchema: {
             type: 'object',
             properties: {
               scene: {
                 type: 'string',
-                enum: ['workspace', 'styles', 'hiview'],
+                enum: ['workspace', 'styles', 'hiview', 'mappings'],
               },
             },
             required: ['scene'],
@@ -191,7 +251,10 @@ export default function Page() {
           },
           execute: async (input: unknown) => {
             const value = (input as { scene?: string })?.scene
-            if (!value || !['workspace', 'styles', 'hiview'].includes(value))
+            if (
+              !value ||
+              !['workspace', 'styles', 'hiview', 'mappings'].includes(value)
+            )
               throw new Error('Unknown scene')
             apiRef.current.scene(value)
             await new Promise((resolve) =>
@@ -443,6 +506,9 @@ export default function Page() {
               <DropdownMenuItem onClick={() => scene('styles')}>
                 02 · Style editing
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => scene('mappings')}>
+                04 · Inline mappings
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => scene('hiview')}>
                 03 · HiView subsystem
               </DropdownMenuItem>
@@ -450,7 +516,8 @@ export default function Page() {
               <DropdownMenuItem
                 render={
                   <a
-                    aria-label="View 01-workspace concept" href="/concepts/01-workspace.png"
+                    aria-label="View 01-workspace concept"
+                    href="/concepts/01-workspace.png"
                     target="_blank"
                     rel="noreferrer"
                   />
@@ -461,7 +528,8 @@ export default function Page() {
               <DropdownMenuItem
                 render={
                   <a
-                    aria-label="View 02-style-editor concept" href="/concepts/02-style-editor.png"
+                    aria-label="View 02-style-editor concept"
+                    href="/concepts/02-style-editor.png"
                     target="_blank"
                     rel="noreferrer"
                   />
@@ -472,7 +540,8 @@ export default function Page() {
               <DropdownMenuItem
                 render={
                   <a
-                    aria-label="View 03-hiview concept" href="/concepts/03-hiview.png"
+                    aria-label="View 03-hiview concept"
+                    href="/concepts/03-hiview.png"
                     target="_blank"
                     rel="noreferrer"
                   />
@@ -500,7 +569,6 @@ export default function Page() {
         <div className="editor-body">
           <div className="central-workspace">
             <Graph
-              key={`${current}-${mode}`}
               network={network}
               selected={selected}
               onSelect={setSelected}

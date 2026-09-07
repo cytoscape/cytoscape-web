@@ -49,3 +49,60 @@ test('numeric sort is numeric and non-mutating', () => {
   )
   assert.equal(rows[0].score, '10')
 })
+
+const { resolveMapping, assignCategory, fitDomain } =
+  await import('./mappings.ts')
+
+test('continuous mappings interpolate, clamp and fall back on missing data', () => {
+  const m = {
+    enabled: true,
+    kind: 'continuous',
+    attribute: 'score',
+    domain: [0, 10],
+    range: [1, 5],
+    entries: [],
+  }
+  assert.equal(resolveMapping(m, { score: '5' }, 2), 3)
+  assert.equal(resolveMapping(m, { score: '20' }, 2), 5)
+  assert.equal(resolveMapping(m, { score: '' }, 2), 2)
+  assert.equal(resolveMapping({ ...m, enabled: false }, { score: '5' }, 2), 2)
+  assert.equal(resolveMapping({ ...m, domain: [2, 2] }, { score: '5' }, 2), 2)
+  assert.equal(
+    resolveMapping(
+      { ...m, range: ['#000000', '#ffffff'] },
+      { score: '5' },
+      '#737373',
+    ),
+    '#808080',
+  )
+})
+
+test('discrete assignments move categories between output rows without mutation', () => {
+  const entries = [
+    { id: 'a', value: 12, categories: ['kinase', 'adaptor'] },
+    { id: 'b', value: 24, categories: [] },
+  ]
+  const next = assignCategory(entries, 'b', 'kinase', true)
+  assert.deepEqual(next[0].categories, ['adaptor'])
+  assert.deepEqual(next[1].categories, ['kinase'])
+  assert.deepEqual(entries[0].categories, ['kinase', 'adaptor'])
+  const m = {
+    enabled: true,
+    kind: 'discrete',
+    attribute: 'type',
+    entries: next,
+    domain: [0, 1],
+    range: [1, 5],
+  }
+  assert.equal(resolveMapping(m, { type: 'kinase' }, 8), 24)
+  assert.equal(resolveMapping(m, { type: 'unknown' }, 8), 8)
+})
+
+test('domain fitting ignores blanks and invalid values, expanding constant data', () => {
+  assert.deepEqual(
+    fitDomain([{ x: '' }, { x: '-2' }, { x: '4' }, { x: 'bad' }], 'x'),
+    [-2, 4],
+  )
+  assert.deepEqual(fitDomain([{ x: '3' }], 'x'), [3, 4])
+  assert.deepEqual(fitDomain([], 'x'), [0, 1])
+})

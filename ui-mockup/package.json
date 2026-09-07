@@ -9,7 +9,7 @@
     "dev": "vinext dev --port 5511",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
-    "lint": "oxlint app components/editor lib/editor.ts",
+    "lint": "oxlint app components/editor lib/editor.ts lib/mappings.ts",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
     "test:quiet": "node --test --test-reporter=dot lib/editor.test.mjs"
