@@ -251,6 +251,15 @@ export function MappingEditor({
           <ChevronRight size={12} />
           <span>{label}</span>
         </CollapsibleTrigger>
+        {!open && (
+          <div className="mapping-summary">
+            {mapping.enabled
+              ? summary
+              : type === 'text'
+                ? fallback || 'No text'
+                : `${fallback}${unit}`}
+          </div>
+        )}
         <Button
           size="xs"
           variant={mapping.enabled ? 'secondary' : 'ghost'}
@@ -265,15 +274,6 @@ export function MappingEditor({
           Map
         </Button>
       </div>
-      {!open && (
-        <div className="mapping-summary">
-          {mapping.enabled
-            ? summary
-            : type === 'text'
-              ? fallback || 'No text'
-              : `${fallback}${unit}`}
-        </div>
-      )}
       <CollapsibleContent className="mapping-body">
         {!mapping.enabled ? (
           (children ?? (

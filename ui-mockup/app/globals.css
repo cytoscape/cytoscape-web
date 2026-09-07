@@ -508,8 +508,7 @@ tbody tr:hover {
 }
 .property-tree {
   margin-left: 25px;
-  padding: 0 14px 6px 10px;
-  border-left: 1px solid var(--border);
+  padding: 0 14px 0 11px;
 }
 .category-trigger {
   display: flex;
@@ -527,11 +526,12 @@ tbody tr:hover {
   transform: rotate(90deg);
 }
 .category-content {
-  padding: 0 0 10px 18px;
+  padding: 0 0 0 18px;
 }
 .category-content .property {
   font-size: 12px;
-  margin: 10px 0;
+  margin: 0;
+  min-height: 32px;
   gap: 8px;
 }
 .property-select {
@@ -1144,11 +1144,7 @@ tbody tr:hover {
 
 /* Inline mapping editors share the inspector's compact, neutral controls. */
 .mapped-property {
-  border-bottom: 1px solid var(--border);
-  padding: 0 0 10px;
-}
-.mapped-property:last-child {
-  border-bottom: 0;
+  padding: 0;
 }
 .mapped-property-heading,
 .mapping-caption,
@@ -1175,14 +1171,16 @@ tbody tr:hover {
 .mapping-summary {
   font-size: 11px;
   color: var(--muted-foreground);
-  padding: 3px 0 0 18px;
-  overflow-wrap: anywhere;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mapping-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 8px 0 0 18px;
+  padding: 4px 0 12px 18px;
   min-width: 0;
 }
 .mapping-field {
@@ -1210,7 +1208,7 @@ tbody tr:hover {
   margin-top: 3px;
 }
 .mapping-caption button,
-.mapped-property-heading > [data-slot=button] {
+.mapped-property-heading > [data-slot='button'] {
   font-size: 10px;
 }
 .mapping-endpoints {
@@ -1250,8 +1248,7 @@ tbody tr:hover {
   line-height: 1.4;
 }
 .mapping-fallback {
-  padding-top: 9px;
-  border-top: 1px solid var(--border);
+  padding-top: 0;
   display: grid;
   grid-template-columns: 1fr 90px;
   align-items: center;
@@ -1367,4 +1364,24 @@ tbody tr:hover {
 [data-slot='sidebar-content'] input[type='text'] {
   background-color: var(--background);
   color: var(--foreground);
+}
+
+/* Expanded controls own their spacing; nested legacy margins must not add to it. */
+.category-content .range-property {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.category-content .range-property .property {
+  margin: 0;
+}
+.mapping-body .range-property {
+  padding: 0;
+}
+.category-content > .property {
+  padding: 4px 0;
+  min-height: 36px;
 }

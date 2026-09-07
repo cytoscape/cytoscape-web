@@ -80,3 +80,4 @@
 
 - [2026-09-07] Sidebar hierarchy: use one font size and fixed disclosure/indent spacing across section, group, and property rows. Scope small action-button typography to the action itself so it cannot shrink the property disclosure label.
 - [2026-09-07] Prototype form surfaces: dropdowns and text/number inputs should have white backgrounds in light mode, including inline mapping controls; retain dark surfaces in dark mode.
+- [2026-09-07] Sidebar spacing: collapsed tree rows should have one fixed height; keep summaries inline. Expanded editors own their gaps, so remove inherited control margins and per-property separator lines.
