@@ -89,3 +89,4 @@
 - [2026-09-08] Spreadsheet surface: use a small outer margin, rounded corners and a light shadow like the ChatGPT composer. Account for margins in full-height sizing and pointer resize calculations.
 - [2026-09-08] Mapping sliders need an extra 4px above their track so the thumb clears endpoint input borders without weakening the domain/range grouping.
 - [2026-09-08] Numeric style controls follow Pixelmator: quiet unfocused readouts, white editing surface on focus, right-aligned numbers with units inside, and a slider for every numeric style value. Single controls such as Arrows should be direct rows rather than empty hierarchy layers.
+- [2026-09-08] Style sidebar mapping icons use a dedicated 36px right gutter. Widen the panel, not the control area, so defaults and expanded mappings keep identical right edges.

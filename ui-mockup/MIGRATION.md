@@ -122,3 +122,7 @@ Numeric style controls use quiet readouts with right-aligned numbers and units
 inside a shared field that appears on focus. Pair each numeric default, mapping
 output and fallback with a slider using sensible property bounds. Keep simple
 properties such as Arrows directly visible instead of nesting a single control.
+
+Reserve a dedicated mapping-action gutter to the right of the style controls.
+The prototype uses a 340px sidebar with a 36px gutter, preserving the original
+control width and alignment for both defaults and expanded mapping editors.

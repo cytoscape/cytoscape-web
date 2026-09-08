@@ -142,3 +142,11 @@ Arrows is a direct dropdown under Edges. Browser checks confirmed typing a
 and line width reaches 12px. Focus reveals a white field; blur restores a
 transparent readout. Prototype lint, typecheck, nine tests and build passed;
 parent quiet checks passed with 4,219 tests and one skipped.
+
+## Dedicated mapping icon column
+
+Widened the desktop sidebar from 304px to 340px and reserved the added 36px
+for mapping actions. Browser measurements confirm controls still end at x=289
+and all visible mapping buttons occupy x=301–325. Enabling Diameter mapping
+keeps the domain editor right edge at x=289 and its button in the same column.
+Prototype lint/typecheck passed.

@@ -1771,3 +1771,19 @@ tbody tr:hover {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Reserve a mapping action gutter without widening the style controls. */
+[data-slot='sidebar-content'] {
+  padding-right: 36px;
+}
+.mapped-property-heading {
+  position: relative;
+}
+.mapped-property-heading > .property-map-toggle {
+  position: absolute;
+  right: -36px;
+  top: 4px;
+}
+[data-slot='sidebar'][data-mobile='true'] {
+  width: min(340px, calc(100vw - 32px));
+}

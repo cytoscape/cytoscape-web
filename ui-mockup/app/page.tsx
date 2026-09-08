@@ -300,7 +300,7 @@ export default function Page() {
     return () => controller.abort()
   }, [])
   return (
-    <SidebarProvider style={{ '--sidebar-width': '304px' } as CSSProperties}>
+    <SidebarProvider style={{ '--sidebar-width': '340px' } as CSSProperties}>
       <Sidebar className="editor-sidebar" collapsible="offcanvas">
         <SidebarHeader>
           <NetworkPicker
