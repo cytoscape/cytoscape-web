@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, type CSSProperties } from 'react'
+import hotkeys from 'hotkeys-js'
 import {
   ChevronsUpDown,
   Sun,
@@ -21,6 +22,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import {
   Menubar,
@@ -29,6 +31,7 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarShortcut,
   MenubarSub,
   MenubarSubTrigger,
   MenubarSubContent,
@@ -63,6 +66,25 @@ import {
 } from '@/lib/editor'
 
 export default function Page() {
+  return (
+    <SidebarProvider style={{ '--sidebar-width': '340px' } as CSSProperties}>
+      <Workspace />
+    </SidebarProvider>
+  )
+}
+
+function Workspace() {
+  const { toggleSidebar, open, openMobile, isMobile } = useSidebar()
+  const styleOpen = isMobile ? openMobile : open
+  const [isMac, setIsMac] = useState(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() =>
+      setIsMac(/Mac|iPhone|iPad/.test(navigator.platform)),
+    )
+    return () => cancelAnimationFrame(frame)
+  }, [])
+  const shortcut = (key: string, shift = false) =>
+    isMac ? `${shift ? '⇧' : ''}⌘${key}` : `Ctrl+${shift ? 'Shift+' : ''}${key}`
   const [networks, setNetworks] = useState(makeFixtures),
     [current, setCurrent] = useState('egfr'),
     [dark, setDark] = useState(false),
@@ -223,18 +245,24 @@ export default function Page() {
     return () => clearTimeout(timer)
   }, [notice])
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.key.toLowerCase() === 'z' &&
-        !(e.target instanceof HTMLInputElement)
-      ) {
-        e.preventDefault()
-        history(e.shiftKey ? 'redo' : 'undo')
+    const bindings: [string, () => void][] = [
+      ['command+z,ctrl+z', () => history('undo')],
+      ['command+shift+z,ctrl+shift+z,ctrl+y', () => history('redo')],
+      ['command+b,ctrl+b', toggleSidebar],
+      ['command+j,ctrl+j', toggleSpreadsheet],
+      ['command+shift+b,ctrl+shift+b', () => setInspector((v) => !v)],
+    ]
+    const handlers = bindings.map(([keys, action]) => {
+      const handler = (event: KeyboardEvent) => {
+        if (event.isComposing) return
+        event.preventDefault()
+        if (!event.repeat) action()
       }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+      hotkeys(keys, handler)
+      return { keys, handler }
+    })
+    return () =>
+      handlers.forEach(({ keys, handler }) => hotkeys.unbind(keys, handler))
   })
   function exportData() {
     const blob = new Blob([JSON.stringify(network, null, 2)], {
@@ -303,7 +331,7 @@ export default function Page() {
     return () => controller.abort()
   }, [])
   return (
-    <SidebarProvider style={{ '--sidebar-width': '340px' } as CSSProperties}>
+    <>
       <Sidebar className="editor-sidebar" collapsible="offcanvas">
         <SidebarHeader>
           <NetworkPicker
@@ -368,6 +396,7 @@ export default function Page() {
                 >
                   <Undo2 />
                   Undo
+                  <MenubarShortcut>{shortcut('Z')}</MenubarShortcut>
                 </MenubarItem>
                 <MenubarItem
                   disabled={!redo[current]?.length}
@@ -375,6 +404,7 @@ export default function Page() {
                 >
                   <Redo2 />
                   Redo
+                  <MenubarShortcut>{shortcut('Z', true)}</MenubarShortcut>
                 </MenubarItem>
                 <MenubarSeparator />
                 <MenubarItem
@@ -390,14 +420,20 @@ export default function Page() {
             <MenubarMenu>
               <MenubarTrigger>View</MenubarTrigger>
               <MenubarContent className="main-menu-content">
+                <MenubarItem onClick={toggleSidebar}>
+                  {styleOpen ? 'Hide' : 'Show'} style sidebar
+                  <MenubarShortcut>{shortcut('B')}</MenubarShortcut>
+                </MenubarItem>
                 <MenubarItem onClick={toggleSpreadsheet}>
                   {collapsed ? 'Show' : 'Hide'} spreadsheet
+                  <MenubarShortcut>{shortcut('J')}</MenubarShortcut>
                 </MenubarItem>
                 <MenubarItem onClick={toggleNetwork}>
                   {networkHidden ? 'Show' : 'Hide'} network
                 </MenubarItem>
                 <MenubarItem onClick={() => setInspector(!inspector)}>
                   {inspector ? 'Hide' : 'Show'} inspector
+                  <MenubarShortcut>{shortcut('B', true)}</MenubarShortcut>
                 </MenubarItem>
                 <MenubarItem onClick={() => setDark(!dark)}>
                   {dark ? 'Light' : 'Dark'} appearance
@@ -818,6 +854,6 @@ export default function Page() {
           </output>
         )}
       </main>
-    </SidebarProvider>
+    </>
   )
 }

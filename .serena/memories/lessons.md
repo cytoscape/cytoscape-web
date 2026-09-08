@@ -93,3 +93,4 @@
 - [2026-09-08] Refine quiet numeric controls: omit px labels, align mapping minimums left and maximums right to slider ends, and reduce endpoint field height. Portalled dropdown options must match their trigger typography. Enabled mapping buttons use solid black with white icons for clear state contrast.
 - [2026-09-08] Quiet mapping readouts need compact actual row heights, not just smaller gaps. Use 20px captions and 18px endpoint rows; omit the redundant outside-domain explanation.
 - [2026-09-08] Edge draft row clicks must focus the first missing endpoint (source, then target). Do not render an invisible create button over a blank draft cell; show Create edge only when both endpoints exist. Use Source node and Target node placeholders.
+- [2026-09-08] Shortcut hints should use light grey Mac-style labels, visually secondary to menu text. Use one shortcut registration path to avoid duplicate panel toggles and preserve normal text editing in inputs.

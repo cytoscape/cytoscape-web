@@ -1860,3 +1860,11 @@ tbody tr:hover {
 .draft-row > td {
   cursor: text;
 }
+.main-menu-content [data-slot='menubar-shortcut'] {
+  color: #999999;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin-left: auto;
+  padding-left: 24px;
+}

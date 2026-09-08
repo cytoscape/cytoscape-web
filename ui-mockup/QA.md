@@ -189,3 +189,12 @@ button when complete. The create button is absent while either endpoint is
 missing, so it cannot intercept blank-cell clicks. Browser verified blank-cell
 focus with neither endpoint, source only, and both selected. Source placeholder
 is Source node. Prototype lint/typecheck and parent quiet checks passed.
+
+## Keyboard shortcuts
+
+Replaced ad hoc undo/sidebar listeners with hotkeys-js registrations and
+handler-specific cleanup. Browser verified Cmd+B, Cmd+J and Cmd+Shift+B toggle
+the intended panel once; Cmd+Z restored diameter from 40 to 24 and Cmd+Shift+Z
+restored 40. Cmd+B inside the diameter input left the sidebar open. Reviewed
+View menu shortcut hints in light grey. Prototype lint, typecheck, nine tests
+and build passed; parent quiet checks passed (4,219 tests, one skipped).

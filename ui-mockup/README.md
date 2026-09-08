@@ -87,3 +87,15 @@ npm run build
 See [QA.md](QA.md) for browser checks and [MIGRATION.md](MIGRATION.md) for the
 revised production migration plan. All dependencies are owned by this folder;
 the parent TypeScript project excludes it.
+
+## Keyboard shortcuts
+
+Shortcuts use hotkeys-js and appear in Edit/View menus with platform-aware,
+light-grey labels. Use Cmd on Mac or Ctrl elsewhere:
+
+- Z: undo; Shift+Z: redo (Ctrl+Y also works).
+- B: toggle Style sidebar.
+- J: toggle spreadsheet.
+- Shift+B: toggle Inspector.
+
+Inputs, selects and editable text retain their normal editing shortcuts.
