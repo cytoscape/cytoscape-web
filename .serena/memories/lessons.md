@@ -98,3 +98,4 @@
 - [2026-09-08] Scope mapping fallback bold styling to its label (first child), never every span: numeric value wrappers are spans too. Group fallback values with their slider using the same compact spacing as domain/range controls.
 - [2026-09-08] Updated style-divider preference: use subtle indented horizontal lines between sibling groups/properties, like GeneMANIA. Keep each expanded property and its mapping controls together without internal divider lines.
 - [2026-09-08] Style hierarchy dividers include a top border on the first child at each level, not only between siblings.
+- [2026-09-08] Extend style hierarchy dividers through the mapper gutter to the mapping button's right edge, visually joining the button to its property row while preserving control widths.
