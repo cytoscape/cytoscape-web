@@ -494,9 +494,6 @@ export function MappingEditor({
                       }}
                     />
                   )}
-                  <small className="mapping-note">
-                    Outside domain: use nearest endpoint.
-                  </small>
                 </fieldset>
               </>
             )}

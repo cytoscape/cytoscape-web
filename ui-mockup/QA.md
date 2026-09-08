@@ -160,3 +160,8 @@ removed their redundant arrows. Dropdown options match trigger typography
 with white icons. Browser measurements confirmed matching 11px menu/trigger
 text, left/right endpoint alignment and no px labels in the sidebar. Prototype
 lint, typecheck, nine tests and build passed; parent quiet checks passed.
+
+Further reduced mapping density to 20px caption rows and 18px numeric rows,
+with no internal flex gap and smaller group margins. Removed the outside-domain
+explanation. Browser measured a 48px domain group and confirmed the text is gone;
+prototype lint/typecheck and parent quiet checks passed.

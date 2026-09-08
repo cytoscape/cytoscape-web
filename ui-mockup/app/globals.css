@@ -1808,12 +1808,12 @@ tbody tr:hover {
 }
 .mapping-endpoints .number-unit {
   width: 100%;
-  height: 22px;
+  height: 18px;
   padding: 0;
 }
 [data-slot='sidebar-content'] .mapping-endpoints input[type='number'] {
   width: 100%;
-  height: 22px;
+  height: 18px;
   padding: 1px 5px;
   font-size: 11px;
 }
@@ -1825,7 +1825,18 @@ tbody tr:hover {
   text-align: left;
 }
 .mapping-control-group {
-  gap: 2px;
+  gap: 0;
+  margin-top: 4px;
+}
+.mapping-control-group .mapping-caption,
+.mapping-control-group .mapping-caption button {
+  height: 20px;
+  min-height: 20px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.mapping-control-group + .mapping-fallback {
+  margin-top: 4px;
 }
 .mapping-control-group > [data-slot='slider'] {
   margin-top: 6px;
@@ -1840,4 +1851,7 @@ tbody tr:hover {
 }
 .dark .property-map-toggle[aria-pressed='true'] {
   border-color: #737373;
+}
+.mapping-control-group .mapping-gradient {
+  margin: 2px 0 4px;
 }
