@@ -48,18 +48,20 @@ function NodePicker({
   value,
   onChange,
   label,
+  placeholder = label,
 }: {
   network: Network
   value: string
   onChange: (id: string) => void
   label: string
+  placeholder?: string
 }) {
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState('')
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className="cell-node-picker" aria-label={label}>
-        {network.nodes.find((n) => n.id === value)?.name || label}
+        {network.nodes.find((n) => n.id === value)?.name || placeholder}
         <ChevronDown size={12} />
       </PopoverTrigger>
       <PopoverContent>
@@ -123,6 +125,7 @@ export function Spreadsheet({
   } | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null),
     [newHeading, setNewHeading] = useState('')
+  const [columnFocused, setColumnFocused] = useState(false)
   const [nodeDraft, setNodeDraft] = useState(''),
     [source, setSource] = useState(''),
     [target, setTarget] = useState(''),
@@ -415,7 +418,9 @@ export function Spreadsheet({
                             ref={newColumnInput}
                             className="blank-heading"
                             aria-label="New column name"
-                            placeholder="+"
+                            placeholder={columnFocused ? 'Add column' : '+'}
+                            onFocus={() => setColumnFocused(true)}
+                            onBlur={() => setColumnFocused(false)}
                             value={newHeading}
                             onChange={(e) => setNewHeading(e.target.value)}
                             onKeyDown={(e) => {
@@ -531,7 +536,7 @@ export function Spreadsheet({
                               <input
                                 ref={newRowInput}
                                 aria-label="New node name"
-                                placeholder="Add a node…"
+                                placeholder="Add node"
                                 value={nodeDraft}
                                 onChange={(e) => setNodeDraft(e.target.value)}
                                 onKeyDown={(e) => {
@@ -541,6 +546,7 @@ export function Spreadsheet({
                             ) : kind === 'edges' && c.key === 'source' ? (
                               <NodePicker
                                 label="Choose source"
+                                placeholder="Add edge"
                                 network={network}
                                 value={source}
                                 onChange={setSource}
@@ -548,6 +554,7 @@ export function Spreadsheet({
                             ) : kind === 'edges' && c.key === 'target' ? (
                               <NodePicker
                                 label="Choose target"
+                                placeholder="Target node"
                                 network={network}
                                 value={target}
                                 onChange={setTarget}
@@ -560,7 +567,7 @@ export function Spreadsheet({
                               <input
                                 ref={newRowInput}
                                 aria-label="New property name"
-                                placeholder="Add a property…"
+                                placeholder="Add property"
                                 value={propertyDraft}
                                 onChange={(e) =>
                                   setPropertyDraft(e.target.value)
