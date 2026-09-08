@@ -92,3 +92,4 @@
 - [2026-09-08] Style sidebar mapping icons use a dedicated 36px right gutter. Widen the panel, not the control area, so defaults and expanded mappings keep identical right edges.
 - [2026-09-08] Refine quiet numeric controls: omit px labels, align mapping minimums left and maximums right to slider ends, and reduce endpoint field height. Portalled dropdown options must match their trigger typography. Enabled mapping buttons use solid black with white icons for clear state contrast.
 - [2026-09-08] Quiet mapping readouts need compact actual row heights, not just smaller gaps. Use 20px captions and 18px endpoint rows; omit the redundant outside-domain explanation.
+- [2026-09-08] Edge draft row clicks must focus the first missing endpoint (source, then target). Do not render an invisible create button over a blank draft cell; show Create edge only when both endpoints exist. Use Source node and Target node placeholders.

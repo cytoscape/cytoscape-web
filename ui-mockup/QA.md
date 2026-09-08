@@ -183,3 +183,9 @@ focus the source picker. Browser verified blank row, plus gutter, blank column,
 and corner focus; created a node and column with Enter; and verified Network
 draft cells focus New property name. Prototype lint/typecheck and parent checks
 passed.
+
+Edge draft focus now follows the first missing endpoint, then the Create edge
+button when complete. The create button is absent while either endpoint is
+missing, so it cannot intercept blank-cell clicks. Browser verified blank-cell
+focus with neither endpoint, source only, and both selected. Source placeholder
+is Source node. Prototype lint/typecheck and parent quiet checks passed.

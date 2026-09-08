@@ -502,16 +502,22 @@ export function Spreadsheet({
                       <TableRow
                         className="draft-row"
                         onClick={(e) => {
-                          const target = e.target as HTMLElement
+                          const clickedElement = e.target as HTMLElement
                           if (
-                            target.closest('input, button, [role="combobox"]')
+                            clickedElement.closest(
+                              'input, button, [role="combobox"]',
+                            )
                           )
                             return
                           if (newRowInput.current) newRowInput.current.focus()
                           else
                             e.currentTarget
                               .querySelector<HTMLButtonElement>(
-                                '.cell-node-picker',
+                                !source
+                                  ? '[aria-label="Choose source"]'
+                                  : !target
+                                    ? '[aria-label="Choose target"]'
+                                    : '.commit-edge',
                               )
                               ?.focus()
                         }}
@@ -546,7 +552,7 @@ export function Spreadsheet({
                             ) : kind === 'edges' && c.key === 'source' ? (
                               <NodePicker
                                 label="Choose source"
-                                placeholder="Add edge"
+                                placeholder="Source node"
                                 network={network}
                                 value={source}
                                 onChange={setSource}
@@ -559,9 +565,12 @@ export function Spreadsheet({
                                 value={target}
                                 onChange={setTarget}
                               />
-                            ) : kind === 'edges' && i === 2 ? (
+                            ) : kind === 'edges' &&
+                              i === 2 &&
+                              source &&
+                              target ? (
                               <button className="commit-edge" onClick={draft}>
-                                {source || target ? 'Create edge ↵' : ''}
+                                Create edge ↵
                               </button>
                             ) : kind === 'network' && i === 0 ? (
                               <input
