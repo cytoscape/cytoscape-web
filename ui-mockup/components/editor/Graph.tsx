@@ -15,6 +15,7 @@ export function Graph({
   network,
   selected,
   onSelect,
+  onNodeClick,
   onOpen,
   confidence,
   physical,
@@ -23,6 +24,7 @@ export function Graph({
   network: Network
   selected: string[]
   onSelect: (ids: string[]) => void
+  onNodeClick: (id: string) => void
   onOpen: () => void
   confidence: number
   physical: boolean
@@ -141,6 +143,7 @@ export function Graph({
                 transform={`translate(${point(n).x},${point(n).y})`}
                 onClick={(e) => {
                   e.stopPropagation()
+                  onNodeClick(n.id)
                   onSelect(
                     e.shiftKey
                       ? active
@@ -156,6 +159,7 @@ export function Graph({
                 onKeyDown={(e) => {
                   if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault()
+                    onNodeClick(n.id)
                     onSelect([n.id])
                     if (
                       e.key === 'Enter' &&

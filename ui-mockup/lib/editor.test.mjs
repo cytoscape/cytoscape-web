@@ -117,3 +117,10 @@ test('pane divider snaps near landmarks and reaches both extremes', () => {
   assert.equal(snapSpreadsheetHeight(-10), 0)
   assert.equal(snapSpreadsheetHeight(120), 100)
 })
+
+const { scrollToRevealRow } = await import('./pane-layout.ts')
+test('revealing a row scrolls only as needed and accounts for sticky headings', () => {
+  assert.equal(scrollToRevealRow(0, 200, 30, 600, 32), 432)
+  assert.equal(scrollToRevealRow(400, 200, 30, 300, 32), 270)
+  assert.equal(scrollToRevealRow(400, 200, 30, 480, 32), 400)
+})

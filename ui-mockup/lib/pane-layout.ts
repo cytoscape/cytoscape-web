@@ -6,3 +6,17 @@ export function snapSpreadsheetHeight(value: number): number {
   const stop = [33, 40, 50, 67].find((point) => Math.abs(point - clamped) <= 3)
   return stop ?? clamped
 }
+
+export function scrollToRevealRow(
+  scrollTop: number,
+  viewportHeight: number,
+  headerHeight: number,
+  rowTop: number,
+  rowHeight: number,
+): number {
+  if (rowTop < scrollTop + headerHeight)
+    return Math.max(0, rowTop - headerHeight)
+  if (rowTop + rowHeight > scrollTop + viewportHeight)
+    return rowTop + rowHeight - viewportHeight
+  return scrollTop
+}

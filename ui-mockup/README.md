@@ -37,6 +37,8 @@ the running prototype is authoritative for labels, layout, and interaction.
   Clicking any tab reopens the spreadsheet. View → Hide/Show network switches
   between the full spreadsheet and the previous split. Arrow keys step through
   snap points; Home and End reach the two extremes.
+- Click a graph node to open the Nodes table and scroll its row into view,
+  including after sorting or when the spreadsheet was closed.
 - Edit a cell directly. Enter commits; Escape restores its previous value.
   Header menus rename and sort columns. The blank row adds a node or property;
   the blank header adds a column. New edges require two existing endpoints.

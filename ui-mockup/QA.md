@@ -84,3 +84,14 @@ the height transition; reduced-motion preferences disable the new transitions.
 Browser measurements confirm 200ms panel transitions and matching 49px heights
 for the menubar, sidebar workspace header, and account footer. Opening and
 closing both panels and the compact desktop layout were reviewed visually.
+
+## Node-to-row reveal — September 8
+
+Graph pointer and keyboard node activation opens the Nodes table and reveals
+its row by stable node ID. Scrolling is confined to the table and accounts for
+sticky headings. Resize observation keeps the row visible as the panel opens.
+Browser checks confirmed JUN was revealed from offscreen, EGFR scrolled back to
+the top, a closed Edges table switched to Nodes and opened, and JUN remained
+correctly targeted after sorting (row 12) and repeated clicks after manual scroll.
+Nine model tests pass, including the row-reveal scroll calculation, which failed
+before implementation.

@@ -52,13 +52,23 @@ import {
 } from '@/components/editor/StyleInspector'
 import { Spreadsheet } from '@/components/editor/Spreadsheet'
 import { Graph } from '@/components/editor/Graph'
-import { makeFixtures, type Network, type Style } from '@/lib/editor'
+import {
+  makeFixtures,
+  type Network,
+  type Style,
+  type TableKind,
+} from '@/lib/editor'
 
 export default function Page() {
   const [networks, setNetworks] = useState(makeFixtures),
     [current, setCurrent] = useState('egfr'),
     [dark, setDark] = useState(false),
     [mode, setMode] = useState('workspace')
+  const [tableKind, setTableKind] = useState<TableKind>('nodes')
+  const [revealRow, setRevealRow] = useState<{
+    id: string
+    request: number
+  } | null>(null)
   const [selected, setSelected] = useState<string[]>([]),
     [collapsed, setCollapsed] = useState(false),
     [height, setHeight] = useState(40),
@@ -123,6 +133,7 @@ export default function Page() {
     setNetworks((prev) => ({ ...prev, [current]: previous }))
   }
   function choose(id: string) {
+    setTableKind('nodes')
     setCurrent(id)
     setSelected([])
     setDrilled(false)
@@ -600,6 +611,14 @@ export default function Page() {
                 network={network}
                 selected={selected}
                 onSelect={setSelected}
+                onNodeClick={(id) => {
+                  setTableKind('nodes')
+                  if (collapsed) toggleSpreadsheet()
+                  setRevealRow((previous) => ({
+                    id,
+                    request: (previous?.request ?? 0) + 1,
+                  }))
+                }}
                 onOpen={openSubsystem}
                 confidence={confidence / 100}
                 physical={physical}
@@ -614,6 +633,9 @@ export default function Page() {
               onCollapse={toggleSpreadsheet}
               height={height}
               onHeight={resizeSpreadsheet}
+              revealRow={revealRow}
+              kind={tableKind}
+              onKindChange={setTableKind}
               selected={selected}
               onSelect={setSelected}
             />

@@ -1,7 +1,7 @@
 'use client'
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Interactive splitter needs the ARIA separator role and pointer handlers. */
-import { useState, useRef } from 'react'
-import { snapSpreadsheetHeight } from '@/lib/pane-layout'
+import { useState, useRef, useEffect } from 'react'
+import { snapSpreadsheetHeight, scrollToRevealRow } from '@/lib/pane-layout'
 import {
   ChevronDown,
   ChevronUp,
@@ -98,6 +98,9 @@ export function Spreadsheet({
   onCollapse,
   height,
   onHeight,
+  revealRow,
+  kind,
+  onKindChange,
   selected,
   onSelect,
 }: {
@@ -106,16 +109,18 @@ export function Spreadsheet({
   collapsed: boolean
   onCollapse: () => void
   height: number
+  revealRow: { id: string; request: number } | null
+  kind: TableKind
+  onKindChange: (kind: TableKind) => void
   onHeight: (n: number) => void
   selected: string[]
   onSelect: (ids: string[]) => void
 }) {
   const [dragging, setDragging] = useState(false)
-  const [kind, setKind] = useState<TableKind>('nodes'),
-    [sort, setSort] = useState<{
-      key: string
-      direction: 'asc' | 'desc'
-    } | null>(null)
+  const [sort, setSort] = useState<{
+    key: string
+    direction: 'asc' | 'desc'
+  } | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null),
     [newHeading, setNewHeading] = useState('')
   const [nodeDraft, setNodeDraft] = useState(''),
@@ -124,6 +129,30 @@ export function Spreadsheet({
     [propertyDraft, setPropertyDraft] = useState(''),
     [error, setError] = useState('')
   const container = useRef<HTMLElement>(null)
+  const rowElements = useRef(new Map<string, HTMLTableRowElement>())
+  useEffect(() => {
+    if (!revealRow || collapsed || kind !== 'nodes') return
+    const row = rowElements.current.get(revealRow.id)
+    const scroller = row?.closest<HTMLElement>('.table-scroll')
+    if (!row || !scroller) return
+    const reveal = () => {
+      const viewport = scroller.getBoundingClientRect()
+      const bounds = row.getBoundingClientRect()
+      const headerHeight =
+        scroller.querySelector('thead')?.getBoundingClientRect().height ?? 0
+      scroller.scrollTop = scrollToRevealRow(
+        scroller.scrollTop,
+        scroller.clientHeight,
+        headerHeight,
+        bounds.top - viewport.top + scroller.scrollTop,
+        bounds.height,
+      )
+    }
+    const observer = new ResizeObserver(reveal)
+    observer.observe(scroller)
+    reveal()
+    return () => observer.disconnect()
+  }, [revealRow, collapsed, kind, sort, network.nodes])
   const cols = network.columns[kind]
   const data: Row[] =
     kind === 'nodes'
@@ -249,7 +278,7 @@ export function Spreadsheet({
       <Tabs
         value={kind}
         onValueChange={(v) => {
-          setKind(v as TableKind)
+          onKindChange(v as TableKind)
           setSort(null)
           setError('')
         }}
@@ -401,6 +430,11 @@ export function Spreadsheet({
                       {rows.map((r, i) => (
                         <TableRow
                           key={r.id}
+                          ref={(element) => {
+                            if (element) rowElements.current.set(r.id, element)
+                            else rowElements.current.delete(r.id)
+                          }}
+                          data-node-id={kind === 'nodes' ? r.id : undefined}
                           data-selected={
                             kind === 'nodes' && selected.includes(r.id)
                           }
