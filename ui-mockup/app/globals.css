@@ -1905,7 +1905,7 @@ tbody tr:hover {
   padding: 1px 5px;
   font-size: 11px;
 }
-/* Top dividers include the mapper gutter, including on first children. */
+/* Top dividers follow every hierarchy row, including its first child. */
 [data-slot='sidebar-content'] > [data-slot='collapsible'],
 .property-tree > .inspector-group,
 .category-content > :is(.mapped-property, .property, .range-property),
@@ -1920,13 +1920,13 @@ tbody tr:hover {
   position: absolute;
   top: 0;
   left: 0;
-  right: -36px;
+  right: 0;
   border-top: 1px solid color-mix(in srgb, var(--foreground) 9%, transparent);
   pointer-events: none;
 }
 [data-slot='sidebar-content'] > [data-slot='collapsible']::before {
   left: 18px;
-  right: -22px;
+  right: 14px;
 }
 .category-content > .mapped-property::before {
   left: 18px;

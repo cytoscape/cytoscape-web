@@ -213,7 +213,3 @@ quiet checks passed.
 Style divider selectors now include the first child at every level (section,
 group and property), keeping the same indents and row heights. Prototype
 lint/typecheck and parent quiet checks passed.
-
-Extended hierarchy dividers through the mapper gutter. Browser review confirmed
-dividers end at the mapping buttons' right edge (325px), while control areas
-still end at 289px. Indentation and row heights are unchanged.
