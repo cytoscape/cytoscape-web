@@ -150,3 +150,13 @@ for mapping actions. Browser measurements confirm controls still end at x=289
 and all visible mapping buttons occupy x=301–325. Enabling Diameter mapping
 keeps the domain editor right edge at x=289 and its button in the same column.
 Prototype lint/typecheck passed.
+
+## Compact endpoints and visible mapping state
+
+Removed px from style fields, mapping summaries and range captions. Numeric
+endpoints use 22px rows with minimums left-aligned and maximums right-aligned;
+removed their redundant arrows. Dropdown options match trigger typography
+(11px for mappings, 12px for style choices). Enabled mapper buttons are black
+with white icons. Browser measurements confirmed matching 11px menu/trigger
+text, left/right endpoint alignment and no px labels in the sidebar. Prototype
+lint, typecheck, nine tests and build passed; parent quiet checks passed.

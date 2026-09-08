@@ -54,7 +54,7 @@ function SelectField({
       <SelectTrigger aria-label={label}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="mapping-select-menu">
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>
             {o.label}
@@ -418,7 +418,9 @@ export function MappingEditor({
                     <span>
                       {type === 'color'
                         ? 'Colour range'
-                        : `Output range (${unit || 'value'})`}
+                        : unit
+                          ? `Output range (${unit})`
+                          : 'Output range'}
                     </span>
                     <Button
                       size="xs"

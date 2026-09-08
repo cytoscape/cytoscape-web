@@ -53,7 +53,7 @@ export function Choice({
       <SelectTrigger aria-label={label} className="property-select">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="style-select-menu">
         {options.map((o) => (
           <SelectItem key={o} value={o}>
             {o}
@@ -251,7 +251,6 @@ export function StyleInspector({
               label="Diameter"
               min={8}
               max={64}
-              unit="px"
               network={network}
               onStyle={onStyle}
               initialOpen
@@ -263,7 +262,6 @@ export function StyleInspector({
               value={s.border}
               min={0}
               max={6}
-              unit="px"
               onChange={(border) => onStyle({ border })}
             />
           </Group>
@@ -290,7 +288,6 @@ export function StyleInspector({
               label="Font size"
               min={8}
               max={24}
-              unit="px"
               network={network}
               onStyle={onStyle}
               initialOpen
@@ -348,7 +345,6 @@ export function StyleInspector({
                   }
                   min={8}
                   max={28}
-                  unit="px"
                   onChange={(size) =>
                     onStyle({
                       overrides: {
@@ -386,7 +382,6 @@ export function StyleInspector({
               label="Line width"
               min={0.5}
               max={12}
-              unit="px"
               network={network}
               onStyle={onStyle}
               initialOpen

@@ -126,3 +126,7 @@ properties such as Arrows directly visible instead of nesting a single control.
 Reserve a dedicated mapping-action gutter to the right of the style controls.
 The prototype uses a 340px sidebar with a 36px gutter, preserving the original
 control width and alignment for both defaults and expanded mapping editors.
+
+Omit pixel-unit labels in the style panel. Numeric mapping endpoints align to
+the left/right scale ends in compact rows; dropdown option typography matches
+the trigger. Use solid black mapping buttons with white icons when enabled.
