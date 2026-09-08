@@ -1607,7 +1607,7 @@ tbody tr:hover {
 }
 .mapping-field > span,
 .mapping-caption > span,
-.mapping-fallback > span {
+.mapping-fallback > span:first-child {
   font-weight: 600;
   color: var(--foreground);
 }
@@ -1879,8 +1879,29 @@ tbody tr:hover {
     .property,
     .mapping-field > span,
     .mapping-caption > span,
-    .mapping-fallback > span,
+    .mapping-fallback > span:first-child,
     .override-heading > span:first-child
   ) {
   font-weight: 600;
+}
+
+/* Fallback readouts are values, with the same compact slider spacing. */
+.mapping-fallback {
+  font-size: 11px;
+}
+.mapping-fallback .number-unit,
+.mapping-fallback input {
+  font-weight: 400;
+}
+.numeric-fallback-group .mapping-fallback {
+  min-height: 20px;
+}
+.numeric-fallback-group .number-unit {
+  height: 18px;
+  padding: 0;
+}
+[data-slot='sidebar-content'] .numeric-fallback-group input[type='number'] {
+  height: 18px;
+  padding: 1px 5px;
+  font-size: 11px;
 }

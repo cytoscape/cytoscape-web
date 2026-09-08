@@ -678,48 +678,56 @@ export function MappingEditor({
                 </Button>
               </div>
             )}
-            <div className="mapping-fallback">
-              <span>
-                {mapping.kind === 'discrete'
-                  ? 'Unmatched / missing'
-                  : 'Missing values'}
-              </span>
-              {type === 'text' ? (
-                <Input
-                  aria-label="Fallback label text"
-                  value={String(fallback)}
-                  onChange={(e) => setFallback(e.target.value)}
-                  placeholder="No text"
-                />
-              ) : (
-                <ValueField
-                  unit={unit}
-                  label={`${label} fallback`}
-                  value={fallback}
+            <div
+              className={
+                type === 'number'
+                  ? 'mapping-control-group numeric-fallback-group'
+                  : 'fallback-group'
+              }
+            >
+              <div className="mapping-fallback">
+                <span>
+                  {mapping.kind === 'discrete'
+                    ? 'Unmatched / missing'
+                    : 'Missing values'}
+                </span>
+                {type === 'text' ? (
+                  <Input
+                    aria-label="Fallback label text"
+                    value={String(fallback)}
+                    onChange={(e) => setFallback(e.target.value)}
+                    placeholder="No text"
+                  />
+                ) : (
+                  <ValueField
+                    unit={unit}
+                    label={`${label} fallback`}
+                    value={fallback}
+                    min={min}
+                    max={max}
+                    onChange={setFallback}
+                  />
+                )}
+              </div>
+              {type === 'number' && (
+                <Slider
+                  aria-label={`${label} fallback slider`}
                   min={min}
                   max={max}
-                  onChange={setFallback}
+                  step={0.1}
+                  value={[Number(fallback)]}
+                  onValueChange={(v) =>
+                    onStyle(
+                      { [property]: typeof v === 'number' ? v : v[0] },
+                      true,
+                    )
+                  }
+                  onValueCommitted={(v) =>
+                    setFallback(typeof v === 'number' ? v : v[0])
+                  }
                 />
               )}
             </div>
-            {type === 'number' && (
-              <Slider
-                aria-label={`${label} fallback slider`}
-                min={min}
-                max={max}
-                step={0.1}
-                value={[Number(fallback)]}
-                onValueChange={(v) =>
-                  onStyle(
-                    { [property]: typeof v === 'number' ? v : v[0] },
-                    true,
-                  )
-                }
-                onValueCommitted={(v) =>
-                  setFallback(typeof v === 'number' ? v : v[0])
-                }
-              />
-            )}
           </>
         )}
       </CollapsibleContent>

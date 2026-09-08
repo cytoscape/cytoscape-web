@@ -198,3 +198,8 @@ the intended panel once; Cmd+Z restored diameter from 40 to 24 and Cmd+Shift+Z
 restored 40. Cmd+B inside the diameter input left the sidebar open. Reviewed
 View menu shortcut hints in light grey. Prototype lint, typecheck, nine tests
 and build passed; parent quiet checks passed (4,219 tests, one skipped).
+
+Corrected Missing values: bold applies only to the label, not the numeric
+wrapper. The value and slider share a compact group. Browser confirmed value
+weight 400, label weight 600, 11px value text and a 30px group height. Prototype
+lint/typecheck and parent quiet checks passed.
