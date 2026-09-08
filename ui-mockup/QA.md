@@ -203,3 +203,9 @@ Corrected Missing values: bold applies only to the label, not the numeric
 wrapper. The value and slider share a compact group. Browser confirmed value
 weight 400, label weight 600, 11px value text and a 30px group height. Prototype
 lint/typecheck and parent quiet checks passed.
+
+Added subtle horizontal sibling dividers to style sections, groups and properties,
+indented to their hierarchy level. Dividers are positioned without adding row
+height and do not divide a property from its mapping editor. Reviewed expanded
+and collapsed groups in the live browser; prototype lint/typecheck and parent
+quiet checks passed.

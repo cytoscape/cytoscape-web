@@ -1905,3 +1905,37 @@ tbody tr:hover {
   padding: 1px 5px;
   font-size: 11px;
 }
+/* Subtle sibling dividers follow each level without splitting its controls. */
+[data-slot='sidebar-content'] > [data-slot='collapsible'],
+.property-tree > .inspector-group,
+.category-content > :is(.mapped-property, .property, .range-property),
+.direct-arrow-property {
+  position: relative;
+}
+[data-slot='sidebar-content']
+  > [data-slot='collapsible']
+  + [data-slot='collapsible']::before,
+.property-tree > .inspector-group + .inspector-group::before,
+.category-content
+  > :is(.mapped-property, .property, .range-property)
+  ~ :is(.mapped-property, .property, .range-property)::before,
+.direct-arrow-property::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 9%, transparent);
+  pointer-events: none;
+}
+[data-slot='sidebar-content']
+  > [data-slot='collapsible']
+  + [data-slot='collapsible']::before {
+  left: 18px;
+  right: 14px;
+}
+.category-content
+  > :is(.mapped-property, .property, .range-property)
+  ~ .mapped-property::before {
+  left: 18px;
+}
