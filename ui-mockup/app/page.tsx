@@ -591,7 +591,11 @@ export default function Page() {
         )}
         <div className="editor-body">
           <div className="central-workspace">
-            {!networkHidden && (
+            <div
+              className="network-pane"
+              aria-hidden={networkHidden}
+              inert={networkHidden}
+            >
               <Graph
                 network={network}
                 selected={selected}
@@ -601,7 +605,7 @@ export default function Page() {
                 physical={physical}
                 predicted={predicted}
               />
-            )}
+            </div>
             <Spreadsheet
               key={current}
               network={network}
@@ -614,7 +618,12 @@ export default function Page() {
               onSelect={setSelected}
             />
           </div>
-          {inspector && (
+          <div
+            className="inspector-panel"
+            data-open={inspector}
+            aria-hidden={!inspector}
+            inert={!inspector}
+          >
             <aside className="right-inspector">
               <div className="inspector-title">
                 <strong>{drilled ? 'Subsystem' : 'Inspector'}</strong>
@@ -687,7 +696,7 @@ export default function Page() {
               </details>
               <div className="inspector-footnote">Illustrative data</div>
             </aside>
-          )}
+          </div>
         </div>
         {notice && (
           <output className="notice">

@@ -82,3 +82,4 @@
 - [2026-09-07] Prototype form surfaces: dropdowns and text/number inputs should have white backgrounds in light mode, including inline mapping controls; retain dark surfaces in dark mode.
 - [2026-09-07] Sidebar spacing: collapsed tree rows should have one fixed height; keep summaries inline. Expanded editors own their gaps, so remove inherited control margins and per-property separator lines.
 - [2026-09-08] Prototype panes: clicking any spreadsheet tab must reopen a collapsed spreadsheet. Support snapping and both pane extremes; keep a way to restore the hidden pane. Menubar triggers/items use the same font size and no wrapping; popup width must follow content, not anchor width.
+- [2026-09-08] Panel chrome: match right/bottom toggle motion to the shadcn left sidebar (200ms), without lag during divider dragging. Workspace and account rows should match the 49px menubar height.

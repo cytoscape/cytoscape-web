@@ -110,6 +110,7 @@ export function Spreadsheet({
   selected: string[]
   onSelect: (ids: string[]) => void
 }) {
+  const [dragging, setDragging] = useState(false)
   const [kind, setKind] = useState<TableKind>('nodes'),
     [sort, setSort] = useState<{
       key: string
@@ -195,7 +196,7 @@ export function Spreadsheet({
   return (
     <section
       ref={container}
-      className={`spreadsheet ${collapsed ? 'is-collapsed' : ''}`}
+      className={`spreadsheet ${collapsed ? 'is-collapsed' : ''} ${dragging ? 'is-resizing' : ''}`}
       style={{ height: collapsed ? 44 : `${height}%` }}
       aria-label="Spreadsheet"
     >
@@ -225,6 +226,7 @@ export function Spreadsheet({
           }
         }}
         onPointerDown={(e) => {
+          setDragging(true)
           e.currentTarget.setPointerCapture(e.pointerId)
         }}
         onPointerMove={(e) => {
@@ -242,6 +244,7 @@ export function Spreadsheet({
           }
         }}
         onPointerUp={(e) => e.currentTarget.releasePointerCapture(e.pointerId)}
+        onLostPointerCapture={() => setDragging(false)}
       />
       <Tabs
         value={kind}
@@ -293,9 +296,10 @@ export function Spreadsheet({
             key={t}
             value={t}
             className="table-content"
-            hidden={collapsed}
+            aria-hidden={collapsed}
+            inert={collapsed}
           >
-            {kind === t && !collapsed && (
+            {kind === t && (
               <>
                 <div className="table-scroll">
                   <Table>

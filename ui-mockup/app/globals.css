@@ -1416,3 +1416,125 @@ tbody tr:hover {
 .main-menu-content [role='menuitem'] {
   min-width: max-content;
 }
+
+/* Shared chrome height and motion match the shadcn left sidebar. */
+:root {
+  --chrome-height: 49px;
+  --inspector-width: 245px;
+}
+.main-header,
+[data-slot='sidebar-header'],
+[data-slot='sidebar-footer'] {
+  height: var(--chrome-height);
+  min-height: var(--chrome-height);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+[data-slot='sidebar-header'],
+[data-slot='sidebar-footer'] {
+  padding: 4px 12px !important;
+}
+.workspace-switch,
+.account {
+  height: 40px;
+  padding: 3px 6px;
+  gap: 9px;
+}
+.workspace-switch > span:nth-child(2),
+.account > span:nth-child(2) {
+  gap: 0;
+  overflow: hidden;
+}
+.workspace-switch strong,
+.account strong {
+  font-size: 12px;
+  line-height: 16px;
+}
+.workspace-switch small,
+.account small {
+  font-size: 10px;
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand-mark,
+.avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 7px;
+}
+.avatar {
+  border-radius: 50%;
+  font-size: 10px;
+}
+.brand-mark svg {
+  width: 17px;
+  height: 17px;
+}
+.network-pane {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.inspector-panel {
+  width: 0;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition:
+    width 200ms linear,
+    visibility 0s 200ms;
+}
+.inspector-panel[data-open='true'] {
+  width: var(--inspector-width);
+  visibility: visible;
+  transition:
+    width 200ms linear,
+    visibility 0s;
+}
+.inspector-panel .right-inspector {
+  width: var(--inspector-width);
+  height: 100%;
+  position: relative;
+  inset: auto;
+  transform: translateX(100%);
+  transition: transform 200ms linear;
+}
+.inspector-panel[data-open='true'] .right-inspector {
+  transform: translateX(0);
+}
+.spreadsheet {
+  transition: height 200ms linear;
+  overflow: clip;
+}
+.spreadsheet.is-resizing {
+  transition: none;
+}
+@media (max-width: 1100px) {
+  :root {
+    --inspector-width: 210px;
+  }
+}
+@media (max-width: 800px) {
+  :root {
+    --inspector-width: 245px;
+  }
+  .inspector-panel {
+    position: absolute;
+    right: 0;
+    top: var(--chrome-height);
+    bottom: 0;
+    z-index: 20;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inspector-panel,
+  .inspector-panel .right-inspector,
+  .spreadsheet {
+    transition: none;
+  }
+}

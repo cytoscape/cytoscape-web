@@ -74,3 +74,13 @@ quiet checks pass (4,219 tests, one skipped). Browser checks confirmed:
 
 The bottom-panel toolbar button now toggles the spreadsheet. The inspector uses
 a right-sidebar icon. Theme switching remains available in View.
+
+## Panel motion and compact chrome — September 8
+
+The inspector remains mounted inside an animated width/slide wrapper, and the
+spreadsheet retains its content while its height transitions. Hidden contents
+are inert and excluded from accessibility navigation. Divider dragging disables
+the height transition; reduced-motion preferences disable the new transitions.
+Browser measurements confirm 200ms panel transitions and matching 49px heights
+for the menubar, sidebar workspace header, and account footer. Opening and
+closing both panels and the compact desktop layout were reviewed visually.
