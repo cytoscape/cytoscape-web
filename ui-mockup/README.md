@@ -32,14 +32,19 @@ the running prototype is authoritative for labels, layout, and interaction.
   and apply a label-size override. Changes appear on the graph immediately.
 - Use the centred Nodes / Edges / Network tabs. Click either remaining side of
   their bar to collapse or expand the table. Drag the divider or use its arrow
-  keys to resize. Initial height is 40%, with a 25–65% range.
+  keys to resize. Initial height is 40%. The divider snaps at 33%, 40%, 50%, and 67%,
+  and reaches 0% (network only, tab bar retained) or 100% (spreadsheet only).
+  Clicking any tab reopens the spreadsheet. View → Hide/Show network switches
+  between the full spreadsheet and the previous split. Arrow keys step through
+  snap points; Home and End reach the two extremes.
 - Edit a cell directly. Enter commits; Escape restores its previous value.
   Header menus rename and sort columns. The blank row adds a node or property;
   the blank header adds a column. New edges require two existing endpoints.
 - Switch to Human cell hierarchy and open MAPK cascade. Back restores the
   hierarchy. The style target follows the visible subsystem. The right inspector
   filters graph edges by confidence and interaction type.
-- Toggle the sun/moon control to change theme.
+- Use View → Dark/Light appearance to change theme. The bottom-panel toolbar
+  icon toggles the spreadsheet; the right-sidebar icon toggles the inspector.
 
 Import remains in File and is disabled in this fixture prototype. Account,
 application integrations, image/chart styling, and a persistent style library

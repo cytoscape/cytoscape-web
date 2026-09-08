@@ -1,6 +1,7 @@
 'use client'
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Interactive splitter needs the ARIA separator role and pointer handlers. */
 import { useState, useRef } from 'react'
+import { snapSpreadsheetHeight } from '@/lib/pane-layout'
 import {
   ChevronDown,
   ChevronUp,
@@ -198,53 +199,50 @@ export function Spreadsheet({
       style={{ height: collapsed ? 44 : `${height}%` }}
       aria-label="Spreadsheet"
     >
-      {!collapsed && (
-        <div
-          className="table-resize"
-          role="separator"
-          aria-label="Resize spreadsheet"
-          aria-orientation="horizontal"
-          aria-valuenow={height}
-          aria-valuemin={25}
-          aria-valuemax={65}
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-              e.preventDefault()
-              onHeight(
-                Math.max(
-                  25,
-                  Math.min(65, height + (e.key === 'ArrowUp' ? 5 : -5)),
-                ),
-              )
-            }
-          }}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId)
-          }}
-          onPointerMove={(e) => {
-            if (
-              e.currentTarget.hasPointerCapture(e.pointerId) &&
-              container.current
-            ) {
-              const parent =
-                container.current.parentElement!.getBoundingClientRect()
-              onHeight(
-                Math.max(
-                  25,
-                  Math.min(
-                    65,
-                    (100 * (parent.bottom - e.clientY)) / parent.height,
-                  ),
-                ),
-              )
-            }
-          }}
-          onPointerUp={(e) =>
-            e.currentTarget.releasePointerCapture(e.pointerId)
+      <div
+        className="table-resize"
+        role="separator"
+        aria-label="Resize spreadsheet"
+        aria-orientation="horizontal"
+        aria-valuenow={collapsed ? 0 : height}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+            e.preventDefault()
+            const stops = [0, 33, 40, 50, 67, 100]
+            const value = collapsed ? 0 : height
+            onHeight(
+              e.key === 'Home'
+                ? 0
+                : e.key === 'End'
+                  ? 100
+                  : e.key === 'ArrowUp'
+                    ? (stops.find((stop) => stop > value) ?? 100)
+                    : ([...stops].reverse().find((stop) => stop < value) ?? 0),
+            )
           }
-        />
-      )}
+        }}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }}
+        onPointerMove={(e) => {
+          if (
+            e.currentTarget.hasPointerCapture(e.pointerId) &&
+            container.current
+          ) {
+            const parent =
+              container.current.parentElement!.getBoundingClientRect()
+            onHeight(
+              snapSpreadsheetHeight(
+                (100 * (parent.bottom - e.clientY)) / parent.height,
+              ),
+            )
+          }
+        }}
+        onPointerUp={(e) => e.currentTarget.releasePointerCapture(e.pointerId)}
+      />
       <Tabs
         value={kind}
         onValueChange={(v) => {
@@ -255,10 +253,21 @@ export function Spreadsheet({
         className="table-tabs-root"
       >
         <div className="table-bar">
-          <button className="table-left-toggle" aria-label="Toggle spreadsheet visibility" aria-expanded={!collapsed} onClick={onCollapse} />
+          <button
+            className="table-left-toggle"
+            aria-label="Toggle spreadsheet visibility"
+            aria-expanded={!collapsed}
+            onClick={onCollapse}
+          />
           <TabsList aria-label="Table type">
             {(['nodes', 'edges', 'network'] as TableKind[]).map((t) => (
-              <TabsTrigger key={t} value={t}>
+              <TabsTrigger
+                key={t}
+                value={t}
+                onClick={() => {
+                  if (collapsed) onCollapse()
+                }}
+              >
                 {t[0].toUpperCase() + t.slice(1)}
               </TabsTrigger>
             ))}
@@ -297,7 +306,9 @@ export function Spreadsheet({
                           <TableHead key={c.key}>
                             {renaming === c.key ? (
                               <Input
-                                ref={element => { element?.focus() }}
+                                ref={(element) => {
+                                  element?.focus()
+                                }}
                                 aria-label="Rename column"
                                 defaultValue={c.label}
                                 onKeyDown={(e) => {

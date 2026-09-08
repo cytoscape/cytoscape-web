@@ -4,7 +4,8 @@ import {
   ChevronsUpDown,
   Sun,
   Moon,
-  SlidersHorizontal,
+  PanelRight,
+  PanelBottom,
   ArrowLeft,
   ChevronRight,
   X,
@@ -70,6 +71,22 @@ export default function Page() {
     [notice, setNotice] = useState('')
   const [undo, setUndo] = useState<Record<string, Network[]>>({})
   const [redo, setRedo] = useState<Record<string, Network[]>>({})
+  const lastSplit = useRef(40)
+  const networkHidden = !collapsed && height === 100
+  function resizeSpreadsheet(value: number) {
+    if (value > 0 && value < 100) lastSplit.current = value
+    setHeight(value)
+    setCollapsed(value === 0)
+  }
+  function toggleSpreadsheet() {
+    if (collapsed) {
+      setHeight(lastSplit.current)
+      setCollapsed(false)
+    } else setCollapsed(true)
+  }
+  function toggleNetwork() {
+    resizeSpreadsheet(networkHidden ? lastSplit.current : 100)
+  }
   const network = networks[current]
   const mappingGesture = useRef<Network | null>(null)
   const change = (next: Network, transient = false) => {
@@ -127,6 +144,7 @@ export default function Page() {
   }
   function scene(next: string) {
     setMode(next)
+    setHeight(lastSplit.current)
     if (next === 'mappings') {
       setNetworks((prev) => ({
         ...prev,
@@ -318,7 +336,7 @@ export default function Page() {
           <Menubar className="app-menubar">
             <MenubarMenu>
               <MenubarTrigger>File</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent className="main-menu-content">
                 <MenubarItem disabled>Import network… (prototype)</MenubarItem>
                 <MenubarItem disabled>Import table… (prototype)</MenubarItem>
                 <MenubarSeparator />
@@ -329,7 +347,7 @@ export default function Page() {
             </MenubarMenu>
             <MenubarMenu>
               <MenubarTrigger>Edit</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent className="main-menu-content">
                 <MenubarItem
                   disabled={!undo[current]?.length}
                   onClick={() => history('undo')}
@@ -357,9 +375,12 @@ export default function Page() {
             </MenubarMenu>
             <MenubarMenu>
               <MenubarTrigger>View</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem onClick={() => setCollapsed(!collapsed)}>
+              <MenubarContent className="main-menu-content">
+                <MenubarItem onClick={toggleSpreadsheet}>
                   {collapsed ? 'Show' : 'Hide'} spreadsheet
+                </MenubarItem>
+                <MenubarItem onClick={toggleNetwork}>
+                  {networkHidden ? 'Show' : 'Hide'} network
                 </MenubarItem>
                 <MenubarItem onClick={() => setInspector(!inspector)}>
                   {inspector ? 'Hide' : 'Show'} inspector
@@ -371,7 +392,7 @@ export default function Page() {
             </MenubarMenu>
             <MenubarMenu>
               <MenubarTrigger>Layout</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent className="main-menu-content">
                 <MenubarItem
                   onClick={() =>
                     change({
@@ -417,7 +438,7 @@ export default function Page() {
             </MenubarMenu>
             <MenubarMenu>
               <MenubarTrigger>Apps</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent className="main-menu-content">
                 <MenubarItem disabled>
                   No apps connected in this prototype
                 </MenubarItem>
@@ -425,7 +446,7 @@ export default function Page() {
             </MenubarMenu>
             <MenubarMenu>
               <MenubarTrigger>Help</MenubarTrigger>
-              <MenubarContent>
+              <MenubarContent className="main-menu-content">
                 <MenubarItem
                   onClick={() =>
                     setNotice(
@@ -481,18 +502,20 @@ export default function Page() {
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Toggle theme"
-            onClick={() => setDark(!dark)}
+            aria-label="Toggle spreadsheet"
+            aria-pressed={!collapsed}
+            onClick={toggleSpreadsheet}
           >
-            {dark ? <Sun /> : <Moon />}
+            <PanelBottom />
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
             aria-label="Toggle inspector"
+            aria-pressed={inspector}
             onClick={() => setInspector(!inspector)}
           >
-            <SlidersHorizontal />
+            <PanelRight />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger className="prototype-switch">
@@ -568,23 +591,25 @@ export default function Page() {
         )}
         <div className="editor-body">
           <div className="central-workspace">
-            <Graph
-              network={network}
-              selected={selected}
-              onSelect={setSelected}
-              onOpen={openSubsystem}
-              confidence={confidence / 100}
-              physical={physical}
-              predicted={predicted}
-            />
+            {!networkHidden && (
+              <Graph
+                network={network}
+                selected={selected}
+                onSelect={setSelected}
+                onOpen={openSubsystem}
+                confidence={confidence / 100}
+                physical={physical}
+                predicted={predicted}
+              />
+            )}
             <Spreadsheet
               key={current}
               network={network}
               onChange={change}
               collapsed={collapsed}
-              onCollapse={() => setCollapsed(!collapsed)}
+              onCollapse={toggleSpreadsheet}
               height={height}
-              onHeight={setHeight}
+              onHeight={resizeSpreadsheet}
               selected={selected}
               onSelect={setSelected}
             />

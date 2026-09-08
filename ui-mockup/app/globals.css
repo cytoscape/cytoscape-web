@@ -310,7 +310,7 @@ small {
 .canvas-area {
   position: relative;
   flex: 1;
-  min-height: 100px;
+  min-height: 0;
   overflow: hidden;
   background: var(--background);
 }
@@ -1384,4 +1384,35 @@ tbody tr:hover {
 .category-content > .property {
   padding: 4px 0;
   min-height: 36px;
+}
+
+/* App commands stay on one line with identical trigger/menu typography. */
+.app-menubar {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+.app-menubar [data-slot='menubar-trigger'],
+.main-menu-content [role='menuitem'] {
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.main-header {
+  overflow-x: auto;
+}
+.main-header > button {
+  flex-shrink: 0;
+}
+.table-resize {
+  touch-action: none;
+}
+.main-menu-content {
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  overflow-x: auto;
+}
+.main-menu-content [role='menuitem'] {
+  min-width: max-content;
 }

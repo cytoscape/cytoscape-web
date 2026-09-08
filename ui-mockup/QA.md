@@ -57,3 +57,20 @@ Browser verification in a separate Chrome tab:
 Parent quiet checks passed again: 329 files, 4,219 passing tests, one skipped.
 - Switching to MAPK showed its unmapped Fill; switching back retained EGFR's
   enabled mapping. Adding and removing a third discrete output row worked.
+
+
+## Pane and menubar revision — September 8
+
+Eight model tests pass, including snap points and both extremes. The new snap
+test failed before implementation. Prototype lint/typecheck/build and parent
+quiet checks pass (4,219 tests, one skipped). Browser checks confirmed:
+
+- Clicking the selected Nodes tab or a different Edges tab reopens the sheet.
+- Pointer dragging reaches 100% with no network, and 0% with a collapsed sheet.
+- Dragging near 49% snaps to 50%; keyboard Home/End reach the extremes.
+- View → Show network restores the previous split.
+- Menubar trigger and popup item fonts both measure 13px with nowrap.
+- Apps popup displays its entire message, with equal client and scroll widths.
+
+The bottom-panel toolbar button now toggles the spreadsheet. The inspector uses
+a right-sidebar icon. Theme switching remains available in View.

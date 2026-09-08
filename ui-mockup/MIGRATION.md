@@ -98,3 +98,14 @@ intermediate stops and out-of-range rules; provide an advanced editor or a
 faithful read-only summary until the new UI supports them. Disabling a map in
 this prototype retains its draft configuration; production must decide where to
 retain that disabled draft without changing CX2 semantics.
+
+
+## Pane behavior revision — September 8
+
+Tabs now reopen the spreadsheet when collapsed, including the currently selected
+tab. The resize handle stays available at both extremes. Pointer resizing snaps
+near 33/40/50/67 percent and to 0/100 percent; keyboard arrows step through those
+stops. At 0 the tab bar remains for reopening; at 100 the network is hidden.
+View includes Hide/Show network and Hide/Show spreadsheet. Menu triggers and
+items share 13px typography and never wrap; popup widths follow their content
+instead of inheriting the trigger width.

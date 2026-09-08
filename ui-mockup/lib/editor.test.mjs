@@ -106,3 +106,14 @@ test('domain fitting ignores blanks and invalid values, expanding constant data'
   assert.deepEqual(fitDomain([{ x: '3' }], 'x'), [3, 4])
   assert.deepEqual(fitDomain([], 'x'), [0, 1])
 })
+
+const { snapSpreadsheetHeight } = await import('./pane-layout.ts')
+test('pane divider snaps near landmarks and reaches both extremes', () => {
+  assert.equal(snapSpreadsheetHeight(3), 0)
+  assert.equal(snapSpreadsheetHeight(97), 100)
+  assert.equal(snapSpreadsheetHeight(48), 50)
+  assert.equal(snapSpreadsheetHeight(32), 33)
+  assert.equal(snapSpreadsheetHeight(58), 58)
+  assert.equal(snapSpreadsheetHeight(-10), 0)
+  assert.equal(snapSpreadsheetHeight(120), 100)
+})
