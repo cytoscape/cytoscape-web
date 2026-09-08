@@ -88,3 +88,4 @@
 - [2026-09-08] Sidebar hover feedback should extend rightward across the available row with a subtle rounded surface and vertical breathing room, independent of the larger clickable area. Spreadsheet toggle areas should share a nearly full-width rounded hover surface inset from the panel edges.
 - [2026-09-08] Spreadsheet surface: use a small outer margin, rounded corners and a light shadow like the ChatGPT composer. Account for margins in full-height sizing and pointer resize calculations.
 - [2026-09-08] Mapping sliders need an extra 4px above their track so the thumb clears endpoint input borders without weakening the domain/range grouping.
+- [2026-09-08] Numeric style controls follow Pixelmator: quiet unfocused readouts, white editing surface on focus, right-aligned numbers with units inside, and a slider for every numeric style value. Single controls such as Arrows should be direct rows rather than empty hierarchy layers.

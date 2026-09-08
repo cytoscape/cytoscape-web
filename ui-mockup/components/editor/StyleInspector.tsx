@@ -400,14 +400,15 @@ export function StyleInspector({
               initialOpen
             />
           </Group>
-          <Group title="Arrows">
+          <div className="property direct-arrow-property">
+            <span>Arrows</span>
             <Choice
               label="Edge arrows"
               value={s.arrows ? 'Target' : 'None'}
               options={['None', 'Target']}
               onChange={(v) => onStyle({ arrows: v === 'Target' })}
             />
-          </Group>
+          </div>
         </CollapsibleContent>
       </Collapsible>
       <Collapsible>

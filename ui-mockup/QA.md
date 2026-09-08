@@ -131,3 +131,14 @@ and individual node focus indicators.
 Mapping sliders now have an additional 4px top margin. Browser measurements
 confirmed 4px clearance between endpoint inputs and the domain/output slider
 thumbs. Prototype lint and typecheck passed.
+
+## Quiet numeric controls
+
+Numeric style readouts are transparent until focused; numbers align right and
+units share the editing surface. Added default diameter/font-size/line-width
+sliders and sliders for numeric discrete outputs and missing-value fallbacks.
+Arrows is a direct dropdown under Edges. Browser checks confirmed typing a
+32px diameter produces a 16px node radius, the diameter slider reaches 64px,
+and line width reaches 12px. Focus reveals a white field; blur restores a
+transparent readout. Prototype lint, typecheck, nine tests and build passed;
+parent quiet checks passed with 4,219 tests and one skipped.

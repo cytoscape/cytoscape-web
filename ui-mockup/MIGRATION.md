@@ -117,3 +117,8 @@ a group and 16px between groups, without separator lines. Align colour swatches
 with the gradient endpoints and place the right hex value before its swatch.
 The placeholder preset card is removed from this preview; production named
 styles still need a deliberate management entry point during migration.
+
+Numeric style controls use quiet readouts with right-aligned numbers and units
+inside a shared field that appears on focus. Pair each numeric default, mapping
+output and fallback with a slider using sensible property bounds. Keep simple
+properties such as Arrows directly visible instead of nesting a single control.

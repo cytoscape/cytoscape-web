@@ -1716,3 +1716,58 @@ tbody tr:hover {
 .table-bar:has(.table-left-toggle:hover, .table-collapse-area:hover)::before {
   background: color-mix(in srgb, var(--foreground) 5%, transparent);
 }
+
+/* Quiet numeric readouts reveal their editing surface only on focus. */
+[data-slot='sidebar-content'] input[type='number'] {
+  text-align: right;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  appearance: textfield;
+}
+[data-slot='sidebar-content'] input[type='number']::-webkit-inner-spin-button,
+[data-slot='sidebar-content'] input[type='number']::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+[data-slot='sidebar-content'] input[type='number']:focus {
+  background: var(--background);
+  border-color: var(--border);
+  outline: none;
+}
+.number-unit {
+  height: 28px;
+  gap: 4px;
+  border-color: transparent;
+  background: transparent;
+  padding-right: 6px;
+}
+.number-unit:focus-within {
+  background: var(--background);
+  border-color: var(--border);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+[data-slot='sidebar-content'] .number-unit input[type='number'] {
+  width: 52px;
+  height: 26px;
+  padding: 3px 0 3px 6px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  font-size: 12px;
+}
+.default-property-slider {
+  margin: 4px 0 12px 18px;
+}
+.mapping-fallback + [data-slot='slider'],
+.discrete-entry > [data-slot='slider'] {
+  margin-top: 4px;
+}
+.direct-arrow-property {
+  color: var(--foreground);
+  margin: 0 0 0 18px;
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 600;
+}

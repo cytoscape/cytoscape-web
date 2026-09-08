@@ -109,8 +109,10 @@ function ValueField({
   value,
   min,
   max,
+  unit = '',
   onChange,
 }: {
+  unit?: string
   label: string
   value: MappingValue
   min?: number
@@ -118,13 +120,16 @@ function ValueField({
   onChange: (v: MappingValue) => void
 }) {
   return typeof value === 'number' ? (
-    <NumberField
-      label={label}
-      value={value}
-      min={min}
-      max={max}
-      onChange={onChange}
-    />
+    <span className="number-unit">
+      <NumberField
+        label={label}
+        value={value}
+        min={min}
+        max={max}
+        onChange={onChange}
+      />
+      {unit && <span>{unit}</span>}
+    </span>
   ) : (
     <label className="mapping-color">
       <input
@@ -273,15 +278,13 @@ export function MappingEditor({
               />
             ) : (
               <ValueField
+                unit={unit}
                 label={label}
                 value={fallback}
                 min={min}
                 max={max}
                 onChange={setFallback}
               />
-            )}
-            {type === 'number' && unit && (
-              <span className="property-unit">{unit}</span>
             )}
           </div>
         )}
@@ -300,6 +303,23 @@ export function MappingEditor({
           <Link2 size={13} />
         </Button>
       </div>
+      {!mapping.enabled && type === 'number' && (
+        <div className="default-property-slider">
+          <Slider
+            aria-label={`${label} slider`}
+            min={min}
+            max={max}
+            step={0.1}
+            value={[Number(fallback)]}
+            onValueChange={(v) =>
+              onStyle({ [property]: typeof v === 'number' ? v : v[0] }, true)
+            }
+            onValueCommitted={(v) =>
+              setFallback(typeof v === 'number' ? v : v[0])
+            }
+          />
+        </div>
+      )}
       <CollapsibleContent className="mapping-body">
         {mapping.enabled && (
           <>
@@ -422,6 +442,7 @@ export function MappingEditor({
                     className={`mapping-endpoints ${type === 'color' ? 'color-endpoints' : ''}`}
                   >
                     <ValueField
+                      unit={unit}
                       label={`${label} range start`}
                       value={mapping.range[0]}
                       min={min}
@@ -430,6 +451,7 @@ export function MappingEditor({
                     />
                     <span>→</span>
                     <ValueField
+                      unit={unit}
                       label={`${label} range end`}
                       value={mapping.range[1]}
                       min={min}
@@ -482,6 +504,7 @@ export function MappingEditor({
                   <div className="discrete-entry" key={entry.id}>
                     <div className="discrete-value">
                       <ValueField
+                        unit={unit}
                         label={`${label} style value ${index + 1}`}
                         value={entry.value}
                         min={min}
@@ -509,6 +532,42 @@ export function MappingEditor({
                         <Trash2 size={12} />
                       </Button>
                     </div>
+                    {type === 'number' && (
+                      <Slider
+                        aria-label={`${label} style value ${index + 1} slider`}
+                        min={min}
+                        max={max}
+                        step={0.1}
+                        value={[Number(entry.value)]}
+                        onValueChange={(v) =>
+                          update(
+                            {
+                              entries: mapping.entries.map((e) =>
+                                e.id === entry.id
+                                  ? {
+                                      ...e,
+                                      value: typeof v === 'number' ? v : v[0],
+                                    }
+                                  : e,
+                              ),
+                            },
+                            true,
+                          )
+                        }
+                        onValueCommitted={(v) =>
+                          update({
+                            entries: mapping.entries.map((e) =>
+                              e.id === entry.id
+                                ? {
+                                    ...e,
+                                    value: typeof v === 'number' ? v : v[0],
+                                  }
+                                : e,
+                            ),
+                          })
+                        }
+                      />
+                    )}
                     <div className="category-chips">
                       {entry.categories.map((category) => (
                         <button
@@ -635,6 +694,7 @@ export function MappingEditor({
                 />
               ) : (
                 <ValueField
+                  unit={unit}
                   label={`${label} fallback`}
                   value={fallback}
                   min={min}
@@ -643,6 +703,24 @@ export function MappingEditor({
                 />
               )}
             </div>
+            {type === 'number' && (
+              <Slider
+                aria-label={`${label} fallback slider`}
+                min={min}
+                max={max}
+                step={0.1}
+                value={[Number(fallback)]}
+                onValueChange={(v) =>
+                  onStyle(
+                    { [property]: typeof v === 'number' ? v : v[0] },
+                    true,
+                  )
+                }
+                onValueCommitted={(v) =>
+                  setFallback(typeof v === 'number' ? v : v[0])
+                }
+              />
+            )}
           </>
         )}
       </CollapsibleContent>
