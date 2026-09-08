@@ -165,3 +165,11 @@ Further reduced mapping density to 20px caption rows and 18px numeric rows,
 with no internal flex gap and smaller group margins. Removed the outside-domain
 explanation. Browser measured a 48px domain group and confirmed the text is gone;
 prototype lint/typecheck and parent quiet checks passed.
+
+## Nested Help menu demo
+
+Help includes Guides and Workspace tips submenus. Guides → Styling & mappings
+→ Attribute mappings demonstrates deeper nesting with Continuous and Discrete
+leaf items. Each topic shows a contextual tip. Browser verification traversed
+all three submenu levels with ArrowRight and selected Continuous mappings;
+the expected tip appeared. Prototype lint/typecheck and parent checks passed.

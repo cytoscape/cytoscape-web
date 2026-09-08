@@ -29,6 +29,9 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarSub,
+  MenubarSubTrigger,
+  MenubarSubContent,
 } from '@/components/ui/menubar'
 import {
   DropdownMenu,
@@ -458,6 +461,92 @@ export default function Page() {
             <MenubarMenu>
               <MenubarTrigger>Help</MenubarTrigger>
               <MenubarContent className="main-menu-content">
+                <MenubarSub>
+                  <MenubarSubTrigger>Guides</MenubarSubTrigger>
+                  <MenubarSubContent className="main-menu-content">
+                    <MenubarItem
+                      onClick={() =>
+                        setNotice(
+                          'Choose a network from the workspace selector. Click a node to reveal its spreadsheet row.',
+                        )
+                      }
+                    >
+                      Exploring networks
+                    </MenubarItem>
+                    <MenubarSub>
+                      <MenubarSubTrigger>Styling & mappings</MenubarSubTrigger>
+                      <MenubarSubContent className="main-menu-content">
+                        <MenubarItem
+                          onClick={() =>
+                            setNotice(
+                              'Edit a value or drag its slider to set the default appearance. The graph updates immediately.',
+                            )
+                          }
+                        >
+                          Default appearance
+                        </MenubarItem>
+                        <MenubarSub>
+                          <MenubarSubTrigger>
+                            Attribute mappings
+                          </MenubarSubTrigger>
+                          <MenubarSubContent className="main-menu-content">
+                            <MenubarItem
+                              onClick={() =>
+                                setNotice(
+                                  'Enable the mapping button, choose Continuous, then set the data domain and output range.',
+                                )
+                              }
+                            >
+                              Continuous mappings
+                            </MenubarItem>
+                            <MenubarItem
+                              onClick={() =>
+                                setNotice(
+                                  'Choose Discrete to assign attribute categories to style values. Add entries and use Select values to group categories.',
+                                )
+                              }
+                            >
+                              Discrete mappings
+                            </MenubarItem>
+                          </MenubarSubContent>
+                        </MenubarSub>
+                      </MenubarSubContent>
+                    </MenubarSub>
+                    <MenubarItem
+                      onClick={() =>
+                        setNotice(
+                          'Edit spreadsheet cells directly. Use column menus to rename or sort, and the blank row to add data.',
+                        )
+                      }
+                    >
+                      Editing tables
+                    </MenubarItem>
+                  </MenubarSubContent>
+                </MenubarSub>
+                <MenubarSub>
+                  <MenubarSubTrigger>Workspace tips</MenubarSubTrigger>
+                  <MenubarSubContent className="main-menu-content">
+                    <MenubarItem
+                      onClick={() =>
+                        setNotice(
+                          'Use the panel icons to toggle Style, Spreadsheet, and Inspector. Drag the spreadsheet edge to snap between layouts.',
+                        )
+                      }
+                    >
+                      Arranging panels
+                    </MenubarItem>
+                    <MenubarItem
+                      onClick={() =>
+                        setNotice(
+                          'In HiView, open a subsystem to drill down. Use Back or the breadcrumbs to return.',
+                        )
+                      }
+                    >
+                      Navigating HiView
+                    </MenubarItem>
+                  </MenubarSubContent>
+                </MenubarSub>
+                <MenubarSeparator />
                 <MenubarItem
                   onClick={() =>
                     setNotice(
