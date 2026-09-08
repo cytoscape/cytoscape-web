@@ -1855,3 +1855,8 @@ tbody tr:hover {
 .mapping-control-group .mapping-gradient {
   margin: 2px 0 4px;
 }
+
+.draft-column-cell,
+.draft-row > td {
+  cursor: text;
+}

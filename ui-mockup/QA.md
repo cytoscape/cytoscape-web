@@ -173,3 +173,13 @@ Help includes Guides and Workspace tips submenus. Guides → Styling & mappings
 leaf items. Each topic shows a contextual tip. Browser verification traversed
 all three submenu levels with ArrowRight and selected Continuous mappings;
 the expected tip appeared. Prototype lint/typecheck and parent checks passed.
+
+## Draft cell focus
+
+Clicking any blank add-row cell focuses the row name input; blank add-column
+cells and the bottom-right intersection focus New column name. Existing edge
+source/target controls remain directly interactive; other edge draft cells
+focus the source picker. Browser verified blank row, plus gutter, blank column,
+and corner focus; created a node and column with Enter; and verified Network
+draft cells focus New property name. Prototype lint/typecheck and parent checks
+passed.

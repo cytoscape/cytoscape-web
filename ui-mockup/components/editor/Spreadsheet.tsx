@@ -128,6 +128,8 @@ export function Spreadsheet({
     [target, setTarget] = useState(''),
     [propertyDraft, setPropertyDraft] = useState(''),
     [error, setError] = useState('')
+  const newColumnInput = useRef<HTMLInputElement>(null)
+  const newRowInput = useRef<HTMLInputElement>(null)
   const container = useRef<HTMLElement>(null)
   const rowElements = useRef(new Map<string, HTMLTableRowElement>())
   useEffect(() => {
@@ -406,8 +408,11 @@ export function Spreadsheet({
                             )}
                           </TableHead>
                         ))}
-                        <TableHead>
+                        <TableHead
+                          onClick={() => newColumnInput.current?.focus()}
+                        >
                           <input
+                            ref={newColumnInput}
                             className="blank-heading"
                             aria-label="New column name"
                             placeholder="+"
@@ -483,11 +488,28 @@ export function Spreadsheet({
                               )}
                             </TableCell>
                           ))}
-                          <TableCell />
+                          <TableCell
+                            className="draft-column-cell"
+                            onClick={() => newColumnInput.current?.focus()}
+                          />
                         </TableRow>
                       ))}
                       <TableRow
                         className="draft-row"
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement
+                          if (
+                            target.closest('input, button, [role="combobox"]')
+                          )
+                            return
+                          if (newRowInput.current) newRowInput.current.focus()
+                          else
+                            e.currentTarget
+                              .querySelector<HTMLButtonElement>(
+                                '.cell-node-picker',
+                              )
+                              ?.focus()
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Escape') {
                             setNodeDraft('')
@@ -507,6 +529,7 @@ export function Spreadsheet({
                           <TableCell key={c.key}>
                             {kind === 'nodes' && i === 0 ? (
                               <input
+                                ref={newRowInput}
                                 aria-label="New node name"
                                 placeholder="Add a node…"
                                 value={nodeDraft}
@@ -535,6 +558,7 @@ export function Spreadsheet({
                               </button>
                             ) : kind === 'network' && i === 0 ? (
                               <input
+                                ref={newRowInput}
                                 aria-label="New property name"
                                 placeholder="Add a property…"
                                 value={propertyDraft}
@@ -548,7 +572,13 @@ export function Spreadsheet({
                             ) : null}
                           </TableCell>
                         ))}
-                        <TableCell />
+                        <TableCell
+                          className="draft-column-cell"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            newColumnInput.current?.focus()
+                          }}
+                        />
                       </TableRow>
                     </TableBody>
                   </Table>
