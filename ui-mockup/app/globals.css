@@ -1664,6 +1664,9 @@ tbody tr:hover {
   margin-top: 8px;
   min-width: 0;
 }
+.mapping-control-group > [data-slot='slider'] {
+  margin-top: 4px;
+}
 .mapping-control-group .mapping-caption {
   margin-top: 0;
 }

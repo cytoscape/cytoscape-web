@@ -127,3 +127,7 @@ a smaller contact shadow. Visually checked the sidebar and spreadsheet hover
 in the live browser and verified collapse/reopen. Prototype checks and build pass.
 Removed the canvas SVG focus outline while retaining keyboard interaction
 and individual node focus indicators.
+
+Mapping sliders now have an additional 4px top margin. Browser measurements
+confirmed 4px clearance between endpoint inputs and the domain/output slider
+thumbs. Prototype lint and typecheck passed.
