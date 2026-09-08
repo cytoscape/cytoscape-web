@@ -108,3 +108,11 @@ gap between them. Prototype lint, typecheck, nine tests and build pass; parent
 quiet checks pass (4,219 tests, one skipped).
 Hover was visually checked on Appearance: a compact rounded surface surrounds
 the caret and label while the full row remains clickable.
+
+## Inset spreadsheet surface
+
+Added 8px top and 12px side/bottom margins, a 16px corner radius and a subtle
+shadow. Browser verification at 1280×800 confirmed the full-height sheet stays
+inside its parent with the network at zero height, collapse retains a 44px bar,
+and clicking Nodes reopens it. Resize calculations account for the top margin.
+Prototype lint, typecheck, tests and build passed.

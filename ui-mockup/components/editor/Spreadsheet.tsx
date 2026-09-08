@@ -226,7 +226,7 @@ export function Spreadsheet({
     <section
       ref={container}
       className={`spreadsheet ${collapsed ? 'is-collapsed' : ''} ${dragging ? 'is-resizing' : ''}`}
-      style={{ height: collapsed ? 44 : `${height}%` }}
+      style={{ height: collapsed ? 44 : `calc(${height}% - 20px)` }}
       aria-label="Spreadsheet"
     >
       <div
@@ -267,7 +267,7 @@ export function Spreadsheet({
               container.current.parentElement!.getBoundingClientRect()
             onHeight(
               snapSpreadsheetHeight(
-                (100 * (parent.bottom - e.clientY)) / parent.height,
+                (100 * (parent.bottom - e.clientY + 8)) / parent.height,
               ),
             )
           }

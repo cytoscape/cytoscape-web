@@ -1670,3 +1670,22 @@ tbody tr:hover {
 .mapping-control-group + .mapping-fallback {
   margin-top: 8px;
 }
+
+/* A quiet, inset surface separates the sheet from the canvas. */
+.spreadsheet {
+  margin: 8px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 8px rgb(0 0 0 / 5%),
+    0 1px 2px rgb(0 0 0 / 3%);
+}
+.spreadsheet .table-resize {
+  top: 0;
+  left: 12px;
+  width: calc(100% - 24px);
+  border-radius: 999px;
+}
+.spreadsheet.is-collapsed .table-bar {
+  border-bottom-color: transparent;
+}
