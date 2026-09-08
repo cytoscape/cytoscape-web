@@ -97,3 +97,4 @@
 - [2026-09-08] Use one shared bold weight (600) for every style hierarchy level and property label, including collapsible groups and mapping captions. Values and menu actions remain regular weight.
 - [2026-09-08] Scope mapping fallback bold styling to its label (first child), never every span: numeric value wrappers are spans too. Group fallback values with their slider using the same compact spacing as domain/range controls.
 - [2026-09-08] Updated style-divider preference: use subtle indented horizontal lines between sibling groups/properties, like GeneMANIA. Keep each expanded property and its mapping controls together without internal divider lines.
+- [2026-09-08] Style hierarchy dividers include a top border on the first child at each level, not only between siblings.

@@ -208,9 +208,6 @@ export function StyleInspector({
     <>
       <div className="style-heading">
         <span>Style</span>
-        <span className="target-name" title={network.name}>
-          {network.name}
-        </span>
       </div>
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="section-trigger">

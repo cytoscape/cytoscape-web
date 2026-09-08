@@ -209,3 +209,7 @@ indented to their hierarchy level. Dividers are positioned without adding row
 height and do not divide a property from its mapping editor. Reviewed expanded
 and collapsed groups in the live browser; prototype lint/typecheck and parent
 quiet checks passed.
+
+Style divider selectors now include the first child at every level (section,
+group and property), keeping the same indents and row heights. Prototype
+lint/typecheck and parent quiet checks passed.
