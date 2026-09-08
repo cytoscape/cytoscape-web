@@ -61,8 +61,8 @@ checks and the targeted e2e specs for each migrated feature.
 
 ## Findings from this study
 
-- Centre tabs with equal flexible space on each side; right-side count text
-  must not shift their centre.
+- Centre tabs with equal flexible space on each side; the count belongs on the left
+  and the collapse icon on the right.
 - Scale graph positions to the available canvas while keeping node and label
   sizes readable as the spreadsheet resizes.
 - Disclose units on confidence controls: the inspector uses 0–100%, while
@@ -109,3 +109,11 @@ stops. At 0 the tab bar remains for reopening; at 100 the network is hidden.
 View includes Hide/Show network and Hide/Show spreadsheet. Menu triggers and
 items share 13px typography and never wrap; popup widths follow their content
 instead of inheriting the trigger width.
+
+Property defaults use bold labels and right-aligned editors without disclosure
+carets. Place the Map icon before a default editor; enabled mappings disclose
+indented controls. Use proximity to group domain and output scales: 4px within
+a group and 16px between groups, without separator lines. Align colour swatches
+with the gradient endpoints and place the right hex value before its swatch.
+The placeholder preset card is removed from this preview; production named
+styles still need a deliberate management entry point during migration.

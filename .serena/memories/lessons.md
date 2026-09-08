@@ -83,3 +83,6 @@
 - [2026-09-07] Sidebar spacing: collapsed tree rows should have one fixed height; keep summaries inline. Expanded editors own their gaps, so remove inherited control margins and per-property separator lines.
 - [2026-09-08] Prototype panes: clicking any spreadsheet tab must reopen a collapsed spreadsheet. Support snapping and both pane extremes; keep a way to restore the hidden pane. Menubar triggers/items use the same font size and no wrapping; popup width must follow content, not anchor width.
 - [2026-09-08] Panel chrome: match right/bottom toggle motion to the shadcn left sidebar (200ms), without lag during divider dragging. Workspace and account rows should match the 49px menubar height.
+
+- [2026-09-08] Style prototype: bold all property labels; keep unmapped defaults inline without carets, indent enabled mapping controls, and omit the placeholder preset card. Group domain/range controls by proximity (4px within, 16px between), not separators. Align colour endpoint swatches with the gradient; right hex goes before its swatch. Spreadsheet count belongs left with tabs centred.
+- [2026-09-08] Sidebar hover feedback should hug the caret and label with a subtle rounded surface, independent of the larger clickable row; avoid filling the whole tap area.

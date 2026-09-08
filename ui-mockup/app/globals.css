@@ -240,7 +240,7 @@ small {
   width: 100%;
   font-weight: 600;
 }
-.section-trigger[data-open] > svg:first-child {
+.section-trigger[data-open] > .tree-row-content > svg {
   transform: rotate(90deg);
 }
 .property-group {
@@ -503,7 +503,7 @@ tbody tr:hover {
 .section-trigger {
   padding: 7px 18px;
 }
-.section-trigger > svg {
+.section-trigger > .tree-row-content > svg {
   color: var(--muted-foreground);
 }
 .property-tree {
@@ -522,7 +522,7 @@ tbody tr:hover {
 .category-trigger svg {
   color: var(--muted-foreground);
 }
-.category-trigger[data-open] > svg {
+.category-trigger[data-open] > .tree-row-content > svg {
   transform: rotate(90deg);
 }
 .category-content {
@@ -1113,8 +1113,8 @@ tbody tr:hover {
 .graph {
   padding: 0 !important;
 }
-.section-trigger[aria-expanded='true'] > svg:first-child,
-.category-trigger[aria-expanded='true'] > svg {
+.section-trigger[aria-expanded='true'] > .tree-row-content > svg,
+.category-trigger[aria-expanded='true'] > .tree-row-content > svg {
   transform: rotate(90deg);
 }
 /* Center the selector in the full table width, independent of the row count. */
@@ -1165,7 +1165,7 @@ tbody tr:hover {
   flex: 1;
   text-align: left;
 }
-.mapped-property-disclosure[data-panel-open] svg {
+.mapped-property-disclosure[data-panel-open] .tree-row-content > svg {
   transform: rotate(90deg);
 }
 .mapping-summary {
@@ -1338,9 +1338,9 @@ tbody tr:hover {
   line-height: 18px;
   min-height: 32px;
 }
-.section-trigger > svg:first-child,
-.category-trigger > svg,
-.mapped-property-disclosure > svg {
+.section-trigger > .tree-row-content > svg,
+.category-trigger > .tree-row-content > svg,
+.mapped-property-disclosure > .tree-row-content > svg {
   width: 12px;
   height: 12px;
   flex: 0 0 12px;
@@ -1537,4 +1537,136 @@ tbody tr:hover {
   .spreadsheet {
     transition: none;
   }
+}
+
+/* Property labels and editors share a single row; mappings disclose below it. */
+.table-left-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.plain-property-name {
+  padding-left: 18px;
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 600;
+}
+.mapped-property-disclosure {
+  font-weight: 600;
+}
+.mapped-property-heading {
+  gap: 6px;
+}
+.inline-property-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 116px;
+  min-width: 0;
+  margin-left: auto;
+}
+.inline-property-value > [data-slot='input'] {
+  width: 68px;
+  height: 28px;
+  padding: 4px 6px;
+  font-size: 12px;
+  background: var(--background);
+}
+.inline-property-value .mapping-color {
+  font-size: 10px;
+  flex-direction: row-reverse;
+}
+.property-unit {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.property-map-toggle {
+  flex: 0 0 24px;
+}
+.property-map-toggle[aria-pressed='false'] {
+  color: var(--muted-foreground);
+}
+.mapping-body {
+  padding-left: 36px;
+  gap: 8px;
+}
+.category-content .property {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.category-content .property input,
+.category-content .property [data-slot='select-trigger'],
+.category-content .property .number-unit {
+  font-weight: 400;
+}
+.mapping-field > span,
+.mapping-caption > span,
+.mapping-fallback > span {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.color-endpoints > .mapping-color {
+  width: 100%;
+  font-size: 10px;
+}
+.color-endpoints > .mapping-color:last-child {
+  flex-direction: row-reverse;
+}
+.section-trigger,
+.category-trigger,
+.mapped-property-disclosure {
+  border-radius: 6px;
+}
+.section-trigger:hover,
+.category-trigger:hover,
+.mapped-property-disclosure:hover {
+  background: transparent;
+}
+.tree-row-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  isolation: isolate;
+}
+.tree-row-content::before {
+  content: '';
+  position: absolute;
+  inset: -4px -7px;
+  z-index: -1;
+  border-radius: 6px;
+  pointer-events: none;
+}
+:is(.section-trigger, .category-trigger, .mapped-property-disclosure):hover
+  > .tree-row-content::before {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.mapped-property-heading:has(.inline-property-value) .property-map-toggle {
+  order: 1;
+}
+.inline-property-value {
+  order: 2;
+}
+
+/* Proximity groups each mapping scale without adding borders or dividers. */
+.mapping-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  min-width: 0;
+}
+.mapping-control-group .mapping-caption {
+  margin-top: 0;
+}
+.mapping-control-group .mapping-note {
+  margin-top: 2px;
+}
+.mapping-control-group + .mapping-fallback {
+  margin-top: 8px;
 }

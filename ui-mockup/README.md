@@ -59,8 +59,8 @@ Open **UI study → 04 · Inline mappings**. This seeds node fill by `type` and
 edge width by `confidence` the first time; later visits retain your edits.
 
 Supported properties are node fill, diameter, label font size, edge width,
-edge colour, and label text. Each has a Map toggle and a collapsible inline
-editor. Turning Map off uses the default and retains the mapping configuration.
+edge colour, and label text. Each has an icon Map toggle. Defaults stay on a single row with the value
+on the right; only enabled mappings have a collapsible, indented inline editor. Turning Map off uses the default and retains the mapping configuration.
 Collapsing the editor keeps the mapping active.
 
 Continuous numeric and colour mappings use two endpoints, editable domain

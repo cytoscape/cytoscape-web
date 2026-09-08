@@ -290,7 +290,11 @@ export function Spreadsheet({
             aria-label="Toggle spreadsheet visibility"
             aria-expanded={!collapsed}
             onClick={onCollapse}
-          />
+          >
+            <span>
+              {data.length} {kind === 'network' ? 'properties' : kind}
+            </span>
+          </button>
           <TabsList aria-label="Table type">
             {(['nodes', 'edges', 'network'] as TableKind[]).map((t) => (
               <TabsTrigger
@@ -312,11 +316,6 @@ export function Spreadsheet({
             aria-expanded={!collapsed}
             onClick={onCollapse}
           >
-            <span>
-              {collapsed
-                ? ''
-                : `${data.length} ${kind === 'network' ? 'properties' : kind}`}
-            </span>
             {collapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </button>
         </div>

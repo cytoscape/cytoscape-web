@@ -95,3 +95,16 @@ the top, a closed Edges table switched to Nodes and opened, and JUN remained
 correctly targeted after sorting (row 12) and repeated clicks after manual scroll.
 Nine model tests pass, including the row-reveal scroll calculation, which failed
 before implementation.
+
+## Property layout and mapping grouping
+
+Verified the live browser at 1280×800: default Fill has no disclosure trigger,
+its editor remains inline, and enabling mapping reveals indented controls.
+The redundant preset card is gone. Spreadsheet count is left-aligned while
+tabs remain geometrically centred. Gradient and right endpoint swatch share
+the same right edge, with hex text to the left of that swatch. Domain and range
+are separate accessible groups with 4px internal spacing and a measured 16px
+gap between them. Prototype lint, typecheck, nine tests and build pass; parent
+quiet checks pass (4,219 tests, one skipped).
+Hover was visually checked on Appearance: a compact rounded surface surrounds
+the caret and label while the full row remains clickable.

@@ -3,7 +3,6 @@ import { useState, type ReactNode } from 'react'
 import {
   ChevronRight,
   RotateCcw,
-  SlidersHorizontal,
   Check,
   ChevronsUpDown,
   Network as NetworkIcon,
@@ -76,8 +75,10 @@ function Group({
   return (
     <Collapsible defaultOpen={open} className="inspector-group">
       <CollapsibleTrigger className="category-trigger">
-        <ChevronRight size={13} />
-        {title}
+        <span className="tree-row-content">
+          <ChevronRight size={13} />
+          {title}
+        </span>
       </CollapsibleTrigger>
       <CollapsibleContent className="category-content">
         {children}
@@ -211,45 +212,12 @@ export function StyleInspector({
           {network.name}
         </span>
       </div>
-      <div className="style-preset">
-        <span className="preset-preview">
-          <i />
-          <i />
-          <i />
-        </span>
-        <div>
-          <strong>Signal</strong>
-          <small>Network style</small>
-        </div>
-        <Popover>
-          <PopoverTrigger aria-label="Style options">
-            <SlidersHorizontal size={16} />
-          </PopoverTrigger>
-          <PopoverContent>
-            <PopoverTitle>Style options</PopoverTitle>
-            <Button
-              variant="ghost"
-              onClick={() =>
-                onStyle({
-                  fill: '#737373',
-                  size: 24,
-                  labelSize: 12,
-                  opacity: 100,
-                  overrides: {},
-                  mappings: {},
-                })
-              }
-            >
-              <RotateCcw />
-              Reset appearance
-            </Button>
-          </PopoverContent>
-        </Popover>
-      </div>
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="section-trigger">
-          <ChevronRight size={14} />
-          Nodes
+          <span className="tree-row-content">
+            <ChevronRight size={14} />
+            Nodes
+          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
           <Group title="Appearance" open={mode !== 'styles'}>
@@ -260,20 +228,7 @@ export function StyleInspector({
               network={network}
               onStyle={onStyle}
               initialOpen
-            >
-              <label className="property">
-                Fill
-                <span className="color-value">
-                  <input
-                    aria-label="Node fill"
-                    type="color"
-                    value={s.fill}
-                    onChange={(e) => onStyle({ fill: e.target.value })}
-                  />
-                  <span>{s.fill.toUpperCase()}</span>
-                </span>
-              </label>
-            </MappingEditor>
+            />
             <div className="property">
               Shape
               <Choice
@@ -300,16 +255,7 @@ export function StyleInspector({
               network={network}
               onStyle={onStyle}
               initialOpen
-            >
-              <Range
-                label="Diameter"
-                value={s.size}
-                min={8}
-                max={64}
-                unit="px"
-                onChange={(size) => onStyle({ size })}
-              />
-            </MappingEditor>
+            />
           </Group>
           <Group title="Border">
             <Range
@@ -348,16 +294,7 @@ export function StyleInspector({
               network={network}
               onStyle={onStyle}
               initialOpen
-            >
-              <Range
-                label="Font size"
-                value={s.labelSize}
-                min={8}
-                max={24}
-                unit="px"
-                onChange={(labelSize) => onStyle({ labelSize })}
-              />
-            </MappingEditor>
+            />
             <label className="property">
               Color
               <input
@@ -437,8 +374,10 @@ export function StyleInspector({
       </Collapsible>
       <Collapsible defaultOpen={mode === 'mappings'}>
         <CollapsibleTrigger className="section-trigger">
-          <ChevronRight size={14} />
-          Edges
+          <span className="tree-row-content">
+            <ChevronRight size={14} />
+            Edges
+          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
           <Group title="Line" open>
@@ -451,16 +390,7 @@ export function StyleInspector({
               network={network}
               onStyle={onStyle}
               initialOpen
-            >
-              <Range
-                label="Line width"
-                value={s.lineWidth}
-                min={1}
-                max={5}
-                unit="px"
-                onChange={(lineWidth) => onStyle({ lineWidth })}
-              />
-            </MappingEditor>
+            />
             <MappingEditor
               property="lineColor"
               label="Edge colour"
@@ -468,17 +398,7 @@ export function StyleInspector({
               network={network}
               onStyle={onStyle}
               initialOpen
-            >
-              <label className="property">
-                Color
-                <input
-                  type="color"
-                  aria-label="Edge color"
-                  value={s.lineColor}
-                  onChange={(e) => onStyle({ lineColor: e.target.value })}
-                />
-              </label>
-            </MappingEditor>
+            />
           </Group>
           <Group title="Arrows">
             <Choice
@@ -492,8 +412,10 @@ export function StyleInspector({
       </Collapsible>
       <Collapsible>
         <CollapsibleTrigger className="section-trigger">
-          <ChevronRight size={14} />
-          Network
+          <span className="tree-row-content">
+            <ChevronRight size={14} />
+            Network
+          </span>
         </CollapsibleTrigger>
         <CollapsibleContent className="property-tree">
           <Group title="Background" open>

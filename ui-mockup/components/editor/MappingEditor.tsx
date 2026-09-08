@@ -1,5 +1,5 @@
 'use client'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { ChevronRight, Link2, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -143,7 +143,6 @@ export function MappingEditor({
   label,
   network,
   onStyle,
-  children,
   type = 'number',
   min = 1,
   max = 64,
@@ -154,7 +153,6 @@ export function MappingEditor({
   label: string
   network: Network
   onStyle: (s: Partial<Style>, transient?: boolean) => void
-  children?: ReactNode
   type?: 'number' | 'color' | 'text'
   min?: number
   max?: number
@@ -242,26 +240,55 @@ export function MappingEditor({
     })
   }
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className="mapped-property">
+    <Collapsible
+      open={mapping.enabled && open}
+      onOpenChange={setOpen}
+      className="mapped-property"
+    >
       <div className="mapped-property-heading">
-        <CollapsibleTrigger
-          className="mapped-property-disclosure"
-          aria-label={`${open ? 'Collapse' : 'Expand'} ${label} settings`}
-        >
-          <ChevronRight size={12} />
-          <span>{label}</span>
-        </CollapsibleTrigger>
-        {!open && (
-          <div className="mapping-summary">
-            {mapping.enabled
-              ? summary
-              : type === 'text'
-                ? fallback || 'No text'
-                : `${fallback}${unit}`}
+        {mapping.enabled ? (
+          <CollapsibleTrigger
+            className="mapped-property-disclosure"
+            aria-label={`${open ? 'Collapse' : 'Expand'} ${label} settings`}
+          >
+            <span className="tree-row-content">
+              <ChevronRight size={12} />
+              <span>{label}</span>
+            </span>
+          </CollapsibleTrigger>
+        ) : (
+          <span className="plain-property-name">{label}</span>
+        )}
+        {mapping.enabled && !open && (
+          <div className="mapping-summary">{summary}</div>
+        )}
+        {!mapping.enabled && (
+          <div className="inline-property-value">
+            {type === 'text' ? (
+              <Input
+                aria-label="Default label text"
+                value={String(fallback)}
+                onChange={(e) => setFallback(e.target.value)}
+                placeholder="No text"
+              />
+            ) : (
+              <ValueField
+                label={label}
+                value={fallback}
+                min={min}
+                max={max}
+                onChange={setFallback}
+              />
+            )}
+            {type === 'number' && unit && (
+              <span className="property-unit">{unit}</span>
+            )}
           </div>
         )}
         <Button
-          size="xs"
+          size="icon-xs"
+          className="property-map-toggle"
+          title={mapping.enabled ? `Disable ${label} mapping` : `Map ${label}`}
           variant={mapping.enabled ? 'secondary' : 'ghost'}
           aria-label={`Map ${label}`}
           aria-pressed={mapping.enabled}
@@ -270,21 +297,11 @@ export function MappingEditor({
             setOpen(true)
           }}
         >
-          <Link2 size={11} />
-          Map
+          <Link2 size={13} />
         </Button>
       </div>
       <CollapsibleContent className="mapping-body">
-        {!mapping.enabled ? (
-          (children ?? (
-            <Input
-              aria-label="Default label text"
-              value={String(fallback)}
-              onChange={(e) => setFallback(e.target.value)}
-              placeholder="No text"
-            />
-          ))
-        ) : (
+        {mapping.enabled && (
           <>
             <div className="mapping-field">
               <span>Attribute</span>
@@ -325,121 +342,138 @@ export function MappingEditor({
             </div>
             {mapping.kind === 'continuous' && (
               <>
-                <div className="mapping-caption">
-                  <span>Data domain</span>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => update({ domain: dataDomain })}
-                  >
-                    Fit to data
-                  </Button>
-                </div>
-                <div className="mapping-endpoints">
-                  <NumberField
-                    label={`${label} domain minimum`}
-                    value={mapping.domain[0]}
-                    max={mapping.domain[1] - 0.001}
-                    onChange={(v) => update({ domain: [v, mapping.domain[1]] })}
-                  />
-                  <span>→</span>
-                  <NumberField
-                    label={`${label} domain maximum`}
-                    value={mapping.domain[1]}
-                    min={mapping.domain[0] + 0.001}
-                    onChange={(v) => update({ domain: [mapping.domain[0], v] })}
-                  />
-                </div>
-                <Slider
-                  aria-label={`${label} domain slider`}
-                  min={domainMin}
-                  max={domainMax}
-                  step={Math.max(0.001, (domainMax - domainMin) / 1000)}
-                  minStepsBetweenValues={1}
-                  value={mapping.domain}
-                  onValueChange={(v) =>
-                    update({ domain: v as [number, number] }, true)
-                  }
-                  onValueCommitted={(v) =>
-                    update({ domain: v as [number, number] })
-                  }
-                />
-                <div className="mapping-caption">
-                  <span>
-                    {type === 'color'
-                      ? 'Colour range'
-                      : `Output range (${unit || 'value'})`}
-                  </span>
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={() =>
-                      update({ range: [mapping.range[1], mapping.range[0]] })
-                    }
-                  >
-                    Reverse
-                  </Button>
-                </div>
-                {type === 'color' && (
-                  <div
-                    className="mapping-gradient"
-                    style={{
-                      background: `linear-gradient(to right, ${mapping.range[0]}, ${mapping.range[1]})`,
-                    }}
-                  />
-                )}
-                <div className="mapping-endpoints">
-                  <ValueField
-                    label={`${label} range start`}
-                    value={mapping.range[0]}
-                    min={min}
-                    max={max}
-                    onChange={(v) => update({ range: [v, mapping.range[1]] })}
-                  />
-                  <span>→</span>
-                  <ValueField
-                    label={`${label} range end`}
-                    value={mapping.range[1]}
-                    min={min}
-                    max={max}
-                    onChange={(v) => update({ range: [mapping.range[0], v] })}
-                  />
-                </div>
-                {type === 'number' && (
+                <fieldset
+                  className="mapping-control-group"
+                  aria-label={`${label} data domain`}
+                >
+                  <div className="mapping-caption">
+                    <span>Data domain</span>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => update({ domain: dataDomain })}
+                    >
+                      Fit to data
+                    </Button>
+                  </div>
+                  <div className="mapping-endpoints">
+                    <NumberField
+                      label={`${label} domain minimum`}
+                      value={mapping.domain[0]}
+                      max={mapping.domain[1] - 0.001}
+                      onChange={(v) =>
+                        update({ domain: [v, mapping.domain[1]] })
+                      }
+                    />
+                    <span>→</span>
+                    <NumberField
+                      label={`${label} domain maximum`}
+                      value={mapping.domain[1]}
+                      min={mapping.domain[0] + 0.001}
+                      onChange={(v) =>
+                        update({ domain: [mapping.domain[0], v] })
+                      }
+                    />
+                  </div>
                   <Slider
-                    aria-label={`${label} output slider`}
-                    min={min}
-                    max={max}
-                    step={0.1}
-                    value={[...(mapping.range as number[])].sort(
-                      (a, b) => a - b,
-                    )}
-                    onValueChange={(v) => {
-                      const pair = v as [number, number]
-                      update(
-                        {
+                    aria-label={`${label} domain slider`}
+                    min={domainMin}
+                    max={domainMax}
+                    step={Math.max(0.001, (domainMax - domainMin) / 1000)}
+                    minStepsBetweenValues={1}
+                    value={mapping.domain}
+                    onValueChange={(v) =>
+                      update({ domain: v as [number, number] }, true)
+                    }
+                    onValueCommitted={(v) =>
+                      update({ domain: v as [number, number] })
+                    }
+                  />
+                </fieldset>
+                <fieldset
+                  className="mapping-control-group"
+                  aria-label={`${label} output range`}
+                >
+                  <div className="mapping-caption">
+                    <span>
+                      {type === 'color'
+                        ? 'Colour range'
+                        : `Output range (${unit || 'value'})`}
+                    </span>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() =>
+                        update({ range: [mapping.range[1], mapping.range[0]] })
+                      }
+                    >
+                      Reverse
+                    </Button>
+                  </div>
+                  {type === 'color' && (
+                    <div
+                      className="mapping-gradient"
+                      style={{
+                        background: `linear-gradient(to right, ${mapping.range[0]}, ${mapping.range[1]})`,
+                      }}
+                    />
+                  )}
+                  <div
+                    className={`mapping-endpoints ${type === 'color' ? 'color-endpoints' : ''}`}
+                  >
+                    <ValueField
+                      label={`${label} range start`}
+                      value={mapping.range[0]}
+                      min={min}
+                      max={max}
+                      onChange={(v) => update({ range: [v, mapping.range[1]] })}
+                    />
+                    <span>→</span>
+                    <ValueField
+                      label={`${label} range end`}
+                      value={mapping.range[1]}
+                      min={min}
+                      max={max}
+                      onChange={(v) => update({ range: [mapping.range[0], v] })}
+                    />
+                  </div>
+                  {type === 'number' && (
+                    <Slider
+                      aria-label={`${label} output slider`}
+                      min={min}
+                      max={max}
+                      step={0.1}
+                      value={[...(mapping.range as number[])].sort(
+                        (a, b) => a - b,
+                      )}
+                      onValueChange={(v) => {
+                        const pair = v as [number, number]
+                        update(
+                          {
+                            range:
+                              Number(mapping.range[0]) >
+                              Number(mapping.range[1])
+                                ? [pair[1], pair[0]]
+                                : pair,
+                          },
+                          true,
+                        )
+                      }}
+                      onValueCommitted={(v) => {
+                        const pair = v as [number, number]
+                        update({
                           range:
                             Number(mapping.range[0]) > Number(mapping.range[1])
                               ? [pair[1], pair[0]]
                               : pair,
-                        },
-                        true,
-                      )
-                    }}
-                    onValueCommitted={(v) => {
-                      const pair = v as [number, number]
-                      update({
-                        range:
-                          Number(mapping.range[0]) > Number(mapping.range[1])
-                            ? [pair[1], pair[0]]
-                            : pair,
-                      })
-                    }}
-                  />
-                )}
-                <small className="mapping-note">
-                  Outside domain: use nearest endpoint.
-                </small>
+                        })
+                      }}
+                    />
+                  )}
+                  <small className="mapping-note">
+                    Outside domain: use nearest endpoint.
+                  </small>
+                </fieldset>
               </>
             )}
             {mapping.kind === 'discrete' && (
