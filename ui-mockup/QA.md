@@ -116,3 +116,14 @@ shadow. Browser verification at 1280×800 confirmed the full-height sheet stays
 inside its parent with the network at zero height, collapse retains a 44px bar,
 and clicking Nodes reopens it. Resize calculations account for the top margin.
 Prototype lint, typecheck, tests and build passed.
+
+## Hover and shadow refinement
+
+Extended style hover surfaces across the available row width while retaining
+rounded corners and vertical inset. Both spreadsheet toggle areas activate one
+shared header surface, inset 5px vertically and 6px horizontally; tabs retain
+their own interaction. Increased the sheet shadow to a soft 16px blur with
+a smaller contact shadow. Visually checked the sidebar and spreadsheet hover
+in the live browser and verified collapse/reopen. Prototype checks and build pass.
+Removed the canvas SVG focus outline while retaining keyboard interaction
+and individual node focus indicators.

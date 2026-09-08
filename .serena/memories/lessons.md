@@ -85,5 +85,5 @@
 - [2026-09-08] Panel chrome: match right/bottom toggle motion to the shadcn left sidebar (200ms), without lag during divider dragging. Workspace and account rows should match the 49px menubar height.
 
 - [2026-09-08] Style prototype: bold all property labels; keep unmapped defaults inline without carets, indent enabled mapping controls, and omit the placeholder preset card. Group domain/range controls by proximity (4px within, 16px between), not separators. Align colour endpoint swatches with the gradient; right hex goes before its swatch. Spreadsheet count belongs left with tabs centred.
-- [2026-09-08] Sidebar hover feedback should hug the caret and label with a subtle rounded surface, independent of the larger clickable row; avoid filling the whole tap area.
+- [2026-09-08] Sidebar hover feedback should extend rightward across the available row with a subtle rounded surface and vertical breathing room, independent of the larger clickable area. Spreadsheet toggle areas should share a nearly full-width rounded hover surface inset from the panel edges.
 - [2026-09-08] Spreadsheet surface: use a small outer margin, rounded corners and a light shadow like the ChatGPT composer. Account for margins in full-height sizing and pointer resize calculations.

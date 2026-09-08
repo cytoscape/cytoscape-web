@@ -727,6 +727,7 @@ tbody tr:hover {
   margin-bottom: 4px;
 }
 .graph {
+  outline: none;
   padding: 66px 48px 35px;
 }
 .graph-node {
@@ -1628,6 +1629,8 @@ tbody tr:hover {
   background: transparent;
 }
 .tree-row-content {
+  flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1637,7 +1640,7 @@ tbody tr:hover {
 .tree-row-content::before {
   content: '';
   position: absolute;
-  inset: -4px -7px;
+  inset: -4px 0 -4px -7px;
   z-index: -1;
   border-radius: 6px;
   pointer-events: none;
@@ -1677,8 +1680,8 @@ tbody tr:hover {
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow:
-    0 2px 8px rgb(0 0 0 / 5%),
-    0 1px 2px rgb(0 0 0 / 3%);
+    0 4px 16px rgb(0 0 0 / 8%),
+    0 1px 4px rgb(0 0 0 / 5%);
 }
 .spreadsheet .table-resize {
   top: 0;
@@ -1688,4 +1691,25 @@ tbody tr:hover {
 }
 .spreadsheet.is-collapsed .table-bar {
   border-bottom-color: transparent;
+}
+
+/* Both toggle areas share one inset hover surface around the centred tabs. */
+.table-bar {
+  position: relative;
+  isolation: isolate;
+}
+.table-bar::before {
+  content: '';
+  position: absolute;
+  inset: 5px 6px;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: -1;
+}
+.table-left-toggle:hover,
+.table-collapse-area:hover {
+  background: transparent;
+}
+.table-bar:has(.table-left-toggle:hover, .table-collapse-area:hover)::before {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
 }
