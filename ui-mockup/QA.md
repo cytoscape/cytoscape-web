@@ -213,3 +213,19 @@ quiet checks passed.
 Style divider selectors now include the first child at every level (section,
 group and property), keeping the same indents and row heights. Prototype
 lint/typecheck and parent quiet checks passed.
+
+
+Selection bypass review: verified node diameter and colour edits update graph
+geometry and fills; distinct colour groups edit independently; Set all merges
+groups; reset-all affects only selected elements. Edge row selection joins node
+selection, edge graph keyboard selection opens bypass mode, and line-width edits
+update the SVG. Deselecting preserves bypasses. Network style retains mapper
+buttons and explicit scope survives changes to a nonempty selection. Verified
+numeric undo/redo and slider undo, and reviewed compact controls in dark theme.
+The quiet prototype tests cover precedence, provenance grouping, group isolation,
+zero values, and property reset while preserving other values.
+
+Also reviewed light theme and verified the scope header stays at y=49 while the
+sidebar scrolls. Prototype lint/typecheck, all 13 prototype tests, production
+build, and parent quiet checks (4219 passed, 1 skipped) pass. Hierarchy node
+diameter now comes from fixture style data so inherited readouts match the graph.

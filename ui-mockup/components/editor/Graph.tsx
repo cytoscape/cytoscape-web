@@ -1,5 +1,5 @@
 'use client'
-import { resolveMapping } from '@/lib/mappings'
+import { effectiveValue } from '@/lib/bypasses'
 /* oxlint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex -- SVG canvas and nodes provide keyboard navigation; HTML buttons cannot wrap SVG geometry. */
 import { useState, useEffect, useRef } from 'react'
 import {
@@ -102,36 +102,73 @@ export function Graph({
             const a = point(network.nodes.find((n) => n.id === e.source)!),
               b = point(network.nodes.find((n) => n.id === e.target)!)
             return (
-              <line
+              <g
                 key={e.id}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                stroke={String(
-                  resolveMapping(s.mappings?.lineColor, e, s.lineColor),
+                role="button"
+                tabIndex={0}
+                aria-label={`Select edge ${network.nodes.find((n) => n.id === e.source)?.name} to ${network.nodes.find((n) => n.id === e.target)?.name}`}
+                aria-pressed={selected.includes(e.id)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSelect(
+                    event.shiftKey
+                      ? selected.includes(e.id)
+                        ? selected.filter((id) => id !== e.id)
+                        : [...selected, e.id]
+                      : [e.id],
+                  )
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onSelect([e.id])
+                  }
+                }}
+              >
+                <line
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke="transparent"
+                  strokeWidth={Math.max(
+                    12,
+                    Number(effectiveValue(s, e, 'lineWidth')) + 8,
+                  )}
+                />
+                {selected.includes(e.id) && (
+                  <line
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke="var(--foreground)"
+                    strokeOpacity={0.2}
+                    strokeWidth={Number(effectiveValue(s, e, 'lineWidth')) + 5}
+                  />
                 )}
-                strokeWidth={Number(
-                  resolveMapping(s.mappings?.lineWidth, e, s.lineWidth),
-                )}
-                strokeDasharray={
-                  e.interaction === 'predicted' ? '4 4' : undefined
-                }
-                markerEnd={s.arrows ? 'url(#arrow)' : undefined}
-                opacity={0.7}
-              />
+                <line
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={String(effectiveValue(s, e, 'lineColor'))}
+                  strokeWidth={Number(effectiveValue(s, e, 'lineWidth'))}
+                  strokeDasharray={
+                    e.interaction === 'predicted' ? '4 4' : undefined
+                  }
+                  markerEnd={
+                    effectiveValue(s, e, 'arrows') ? 'url(#arrow)' : undefined
+                  }
+                  opacity={0.7}
+                />
+              </g>
             )
           })}
           {network.nodes.map((n) => {
             const active = selected.includes(n.id),
-              r =
-                Number(
-                  resolveMapping(
-                    s.mappings?.size,
-                    n,
-                    isHierarchy ? 56 : s.size,
-                  ),
-                ) / 2
+              r = Number(effectiveValue(s, n, 'size')) / 2
             return (
               <g
                 key={n.id}
@@ -179,66 +216,62 @@ export function Graph({
                   />
                 )}
                 <circle r={Math.max(r, 16)} fill="transparent" />
-                {s.shape === 'Diamond' ? (
+                {effectiveValue(s, n, 'shape') === 'Diamond' ? (
                   <path
                     d={`M 0 ${-r} L ${r} 0 L 0 ${r} L ${-r} 0 Z`}
-                    fill={String(resolveMapping(s.mappings?.fill, n, s.fill))}
-                    opacity={s.opacity / 100}
+                    fill={String(effectiveValue(s, n, 'fill'))}
+                    opacity={Number(effectiveValue(s, n, 'opacity')) / 100}
+                    stroke="color-mix(in srgb, var(--primary), transparent 60%)"
+                    strokeWidth={Number(effectiveValue(s, n, 'border'))}
                   />
-                ) : s.shape === 'Rounded rectangle' ? (
+                ) : effectiveValue(s, n, 'shape') === 'Rounded rectangle' ? (
                   <rect
                     x={-r}
                     y={-r * 0.72}
                     width={r * 2}
                     height={r * 1.44}
                     rx={5}
-                    fill={String(resolveMapping(s.mappings?.fill, n, s.fill))}
-                    opacity={s.opacity / 100}
+                    fill={String(effectiveValue(s, n, 'fill'))}
+                    opacity={Number(effectiveValue(s, n, 'opacity')) / 100}
+                    stroke="color-mix(in srgb, var(--primary), transparent 60%)"
+                    strokeWidth={Number(effectiveValue(s, n, 'border'))}
                   />
                 ) : (
                   <circle
                     r={r}
-                    fill={String(resolveMapping(s.mappings?.fill, n, s.fill))}
-                    opacity={s.opacity / 100}
+                    fill={String(effectiveValue(s, n, 'fill'))}
+                    opacity={Number(effectiveValue(s, n, 'opacity')) / 100}
                     stroke="color-mix(in srgb, var(--primary), transparent 60%)"
-                    strokeWidth={s.border}
+                    strokeWidth={Number(effectiveValue(s, n, 'border'))}
                   />
                 )}
-                {(s.mappings?.labelText
-                  ? s.mappings.labelText.enabled || s.labelText
-                  : s.mapped) && (
+                {(s.bypasses?.[n.id]?.labelText !== undefined ||
+                  (s.mappings?.labelText
+                    ? s.mappings.labelText.enabled || s.labelText
+                    : s.mapped)) && (
                   <text
                     y={
-                      s.labelPosition === 'Below'
+                      effectiveValue(s, n, 'labelPosition') === 'Below'
                         ? r + 17
-                        : s.labelPosition === 'Above'
+                        : effectiveValue(s, n, 'labelPosition') === 'Above'
                           ? -r - 8
                           : 4
                     }
                     textAnchor="middle"
                     style={{
-                      fontSize:
-                        s.overrides[n.id] ??
-                        Number(
-                          resolveMapping(s.mappings?.labelSize, n, s.labelSize),
-                        ),
-                      fill: s.labelColor || undefined,
+                      fontSize: Number(effectiveValue(s, n, 'labelSize')),
+                      fill:
+                        String(effectiveValue(s, n, 'labelColor')) || undefined,
                       fontFamily:
-                        s.font === 'Georgia'
+                        effectiveValue(s, n, 'font') === 'Georgia'
                           ? 'Georgia'
-                          : s.font === 'Monospace'
+                          : effectiveValue(s, n, 'font') === 'Monospace'
                             ? 'monospace'
                             : undefined,
                       fontWeight: active ? 600 : 400,
                     }}
                   >
-                    {s.mappings?.labelText
-                      ? resolveMapping(
-                          s.mappings.labelText,
-                          n,
-                          s.labelText || '',
-                        )
-                      : n[s.labelAttribute]}
+                    {String(effectiveValue(s, n, 'labelText'))}
                   </text>
                 )}
               </g>

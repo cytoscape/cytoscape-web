@@ -445,14 +445,14 @@ export function Spreadsheet({
                           }}
                           data-node-id={kind === 'nodes' ? r.id : undefined}
                           data-selected={
-                            kind === 'nodes' && selected.includes(r.id)
+                            kind !== 'network' && selected.includes(r.id)
                           }
                         >
                           <TableCell>
                             <button
                               aria-label={`Select row ${i + 1}`}
                               onClick={() => {
-                                if (kind === 'nodes')
+                                if (kind !== 'network')
                                   onSelect(
                                     selected.includes(r.id)
                                       ? selected.filter((id) => id !== r.id)

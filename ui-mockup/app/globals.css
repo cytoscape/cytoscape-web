@@ -1931,3 +1931,180 @@ tbody tr:hover {
 .category-content > .mapped-property::before {
   left: 18px;
 }
+
+/* Selection scope stays visible while its property tree scrolls. */
+.style-scope-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--sidebar);
+  margin-right: -36px;
+  padding-right: 36px;
+}
+.selection-scope {
+  margin: 0 14px 12px 18px;
+  font-size: 11px;
+}
+.selection-scope > .property-select {
+  width: 100%;
+  font-size: 12px;
+}
+.selection-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 7px;
+  gap: 8px;
+  color: var(--muted-foreground);
+}
+.selection-summary button {
+  color: var(--foreground);
+}
+.selection-summary button:hover,
+.bypass-set-all:hover,
+.remove-selection-bypasses:hover {
+  text-decoration: underline;
+}
+.remove-selection-bypasses {
+  font-size: 10px;
+  margin-top: 7px;
+  color: var(--muted-foreground);
+}
+.remove-selection-bypasses:disabled {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: none;
+}
+.network-style-tree[hidden] {
+  display: none;
+}
+.network-style-tree > [data-slot='collapsible'],
+.bypass-tree > [data-slot='collapsible'] {
+  position: relative;
+}
+.network-style-tree > [data-slot='collapsible']::before,
+.bypass-tree > [data-slot='collapsible']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 9%, transparent);
+  pointer-events: none;
+}
+.bypass-values {
+  padding: 0 0 8px 36px;
+}
+.bypass-entry {
+  margin-bottom: 8px;
+}
+.bypass-entry-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  margin-bottom: 3px;
+  min-height: 16px;
+}
+.bypass-entry-caption button {
+  padding: 3px;
+  border-radius: 4px;
+}
+.bypass-entry-caption button:hover {
+  background: var(--accent);
+}
+.bypass-color {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+.bypass-color input {
+  width: 24px;
+  height: 24px;
+}
+.bypass-value > input {
+  height: 24px;
+  font-size: 11px;
+}
+.bypass-value > input.bypass-number {
+  text-align: right;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding-right: 5px;
+}
+.bypass-value > input.bypass-number:focus {
+  background: var(--background);
+  border-color: var(--border);
+}
+.bypass-value > [data-slot='slider'] {
+  margin-top: 6px;
+}
+.bypass-set-all,
+.bypass-expand {
+  font-size: 11px;
+  margin: 3px 0 6px;
+}
+.bypass-expand {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.bypass-expand[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+.bypass-property .plain-property-name {
+  font-weight: 600;
+}
+.style-scope-header {
+  flex-shrink: 0;
+}
+.selection-scope .property-select {
+  max-width: none;
+  width: 100%;
+}
+.bypass-color input.bypass-hex {
+  width: 82px;
+  height: 24px;
+  padding: 2px 4px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+.bypass-color input.bypass-hex:focus {
+  border-color: var(--border);
+  background: var(--background);
+}
+.bypass-single .bypass-values {
+  padding-left: 18px;
+  margin-top: -30px;
+  pointer-events: none;
+}
+.bypass-single .bypass-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 0;
+}
+.bypass-single .bypass-entry > :not(.bypass-entry-caption) {
+  pointer-events: auto;
+}
+.bypass-single .bypass-entry-caption {
+  order: 2;
+  margin: 0;
+}
+.bypass-single .bypass-color,
+.bypass-single .property-select {
+  align-self: flex-end;
+}
+.bypass-single .bypass-value > input {
+  display: block;
+  width: 100px;
+  margin-left: auto;
+}
+.bypass-single .bypass-value > [data-slot='slider'] {
+  pointer-events: auto;
+}

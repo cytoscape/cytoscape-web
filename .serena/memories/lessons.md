@@ -98,3 +98,5 @@
 - [2026-09-08] Scope mapping fallback bold styling to its label (first child), never every span: numeric value wrappers are spans too. Group fallback values with their slider using the same compact spacing as domain/range controls.
 - [2026-09-08] Updated style-divider preference: use subtle indented horizontal lines between sibling groups/properties, like GeneMANIA. Keep each expanded property and its mapping controls together without internal divider lines.
 - [2026-09-08] Style hierarchy dividers include a top border on the first child at each level, not only between siblings.
+
+- [2026-09-09] Bypass UI: mapper buttons remain in Network style mode; selection mode uses reset actions. Group distinct values by both value and inherited/overridden provenance. Editing a group targets its members, Set all targets the selection, and deselecting never deletes bypasses. Keep single-value editors compact and preserve explicit scope choice while selection remains nonempty.

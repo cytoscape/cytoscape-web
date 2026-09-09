@@ -2,7 +2,6 @@
 import { useState, type ReactNode } from 'react'
 import {
   ChevronRight,
-  RotateCcw,
   Check,
   ChevronsUpDown,
   Network as NetworkIcon,
@@ -30,7 +29,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { type Network, type Style } from '@/lib/editor'
 import { MappingEditor } from './MappingEditor'
-import { resolveMapping } from '@/lib/mappings'
+import { BypassInspector } from './BypassInspector'
+import { updateBypasses } from '@/lib/bypasses'
 
 export function Choice({
   label,
@@ -196,241 +196,247 @@ export function StyleInspector({
   network,
   selected,
   onStyle,
+  onClearSelection,
   mode,
 }: {
   network: Network
   selected: string[]
   onStyle: (s: Partial<Style>, transient?: boolean) => void
+  onClearSelection: () => void
   mode: string
 }) {
   const s = network.style
+  const nodes = network.nodes.filter((n) => selected.includes(n.id)).length
+  const edges = network.edges.filter((e) => selected.includes(e.id)).length
+  const hasSelection = nodes + edges > 0
+  const [previousSelection, setPreviousSelection] = useState(hasSelection)
+  const [scope, setScope] = useState(
+    hasSelection ? 'Selection — bypasses' : 'Network style',
+  )
+  if (previousSelection !== hasSelection) {
+    setPreviousSelection(hasSelection)
+    setScope(hasSelection ? 'Selection — bypasses' : 'Network style')
+  }
+  const bypassMode = hasSelection && scope === 'Selection — bypasses'
   return (
     <>
-      <div className="style-heading">
-        <span>Style</span>
+      <div className="style-scope-header">
+        <div className="style-heading">
+          <span>Style</span>
+        </div>
+        {hasSelection && (
+          <div className="selection-scope">
+            <Choice
+              label="Style editing scope"
+              value={scope}
+              options={['Selection — bypasses', 'Network style']}
+              onChange={setScope}
+            />
+            <div className="selection-summary">
+              <span>
+                {nodes} {nodes === 1 ? 'node' : 'nodes'} · {edges}{' '}
+                {edges === 1 ? 'edge' : 'edges'}
+              </span>
+              <button onClick={onClearSelection}>Clear selection</button>
+            </div>
+            {bypassMode && (
+              <button
+                className="remove-selection-bypasses"
+                disabled={
+                  !selected.some(
+                    (id) => s.bypasses?.[id] || s.overrides[id] !== undefined,
+                  )
+                }
+                onClick={() => onStyle(updateBypasses(s, selected))}
+              >
+                Remove bypasses from selection
+              </button>
+            )}
+          </div>
+        )}
       </div>
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger className="section-trigger">
-          <span className="tree-row-content">
-            <ChevronRight size={14} />
-            Nodes
-          </span>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="property-tree">
-          <Group title="Appearance" open={mode !== 'styles'}>
-            <MappingEditor
-              property="fill"
-              label="Fill"
-              type="color"
-              network={network}
-              onStyle={onStyle}
-              initialOpen
-            />
-            <div className="property">
-              Shape
-              <Choice
-                label="Node shape"
-                value={s.shape}
-                options={['Ellipse', 'Rounded rectangle', 'Diamond']}
-                onChange={(shape) => onStyle({ shape })}
-              />
-            </div>
-            <Range
-              label="Opacity"
-              value={s.opacity}
-              onChange={(opacity) => onStyle({ opacity })}
-              unit="%"
-            />
-          </Group>
-          <Group title="Size">
-            <MappingEditor
-              property="size"
-              label="Diameter"
-              min={8}
-              max={64}
-              network={network}
-              onStyle={onStyle}
-              initialOpen
-            />
-          </Group>
-          <Group title="Border">
-            <Range
-              label="Border width"
-              value={s.border}
-              min={0}
-              max={6}
-              onChange={(border) => onStyle({ border })}
-            />
-          </Group>
-          <Group title="Labels" open={mode !== 'mappings'}>
-            <MappingEditor
-              property="labelText"
-              label="Label text"
-              type="text"
-              network={network}
-              onStyle={onStyle}
-              initialOpen
-            />
-            <div className="property">
-              Font
-              <Choice
-                label="Label font"
-                value={s.font}
-                options={['Inter', 'Georgia', 'Monospace']}
-                onChange={(font) => onStyle({ font })}
-              />
-            </div>
-            <MappingEditor
-              property="labelSize"
-              label="Font size"
-              min={8}
-              max={24}
-              network={network}
-              onStyle={onStyle}
-              initialOpen
-            />
-            <label className="property">
-              Color
-              <input
+      {hasSelection && (
+        <BypassInspector
+          network={network}
+          selected={selected}
+          onStyle={onStyle}
+          active={bypassMode}
+        />
+      )}
+      <div className="network-style-tree" hidden={bypassMode}>
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger className="section-trigger">
+            <span className="tree-row-content">
+              <ChevronRight size={14} />
+              Nodes
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="property-tree">
+            <Group title="Appearance" open={mode !== 'styles'}>
+              <MappingEditor
+                property="fill"
+                label="Fill"
                 type="color"
-                aria-label="Label color"
-                value={s.labelColor || '#737373'}
-                onChange={(e) => onStyle({ labelColor: e.target.value })}
+                network={network}
+                onStyle={onStyle}
+                initialOpen
               />
-            </label>
-            <div className="property">
-              Position
-              <Choice
-                label="Label position"
-                value={s.labelPosition}
-                options={['Below', 'Center', 'Above']}
-                onChange={(labelPosition) => onStyle({ labelPosition })}
-              />
-            </div>
-            {selected.length > 0 ? (
-              <div className="override-box">
-                <div className="override-heading">
-                  <span>
-                    {selected.length} {selected.length === 1 ? 'node' : 'nodes'}{' '}
-                    selected
-                  </span>
-                  <span className="mapping-badge">Override</span>
-                  <Button
-                    size="icon-xs"
-                    variant="ghost"
-                    aria-label="Clear selected overrides"
-                    onClick={() => {
-                      const overrides = { ...s.overrides }
-                      selected.forEach((id) => delete overrides[id])
-                      onStyle({ overrides })
-                    }}
-                  >
-                    <RotateCcw size={12} />
-                  </Button>
-                </div>
-                <Range
-                  label="Selected label size"
-                  value={
-                    s.overrides[selected[0]] ??
-                    Number(
-                      resolveMapping(
-                        s.mappings?.labelSize,
-                        network.nodes.find((n) => n.id === selected[0]) ?? {},
-                        s.labelSize,
-                      ),
-                    )
-                  }
-                  min={8}
-                  max={28}
-                  onChange={(size) =>
-                    onStyle({
-                      overrides: {
-                        ...s.overrides,
-                        ...Object.fromEntries(selected.map((id) => [id, size])),
-                      },
-                    })
-                  }
+              <div className="property">
+                Shape
+                <Choice
+                  label="Node shape"
+                  value={s.shape}
+                  options={['Ellipse', 'Rounded rectangle', 'Diamond']}
+                  onChange={(shape) => onStyle({ shape })}
                 />
               </div>
-            ) : (
-              <small className="inspector-hint">
-                Select nodes to override their labels.
-              </small>
-            )}
-          </Group>
-          <Group title="Images & Charts">
-            <small className="inspector-hint">
-              Custom graphics are outside this prototype.
-            </small>
-          </Group>
-        </CollapsibleContent>
-      </Collapsible>
-      <Collapsible defaultOpen={mode === 'mappings'}>
-        <CollapsibleTrigger className="section-trigger">
-          <span className="tree-row-content">
-            <ChevronRight size={14} />
-            Edges
-          </span>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="property-tree">
-          <Group title="Line" open>
-            <MappingEditor
-              property="lineWidth"
-              label="Line width"
-              min={0.5}
-              max={12}
-              network={network}
-              onStyle={onStyle}
-              initialOpen
-            />
-            <MappingEditor
-              property="lineColor"
-              label="Edge colour"
-              type="color"
-              network={network}
-              onStyle={onStyle}
-              initialOpen
-            />
-          </Group>
-          <div className="property direct-arrow-property">
-            <span>Arrows</span>
-            <Choice
-              label="Edge arrows"
-              value={s.arrows ? 'Target' : 'None'}
-              options={['None', 'Target']}
-              onChange={(v) => onStyle({ arrows: v === 'Target' })}
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-      <Collapsible>
-        <CollapsibleTrigger className="section-trigger">
-          <span className="tree-row-content">
-            <ChevronRight size={14} />
-            Network
-          </span>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="property-tree">
-          <Group title="Background" open>
-            <label className="property">
-              Canvas
-              <input
-                type="color"
-                aria-label="Canvas color"
-                value={s.background || '#ffffff'}
-                onChange={(e) => onStyle({ background: e.target.value })}
+              <Range
+                label="Opacity"
+                value={s.opacity}
+                onChange={(opacity) => onStyle({ opacity })}
+                unit="%"
               />
-            </label>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onStyle({ background: '' })}
-            >
-              Use theme color
-            </Button>
-          </Group>
-        </CollapsibleContent>
-      </Collapsible>
+            </Group>
+            <Group title="Size">
+              <MappingEditor
+                property="size"
+                label="Diameter"
+                min={8}
+                max={64}
+                network={network}
+                onStyle={onStyle}
+                initialOpen
+              />
+            </Group>
+            <Group title="Border">
+              <Range
+                label="Border width"
+                value={s.border}
+                min={0}
+                max={6}
+                onChange={(border) => onStyle({ border })}
+              />
+            </Group>
+            <Group title="Labels" open={mode !== 'mappings'}>
+              <MappingEditor
+                property="labelText"
+                label="Label text"
+                type="text"
+                network={network}
+                onStyle={onStyle}
+                initialOpen
+              />
+              <div className="property">
+                Font
+                <Choice
+                  label="Label font"
+                  value={s.font}
+                  options={['Inter', 'Georgia', 'Monospace']}
+                  onChange={(font) => onStyle({ font })}
+                />
+              </div>
+              <MappingEditor
+                property="labelSize"
+                label="Font size"
+                min={8}
+                max={24}
+                network={network}
+                onStyle={onStyle}
+                initialOpen
+              />
+              <label className="property">
+                Color
+                <input
+                  type="color"
+                  aria-label="Label color"
+                  value={s.labelColor || '#737373'}
+                  onChange={(e) => onStyle({ labelColor: e.target.value })}
+                />
+              </label>
+              <div className="property">
+                Position
+                <Choice
+                  label="Label position"
+                  value={s.labelPosition}
+                  options={['Below', 'Center', 'Above']}
+                  onChange={(labelPosition) => onStyle({ labelPosition })}
+                />
+              </div>
+            </Group>
+            <Group title="Images & Charts">
+              <small className="inspector-hint">
+                Custom graphics are outside this prototype.
+              </small>
+            </Group>
+          </CollapsibleContent>
+        </Collapsible>
+        <Collapsible defaultOpen={mode === 'mappings'}>
+          <CollapsibleTrigger className="section-trigger">
+            <span className="tree-row-content">
+              <ChevronRight size={14} />
+              Edges
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="property-tree">
+            <Group title="Line" open>
+              <MappingEditor
+                property="lineWidth"
+                label="Line width"
+                min={0.5}
+                max={12}
+                network={network}
+                onStyle={onStyle}
+                initialOpen
+              />
+              <MappingEditor
+                property="lineColor"
+                label="Edge colour"
+                type="color"
+                network={network}
+                onStyle={onStyle}
+                initialOpen
+              />
+            </Group>
+            <div className="property direct-arrow-property">
+              <span>Arrows</span>
+              <Choice
+                label="Edge arrows"
+                value={s.arrows ? 'Target' : 'None'}
+                options={['None', 'Target']}
+                onChange={(v) => onStyle({ arrows: v === 'Target' })}
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+        <Collapsible>
+          <CollapsibleTrigger className="section-trigger">
+            <span className="tree-row-content">
+              <ChevronRight size={14} />
+              Network
+            </span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="property-tree">
+            <Group title="Background" open>
+              <label className="property">
+                Canvas
+                <input
+                  type="color"
+                  aria-label="Canvas color"
+                  value={s.background || '#ffffff'}
+                  onChange={(e) => onStyle({ background: e.target.value })}
+                />
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onStyle({ background: '' })}
+              >
+                Use theme color
+              </Button>
+            </Group>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
     </>
   )
 }

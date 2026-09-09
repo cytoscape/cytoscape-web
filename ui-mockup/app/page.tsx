@@ -346,6 +346,7 @@ function Workspace() {
             network={network}
             selected={selected}
             onStyle={changeStyle}
+            onClearSelection={() => setSelected([])}
             mode={mode}
           />
         </SidebarContent>
@@ -838,7 +839,18 @@ function Workspace() {
                     {drilled ? 'Human cell hierarchy' : 'Example workspace'}
                   </dd>
                   <dt>Selection</dt>
-                  <dd>{selected.length} nodes</dd>
+                  <dd>
+                    {
+                      network.nodes.filter((n) => selected.includes(n.id))
+                        .length
+                    }{' '}
+                    nodes ·{' '}
+                    {
+                      network.edges.filter((e) => selected.includes(e.id))
+                        .length
+                    }{' '}
+                    edges
+                  </dd>
                 </dl>
               </details>
               <div className="inspector-footnote">Illustrative data</div>

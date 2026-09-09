@@ -8,15 +8,16 @@ Use the default neutral shadcn tokens, thin borders, quiet surfaces, and compact
 system typography. Color should communicate network data only when explicitly
 configured by the user. There is no green brand theme.
 
-Use a fixed 304px shadcn Sidebar with a workspace/network picker at the top and
+Use a fixed 340px shadcn Sidebar (including a 36px mapping-action gutter) with a workspace/network picker at the top and
 account menu in its footer. Put the horizontal shadcn Menubar in the content
 area to its right. Keep the sidebar exclusively for style editing, with two
 disclosure levels: Nodes → Labels, Edges → Line, Network → Background.
 
 Adopt Pixelmator's direct property rows: a value field and slider where useful,
 an explicit mapped-state label, and a collapsible inline mapping editor. Display
-selected-node overrides together with their scope and a reset action. Keep the
-active network/subsystem target visible above the controls.
+selection bypasses in a separate scope, with a sticky node/edge count and clear
+selection action. The Style heading stays plain; network context is already in
+the workspace selector and canvas.
 
 Start the spreadsheet at 40% of the content area and remember the user's size.
 Centre the three tabs across the entire spreadsheet width. Both remaining sides
@@ -72,7 +73,6 @@ checks and the targeted e2e specs for each migrated feature.
 - The prototype preserves in-memory edits between networks, but does not prove
   production persistence, performance, or a full Excel keyboard model.
 
-
 ## Inline mapping preview findings
 
 The second iteration implements property-local Map toggles for node fill, size,
@@ -98,7 +98,6 @@ intermediate stops and out-of-range rules; provide an advanced editor or a
 faithful read-only summary until the new UI supports them. Disabling a map in
 this prototype retains its draft configuration; production must decide where to
 retain that disabled draft without changing CX2 semantics.
-
 
 ## Pane behavior revision — September 8
 
@@ -130,3 +129,29 @@ control width and alignment for both defaults and expanded mapping editors.
 Omit pixel-unit labels in the style panel. Numeric mapping endpoints align to
 the left/right scale ends in compact rows; dropdown option typography matches
 the trigger. Use solid black mapping buttons with white icons when enabled.
+
+## Selection bypass scope
+
+The prototype enters Selection — bypasses when a nonempty selection starts.
+A sticky scope selector allows Network style editing without deselecting; that
+explicit scope lasts until selection becomes empty. Network mode retains mapper
+buttons. Selection mode uses the same property hierarchy and the action gutter
+for restoring inherited style. Network-only properties are not editable there.
+
+Distinct effective values are grouped by value AND provenance (inherited versus
+explicit bypass). Editing an entry targets only its selected members. Set all
+assigns one value across the selection. More than four groups are collapsed into
+an expandable count. A single group keeps its value aligned with the property
+label; numeric values retain sliders. Groups are held stable during gestures so
+converging values cannot retarget a drag. Hex and numeric drafts commit on Enter
+or blur, Escape cancels, and slider gestures form one undo entry.
+
+Reset a group, a property, or all bypasses on the current selection. Clearing the
+selection does not remove bypasses. Values resolve as bypass → mapping → default;
+legacy label-size overrides remain readable and are removed by the same reset
+path. Production integration must adapt this UI to the existing per-style bypass
+model and undo commands, rather than introducing a second production store.
+
+Nodes and edges can be selected together from the graph or spreadsheet. Selection
+is local to the current network. Only selected nodes receive node edits, and only
+selected edges receive edge edits. Custom graphics remain outside this prototype.

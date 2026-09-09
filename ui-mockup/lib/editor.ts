@@ -1,3 +1,4 @@
+import type { Bypasses } from './bypasses.ts'
 import type { Mapping, MappableProperty } from './mappings.ts'
 export type Row = Record<string, string>
 export type Node = Row & { id: string; name: string; x: string; y: string }
@@ -5,6 +6,7 @@ export type Edge = Row & { id: string; source: string; target: string }
 export type TableKind = 'nodes' | 'edges' | 'network'
 export type Column = { key: string; label: string }
 export type Style = {
+  bypasses?: Bypasses
   mappings?: Partial<Record<MappableProperty, Mapping>>
   labelText?: string
   fill: string
@@ -195,7 +197,10 @@ function fixture(
         value: 'Illustrative data for interface exploration',
       },
     ],
-    style: structuredClone(defaultStyle),
+    style: structuredClone({
+      ...defaultStyle,
+      size: id === 'hierarchy' ? 56 : defaultStyle.size,
+    }),
     columns: {
       nodes: ['name', 'type', 'log2FC', 'pValue'].map((key) => ({
         key,
