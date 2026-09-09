@@ -211,27 +211,37 @@ export function StyleInspector({
   const hasSelection = nodes + edges > 0
   const [previousSelection, setPreviousSelection] = useState(hasSelection)
   const [scope, setScope] = useState(
-    hasSelection ? 'Selection — bypasses' : 'Network style',
+    hasSelection ? 'Selection bypasses' : 'Network style',
   )
   if (previousSelection !== hasSelection) {
     setPreviousSelection(hasSelection)
-    setScope(hasSelection ? 'Selection — bypasses' : 'Network style')
+    setScope(hasSelection ? 'Selection bypasses' : 'Network style')
   }
-  const bypassMode = hasSelection && scope === 'Selection — bypasses'
+  const bypassMode = hasSelection && scope === 'Selection bypasses'
   return (
     <>
       <div className="style-scope-header">
-        <div className="style-heading">
-          <span>Style</span>
-        </div>
+        <Select
+          value={scope}
+          onValueChange={(value) => {
+            if (value) setScope(value)
+          }}
+        >
+          <SelectTrigger
+            className="style-scope-title"
+            aria-label="Style editing scope"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="style-scope-menu">
+            <SelectItem value="Network style">Network style</SelectItem>
+            <SelectItem value="Selection bypasses" disabled={!hasSelection}>
+              Selection bypasses
+            </SelectItem>
+          </SelectContent>
+        </Select>
         {hasSelection && (
           <div className="selection-scope">
-            <Choice
-              label="Style editing scope"
-              value={scope}
-              options={['Selection — bypasses', 'Network style']}
-              onChange={setScope}
-            />
             <div className="selection-summary">
               <span>
                 {nodes} {nodes === 1 ? 'node' : 'nodes'} · {edges}{' '}

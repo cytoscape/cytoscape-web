@@ -100,3 +100,5 @@
 - [2026-09-08] Style hierarchy dividers include a top border on the first child at each level, not only between siblings.
 
 - [2026-09-09] Bypass UI: mapper buttons remain in Network style mode; selection mode uses reset actions. Group distinct values by both value and inherited/overridden provenance. Editing a group targets its members, Set all targets the selection, and deselecting never deletes bypasses. Keep single-value editors compact and preserve explicit scope choice while selection remains nonempty.
+
+- [2026-09-09] Style scope dropdown replaces the redundant Style title: 14px semibold, quiet chevron, rounded hover, no resting input outline. Always show Network style or Selection bypasses; disable selection scope when empty, with counts and Clear selection underneath when applicable.

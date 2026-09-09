@@ -2108,3 +2108,29 @@ tbody tr:hover {
 .bypass-single .bypass-value > [data-slot='slider'] {
   pointer-events: auto;
 }
+
+/* Scope doubles as the panel title in both editing modes. */
+[data-slot='sidebar-content'] .style-scope-title {
+  margin: 12px 8px 8px 12px;
+  width: calc(100% - 20px);
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+[data-slot='sidebar-content'] .style-scope-title:hover,
+[data-slot='sidebar-content'] .style-scope-title[data-popup-open] {
+  background: var(--sidebar-accent);
+}
+.style-scope-title > svg {
+  color: var(--muted-foreground);
+  width: 14px;
+  height: 14px;
+}
+.style-scope-menu [data-slot='select-item'] {
+  font-size: 14px;
+}

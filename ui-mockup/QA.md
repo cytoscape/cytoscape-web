@@ -229,3 +229,8 @@ Also reviewed light theme and verified the scope header stays at y=49 while the
 sidebar scrolls. Prototype lint/typecheck, all 13 prototype tests, production
 build, and parent quiet checks (4219 passed, 1 skipped) pass. Hierarchy node
 diameter now comes from fixture style data so inherited readouts match the graph.
+
+Scope dropdown now replaces the Style title. Browser verified 14px/600 typography,
+transparent resting surface, selection counts beneath it, and a disabled Selection
+bypasses option after clearing selection. Prototype lint/typecheck and 13 tests,
+plus parent quiet checks, passed.

@@ -16,7 +16,7 @@ disclosure levels: Nodes → Labels, Edges → Line, Network → Background.
 Adopt Pixelmator's direct property rows: a value field and slider where useful,
 an explicit mapped-state label, and a collapsible inline mapping editor. Display
 selection bypasses in a separate scope, with a sticky node/edge count and clear
-selection action. The Style heading stays plain; network context is already in
+selection action. The scope dropdown doubles as the panel heading; network context is already in
 the workspace selector and canvas.
 
 Start the spreadsheet at 40% of the content area and remember the user's size.
@@ -132,7 +132,7 @@ the trigger. Use solid black mapping buttons with white icons when enabled.
 
 ## Selection bypass scope
 
-The prototype enters Selection — bypasses when a nonempty selection starts.
+The prototype enters Selection bypasses when a nonempty selection starts.
 A sticky scope selector allows Network style editing without deselecting; that
 explicit scope lasts until selection becomes empty. Network mode retains mapper
 buttons. Selection mode uses the same property hierarchy and the action gutter
@@ -155,3 +155,7 @@ model and undo commands, rather than introducing a second production store.
 Nodes and edges can be selected together from the graph or spreadsheet. Selection
 is local to the current network. Only selected nodes receive node edits, and only
 selected edges receive edge edits. Custom graphics remain outside this prototype.
+
+The scope heading is always visible: 14px semibold with a quiet chevron, rounded
+hover, and no resting field outline. Selection bypasses is disabled when nothing
+is selected. Counts and Clear selection remain below the heading when applicable.
