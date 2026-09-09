@@ -27,8 +27,18 @@ import {
 const PANEL = '[data-testid="empty-workspace-panel"]'
 const OPEN_SAMPLES = '[data-testid="empty-workspace-open-samples"]'
 
-/** First `testNetworks` entry in src/assets/config.json. */
-const FIRST_SAMPLE_ID = '2496d8c5-5c74-11ec-b3be-0ac135e8bacf'
+/**
+ * First `testNetworks` entry in src/assets/config.json — read at module load
+ * so a config change cannot silently desync the fixture this spec serves.
+ */
+const FIRST_SAMPLE_ID: string = (
+  JSON.parse(
+    fs.readFileSync(
+      path.resolve(__dirname, '../../src/assets/config.json'),
+      'utf8',
+    ),
+  ) as { testNetworks: string[] }
+).testNetworks[0]
 const CX2_FIXTURE = path.resolve(
   __dirname,
   `../fixtures/ndex/${FIRST_SAMPLE_ID}.valid.cx2`,

@@ -95,6 +95,40 @@ describe('useLoadDemoNetworks', () => {
     )
   })
 
+  it('adds only the samples NDEx actually returned and selects the first of those', async () => {
+    // A deleted or private sample drops out of the batch response silently.
+    fetchNdexSummaries.mockResolvedValue([summaryFor('sample-2')])
+    const { result } = renderHook(() => useLoadDemoNetworks(), { wrapper })
+
+    let ok = false
+    await act(async () => {
+      ok = await result.current.loadDemoNetworks()
+    })
+
+    expect(ok).toBe(true)
+    const { workspace } = useWorkspaceStore.getState()
+    expect(workspace.networkIds).toEqual(['sample-2'])
+    expect(workspace.currentNetworkId).toBe('sample-2')
+    expect(navigateToNetwork).toHaveBeenCalledWith(
+      expect.objectContaining({ networkId: 'sample-2' }),
+    )
+  })
+
+  it('fails when NDEx returns none of the samples', async () => {
+    fetchNdexSummaries.mockResolvedValue([])
+    const { result } = renderHook(() => useLoadDemoNetworks(), { wrapper })
+
+    let ok = true
+    await act(async () => {
+      ok = await result.current.loadDemoNetworks()
+    })
+
+    expect(ok).toBe(false)
+    expect(result.current.status).toBe('error')
+    expect(useWorkspaceStore.getState().workspace.networkIds).toEqual([])
+    expect(navigateToNetwork).not.toHaveBeenCalled()
+  })
+
   it('reports a failure without touching the workspace', async () => {
     fetchNdexSummaries.mockRejectedValue(new Error('NDEx unreachable'))
     const { result } = renderHook(() => useLoadDemoNetworks(), { wrapper })

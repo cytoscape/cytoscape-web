@@ -56,7 +56,18 @@ export const useLoadDemoNetworks = (): UseLoadDemoNetworksReturn => {
       const token = await getToken()
       const summaries = await fetchNdexSummaries(testNetworks, token)
 
-      addNetworkIds(testNetworks)
+      // NDEx answers the batch with only the networks it can serve (a
+      // deleted or private sample silently drops out), so reconcile against
+      // what came back: an id without a summary would sit blank in the
+      // workspace panel, and selecting it would fail on the network fetch.
+      const resolvedIds = testNetworks.filter((id) =>
+        summaries.some((summary) => summary.externalId === id),
+      )
+      if (resolvedIds.length === 0) {
+        throw new Error('No sample networks could be retrieved from NDEx')
+      }
+
+      addNetworkIds(resolvedIds)
       addSummaries(
         summaries.reduce(
           (acc, summary) => {
@@ -67,7 +78,7 @@ export const useLoadDemoNetworks = (): UseLoadDemoNetworksReturn => {
         ),
       )
 
-      const firstId = testNetworks[0]
+      const firstId = resolvedIds[0]
       setCurrentNetworkId(firstId)
       navigateToNetwork({
         workspaceId: useWorkspaceStore.getState().workspace.id,
