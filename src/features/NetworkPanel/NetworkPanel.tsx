@@ -13,6 +13,7 @@ import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { MessagePanel } from '../Messages'
+import { EmptyWorkspacePanel } from './EmptyWorkspacePanel'
 import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 
@@ -153,13 +154,21 @@ const NetworkPanel = ({
     return <MessagePanel message="Loading network data..." />
   }
 
-  // Workspace is initialized but no network is selected
+  // Workspace is initialized but holds no networks: the call to action
+  // (#651). State-driven, so it also returns after Data → Remove All Networks.
   if (workspace.networkIds.length === 0) {
-    return <MessagePanel message="No network selected" />
+    return <EmptyWorkspacePanel />
   }
 
-  // This should not be reached, but TypeScript needs it
-  return <MessagePanel message="No network selected" />
+  // Workspace has networks but none is current. A "load a network" CTA is
+  // the wrong copy here — point at the workspace panel instead.
+  return (
+    <MessagePanel
+      data-testid="no-network-selected-panel"
+      message="Select a network"
+      subMessage="Choose a network from the workspace panel on the left to view it here."
+    />
+  )
 }
 
 export default NetworkPanel

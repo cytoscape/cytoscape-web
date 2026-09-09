@@ -30,6 +30,7 @@ import { LoadFromNdexDialog } from './LoadFromNdexDialog'
 import { LoadFromNdexMenuItem } from './LoadFromNdexMenuItem'
 import LoadWorkspaceDialog from './LoadWorkspaceDialog'
 import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
+import { useFileUploadDialogStore } from './store/fileUploadDialogStore'
 import { useLoadFromNdexDialogStore } from './store/loadFromNdexDialogStore'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
@@ -42,10 +43,6 @@ import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverw
 export const DataMenu = () => {
   const { open, setOpen } = useMenuBarMenu('data-menu')
   const [openWorkspaceDialog, setOpenWorkspaceDialog] = useState(false)
-  const [openFileUpload, setOpenFileUpload] = useState(false)
-  // Mount latch for the lazy FileUpload dialog: stays true after the first
-  // open so the close animation still plays and reopening is instant.
-  const [hasOpenedFileUpload, setHasOpenedFileUpload] = useState(false)
   const [openDeleteNetworkDialog, setOpenDeleteNetworkDialog] = useState(false)
   const [openDeleteAllNetworksDialog, setOpenDeleteAllNetworksDialog] =
     useState(false)
@@ -93,14 +90,24 @@ export const DataMenu = () => {
     setOpenWorkspaceDialog(false)
   }
 
-  // File upload handlers
+  // File upload dialog state lives in a store too: the empty-workspace
+  // panel's "Import from file" opens the same dialog from the canvas (#651).
+  // `hasOpened` is the mount latch for the lazy FileUpload dialog — it stays
+  // true after the first open so the close animation still plays and
+  // reopening is instant.
+  const openFileUpload = useFileUploadDialogStore((state) => state.isOpen)
+  const hasOpenedFileUpload = useFileUploadDialogStore(
+    (state) => state.hasOpened,
+  )
+  const openFileUploadAction = useFileUploadDialogStore(
+    (state) => state.openDialog,
+  )
+  const handleCloseFileUpload = useFileUploadDialogStore(
+    (state) => state.closeDialog,
+  )
   const handleOpenFileUpload = (): void => {
     handleClose()
-    setHasOpenedFileUpload(true)
-    setOpenFileUpload(true)
-  }
-  const handleCloseFileUpload = (): void => {
-    setOpenFileUpload(false)
+    openFileUploadAction()
   }
 
   // Delete network handlers
