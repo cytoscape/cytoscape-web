@@ -5,6 +5,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material'
 import { ReactElement } from 'react'
 
+import logo from '@/assets/cytoscape.svg'
 import { useLoadDemoNetworks } from '@/data/hooks/useLoadDemoNetworks'
 import { useOnboardingStore } from '@/features/Onboarding/store/OnboardingStore'
 import { DEFAULT_TOUR_ID } from '@/features/Onboarding/tours/registry'
@@ -72,7 +73,12 @@ export const EmptyWorkspacePanel = (): ReactElement => {
           gap: 1,
         }}
       >
-        <HubIcon color="primary" sx={{ fontSize: 56 }} />
+        <Box
+          component="img"
+          src={logo}
+          alt=""
+          sx={{ width: 64, height: 64, mb: 0.5 }}
+        />
         <Typography variant="h5" component="h2">
           Welcome to Cytoscape Web
         </Typography>
