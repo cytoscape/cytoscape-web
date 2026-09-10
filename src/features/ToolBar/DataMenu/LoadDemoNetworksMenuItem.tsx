@@ -1,62 +1,33 @@
-import { ReactElement, useContext } from 'react'
+import { ReactElement } from 'react'
 
-import { AppConfigContext } from '../../../AppConfigContext'
-import { fetchNdexSummaries } from '../../../data/external-api/ndex'
-import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
-import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
-import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { NetworkSummary } from '../../../models'
-import { IdType } from '../../../models/IdType'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useLoadDemoNetworks } from '../../../data/hooks/useLoadDemoNetworks'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
 export const LoadDemoNetworksMenuItem = (
   props: BaseMenuItemProps,
 ): ReactElement => {
-  const addNetworks: (ids: IdType | IdType[]) => void = useWorkspaceStore(
-    (state) => state.addNetworkIds,
-  )
+  const { loadDemoNetworks } = useLoadDemoNetworks()
+  const addMessage = useMessageStore((state) => state.addMessage)
 
-  const { testNetworks } = useContext(AppConfigContext)
-
-  const { navigateToNetwork } = useUrlNavigation()
-
-  const workspace = useWorkspaceStore((state) => state.workspace)
-  const addSummaries = useNetworkSummaryStore((state) => state.addAll)
-  const setCurrentNetworkId = useWorkspaceStore(
-    (state) => state.setCurrentNetworkId,
-  )
-  const { getToken } = useCredentialStore()
-  const handleAddDemoNetworks = async () => {
-    const token = await getToken()
-    const summaries = await fetchNdexSummaries(testNetworks, token)
-    addNetworks(testNetworks)
-
-    addSummaries(
-      summaries.reduce(
-        (acc, summary) => {
-          acc[summary.externalId] = summary
-          return acc
-        },
-        {} as Record<IdType, NetworkSummary>,
-      ),
-    )
-
-    setCurrentNetworkId(testNetworks[0])
-    navigateToNetwork({
-      workspaceId: workspace.id,
-      networkId: testNetworks[0],
-      searchParams: new URLSearchParams(location.search),
-      replace: false,
-    })
+  const handleClick = (): void => {
+    // Close the menu right away; the NDEx round trip continues in the
+    // background. A menu item has nowhere to render a failure, so it goes
+    // to the snackbar (the empty-workspace panel renders its own inline).
     props.onClick()
+    void loadDemoNetworks().then((ok) => {
+      if (!ok) {
+        addMessage({
+          duration: 10000,
+          message:
+            'Could not open the sample networks. NDEx may be unreachable — check your connection and try again.',
+          severity: MessageSeverity.ERROR,
+        })
+      }
+    })
   }
 
-  return (
-    <DropdownMenuItem
-      label="Open Sample Networks"
-      onClick={handleAddDemoNetworks}
-    />
-  )
+  return <DropdownMenuItem label="Open Sample Networks" onClick={handleClick} />
 }

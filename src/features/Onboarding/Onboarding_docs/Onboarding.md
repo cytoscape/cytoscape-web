@@ -108,5 +108,9 @@ seeds `cyweb.onboarding` as "seen" by default; opt into first-run with
 - Additional tours (e.g. "Styling deep-dive", "Hierarchies & LLM analysis") —
   add a `TourDef` to `tours/registry.ts`.
 - Contextual, dismissable hints (the store already tracks `dismissedHints`).
+  The first state-driven complement to this first-run flow already exists:
+  the empty-workspace call to action in `features/NetworkPanel/EmptyWorkspacePanel.tsx`
+  (#651), which shows whenever the workspace holds no networks and hides its
+  actions while a tour is running.
 - Optionally load a sample network at tour start for a fuller walkthrough when
   offline determinism is not required.

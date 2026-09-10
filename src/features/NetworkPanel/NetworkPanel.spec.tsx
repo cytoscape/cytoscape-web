@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { IdType } from '@/models/IdType'
 import { ValueTypeName } from '@/models/TableModel/ValueTypeName'
 import NetworkPanel from './NetworkPanel'
@@ -16,6 +17,11 @@ vi.mock('./NetworkTab', () => ({
 }))
 vi.mock('./NetworkTabs', () => ({
   NetworkTabs: () => <div data-testid="network-tabs-stub" />,
+}))
+// The empty-workspace call to action has its own spec; here it only matters
+// which of the two "nothing to render" states NetworkPanel picks.
+vi.mock('./EmptyWorkspacePanel', () => ({
+  EmptyWorkspacePanel: () => <div data-testid="empty-workspace-panel-stub" />,
 }))
 
 vi.mock('@/data/db', () => ({
@@ -62,11 +68,23 @@ const seedTables = (): void => {
     )
 }
 
+const seedWorkspace = (networkIds: IdType[], id: IdType = 'ws-1'): void => {
+  useWorkspaceStore.setState({
+    workspace: {
+      ...useWorkspaceStore.getState().workspace,
+      id,
+      currentNetworkId: '',
+      networkIds,
+    },
+  })
+}
+
 describe('NetworkPanel', () => {
   beforeEach(() => {
     useNetworkStore.setState({ networks: new Map() as any })
     useTableStore.setState({ tables: {} } as any)
     useVisualStyleStore.setState({ visualStyles: {} } as any)
+    seedWorkspace([], '')
   })
 
   it('shows a loading state while the network itself is absent', () => {
@@ -124,5 +142,36 @@ describe('NetworkPanel', () => {
     render(<NetworkPanel networkId={NETWORK_ID} failedToLoad="boom" />)
 
     expect(screen.getByText(/Failed to load network data: boom/i)).toBeDefined()
+  })
+
+  describe('with no network to show', () => {
+    it('keeps the loading state until the workspace is initialized', () => {
+      seedWorkspace([], '')
+
+      render(<NetworkPanel networkId="" />)
+
+      expect(screen.getByText(/Loading network data/i)).toBeDefined()
+      expect(screen.queryByTestId('empty-workspace-panel-stub')).toBeNull()
+    })
+
+    it('renders the call to action when the workspace is empty (#651)', () => {
+      seedWorkspace([])
+
+      render(<NetworkPanel networkId="" />)
+
+      expect(screen.getByTestId('empty-workspace-panel-stub')).toBeDefined()
+      expect(screen.queryByText(/No network selected/i)).toBeNull()
+    })
+
+    it('asks for a selection when networks exist but none is current', () => {
+      // A "load a network" CTA is wrong here — the workspace already has one.
+      seedWorkspace([NETWORK_ID])
+
+      render(<NetworkPanel networkId="" />)
+
+      expect(screen.getByTestId('no-network-selected-panel')).toBeDefined()
+      expect(screen.getByText(/Select a network/i)).toBeDefined()
+      expect(screen.queryByTestId('empty-workspace-panel-stub')).toBeNull()
+    })
   })
 })
