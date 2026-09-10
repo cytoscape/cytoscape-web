@@ -90,9 +90,12 @@ event with **no tag filter**. Any GitHub Release published from this repository
 mints a new version of the Cytoscape Web software record
 ([10.5281/zenodo.14775458](https://doi.org/10.5281/zenodo.14775458)).
 
-An api-types release is not a release of the Cytoscape Web application. Putting
-one in that citation record makes the record wrong, and Zenodo versions cannot
-be deleted by the depositor.
+An api-types release is not a release of the Cytoscape Web application, and
+putting one in that citation record makes the record wrong. Zenodo does let an
+owner delete a record within 30 days of publication, but the deletion leaves a
+tombstone page carrying the citation, and after 30 days removal requires a
+justified case such as copyright infringement. So the mistake is recoverable
+only briefly, and never invisibly — which is reason enough not to make it.
 
 This is why `api-types-v1.0.0-beta.3` has a tag but no GitHub Release. That
 omission was correct; this design makes it deliberate and documented.
@@ -170,16 +173,44 @@ permissions:
   id-token: write # OIDC + provenance
 
 concurrency:
-  group: release-api-types # deliberately ref-less: never two tags at once
+  # Publishes queue; rehearsals are a separate group so a dry run can never
+  # displace a release waiting to publish.
+  group: release-api-types-${{ inputs.dry_run == true && 'rehearsal' || 'publish' }}
   cancel-in-progress: false # a cancelled publish leaves an immutable version unverified
+  queue: max # see below — the default would cancel a queued release
 ```
 
 `permissions` is a real tightening: the repository default is
 `default_workflow_permissions: write`.
 
-A `workflow_dispatch` run against a branch is **rehearsal only** — the workflow
-refuses a non-dry-run publish unless `github.ref_type == 'tag'`. This prevents
-publishing an arbitrary un-tagged `development` HEAD.
+`cancel-in-progress: false` alone does **not** serialize releases. By default
+only one run may be _pending_ in a concurrency group; a newly queued run cancels
+and replaces the one already waiting. `queue: max` raises that to 100 pending
+runs processed first-in-first-out
+([GitHub changelog, 2026-05-07](https://github.blog/changelog/2026-05-07-github-actions-concurrency-groups-now-allow-larger-queues/)).
+`queue: max` may not be combined with `cancel-in-progress: true` — that is a
+validation error, and irrelevant here.
+
+Splitting rehearsals into their own group matters for the same reason: without
+it, a `dry_run=true` dispatch queued behind a real publish would cancel it.
+
+### Trigger-dependent parameters
+
+The two triggers supply parameters differently, and conflating them is the
+easiest way to get this workflow wrong.
+
+|                    | Tag push                                                                                                                       | `workflow_dispatch`                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `dry_run`          | Always `false` — `inputs` is empty on a tag push, so the workflow must default it explicitly rather than read `inputs.dry_run` | The input, default `true`                                                    |
+| `dist_tag`         | Always `latest` (the standing policy)                                                                                          | The input, default `latest`                                                  |
+| Tag-name guard     | **Required**                                                                                                                   | **Skipped** — there is no tag to compare against                             |
+| Publishing allowed | Yes                                                                                                                            | Only with `dry_run=true`; a real publish requires `github.ref_type == 'tag'` |
+
+A `workflow_dispatch` run against a branch is **rehearsal only**. This prevents
+publishing an arbitrary un-tagged `development` HEAD — and it is why the
+tag-name guard must carry `if: github.ref_type == 'tag'`. Without that
+condition a branch rehearsal fails on the very first guard and never reaches the
+checks it exists to exercise.
 
 The version always comes from `package.json`. The tag is only _validated
 against_ it, never parsed into it. This is the opposite of the deleted
@@ -192,21 +223,89 @@ exactly how a lockfile drifts.
 **Every guard runs before the build.** A bad tag or an undated changelog should
 fail in about thirty seconds, not after a full `tsup` declaration pass.
 
-1. Tag name matches `package.json` version
+1. Tag name matches `package.json` version — **`if: github.ref_type == 'tag'`**
 2. `package-lock.json`'s workspace entry matches `package.json`
 3. `CHANGELOG.md` has a dated `## <version> (YYYY-MM-DD)` section — an
    `(unpublished)` marker fails the release
-4. The version is not already on npm
-5. npm CLI is ≥ 11.5.1 (the Trusted Publishing minimum); upgrade if not
+4. The required checks for this exact SHA succeeded (see §Gating on CI below)
+5. Registry state for this version is acceptable (see §Republishing below)
+6. npm CLI is ≥ 11.5.1 (the Trusted Publishing minimum); upgrade if not
 
-Guards 4 and 5 have cheap implementations worth noting:
-`npm view <pkg>@<missing-version> version` exits 1 with `E404`, so guard 4 is a
-single conditional. `semver@^7.8.4` is a root **runtime** dependency, already
-installed after `npm ci`, so guard 5 needs no extra install.
+`semver@^7.8.4` is a root **runtime** dependency, already installed after
+`npm ci`, so guard 6 needs no extra install.
 
-Then: build → verify tarball contents → publish → verify the registry
-(version, shasum, integrity, provenance URL, and that the dist-tag resolves to
-the version just published).
+Then: build once → pack to a real `.tgz` → verify **that file** → publish
+**that same file** → verify the registry against it. Why it must be one
+artifact rather than three builds is the subject of §Build once, publish what
+was verified.
+
+#### Gating on CI
+
+`ci.yml` triggers on pushes and pull requests to `master` and `development`. A
+tag push does not run it, and nothing otherwise connects a green CI result to
+the commit being published. The release workflow must therefore either query
+the check runs for its own SHA and refuse to publish unless the required ones
+succeeded, or re-run the gates itself (`npm run lint`, `npm run test:unit`)
+before building. Querying is preferable: it is faster and it asserts the thing
+that actually matters — that this commit passed review-time CI.
+
+#### Republishing after a partial failure
+
+npm publishes are not idempotent, but everything after the publish is. If the
+registry accepts the package and a later step fails — the post-publish
+verification, the artifact upload — a naive "version must not exist" guard
+turns the tag into a dead end: it can neither be re-run nor re-tagged, because
+the version is now taken and npm versions are immutable.
+
+Guard 5 therefore branches on what the registry holds:
+
+| Registry state                                                                                                                        | Action                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Version absent                                                                                                                        | Publish normally                                                      |
+| Version present, and its `dist.integrity` matches the `.tgz` this run built **and** its provenance names this repository and workflow | Skip the publish, resume at verification — this is the resumable case |
+| Version present with different content or a different publisher                                                                       | **Stop.** Something else published this version; a human must look    |
+| Version present but the dist-tag has since moved to a newer release                                                                   | **Stop.** Do not roll `latest` back onto an older version             |
+
+Distinguishing "absent" from "cannot tell" is part of the guard, not an
+implementation detail. `npm view <pkg>@<version>` exits non-zero for a missing
+version _and_ for a network failure, an auth error, and a registry outage.
+Only `E404` means "not published"; every other non-zero exit must fail the
+run rather than be read as permission to publish.
+
+#### Build once, publish what was verified
+
+`prepack` runs on `npm pack`, on `npm pack --dry-run`, and on `npm publish` —
+measured, not assumed:
+
+```
+npm pack --dry-run     → prepack ran
+npm publish --dry-run  → prepack ran
+npm pack               → prepack ran
+```
+
+So an explicit build, followed by a verification pack, followed by a publish
+rebuilds the package three times, and the bytes that were verified are not the
+bytes that reach the registry. Worse, a verification designed to catch a
+corrupted `dist/` cannot fail: `prepack` regenerates `dist/` before the check
+looks at it.
+
+Publishing a pre-built tarball does **not** re-run `prepack` (also measured), so
+the flow that keeps one artifact throughout is:
+
+1. `npm run build:api-types`
+2. `npm pack` → a real `.tgz` on disk
+3. Verify the `.tgz` — extract it and inspect the extracted tree, so the check
+   reads exactly what a consumer would install
+4. Type-check a consumer fixture against that same `.tgz` (§Closing the CI gap)
+5. `npm publish <path-to-tgz> --tag <dist_tag>`
+6. Assert the registry's `dist.integrity` equals the local `.tgz`'s integrity
+
+Step 6 is an equality assertion, not a log line. Recording a shasum that nobody
+compares proves nothing.
+
+`prepack` still earns its place: it makes a stale `dist/` unpublishable by any
+route, including a hand-run `npm publish` from a laptop. It is a backstop, not
+the mechanism.
 
 ### npm Trusted Publishing
 
@@ -216,44 +315,89 @@ npm credentials in this repository.
 
 Configured on `https://www.npmjs.com/package/@cytoscape-web/api-types/access`:
 
-| Field                | Value                   |
-| -------------------- | ----------------------- |
-| Organization or user | `cytoscape`             |
-| Repository           | `cytoscape-web`         |
-| Workflow filename    | `release-api-types.yml` |
-| Environment name     | blank                   |
+| Field                | Value                                      |
+| -------------------- | ------------------------------------------ |
+| Organization or user | `cytoscape`                                |
+| Repository           | `cytoscape-web`                            |
+| Workflow filename    | `release-api-types.yml`                    |
+| Environment name     | blank                                      |
+| Allowed actions      | **must include `npm publish`** — see below |
+
+**Allowed actions is not optional for a configuration created now.** npm's
+documented rule: configurations created before 2026-05-20 allow `npm publish`
+only; those created before 2026-09-03 require an explicit choice; and
+**configurations created after 2026-09-03 default to `npm stage publish`**,
+with direct `npm publish` as an opt-in. This configuration is being created
+after that date, so leaving the default in place would make the workflow's
+`npm publish` fail. Either tick `npm publish`, or change the workflow to the
+two-phase `npm stage publish` flow — but decide deliberately rather than
+inheriting the default.
 
 Requirements: npm CLI ≥ 11.5.1, Node ≥ 22.14, `id-token: write`, and a public
 repository plus public package for automatic provenance. All are satisfied —
 `.nvmrc` pins Node 24, and the repository is public.
 
-**Do not set `registry-url` on `actions/setup-node` for this job.** When
-`registry-url` is set, `setup-node` always writes
-`//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}` into the runner's
-`.npmrc`. With no `NODE_AUTH_TOKEN` the substitution yields an empty string,
-npm reads the line as "auth is configured", skips the OIDC exchange entirely,
-and fails with `ENEEDAUTH` or `E404`
-([actions/setup-node#1551](https://github.com/actions/setup-node/issues/1551)).
+#### Why this job omits `registry-url`
 
-This has a pleasant consequence: `./.github/actions/setup-node-dependencies` is
-reused **unchanged**. Its lack of a `registry-url` input, which looked like an
-obstacle, is the correct configuration on the OIDC path.
+npm's own documented example **does** pass
+`registry-url: 'https://registry.npmjs.org'` to `actions/setup-node`, so
+setting it is not inherently wrong.
 
-The release job should still bypass the composite action's `node_modules` cache
-and run a clean `npm ci`, so the published artifact comes from a reproducible
-install rather than a restored cache.
+The reason to omit it here is narrower. When `registry-url` is set,
+`setup-node` writes `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}` into
+the runner's `.npmrc`. With no `NODE_AUTH_TOKEN` that expands to an empty
+credential, and there are reported cases of npm treating the line as configured
+auth and never attempting the OIDC exchange, failing with `ENEEDAUTH` or `E404`
+([actions/setup-node#1551](https://github.com/actions/setup-node/issues/1551),
+[npm/documentation#1960](https://github.com/npm/documentation/issues/1960)).
+Whether a given npm version attempts OIDC first is a moving target.
+
+Since Trusted Publishing does not use `NODE_AUTH_TOKEN` at all, the line buys
+nothing and can only cause that failure. Omitting it is a defensive choice, not
+a claim that `registry-url` is always broken. If publishing ever fails with an
+auth error, this is the first thing to test.
+
+Convenient consequence: nothing needs to be added to
+`./.github/actions/setup-node-dependencies`.
+
+#### Node and dependency setup for the release job
+
+Do **not** layer an extra `npm ci` on top of the composite action. On a cache
+miss the composite already runs `npm ci`, so the release job would install
+twice; on a cache hit it restores `node_modules` from a cache keyed only on the
+lockfile hash, which is not the reproducible install a publish deserves.
+
+Call `actions/setup-node@v4` directly in the release job with
+`node-version-file: .nvmrc` and `cache: npm`, no `registry-url`, followed by
+exactly one `npm ci`. The composite action stays as it is, for CI's benefit.
 
 ### Release notes
 
 With no GitHub Release, the notes reach four places, none of which touch the
 citation record:
 
-| Destination          | How                                                                                                                                           |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Annotated tag        | `npm run changelog:section -- --version <v> \| git tag -a api-types-v<v> <sha> -F -`. `git show api-types-v<v>` then prints the notes forever |
-| Workflow job summary | The canonical machine-generated record, linked from the Actions tab                                                                           |
-| npm tarball          | `CHANGELOG.md` is in `files`, so every consumer has the notes locally                                                                         |
-| Workflow artifact    | `release-notes.md`, 90-day retention, for forensics                                                                                           |
+| Destination          | How                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| Annotated tag        | Extracted to a file, checked, then `git tag -a api-types-v<v> <sha> -F notes.md` — see below |
+| Workflow job summary | The canonical machine-generated record, linked from the Actions tab                          |
+| npm tarball          | `CHANGELOG.md` is in `files`, so every consumer has the notes locally                        |
+| Workflow artifact    | `release-notes.md`, 90-day retention, for forensics                                          |
+
+**Do not pipe `npm run` into `git tag -F -`.** Two measured problems: `npm run`
+writes its `> pkg@version script` banner to **stdout**, so the banner would be
+embedded in the tag message; and in a pipeline the right-hand side runs
+regardless of whether the left-hand side failed, so a failed extraction would
+still create a tag — with an empty message. Extract to a file, confirm it is
+non-empty, then tag:
+
+```bash
+npm run --silent changelog:section -- --version <v> > notes.md
+test -s notes.md
+git tag -a api-types-v<v> <MERGE_COMMIT_SHA> -F notes.md
+```
+
+Extract from the commit being tagged, not from the working tree, so the notes
+cannot drift from what is being released.
 
 `scripts/changelog-section.mjs` extracts one version's section. It parses
 headings with `/^## +(\S+?)(?: +\((.+?)\))?\s*$/` — the parenthetical is
@@ -276,17 +420,39 @@ The build and the verification must sit in the **same job**, for the reason the
 existing `build` job already documents in a comment: the verifier reads
 `packages/api-types/dist/`, which does not survive a job boundary.
 
-`scripts/verify-api-types-pack.mjs` runs `npm pack --dry-run --json` and asserts
-an exact file list, the entry count, the version, and — the assertions that earn
-their keep — that the build is not silently broken:
+`scripts/verify-api-types-pack.mjs` packs a real `.tgz`, extracts it, and
+asserts against the extracted tree — the same bytes a consumer installs, and
+the same file the publish step will upload. It checks an exact file list, the
+entry count, the version, and, as structural evidence that the build is not
+silently broken:
 
 - `dist/index.d.ts` exceeds 10 KB (today it is 62,559 bytes; an empty or stub declaration file is the characteristic `tsup` failure mode)
 - its first line is exactly `/// <reference path="./mf-declarations.d.ts" />`, proving the relative-path `postbuild` one-liner ran with the right cwd rather than silently no-opping
 - `dist/mf-declarations.d.ts` is byte-identical to `src/mf-declarations.d.ts`
-- a couple of load-bearing exported names are present
+
+These are cheap sanity checks, not proof of correctness. Size thresholds and
+substring greps cannot tell a working declaration bundle from a broken one —
+only a compiler can. That is the consumer fixture's job.
 
 The same script runs in the release workflow, so the release path asserts
 exactly what every pull request asserted.
+
+#### The consumer fixture — before publishing, not after
+
+`cy-agent-bridge` type-checks this package with `skipLibCheck: false` and is
+the only place the published declarations are genuinely compiled. Today that
+happens **after** the release, where it is useless: a broken `1.0.0-beta.4`
+cannot be replaced, only superseded by `1.0.0-beta.5`.
+
+So the same check must run before the publish, in both CI and the release
+workflow, against the `.tgz` just built:
+
+- A small fixture — its own `package.json`, `tsconfig.json`, and one `.ts` file — installed from `file:` pointing at the `.tgz`, not from the workspace symlink, so it exercises the real tarball's resolution
+- `skipLibCheck: false`, mirroring `cy-agent-bridge/tsconfig.json:33-35`
+- Both consumption modes covered: ordinary `import type { ... } from '@cytoscape-web/api-types'`, and the ambient side — `window.CyWebApi`, a typed `window.addEventListener`, and a `cyweb/*` module declaration — since `mf-declarations.d.ts` reaches consumers only through the triple-slash reference that `postbuild` prepends
+
+This turns "the declarations compile" from a post-hoc discovery into a release
+gate.
 
 A companion consistency test lives at
 `src/app-api/federation/apiTypesRelease.test.ts` — under `src/`, next to
@@ -340,8 +506,10 @@ npm cache.
 
 **Add `registry-url` to the composite action for the OIDC path.** This looks
 like the obvious fix for "setup-node needs registry-url to write auth config."
-It is wrong here, and actively breaks publishing — see §"npm Trusted
-Publishing".
+Rejected for this job because OIDC never reads `NODE_AUTH_TOKEN`, so the line
+the input exists to write is dead weight that has been reported to suppress the
+OIDC exchange. See §"Why this job omits `registry-url`" — this is a defensive
+omission, not a claim that the input is broken in general.
 
 **Use `tsc -p packages/api-types/tsconfig.json --noEmit` as the CI check.**
 Rejected: that tsconfig is tuned for the `tsup` declaration build. Running plain
@@ -379,12 +547,37 @@ directly:
 semver.satisfies('1.0.0-beta.4', '^1.0.0-beta.3')  // true
 ```
 
-So the moment beta.4 reaches `latest`, any fresh `npm install` in those
-repositories silently pulls a release that removes `component`, `closeOnAction`,
-`errorFallback` and `title` from `RegisterMenuItemOptions`, renames
-`additiveUnselect` → `additiveDeselect`, `removeMapping` → `deleteMapping` and
-`setColumnName` → `renameColumn`, and rewraps the collection getters. There is
-no window in which leaving these pins alone is safe.
+**But a committed lockfile wins over the range.** Both consumer lockfiles
+currently record `1.0.0-beta.3`, so `npm ci` — and a plain `npm install` that
+finds the lockfile satisfying the manifest — keeps resolving beta.3 after
+beta.4 ships. The exposure is narrower than "any install":
+
+| Operation                                                                                 | Resolves to                |
+| ----------------------------------------------------------------------------------------- | -------------------------- |
+| `npm ci`, or `npm install` against the current lockfile                                   | `1.0.0-beta.3` — unchanged |
+| `npm install` with no lockfile (fresh clone that never committed one, CI cache wipe)      | `1.0.0-beta.4`             |
+| `npm update`, `npm install @cytoscape-web/api-types@latest`, or any lockfile regeneration | `1.0.0-beta.4`             |
+| A new app scaffolded from `create-cytoscape-app`                                          | `1.0.0-beta.4`             |
+
+So the breakage arrives on the next dependency refresh rather than instantly.
+That is a reprieve, not safety: the change removes `component`,
+`closeOnAction`, `errorFallback` and `title` from `RegisterMenuItemOptions`,
+renames `additiveUnselect` → `additiveDeselect`, `removeMapping` →
+`deleteMapping` and `setColumnName` → `renameColumn`, and rewraps the
+collection getters — and it will land on whoever next runs `npm update`,
+without them asking for it.
+
+**Prepare the consumer migration before publishing, not after.** Pack a local
+`.tgz` from the release commit, install it into each consumer, and fix the
+fallout while the version number is still changeable. Publishing first turns
+every problem found into a `1.0.0-beta.5`.
+
+Version compatibility beyond types also needs recording. `apiVersion` exists
+but is documented as being for future compatibility checking
+(`src/app-api/api_docs/Api.md:2766`) and enforces nothing today, so nothing
+stops an app built against beta.4 from loading into a host that predates it.
+The release notes should state which host commit or version beta.4 requires and
+which deployments carry it.
 
 `cy-agent-bridge` should be bumped first: its `tsconfig.json:33-35` sets
 `"skipLibCheck": false` with this package in `types`, making its type-check the
