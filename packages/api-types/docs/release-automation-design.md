@@ -174,12 +174,12 @@ compatibility statement below cannot simply say "the latest release".)
 
 Resolved before implementation. Do not re-litigate these during the work.
 
-| Decision                  | Resolution                                                                                                                                                                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Release notes destination | **No GitHub Release.** Notes land in the annotated tag message, the workflow run's job summary, and the `CHANGELOG.md` shipped inside the npm tarball. Protects the Zenodo DOI record (§Background 3)             |
-| npm authentication        | **Trusted Publishing (OIDC).** No repository secret; provenance attestation is generated automatically                                                                                                            |
-| npm dist-tag              | **`latest`.** Team policy per `../README.md:290-292` — the active beta stream uses `latest`. Exposed as a `workflow_dispatch` input for exceptions                                                                |
-| Workflow trigger          | **Both** `push: tags: ['api-types-v*']` and `workflow_dispatch`. Tag push is the real release path; dispatch provides a dry-run rehearsal and a re-run path for a publish that fails after the tag already exists |
+| Decision                  | Resolution                                                                                                                                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Release notes destination | **No GitHub Release.** Notes land in the annotated tag message, the workflow run's job summary, and the `CHANGELOG.md` shipped inside the npm tarball. Protects the Zenodo DOI record (§Background 3)                 |
+| npm authentication        | **Trusted Publishing (OIDC).** No repository secret; provenance attestation is generated automatically                                                                                                                |
+| npm dist-tag              | **`latest` until `1.0.0` ships, `next` for prereleases afterwards.** The current beta stream stays on `latest`; once a stable `1.0.0` exists, `latest` means stable and prereleases move to `next` (§Dist-tag policy) |
+| Workflow trigger          | **Both** `push: tags: ['api-types-v*']` and `workflow_dispatch`. Tag push is the real release path; dispatch provides a dry-run rehearsal and a re-run path for a publish that fails after the tag already exists     |
 
 ---
 
@@ -593,6 +593,53 @@ It deliberately does **not** require a date on pull requests. `(unpublished)` is
 the legitimate working state; requiring a date on every PR would force daily
 churn. The date requirement belongs only in the release workflow's guard.
 
+### Dist-tag policy
+
+The conventional arrangement — prereleases on `next` or `beta`, `latest`
+reserved for stable — is not what this package does today, and deliberately so.
+`latest` currently points at `1.0.0-beta.3` and will point at `1.0.0-beta.4`.
+
+The reason is that there is no stable release to reserve `latest` for. npm gives
+`latest` to a package's first publish and there is no way to have no `latest`,
+so with only prereleases in existence the tag has to point at one of them.
+Pointing it at the newest is more useful than pointing it at an old one, and a
+bare `npm install @cytoscape-web/api-types` gets the version the docs describe.
+
+**The policy changes when `1.0.0` ships**, in two steps that must not be
+conflated:
+
+| Period                      | `latest`               | Prereleases                     |
+| --------------------------- | ---------------------- | ------------------------------- |
+| Now, through `1.0.0-beta.n` | The newest prerelease  | Also `latest` — no separate tag |
+| `1.0.0` itself              | `1.0.0`                | —                               |
+| After `1.0.0`               | Newest **stable** only | `next`                          |
+
+So `1.0.0-beta.4` needs no change: it publishes to `latest` exactly as beta.3
+did. The switch happens at the release _after_ `1.0.0`, and it is the first
+prerelease of `1.1.0` that goes to `next`.
+
+Two implementation notes for when that time comes:
+
+- **Derive the tag rather than remembering it.** `semver.prerelease(version)`
+  returns `null` for a stable version and an array for a prerelease, and
+  `semver` is already a root runtime dependency. Defaulting `dist_tag` to
+  `prerelease(version) === null ? 'latest' : 'next'` makes the policy
+  self-enforcing. Until `1.0.0` the default stays the literal `latest`,
+  because that derivation would be wrong today.
+- **The tag change is what finally protects consumers.** Moving prereleases off
+  `latest` does nothing on its own — ranges resolve against versions, not tags,
+  which is why `^1.0.0-beta.3` already admits `1.0.0-beta.4`. What protects
+  consumers is that after `1.0.0` they pin `^1.0.0`, and a caret range on a
+  stable version excludes prereleases of a _different_ version tuple. Verified:
+  `^1.0.0` matches `1.0.1` and `1.1.0` but **not** `1.1.0-beta.1`. So the
+  dist-tag switch and the consumers' move to stable pins are one change, not
+  two.
+
+Housekeeping for the same moment: the registry still carries an `alpha`
+dist-tag pointing at `0.1.0-alpha.3`, abandoned since March 2026, and
+`packages/README.md:28` still tells readers to install `@alpha`. The README line
+is fixed as part of this work (§Follow-up lists the tag itself).
+
 ### Declaring app compatibility
 
 Closing §Background 6 properly means making `apiVersion` real, which is a
@@ -754,4 +801,6 @@ source-compatible.
 - **Replace the Zenodo webhook with an explicit deposition step** in the application release workflow, gated on `v*` tags — or split this package into its own repository, which decouples the two release cadences entirely. The latter is where a package with independent versioning and its own downstream consumers naturally belongs.
 - **An API surface report — the highest-value single addition here.** Generate a public-declaration summary (Microsoft API Extractor writes an `.api.md`; a committed `.d.ts` rollup diffed in review is a lighter equivalent), commit it, and fail CI when the generated file differs from the committed one. This converts §Background 5's "someone must notice" into "the diff shows it": a pull request that changes `src/app-api/types/` then carries a visible public-API change that a reviewer must accept, and forgetting the changelog becomes hard rather than merely discouraged. Two notes on sequencing — the natural moment to generate the first baseline is the `1.0.0-beta.4` tag, where the contract has just been reviewed by hand; and the report should be produced from the same `tsup` output the package ships, not from a second compilation, or the two can disagree.
 - **Make `apiVersion` mean something.** Today `APP_API_VERSION` is the constant `'1.0'` and has never moved (§Background 6). Give it a real value that changes when the contract does, have apps declare the minimum they need, and have the host refuse — or warn loudly — on a mismatch at mount time. That turns §Declaring app compatibility's written claim into an enforced one. It touches the host, the app runtime and every example app, so it is its own project.
+- **Move prereleases to `next` after `1.0.0`.** Decided, not yet actionable — see §Dist-tag policy for the two-step transition and the `semver.prerelease()` derivation that should replace the hardcoded `latest` default at that point.
+- **Remove the stale `alpha` dist-tag.** `npm dist-tag rm @cytoscape-web/api-types alpha` — it points at `0.1.0-alpha.3` and only misdirects. Do it alongside the `next` switch so all tag changes land together.
 - **Exact rather than caret pins for prerelease consumers.** Caret ranges on prereleases give the update cadence of a stable dependency with the breakage cadence of an alpha. Exact pins make every consumer bump a deliberate, reviewable act, which is what this contract needs while it is still moving this fast.

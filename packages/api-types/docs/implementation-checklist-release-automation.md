@@ -28,7 +28,7 @@ the work:
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Release notes destination | **No GitHub Release.** Annotated tag message, workflow job summary, and the `CHANGELOG.md` shipped in the npm tarball. Repo webhook `527149929` is a Zenodo receiver on the `release` event with no tag filter |
 | npm authentication        | **Trusted Publishing (OIDC).** No repository secret; provenance generated automatically                                                                                                                        |
-| npm dist-tag              | **`latest`**, per the standing policy in `../README.md:290-292`                                                                                                                                                |
+| npm dist-tag              | **`latest` now, `next` for prereleases after `1.0.0` ships.** beta.4 publishes to `latest` unchanged; the switch happens at the first prerelease following a stable `1.0.0` (Step 9c)                          |
 | Workflow trigger          | **Both** `push: tags: ['api-types-v*']` and `workflow_dispatch` (dry-run rehearsal and re-run path)                                                                                                            |
 
 ---
@@ -338,7 +338,8 @@ _Design: §Background 4, §Target design_
 - [ ] Step 3: **delete the "confirm the tarball contains … " list entirely** — it names five entries but the real count is six (it omits the package-root `index.d.ts`), and the check is now machine-enforced
 - [ ] New step: rehearse with `gh workflow run release-api-types.yml --ref development -f dry_run=true`
 - [ ] Step 4: keep the "do not tag a later `development` HEAD" warning verbatim; give the extract-to-file tagging command from 7b (**never** a pipe into `git tag -F -`); state plainly that **pushing the tag publishes the package** with no further confirmation
-- [ ] Step 5: replace `npm whoami` / `npm run build` / `npm publish` with a description of what the workflow does; keep the `latest` dist-tag policy sentence; state that there are no npm credentials in the repository and that **renaming the workflow file breaks publishing**
+- [ ] Step 5: replace `npm whoami` / `npm run build` / `npm publish` with a description of what the workflow does; state that there are no npm credentials in the repository and that **renaming the workflow file breaks publishing**
+- [ ] Step 5: replace the standing `latest` dist-tag sentence (`README.md:290-292`) with the full policy and its expiry — `latest` while only prereleases exist, `next` for prereleases once `1.0.0` ships — so the current choice reads as a decision with an end date rather than an oddity
 - [ ] Step 6: point at the workflow run's job summary as the primary record, keep the `npm view` commands as an independent second opinion, and add checking for the Provenance panel on the npm page
 - [ ] New section "Why there is no GitHub Release" — webhook `527149929`, the DOI record, and the escape hatch if one is ever genuinely needed
 - [ ] Extend the closing immutability warning: if a publish fails _after_ the tag exists, do not delete or move the tag — re-run the workflow against the existing tag, which the registry-state guard (Step 2d) resumes rather than rejects
@@ -514,10 +515,26 @@ This turns Step 7a-2's written claim into an enforced one. It touches the host,
 the app runtime and every example app, so treat it as its own project rather
 than a checklist item bolted onto a release.
 
+### 9c — Move prereleases to `next` (at the first prerelease after `1.0.0`)
+
+_Design: §Dist-tag policy_
+
+Decided, but **not actionable until `1.0.0` ships**. Doing it earlier would
+leave `latest` pointing at an old prerelease, since npm always assigns `latest`
+and there is no stable version to give it to.
+
+- [ ] Publish `1.0.0` to `latest` as usual — this is the release that gives `latest` a stable meaning
+- [ ] From the next prerelease onward, publish prereleases to `next`
+- [ ] Replace the hardcoded `latest` default in the release workflow with a derived one — `semver.prerelease(version) === null ? 'latest' : 'next'`, using the root `semver` dependency — so the policy cannot be forgotten
+- [ ] Move consumers from `^1.0.0-beta.n` to `^1.0.0`. This is the half that actually protects them: ranges resolve against versions, not dist-tags, but a caret on a stable version excludes prereleases of a different tuple (verified: `^1.0.0` matches `1.0.1` and `1.1.0`, not `1.1.0-beta.1`)
+- [ ] `npm dist-tag rm @cytoscape-web/api-types alpha` — it still points at `0.1.0-alpha.3` and only misdirects
+- [ ] Update the runbook and `packages/README.md` to describe the post-1.0.0 arrangement
+
 #### Verification (Step 9)
 
 - [ ] A pull request that edits `src/app-api/types/` fails CI until the committed API report is regenerated
 - [ ] An app declaring a higher required API version than the host provides is refused or warned at mount time
+- [ ] After `1.0.0`, `npm view @cytoscape-web/api-types dist-tags` shows `latest` on a stable version and `next` on the newest prerelease, and no `alpha`
 
 ---
 
