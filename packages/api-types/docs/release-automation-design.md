@@ -231,6 +231,7 @@ on:
 permissions:
   contents: read # no GitHub Release is created, so no write scope is needed
   id-token: write # OIDC + provenance
+  checks: read # the CI gate below; an omitted scope defaults to none
 
 concurrency:
   # Publishes queue; rehearsals are a separate group so a dry run can never
@@ -484,7 +485,7 @@ citation record:
 
 | Destination          | How                                                                                          |
 | -------------------- | -------------------------------------------------------------------------------------------- |
-| Annotated tag        | Extracted to a file, checked, then `git tag -a api-types-v<v> <sha> -F notes.md` — see below |
+| Annotated tag        | Extracted from the tagged commit to a file, checked, then passed to `git tag -F` — see below |
 | Workflow job summary | The canonical machine-generated record, linked from the Actions tab                          |
 | npm tarball          | `CHANGELOG.md` is in `files`, so every consumer has the notes locally                        |
 | Workflow artifact    | `release-notes.md`, 90-day retention, for forensics                                          |
@@ -496,14 +497,16 @@ regardless of whether the left-hand side failed, so a failed extraction would
 still create a tag — with an empty message. Extract to a file, confirm it is
 non-empty, then tag:
 
-```bash
-npm run --silent changelog:section -- --version <v> > notes.md
-test -s notes.md
-git tag -a api-types-v<v> <MERGE_COMMIT_SHA> -F notes.md
-```
+Extract from the commit being tagged (`git show "$SHA:.../CHANGELOG.md"`), not
+from the working tree, so the notes cannot drift from what is being released,
+and run it under `set -euo pipefail` — a failing `test -s` does **not** stop the
+next command in an ordinary shell, so without it a failed extraction still
+reaches `git tag` and creates a tag with an empty message.
 
-Extract from the commit being tagged, not from the working tree, so the notes
-cannot drift from what is being released.
+**The runnable command lives in one place only:**
+[implementation-checklist-release-automation.md](implementation-checklist-release-automation.md)
+§Step 7b. It is deliberately not duplicated here — an out-of-date copy in a
+design document is a command someone will paste.
 
 `scripts/changelog-section.mjs` extracts one version's section. It parses
 headings with `/^## +(\S+?)(?: +\((.+?)\))?\s*$/` — the parenthetical is
@@ -599,11 +602,24 @@ The conventional arrangement — prereleases on `next` or `beta`, `latest`
 reserved for stable — is not what this package does today, and deliberately so.
 `latest` currently points at `1.0.0-beta.3` and will point at `1.0.0-beta.4`.
 
-The reason is that there is no stable release to reserve `latest` for. npm gives
-`latest` to a package's first publish and there is no way to have no `latest`,
-so with only prereleases in existence the tag has to point at one of them.
-Pointing it at the newest is more useful than pointing it at an old one, and a
-bare `npm install @cytoscape-web/api-types` gets the version the docs describe.
+The reason is that `latest` cannot be pointed at nothing, so with only
+prereleases in existence it has to point at one of them — and the newest is more
+useful than an old one. A bare `npm install @cytoscape-web/api-types` then gets
+the version the documentation describes.
+
+That constraint is easy to get wrong from the CLI documentation, which covers
+`npm publish --tag` and `npm dist-tag rm` without noting that `latest` is a
+special case. This organisation established it the expensive way, publishing
+`@cytoscape-web/app-runtime@0.1.0` under `--tag next` on 2026-08-18 and finding
+that npm assigned `latest` anyway, then that `DELETE …/dist-tags/latest` returns
+`400` on an authenticated request. Written up in
+`cytoscape-web-app-examples/design/specifications/app-sdk/phase6-release-runbook.md`
+§2, and still visible in the registry today — that package carries both
+`latest` and `next`.
+
+So the choice for api-types is not "prerelease on `latest`" versus "no
+`latest`". It is which version `latest` points at, and until a stable release
+exists every candidate is a prerelease.
 
 **The policy changes when `1.0.0` ships**, in two steps that must not be
 conflated:

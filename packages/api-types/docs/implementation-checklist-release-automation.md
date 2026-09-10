@@ -129,7 +129,7 @@ the publish — a broken `1.0.0-beta.4` cannot be replaced, only superseded.
 - [ ] `npm run changelog:section -- --version 1.0.0-beta.4 --require-date` exits `2` while the heading still reads `(unpublished)`
 - [ ] `npm run changelog:section -- --version 9.9.9` exits `1`
 - [ ] A test invokes the CLI as a subprocess and asserts stdout and exit code — the `pathToFileURL` main-check guard is exactly the kind of bug an in-process import test cannot see
-- [ ] `npm run build:api-types`, then `npm pack -w packages/api-types`, then `npm run verify:api-types-pack -- <tgz>` passes
+- [ ] `npm run build:api-types`, then `npm pack -w packages/api-types --ignore-scripts`, then `npm run verify:api-types-pack -- <tgz>` passes
 - [ ] `npm run verify:api-types-consumer -- <tgz>` passes
 - [ ] Corrupting `dist/index.d.ts` **and packing again without rebuilding** makes both verifiers fail (a plain truncate would be undone by `prepack`; restore afterwards)
 
@@ -165,7 +165,9 @@ _Design: §Target design → The release workflow, §Guard order_
 - [ ] `package-lock.json`'s `packages['packages/api-types'].version` equals the `package.json` version
 - [ ] `scripts/changelog-section.mjs --require-date` succeeds, writing the notes to a file for later steps
 - [ ] Required CI checks for **this exact SHA** succeeded — query the Checks API and refuse to publish otherwise. `ci.yml` runs on branch pushes and pull requests, not on tags, so nothing else connects a green CI to the commit being published
-- [ ] Require a **fixed, explicit list** of check names — the `lint`, `build`, `unit-tests` and `api-types` jobs of `ci.yml`. Do **not** iterate over every check run for the SHA: that set includes this release run itself, which is `in_progress` by definition and would deadlock the guard
+- [ ] Require a **fixed, explicit list** of check names — `Lint`, `Build`, `Unit Tests` and `API Types Package`. These are the **display names**, not the job IDs: `ci.yml` declares `lint:` / `name: Lint`, `build:` / `name: Build`, `unit-tests:` / `name: Unit Tests`, and the Checks API reports the display name. Matching on the job IDs would report "no required check" against a perfectly green CI run
+- [ ] Give the new `api-types` job an explicit `name:` (Step 3a) and use that exact string here, so the two cannot drift
+- [ ] Do **not** iterate over every check run for the SHA: that set includes this release run itself, which is `in_progress` by definition and would deadlock the guard
 - [ ] A required check with **no run** for this SHA fails the guard — usually a tag on a commit that never reached `development`, which is exactly what this catches
 - [ ] A required check still `in_progress` also fails, with a message saying to re-run once CI finishes — do not block a release job on someone else's queue
 - [ ] **Registry probe only** at this stage: record whether the version exists and fail on any non-`E404` error. The publish/skip/stop decision needs the `.tgz` and therefore belongs after the build (see 2d)
@@ -217,6 +219,18 @@ here.
 - [ ] Grep confirms `queue: max` is present and `cancel-in-progress: true` is not (the combination is a validation error)
 - [ ] The tag-name guard carries an `if:` condition on `github.ref_type`
 
+Static greps prove the workflow _says_ the right things. The branches below are
+the ones that only run when something has already gone wrong, which is the worst
+time to discover they were never exercised. Rehearse each with `dry_run=true`,
+or against a scratch package on a fork:
+
+- [ ] **Resume after a post-publish failure** — with the version already on the registry and the `.tgz` matching, the run skips the publish and completes verification instead of refusing
+- [ ] **Integrity mismatch** — a registry entry whose `dist.integrity` differs from the local `.tgz` stops the run
+- [ ] **Provenance SHA mismatch** — a version published from this same workflow at a different commit stops the run rather than resuming onto it
+- [ ] **Missing required CI** — a SHA with no `Lint` / `Build` / `Unit Tests` / `API Types Package` check run fails the guard, and the message names which check was missing
+- [ ] **dist-tag rollback refusal** — with the dist-tag already pointing at a newer version, the run stops rather than moving it backwards
+- [ ] **Non-`E404` registry error** — a failed `npm view` that is not a 404 fails the run instead of being read as "not published"
+
 ---
 
 ## Step 3: Close the CI Gap
@@ -234,7 +248,8 @@ _Design: §Background 2, §Target design → Closing the CI gap_
 ### 3a — `api-types` job in `ci.yml`
 
 - [ ] Add a **separate** `api-types` job (not appended to `build`) with a 10-minute timeout
-- [ ] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
+- [ ] Give the job an explicit `name: API Types Package` — the release workflow's CI gate (Step 2b) matches on the display name, so an unnamed job would be reported under its ID and the gate would miss it
+- [ ] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types --ignore-scripts` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
 - [ ] Comment explaining that root `tsconfig.json` excludes `packages/`, so `lint:tsc` never sees this package and a declaration break would otherwise be invisible until release day
 - [ ] Comment noting the build, the pack and both verifiers must stay in the same job, because `packages/api-types/dist/` and the `.tgz` do not survive a job boundary
 - [ ] **Repository settings, not part of the PR:** after the PR merges and the job has run once under its final name, add `api-types` to the branch-protection required checks — so Step 2b's CI gate has something to require and the name it queries is known to exist
@@ -387,8 +402,9 @@ api-types version: `APP_API_VERSION` is the hardcoded string `'1.0'`
 the only signal.
 
 - [ ] Add a short compatibility block at the top of the `## 1.0.0-beta.4` section of `CHANGELOG.md`, so it ships in the tarball and renders on npmjs.com
-- [ ] Name the host commit the release was built from — the tagged merge commit
-- [ ] Name which deployments carry that commit at release time (`dev1.ndexbio.org/cytoscape`, production, or "not yet deployed"), concretely rather than as "the latest version"
+- [ ] Identify the host build by the **tag name** (`api-types-v1.0.0-beta.4`), not by a commit SHA. Writing the SHA here is self-referential: the CHANGELOG is committed before the merge, and the merge commit's SHA does not exist until after that content is fixed — adding it would change the commit and invalidate the SHA just written
+- [ ] Let the machine record the SHA instead: the workflow summary and the provenance attestation both carry the exact commit, and `git rev-list -n1 api-types-v1.0.0-beta.4` resolves the tag for anyone who needs it
+- [ ] Name which deployments carry that build at release time (`dev1.ndexbio.org/cytoscape`, production, or "not yet deployed"), concretely rather than as "the latest version"
 - [ ] State plainly that the APIs added in beta.4 (Dialog API, `applyVisualStyle`/`getVisualStyle`, `getStyles`/`switchStyle`, the `'modal-launcher'` and `'search-bar'` slots) exist on `development` only, so **no released application version implements them yet** — this is a real hazard, not boilerplate: an app can compile against methods the deployed host does not have
 - [ ] Mirror the same statement in the `packages/api-types/README.md` migration notes updated in Step 6b
 
@@ -456,7 +472,7 @@ app — rather than instantly. That is a reprieve, not safety.
 Do this while the version number can still change. Once beta.4 is on the
 registry, every problem found here becomes a `1.0.0-beta.5`.
 
-- [ ] Build a local `.tgz` from the release commit (`npm run build:api-types && npm pack -w packages/api-types`)
+- [ ] Build a local `.tgz` from the release commit (`npm run build:api-types && npm pack -w packages/api-types --ignore-scripts`)
 - [ ] Install it into `cy-agent-bridge` via a `file:` specifier and run `npx tsc --noEmit` — this repository sets `"skipLibCheck": false` (`tsconfig.json:33-35`) with the package in `types`, making it the strictest consumer of the declarations
 - [ ] Install it into each example app and fix the fallout, especially every app registering an `'apps-menu'` item: the component-to-data change is not source-compatible, so a pin bump alone is not enough
 - [ ] Record which host commit or version beta.4 requires, and which deployments carry it. `apiVersion` is documented as being for future compatibility checking (`src/app-api/api_docs/Api.md:2766`) and enforces nothing today, so nothing stops an app built against beta.4 from loading into an older host
@@ -498,6 +514,7 @@ contract has just been reviewed by hand.
 
 - [ ] Generate a public-declaration summary and commit it — Microsoft API Extractor writes an `.api.md`; a committed `.d.ts` rollup reviewed as a file is a lighter equivalent
 - [ ] Produce it from the **same `tsup` output the package ships**, not a second compilation, or the report and the tarball can disagree
+- [ ] Cover **both** shipped declaration files. A report over `dist/index.d.ts` alone misses every change to the `cyweb/*` module declarations in `dist/mf-declarations.d.ts` — including altered argument and return types. The existing `mfDeclarations.test.ts` does not close that gap: it asserts that the declared module _names_ match `FEDERATION_EXPOSES`, and says nothing about their signatures
 - [ ] Fail CI when the generated report differs from the committed one, with a message telling the author to review the API change and commit the updated report
 - [ ] Generate the first baseline at the `api-types-v1.0.0-beta.4` commit
 - [ ] Add the report to the `api-types` job from Step 3a
@@ -506,7 +523,7 @@ contract has just been reviewed by hand.
 ### 9b — Make `apiVersion` mean something
 
 - [ ] Give `APP_API_VERSION` (`src/app-api/federation/hostDescriptor.ts:22`) a value that actually changes when the contract changes, instead of the constant `'1.0'`
-- [ ] Let apps declare the minimum API version they require
+- [ ] Let apps declare the API versions they support — a **range or compatible-major**, not a bare minimum. "At least 1.4" does not imply compatibility with 2.0, which by definition contains breaking changes, so a minimum-only check silently green-lights the one case it most needs to catch
 - [ ] Have the host refuse, or warn loudly, on a mismatch at mount time
 - [ ] Update `src/app-api/api_docs/Api.md:2766`, which currently documents the field as "reserved for future compatibility checks"
 - [ ] Update the example apps and `cy-agent-bridge` to declare their requirement
@@ -519,9 +536,10 @@ than a checklist item bolted onto a release.
 
 _Design: §Dist-tag policy_
 
-Decided, but **not actionable until `1.0.0` ships**. Doing it earlier would
-leave `latest` pointing at an old prerelease, since npm always assigns `latest`
-and there is no stable version to give it to.
+Decided, but **not actionable until `1.0.0` ships**. `latest` cannot be pointed
+at nothing (see design §Dist-tag policy for the measured evidence), so moving
+prereleases to `next` today would leave `latest` stuck on an older prerelease —
+worse than where it is now.
 
 - [ ] Publish `1.0.0` to `latest` as usual — this is the release that gives `latest` a stable meaning
 - [ ] From the next prerelease onward, publish prereleases to `next`
