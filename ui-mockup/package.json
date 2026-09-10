@@ -6,7 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev --port 5511",
+    "dev": "vinext dev --hostname 0.0.0.0 --port 5511",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint app components/editor lib/editor.ts lib/mappings.ts lib/pane-layout.ts",
