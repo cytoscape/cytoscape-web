@@ -22,6 +22,8 @@ yarn.lock
 # AI agent settings: shared team rules are tracked, everything else is local
 .claude/*
 !.claude/settings.json
+.agents/
+.codex/
 
 # Editor directories and files
 .vscode/*
