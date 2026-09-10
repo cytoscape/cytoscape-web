@@ -18,7 +18,8 @@ cannot succeed until it is done. Step 5 depends on Steps 0–4. **Step 8a runs
 before Step 7**, not after: the consumer migration must be rehearsed against a
 local tarball while the version number is still changeable. Step 7 depends on
 everything before it, and Step 8b lands in the two sibling repositories once the
-publish succeeds.
+publish succeeds. **Step 9 is follow-up** — it guards the contract against
+silent drift and does not gate this release.
 
 **Key decisions** — resolved before implementation; do not re-litigate during
 the work:
@@ -374,6 +375,22 @@ _Design: §Consumer impact_
 - [ ] Line 159: delete the stray blank line splitting the `### Fixed` list, so all its items form one list
 - [ ] Confirm no version bump is needed — `package.json` and `package-lock.json` already record `1.0.0-beta.4`
 
+### 7a-2 — Write the host-compatibility statement
+
+_Design: §Target design → Declaring app compatibility_
+
+Consumers currently have no way to tell which Cytoscape Web implements a given
+api-types version: `APP_API_VERSION` is the hardcoded string `'1.0'`
+(`src/app-api/federation/hostDescriptor.ts:22`) and has not moved across
+`1.0.0-beta.0`–`1.0.0-beta.4`. Until that is fixed (Step 9), the statement is
+the only signal.
+
+- [ ] Add a short compatibility block at the top of the `## 1.0.0-beta.4` section of `CHANGELOG.md`, so it ships in the tarball and renders on npmjs.com
+- [ ] Name the host commit the release was built from — the tagged merge commit
+- [ ] Name which deployments carry that commit at release time (`dev1.ndexbio.org/cytoscape`, production, or "not yet deployed"), concretely rather than as "the latest version"
+- [ ] State plainly that the APIs added in beta.4 (Dialog API, `applyVisualStyle`/`getVisualStyle`, `getStyles`/`switchStyle`, the `'modal-launcher'` and `'search-bar'` slots) exist on `development` only, so **no released application version implements them yet** — this is a real hazard, not boilerplate: an app can compile against methods the deployed host does not have
+- [ ] Mirror the same statement in the `packages/api-types/README.md` migration notes updated in Step 6b
+
 ### 7b — Merge and tag
 
 - [ ] Merge the release pull request into `development` and note the merge commit SHA
@@ -462,6 +479,48 @@ registry, every problem found here becomes a `1.0.0-beta.5`.
 
 ---
 
+## Step 9: Guard the contract (follow-up — **not** blocking `1.0.0-beta.4`)
+
+_Design: §Background 5, §Background 6, §Follow-up_
+
+Steps 0–8 make the release mechanism safe. They do not stop the published
+contract from changing without anyone noticing, because the package is a facade
+over `src/app-api/types/` and a one-line edit there reads as ordinary
+application code in review. Since the beta.3 tag, 23 commits touched that
+directory. Sixteen updated the changelog — good discipline, but discipline is
+currently the only mechanism.
+
+Do this after beta.4 ships. The beta.4 tag is the natural baseline: its
+contract has just been reviewed by hand.
+
+### 9a — API surface report
+
+- [ ] Generate a public-declaration summary and commit it — Microsoft API Extractor writes an `.api.md`; a committed `.d.ts` rollup reviewed as a file is a lighter equivalent
+- [ ] Produce it from the **same `tsup` output the package ships**, not a second compilation, or the report and the tarball can disagree
+- [ ] Fail CI when the generated report differs from the committed one, with a message telling the author to review the API change and commit the updated report
+- [ ] Generate the first baseline at the `api-types-v1.0.0-beta.4` commit
+- [ ] Add the report to the `api-types` job from Step 3a
+- [ ] Document in `packages/api-types/README.md` that a changed report means a changed public contract and requires a changelog entry
+
+### 9b — Make `apiVersion` mean something
+
+- [ ] Give `APP_API_VERSION` (`src/app-api/federation/hostDescriptor.ts:22`) a value that actually changes when the contract changes, instead of the constant `'1.0'`
+- [ ] Let apps declare the minimum API version they require
+- [ ] Have the host refuse, or warn loudly, on a mismatch at mount time
+- [ ] Update `src/app-api/api_docs/Api.md:2766`, which currently documents the field as "reserved for future compatibility checks"
+- [ ] Update the example apps and `cy-agent-bridge` to declare their requirement
+
+This turns Step 7a-2's written claim into an enforced one. It touches the host,
+the app runtime and every example app, so treat it as its own project rather
+than a checklist item bolted onto a release.
+
+#### Verification (Step 9)
+
+- [ ] A pull request that edits `src/app-api/types/` fails CI until the committed API report is regenerated
+- [ ] An app declaring a higher required API version than the host provides is refused or warned at mount time
+
+---
+
 ## Verification
 
 - [ ] `npm run test:checks:quiet` passes
@@ -473,3 +532,7 @@ registry, every problem found here becomes a `1.0.0-beta.5`.
 - [ ] `gh secret list` is still empty — no npm credential was introduced
 - [ ] The Zenodo DOI record gained no new version
 - [ ] All six downstream consumers pin `^1.0.0-beta.4`, record it in their lockfiles, and build
+- [ ] The published `CHANGELOG.md` states which host commit and which deployments implement this version
+
+Step 9 is deliberately excluded from this list — it is follow-up work, tracked
+here so it is not lost, and not a condition for releasing `1.0.0-beta.4`.

@@ -43,8 +43,11 @@ annotate a tag, then `npm publish --access public --tag latest`.
 The last automated release of anything in this repository was never — the
 `api-types-v1.0.0-beta.3` tag exists, but no workflow produced it.
 
-Four concrete failure modes make this worth fixing now rather than after
-`1.0.0-beta.4` ships.
+Six concrete failure modes make this worth fixing now rather than after
+`1.0.0-beta.4` ships. The first four are mechanical and this design closes them.
+The last two are structural — they are what makes the mechanical ones easy to
+hit — and this design records them, closing the cheap half now (§Declaring
+app compatibility) and scheduling the rest (§Follow-up).
 
 ### 1. A stale `dist/` can be published under a new version number
 
@@ -107,6 +110,63 @@ omission was correct; this design makes it deliberate and documented.
 five entries. The real count is **six**: it omits the package-root `index.d.ts`
 (123 bytes), which is listed in `files` and does exist. A check that has been
 wrong since it was written is a check nobody was really performing.
+
+### 5. The package is a facade over app internals, and nothing guards the contract
+
+`packages/api-types/src/index.ts` does `export * from '../../../src/app-api/types'`.
+The published contract is not a separate artifact that someone maintains — it
+**is** the application's own source, viewed through a `tsup` declaration
+rollup. Editing one line under `src/app-api/types/` changes what consumers
+compile against.
+
+Nothing makes that visible. In a pull request such a change reads as an
+ordinary edit to application code; the public API diff appears nowhere. Since
+the `api-types-v1.0.0-beta.3` tag:
+
+| Path                                                 | Commits |
+| ---------------------------------------------------- | ------- |
+| `src/app-api/types/` — the published contract itself | 23      |
+| `packages/api-types/CHANGELOG.md`                    | 16      |
+| `packages/api-types/package.json` (the version bump) | 1       |
+
+Sixteen changelog updates against twenty-three contract commits is decent
+discipline, not negligence — the team does record changes as it goes. The
+problem is that **discipline is the only mechanism**. There is no check that
+fails when the contract moves and the changelog does not, and no artifact in
+which a reviewer can see the API difference a pull request causes.
+
+The standard remedy is an API surface report: a generated, committed summary of
+the public declarations that changes in the diff whenever the contract changes.
+That is scheduled in §Follow-up rather than done here, because introducing it
+is its own piece of work and `1.0.0-beta.4`'s changelog has already been
+written and reviewed by hand.
+
+### 6. No released application implements what the package describes
+
+The package and the application version independently, which is correct — but
+independent versions still have a compatibility relationship, and here it is
+undeclared.
+
+`AppContext.apiVersion` exists (`src/app-api/types/AppContext.ts:80`) and the
+host publishes `APP_API_VERSION` in its federation descriptor
+(`src/app-api/federation/hostDescriptor.ts:22`). Its value is the string
+`'1.0'`, hardcoded, and it has not moved across `1.0.0-beta.0` through
+`1.0.0-beta.4` — a span containing several breaking changes.
+`src/app-api/api_docs/Api.md:2766` is explicit that it is "reserved for future
+compatibility checks". So it identifies nothing and enforces nothing.
+
+Meanwhile `api-types` is released from `development`: the
+`api-types-v1.0.0-beta.3` tag is an ancestor of `development` and **not** of
+`master`. The APIs `1.0.0-beta.4` documents — the Dialog API, `applyVisualStyle`,
+the `'modal-launcher'` slot — therefore exist only on `development`. An app
+developer who installs `1.0.0-beta.4` and targets a deployed Cytoscape Web can
+compile successfully against methods the host does not have, and nothing at
+either build time or runtime tells them.
+
+(Which branch the application itself releases from is a separate question, and
+the answer on the ground does not match what the repository documents. That is
+outside this design's scope; it is noted here only because it is why the
+compatibility statement below cannot simply say "the latest release".)
 
 ---
 
@@ -533,6 +593,33 @@ It deliberately does **not** require a date on pull requests. `(unpublished)` is
 the legitimate working state; requiring a date on every PR would force daily
 churn. The date requirement belongs only in the release workflow's guard.
 
+### Declaring app compatibility
+
+Closing §Background 6 properly means making `apiVersion` real, which is a
+change to the host and to every app — too much to attach to this release. The
+cheap half is worth doing now, because it costs a paragraph and it is the only
+thing standing between a consumer and a silent runtime failure.
+
+**Every api-types release states which host it requires.** A short block at the
+top of the version's `CHANGELOG.md` section, shipped in the tarball and
+therefore visible on npmjs.com:
+
+- The host commit the package was built from — the tagged commit, which the
+  release workflow already knows
+- Which deployments carry that commit at release time, named concretely
+  (`dev1.ndexbio.org/cytoscape`, production, or "not yet deployed")
+- For a prerelease that runs ahead of every application release, an explicit
+  sentence saying so, rather than leaving the reader to infer it
+
+For `1.0.0-beta.4` that sentence is not a formality: the APIs it documents are
+on `development` only, so the honest statement is that no released application
+version implements them yet.
+
+This is a claim a human writes, not a generated field. It is not enforced, and
+it does not pretend to be — it replaces "the consumer has no way to know" with
+"the consumer was told", which is the whole of the improvement available at
+this cost. Enforcement is §Follow-up.
+
 #### Why the helper scripts are `.mjs`
 
 `scripts/` is in the root `tsconfig.json` `exclude` list and outside
@@ -665,4 +752,6 @@ source-compatible.
 - **`environment: npm-publish` approval gate** — a required reviewer before the publish step. The environment name must be set in both the workflow and the npm Trusted Publisher configuration, or the OIDC subject will not match.
 - **Release notes as a GitHub Discussion** — Discussions emit `discussion`, never `release`, so Zenodo is untouched and consumers get a subscribable feed. Needs `discussions: write`.
 - **Replace the Zenodo webhook with an explicit deposition step** in the application release workflow, gated on `v*` tags — or split this package into its own repository, which decouples the two release cadences entirely. The latter is where a package with independent versioning and its own downstream consumers naturally belongs.
+- **An API surface report — the highest-value single addition here.** Generate a public-declaration summary (Microsoft API Extractor writes an `.api.md`; a committed `.d.ts` rollup diffed in review is a lighter equivalent), commit it, and fail CI when the generated file differs from the committed one. This converts §Background 5's "someone must notice" into "the diff shows it": a pull request that changes `src/app-api/types/` then carries a visible public-API change that a reviewer must accept, and forgetting the changelog becomes hard rather than merely discouraged. Two notes on sequencing — the natural moment to generate the first baseline is the `1.0.0-beta.4` tag, where the contract has just been reviewed by hand; and the report should be produced from the same `tsup` output the package ships, not from a second compilation, or the two can disagree.
+- **Make `apiVersion` mean something.** Today `APP_API_VERSION` is the constant `'1.0'` and has never moved (§Background 6). Give it a real value that changes when the contract does, have apps declare the minimum they need, and have the host refuse — or warn loudly — on a mismatch at mount time. That turns §Declaring app compatibility's written claim into an enforced one. It touches the host, the app runtime and every example app, so it is its own project.
 - **Exact rather than caret pins for prerelease consumers.** Caret ranges on prereleases give the update cadence of a stable dependency with the breakage cadence of an alpha. Exact pins make every consumer bump a deliberate, reviewable act, which is what this contract needs while it is still moving this fast.
