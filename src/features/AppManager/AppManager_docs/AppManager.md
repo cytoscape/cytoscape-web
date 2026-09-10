@@ -133,8 +133,10 @@ The AppManager feature consists of:
 
 `AppStore` keeps two session-local records keyed by catalog id: `loadStates`
 (`AppLoadState`) and `loadErrors` (`AppLoadFailure`). `setLoadFailed(id, failure)`
-writes both, so a `'failed'` app always has a reason. Any other `setLoadState`
-clears the reason, and `remove` prunes it.
+writes both, so a `'failed'` app always has a reason. `setLoadState` clears the
+reason, and `remove` prunes it. `setLoadState` takes
+`SettableAppLoadState` (`AppLoadState` minus `'failed'`), so the compiler — not
+convention — keeps `setLoadFailed` the only way into `'failed'`.
 
 `AppLoadFailure` carries identifiers, not prose. `appLoadFailureMessage`
 (`src/models/AppModel/impl/appLoadFailureMessage.ts`) turns a code into the text

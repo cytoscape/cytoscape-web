@@ -4,7 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 import { logStore } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
-import { AppLoadState } from '../../../models/AppModel/AppLoadState'
+import { SettableAppLoadState } from '../../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { AppSource } from '../../../models/AppModel/InstalledApp'
@@ -298,7 +298,7 @@ export const useAppStore = create(
       })
     },
 
-    setLoadState: (id: string, loadState: AppLoadState) => {
+    setLoadState: (id: string, loadState: SettableAppLoadState) => {
       set((state) => {
         const newState = AppStoreImpl.setLoadState(state, id, loadState)
         state.loadStates = newState.loadStates

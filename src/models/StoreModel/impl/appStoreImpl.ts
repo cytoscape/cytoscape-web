@@ -1,6 +1,6 @@
 import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
 import { AppLoadFailure } from '../../AppModel/AppLoadFailure'
-import { AppLoadState } from '../../AppModel/AppLoadState'
+import { AppLoadState, SettableAppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
@@ -368,13 +368,13 @@ export const setCatalog = (
 /**
  * Set the runtime load state for a specific app, discarding any failure
  * recorded for it. A transition to 'loading', 'loaded' or 'unloaded' makes the
- * previous reason stale, and a caller who means to keep one uses
- * `setLoadFailed`.
+ * previous reason stale. `'failed'` is not reachable here — `setLoadFailed` is
+ * the only way in, so the state and its reason are always written together.
  */
 export const setLoadState = (
   state: AppState,
   id: string,
-  loadState: AppLoadState,
+  loadState: SettableAppLoadState,
 ): AppState => {
   const restLoadErrors = { ...state.loadErrors }
   delete restLoadErrors[id]

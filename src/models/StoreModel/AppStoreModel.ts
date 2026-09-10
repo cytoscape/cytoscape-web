@@ -1,6 +1,6 @@
 import { AppCatalogEntry } from '../AppModel/AppCatalogEntry'
 import { AppLoadFailure } from '../AppModel/AppLoadFailure'
-import { AppLoadState } from '../AppModel/AppLoadState'
+import { AppLoadState, SettableAppLoadState } from '../AppModel/AppLoadState'
 import { AppStatus } from '../AppModel/AppStatus'
 import { CyApp } from '../AppModel/CyApp'
 import { AppSource } from '../AppModel/InstalledApp'
@@ -147,8 +147,11 @@ export interface AppAction {
   /**
    * Set the runtime load state for a specific app. Clears any recorded
    * failure — a new state supersedes the last reason.
+   *
+   * `'failed'` is excluded: it would clear the reason it needs. Use
+   * `setLoadFailed`.
    */
-  setLoadState: (id: string, state: AppLoadState) => void
+  setLoadState: (id: string, state: SettableAppLoadState) => void
 
   /**
    * Mark an app failed and record why. Writes both `loadStates[id] = 'failed'`
