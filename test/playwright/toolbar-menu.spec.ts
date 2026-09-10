@@ -51,4 +51,26 @@ test.describe('Toolbar Menus', () => {
     ).toBeVisible()
     await page.keyboard.press('Escape')
   })
+
+  // The About, Citation and Report a Bug rows (and Developer > Import
+  // Database Snapshot) once rendered their dialog inside the menu row. When
+  // the dialog took focus the menubar rework closed the menu as a focus-out,
+  // which unmounted the dialog with it — the item looked dead. The dialogs
+  // are owned by HelpMenu now; this guards the round trip either way.
+  test('Help > About opens its dialog and the dialog closes the menu', async ({
+    page,
+  }) => {
+    await page.locator('[data-testid="toolbar-help-menu-menu-button"]').click()
+    await page.getByRole('menuitem', { name: 'About Cytoscape Web' }).click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByTestId('about-version-link')).toBeVisible()
+
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+    await expect(dialog).toBeHidden()
+    await expect(
+      page.getByRole('menuitem', { name: 'About Cytoscape Web' }),
+    ).toBeHidden()
+  })
 })

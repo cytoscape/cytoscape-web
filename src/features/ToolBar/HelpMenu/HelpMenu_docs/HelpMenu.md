@@ -12,17 +12,19 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
 ## Architecture
 
 - **UI Component**
-  - `HelpMenu.tsx`: Renders the **Help** button and a PrimeReact `OverlayPanel` with a `TieredMenu`.
+  - `index.tsx` (`HelpMenu`): Renders the **Help** trigger through the toolbar's `DropdownMenu`, defines the menu model, and owns the open state of every Help dialog (`openDialog: HelpDialog | null`, one at a time).
 
-- **Menu Item Components**
-  - `AboutCytoscapeWebMenuItem`: Shows application information (version, links, etc.).
-  - `TutorialMenuItem`: Links to end-user tutorials.
-  - `DeveloperMenuItem`: Links to developer guide and technical docs.
+- **Menu Item Components** (rows only — each renders a `DropdownMenuItem` and calls the `onClick` it is given)
+  - `AboutCytoscapeWebMenuItem`, `LicenseMenuItem`, `CitationMenuItem`, `BugReportMenuItem`, `ImportDatabaseMenuItem`: open a dialog owned by `HelpMenu`.
+  - `TakeATourMenuItem`, `TutorialMenuItem`, `DeveloperMenuItem`, `CodeRepositoryMenuItem`: navigate (tour, tutorials, developer guide, GitHub).
   - `ExportDatabaseMenuItem`: Exports the internal Dexie/IndexedDB database to a file.
-  - `ImportDatabaseMenuItem`: Imports a database snapshot into the local cache.
-  - `CodeRepositoryMenuItem`: Links to the GitHub repository.
-  - `CitationMenuItem`: Shows citation instructions for Cytoscape Web.
-  - `BugReportMenuItem`: Links to issue tracker or bug-reporting form.
+
+- **Dialog Components** (rendered by `HelpMenu` next to the menu, never inside a row)
+  - `AboutDialog`: Application information (version link, build id, cache version).
+  - `LicenseDialog`: The MIT license text.
+  - `CitationDialog`: The papers to cite, with a copy button.
+  - `BugReportDialog`: Loads the Atlassian issue collector.
+  - `ImportDatabaseSnapshotDialog` (lazy): file picker, then a confirmation; imports a database snapshot into the local cache and reloads.
 
 ## Behavior
 
@@ -48,21 +50,19 @@ Dividers are used to separate these groups visually.
 
 ### Interaction Flow
 
-- Clicking the **Help** button opens a PrimeReact `OverlayPanel` anchored to the button.
-- The `TieredMenu` renders menu items using React templates, each responsible for:
-  - Opening dialogs (e.g. About, Export/Import database)
-  - Navigating to external URLs (tutorials, docs, repository, bug tracker)
-- A shared `handleClose` callback is passed into menu item components where needed so they can close the overlay after initiating an action.
+- Clicking the **Help** trigger opens the toolbar `DropdownMenu` (a non-modal Popper shared with the other menus; see `MenuBar`).
+- Rows that navigate call `handleClose` after starting the action.
+- Rows that open a dialog call `openDialogFromMenu(<dialog>)`, which closes the menu first and then sets `openDialog`; the dialog's own Close button clears it. The menu is gone by the time the dialog shows, so the dialog stands alone.
 
 ## Design Decisions
 
-- **PrimeReact TieredMenu**
-  - Keeps Help menu visually and behaviorally consistent with Data and Analysis menus.
-  - Supports nested developer sub-menu without additional layout code.
+- **Dialogs are owned by `HelpMenu`, not by their rows**
+  - A row lives inside the menu Popper and is unmounted whenever the menu closes — and the menu closes on focus-out, which a dialog's focus trap triggers. State kept in the row would vanish with it (this was a real regression after the menubar rework). Keeping the dialog beside the menu, as `LicenseDialog` always did, makes its lifetime independent of the menu.
+  - `DropdownMenu` still tolerates a row that renders its own portaled dialog (other menus and app-supplied rows do), but the Help menu does not rely on that.
 
 - **Separation of Concerns**
-  - `HelpMenu` only defines menu structure and wires up the overlay.
-  - Each menu item component encapsulates its own UI and side-effects (dialog open, navigation, database export/import).
+  - `HelpMenu` defines the menu structure and which dialog is open.
+  - Each row component is presentation only; each dialog component encapsulates its own UI and side-effects.
 
 - **Developer Tools in Help**
   - Developer-oriented actions live under Help rather than a separate toolbar menu to keep the main toolbar compact while still discoverable.

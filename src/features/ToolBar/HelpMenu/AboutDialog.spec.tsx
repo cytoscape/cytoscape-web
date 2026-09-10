@@ -1,20 +1,16 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import packageInfo from '../../../../package.json'
-import {
-  AboutCytoscapeWebMenuItem,
-  RELEASE_NOTES_URL,
-} from './AboutCytoscapeWebMenuItem'
+import { AboutDialog, RELEASE_NOTES_URL } from './AboutDialog'
 
 vi.mock('../../../data/db', () => ({
   getDatabaseVersion: () => 1,
 }))
 
-describe('AboutCytoscapeWebMenuItem (CW-578)', () => {
+describe('AboutDialog (CW-578)', () => {
   const openDialog = (): void => {
-    render(<AboutCytoscapeWebMenuItem onClick={vi.fn()} />)
-    fireEvent.click(screen.getByText('About Cytoscape Web'))
+    render(<AboutDialog open={true} onClose={vi.fn()} />)
   }
 
   it('renders the version as a link to the GitHub release notes', () => {

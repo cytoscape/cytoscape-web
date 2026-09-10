@@ -152,6 +152,13 @@ function MenuLevel({
       tabIndex={-1}
       {...{ [MENU_OWNER_ATTR]: ownerId }}
       onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+        // A dialog a template row opened is a React descendant of the row
+        // but lives in its own portal outside the menu, so its keys bubble
+        // here too: Escape would close the menu (and unmount the dialog
+        // with it), the arrows would move focus back onto the rows.
+        if (!isInsideMenu(event.target as Element, ownerId)) {
+          return
+        }
         // Keydowns in a submenu bubble through its portal to every level
         // above, so each handled key stops here: the level above would
         // otherwise act on the same key (and move focus onto its own rows).
@@ -227,7 +234,11 @@ function MenuLevel({
               onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
                 if (
                   item.disabled === true ||
-                  (event.key !== 'Enter' && event.key !== ' ')
+                  (event.key !== 'Enter' && event.key !== ' ') ||
+                  // Typing in a dialog the template opened bubbles here too;
+                  // a Space or Enter there must not re-activate the row (or
+                  // lose its default in the dialog's input).
+                  !isInsideMenu(event.target as Element, ownerId)
                 ) {
                   return
                 }
@@ -300,6 +311,9 @@ function MenuLevel({
               activateRow(event.currentTarget)
             }}
             onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
+              if (!isInsideMenu(event.target as Element, ownerId)) {
+                return
+              }
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
                 activateRow(event.currentTarget, true)
@@ -594,8 +608,9 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         open={isOpen}
         anchorEl={buttonRef.current}
         placement="bottom-start"
-        // Above the workspace panes, below dialogs (which close the menu
-        // first anyway); submenus sit one step higher.
+        // Above the workspace panes, below dialogs (the theme's dialogs sit
+        // higher still, above a dialog-owning row's menu left mounted
+        // underneath); submenus sit one step higher.
         sx={{ zIndex: theme.zIndex.modal }}
       >
         <ClickAwayListener onClickAway={close}>
@@ -614,6 +629,13 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                 if (!isOpenRef.current) {
                   return
                 }
+                // A focus event arrived from inside the React tree after the
+                // blur: a dialog a template row opened has taken focus. It
+                // is not in the menu's DOM (it has its own portal), but it
+                // is the menu's, and closing now would unmount it.
+                if (focusWithinRef.current) {
+                  return
+                }
                 const active = document.activeElement
                 if (active === buttonRef.current || isInsideMenu(active, id)) {
                   focusWithinRef.current = true
@@ -626,7 +648,11 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             // on a separator or the padding would otherwise blur the menu and
             // close it, and selecting text in a menu is never wanted.
             onMouseDown={(event: React.MouseEvent<HTMLElement>) => {
-              event.preventDefault()
+              // Not for a dialog a template row opened: its inputs must be
+              // able to take focus on click.
+              if (isInsideMenu(event.target as Element, id)) {
+                event.preventDefault()
+              }
             }}
             sx={{
               boxShadow: MENU_SHADOW,
