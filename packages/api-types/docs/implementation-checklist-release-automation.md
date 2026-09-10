@@ -9,7 +9,10 @@
 _Design: [release-automation-design.md](release-automation-design.md) — full rationale including the four failure modes of the current flow, the Zenodo constraint, and the rejected alternatives_
 
 **Dependency note:** Steps 0–3 are ordinary repository changes and can land in
-one pull request. **Step 4 is manual and can only be performed by a human with
+one pull request — with one exception: the branch-protection edit in Step 3a is
+a repository **settings** change, made in the GitHub UI after that PR merges and
+the `api-types` job has run at least once under its final name. **Step 4 is
+manual and can only be performed by a human with
 owner rights on the npm package** — nothing in CI can self-serve it, and Step 7
 cannot succeed until it is done. Step 5 depends on Steps 0–4. **Step 8a runs
 before Step 7**, not after: the consumer migration must be rehearsed against a
@@ -108,7 +111,9 @@ the publish — a broken `1.0.0-beta.4` cannot be replaced, only superseded.
 - [ ] Create a minimal fixture: `package.json`, `tsconfig.json` with `"skipLibCheck": false` (mirroring `cy-agent-bridge/tsconfig.json:33-35`) and `"types": ["@cytoscape-web/api-types"]`, and one `.ts` source file
 - [ ] Cover ordinary type imports — `import type { ApiResult, CyWebApiType } from '@cytoscape-web/api-types'`
 - [ ] Cover the ambient surface — `window.CyWebApi`, a typed `window.addEventListener`, and a `cyweb/*` module declaration — since `mf-declarations.d.ts` reaches consumers only through the triple-slash reference `postbuild` prepends
-- [ ] `scripts/verify-api-types-consumer.mjs` installs the built `.tgz` into the fixture via a `file:` specifier (**not** the workspace symlink, so the real tarball's resolution is exercised) and runs `tsc --noEmit`
+- [ ] `scripts/verify-api-types-consumer.mjs` **copies the fixture to a temporary directory outside the repository**, then installs the `.tgz` and the fixture's own declared dependencies there and runs `tsc --noEmit`
+- [ ] Do not compile the fixture in place. Measured from `test/fixtures/api-types-consumer/`, resolution walks up and finds `<repo>/node_modules/react`, `<repo>/node_modules/@types/react`, `<repo>/node_modules/typescript` — and, worst of all, `@cytoscape-web/api-types` resolves to `<repo>/packages/api-types/dist/index.d.ts` via the workspace symlink, so the fixture would type-check the local build no matter what the tarball contains
+- [ ] Declare every dependency the fixture needs in its own `package.json`, so a missing peer dependency fails here instead of being masked by the host's install
 - [ ] Exclude the fixture from the root `tsconfig.json` and from `oxlint` if either would otherwise pick it up
 
 ### 1d — Register the scripts
@@ -145,7 +150,7 @@ _Design: §Target design → The release workflow, §Guard order_
 
 - [ ] Header comment stating that the **filename is load-bearing** (npm's Trusted Publisher configuration names `release-api-types.yml`; renaming breaks publishing) and that the workflow deliberately creates **no** GitHub Release, with the Zenodo webhook id and DOI as the reason
 - [ ] Triggers: `push: tags: ['api-types-v*']` and `workflow_dispatch` with a `dry_run` boolean (default `true`) and a `dist_tag` choice (`latest` / `beta` / `next`, default `latest`)
-- [ ] `permissions: contents: read` + `id-token: write` — no write scope, since no GitHub Release is created
+- [ ] `permissions: contents: read` + `id-token: write` + `checks: read` — no write scope, since no GitHub Release is created. `checks: read` is required for the CI gate in 2b: a `permissions` block sets every unlisted scope to `none`
 - [ ] Resolve `dry_run` and `dist_tag` explicitly per trigger: on a tag push `inputs` is empty, so default them to `false` and `latest` rather than reading `inputs.*`
 - [ ] `concurrency`: separate groups for publish and rehearsal (so a dry run cannot displace a queued release), `cancel-in-progress: false`, **and `queue: max`** — without it only one run may be pending and a newly queued release cancels the one already waiting
 - [ ] `actions/checkout@v4` with `fetch-depth: 0`
@@ -158,8 +163,11 @@ _Design: §Target design → The release workflow, §Guard order_
 - [ ] Tag name minus the `api-types-v` prefix equals the `package.json` version — **conditional on `github.ref_type == 'tag'`**, otherwise a branch rehearsal fails here and never reaches the guards it exists to exercise
 - [ ] `package-lock.json`'s `packages['packages/api-types'].version` equals the `package.json` version
 - [ ] `scripts/changelog-section.mjs --require-date` succeeds, writing the notes to a file for later steps
-- [ ] Required CI checks for **this exact SHA** succeeded — query the check runs and refuse to publish otherwise. `ci.yml` runs on branch pushes and pull requests, not on tags, so nothing else connects a green CI to the commit being published
-- [ ] Registry-state guard, branching rather than a flat "must not exist" (see 2d)
+- [ ] Required CI checks for **this exact SHA** succeeded — query the Checks API and refuse to publish otherwise. `ci.yml` runs on branch pushes and pull requests, not on tags, so nothing else connects a green CI to the commit being published
+- [ ] Require a **fixed, explicit list** of check names — the `lint`, `build`, `unit-tests` and `api-types` jobs of `ci.yml`. Do **not** iterate over every check run for the SHA: that set includes this release run itself, which is `in_progress` by definition and would deadlock the guard
+- [ ] A required check with **no run** for this SHA fails the guard — usually a tag on a commit that never reached `development`, which is exactly what this catches
+- [ ] A required check still `in_progress` also fails, with a message saying to re-run once CI finishes — do not block a release job on someone else's queue
+- [ ] **Registry probe only** at this stage: record whether the version exists and fail on any non-`E404` error. The publish/skip/stop decision needs the `.tgz` and therefore belongs after the build (see 2d)
 - [ ] npm CLI is ≥ 11.5.1, using the root `semver` runtime dependency to compare; upgrade in place if not
 
 ### 2c — Build once, verify, publish that artifact
@@ -170,25 +178,32 @@ that were never verified. Publishing a pre-built tarball does not re-run
 `prepack`, so one artifact flows through every step.
 
 - [ ] `npm run build:api-types`
-- [ ] `npm pack -w packages/api-types` → a real `.tgz`; every later step consumes **that file**
+- [ ] `npm pack -w packages/api-types --ignore-scripts` → a real `.tgz`; every later step consumes **that file**. **`--ignore-scripts` is load-bearing**: a plain `npm pack` fires `prepack` and rebuilds, making this build twice rather than once (measured)
 - [ ] `npm run verify:api-types-pack -- <tgz>`
 - [ ] `npm run verify:api-types-consumer -- <tgz>` — the `skipLibCheck: false` compile gate, before the registry is touched
 - [ ] Publish with `npm publish <tgz> --tag <dist_tag>` — no `NODE_AUTH_TOKEN`, no `--access` (it is in `publishConfig`), no `--provenance` (automatic under OIDC)
 - [ ] A parallel `--dry-run` step for the rehearsal path, with a comment recording that **`npm publish --dry-run` does not validate credentials** — verified locally: it succeeds while `npm whoami` returns `E401`. A green rehearsal proves the guards, build and packaging, never the OIDC configuration
 - [ ] Post-publish: poll until the version is visible (the registry CDN lags a publish by seconds), then **assert** `dist.integrity` equals the local `.tgz`'s integrity — an equality check, not a logged value — and assert the dist-tag resolves to the version just published
+- [ ] Assert the provenance attestation **exists** and names this repository, this workflow and **this commit SHA**. Leaving provenance to a human's post-release spot check means a release with none, or with the wrong source, passes the automated gate
 - [ ] Write the release notes and the published metadata to `$GITHUB_STEP_SUMMARY`
 - [ ] Upload the `.tgz`, the release notes and the pack result as a workflow artifact with 90-day retention
 - [ ] Confirm the workflow contains **no** `gh release create` and no `contents: write`
 
-### 2d — Registry-state guard and the resume path
+### 2d — Registry-state decision and the resume path
 
-A flat "version must not exist" guard makes a partial failure unrecoverable:
-if npm accepts the package and only the verification or artifact upload fails,
-the tag can be neither re-run nor re-tagged.
+A flat "version must not exist" guard makes a partial failure unrecoverable: if
+npm accepts the package and only the verification or artifact upload fails, the
+tag can be neither re-run nor re-tagged.
+
+**This decision runs after the `.tgz` exists**, not with the pre-build guards —
+it compares the registry against the artifact this run produced, which does not
+exist yet at guard time. 2b only probes for existence; the branching happens
+here.
 
 - [ ] Version absent → publish normally
-- [ ] Version present, `dist.integrity` matches this run's `.tgz`, and its provenance names this repository and workflow → skip the publish and resume at verification
-- [ ] Version present with different content or a different publisher → **stop**; a human must investigate
+- [ ] Version present, `dist.integrity` matches this run's `.tgz`, **and** its provenance names this repository, this workflow **and this commit SHA** → skip the publish and resume at verification
+- [ ] Match the commit SHA, not just repository and workflow — otherwise a publish made from this same workflow at a **different commit** reads as "already done" and the run resumes onto someone else's artifact
+- [ ] Version present with different content, a different publisher, or provenance naming a different commit → **stop**; a human must investigate
 - [ ] The dist-tag already points at a newer release → **stop**; never roll `latest` back onto an older version
 - [ ] Treat only `E404` as "not published" — `npm view` also exits non-zero on network failure, auth error and registry outage, and those must fail the run rather than be read as permission to publish
 - [ ] Under `dry_run`, warn instead of failing when the version already exists
@@ -221,7 +236,7 @@ _Design: §Background 2, §Target design → Closing the CI gap_
 - [ ] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
 - [ ] Comment explaining that root `tsconfig.json` excludes `packages/`, so `lint:tsc` never sees this package and a declaration break would otherwise be invisible until release day
 - [ ] Comment noting the build, the pack and both verifiers must stay in the same job, because `packages/api-types/dist/` and the `.tgz` do not survive a job boundary
-- [ ] Add this job to the branch protection required checks, so Step 2b's CI gate has something to require
+- [ ] **Repository settings, not part of the PR:** after the PR merges and the job has run once under its final name, add `api-types` to the branch-protection required checks — so Step 2b's CI gate has something to require and the name it queries is known to exist
 
 ### 3b — `src/app-api/federation/apiTypesRelease.test.ts`
 
@@ -295,7 +310,7 @@ _Design: §Target design → The release workflow_
 ### 5c — Record what the rehearsal does and does not prove
 
 - [ ] Note in the run summary, and in the runbook, that a green rehearsal covers the guards, the build, the packaging and the consumer type-check — but **not** npm authentication
-- [ ] `npm publish --dry-run` succeeds with no credentials at all: verified locally, where it reported success while `npm whoami` returned `E401`. The OIDC handshake is exercised only by a real publish, which is why every guard is ordered ahead of it
+- [ ] `npm publish --dry-run` succeeds with no credentials at all: verified locally, where it reported success while `npm whoami` returned `E401`. A dry run may still attempt the OIDC exchange, but it does not require it to succeed — so a green rehearsal cannot confirm the trusted-publisher configuration either way. That is why every guard is ordered ahead of the real publish
 
 #### Verification (Step 5)
 
@@ -318,7 +333,7 @@ _Design: §Background 4, §Target design_
 ### 6a — Rewrite the release runbook in `packages/api-types/README.md`
 
 - [ ] Step 2: note that the CHANGELOG heading must be dated (the workflow refuses `(unpublished)`) and that `package-lock.json` must be regenerated; mention that a CI test now enforces both
-- [ ] Step 3: replace the hand-run checklist with `npm run lint`, `npm run test:unit`, `npm run build:api-types`, `npm pack -w packages/api-types`, then both verifiers against the resulting `.tgz`; note these also run on every pull request
+- [ ] Step 3: replace the hand-run checklist with `npm run lint`, `npm run test:unit`, `npm run build:api-types`, `npm pack -w packages/api-types --ignore-scripts`, then both verifiers against the resulting `.tgz`; note these also run on every pull request
 - [ ] Step 3: **delete the "confirm the tarball contains … " list entirely** — it names five entries but the real count is six (it omits the package-root `index.d.ts`), and the check is now machine-enforced
 - [ ] New step: rehearse with `gh workflow run release-api-types.yml --ref development -f dry_run=true`
 - [ ] Step 4: keep the "do not tag a later `development` HEAD" warning verbatim; give the extract-to-file tagging command from 7b (**never** a pipe into `git tag -F -`); state plainly that **pushing the tag publishes the package** with no further confirmation
@@ -364,17 +379,32 @@ _Design: §Consumer impact_
 - [ ] Merge the release pull request into `development` and note the merge commit SHA
 - [ ] Complete Step 5b against that merge commit
 - [ ] Tag the **exact merge commit**, not a later `development` HEAD:
+
   ```bash
+  #!/usr/bin/env bash
+  # set -e is required. Verified: a failing `test -s` does NOT stop the next
+  # command in an ordinary shell, so without it a failed extraction still
+  # reaches `git tag` and creates a tag with an empty message.
+  set -euo pipefail
+
+  VERSION=1.0.0-beta.4
+  SHA=<MERGE_COMMIT_SHA>
   git fetch origin development
-  # Extract to a file and confirm it is non-empty BEFORE tagging. Do not pipe:
-  # `npm run` writes its banner to stdout (it would land in the tag message),
-  # and the right side of a pipe runs even when the left side fails, which
-  # would create a tag with an empty message.
-  npm run --silent changelog:section -- --version 1.0.0-beta.4 > /tmp/notes.md
+
+  # Read the CHANGELOG **from the commit being tagged**, not the working tree,
+  # so the notes cannot drift from what is actually released.
+  git show "$SHA:packages/api-types/CHANGELOG.md" > /tmp/changelog-at-tag.md
+
+  # --silent suppresses npm's `> pkg@version script` banner, which npm writes
+  # to stdout and would otherwise land inside the tag message.
+  npm run --silent changelog:section -- \
+    --version "$VERSION" --file /tmp/changelog-at-tag.md > /tmp/notes.md
   test -s /tmp/notes.md
-  git tag -a api-types-v1.0.0-beta.4 <MERGE_COMMIT_SHA> -F /tmp/notes.md
-  git push origin refs/tags/api-types-v1.0.0-beta.4
+
+  git tag -a "api-types-v$VERSION" "$SHA" -F /tmp/notes.md
+  git push origin "refs/tags/api-types-v$VERSION"
   ```
+
 - [ ] `gh run watch` — the tag push fires the workflow automatically and publishes with `--tag latest`
 
 ### 7c — Verify the release

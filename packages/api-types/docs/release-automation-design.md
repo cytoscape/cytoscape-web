@@ -196,21 +196,23 @@ it, a `dry_run=true` dispatch queued behind a real publish would cancel it.
 
 ### Trigger-dependent parameters
 
-The two triggers supply parameters differently, and conflating them is the
-easiest way to get this workflow wrong.
+`workflow_dispatch` accepts a tag as its `ref`, so "dispatch" is not one case
+but two. Treating it as one is the easiest way to get this workflow wrong —
+either a branch rehearsal dies on a guard meant for tags, or the resume path
+(§Republishing) is locked out of publishing.
 
-|                    | Tag push                                                                                                                       | `workflow_dispatch`                                                          |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `dry_run`          | Always `false` — `inputs` is empty on a tag push, so the workflow must default it explicitly rather than read `inputs.dry_run` | The input, default `true`                                                    |
-| `dist_tag`         | Always `latest` (the standing policy)                                                                                          | The input, default `latest`                                                  |
-| Tag-name guard     | **Required**                                                                                                                   | **Skipped** — there is no tag to compare against                             |
-| Publishing allowed | Yes                                                                                                                            | Only with `dry_run=true`; a real publish requires `github.ref_type == 'tag'` |
+|                    | Tag push                                                                                                                       | Dispatch on a **branch**                       | Dispatch on a **tag**                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ----------------------------------------------------- |
+| `dry_run`          | Always `false` — `inputs` is empty on a tag push, so the workflow must default it explicitly rather than read `inputs.dry_run` | The input, default `true`                      | The input, default `true`                             |
+| `dist_tag`         | Always `latest` (the standing policy)                                                                                          | The input, default `latest`                    | The input, default `latest`                           |
+| Tag-name guard     | **Required**                                                                                                                   | **Skipped** — there is no tag to compare       | **Required** — same as a tag push                     |
+| Publishing allowed | Yes                                                                                                                            | **No** — rehearsal only, `dry_run=true` forced | Yes — this is the re-run path after a partial failure |
 
-A `workflow_dispatch` run against a branch is **rehearsal only**. This prevents
-publishing an arbitrary un-tagged `development` HEAD — and it is why the
-tag-name guard must carry `if: github.ref_type == 'tag'`. Without that
-condition a branch rehearsal fails on the very first guard and never reaches the
-checks it exists to exercise.
+The discriminator is `github.ref_type`, not `github.event_name`. A real publish
+requires `github.ref_type == 'tag'`, which admits both the tag push and a tag
+dispatch while refusing an arbitrary un-tagged `development` HEAD. The tag-name
+guard carries the same `if:` condition; without it a branch rehearsal fails on
+the very first guard and never reaches the checks it exists to exercise.
 
 The version always comes from `package.json`. The tag is only _validated
 against_ it, never parsed into it. This is the opposite of the deleted
@@ -220,24 +222,37 @@ exactly how a lockfile drifts.
 
 #### Guard order
 
-**Every guard runs before the build.** A bad tag or an undated changelog should
-fail in about thirty seconds, not after a full `tsup` declaration pass.
+Cheap guards run **before** the build, so a bad tag or an undated changelog
+fails in about thirty seconds rather than after a full `tsup` declaration pass.
+But one check cannot: deciding what to do about an already-published version
+requires comparing it against the artifact this run produces, which does not
+exist yet. That check is therefore split in two.
+
+**Before the build:**
 
 1. Tag name matches `package.json` version — **`if: github.ref_type == 'tag'`**
 2. `package-lock.json`'s workspace entry matches `package.json`
 3. `CHANGELOG.md` has a dated `## <version> (YYYY-MM-DD)` section — an
    `(unpublished)` marker fails the release
 4. The required checks for this exact SHA succeeded (see §Gating on CI below)
-5. Registry state for this version is acceptable (see §Republishing below)
+5. **Registry probe only** — does this version exist? Record the answer, and
+   fail on any non-`E404` error. Do not decide anything yet
 6. npm CLI is ≥ 11.5.1 (the Trusted Publishing minimum); upgrade if not
 
 `semver@^7.8.4` is a root **runtime** dependency, already installed after
 `npm ci`, so guard 6 needs no extra install.
 
-Then: build once → pack to a real `.tgz` → verify **that file** → publish
-**that same file** → verify the registry against it. Why it must be one
-artifact rather than three builds is the subject of §Build once, publish what
-was verified.
+**Then:** build once → pack one `.tgz` → verify that file → type-check a
+consumer against it.
+
+**After the artifact exists, before publishing:** decide, using guard 5's
+answer plus the `.tgz` now in hand — publish, skip-and-resume, or stop
+(§Republishing). Only here is the comparison possible.
+
+**Then:** publish that same file → verify the registry against it.
+
+Why it must be one artifact rather than several builds is the subject of
+§Build once, publish what was verified.
 
 #### Gating on CI
 
@@ -249,6 +264,23 @@ succeeded, or re-run the gates itself (`npm run lint`, `npm run test:unit`)
 before building. Querying is preferable: it is faster and it asserts the thing
 that actually matters — that this commit passed review-time CI.
 
+Three details decide whether the query is correct or merely present:
+
+- **Name the checks.** Require a fixed, explicit list — the `lint`, `build`,
+  `unit-tests` and `api-types` jobs of `ci.yml`. Do not iterate over whatever
+  check runs happen to exist for the SHA: that set includes the release run
+  itself, which is `in_progress` by definition and would deadlock the guard.
+- **Missing is not success.** A required check with no run for this SHA fails
+  the guard. The common cause is a tag on a commit that never reached
+  `development` — exactly what the guard exists to catch.
+- **In progress is not success either.** Fail with a message saying to re-run
+  once CI finishes, rather than waiting: a release job blocking on someone
+  else's queue is a worse failure than an explicit "not ready".
+
+The query needs `checks: read` in the workflow's `permissions` block. A
+`permissions` block that lists only `contents` and `id-token` sets every other
+scope to `none`, so the Checks API call fails without it.
+
 #### Republishing after a partial failure
 
 npm publishes are not idempotent, but everything after the publish is. If the
@@ -257,14 +289,19 @@ verification, the artifact upload — a naive "version must not exist" guard
 turns the tag into a dead end: it can neither be re-run nor re-tagged, because
 the version is now taken and npm versions are immutable.
 
-Guard 5 therefore branches on what the registry holds:
+The decision therefore branches on what the registry holds, evaluated **after
+the `.tgz` exists** so the comparison has something to compare against:
 
-| Registry state                                                                                                                        | Action                                                                |
-| ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Version absent                                                                                                                        | Publish normally                                                      |
-| Version present, and its `dist.integrity` matches the `.tgz` this run built **and** its provenance names this repository and workflow | Skip the publish, resume at verification — this is the resumable case |
-| Version present with different content or a different publisher                                                                       | **Stop.** Something else published this version; a human must look    |
-| Version present but the dist-tag has since moved to a newer release                                                                   | **Stop.** Do not roll `latest` back onto an older version             |
+| Registry state                                                                                                                                   | Action                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Version absent                                                                                                                                   | Publish normally                                                      |
+| Version present, `dist.integrity` matches this run's `.tgz`, **and** its provenance names this repository, this workflow **and this commit SHA** | Skip the publish, resume at verification — this is the resumable case |
+| Version present with different content, a different publisher, or provenance naming a **different commit**                                       | **Stop.** Something else published this version; a human must look    |
+| Version present but the dist-tag has since moved to a newer release                                                                              | **Stop.** Do not roll `latest` back onto an older version             |
+
+The commit SHA matters as much as the repository and workflow. Without it, a
+publish made from this same workflow at a _different_ commit reads as "already
+done" and the run resumes onto someone else's artifact.
 
 Distinguishing "absent" from "cannot tell" is part of the guard, not an
 implementation detail. `npm view <pkg>@<version>` exits non-zero for a missing
@@ -289,19 +326,28 @@ bytes that reach the registry. Worse, a verification designed to catch a
 corrupted `dist/` cannot fail: `prepack` regenerates `dist/` before the check
 looks at it.
 
-Publishing a pre-built tarball does **not** re-run `prepack` (also measured), so
-the flow that keeps one artifact throughout is:
+Two further measurements settle the shape of the fix: publishing a pre-built
+tarball does **not** re-run `prepack`, and `npm pack --ignore-scripts` skips it
+too. So the flow that really builds once is:
 
-1. `npm run build:api-types`
-2. `npm pack` → a real `.tgz` on disk
+1. `npm run build:api-types` — the one build, with legible output if it fails
+2. `npm pack --ignore-scripts` → a real `.tgz` on disk. **`--ignore-scripts` is
+   load-bearing**: a plain `npm pack` here would fire `prepack` and rebuild,
+   making this "build twice" rather than "build once"
 3. Verify the `.tgz` — extract it and inspect the extracted tree, so the check
    reads exactly what a consumer would install
 4. Type-check a consumer fixture against that same `.tgz` (§Closing the CI gap)
 5. `npm publish <path-to-tgz> --tag <dist_tag>`
-6. Assert the registry's `dist.integrity` equals the local `.tgz`'s integrity
+6. Assert the registry's `dist.integrity` equals the local `.tgz`'s integrity,
+   and that its provenance names this repository, workflow and commit
 
 Step 6 is an equality assertion, not a log line. Recording a shasum that nobody
-compares proves nothing.
+compares proves nothing — and provenance belongs here, in the automated check,
+not only in a human's post-release spot check.
+
+The alternative — drop the explicit build and let `prepack` do it during the
+pack — also builds once and is defensible. It is not chosen here only because a
+failure then surfaces as a failed `npm pack` rather than a failed build step.
 
 `prepack` still earns its place: it makes a stale `dist/` unpublishable by any
 route, including a hand-run `npm publish` from a laptop. It is a backstop, not
@@ -447,9 +493,30 @@ cannot be replaced, only superseded by `1.0.0-beta.5`.
 So the same check must run before the publish, in both CI and the release
 workflow, against the `.tgz` just built:
 
-- A small fixture — its own `package.json`, `tsconfig.json`, and one `.ts` file — installed from `file:` pointing at the `.tgz`, not from the workspace symlink, so it exercises the real tarball's resolution
+- A small fixture — its own `package.json`, `tsconfig.json`, and one `.ts` file — installed from `file:` pointing at the `.tgz`
 - `skipLibCheck: false`, mirroring `cy-agent-bridge/tsconfig.json:33-35`
 - Both consumption modes covered: ordinary `import type { ... } from '@cytoscape-web/api-types'`, and the ambient side — `window.CyWebApi`, a typed `window.addEventListener`, and a `cyweb/*` module declaration — since `mf-declarations.d.ts` reaches consumers only through the triple-slash reference that `postbuild` prepends
+
+**The fixture must be copied out of the repository before it is installed and
+compiled.** Node and TypeScript resolution walk up the directory tree, so a
+fixture left in place at `test/fixtures/api-types-consumer/` silently borrows
+the host's dependency tree. Measured from that exact path:
+
+| Specifier                  | Resolves to                                 |
+| -------------------------- | ------------------------------------------- |
+| `react`                    | `<repo>/node_modules/react`                 |
+| `@types/react`             | `<repo>/node_modules/@types/react`          |
+| `typescript`               | `<repo>/node_modules/typescript`            |
+| `@cytoscape-web/api-types` | `<repo>/packages/api-types/dist/index.d.ts` |
+
+The last row defeats the point entirely: the workspace symlink wins over the
+`.tgz`, so the fixture would type-check the local build no matter what the
+tarball contains. The others hide missing peer dependencies that a real
+consumer would have to install for themselves.
+
+Copy the fixture to a temporary directory outside the repository, install the
+`.tgz` and the fixture's own declared dependencies there, then run `tsc`. Only
+then is it a consumer test rather than a second view of the host tree.
 
 This turns "the declarations compile" from a post-hoc discovery into a release
 gate.
@@ -482,8 +549,9 @@ for zero-dependency Node ESM. A dependency-free `.mjs` script also runs before
 **Create a GitHub Release and accept a Zenodo version.** Cheapest to implement —
 add `contents: write` and `gh release create --notes-file`. Rejected: it mints a
 DOI version of the Cytoscape Web _software_ record for something that is not a
-release of that software, and Zenodo versions are not deletable by the
-depositor.
+release of that software. The owner-deletion window is 30 days and leaves a
+tombstone page carrying the citation, so the record would be wrong in public
+first and permanently marked afterwards.
 
 **Temporarily deactivate the Zenodo webhook around each release.** Works, but it
 is a manual toggle whose failure mode is silent: an interrupted run leaves
@@ -555,7 +623,7 @@ beta.4 ships. The exposure is narrower than "any install":
 | Operation                                                                                 | Resolves to                |
 | ----------------------------------------------------------------------------------------- | -------------------------- |
 | `npm ci`, or `npm install` against the current lockfile                                   | `1.0.0-beta.3` — unchanged |
-| `npm install` with no lockfile (fresh clone that never committed one, CI cache wipe)      | `1.0.0-beta.4`             |
+| `npm install` with no lockfile (a consumer that never committed one)                      | `1.0.0-beta.4`             |
 | `npm update`, `npm install @cytoscape-web/api-types@latest`, or any lockfile regeneration | `1.0.0-beta.4`             |
 | A new app scaffolded from `create-cytoscape-app`                                          | `1.0.0-beta.4`             |
 
