@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { AppLoadState } from '../../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
@@ -73,6 +74,7 @@ export const useAppStore = create(
     catalogSources: {},
     manifestIds: [],
     loadStates: {},
+    loadErrors: {},
     manifestSource: undefined,
 
     restore: async (apps: CyApp[]) => {
@@ -300,6 +302,16 @@ export const useAppStore = create(
       set((state) => {
         const newState = AppStoreImpl.setLoadState(state, id, loadState)
         state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
+        return state
+      })
+    },
+
+    setLoadFailed: (id: string, failure: AppLoadFailure) => {
+      set((state) => {
+        const newState = AppStoreImpl.setLoadFailed(state, id, failure)
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
         return state
       })
     },
@@ -333,6 +345,7 @@ export const useAppStore = create(
         const newState = AppStoreImpl.removeApp(state, id)
         state.apps = newState.apps
         state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
         return state
       })
       deleteAppFromDb(id).catch((error) => {

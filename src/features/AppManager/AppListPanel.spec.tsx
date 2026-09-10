@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import type { AppManagerCommands } from '../../data/hooks/stores/useAppManager'
 import { AppCatalogEntry } from '../../models/AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../models/AppModel/AppLoadFailure'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { AppSource } from '../../models/AppModel/InstalledApp'
 import { AppListPanel } from './AppListPanel'
@@ -48,6 +49,7 @@ const renderPanel = (
       [id]: { id, name: `${id} app`, status: AppStatus.Inactive } as any,
     },
     loadStates: {},
+    loadErrors: {},
   })
   const cmds = commands()
   render(
@@ -66,6 +68,7 @@ describe('AppListPanel — uninstall affordance', () => {
       catalogSources: {},
       manifestIds: [],
       loadStates: {},
+      loadErrors: {},
     })
   })
 
@@ -124,6 +127,7 @@ describe('AppListPanel — source chip', () => {
       catalogSources: {},
       manifestIds: [],
       loadStates: {},
+      loadErrors: {},
     })
   })
 
@@ -147,5 +151,113 @@ describe('AppListPanel — source chip', () => {
 
     expect(screen.queryByText('Snapshot')).toBeNull()
     expect(screen.queryByText('App Store')).toBeNull()
+  })
+})
+
+// #719: a failed row showed a bare "failed" chip and a Retry button that could
+// not work for four of the five causes.
+describe('AppListPanel — load failure reasons', () => {
+  const renderFailed = (
+    id: string,
+    failure: AppLoadFailure,
+  ): AppManagerCommands => {
+    useAppStore.getState().setCatalog([entry(id)], { [id]: 'manifest' }, [id])
+    useAppStore.setState({
+      apps: {},
+      loadStates: { [id]: 'failed' },
+      loadErrors: { [id]: failure },
+    })
+    const cmds = commands()
+    render(
+      <AppManagerCommandsProvider value={cmds}>
+        <AppListPanel />
+      </AppManagerCommandsProvider>,
+    )
+    return cmds
+  }
+
+  beforeEach(() => {
+    useAppStore.setState({
+      apps: {},
+      catalog: {},
+      catalogSources: {},
+      manifestIds: [],
+      loadStates: {},
+      loadErrors: {},
+    })
+  })
+
+  it('states both ids and hides Retry for a mis-packaged bundle', () => {
+    renderFailed('chrisapp', {
+      code: 'id-mismatch',
+      url: 'https://apps-stage.cytoscape.org/web/chrisapp/0.2.0/remoteEntry.js',
+      expected: 'chrisapp',
+      received: 'chrisApp',
+    })
+
+    const reason = screen.getByTestId('app-failure-chrisapp').textContent ?? ''
+    expect(reason).toContain('"chrisApp"')
+    expect(reason).toContain('"chrisapp"')
+    expect(reason).toContain('mis-packaged')
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+  })
+
+  it('names the URL and says to reload for a fetch failure', () => {
+    renderFailed('missing', {
+      code: 'fetch-failed',
+      url: 'https://apps-stage.cytoscape.org/web/does-not-exist/remoteEntry.js',
+      message: 'HTTP 404',
+    })
+
+    const reason = screen.getByTestId('app-failure-missing').textContent ?? ''
+    expect(reason).toContain('does-not-exist/remoteEntry.js')
+    expect(reason).toContain('HTTP 404')
+    expect(reason).toContain('Reload the page')
+    // Retry cannot succeed in-tab: the federation runtime memoizes the
+    // rejected entry promise for the life of the page.
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+  })
+
+  it('names the rejected origin and hides Retry when the origin is blocked', () => {
+    renderFailed('evil', {
+      code: 'origin-blocked',
+      url: 'https://evil.example.com/remoteEntry.js',
+    })
+
+    expect(screen.getByTestId('app-failure-evil').textContent).toContain(
+      'https://evil.example.com/remoteEntry.js',
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+  })
+
+  it('hides Retry when the bundle exports no AppConfig', () => {
+    renderFailed('noconfig', {
+      code: 'no-app-config',
+      url: 'https://apps.cytoscape.org/web/noconfig/1.0.0/remoteEntry.js',
+    })
+
+    expect(screen.getByTestId('app-failure-noconfig').textContent).toContain(
+      'exports no AppConfig',
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+  })
+
+  it('keeps Retry for a failed mount — the one cause it can fix', () => {
+    const cmds = renderFailed('breaks', {
+      code: 'mount-failed',
+      message: 'Cannot read properties of undefined',
+    })
+
+    expect(screen.getByTestId('app-failure-breaks').textContent).toContain(
+      'Cannot read properties of undefined',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(cmds.retryApp).toHaveBeenCalledWith('breaks')
+  })
+
+  it('shows no reason for a row that has not failed', () => {
+    renderPanel('hello', 'manifest', true)
+
+    expect(screen.queryByTestId('app-failure-hello')).toBeNull()
   })
 })

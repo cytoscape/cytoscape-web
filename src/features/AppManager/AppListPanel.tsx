@@ -22,9 +22,14 @@ import { useState } from 'react'
 import { CyDialog } from '@/components/CyDialog'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { AppCatalogEntry } from '../../models/AppModel/AppCatalogEntry'
+import {
+  AppLoadFailure,
+  isRetryableAppLoadFailure,
+} from '../../models/AppModel/AppLoadFailure'
 import { AppLoadState } from '../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import { CyApp } from '../../models/AppModel/CyApp'
+import { appLoadFailureMessage } from '../../models/AppModel/impl/appLoadFailureMessage'
 import { AppSource } from '../../models/AppModel/InstalledApp'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
 
@@ -39,6 +44,8 @@ interface AppDisplayEntry {
   author?: string
   inCatalog: boolean
   loadState: AppLoadState | undefined
+  /** Why the load failed; set only when `loadState` is `'failed'` */
+  failure: AppLoadFailure | undefined
   status: AppStatus | undefined
   /** Provenance of the catalog entry (undefined for orphans) */
   source?: AppSource
@@ -64,7 +71,12 @@ function getAction(
 ): 'enable' | 'disable' | 'retry' | 'loading' | 'remove' | 'none' {
   if (entry.inCatalog) {
     if (entry.loadState === 'loading') return 'loading'
-    if (entry.loadState === 'failed') return 'retry'
+    // Retry re-runs activation and nothing else, so it can only help the one
+    // cause that is not deterministic in-tab: a failed mount. For the other
+    // four it fails identically, forever — the row states the reason instead
+    // (#719).
+    if (entry.loadState === 'failed')
+      return isRetryableAppLoadFailure(entry.failure) ? 'retry' : 'none'
     if (entry.loadState === 'loaded' && entry.status === AppStatus.Active)
       return 'disable'
     // unloaded or loaded+inactive → enable
@@ -89,6 +101,9 @@ export const AppListPanel = () => {
   const manifestIds: string[] = useAppStore((state) => state.manifestIds)
   const loadStates: Record<string, AppLoadState> = useAppStore(
     (state) => state.loadStates,
+  )
+  const loadErrors: Record<string, AppLoadFailure> = useAppStore(
+    (state) => state.loadErrors,
   )
   const { activateApp, deactivateApp, retryApp, removeOrphan, uninstallApp } =
     useAppManagerCommands()
@@ -119,6 +134,7 @@ export const AppListPanel = () => {
       author: entry.author,
       inCatalog: true,
       loadState: loadStates[entry.id],
+      failure: loadErrors[entry.id],
       status: app?.status,
       source,
       // Only workspace-installed apps are uninstallable; anything the manifest
@@ -144,6 +160,7 @@ export const AppListPanel = () => {
       author: undefined,
       inCatalog: false,
       loadState: loadStates[id],
+      failure: loadErrors[id],
       status: app.status,
       // Orphans keep the existing (unconfirmed) removeOrphan path, not the
       // kebab uninstall.
@@ -250,6 +267,21 @@ export const AppListPanel = () => {
                       }}
                     >
                       {entry.description}
+                    </Typography>
+                  )}
+                  {/*
+                    Persistent, not a tooltip: the reason is the only thing
+                    telling the user whether they can act, and a tooltip is
+                    undiscoverable and unusable on touch (#719).
+                  */}
+                  {entry.failure !== undefined && (
+                    <Typography
+                      variant="caption"
+                      color="error"
+                      data-testid={`app-failure-${entry.id}`}
+                      sx={{ mt: 0.25, display: 'block' }}
+                    >
+                      {appLoadFailureMessage(entry.failure)}
                     </Typography>
                   )}
                 </Box>

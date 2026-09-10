@@ -30,6 +30,7 @@ const createDefaultState = (): AppState => {
     catalogSources: {},
     manifestIds: [],
     loadStates: {},
+    loadErrors: {},
     manifestSource: undefined,
   }
 }

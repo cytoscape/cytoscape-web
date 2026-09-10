@@ -12,6 +12,7 @@ import { migrateLegacyApps } from '../../../features/AppManager/install/migrateL
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { mountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
 import { useMessageStore } from './MessageStore'
 import { appRegistry, useAppManager } from './useAppManager'
@@ -240,7 +241,7 @@ describe('useAppManager — install / uninstall', () => {
         async (id: string, _url: string, registry: Map<string, unknown>) => {
           const app = { id, name: id, status: AppStatus.Inactive }
           registry.set(id, app)
-          return app
+          return { ok: true, app }
         },
       )
       const { result } = await renderManager()
@@ -265,7 +266,7 @@ describe('useAppManager — install / uninstall', () => {
         async (id: string, _url: string, registry: Map<string, unknown>) => {
           const app = { id, name: id, status: AppStatus.Inactive }
           registry.set(id, app)
-          return app
+          return { ok: true, app }
         },
       )
       const { result } = await renderManager()
@@ -359,5 +360,160 @@ describe('useAppManager — install / uninstall', () => {
       const [, fromDefaultManifest] = mockIsCatalogEntryAllowed.mock.calls[0]
       expect(fromDefaultManifest).toBe(false)
     })
+  })
+})
+
+// #719: the reason a load failed reached only the debug log. It must reach the
+// store (for the row) and a toast (for the paths where the list is closed).
+describe('useAppManager — load failure reasons', () => {
+  const idMismatch = {
+    ok: false,
+    failure: {
+      code: 'id-mismatch',
+      url: 'https://apps.cytoscape.org/web/chrisapp/1.0.0/remoteEntry.js',
+      expected: 'chrisapp',
+      received: 'chrisApp',
+    },
+  } as const
+
+  /** Seed a hydrated workspace with the given installed-app records. */
+  const seedWorkspace = (
+    records: Array<{ id: string; status: AppStatus }>,
+  ): void => {
+    useWorkspaceStore.getState().set({
+      id: 'ws-test',
+      name: 'Test',
+      isRemote: false,
+      networkIds: [],
+      networkModified: {},
+      creationTime: new Date(),
+      localModificationTime: new Date(),
+      currentNetworkId: '',
+      installedApps: records.map((r) => ({
+        entry: entry(r.id),
+        status: r.status,
+        source: 'appstore' as const,
+        installedAt: '2026-01-01T00:00:00.000Z',
+      })),
+    })
+  }
+
+  const lastMessage = (): string => {
+    const messages = useMessageStore.getState().messages
+    return messages[messages.length - 1]?.message ?? ''
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsAllowedOrigin.mockReturnValue(true)
+    mockIsCatalogEntryAllowed.mockReturnValue(true)
+    mockIsHostCompatible.mockReturnValue(true)
+    appRegistry.clear()
+    seedWorkspace([])
+    useAppStore.setState({ loadStates: {}, loadErrors: {}, apps: {} })
+    useAppStore.getState().setCatalog([])
+    useMessageStore.getState().resetMessages()
+  })
+
+  it('stores the cause and toasts it when activation fails', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore.getState().setCatalog([entry('chrisapp')])
+    })
+
+    await act(async () => {
+      await result.current.activateApp('chrisapp')
+    })
+
+    expect(useAppStore.getState().loadStates['chrisapp']).toBe('failed')
+    expect(useAppStore.getState().loadErrors['chrisapp']).toEqual(
+      idMismatch.failure,
+    )
+    expect(lastMessage()).toContain('mis-packaged')
+    expect(lastMessage()).toContain('chrisApp')
+  })
+
+  it('records origin-blocked without adding a second toast', async () => {
+    mockIsCatalogEntryAllowed.mockReturnValue(false)
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore.getState().setCatalog([entry('remote')])
+    })
+
+    await act(async () => {
+      await result.current.activateApp('remote')
+    })
+
+    expect(useAppStore.getState().loadErrors['remote']?.code).toBe(
+      'origin-blocked',
+    )
+    // The pre-existing gate message, not the generic failure toast.
+    expect(useMessageStore.getState().messages).toHaveLength(1)
+    expect(lastMessage()).toContain('not from an allowed origin')
+  })
+
+  it('records mount-failed and offers the reason when mount throws', async () => {
+    mockLoadRemoteApp.mockImplementation(
+      async (id: string, _url: string, registry: Map<string, unknown>) => {
+        const app = { id, name: id, status: AppStatus.Inactive }
+        registry.set(id, app)
+        return { ok: true, app }
+      },
+    )
+    ;(mountApp as Mock).mockRejectedValueOnce(new Error('boom'))
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore.getState().setCatalog([entry('breaks')])
+    })
+
+    await act(async () => {
+      await result.current.activateApp('breaks')
+    })
+
+    expect(useAppStore.getState().loadErrors['breaks']).toEqual({
+      code: 'mount-failed',
+      message: 'boom',
+    })
+    expect(lastMessage()).toContain('boom')
+  })
+
+  // Before this change the startup path wrapped the failure in a synthetic
+  // Error and raised no toast at all, so a mis-packaged active app failed
+  // silently on every page load.
+  it('names the cause when one app fails at startup', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    seedWorkspace([{ id: 'chrisapp', status: AppStatus.Active }])
+
+    await renderManager()
+
+    await waitFor(() => {
+      expect(useAppStore.getState().loadErrors['chrisapp']).toEqual(
+        idMismatch.failure,
+      )
+    })
+    await waitFor(() => expect(lastMessage()).toContain('mis-packaged'))
+  })
+
+  // SnackbarMessageList shows one message at a time, so N broken apps must not
+  // queue N toasts.
+  it('collapses several startup failures into one toast', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    seedWorkspace([
+      { id: 'one', status: AppStatus.Active },
+      { id: 'two', status: AppStatus.Active },
+    ])
+
+    await renderManager()
+
+    await waitFor(() => {
+      expect(useAppStore.getState().loadErrors['two']).toBeDefined()
+    })
+    await waitFor(() =>
+      expect(lastMessage()).toBe(
+        '2 apps failed to load — open App Manager for details.',
+      ),
+    )
+    expect(useMessageStore.getState().messages).toHaveLength(1)
   })
 })

@@ -1,4 +1,5 @@
 import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../AppModel/AppLoadFailure'
 import { AppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
@@ -53,6 +54,7 @@ export interface AppState {
   catalogSources: Record<string, AppSource>
   manifestIds: string[]
   loadStates: Record<string, AppLoadState>
+  loadErrors: Record<string, AppLoadFailure>
   manifestSource?: ManifestSource
 }
 
@@ -364,18 +366,46 @@ export const setCatalog = (
 }
 
 /**
- * Set the runtime load state for a specific app
+ * Set the runtime load state for a specific app, discarding any failure
+ * recorded for it. A transition to 'loading', 'loaded' or 'unloaded' makes the
+ * previous reason stale, and a caller who means to keep one uses
+ * `setLoadFailed`.
  */
 export const setLoadState = (
   state: AppState,
   id: string,
   loadState: AppLoadState,
 ): AppState => {
+  const restLoadErrors = { ...state.loadErrors }
+  delete restLoadErrors[id]
   return {
     ...state,
     loadStates: {
       ...state.loadStates,
       [id]: loadState,
+    },
+    loadErrors: restLoadErrors,
+  }
+}
+
+/**
+ * Mark an app failed and record why, in one transition, so no failed app is
+ * ever left without a reason.
+ */
+export const setLoadFailed = (
+  state: AppState,
+  id: string,
+  failure: AppLoadFailure,
+): AppState => {
+  return {
+    ...state,
+    loadStates: {
+      ...state.loadStates,
+      [id]: 'failed',
+    },
+    loadErrors: {
+      ...state.loadErrors,
+      [id]: failure,
     },
   }
 }
@@ -394,16 +424,19 @@ export const setManifestSource = (
 }
 
 /**
- * Remove an app from apps and loadStates
+ * Remove an app from apps, loadStates and loadErrors
  */
 export const removeApp = (state: AppState, id: string): AppState => {
   const restApps = { ...state.apps }
   delete restApps[id]
   const restLoadStates = { ...state.loadStates }
   delete restLoadStates[id]
+  const restLoadErrors = { ...state.loadErrors }
+  delete restLoadErrors[id]
   return {
     ...state,
     apps: restApps,
     loadStates: restLoadStates,
+    loadErrors: restLoadErrors,
   }
 }

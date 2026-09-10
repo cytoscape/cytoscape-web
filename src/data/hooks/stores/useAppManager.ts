@@ -21,8 +21,10 @@ import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp
 import { composeCatalog } from '../../../features/AppManager/manifest/composeCatalog'
 import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obtainCatalogEntries'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
+import { appLoadFailureToast } from '../../../models/AppModel/impl/appLoadFailureMessage'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { getAppSettingFromDb } from '../../db'
@@ -109,6 +111,7 @@ export const useAppManager = (): AppManagerCommands => {
   const registerApp = useAppStore((state) => state.add)
   const setCatalog = useAppStore((state) => state.setCatalog)
   const setLoadState = useAppStore((state) => state.setLoadState)
+  const setLoadFailed = useAppStore((state) => state.setLoadFailed)
   const storeSetManifestSource = useAppStore((state) => state.setManifestSource)
   const setStatus = useAppStore((state) => state.setStatus)
   const removeApp = useAppStore((state) => state.remove)
@@ -144,6 +147,62 @@ export const useAppManager = (): AppManagerCommands => {
       installed,
     )
     setCatalog(entries, sources, manifestIds)
+  }
+
+  /**
+   * Record why an app failed and tell the user once, in a toast.
+   *
+   * Activation runs from three places the App Manager list is not open for —
+   * startup auto-load, the `?installApp` URL intent, and a fast re-enable — so
+   * the row caption alone would leave a failure unseen. `setLoadFailed` keeps
+   * the reason for the row; the toast carries it now. Pass `toast: false`
+   * where a more specific message is already raised.
+   */
+  const failApp = (
+    id: string,
+    failure: AppLoadFailure,
+    opts?: { toast?: boolean },
+  ): void => {
+    setLoadFailed(id, failure)
+    if (opts?.toast === false) return
+    const name = useAppStore.getState().catalog[id]?.name ?? id
+    addMessage({
+      message: appLoadFailureToast(name, failure),
+      duration: 8000,
+      severity: MessageSeverity.ERROR,
+    })
+  }
+
+  /**
+   * Raise one toast for a whole startup pass.
+   *
+   * `SnackbarMessageList` shows messages one at a time with a gap between
+   * them, so N broken apps queueing N toasts would block the UI on a wall of
+   * errors. A single failure still names its cause; several are counted and
+   * the reasons are read off the rows.
+   */
+  const reportStartupFailures = (ids: string[]): void => {
+    if (ids.length === 0) return
+    const { catalog, loadErrors } = useAppStore.getState()
+    if (ids.length === 1) {
+      const failure = loadErrors[ids[0]]
+      if (failure !== undefined) {
+        addMessage({
+          message: appLoadFailureToast(
+            catalog[ids[0]]?.name ?? ids[0],
+            failure,
+          ),
+          duration: 8000,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      }
+    }
+    addMessage({
+      message: `${ids.length} apps failed to load — open App Manager for details.`,
+      duration: 8000,
+      severity: MessageSeverity.ERROR,
+    })
   }
 
   /**
@@ -240,7 +299,12 @@ export const useAppManager = (): AppManagerCommands => {
       logApp.warn(
         `[useAppManager]: activateApp: "${id}" blocked — ${catalogEntry.url} is not from an allowed origin`,
       )
-      setLoadState(id, 'failed')
+      // toast: false — the message above is already specific to this cause.
+      failApp(
+        id,
+        { code: 'origin-blocked', url: catalogEntry.url },
+        { toast: false },
+      )
       return
     }
 
@@ -256,7 +320,10 @@ export const useAppManager = (): AppManagerCommands => {
         logApp.info(`[useAppManager]: App "${id}" re-enabled (fast path)`)
       } catch (error) {
         cleanupAllForApp(id)
-        setLoadState(id, 'failed')
+        failApp(id, {
+          code: 'mount-failed',
+          message: error instanceof Error ? error.message : String(error),
+        })
         logApp.warn(
           `[useAppManager]: App "${id}" re-enable mount failed:`,
           error,
@@ -268,14 +335,16 @@ export const useAppManager = (): AppManagerCommands => {
     // Full load path (unloaded or failed)
     setLoadState(id, 'loading')
 
-    const cyApp = await loadRemoteApp(id, catalogEntry.url, appRegistry)
-    if (cyApp === undefined) {
-      setLoadState(id, 'failed')
+    const loaded = await loadRemoteApp(id, catalogEntry.url, appRegistry)
+    if (!loaded.ok) {
+      failApp(id, loaded.failure)
       if (existedBefore) {
         setStatus(id, AppStatus.Error)
         reconcileInstalledStatus(id, AppStatus.Error)
       }
-      logApp.warn(`[useAppManager]: activateApp: failed to load "${id}"`)
+      logApp.warn(
+        `[useAppManager]: activateApp: failed to load "${id}" — ${loaded.failure.code}`,
+      )
       return
     }
 
@@ -290,7 +359,10 @@ export const useAppManager = (): AppManagerCommands => {
       if (!existedBefore) {
         removeApp(id)
       }
-      setLoadState(id, 'failed')
+      failApp(id, {
+        code: 'mount-failed',
+        message: error instanceof Error ? error.message : String(error),
+      })
       logApp.warn(
         `[useAppManager]: activateApp: mount failed for "${id}":`,
         error,
@@ -514,6 +586,10 @@ export const useAppManager = (): AppManagerCommands => {
         const installedAppList =
           useWorkspaceStore.getState().workspace.installedApps ?? []
         const { catalog, manifestSource } = useAppStore.getState()
+        // Ids that failed anywhere in this startup pass, collapsed into one
+        // toast at the end. Before #719 this path raised none at all, so a
+        // mis-packaged active app failed silently on every page load.
+        const startupFailures: string[] = []
         // Same gate as activateApp, and needed separately: this path loads
         // `catalog[id].url`, not the installed record's URL, so a user-set
         // manifest declaring an existing app's id would otherwise decide where
@@ -533,7 +609,15 @@ export const useAppManager = (): AppManagerCommands => {
               allowsLocalhostAppsOn,
             )
             if (!allowed) {
-              setLoadState(id, 'failed')
+              // Counted into the single startup toast below, not toasted
+              // individually — N broken apps would otherwise queue N toasts,
+              // which SnackbarMessageList shows one at a time.
+              failApp(
+                id,
+                { code: 'origin-blocked', url: catalog[id].url },
+                { toast: false },
+              )
+              startupFailures.push(id)
               logApp.warn(
                 `[useAppManager]: startup auto-load: "${id}" blocked — ${catalog[id].url} is not from an allowed origin`,
               )
@@ -545,6 +629,7 @@ export const useAppManager = (): AppManagerCommands => {
           logApp.info(
             `[${useAppManager.name}]: No active apps to auto-load at startup`,
           )
+          reportStartupFailures(startupFailures)
           return
         }
 
@@ -553,46 +638,52 @@ export const useAppManager = (): AppManagerCommands => {
           setLoadState(id, 'loading')
         }
 
-        // Load all active apps in parallel
-        const results = await Promise.allSettled(
-          activeAppIds.map(async (id) => {
-            const cyApp = await loadRemoteApp(id, catalog[id].url, appRegistry)
-            if (cyApp === undefined) {
-              throw new Error(`Failed to load remote app "${id}"`)
-            }
-            return { id, cyApp }
-          }),
+        // Load all active apps in parallel. loadRemoteApp resolves with the
+        // failure rather than throwing, so the reason survives to the store
+        // instead of being flattened into a synthetic Error.
+        const results = await Promise.all(
+          activeAppIds.map(async (id) => ({
+            id,
+            loaded: await loadRemoteApp(id, catalog[id].url, appRegistry),
+          })),
         )
 
         // Process results
-        for (const result of results) {
-          if (result.status === 'fulfilled') {
-            const { id } = result.value
-            try {
-              await activateAndMount(id)
-              setLoadState(id, 'loaded')
-              logApp.info(
-                `[${useAppManager.name}]: App "${id}" auto-loaded and mounted`,
-              )
-            } catch (error) {
-              setLoadState(id, 'failed')
-              setStatus(id, AppStatus.Error)
-              logApp.warn(
-                `[${useAppManager.name}]: App "${id}" loaded but mount failed:`,
-                error,
-              )
-            }
-          } else {
-            // Extract app ID from the error — Promise.allSettled preserves order
-            const id = activeAppIds[results.indexOf(result)]
-            setLoadState(id, 'failed')
+        for (const { id, loaded } of results) {
+          if (!loaded.ok) {
+            failApp(id, loaded.failure, { toast: false })
+            startupFailures.push(id)
             setStatus(id, AppStatus.Error)
             logApp.warn(
-              `[${useAppManager.name}]: Failed to load app "${id}":`,
-              result.reason,
+              `[${useAppManager.name}]: Failed to load app "${id}" — ${loaded.failure.code}`,
+            )
+            continue
+          }
+          try {
+            await activateAndMount(id)
+            setLoadState(id, 'loaded')
+            logApp.info(
+              `[${useAppManager.name}]: App "${id}" auto-loaded and mounted`,
+            )
+          } catch (error) {
+            failApp(
+              id,
+              {
+                code: 'mount-failed',
+                message: error instanceof Error ? error.message : String(error),
+              },
+              { toast: false },
+            )
+            startupFailures.push(id)
+            setStatus(id, AppStatus.Error)
+            logApp.warn(
+              `[${useAppManager.name}]: App "${id}" loaded but mount failed:`,
+              error,
             )
           }
         }
+
+        reportStartupFailures(startupFailures)
       }
 
       void init()
