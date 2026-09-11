@@ -548,6 +548,8 @@ registry, every problem found here becomes a `1.0.0-beta.5`.
 - [ ] `network-statistics/package.json:40` → `^1.0.0-beta.4`
 - [ ] `network-workflows/package.json:42` → `^1.0.0-beta.4`
 - [ ] Land the app migrations rehearsed in 8a
+- [ ] **`create-cytoscape-app`** — decided 2026-09-11: it pins an **exact** version on purpose (`scaffold.ts:7-14`), so it does not float onto beta.4 and must be moved by hand. Bump `API_TYPES_VERSION` to `1.0.0-beta.4`, **and** migrate the `full` and `menu` templates, which still register `'apps-menu'` with `title:` / `component:` — otherwise every new scaffold would fail to type-check on its first build. Publish the scaffolder after that; it carries the pin
+- [ ] **`cy-agent-bridge/mcp-server`** — the seven runtime breaks and two shape changes from 8a: rename `additiveUnselect` → `additiveDeselect`, `setColumnName` → `renameColumn`, `removeMapping` → `deleteMapping`, `getNetworkList` → `getNetworks`; split the merged `ids` argument for `additiveSelect` / `additiveDeselect` / `toggleSelected`; move `createContinuousMapping` to the options object; and decide whether `cytoscape_get_layouts` / `cytoscape_get_positions` unwrap `{ layouts }` / `{ positions, missing }` or pass them through with a schema update. None of this is visible to `tsc`; re-run the `callApi`-string cross-check from 8a after the fix
 
 #### Verification (Step 8)
 
