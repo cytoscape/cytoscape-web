@@ -98,12 +98,12 @@ _Design: §Target design → Release notes, §Closing the CI gap, §Why the help
 
 ### 1a — `scripts/changelog-section.mjs`
 
-- [ ] Create the file as dependency-free Node ESM (must run before `npm ci`)
-- [ ] CLI: `--version <v>`, `--file <path>` (default `packages/api-types/CHANGELOG.md`), `--require-date`, `--print-date`
-- [ ] Parse headings with `/^## +(\S+?)(?: +\((.+?)\))?\s*$/` — keep the parenthetical optional so a malformed heading is found and reported rather than silently missed
-- [ ] Body = lines between the matched heading and the next `## `, with leading and trailing blank lines trimmed; do **not** collapse interior blank lines
-- [ ] Exit `1` when the section is missing, `2` when `--require-date` is set and the parenthetical is not `YYYY-MM-DD` — distinct codes so callers can tell "forgot the entry" from "forgot the date"
-- [ ] Export the heading parser as a named export alongside the CLI entry point so Step 3b can reuse it. Guard the CLI with `import.meta.url === pathToFileURL(process.argv[1]).href` — the naive `import.meta.url === process.argv[1]` compares a `file://` URL against a plain path and is **always false**, which would silently disable the CLI (`import.meta.filename === process.argv[1]` also works on Node 20.11+)
+- [x] Create the file as dependency-free Node ESM (must run before `npm ci`)
+- [x] CLI: `--version <v>`, `--file <path>` (default `packages/api-types/CHANGELOG.md`), `--require-date`, `--print-date`
+- [x] Parse headings with `/^## +(\S+?)(?: +\((.+?)\))?\s*$/` — keep the parenthetical optional so a malformed heading is found and reported rather than silently missed
+- [x] Body = lines between the matched heading and the next `## `, with leading and trailing blank lines trimmed; do **not** collapse interior blank lines
+- [x] Exit `1` when the section is missing, `2` when `--require-date` is set and the parenthetical is not `YYYY-MM-DD` — distinct codes so callers can tell "forgot the entry" from "forgot the date"
+- [x] Export the heading parser as a named export alongside the CLI entry point so Step 3b can reuse it. Guard the CLI with `import.meta.url === pathToFileURL(process.argv[1]).href` — the naive `import.meta.url === process.argv[1]` compares a `file://` URL against a plain path and is **always false**, which would silently disable the CLI (`import.meta.filename === process.argv[1]` also works on Node 20.11+)
 
 ### 1b — `scripts/verify-api-types-pack.mjs`
 
@@ -111,14 +111,14 @@ Operates on a **real `.tgz`**, never `--dry-run`: `prepack` runs on
 `npm pack --dry-run` too, so a dry-run check would silently rebuild whatever it
 was meant to inspect, and the bytes verified would not be the bytes published.
 
-- [ ] Create the file; accept a path to an existing `.tgz` (packing it first only if not given), extract it to a temporary directory, and assert against the **extracted tree**
-- [ ] Assert the exact file list: `CHANGELOG.md`, `LICENSE`, `README.md`, `dist/index.d.ts`, `dist/mf-declarations.d.ts`, `index.d.ts`, `package.json` — seven entries, including the `LICENSE` added in Step 0c. Report missing and unexpected entries separately, and make the failure message say to update the expected list if the change is intentional
-- [ ] Assert the entry count matches the expected list length and the packed version matches `package.json`
-- [ ] Assert `dist/index.d.ts` exceeds 10,000 bytes — an empty or stub declaration file is the characteristic `tsup` failure mode
-- [ ] Assert `dist/index.d.ts` line 1 is exactly `/// <reference path="./mf-declarations.d.ts" />` — proves the relative-path `postbuild` one-liner ran with the right cwd instead of silently no-opping
-- [ ] Assert `dist/mf-declarations.d.ts` is byte-identical to `src/mf-declarations.d.ts`
-- [ ] Write `{ version, shasum, integrity, tarball }` to a caller-specified path so the release workflow can compare the registry against this exact artifact
-- [ ] Exit non-zero with a single actionable message on any failure
+- [x] Create the file; accept a path to an existing `.tgz` (packing it first only if not given), extract it to a temporary directory, and assert against the **extracted tree**
+- [x] Assert the exact file list: `CHANGELOG.md`, `LICENSE`, `README.md`, `dist/index.d.ts`, `dist/mf-declarations.d.ts`, `index.d.ts`, `package.json` — seven entries, including the `LICENSE` added in Step 0c. Report missing and unexpected entries separately, and make the failure message say to update the expected list if the change is intentional
+- [x] Assert the entry count matches the expected list length and the packed version matches `package.json`
+- [x] Assert `dist/index.d.ts` exceeds 10,000 bytes — an empty or stub declaration file is the characteristic `tsup` failure mode
+- [x] Assert `dist/index.d.ts` line 1 is exactly `/// <reference path="./mf-declarations.d.ts" />` — proves the relative-path `postbuild` one-liner ran with the right cwd instead of silently no-opping
+- [x] Assert `dist/mf-declarations.d.ts` is byte-identical to `src/mf-declarations.d.ts`
+- [x] Write `{ version, shasum, integrity, tarball }` to a caller-specified path so the release workflow can compare the registry against this exact artifact
+- [x] Exit non-zero with a single actionable message on any failure
 
 ### 1c — `test/fixtures/api-types-consumer/` and `scripts/verify-api-types-consumer.mjs`
 
@@ -126,31 +126,31 @@ The size and substring assertions in 1b are sanity checks, not proof the
 declarations compile. Only a compiler settles that, and it must run **before**
 the publish — a broken `1.0.0-beta.4` cannot be replaced, only superseded.
 
-- [ ] Create a minimal fixture: `package.json`, `tsconfig.json` with `"skipLibCheck": false` (mirroring `cy-agent-bridge/tsconfig.json:33-35`) and `"types": ["@cytoscape-web/api-types"]`, and one `.ts` source file
-- [ ] Cover ordinary type imports — `import type { ApiResult, CyWebApiType } from '@cytoscape-web/api-types'`
-- [ ] Cover the ambient surface — `window.CyWebApi`, a typed `window.addEventListener`, and a `cyweb/*` module declaration — since `mf-declarations.d.ts` reaches consumers only through the triple-slash reference `postbuild` prepends
-- [ ] `scripts/verify-api-types-consumer.mjs` **copies the fixture to a temporary directory outside the repository**, then installs the `.tgz` and the fixture's own declared dependencies there and runs `tsc --noEmit`
-- [ ] Do not compile the fixture in place. Measured from `test/fixtures/api-types-consumer/`, resolution walks up and finds `<repo>/node_modules/react`, `<repo>/node_modules/@types/react`, `<repo>/node_modules/typescript` — and, worst of all, `@cytoscape-web/api-types` resolves to `<repo>/packages/api-types/dist/index.d.ts` via the workspace symlink, so the fixture would type-check the local build no matter what the tarball contains
-- [ ] Declare every dependency the fixture needs in its own `package.json`, so a missing peer dependency fails here instead of being masked by the host's install
-- [ ] Pin `@types/react` to **18.x**, matching the host (`react@18.3.1`, `@types/react@^18.0.20`). The `cyweb/*` module declarations reference React types, so the fixture needs them; leaving the version open would install React 19 types and could fail a release over a difference no consumer of this host actually hits
-- [ ] Pin `typescript` explicitly too, for the same reason — the fixture is installed outside the repo and inherits nothing
-- [ ] Exclude the fixture from the root `tsconfig.json` and from `oxlint` if either would otherwise pick it up
+- [x] Create a minimal fixture: `package.json`, `tsconfig.json` with `"skipLibCheck": false` (mirroring `cy-agent-bridge/tsconfig.json:33-35`) and `"types": ["@cytoscape-web/api-types"]`, and one `.ts` source file
+- [x] Cover ordinary type imports — `import type { ApiResult, CyWebApiType } from '@cytoscape-web/api-types'`
+- [x] Cover the ambient surface — `window.CyWebApi`, a typed `window.addEventListener`, and a `cyweb/*` module declaration — since `mf-declarations.d.ts` reaches consumers only through the triple-slash reference `postbuild` prepends
+- [x] `scripts/verify-api-types-consumer.mjs` **copies the fixture to a temporary directory outside the repository**, then installs the `.tgz` and the fixture's own declared dependencies there and runs `tsc --noEmit`
+- [x] Do not compile the fixture in place. Measured from `test/fixtures/api-types-consumer/`, resolution walks up and finds `<repo>/node_modules/react`, `<repo>/node_modules/@types/react`, `<repo>/node_modules/typescript` — and, worst of all, `@cytoscape-web/api-types` resolves to `<repo>/packages/api-types/dist/index.d.ts` via the workspace symlink, so the fixture would type-check the local build no matter what the tarball contains
+- [x] Declare every dependency the fixture needs in its own `package.json`, so a missing peer dependency fails here instead of being masked by the host's install
+- [x] Pin `@types/react` to **18.x**, matching the host (`react@18.3.1`, `@types/react@^18.0.20`). The `cyweb/*` module declarations reference React types, so the fixture needs them; leaving the version open would install React 19 types and could fail a release over a difference no consumer of this host actually hits
+- [x] Pin `typescript` explicitly too, for the same reason — the fixture is installed outside the repo and inherits nothing
+- [x] Exclude the fixture from the root `tsconfig.json` and from `oxlint` if either would otherwise pick it up
 
 ### 1d — Register the scripts
 
-- [ ] Add `"changelog:section": "node scripts/changelog-section.mjs"` to the root `package.json`
-- [ ] Add `"verify:api-types-pack": "node scripts/verify-api-types-pack.mjs"` to the root `package.json`
-- [ ] Add `"verify:api-types-consumer": "node scripts/verify-api-types-consumer.mjs"` to the root `package.json`
+- [x] Add `"changelog:section": "node scripts/changelog-section.mjs"` to the root `package.json`
+- [x] Add `"verify:api-types-pack": "node scripts/verify-api-types-pack.mjs"` to the root `package.json`
+- [x] Add `"verify:api-types-consumer": "node scripts/verify-api-types-consumer.mjs"` to the root `package.json`
 
 #### Verification (Step 1)
 
-- [ ] `npm run --silent changelog:section -- --version 1.0.0-beta.3` prints the beta.3 section — note `--silent`: `npm run` writes its `> pkg@version script` banner to **stdout**, so without it the banner contaminates any captured output
-- [ ] `npm run changelog:section -- --version 1.0.0-beta.4 --require-date` exits `2` while the heading still reads `(unpublished)`
-- [ ] `npm run changelog:section -- --version 9.9.9` exits `1`
-- [ ] A test invokes the CLI as a subprocess and asserts stdout and exit code — the `pathToFileURL` main-check guard is exactly the kind of bug an in-process import test cannot see
-- [ ] `npm run build:api-types`, then `npm pack -w packages/api-types --ignore-scripts`, then `npm run verify:api-types-pack -- <tgz>` passes
-- [ ] `npm run verify:api-types-consumer -- <tgz>` passes
-- [ ] Corrupting `dist/index.d.ts` **and packing again without rebuilding** makes both verifiers fail (a plain truncate would be undone by `prepack`; restore afterwards)
+- [x] `npm run --silent changelog:section -- --version 1.0.0-beta.3` prints the beta.3 section — note `--silent`: `npm run` writes its `> pkg@version script` banner to **stdout**, so without it the banner contaminates any captured output
+- [x] `npm run changelog:section -- --version 1.0.0-beta.4 --require-date` exits `2` while the heading still reads `(unpublished)`
+- [x] `npm run changelog:section -- --version 9.9.9` exits `1`
+- [x] A test invokes the CLI as a subprocess and asserts stdout and exit code — the `pathToFileURL` main-check guard is exactly the kind of bug an in-process import test cannot see — `src/app-api/federation/changelogSection.test.ts`, 9 tests. Confirmed it earns its keep: reverting the guard to the naive comparison fails 6 of them
+- [x] `npm run build:api-types`, then `npm pack -w packages/api-types --ignore-scripts`, then `npm run verify:api-types-pack -- <tgz>` passes
+- [x] `npm run verify:api-types-consumer -- <tgz>` passes — and it caught a real mistake on first run: the fixture used `result.value`, but `ApiSuccess` exposes `data` (`src/app-api/types/ApiResult.ts:385-388`)
+- [x] Corrupting `dist/index.d.ts` **and packing again without rebuilding** makes both verifiers fail (a plain truncate would be undone by `prepack`; restore afterwards) — pack fails on the 58-byte size check; the consumer check fails with `TS2694` on `AppDataApi`, `CyWebEvents` and `AppContextApis`, i.e. `mf-declarations.d.ts` losing the types it references
 
 ---
 
