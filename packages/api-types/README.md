@@ -12,6 +12,10 @@ needing the host repository.
 npm install --save-dev @cytoscape-web/api-types
 ```
 
+The declarations reference React types, so `@types/react` (`^18 || ^19`) is a
+peer dependency. npm installs it for you — nothing extra is required, including
+for a consumer that does not otherwise use React.
+
 ## Setup
 
 Add the package to your `tsconfig.json`:

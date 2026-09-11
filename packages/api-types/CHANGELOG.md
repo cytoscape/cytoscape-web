@@ -23,6 +23,16 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Added
 
+- **`@types/react` is now declared as a peer dependency** (`^18 || ^19`). The
+  published declarations have always referenced React types — `dist/index.d.ts`
+  alone has eight such references, and `mf-declarations.d.ts` types
+  `AppIdProvider` as `import('react').Provider` — but the package declared no
+  dependency at all. A consumer installing only `@cytoscape-web/api-types` with
+  `skipLibCheck: false` got `TS2307: Cannot find module 'react'` plus six
+  `TS2503: Cannot find namespace 'React'`. Declaring it means npm supplies the
+  types automatically, so nothing is required of the consumer; the failure was
+  only ever visible to those who had not already installed React types, which
+  is exactly the vanilla-JS audience this package is meant to serve.
 - **`VisualStyleApi.applyVisualStyle(networkId, visualStyle, options?)` and
   `getVisualStyle(networkId)`** (#702) — give a network a whole visual style
   instead of replaying every default, mapping and bypass by hand. Pair the two

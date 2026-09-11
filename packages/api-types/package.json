@@ -40,6 +40,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "peerDependencies": {
+    "@types/react": "^18 || ^19"
+  },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.5.4"
