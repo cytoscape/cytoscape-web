@@ -383,29 +383,35 @@ _Design: §Background 4, §Target design_
 
 ### 6a — Rewrite the release runbook in `packages/api-types/README.md`
 
-- [ ] Step 2: note that the CHANGELOG heading must be dated (the workflow refuses `(unpublished)`) and that `package-lock.json` must be regenerated; mention that a CI test now enforces both
-- [ ] Step 3: replace the hand-run checklist with `npm run lint`, `npm run test:unit`, `npm run build:api-types`, `npm pack -w packages/api-types --ignore-scripts`, then both verifiers against the resulting `.tgz`; note these also run on every pull request
-- [ ] Step 3: **delete the "confirm the tarball contains … " list entirely** — it names five entries but the real count is six (it omits the package-root `index.d.ts`), and the check is now machine-enforced
-- [ ] New step: rehearse with `gh workflow run release-api-types.yml --ref development -f dry_run=true`
-- [ ] Step 4: keep the "do not tag a later `development` HEAD" warning verbatim; give the extract-to-file tagging command from 7b (**never** a pipe into `git tag -F -`); state plainly that **pushing the tag publishes the package** with no further confirmation
-- [ ] Step 5: replace `npm whoami` / `npm run build` / `npm publish` with a description of what the workflow does; state that there are no npm credentials in the repository and that **renaming the workflow file breaks publishing**
-- [ ] Step 5: replace the standing `latest` dist-tag sentence (`README.md:290-292`) with the full policy and its expiry — `latest` while only prereleases exist, `next` for prereleases once `1.0.0` ships — so the current choice reads as a decision with an end date rather than an oddity
-- [ ] Step 6: point at the workflow run's job summary as the primary record, keep the `npm view` commands as an independent second opinion, and add checking for the Provenance panel on the npm page
-- [ ] New section "Why there is no GitHub Release" — webhook `527149929`, the DOI record, and the escape hatch if one is ever genuinely needed
-- [ ] Extend the closing immutability warning: if a publish fails _after_ the tag exists, do not delete or move the tag — re-run the workflow against the existing tag, which the registry-state guard (Step 2d) resumes rather than rejects
+_Landed in #723 (`3ecdc92f`) rather than as a separate step: a review pointed
+out that merging the tag trigger while the README still said "push the tag,
+then run `npm publish`" would leave the canonical instructions actively wrong
+for the window before this step. Every item below was verified against the
+committed README._
+
+- [x] Step 2: note that the CHANGELOG heading must be dated (the workflow refuses `(unpublished)`) and that `package-lock.json` must be regenerated; mention that a CI test now enforces both
+- [x] Step 3: replace the hand-run checklist with `npm run lint`, `npm run test:unit`, `npm run build:api-types`, `npm pack -w packages/api-types --ignore-scripts`, then both verifiers against the resulting `.tgz`; note these also run on every pull request
+- [x] Step 3: **delete the "confirm the tarball contains … " list entirely** — it names five entries but the real count is six (it omits the package-root `index.d.ts`), and the check is now machine-enforced
+- [x] New step: rehearse with `gh workflow run release-api-types.yml --ref development -f dry_run=true`
+- [x] Step 4: keep the "do not tag a later `development` HEAD" warning verbatim; give the extract-to-file tagging command from 7b (**never** a pipe into `git tag -F -`); state plainly that **pushing the tag publishes the package** with no further confirmation
+- [x] Step 5: replace `npm whoami` / `npm run build` / `npm publish` with a description of what the workflow does; state that there are no npm credentials in the repository and that **renaming the workflow file breaks publishing**
+- [x] Step 5: replace the standing `latest` dist-tag sentence (`README.md:290-292`) with the full policy and its expiry — `latest` while only prereleases exist, `next` for prereleases once `1.0.0` ships — so the current choice reads as a decision with an end date rather than an oddity
+- [x] Step 6: point at the workflow run's job summary as the primary record, keep the `npm view` commands as an independent second opinion, and add checking for the Provenance panel on the npm page
+- [x] New section "Why there is no GitHub Release" — webhook `527149929`, the DOI record, and the escape hatch if one is ever genuinely needed
+- [x] Extend the closing immutability warning: if a publish fails _after_ the tag exists, do not delete or move the tag — re-run the workflow against the existing tag, which the registry-state guard (Step 2d) resumes rather than rejects
 
 ### 6b — Fix stale content
 
-- [ ] `packages/README.md:11` — version table says `0.1.0-alpha.0`; change to the current version
-- [ ] `packages/README.md:28` — `npm install @cytoscape-web/api-types@alpha` still points at the abandoned `0.1.0-alpha.3`; drop `@alpha`
-- [ ] `packages/README.md` "Publishing" section points at `implementation-checklist-phase0.md`, which only records the historical one-off alpha publish; point it at this checklist and the design document instead
-- [ ] `packages/api-types/README.md:57` — the "`1.0.0-beta.3` migration notes" section is stale for the most breaking release in the package's history; add or replace with beta.4 notes covering the `'apps-menu'` component-to-data change (`APP9` on `component`, actions to `onClick`, UI to `apis.dialog.open`), the `SelectionApi` signature split, and the collection-getter wrapping. This README is what npmjs.com renders, so it is the migration document every consumer sees
+- [x] `packages/README.md:11` — version table says `0.1.0-alpha.0`; change to the current version
+- [x] `packages/README.md:28` — `npm install @cytoscape-web/api-types@alpha` still points at the abandoned `0.1.0-alpha.3`; drop `@alpha`
+- [x] `packages/README.md` "Publishing" section points at `implementation-checklist-phase0.md`, which only records the historical one-off alpha publish; point it at this checklist and the design document instead
+- [x] `packages/api-types/README.md:57` — the "`1.0.0-beta.3` migration notes" section is stale for the most breaking release in the package's history; add or replace with beta.4 notes covering the `'apps-menu'` component-to-data change (`APP9` on `component`, actions to `onClick`, UI to `apis.dialog.open`), the `SelectionApi` signature split, and the collection-getter wrapping. This README is what npmjs.com renders, so it is the migration document every consumer sees
 
 #### Verification (Step 6)
 
-- [ ] `npx prettier --check` on the changed Markdown, YAML and `.mjs` files passes — `npm run format` does **not** cover them; its glob is `src/**/*.{js,jsx,ts,tsx}` only
-- [ ] Every file path and line reference cited in the rewritten runbook resolves
-- [ ] No remaining occurrence of `@cytoscape-web/api-types@alpha` in `packages/`
+- [x] `npx prettier --check` on the changed Markdown, YAML and `.mjs` files passes — `npm run format` does **not** cover them; its glob is `src/**/*.{js,jsx,ts,tsx}` only — README.md, CHANGELOG.md, packages/README.md and both docs all pass
+- [x] Every file path and line reference cited in the rewritten runbook resolves
+- [x] No remaining occurrence of `@cytoscape-web/api-types@alpha` in `packages/` — grep confirms
 
 ---
 
@@ -421,10 +427,10 @@ _Design: §Consumer impact_
 
 ### 7a — Prepare the CHANGELOG
 
-- [ ] Line 5: `## 1.0.0-beta.4 (unpublished)` → `## 1.0.0-beta.4 (YYYY-MM-DD)` using the actual merge date
-- [ ] Lines 7–22: the `### Changed` heading holds a single item explicitly labelled `**BREAKING — 'apps-menu' entries are plain data, not components.**`, sitting under the non-breaking heading and before `### Added`. Move that item to the top of the existing `### Changed — BREAKING` block and delete the now-empty `### Changed` heading. Note that having both a `### Changed — BREAKING` and a `### Changed` section is the house convention — beta.3 has both — so the defect is only the misfiled item, not the two headings
-- [ ] Line 159: delete the stray blank line splitting the `### Fixed` list, so all its items form one list
-- [ ] Confirm no version bump is needed — `package.json` and `package-lock.json` already record `1.0.0-beta.4`
+- [x] Line 5: `## 1.0.0-beta.4 (unpublished)` → `## 1.0.0-beta.4 (2026-09-11)`
+- [x] Lines 7–22: the `### Changed` heading holds a single item explicitly labelled `**BREAKING — 'apps-menu' entries are plain data, not components.**`, sitting under the non-breaking heading and before `### Added`. Move that item to the top of the existing `### Changed — BREAKING` block and delete the now-empty `### Changed` heading. Note that having both a `### Changed — BREAKING` and a `### Changed` section is the house convention — beta.3 has both — so the defect is only the misfiled item, not the two headings
+- [x] Line 159: delete the stray blank line splitting the `### Fixed` list, so all its items form one list — seven items, one list. Section order is now `Added` → `Changed — BREAKING` → `Fixed`, matching beta.3
+- [x] Confirm no version bump is needed — `package.json` and `package-lock.json` already record `1.0.0-beta.4`
 
 ### 7a-2 — Write the host-compatibility statement
 
@@ -436,13 +442,13 @@ api-types version: `APP_API_VERSION` is the hardcoded string `'1.0'`
 `1.0.0-beta.0`–`1.0.0-beta.4`. Until that is fixed (Step 9), the statement is
 the only signal.
 
-- [ ] Add a short compatibility block at the top of the `## 1.0.0-beta.4` section of `CHANGELOG.md`, so it ships in the tarball and renders on npmjs.com
-- [ ] Identify the host build by the **tag name** (`api-types-v1.0.0-beta.4`), not by a commit SHA. Writing the SHA here is self-referential: the CHANGELOG is committed before the merge, and the merge commit's SHA does not exist until after that content is fixed — adding it would change the commit and invalidate the SHA just written
-- [ ] Let the machine record the SHA instead: the workflow summary and the provenance attestation both carry the exact commit, and `git rev-list -n1 api-types-v1.0.0-beta.4` resolves the tag for anyone who needs it
-- [ ] Name which deployments carry that build at release time, concretely rather than as "the latest version". For beta.4: available on `dev1.ndexbio.org/cytoscape` once `development` is deployed there (Step 7d), and **not** on production `web.cytoscape.org`, which stays on the 1.0.x line until 1.1.0
-- [ ] Tell the reader how to check for themselves: **Help → About** shows the deployed build's commit (`REACT_APP_GIT_COMMIT`, injected at `vite.config.ts:38`, rendered at `src/features/ToolBar/HelpMenu/AboutDialog.tsx:56-57`). Comparing it against `git rev-list -n1 api-types-v1.0.0-beta.4` answers "does this deployment have it?" — necessary because dev1 is deployed manually and can lag `development`
-- [ ] State plainly that the APIs added in beta.4 (Dialog API, `applyVisualStyle`/`getVisualStyle`, `getStyles`/`switchStyle`, the `'modal-launcher'` and `'search-bar'` slots) exist on `development` only, so **no released application version implements them yet** — this is a real hazard, not boilerplate: an app can compile against methods the deployed host does not have
-- [ ] Mirror the same statement in the `packages/api-types/README.md` migration notes updated in Step 6b
+- [x] Add a short compatibility block at the top of the `## 1.0.0-beta.4` section of `CHANGELOG.md`, so it ships in the tarball and renders on npmjs.com
+- [x] Identify the host build by the **tag name** (`api-types-v1.0.0-beta.4`), not by a commit SHA. Writing the SHA here is self-referential: the CHANGELOG is committed before the merge, and the merge commit's SHA does not exist until after that content is fixed — adding it would change the commit and invalidate the SHA just written
+- [x] Let the machine record the SHA instead: the workflow summary and the provenance attestation both carry the exact commit, and `git rev-list -n1 api-types-v1.0.0-beta.4` resolves the tag for anyone who needs it
+- [x] Name which deployments carry that build at release time, concretely rather than as "the latest version". For beta.4: available on `dev1.ndexbio.org/cytoscape` once `development` is deployed there (Step 7d), and **not** on production `web.cytoscape.org`, which stays on the 1.0.x line until 1.1.0
+- [x] Tell the reader how to check for themselves: **Help → About** shows the deployed build's commit (`REACT_APP_GIT_COMMIT`, injected at `vite.config.ts:38`, rendered at `src/features/ToolBar/HelpMenu/AboutDialog.tsx:56-57`). Comparing it against `git rev-list -n1 api-types-v1.0.0-beta.4` answers "does this deployment have it?" — necessary because dev1 is deployed manually and can lag `development`
+- [x] State plainly that the APIs added in beta.4 (Dialog API, `applyVisualStyle`/`getVisualStyle`, `getStyles`/`switchStyle`, the `'modal-launcher'` and `'search-bar'` slots) exist on `development` only, so **no released application version implements them yet** — this is a real hazard, not boilerplate: an app can compile against methods the deployed host does not have
+- [x] Mirror the same statement in the `packages/api-types/README.md` migration notes updated in Step 6b
 
 ### 7b — Merge and tag
 
