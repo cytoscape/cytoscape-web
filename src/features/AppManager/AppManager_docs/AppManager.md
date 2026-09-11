@@ -129,6 +129,43 @@ The AppManager feature consists of:
 - Error state handling
 - User-friendly status display
 
+#### Load failure codes
+
+`AppStore` keeps two session-local records keyed by catalog id: `loadStates`
+(`AppLoadState`) and `loadErrors` (`AppLoadFailure`). `setLoadFailed(id, failure)`
+writes both, so a `'failed'` app always has a reason. `setLoadState` clears the
+reason, and `remove` prunes it. `setLoadState` takes
+`SettableAppLoadState` (`AppLoadState` minus `'failed'`), so the compiler — not
+convention — keeps `setLoadFailed` the only way into `'failed'`.
+
+`AppLoadFailure` carries identifiers, not prose. `appLoadFailureMessage`
+(`src/models/AppModel/impl/appLoadFailureMessage.ts`) turns a code into the text
+`AppListPanel` renders on the row and `useAppManager` puts in a toast. It sits in
+the model layer, not here, because `src/data` may not import from `src/features`
+(`src/data/layering.test.ts`).
+
+| Code | Cause | Retry? |
+| --- | --- | --- |
+| `origin-blocked` | The catalog URL is outside `appInstallAllowedOrigins`. | No — needs a config change |
+| `fetch-failed` | The `remoteEntry.js` request or entry evaluation threw. | No — reload the page |
+| `no-app-config` | The bundle exports no default from `./AppConfig`. | No — mis-packaged |
+| `id-mismatch` | The bundle's `CyApp.id` differs from the catalog id. | No — mis-packaged |
+| `mount-failed` | The bundle loaded but the app's `mount()` threw. | Yes |
+
+`retryApp` is `activateApp` and nothing else, so only `mount-failed` gets a
+Retry button. `fetch-failed` cannot be retried in-tab: the federation runtime
+memoizes the rejected entry promise in `globalLoading` for the life of the page.
+
+The strict id compare in `loadRemoteApp` stays strict. The catalog id keys the
+federation scope, `appRegistry` and `loadStates`, while `mountApp`/`unmountApp`
+key `mountedApps` by the bundle's own id. Accepting a mismatched pair would mount
+under one id and look for the other on unmount, leaking the app's panels and
+menu items.
+
+Startup auto-load collapses every failure in the pass into one toast: a single
+failure names its cause, several are counted. `SnackbarMessageList` shows
+messages one at a time, so N broken apps must not queue N toasts.
+
 ## Future Improvements
 
 - App configuration UI

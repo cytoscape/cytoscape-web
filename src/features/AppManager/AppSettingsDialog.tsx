@@ -85,9 +85,23 @@ export const AppSettingsDialog = ({
     try {
       const response = await fetch(url)
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+        setInstallError(
+          `The manifest could not be fetched (HTTP ${response.status}).`,
+        )
+        return
       }
-      const data = await response.json()
+      // Parsed separately from the fetch so a non-JSON body reports what it is
+      // rather than surfacing a raw SyntaxError. Pasting a remoteEntry.js URL
+      // here is the common mistake, and it lands exactly on this branch (#719).
+      let data: unknown
+      try {
+        data = await response.json()
+      } catch {
+        setInstallError(
+          'That URL did not return JSON. Enter the app manifest URL, not the remoteEntry.js URL.',
+        )
+        return
+      }
       const entry = parseSingleEntryManifest(data)
       if (entry === undefined) {
         setInstallError('No valid app entry found in the manifest')
@@ -110,8 +124,11 @@ export const AppSettingsDialog = ({
       await installApp(entry, { activate: false })
       setInstallUrl('')
     } catch (err) {
+      // Anything left is a transport failure — a bad hostname, DNS, CORS, or
+      // an offline network. `fetch` reports all of them as "Failed to fetch",
+      // which alone tells the user nothing about what to change.
       setInstallError(
-        err instanceof Error ? err.message : 'Failed to install app',
+        'The manifest could not be fetched. Check the URL and your connection.',
       )
       logApp.warn('[AppSettingsDialog]: Install from URL failed:', err)
     } finally {
