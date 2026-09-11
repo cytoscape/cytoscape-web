@@ -6,9 +6,9 @@ Each subdirectory is an independent npm package managed via [npm workspaces](htt
 
 ## Packages
 
-| Package | Version | Description |
-|---------|---------|-------------|
-| [`@cytoscape-web/api-types`](./api-types/) | `0.1.0-alpha.0` | TypeScript declarations for the Cytoscape Web App API |
+| Package                                    | Version        | Description                                           |
+| ------------------------------------------ | -------------- | ----------------------------------------------------- |
+| [`@cytoscape-web/api-types`](./api-types/) | `1.0.0-beta.4` | TypeScript declarations for the Cytoscape Web App API |
 
 ## `@cytoscape-web/api-types`
 
@@ -25,7 +25,7 @@ Provides ambient TypeScript type declarations for vanilla JS consumers (browser 
 **Installation:**
 
 ```bash
-npm install @cytoscape-web/api-types@alpha
+npm install @cytoscape-web/api-types
 ```
 
 **Usage:**
@@ -56,4 +56,9 @@ The `dist/` output of each package is gitignored and generated locally or in CI 
 
 ## Publishing
 
-See [implementation-checklist-phase0.md](../docs/design/module-federation/checklists/implementation-checklist-phase0.md) for the publication steps.
+Releases are automated: pushing an `api-types-v*` tag runs
+[`release-api-types.yml`](../.github/workflows/release-api-types.yml), which
+publishes to npm via Trusted Publishing. The procedure is in
+[`api-types/README.md`](./api-types/README.md#releasing-a-new-api-bundle-core-developers),
+and the design behind it in
+[`api-types/docs/`](./api-types/docs/release-automation-design.md).
