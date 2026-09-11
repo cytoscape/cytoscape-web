@@ -836,13 +836,26 @@ The release notes should state which host commit or version beta.4 requires and
 which deployments carry it.
 
 `cy-agent-bridge` should be bumped first: its `tsconfig.json:33-35` sets
-`"skipLibCheck": false` with this package in `types`, making its type-check the
-de facto correctness test for the published declarations — and it runs against
-the real registry tarball, not a local build.
+`"skipLibCheck": false` with this package in `types`, so its type-check proves
+the published declarations compile — and it runs against the real registry
+tarball, not a local build.
+
+**That is all it proves.** The Step 8a rehearsal found that `cy-agent-bridge`
+passes `npm run typecheck` on beta.4 with zero errors while seven of its MCP
+tools break at runtime. Two things make the type-check blind to its own
+compatibility: `mcp-server/`, where every API call lives, has its own
+`tsconfig.json` and is outside the root typecheck's `include`; and the server
+dispatches by string — `callApi(page, 'selection.additiveUnselect', …)` with
+`method: string` — so a rename is just a different string. The only check that
+finds those is a cross-reference of every `callApi` string against the new
+declarations, which is what 8a did. A consumer that reaches the API through a
+string boundary needs that kind of check, not a compiler.
 
 Each example app that registers an `'apps-menu'` item also needs a real code
 migration, not just a pin bump. The component-to-data change is not
-source-compatible.
+source-compatible: on beta.4, three of the four apps fail to type-check on
+exactly that, and `project-template` additionally on the `additiveSelect`
+signature split.
 
 ---
 
