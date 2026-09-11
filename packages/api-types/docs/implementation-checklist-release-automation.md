@@ -354,19 +354,19 @@ _Design: §Target design → The release workflow_
 
 ### 5b — Rehearse after Step 7a
 
-- [ ] After the CHANGELOG is dated and merged, run the dispatch again with `dry_run=true`
-- [ ] Confirm every guard passes, the build succeeds, both verifiers pass, and `npm publish --dry-run` reports the expected tarball
-- [ ] Confirm the job summary renders the release notes
+- [x] After the CHANGELOG is dated and merged, run the dispatch again with `dry_run=true` — run 34656503916 against the #726 merge commit `f62224c6`
+- [x] Confirm every guard passes, the build succeeds, both verifiers pass, and `npm publish --dry-run` reports the expected tarball — all green: six guards passed (the two tag guards correctly skipped on a branch ref), CI gate found `ci.yml` run 34656063426 with all four jobs green, 7-entry tarball, consumer type-check passed, decision `publish`, dry run reported `+ @cytoscape-web/api-types@1.0.0-beta.4` to `latest` with public access
+- [x] Confirm the job summary renders the release notes
 
 ### 5c — Record what the rehearsal does and does not prove
 
-- [ ] Note in the run summary, and in the runbook, that a green rehearsal covers the guards, the build, the packaging and the consumer type-check — but **not** npm authentication
-- [ ] `npm publish --dry-run` succeeds with no credentials at all: verified locally, where it reported success while `npm whoami` returned `E401`. A dry run may still attempt the OIDC exchange, but it does not require it to succeed — so a green rehearsal cannot confirm the trusted-publisher configuration either way. That is why every guard is ordered ahead of the real publish
+- [x] Note in the run summary, and in the runbook, that a green rehearsal covers the guards, the build, the packaging and the consumer type-check — but **not** npm authentication — the workflow's dry-run step carries this in a comment, and the runbook's step 4 says what a rehearsal proves
+- [x] `npm publish --dry-run` succeeds with no credentials at all: verified locally, where it reported success while `npm whoami` returned `E401`. A dry run may still attempt the OIDC exchange, but it does not require it to succeed — so a green rehearsal cannot confirm the trusted-publisher configuration either way. That is why every guard is ordered ahead of the real publish
 
 #### Verification (Step 5)
 
-- [ ] A fully green `dry_run=true` run exists against the merge commit that will be tagged
-- [ ] Nothing was published — `npm view @cytoscape-web/api-types version` still reports `1.0.0-beta.3`
+- [x] A fully green `dry_run=true` run exists against the merge commit that will be tagged — 34656503916 on `f62224c6`
+- [x] Nothing was published — `npm view @cytoscape-web/api-types version` still reports `1.0.0-beta.3` — confirmed after both rehearsals
 
 ---
 
@@ -456,32 +456,70 @@ the only signal.
 - [ ] Complete Step 5b against that merge commit
 - [ ] Tag the **exact merge commit**, not a later `development` HEAD:
 
+  The canonical copy of this command is the runbook in
+  `packages/api-types/README.md` §4; it ships in the tarball and is what a
+  releaser reads. Kept identical here so following the checklist does not
+  reproduce the failures the runbook fixed.
+
   ```bash
   #!/usr/bin/env bash
-  # set -e is required. Verified: a failing `test -s` does NOT stop the next
-  # command in an ordinary shell, so without it a failed extraction still
-  # reaches `git tag` and creates a tag with an empty message.
   set -euo pipefail
 
   VERSION=1.0.0-beta.4
   SHA=<MERGE_COMMIT_SHA>
   git fetch origin development
 
-  # Read the CHANGELOG **from the commit being tagged**, not the working tree,
-  # so the notes cannot drift from what is actually released.
-  git show "$SHA:packages/api-types/CHANGELOG.md" > /tmp/changelog-at-tag.md
+  # mktemp, not a fixed /tmp path: a leftover file from an earlier run passed
+  # `test -s` and put another commit's notes into the tag.
+  NOTES="$(mktemp)"
 
-  # --silent suppresses npm's `> pkg@version script` banner, which npm writes
-  # to stdout and would otherwise land inside the tag message.
-  npm run --silent changelog:section -- \
-    --version "$VERSION" --file /tmp/changelog-at-tag.md > /tmp/notes.md
-  test -s /tmp/notes.md
+  # Read the CHANGELOG from the commit being tagged, not the working tree.
+  # --silent: npm's `> pkg@version script` banner goes to stdout and would
+  # land in the tag message.
+  # >| not >: mktemp created the file, and noclobber refuses to overwrite it.
+  git show "$SHA:packages/api-types/CHANGELOG.md" \
+    | npm run --silent changelog:section -- \
+        --version "$VERSION" --file /dev/stdin --require-date >| "$NOTES"
+  test -s "$NOTES"
 
-  git tag -a "api-types-v$VERSION" "$SHA" -F /tmp/notes.md
+  # --cleanup=whitespace: the default strips `#`-prefixed lines as comments,
+  # which deletes every `### ` heading from the notes.
+  git tag -a --cleanup=whitespace "api-types-v$VERSION" "$SHA" -F "$NOTES"
+
+  # Look before pushing: the headings must be there.
+  git tag -l --format='%(contents)' "api-types-v$VERSION" | grep -c '^### '
+
   git push origin "refs/tags/api-types-v$VERSION"
   ```
 
 - [ ] `gh run watch` — the tag push fires the workflow automatically and publishes with `--tag latest`
+
+#### What happened on the first attempt (recorded, not a step)
+
+The first tag push (run 34657565585, tag on `f62224c6`) stopped at
+**Guard — the tag is annotated** with nothing published — the guard ran before
+the build, as designed. The guard was wrong, not the tag: `actions/checkout`
+re-fetches the tag being built as `+<sha>:refs/tags/<name>`, which rewrites the
+local ref to point straight at the commit, so inside the job every tag reads as
+lightweight. The guard now asks the remote via `git ls-remote`, where an
+annotated tag lists a peeled `<name>^{}` line, and additionally checks that the
+peeled commit is the one being built.
+
+Because `workflow_dispatch` runs the workflow file **at the ref it is given**,
+re-running against the existing tag would have used the broken guard again. The
+fix therefore went through a PR to `development`, the unpublished tag was
+deleted from the remote, and the release was re-tagged on the fix's merge
+commit. Nothing about the package changed between the two commits.
+
+Two further problems surfaced while creating the tag locally, both before any
+push: a leftover `/tmp/notes.md` from an earlier extraction passed `test -s`
+and would have shipped stale notes (fixed by `mktemp` + `>|`), and
+`git tag -F` stripped every `### ` heading as a comment (fixed by
+`--cleanup=whitespace`). The runbook's tag command carries all three fixes.
+
+The tag-path guards had never run before this: a branch rehearsal skips them
+by design. That is a real gap in what Step 5 can prove, and it is why the
+publish path is ordered so that every guard fails before any upload.
 
 ### 7c — Verify the release
 
