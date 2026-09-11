@@ -158,15 +158,28 @@ compatibility checks". So it identifies nothing and enforces nothing.
 Meanwhile `api-types` is released from `development`: the
 `api-types-v1.0.0-beta.3` tag is an ancestor of `development` and **not** of
 `master`. The APIs `1.0.0-beta.4` documents — the Dialog API, `applyVisualStyle`,
-the `'modal-launcher'` slot — therefore exist only on `development`. An app
-developer who installs `1.0.0-beta.4` and targets a deployed Cytoscape Web can
-compile successfully against methods the host does not have, and nothing at
+the `'modal-launcher'` slot — therefore exist only on `development`, and
+`1.0.0-beta.4` is deliberately released **before** the 1.1.0 application
+release. An app developer who installs it and targets a deployed Cytoscape Web
+can compile successfully against methods the host does not have, and nothing at
 either build time or runtime tells them.
 
-(Which branch the application itself releases from is a separate question, and
-the answer on the ground does not match what the repository documents. That is
-outside this design's scope; it is noted here only because it is why the
-compatibility statement below cannot simply say "the latest release".)
+`development` reaches `dev1.ndexbio.org/cytoscape` by **manual, progressive
+deployment**, so "it is on `development`" and "it is running on dev1" are
+different claims and the second can lag the first by an unknown amount. The
+compatibility statement must therefore name a build, not a branch.
+
+Fortunately a deployed build is identifiable: `vite.config.ts:38` injects
+`git rev-parse --short HEAD` as `REACT_APP_GIT_COMMIT`, and
+`src/features/ToolBar/HelpMenu/AboutDialog.tsx:56-57` renders it in
+**Help → About**. Comparing that value against the release tag's commit answers
+"does this deployment have it?" without guesswork.
+
+(Which branch the application itself releases from is a separate question,
+tracked in issue #721; the answer on the ground does not match what the
+repository documents. That is outside this design's scope, and noted here only
+because it is why the compatibility statement cannot simply say "the latest
+release".)
 
 ---
 
@@ -667,16 +680,19 @@ thing standing between a consumer and a silent runtime failure.
 top of the version's `CHANGELOG.md` section, shipped in the tarball and
 therefore visible on npmjs.com:
 
-- The host commit the package was built from — the tagged commit, which the
-  release workflow already knows
-- Which deployments carry that commit at release time, named concretely
-  (`dev1.ndexbio.org/cytoscape`, production, or "not yet deployed")
+- The host build, identified by the release **tag** (not a SHA — see the
+  checklist's Step 7a-2 for why writing the SHA into the changelog is circular)
+- Which deployments carry that build, named concretely, and **how a reader
+  checks** — Help → About shows the deployed commit
 - For a prerelease that runs ahead of every application release, an explicit
   sentence saying so, rather than leaving the reader to infer it
 
-For `1.0.0-beta.4` that sentence is not a formality: the APIs it documents are
-on `development` only, so the honest statement is that no released application
-version implements them yet.
+For `1.0.0-beta.4` the last point is not a formality. It ships before the 1.1.0
+application release, so the honest statement is that **no released version
+implements these APIs**; they are available on `dev1.ndexbio.org/cytoscape` once
+`development` has been deployed there, which happens manually. That makes
+deploying dev1 part of the release, not an afterthought — otherwise the package
+documents an API that is running nowhere the reader can reach.
 
 This is a claim a human writes, not a generated field. It is not enforced, and
 it does not pretend to be — it replaces "the consumer has no way to know" with

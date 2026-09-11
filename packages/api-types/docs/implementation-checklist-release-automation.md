@@ -21,6 +21,11 @@ everything before it, and Step 8b lands in the two sibling repositories once the
 publish succeeds. **Step 9 is follow-up** — it guards the contract against
 silent drift and does not gate this release.
 
+**Sequencing, decided:** `1.0.0-beta.4` ships **before** the 1.1.0 application
+release, during this work. It therefore documents APIs that no released version
+of Cytoscape Web implements — which is allowed, and is exactly why Step 7a-2's
+compatibility statement and Step 7d's dev1 deployment are not optional.
+
 **Key decisions** — resolved before implementation; do not re-litigate during
 the work:
 
@@ -404,7 +409,8 @@ the only signal.
 - [ ] Add a short compatibility block at the top of the `## 1.0.0-beta.4` section of `CHANGELOG.md`, so it ships in the tarball and renders on npmjs.com
 - [ ] Identify the host build by the **tag name** (`api-types-v1.0.0-beta.4`), not by a commit SHA. Writing the SHA here is self-referential: the CHANGELOG is committed before the merge, and the merge commit's SHA does not exist until after that content is fixed — adding it would change the commit and invalidate the SHA just written
 - [ ] Let the machine record the SHA instead: the workflow summary and the provenance attestation both carry the exact commit, and `git rev-list -n1 api-types-v1.0.0-beta.4` resolves the tag for anyone who needs it
-- [ ] Name which deployments carry that build at release time (`dev1.ndexbio.org/cytoscape`, production, or "not yet deployed"), concretely rather than as "the latest version"
+- [ ] Name which deployments carry that build at release time, concretely rather than as "the latest version". For beta.4: available on `dev1.ndexbio.org/cytoscape` once `development` is deployed there (Step 7d), and **not** on production `web.cytoscape.org`, which stays on the 1.0.x line until 1.1.0
+- [ ] Tell the reader how to check for themselves: **Help → About** shows the deployed build's commit (`REACT_APP_GIT_COMMIT`, injected at `vite.config.ts:38`, rendered at `src/features/ToolBar/HelpMenu/AboutDialog.tsx:56-57`). Comparing it against `git rev-list -n1 api-types-v1.0.0-beta.4` answers "does this deployment have it?" — necessary because dev1 is deployed manually and can lag `development`
 - [ ] State plainly that the APIs added in beta.4 (Dialog API, `applyVisualStyle`/`getVisualStyle`, `getStyles`/`switchStyle`, the `'modal-launcher'` and `'search-bar'` slots) exist on `development` only, so **no released application version implements them yet** — this is a real hazard, not boilerplate: an app can compile against methods the deployed host does not have
 - [ ] Mirror the same statement in the `packages/api-types/README.md` migration notes updated in Step 6b
 
@@ -451,9 +457,22 @@ the only signal.
 - [ ] **No GitHub Release was created** — `gh release list` is unchanged
 - [ ] **Zenodo did not fire** — `gh api repos/cytoscape/cytoscape-web/hooks/527149929/deliveries --jq '.[0].delivered_at'` shows no new delivery, and the DOI record's version list is unchanged
 
+### 7d — Deploy `development` to dev1
+
+`dev1.ndexbio.org/cytoscape` is deployed **manually** from `development`, so
+"merged" does not imply "running". Until this is done, beta.4 documents an API
+that is reachable nowhere, and the compatibility statement written in Step 7a-2
+is false.
+
+- [ ] Deploy `development` at or after the release commit to `dev1.ndexbio.org/cytoscape`
+- [ ] Confirm via **Help → About** that the deployed commit is at or after `git rev-list -n1 api-types-v1.0.0-beta.4`
+- [ ] Smoke-check one beta.4 API against the deployed host — `applyVisualStyle` or an `apis.dialog.open` call from an app — so the claim is tested, not just asserted
+- [ ] If the deployment has to happen after the publish, say so in the compatibility block rather than claiming availability that does not exist yet
+
 #### Verification (Step 7)
 
 - [ ] A clean `npm pack @cytoscape-web/api-types@1.0.0-beta.4` from a scratch directory yields a tarball whose `dist/index.d.ts` contains `applyVisualStyle`, `switchStyle`, `DialogApi` and `registerModal` — proving the stale-`dist` failure mode is closed
+- [ ] The published compatibility statement is true when read: the build it names is reachable at the deployment it names, confirmed through Help → About rather than assumed
 
 ---
 
