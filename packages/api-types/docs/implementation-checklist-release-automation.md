@@ -456,28 +456,39 @@ the only signal.
 - [ ] Complete Step 5b against that merge commit
 - [ ] Tag the **exact merge commit**, not a later `development` HEAD:
 
+  The canonical copy of this command is the runbook in
+  `packages/api-types/README.md` §4; it ships in the tarball and is what a
+  releaser reads. Kept identical here so following the checklist does not
+  reproduce the failures the runbook fixed.
+
   ```bash
   #!/usr/bin/env bash
-  # set -e is required. Verified: a failing `test -s` does NOT stop the next
-  # command in an ordinary shell, so without it a failed extraction still
-  # reaches `git tag` and creates a tag with an empty message.
   set -euo pipefail
 
   VERSION=1.0.0-beta.4
   SHA=<MERGE_COMMIT_SHA>
   git fetch origin development
 
-  # Read the CHANGELOG **from the commit being tagged**, not the working tree,
-  # so the notes cannot drift from what is actually released.
-  git show "$SHA:packages/api-types/CHANGELOG.md" > /tmp/changelog-at-tag.md
+  # mktemp, not a fixed /tmp path: a leftover file from an earlier run passed
+  # `test -s` and put another commit's notes into the tag.
+  NOTES="$(mktemp)"
 
-  # --silent suppresses npm's `> pkg@version script` banner, which npm writes
-  # to stdout and would otherwise land inside the tag message.
-  npm run --silent changelog:section -- \
-    --version "$VERSION" --file /tmp/changelog-at-tag.md > /tmp/notes.md
-  test -s /tmp/notes.md
+  # Read the CHANGELOG from the commit being tagged, not the working tree.
+  # --silent: npm's `> pkg@version script` banner goes to stdout and would
+  # land in the tag message.
+  # >| not >: mktemp created the file, and noclobber refuses to overwrite it.
+  git show "$SHA:packages/api-types/CHANGELOG.md" \
+    | npm run --silent changelog:section -- \
+        --version "$VERSION" --file /dev/stdin --require-date >| "$NOTES"
+  test -s "$NOTES"
 
-  git tag -a "api-types-v$VERSION" "$SHA" -F /tmp/notes.md
+  # --cleanup=whitespace: the default strips `#`-prefixed lines as comments,
+  # which deletes every `### ` heading from the notes.
+  git tag -a --cleanup=whitespace "api-types-v$VERSION" "$SHA" -F "$NOTES"
+
+  # Look before pushing: the headings must be there.
+  git tag -l --format='%(contents)' "api-types-v$VERSION" | grep -c '^### '
+
   git push origin "refs/tags/api-types-v$VERSION"
   ```
 

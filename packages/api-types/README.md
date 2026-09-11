@@ -394,8 +394,11 @@ step 4 before you tag anything.
    - **`mktemp`, not a fixed path.** A fixed `/tmp/notes.md` left over from an
      earlier run passed `test -s` and went into the tag, so the tag carried
      notes from a commit that was not the one being tagged.
-   - **`>|`, not `>`.** With `noclobber` set, `>` refuses to overwrite and the
-     shell moves on; `>|` forces the write in both bash and zsh.
+   - **`>|`, not `>`.** `mktemp` creates the file, so under `noclobber` a plain
+     `>` refuses to overwrite it. With `set -e` that aborts the script, which is
+     the good outcome; in an interactive shell without it, the stale-file
+     problem above is what you get instead. `>|` forces the write in both bash
+     and zsh.
    - **`--cleanup=whitespace`.** `git tag -F` strips lines starting with `#` as
      comments by default, which deletes every Markdown heading from the notes.
      Verify with `git tag -l --format='%(contents)' api-types-v$VERSION` before
