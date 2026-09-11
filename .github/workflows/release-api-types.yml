@@ -151,16 +151,24 @@ jobs:
       # Guards — every one is cheaper than an immutable mistake, and they  #
       # all run BEFORE the build so a bad tag fails in seconds.            #
       # ---------------------------------------------------------------- #
+      # Compares the WHOLE ref name against the one tag this version may be
+      # released under. Stripping the prefix instead does not enforce it:
+      # `${var#pattern}` returns the value unchanged when the prefix is absent,
+      # so a tag named plainly `1.0.0-beta.4` would have compared equal. The
+      # push trigger filters on api-types-v*, but a workflow_dispatch can name
+      # any tag as its ref, and that path reaches the publish.
       - name: Guard — tag name matches package.json
         if: github.ref_type == 'tag'
+        env:
+          VERSION: ${{ steps.params.outputs.version }}
         run: |
           set -euo pipefail
-          TAG_VERSION="${GITHUB_REF_NAME#"$TAG_PREFIX"}"
-          if [ "$TAG_VERSION" != "${{ steps.params.outputs.version }}" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} implies ${TAG_VERSION}, but ${PKG_DIR}/package.json says ${{ steps.params.outputs.version }}."
+          EXPECTED="${TAG_PREFIX}${VERSION}"
+          if [ "$GITHUB_REF_NAME" != "$EXPECTED" ]; then
+            echo "::error::This run is on tag ${GITHUB_REF_NAME}, but ${PKG_DIR}/package.json says ${VERSION}, which may only be released as ${EXPECTED}."
             exit 1
           fi
-          echo "  ${GITHUB_REF_NAME} matches ${{ steps.params.outputs.version }}"
+          echo "  ${GITHUB_REF_NAME} is the expected tag for ${VERSION}"
 
       # The tag-name guard above only checks spelling. ci.yml runs on master as
       # well as development, so a tag placed on a master-only commit can carry

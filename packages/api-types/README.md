@@ -250,54 +250,97 @@ The host implementation and this package are one public contract. Release them
 from the same `development` commit after the runtime behavior, exported types,
 tests, and documentation have been aligned.
 
+**Pushing the tag publishes the package.** There is no separate confirmation
+step and no manual `npm publish` any more — `.github/workflows/release-api-types.yml`
+runs on an `api-types-v*` tag push and goes all the way to the registry. Read
+step 4 before you tag anything.
+
 1. **Align the contract.** Update the framework-agnostic implementation and
    hook wrappers in `src/app-api/`, the public declarations in
    `src/app-api/types/`, and the exports in `packages/api-types/src/index.ts`.
    Update `mf-declarations.d.ts` when a `cyweb/*` exposure changes. Add or update
    tests, `src/app-api/api_docs/`, the App API specifications, and an ADR when a
    design decision changes. Document breaking changes and consumer migrations.
+
 2. **Prepare the release before merging.** Bump the version in this package and
-   the root lockfile, move the new `CHANGELOG.md` entry from `Unreleased` to its
-   release date, and update any version-specific notes in this README. These
-   changes belong in the same pull request as the API change.
-3. **Verify the bundle.** From the repository root, run:
+   the root lockfile, and give the `CHANGELOG.md` entry a release date — the
+   heading must read `## <version> (YYYY-MM-DD)`, not `(unpublished)`, or the
+   release workflow refuses to publish. State which host build implements the
+   release and where it is deployed; `apiVersion` does not yet carry that.
+   These changes belong in the same pull request as the API change.
+
+   A unit test (`src/app-api/federation/apiTypesRelease.test.ts`) already checks
+   that the version, the lockfile and the changelog agree, so a forgotten
+   `npm install` fails on the pull request rather than at release time.
+
+3. **Verify the bundle.** From the repository root:
 
    ```bash
    npm run lint
    npm run test:unit
    npm run build:api-types
-   cd packages/api-types
-   npm pack --dry-run
+   npm pack -w packages/api-types --ignore-scripts
+   npm run verify:api-types-pack -- <tarball>
+   npm run verify:api-types-consumer -- <tarball>
    ```
 
-   Confirm that the tarball contains `dist/index.d.ts`,
-   `dist/mf-declarations.d.ts`, `README.md`, `CHANGELOG.md`, and `package.json`.
+   `--ignore-scripts` on the pack is deliberate: `prepack` would rebuild what
+   was just built, and its output on stdout breaks `npm pack --json`.
 
-4. **Merge and tag the exact merge commit.** Merge the pull request into
-   `development`, fetch the updated branch, and identify that pull request's
-   merge commit. Do not tag a later `development` HEAD that includes unrelated
-   changes. The tag format is `api-types-v<version>`:
+   The same checks run on every pull request as the `API Types Package` job, so
+   this is a convenience rather than a gate.
+
+4. **Rehearse, then merge and tag the exact merge commit.** Merge the pull
+   request into `development`, fetch the updated branch, and identify that pull
+   request's merge commit. Do not tag a later `development` HEAD that includes
+   unrelated changes — and note that the workflow refuses to publish a commit
+   that is not reachable from `origin/development`.
+
+   Rehearse first. A dry run exercises every guard, the build, the packaging
+   and the consumer type-check without touching the registry:
 
    ```bash
+   gh workflow run release-api-types.yml --ref development -f dry_run=true
+   gh run watch
+   ```
+
+   Then tag. Extract the notes from the commit being tagged rather than the
+   working tree, and confirm the extraction before creating the tag — `npm run`
+   writes its banner to stdout, and the right-hand side of a pipe runs even when
+   the left-hand side fails:
+
+   ```bash
+   set -euo pipefail
+   VERSION=1.0.0-beta.4
+   SHA=<MERGE_COMMIT_SHA>
    git fetch origin development
-   git tag -a api-types-v1.0.0-beta.4 MERGE_COMMIT_SHA \
-     -m "Release @cytoscape-web/api-types 1.0.0-beta.4"
-   git push origin refs/tags/api-types-v1.0.0-beta.4
+   git show "$SHA:packages/api-types/CHANGELOG.md" > /tmp/changelog-at-tag.md
+   npm run --silent changelog:section -- \
+     --version "$VERSION" --file /tmp/changelog-at-tag.md > /tmp/notes.md
+   test -s /tmp/notes.md
+   git tag -a "api-types-v$VERSION" "$SHA" -F /tmp/notes.md
+   git push origin "refs/tags/api-types-v$VERSION"
    ```
 
-5. **Publish the tagged content.** Use a clean checkout of the tagged commit,
-   authenticate with npm, rebuild once, and publish from this directory. The
-   active beta stream currently uses the `latest` dist-tag; use another tag only
-   when the team has agreed to change that policy.
+5. **The workflow publishes.** The tag push starts it; nothing else is needed.
+   It re-checks the tag against `package.json`, the lockfile, the changelog
+   date, the `repository` field provenance is validated against, that the
+   commit is on `development`, and that `ci.yml` passed for that exact commit.
+   Then it builds once, packs one tarball, verifies it, type-checks a consumer
+   against it, publishes **that** tarball, and reads the registry back.
 
-   ```bash
-   npm whoami
-   npm run build
-   npm publish --access public --tag latest
-   ```
+   The active beta stream uses the `latest` dist-tag. That is a decision with an
+   end: once `1.0.0` ships, `latest` means stable and prereleases move to
+   `next`. See `docs/release-automation-design.md` §Dist-tag policy.
 
-6. **Verify both registries.** Confirm the remote tag target, published version,
-   dist-tag, and tarball checksum:
+   **There are no npm credentials in this repository.** Publishing authority
+   comes from a Trusted Publisher configured on npmjs.com, bound to this
+   repository and to the workflow filename. **Renaming
+   `release-api-types.yml` breaks publishing** until that configuration is
+   updated to match. Check it with `npm trust list @cytoscape-web/api-types`.
+
+6. **Verify.** The workflow run's job summary is the primary record — version,
+   integrity, the dist-tag it resolves to, and the release notes. Independently:
 
    ```bash
    git ls-remote --tags origin 'refs/tags/api-types-v1.0.0-beta.4*'
@@ -306,9 +349,45 @@ tests, and documentation have been aligned.
      version dist.shasum dist.integrity
    ```
 
+   The npm package page should show a **Provenance** panel linking back to the
+   workflow run and the tagged commit.
+
+7. **Tell the consumers.** Six files across `cytoscape-web-app-examples` and
+   `cy-agent-bridge` pin this package. Their lockfiles hold the old version
+   until someone regenerates them, so the breakage arrives on the next
+   dependency refresh rather than immediately — which is a reprieve, not
+   safety. Rehearse the migration against a local tarball **before** releasing,
+   while the version number can still change.
+
+### Why there is no GitHub Release
+
+Releases here are tags, not GitHub Releases. Repository webhook `527149929` is
+a Zenodo receiver subscribed to the `release` event with no tag filter, so
+**any** GitHub Release published from this repository mints a new version of
+the Cytoscape Web software DOI record (10.5281/zenodo.14775458). An api-types
+release is not a release of the application and must not appear in that
+citation record.
+
+The notes live in the annotated tag (`git show api-types-v<version>`), in the
+workflow run's job summary, and in the `CHANGELOG.md` shipped inside the npm
+tarball. If a GitHub Release is ever genuinely required, deactivate hook
+`527149929` first and reactivate it immediately afterwards.
+
+### If something goes wrong
+
 npm versions are immutable. If the published bundle is wrong, prepare and
 release the next version; do not try to overwrite the existing version or move
 its Git tag to different content.
+
+If the publish succeeded but a later step failed, **do not delete or move the
+tag**. Re-run the workflow against the existing tag:
+
+```bash
+gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.4 -f dry_run=false
+```
+
+It compares the registry against the tarball it just built, including the
+provenance commit, and resumes at verification instead of refusing.
 
 ## Documentation
 
