@@ -808,12 +808,12 @@ currently record `1.0.0-beta.3`, so `npm ci` — and a plain `npm install` that
 finds the lockfile satisfying the manifest — keeps resolving beta.3 after
 beta.4 ships. The exposure is narrower than "any install":
 
-| Operation                                                                                 | Resolves to                |
-| ----------------------------------------------------------------------------------------- | -------------------------- |
-| `npm ci`, or `npm install` against the current lockfile                                   | `1.0.0-beta.3` — unchanged |
-| `npm install` with no lockfile (a consumer that never committed one)                      | `1.0.0-beta.4`             |
-| `npm update`, `npm install @cytoscape-web/api-types@latest`, or any lockfile regeneration | `1.0.0-beta.4`             |
-| A new app scaffolded from `create-cytoscape-app`                                          | `1.0.0-beta.4`             |
+| Operation                                                                                 | Resolves to                                                                      |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm ci`, or `npm install` against the current lockfile                                   | `1.0.0-beta.3` — unchanged                                                       |
+| `npm install` with no lockfile (a consumer that never committed one)                      | `1.0.0-beta.4`                                                                   |
+| `npm update`, `npm install @cytoscape-web/api-types@latest`, or any lockfile regeneration | `1.0.0-beta.4`                                                                   |
+| A new app scaffolded from `create-cytoscape-app`                                          | `1.0.0-beta.3` — it pins an **exact** version, deliberately (`scaffold.ts:7-14`) |
 
 So the breakage arrives on the next dependency refresh rather than instantly.
 That is a reprieve, not safety: the change removes `component`,
@@ -823,10 +823,24 @@ renames `additiveUnselect` → `additiveDeselect`, `removeMapping` →
 collection getters — and it will land on whoever next runs `npm update`,
 without them asking for it.
 
-**Prepare the consumer migration before publishing, not after.** Pack a local
-`.tgz` from the release commit, install it into each consumer, and fix the
-fallout while the version number is still changeable. Publishing first turns
-every problem found into a `1.0.0-beta.5`.
+**Rehearse the consumer migration before publishing.** Pack a local `.tgz`
+from the release commit, install it into each consumer, and _measure_ the
+fallout while the version number is still changeable — the point is to learn
+whether beta.4 itself needs to change before it becomes immutable. For beta.4
+the rehearsal (checklist Step 8a) found nothing wrong with the package; what it
+found was that the consumers had not been migrated, which is theirs to fix.
+
+**Decided for beta.4: the downstream fixes land after the publish, not
+before.** The exposure is narrower than "any install breaks": both consumer
+repositories carry lockfiles recording beta.3, so `npm ci` is unaffected, and
+`create-cytoscape-app` pins an exact `1.0.0-beta.3`, so new scaffolds are
+unaffected too. What does pick up beta.4 is `npm update`, an explicit
+`@latest`, or an install with no lockfile — a deliberate refresh rather than
+a routine one. Against that, the migrations are two sibling-repository PRs
+that cannot be CI-verified against the registry until beta.4 exists there.
+Publishing first, then landing them against the real package, was judged the
+better order. If a downstream fix reveals a defect in beta.4 itself, that
+becomes `1.0.0-beta.5`; nothing found so far suggests it will.
 
 Version compatibility beyond types also needs recording. `apiVersion` exists
 but is documented as being for future compatibility checking

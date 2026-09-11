@@ -15,8 +15,8 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 > once `development` has been deployed there, which is done by hand and can lag.
 > Production (web.cytoscape.org) stays on the 1.0.x line until Cytoscape Web
 > 1.1.0. To check a given deployment, open **Help → About**: it shows the
-> build's commit, which you can compare against
-> `git rev-list -n1 api-types-v1.0.0-beta.4`.
+> build's commit as a seven-character prefix (plus a build date). Compare that
+> prefix against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'`.
 
 ### Added
 
@@ -60,10 +60,11 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   property, up to ~60; `style:switched` arrives first and tells one switch
   apart from N property edits.
 - **Dialog API** — `AppContextApis.dialog` (`DialogApi`, `OpenDialogOptions`,
-  `DialogRenderProps`). `apis.dialog.open({ title, render, id?, maxWidth?,
-fullWidth? })` shows a modal whose frame (title bar, Close "X", dismissal
-  policy, error and Suspense boundaries) the host owns and whose body the app
-  renders; `render` receives `close`. `close(dialogId?)` closes one dialog, or
+  `DialogRenderProps`).
+  `apis.dialog.open({ title, render, id?, maxWidth?, fullWidth? })` shows a
+  modal whose frame (title bar, Close "X", dismissal policy, error and Suspense
+  boundaries) the host owns and whose body the app renders; `render` receives
+  `close`. `close(dialogId?)` closes one dialog, or
   the app's most recent one. Per-app: dialogs are closed automatically when
   the app is disabled. The escape hatch for `'apps-menu'` items that need
   custom UI. Not on `window.CyWebApi`.

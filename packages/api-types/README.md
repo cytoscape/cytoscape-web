@@ -66,9 +66,9 @@ like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in Typ
 > [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
 > `development` has been deployed there (done by hand, so it can lag);
 > production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
-> shows a deployment's build commit — compare it against
-> `git rev-list -n1 api-types-v1.0.0-beta.4` to know whether that host has this
-> API.
+> shows a deployment's build commit as a seven-character prefix — compare it
+> against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'` to know whether that
+> host has this API.
 
 `1.0.0-beta.4` is the most breaking prerelease so far. These are the changes
 that stop existing code from compiling or, for callers that reach the API by
@@ -83,9 +83,10 @@ name, from working:
   `'right-panel'` registrations are unchanged.
 - **Selection methods take separate id arrays.** `additiveSelect`,
   `additiveDeselect` and `toggleSelected` are now
-  `(networkId, nodeIds, edgeIds)`. A call that passed one merged `ids` array
-  still type-checks in some shapes but treats every id as a node. Split the
-  array. `additiveUnselect` is renamed `additiveDeselect`.
+  `(networkId, nodeIds, edgeIds)`. An old two-argument call does not silently
+  misbehave — the host spreads the missing `edgeIds`, which throws and comes
+  back as `APP3` `OPERATION_FAILED` (`edgeIds is not iterable`). Split the array
+  into nodes and edges. `additiveUnselect` is renamed `additiveDeselect`.
 - **Renames:** `VisualStyleApi.removeMapping` → `deleteMapping`;
   `TableApi.setColumnName` → `renameColumn`; `WorkspaceApi.getNetworkList` →
   `getNetworks`, which now returns `{ networks }`.
@@ -94,6 +95,11 @@ name, from working:
 - **Collection getters return a named object.** `layout.getAvailableLayouts()`
   → `{ layouts }`; `viewport.getNodePositions()` → `{ positions, missing }`
   and takes an optional `nodeIds`; `element.getEdges()` → `{ edges, missing }`.
+- **`ResourceApi` introspection returns `ApiResult`.** `getSupportedSlots()`,
+  `getRegisteredResources()` and `getResourceVisibility()` used to return raw
+  values; they now return `ApiResult`, with the first two wrapping their values
+  as `{ slots }` and `{ resources }`. A caller treating the result as an array
+  or a visibility object will read `undefined`.
 - **Results carry more:** `deleteNodes` / `deleteEdges` gained `missing`;
   `getConnectedEdges` entries include `id`; `generateNextNodeId` /
   `generateNextEdgeId` return `ApiResult<{ nodeId }>` / `ApiResult<{ edgeId }>`
