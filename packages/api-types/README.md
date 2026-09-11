@@ -380,13 +380,26 @@ step 4 before you tag anything.
    VERSION=1.0.0-beta.4
    SHA=<MERGE_COMMIT_SHA>
    git fetch origin development
-   git show "$SHA:packages/api-types/CHANGELOG.md" > /tmp/changelog-at-tag.md
-   npm run --silent changelog:section -- \
-     --version "$VERSION" --file /tmp/changelog-at-tag.md > /tmp/notes.md
-   test -s /tmp/notes.md
-   git tag -a "api-types-v$VERSION" "$SHA" -F /tmp/notes.md
+   NOTES="$(mktemp)"
+   git show "$SHA:packages/api-types/CHANGELOG.md" \
+     | npm run --silent changelog:section -- \
+         --version "$VERSION" --file /dev/stdin --require-date >| "$NOTES"
+   test -s "$NOTES"
+   git tag -a --cleanup=whitespace "api-types-v$VERSION" "$SHA" -F "$NOTES"
    git push origin "refs/tags/api-types-v$VERSION"
    ```
+
+   Three details in that block were each learned the hard way on the first
+   beta.4 attempt:
+   - **`mktemp`, not a fixed path.** A fixed `/tmp/notes.md` left over from an
+     earlier run passed `test -s` and went into the tag, so the tag carried
+     notes from a commit that was not the one being tagged.
+   - **`>|`, not `>`.** With `noclobber` set, `>` refuses to overwrite and the
+     shell moves on; `>|` forces the write in both bash and zsh.
+   - **`--cleanup=whitespace`.** `git tag -F` strips lines starting with `#` as
+     comments by default, which deletes every Markdown heading from the notes.
+     Verify with `git tag -l --format='%(contents)' api-types-v$VERSION` before
+     pushing; it should show `### Added` and friends.
 
 5. **The workflow publishes.** The tag push starts it; nothing else is needed.
    It re-checks the tag against `package.json`, the lockfile, the changelog

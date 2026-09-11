@@ -483,6 +483,33 @@ the only signal.
 
 - [ ] `gh run watch` — the tag push fires the workflow automatically and publishes with `--tag latest`
 
+#### What happened on the first attempt (recorded, not a step)
+
+The first tag push (run 34657565585, tag on `f62224c6`) stopped at
+**Guard — the tag is annotated** with nothing published — the guard ran before
+the build, as designed. The guard was wrong, not the tag: `actions/checkout`
+re-fetches the tag being built as `+<sha>:refs/tags/<name>`, which rewrites the
+local ref to point straight at the commit, so inside the job every tag reads as
+lightweight. The guard now asks the remote via `git ls-remote`, where an
+annotated tag lists a peeled `<name>^{}` line, and additionally checks that the
+peeled commit is the one being built.
+
+Because `workflow_dispatch` runs the workflow file **at the ref it is given**,
+re-running against the existing tag would have used the broken guard again. The
+fix therefore went through a PR to `development`, the unpublished tag was
+deleted from the remote, and the release was re-tagged on the fix's merge
+commit. Nothing about the package changed between the two commits.
+
+Two further problems surfaced while creating the tag locally, both before any
+push: a leftover `/tmp/notes.md` from an earlier extraction passed `test -s`
+and would have shipped stale notes (fixed by `mktemp` + `>|`), and
+`git tag -F` stripped every `### ` heading as a comment (fixed by
+`--cleanup=whitespace`). The runbook's tag command carries all three fixes.
+
+The tag-path guards had never run before this: a branch rehearsal skips them
+by design. That is a real gap in what Step 5 can prove, and it is why the
+publish path is ordered so that every guard fails before any upload.
+
 ### 7c — Verify the release
 
 - [ ] Job summary reports the expected version, shasum, integrity and provenance URL

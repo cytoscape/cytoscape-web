@@ -196,16 +196,30 @@ jobs:
       # one of the three places they exist, since no GitHub Release is created.
       # A lightweight tag has no message at all, and would pass every other
       # guard here while silently losing them.
+      #
+      # Ask the REMOTE, not the checkout. actions/checkout fetches every tag and
+      # then re-fetches the one being built as `+<sha>:refs/tags/<name>`, which
+      # rewrites the local ref to point straight at the commit — so inside the
+      # job every tag looks lightweight and `git cat-file -t "$GITHUB_REF"`
+      # answers `commit` for a perfectly good annotated tag. The first real
+      # publish of this workflow stopped here for exactly that reason. On the
+      # remote an annotated tag lists twice: the tag object, and a peeled
+      # `<name>^{}` line naming the commit it points at.
       - name: Guard — the tag is annotated
         if: github.ref_type == 'tag'
         run: |
           set -euo pipefail
-          KIND="$(git cat-file -t "$GITHUB_REF")"
-          if [ "$KIND" != 'tag' ]; then
-            echo "::error::${GITHUB_REF_NAME} is a lightweight tag (${KIND}), so it carries no release notes. Re-create it with 'git tag -a ... -F notes.md'."
+          LISTING="$(git ls-remote --tags origin "refs/tags/${GITHUB_REF_NAME}*")"
+          PEELED="$(printf '%s\n' "$LISTING" | awk -v ref="refs/tags/${GITHUB_REF_NAME}^{}" '$2 == ref { print $1 }')"
+          if [ -z "$PEELED" ]; then
+            echo "::error::${GITHUB_REF_NAME} is a lightweight tag on the remote, so it carries no release notes. Re-create it with 'git tag -a --cleanup=whitespace ... -F notes.md'."
             exit 1
           fi
-          echo "  ${GITHUB_REF_NAME} is annotated"
+          if [ "$PEELED" != "$GITHUB_SHA" ]; then
+            echo "::error::${GITHUB_REF_NAME} on the remote points at ${PEELED}, but this run is building ${GITHUB_SHA}."
+            exit 1
+          fi
+          echo "  ${GITHUB_REF_NAME} is annotated and points at ${GITHUB_SHA}"
 
       - name: Guard — lockfile agrees with package.json
         run: |
