@@ -2,24 +2,21 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
-## 1.0.0-beta.4 (unpublished)
+## 1.0.0-beta.4 (2026-09-11)
 
-### Changed
-
-- **BREAKING — `'apps-menu'` entries are plain data, not components.**
-  `RegisterMenuItemOptions` lost `component`, `closeOnAction`, `errorFallback`
-  and `title`; it now takes `label` (required), `tooltip`, `icon` (an image
-  URI — http(s), `data:image`, or a root-relative host asset path, exactly as
-  for a `'search-bar'` provider; never a component — an SVG is painted by the
-  host in the row's text color, a raster image shown as-is), `onClick(apis)` and
-  `isEnabled(apis)`, alongside the unchanged `order`/`group`/`requires`. The
-  host renders every entry itself as a standard menu row, so no app can change
-  the shared dropdown's size, font or colors. `MenuItemHostProps` is gone with
-  the component it described. Registering with a `component` now fails with
-  `APP9` and a migration message. Move an old component's action into
-  `onClick`; move its form or other UI into `apis.dialog.open({ render })` (or
-  a `'modal-launcher'` registration) called from `onClick`. `'right-panel'`
-  registrations are unchanged.
+> **Host compatibility.** This release documents the App API as implemented by
+> the Cytoscape Web build tagged `api-types-v1.0.0-beta.4` on the `development`
+> branch. **No released version of Cytoscape Web implements it yet** — the
+> Dialog API, `applyVisualStyle` / `getVisualStyle`, `getStyles` / `switchStyle`,
+> and the `'modal-launcher'` and `'search-bar'` slots exist on `development`
+> only, so an app can compile against methods a deployed host does not have.
+>
+> Where it runs: [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape)
+> once `development` has been deployed there, which is done by hand and can lag.
+> Production (web.cytoscape.org) stays on the 1.0.x line until Cytoscape Web
+> 1.1.0. To check a given deployment, open **Help → About**: it shows the
+> build's commit as a seven-character prefix (plus a build date). Compare that
+> prefix against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'`.
 
 ### Added
 
@@ -63,10 +60,11 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   property, up to ~60; `style:switched` arrives first and tells one switch
   apart from N property edits.
 - **Dialog API** — `AppContextApis.dialog` (`DialogApi`, `OpenDialogOptions`,
-  `DialogRenderProps`). `apis.dialog.open({ title, render, id?, maxWidth?,
-  fullWidth? })` shows a modal whose frame (title bar, Close "X", dismissal
-  policy, error and Suspense boundaries) the host owns and whose body the app
-  renders; `render` receives `close`. `close(dialogId?)` closes one dialog, or
+  `DialogRenderProps`).
+  `apis.dialog.open({ title, render, id?, maxWidth?, fullWidth? })` shows a
+  modal whose frame (title bar, Close "X", dismissal policy, error and Suspense
+  boundaries) the host owns and whose body the app renders; `render` receives
+  `close`. `close(dialogId?)` closes one dialog, or
   the app's most recent one. Per-app: dialogs are closed automatically when
   the app is disabled. The escape hatch for `'apps-menu'` items that need
   custom UI. Not on `window.CyWebApi`.
@@ -132,6 +130,21 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Changed — BREAKING
 
+- **BREAKING — `'apps-menu'` entries are plain data, not components.**
+  `RegisterMenuItemOptions` lost `component`, `closeOnAction`, `errorFallback`
+  and `title`; it now takes `label` (required), `tooltip`, `icon` (an image
+  URI — http(s), `data:image`, or a root-relative host asset path, exactly as
+  for a `'search-bar'` provider; never a component — an SVG is painted by the
+  host in the row's text color, a raster image shown as-is), `onClick(apis)` and
+  `isEnabled(apis)`, alongside the unchanged `order`/`group`/`requires`. The
+  host renders every entry itself as a standard menu row, so no app can change
+  the shared dropdown's size, font or colors. `MenuItemHostProps` is gone with
+  the component it described. Registering with a `component` now fails with
+  `APP9` and a migration message. Move an old component's action into
+  `onClick`; move its form or other UI into `apis.dialog.open({ render })` (or
+  a `'modal-launcher'` registration) called from `onClick`. `'right-panel'`
+  registrations are unchanged.
+
 - `SelectionApi.additiveSelect` / `additiveDeselect` / `toggleSelected` now
   take `(networkId, nodeIds, edgeIds)` — separate arrays — instead of a
   single merged `ids` array. `additiveUnselect` is renamed
@@ -166,7 +179,6 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   longer remove another app's item by guessing its id.
 - `useCyWebEvent` no longer re-registers its window listener when a fresh
   inline handler is passed each render (handler held in a ref).
-
 - Create-time `options.bypass` on `createNode` / `createEdge` is now
   validated (property existence, node/edge scope, value type) before the
   element is created.

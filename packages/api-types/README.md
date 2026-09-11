@@ -58,6 +58,68 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 Ambient module declarations for all `cyweb/*` Module Federation remotes are also bundled, so imports
 like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in TypeScript.
 
+## `1.0.0-beta.4` migration notes
+
+> **Host compatibility.** `1.0.0-beta.4` documents the App API as implemented
+> by the Cytoscape Web build tagged `api-types-v1.0.0-beta.4` on `development`.
+> **No released version of Cytoscape Web implements it yet.** It runs on
+> [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
+> `development` has been deployed there (done by hand, so it can lag);
+> production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
+> shows a deployment's build commit as a seven-character prefix — compare it
+> against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'` to know whether that
+> host has this API.
+
+`1.0.0-beta.4` is the most breaking prerelease so far. These are the changes
+that stop existing code from compiling or, for callers that reach the API by
+name, from working:
+
+- **`'apps-menu'` entries are plain data, not components.** `component`,
+  `closeOnAction`, `errorFallback` and `title` are gone from
+  `RegisterMenuItemOptions`; register with `label`, `onClick(apis)`, and
+  optionally `tooltip`, `icon` and `isEnabled(apis)`. Passing a `component`
+  fails with `APP9`. Move the old component's action into `onClick`; move any
+  form or other UI into `apis.dialog.open({ title, render })` called from it.
+  `'right-panel'` registrations are unchanged.
+- **Selection methods take separate id arrays.** `additiveSelect`,
+  `additiveDeselect` and `toggleSelected` are now
+  `(networkId, nodeIds, edgeIds)`. An old two-argument call does not silently
+  misbehave — the host spreads the missing `edgeIds`, which throws and comes
+  back as `APP3` `OPERATION_FAILED` (`edgeIds is not iterable`). Split the array
+  into nodes and edges. `additiveUnselect` is renamed `additiveDeselect`.
+- **Renames:** `VisualStyleApi.removeMapping` → `deleteMapping`;
+  `TableApi.setColumnName` → `renameColumn`; `WorkspaceApi.getNetworkList` →
+  `getNetworks`, which now returns `{ networks }`.
+- **`createContinuousMapping(networkId, vpName, options)`** replaces the
+  nine-argument positional form. See `CreateContinuousMappingOptions`.
+- **Collection getters return a named object.** `layout.getAvailableLayouts()`
+  → `{ layouts }`; `viewport.getNodePositions()` → `{ positions, missing }`
+  and takes an optional `nodeIds`; `element.getEdges()` → `{ edges, missing }`.
+- **`ResourceApi` introspection returns `ApiResult`.** `getSupportedSlots()`,
+  `getRegisteredResources()` and `getResourceVisibility()` used to return raw
+  values; they now return `ApiResult`, with the first two wrapping their values
+  as `{ slots }` and `{ resources }`. A caller treating the result as an array
+  or a visibility object will read `undefined`.
+- **Results carry more:** `deleteNodes` / `deleteEdges` gained `missing`;
+  `getConnectedEdges` entries include `id`; `generateNextNodeId` /
+  `generateNextEdgeId` return `ApiResult<{ nodeId }>` / `ApiResult<{ edgeId }>`
+  rather than a bare string.
+- `createNetworkFromEdgeList` / `createNetworkFromNodeList` now default
+  `addToWorkspace` to `true`.
+- `@types/react` is now a declared peer dependency (`^18 || ^19`). npm installs
+  it; nothing is required of you.
+
+**If you call the API by method name** — a bridge, an MCP server, anything that
+dispatches `window.CyWebApi` through a string path — TypeScript will not catch
+the renames or the signature changes above. Cross-check every method string
+against this list before upgrading.
+
+See the bundled [CHANGELOG](./CHANGELOG.md) for everything added in beta.4 —
+the Dialog API, whole-style `applyVisualStyle` / `getVisualStyle`, named-style
+`getStyles` / `switchStyle`, the `'modal-launcher'` and `'search-bar'` slots,
+`whenReady()`, `forNetwork()`, batch element creation, and the Visual Style
+read API.
+
 ## `1.0.0-beta.3` migration notes
 
 `1.0.0-beta.3` contains a breaking error-model migration and several additive API changes:
