@@ -162,6 +162,28 @@ jobs:
           fi
           echo "  ${GITHUB_REF_NAME} matches ${{ steps.params.outputs.version }}"
 
+      # The tag-name guard above only checks spelling. ci.yml runs on master as
+      # well as development, so a tag placed on a master-only commit can carry
+      # all four required check names and satisfy every other guard — while
+      # master is, at the time of writing, 891 commits behind. Publishing from
+      # there would ship stale declarations under a new version number, which is
+      # the same class of mistake this whole workflow exists to prevent.
+      #
+      # Warns rather than fails under dry_run so a rehearsal from a feature
+      # branch still exercises the rest of the run.
+      - name: Guard — the commit is on development
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin development
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/development; then
+            echo "  ${GITHUB_SHA} is reachable from origin/development"
+          elif [ "${{ steps.params.outputs.dry_run }}" = 'true' ]; then
+            echo "::warning::${GITHUB_SHA} is not on origin/development (dry run — continuing)"
+          else
+            echo "::error::${GITHUB_SHA} is not reachable from origin/development. api-types is released from development; tag the merge commit there."
+            exit 1
+          fi
+
       - name: Guard — lockfile agrees with package.json
         run: |
           set -euo pipefail

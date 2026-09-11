@@ -17,10 +17,13 @@
 // registry.
 
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const DECIDE = resolve(__dirname, '../../../scripts/decide-registry-action.mjs')
+const CHECKS = resolve(__dirname, '../../../scripts/check-required-checks.mjs')
 
 interface RunResult {
   status: number
@@ -28,11 +31,16 @@ interface RunResult {
   stderr: string
 }
 
-const run = (script: string, args: string[]): RunResult => {
+const run = (
+  script: string,
+  args: string[],
+  env: NodeJS.ProcessEnv = {},
+): RunResult => {
   try {
     const stdout = execFileSync(process.execPath, [script, ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, ...env },
     })
     return { status: 0, stdout, stderr: '' }
   } catch (error: any) {
@@ -43,6 +51,50 @@ const run = (script: string, args: string[]): RunResult => {
     }
   }
 }
+
+/**
+ * A stand-in for the `gh` CLI that prints canned check-run lines.
+ *
+ * check-required-checks.mjs is the gate that decides whether a commit's CI
+ * actually passed, and it was the one piece here with no coverage — which is
+ * how it shipped reading the OLDEST run of each name. Faking the binary keeps
+ * the real argv path under test; a --runs-file flag would not.
+ */
+const withFakeGh = (
+  runs: CheckRun[],
+  body: (env: NodeJS.ProcessEnv) => void,
+): void => {
+  const dir = mkdtempSync(join(tmpdir(), 'fake-gh-'))
+  const bin = join(dir, 'gh')
+  const payload = runs.map((run) => JSON.stringify(run)).join('\n')
+  writeFileSync(
+    bin,
+    `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(payload ? `${payload}\n` : '')})\n`,
+  )
+  chmodSync(bin, 0o755)
+  try {
+    body({ CYWEB_GH_CLI: bin })
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+const REQUIRED = ['Lint', 'Build', 'Unit Tests', 'API Types Package']
+interface CheckRun {
+  name: string
+  status: string
+  conclusion: string | null
+  started_at: string
+  id: number
+}
+
+const passing = (name: string, startedAt: string, id: number): CheckRun => ({
+  name,
+  status: 'completed',
+  conclusion: 'success',
+  started_at: startedAt,
+  id,
+})
 
 // Opt in with CYWEB_REGISTRY_TESTS=1. See the header for why these are off by
 // default.
@@ -220,4 +272,91 @@ describe('decide-registry-action', () => {
     },
     NETWORK_TIMEOUT,
   )
+})
+
+describe('check-required-checks', () => {
+  const allGreen = REQUIRED.map((name, i) =>
+    passing(name, '2026-09-10T01:00:00Z', 100 + i),
+  )
+
+  it('passes when every required check succeeded', () => {
+    withFakeGh(allGreen, (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(0)
+      expect(result.stdout).toContain('all 4 required checks passed')
+    })
+  })
+
+  it('fails and names a check that never ran', () => {
+    withFakeGh(allGreen.slice(0, 3), (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain(
+        'API Types Package: no run for this commit',
+      )
+      expect(result.stderr).toContain('never reached development')
+    })
+  })
+
+  it('fails on a failed check', () => {
+    const runs = [...allGreen]
+    runs[0] = { ...runs[0], conclusion: 'failure' }
+    withFakeGh(runs, (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('Lint: failure')
+    })
+  })
+
+  it('fails on a check still in progress rather than waiting', () => {
+    const runs = [...allGreen]
+    runs[1] = { ...runs[1], status: 'in_progress', conclusion: null }
+    withFakeGh(runs, (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('still in_progress')
+      expect(result.stderr).toContain('once CI finishes')
+    })
+  })
+
+  it('reads the NEWEST run when a check was re-run', () => {
+    // The API returns runs newest-first — measured on this repository. Reading
+    // the other end blocks a release that a re-run has already fixed, which is
+    // exactly what the first version of the script did.
+    const rerun = [
+      passing('Lint', '2026-09-10T02:00:00Z', 200), // newer, green
+      {
+        name: 'Lint',
+        status: 'completed',
+        conclusion: 'failure',
+        started_at: '2026-09-10T01:00:00Z',
+        id: 100,
+      },
+      ...allGreen.slice(1),
+    ]
+    withFakeGh(rerun, (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(0)
+    })
+  })
+
+  it('does not trust array position — an out-of-order payload still works', () => {
+    // Same data, oldest first. Sorting on started_at must make this identical
+    // to the case above.
+    const rerun = [
+      {
+        name: 'Lint',
+        status: 'completed',
+        conclusion: 'failure',
+        started_at: '2026-09-10T01:00:00Z',
+        id: 100,
+      },
+      passing('Lint', '2026-09-10T02:00:00Z', 200),
+      ...allGreen.slice(1),
+    ]
+    withFakeGh(rerun, (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(0)
+    })
+  })
 })

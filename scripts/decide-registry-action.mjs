@@ -121,21 +121,51 @@ const readProvenance = async (manifest) => {
   return null
 }
 
-/** Refuse to move a dist-tag backwards onto an older release. */
+/**
+ * Refuse to move a dist-tag backwards onto an older release.
+ *
+ * Fails CLOSED, for the same reason readVersion does: an auth error, a
+ * registry outage or a timeout also exit non-zero, and swallowing those would
+ * treat "cannot tell" as "the tag does not exist". If the exact-version lookup
+ * then succeeded after a transient failure, this guard would wave through
+ * exactly the rollback it exists to prevent.
+ */
 const checkDistTag = (pkg, distTag, version) => {
   let current
   try {
-    current = execFileSync('npm', ['view', `${pkg}@${distTag}`, 'version'], {
+    // `version --json` and not a bare `--json`: without the field, npm returns
+    // the whole manifest and the parsed result is an object, which silently
+    // skipped this guard when it was first written.
+    current = execFileSync('npm', ['view', `${pkg}@${distTag}`, 'version', '--json'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
-      .toString()
-      .trim()
-  } catch {
-    // The tag does not exist yet. Publishing is what creates it.
-    return
+  } catch (error) {
+    const raw = error.stdout ?? ''
+    let parsed
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      fail(
+        'could not read the current dist-tag, and the failure produced no JSON\n' +
+          `  ${(error.stderr ?? error.message).toString().trim().split('\n')[0]}\n` +
+          '  Treating this as "the tag does not exist" could roll the tag backwards.',
+      )
+    }
+    if (parsed?.error?.code === 'E404') {
+      // The tag genuinely does not exist yet. Publishing is what creates it.
+      console.log(`  dist-tag ${distTag} does not exist yet`)
+      return
+    }
+    fail(
+      `could not read the current dist-tag: ${parsed?.error?.code ?? 'unknown error'}\n` +
+        `  ${parsed?.error?.summary ?? ''}\n` +
+        '  Only a 404 means the tag is unset. Fix the registry access and re-run.',
+    )
   }
-  if (current === '' || current === version) return
+
+  current = JSON.parse(current)
+  if (typeof current !== 'string' || current === '' || current === version) return
 
   if (
     semver.valid(current) &&

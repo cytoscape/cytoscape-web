@@ -15,6 +15,13 @@
 //     "no required check" against a perfectly green run.
 //   - Missing and in_progress are both failures. A tag on a commit that never
 //     reached development is exactly what "missing" looks like.
+//   - A re-run APPENDS a check run with the same name, so "which one counts"
+//     has to be decided explicitly. The API returns runs newest-first —
+//     measured on this repository, where a re-triggered reviewer check came
+//     back at index 0 and its older completed run at index 1 — but relying on
+//     an undocumented order is how the first version of this file read the
+//     OLDEST run and would have blocked a release that a re-run had already
+//     fixed. Sort on started_at instead.
 //
 // Needs `checks: read` in the workflow's permissions block: a permissions block
 // sets every unlisted scope to none.
@@ -43,16 +50,20 @@ const parseArgs = (argv) => {
   return options
 }
 
+// Overridable so tests can stand in a fake. The real gate is exercised only on
+// a live run, and a release-critical guard should not be first exercised there.
+const GH = process.env.CYWEB_GH_CLI ?? 'gh'
+
 const fetchCheckRuns = (repo, sha) => {
   // gh paginates; 100 per page is plenty for this repo's job count.
   const raw = execFileSync(
-    'gh',
+    GH,
     [
       'api',
       '--paginate',
       `repos/${repo}/commits/${sha}/check-runs?per_page=100`,
       '--jq',
-      '.check_runs[] | {name, status, conclusion}',
+      '.check_runs[] | {name, status, conclusion, started_at, id}',
     ],
     { encoding: 'utf8' },
   )
@@ -74,13 +85,21 @@ const main = () => {
 
   const problems = []
   for (const name of REQUIRED) {
-    // Latest run wins: a re-run appends rather than replacing.
-    const matching = runs.filter((run) => run.name === name)
+    // The newest run wins, chosen explicitly rather than by array position:
+    // a re-run appends, and reading the wrong end blocks a release that a
+    // re-run already fixed.
+    const matching = runs
+      .filter((run) => run.name === name)
+      .sort((a, b) => {
+        const byTime =
+          Date.parse(b.started_at ?? 0) - Date.parse(a.started_at ?? 0)
+        return byTime !== 0 ? byTime : (b.id ?? 0) - (a.id ?? 0)
+      })
     if (matching.length === 0) {
       problems.push(`${name}: no run for this commit`)
       continue
     }
-    const latest = matching[matching.length - 1]
+    const latest = matching[0]
     if (latest.status !== 'completed') {
       problems.push(
         `${name}: still ${latest.status} — re-run this release once CI finishes`,
