@@ -305,25 +305,39 @@ workflow will fail to publish until this is done.
 
 ### 4a — Configure the trusted publisher
 
-- [ ] Sign in to npmjs.com and open `https://www.npmjs.com/package/@cytoscape-web/api-types/access`
-- [ ] In **Trusted Publisher**, choose **Connect to a trusted publisher** → **GitHub Actions**
-- [ ] Organization or user: `cytoscape`
-- [ ] Repository: `cytoscape-web`
-- [ ] Workflow filename: `release-api-types.yml` — must match Step 2a exactly
-- [ ] Environment name: **leave blank** (only fill this in if the workflow later adopts `environment:`; the two must agree or the OIDC subject will not match)
-- [ ] **Allowed actions: tick `npm publish`.** Configurations created after 2026-09-03 default to `npm stage publish` only, so accepting the default would make Step 2c's `npm publish` fail. (Configurations created before 2026-05-20 allowed `npm publish` outright, and those before 2026-09-03 forced an explicit choice — this one falls after both dates.) If the team prefers the two-phase flow instead, change the workflow to `npm stage publish` rather than leaving the mismatch
-- [ ] Save
+- [x] Sign in to npmjs.com and open `https://www.npmjs.com/package/@cytoscape-web/api-types/access`
+- [x] In **Trusted Publisher**, choose **Connect to a trusted publisher** → **GitHub Actions**
+- [x] Organization or user: `cytoscape`
+- [x] Repository: `cytoscape-web`
+- [x] Workflow filename: `release-api-types.yml` — must match Step 2a exactly
+- [x] Environment name: **leave blank** (only fill this in if the workflow later adopts `environment:`; the two must agree or the OIDC subject will not match)
+- [x] **Allowed actions: tick `npm publish`.** Confirmed present — `npm trust list` reports `permissions: publish, stage publish`. Configurations created after 2026-09-03 default to `npm stage publish` only, so accepting the default would make Step 2c's `npm publish` fail. (Configurations created before 2026-05-20 allowed `npm publish` outright, and those before 2026-09-03 forced an explicit choice — this one falls after both dates.) If the team prefers the two-phase flow instead, change the workflow to `npm stage publish` rather than leaving the mismatch
+- [x] Save
 
 ### 4b — Confirm nothing else blocks the publish
 
-- [ ] Check **Publishing access** on the same page; leave it as it is — trusted publishing works under either 2FA setting
-- [ ] Confirm the `@cytoscape-web` scope does not force a different registry or restrict publishing to a team that excludes the OIDC identity
-- [ ] Confirm no GitHub organization ruleset restricts pushing tags matching `api-types-v*` for the releaser
+- [x] Check **Publishing access** on the same page; leave it as it is — trusted publishing works under either 2FA setting
+- [x] Confirm the `@cytoscape-web` scope does not force a different registry or restrict publishing to a team that excludes the OIDC identity
+- [x] Confirm no GitHub organization ruleset restricts pushing tags matching `api-types-v*` for the releaser
 
 #### Verification (Step 4)
 
-- [ ] The package's npm settings page lists a GitHub Actions trusted publisher for `cytoscape/cytoscape-web` / `release-api-types.yml`
-- [ ] `gh secret list` still returns empty — no npm credential was introduced
+- [x] The package's npm settings page lists a GitHub Actions trusted publisher for `cytoscape/cytoscape-web` / `release-api-types.yml`
+- [x] Easier than the settings page: **`npm trust list @cytoscape-web/api-types`** prints the configuration directly. It is an account-changing operation, so it prompts for 2FA through the browser. Confirmed 2026-09-10:
+
+  ```
+  type: github
+  file: release-api-types.yml
+  repository: cytoscape/cytoscape-web
+  permissions: publish, stage publish
+  ```
+
+  Cross-checked against the repository: the workflow file exists under that
+  exact name, the remote matches, and no environment is set on either side —
+  which matters, because an environment configured on one side only makes the
+  OIDC subject fail to match.
+
+- [x] `gh secret list` still returns empty — no npm credential was introduced
 
 ---
 
