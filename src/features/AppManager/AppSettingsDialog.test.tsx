@@ -33,8 +33,10 @@ const { isAllowedOrigin, validateManifestUrl } = await import(
 
 const DEV1 = 'https://dev1.ndexbio.org'
 
+const installApp = vi.fn(async () => undefined)
+
 const commands = {
-  installApp: vi.fn(async () => undefined),
+  installApp,
   uninstallApp: vi.fn(async () => undefined),
   activateApp: vi.fn(async () => undefined),
   deactivateApp: vi.fn(async () => undefined),
@@ -87,6 +89,33 @@ describe('AppSettingsDialog — localhost opt-in wiring', () => {
         DEV1,
       ),
     )
+  })
+
+  // Pasting the remoteEntry.js URL where the manifest URL belongs is the
+  // common mistake, and it used to surface a raw SyntaxError (#719).
+  it('names the mistake when the URL returns something other than JSON', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => {
+          throw new SyntaxError('Unexpected token < in JSON at position 0')
+        },
+      })),
+    )
+    renderDialog()
+
+    fireEvent.change(screen.getByTestId('install-from-url-input'), {
+      target: { value: 'http://localhost:6000/remoteEntry.js' },
+    })
+    fireEvent.click(screen.getByTestId('install-from-url-button'))
+
+    expect(
+      await screen.findByText(
+        'That URL did not return JSON. Enter the app manifest URL, not the remoteEntry.js URL.',
+      ),
+    ).toBeTruthy()
+    expect(installApp).not.toHaveBeenCalled()
   })
 
   // The Manifest Source field is a protocol check with its own localhost test,

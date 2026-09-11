@@ -137,6 +137,10 @@ export interface AppAction {
    * When `sources` is omitted, every entry defaults to `'manifest'`.
    * When `manifestIds` is omitted, it falls back to the entries whose
    * resolved source is `'manifest'`.
+   *
+   * Drops any `'failed'` state whose recorded failure names a URL the new
+   * entry no longer uses — a refreshed manifest that fixes the bundle URL
+   * must not leave the row without a control (#719).
    */
   setCatalog: (
     entries: AppCatalogEntry[],

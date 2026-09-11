@@ -16,6 +16,7 @@ import {
   restore,
   setCatalog,
   setCurrentTask,
+  setLoadFailed,
   setStatus,
   updateInputColumn,
   updateServiceParameter,
@@ -479,6 +480,63 @@ describe('AppStoreImpl', () => {
       const second = setCatalog(first, [catalogEntry('b')], undefined, ['b'])
       expect(Object.keys(second.catalog)).toEqual(['b'])
       expect(second.manifestIds).toEqual(['b'])
+    })
+
+    // A non-retryable failure leaves the row with no control at all, so a
+    // manifest refresh that corrects the URL has to retire it (#719).
+    it('drops a failure recorded against a URL the new entry replaced', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        {
+          code: 'id-mismatch',
+          url: catalogEntry('a').url,
+          expected: 'a',
+          received: 'A',
+        },
+      )
+
+      const refreshed = setCatalog(failed, [
+        { ...catalogEntry('a'), url: 'https://apps.example.org/a/entry.js' },
+      ])
+
+      expect(refreshed.loadErrors.a).toBeUndefined()
+      expect(refreshed.loadStates.a).toBeUndefined()
+    })
+
+    it('keeps the failure when the entry URL is unchanged', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'no-app-config', url: catalogEntry('a').url },
+      )
+
+      const refreshed = setCatalog(failed, [catalogEntry('a')])
+
+      expect(refreshed.loadErrors.a).toEqual({
+        code: 'no-app-config',
+        url: catalogEntry('a').url,
+      })
+      expect(refreshed.loadStates.a).toBe('failed')
+    })
+
+    // mount-failed names no URL, and it already keeps its Retry control.
+    it('keeps a mount failure across a catalog replacement', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'mount-failed', message: 'boom' },
+      )
+
+      const refreshed = setCatalog(failed, [
+        { ...catalogEntry('a'), url: 'https://apps.example.org/a/entry.js' },
+      ])
+
+      expect(refreshed.loadErrors.a).toEqual({
+        code: 'mount-failed',
+        message: 'boom',
+      })
+      expect(refreshed.loadStates.a).toBe('failed')
     })
   })
 })

@@ -6,8 +6,8 @@
  * id. Each variant carries the identifiers the user needs to act — the URL
  * that was fetched, the two ids that disagreed — so the store holds no
  * user-facing English and the UI can branch on `code` instead of matching a
- * sentence. `appLoadFailureMessage` in the AppManager feature turns a failure
- * into text.
+ * sentence. `appLoadFailureMessage` (`impl/appLoadFailureMessage.ts`) turns a
+ * failure into text.
  */
 export type AppLoadFailure =
   /** The catalog URL is not from an origin `appInstallAllowedOrigins` permits. */

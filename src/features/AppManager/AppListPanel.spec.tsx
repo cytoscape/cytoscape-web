@@ -260,4 +260,45 @@ describe('AppListPanel — load failure reasons', () => {
 
     expect(screen.queryByTestId('app-failure-hello')).toBeNull()
   })
+
+  // Four of the five codes leave the row with no control, so a refreshed
+  // manifest that corrects the bundle URL has to retire the failure — or the
+  // row stays dead for the rest of the session.
+  it('restores the control when a refreshed manifest changes the URL', () => {
+    useAppStore
+      .getState()
+      .setCatalog([entry('chrisapp')], undefined, ['chrisapp'])
+    useAppStore.setState({
+      apps: {},
+      loadStates: { chrisapp: 'failed' },
+      loadErrors: {
+        chrisapp: {
+          code: 'id-mismatch',
+          url: entry('chrisapp').url,
+          expected: 'chrisapp',
+          received: 'chrisApp',
+        },
+      },
+    })
+
+    useAppStore.getState().setCatalog(
+      [
+        {
+          ...entry('chrisapp'),
+          url: 'https://apps.cytoscape.org/web/chrisapp/0.3.0/remoteEntry.js',
+        },
+      ],
+      undefined,
+      ['chrisapp'],
+    )
+
+    render(
+      <AppManagerCommandsProvider value={commands()}>
+        <AppListPanel />
+      </AppManagerCommandsProvider>,
+    )
+
+    expect(screen.queryByTestId('app-failure-chrisapp')).toBeNull()
+    expect(screen.getByTestId('app-toggle-chrisapp')).toBeTruthy()
+  })
 })

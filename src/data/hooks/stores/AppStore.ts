@@ -294,6 +294,10 @@ export const useAppStore = create(
         state.catalog = newState.catalog
         state.catalogSources = newState.catalogSources
         state.manifestIds = newState.manifestIds
+        // A corrected bundle URL retires the failure recorded against the old
+        // one, so the row gets its Enable control back (#719).
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
         return state
       })
     },
