@@ -520,6 +520,24 @@ describe('AppStoreImpl', () => {
       expect(refreshed.loadStates.a).toBe('failed')
     })
 
+    // A failure kept past a removal is invisible — the orphan row skips failed
+    // ids — until the manifest ships the app again, and then it resurrects on
+    // a row that has no control.
+    it('drops a failure when the catalog no longer carries the entry', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'no-app-config', url: catalogEntry('a').url },
+      )
+
+      const removed = setCatalog(failed, [catalogEntry('b')])
+      expect(removed.loadErrors.a).toBeUndefined()
+      expect(removed.loadStates.a).toBeUndefined()
+
+      const restored = setCatalog(removed, [catalogEntry('a')])
+      expect(restored.loadStates.a).toBeUndefined()
+    })
+
     // mount-failed names no URL, and it already keeps its Retry control.
     it('keeps a mount failure across a catalog replacement', () => {
       const failed = setLoadFailed(

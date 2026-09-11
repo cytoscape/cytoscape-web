@@ -341,13 +341,14 @@ export const updateInputColumn = (
  * source tag on a collision (composeCatalog §8.1). When omitted it falls back
  * to the entries whose resolved source is `'manifest'`.
  *
- * A failure recorded against a URL the new entry no longer uses is dropped,
- * along with its `'failed'` load state. Four of the five codes are not
- * retryable, so the App Manager offers no control on such a row (#719); if a
- * refreshed manifest fixes the bundle URL the row would otherwise stay dead
- * for the session, even though `ensureRemoteRegistered` re-registers a scope
- * whose URL changed. `mount-failed` carries no URL and is retryable, so it is
- * left alone.
+ * A failure survives only while the new catalog still carries its id at the
+ * same URL; a changed URL and a dropped entry both retire it, along with its
+ * `'failed'` load state. Four of the five codes are not retryable, so the App
+ * Manager offers no control on such a row (#719): a refreshed manifest that
+ * fixes the bundle URL would otherwise leave the row dead for the session,
+ * even though `ensureRemoteRegistered` re-registers a scope whose URL changed,
+ * and a failure kept past a removal would resurrect on the id's return.
+ * `mount-failed` carries no URL and is retryable, so it is left alone.
  */
 export const setCatalog = (
   state: AppState,
@@ -367,8 +368,7 @@ export const setCatalog = (
   for (const [id, failure] of Object.entries(state.loadErrors)) {
     const failedUrl = 'url' in failure ? failure.url : undefined
     if (failedUrl === undefined) continue
-    const entry = catalog[id]
-    if (entry === undefined || entry.url === failedUrl) continue
+    if (catalog[id]?.url === failedUrl) continue
     delete loadErrors[id]
     delete loadStates[id]
   }
