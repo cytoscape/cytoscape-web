@@ -51,14 +51,14 @@ _Design: §Target design → Package metadata_
 
 ### 0a — Required publish metadata
 
-- [ ] Add `repository` with `"type": "git"`, `"url": "git+https://github.com/cytoscape/cytoscape-web.git"`, and `"directory": "packages/api-types"` — write the canonical `git+https://` form; provenance validates this URL against the repository that ran the workflow
-- [ ] Add `"publishConfig": { "access": "public" }` — scoped packages default to `restricted`; encoding it here means `--access public` cannot be forgotten
+- [x] Add `repository` with `"type": "git"`, `"url": "git+https://github.com/cytoscape/cytoscape-web.git"`, and `"directory": "packages/api-types"` — write the canonical `git+https://` form; provenance validates this URL against the repository that ran the workflow
+- [x] Add `"publishConfig": { "access": "public" }` — scoped packages default to `restricted`; encoding it here means `--access public` cannot be forgotten
 
 ### 0b — Descriptive metadata
 
-- [ ] `author`: copy from the root `package.json` — `{ "name": "The Cytoscape Consortium", "url": "https://cytoscape.org" }`
-- [ ] `homepage`: `https://github.com/cytoscape/cytoscape-web/tree/development/packages/api-types#readme` — **not** the root's value. The root points at `http://web.cytoscape.org`, the application's site, which tells a developer looking for this package nothing (and is `http://`)
-- [ ] `bugs.url`: `https://github.com/cytoscape/cytoscape-web/issues` — the root has no `bugs` field, so there is nothing to copy
+- [x] `author`: copy from the root `package.json` — `{ "name": "The Cytoscape Consortium", "url": "https://cytoscape.org" }`
+- [x] `homepage`: `https://github.com/cytoscape/cytoscape-web/tree/development/packages/api-types#readme` — **not** the root's value. The root points at `http://web.cytoscape.org`, the application's site, which tells a developer looking for this package nothing (and is `http://`)
+- [x] `bugs.url`: `https://github.com/cytoscape/cytoscape-web/issues` — the root has no `bugs` field, so there is nothing to copy
 
 ### 0c — Ship the license text
 
@@ -66,20 +66,20 @@ _Design: §Target design → Package metadata_
 text. Doing this now is free; doing it later means changing `files` here and the
 verifier's expected-file list in Step 1b in one coordinated commit.
 
-- [ ] Copy the root `LICENSE` (MIT, "Copyright (c) 2024 - 2026 The Cytoscape Consortium", 19 lines) to `packages/api-types/LICENSE`
-- [ ] Add `"LICENSE"` to the `files` array
-- [ ] **The tarball is now 7 entries, not 6.** Step 1b's expected list and Step 0's verification below must both say 7 from the start
+- [x] Copy the root `LICENSE` (MIT, "Copyright (c) 2024 - 2026 The Cytoscape Consortium", 19 lines) to `packages/api-types/LICENSE`
+- [x] Add `"LICENSE"` to the `files` array
+- [x] **The tarball is now 7 entries, not 6.** Step 1b's expected list and Step 0's verification below must both say 7 from the start
 
 ### 0d — Build safety net
 
-- [ ] Add `"prepack": "npm run build"` to `scripts` — makes it structurally impossible to pack a stale `dist/` (the failure mode described in design §Background 1)
-- [ ] Confirm `prepack` does **not** fire on a root `npm ci` (npm runs `prepare`, not `prepack`, for linked workspaces)
+- [x] Add `"prepack": "npm run build"` to `scripts` — makes it structurally impossible to pack a stale `dist/` (the failure mode described in design §Background 1)
+- [x] Confirm `prepack` does **not** fire on a root `npm ci` (npm runs `prepare`, not `prepack`, for linked workspaces)
 
 #### Verification (Step 0)
 
-- [ ] `npm ci` at the repository root still succeeds and does not trigger a `tsup` build
-- [ ] `npm pack -w packages/api-types` produces a `.tgz` with `"version": "1.0.0-beta.4"` and **7** entries (6 plus `LICENSE`) — note that from here on `prepack` fires on every pack, including `--dry-run`, so packing is no longer a read-only inspection
-- [ ] `node -p "require('./packages/api-types/package.json').publishConfig.access"` prints `public`
+- [x] `npm ci` at the repository root still succeeds and does not trigger a `tsup` build — verified by deleting `dist/` first and confirming it stayed absent
+- [x] `npm pack -w packages/api-types` produces a `.tgz` with `"version": "1.0.0-beta.4"` and **7** entries (6 plus `LICENSE`) — note that from here on `prepack` fires on every pack, including `--dry-run`, so packing is no longer a read-only inspection — confirmed: 7 entries, `LICENSE` 1086 bytes. **Also observed: `prepack`'s `tsup` output goes to stdout, so `npm pack --json` cannot be parsed when scripts run.** Step 1b's `--ignore-scripts` is what keeps that output clean, not merely what avoids a second build
+- [x] `node -p "require('./packages/api-types/package.json').publishConfig.access"` prints `public`
 
 ---
 

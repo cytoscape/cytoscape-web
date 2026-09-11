@@ -8,10 +8,12 @@
     "dist",
     "index.d.ts",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup",
+    "prepack": "npm run build",
     "postbuild": "node -e \"const fs=require('fs');fs.copyFileSync('src/mf-declarations.d.ts','dist/mf-declarations.d.ts');const p='dist/index.d.ts';const c=fs.readFileSync(p,'utf8');const r='/// <reference path=\\\"./mf-declarations.d.ts\\\" />\\n';if(!c.startsWith(r))fs.writeFileSync(p,r+c);\""
   },
   "keywords": [
@@ -22,6 +24,22 @@
     "types"
   ],
   "license": "MIT",
+  "author": {
+    "name": "The Cytoscape Consortium",
+    "url": "https://cytoscape.org"
+  },
+  "homepage": "https://github.com/cytoscape/cytoscape-web/tree/development/packages/api-types#readme",
+  "bugs": {
+    "url": "https://github.com/cytoscape/cytoscape-web/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cytoscape/cytoscape-web.git",
+    "directory": "packages/api-types"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.5.4"
