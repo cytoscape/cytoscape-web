@@ -354,19 +354,19 @@ _Design: §Target design → The release workflow_
 
 ### 5b — Rehearse after Step 7a
 
-- [ ] After the CHANGELOG is dated and merged, run the dispatch again with `dry_run=true`
-- [ ] Confirm every guard passes, the build succeeds, both verifiers pass, and `npm publish --dry-run` reports the expected tarball
-- [ ] Confirm the job summary renders the release notes
+- [x] After the CHANGELOG is dated and merged, run the dispatch again with `dry_run=true` — run 34656503916 against the #726 merge commit `f62224c6`
+- [x] Confirm every guard passes, the build succeeds, both verifiers pass, and `npm publish --dry-run` reports the expected tarball — all green: six guards passed (the two tag guards correctly skipped on a branch ref), CI gate found `ci.yml` run 34656063426 with all four jobs green, 7-entry tarball, consumer type-check passed, decision `publish`, dry run reported `+ @cytoscape-web/api-types@1.0.0-beta.4` to `latest` with public access
+- [x] Confirm the job summary renders the release notes
 
 ### 5c — Record what the rehearsal does and does not prove
 
-- [ ] Note in the run summary, and in the runbook, that a green rehearsal covers the guards, the build, the packaging and the consumer type-check — but **not** npm authentication
-- [ ] `npm publish --dry-run` succeeds with no credentials at all: verified locally, where it reported success while `npm whoami` returned `E401`. A dry run may still attempt the OIDC exchange, but it does not require it to succeed — so a green rehearsal cannot confirm the trusted-publisher configuration either way. That is why every guard is ordered ahead of the real publish
+- [x] Note in the run summary, and in the runbook, that a green rehearsal covers the guards, the build, the packaging and the consumer type-check — but **not** npm authentication — the workflow's dry-run step carries this in a comment, and the runbook's step 4 says what a rehearsal proves
+- [x] `npm publish --dry-run` succeeds with no credentials at all: verified locally, where it reported success while `npm whoami` returned `E401`. A dry run may still attempt the OIDC exchange, but it does not require it to succeed — so a green rehearsal cannot confirm the trusted-publisher configuration either way. That is why every guard is ordered ahead of the real publish
 
 #### Verification (Step 5)
 
-- [ ] A fully green `dry_run=true` run exists against the merge commit that will be tagged
-- [ ] Nothing was published — `npm view @cytoscape-web/api-types version` still reports `1.0.0-beta.3`
+- [x] A fully green `dry_run=true` run exists against the merge commit that will be tagged — 34656503916 on `f62224c6`
+- [x] Nothing was published — `npm view @cytoscape-web/api-types version` still reports `1.0.0-beta.3` — confirmed after both rehearsals
 
 ---
 
