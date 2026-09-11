@@ -348,9 +348,9 @@ _Design: §Target design → The release workflow_
 
 ### 5a — Rehearse before the CHANGELOG is dated
 
-- [ ] Merge Steps 0–3 to `development`
-- [ ] Run `gh workflow run release-api-types.yml --ref development -f dry_run=true`, then `gh run watch`
-- [ ] Confirm the run fails at the CHANGELOG date guard with exit code `2` — this is the **correct** outcome while the heading still reads `(unpublished)`, and it proves the guard works
+- [x] Merge Steps 0–3 to `development` — #723, merged 2026-09-11 as `57894482`
+- [x] Run `gh workflow run release-api-types.yml --ref development -f dry_run=true`, then `gh run watch` — run 34649091444 against `57894482`
+- [x] Confirm the run fails at the CHANGELOG date guard with exit code `2` — this is the **correct** outcome while the heading still reads `(unpublished)`, and it proves the guard works — confirmed: `changelog-section: "## 1.0.0-beta.4 (unpublished)" is not dated` / `Process completed with exit code 2`. The three guards before it (development ancestry, lockfile, repository field) all passed; the tag guards were correctly skipped on a branch ref; every step from the CI gate onward was skipped; the registry still reports `1.0.0-beta.3`. Time to failure: ~30 s, before any build
 
 ### 5b — Rehearse after Step 7a
 
