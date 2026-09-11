@@ -249,7 +249,7 @@ on:
 permissions:
   contents: read # no GitHub Release is created, so no write scope is needed
   id-token: write # OIDC + provenance
-  checks: read # the CI gate below; an omitted scope defaults to none
+  actions: read # the CI gate below reads ci.yml's runs; an omitted scope defaults to none
 
 concurrency:
   # Publishes queue; rehearsals are a separate group so a dry run can never
@@ -356,9 +356,22 @@ Three details decide whether the query is correct or merely present:
   once CI finishes, rather than waiting: a release job blocking on someone
   else's queue is a worse failure than an explicit "not ready".
 
-The query needs `checks: read` in the workflow's `permissions` block. A
+**Ask for runs of the workflow file, not for check runs by name.** A check run
+called `Lint` can be produced by any workflow in the repository, or by any
+GitHub App holding `checks:write`. Matching on display names accepts all of
+them and calls the result a green CI. Querying
+`actions/workflows/ci.yml/runs?head_sha=<sha>` and then that run's jobs binds
+the answer to the jobs this repository actually defines.
+
+It also removes a whole class of bug: a re-run adds an ATTEMPT to the same
+workflow run, and the jobs endpoint returns the latest attempt by default, so
+there is no run ordering to get wrong. The Checks API version had to sort runs
+by timestamp — and the first implementation sorted the wrong way, reading the
+oldest run of each name.
+
+The query needs `actions: read` in the workflow's `permissions` block. A
 `permissions` block that lists only `contents` and `id-token` sets every other
-scope to `none`, so the Checks API call fails without it.
+scope to `none`, so the call fails without it.
 
 #### Republishing after a partial failure
 
@@ -416,7 +429,11 @@ too. So the flow that really builds once is:
 3. Verify the `.tgz` — extract it and inspect the extracted tree, so the check
    reads exactly what a consumer would install
 4. Type-check a consumer fixture against that same `.tgz` (§Closing the CI gap)
-5. `npm publish <path-to-tgz> --tag <dist_tag>`
+5. `npm publish <path-to-tgz> --provenance --tag <dist_tag>` — the flag is
+   passed explicitly even though provenance is automatic under OIDC, so a run
+   that cannot generate it fails instead of shipping a release without it.
+   `--tag` is required rather than optional: npm refuses to publish a
+   prerelease version without one
 6. Assert the registry's `dist.integrity` equals the local `.tgz`'s integrity,
    and that its provenance names this repository, workflow and commit
 

@@ -192,6 +192,21 @@ jobs:
             exit 1
           fi
 
+      # The release notes live in the tag: `git show api-types-v<version>` is
+      # one of the three places they exist, since no GitHub Release is created.
+      # A lightweight tag has no message at all, and would pass every other
+      # guard here while silently losing them.
+      - name: Guard — the tag is annotated
+        if: github.ref_type == 'tag'
+        run: |
+          set -euo pipefail
+          KIND="$(git cat-file -t "$GITHUB_REF")"
+          if [ "$KIND" != 'tag' ]; then
+            echo "::error::${GITHUB_REF_NAME} is a lightweight tag (${KIND}), so it carries no release notes. Re-create it with 'git tag -a ... -F notes.md'."
+            exit 1
+          fi
+          echo "  ${GITHUB_REF_NAME} is annotated"
+
       - name: Guard — lockfile agrees with package.json
         run: |
           set -euo pipefail
