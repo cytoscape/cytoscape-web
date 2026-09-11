@@ -60,7 +60,7 @@ concurrency:
 permissions:
   contents: read # checkout only — no GitHub Release is created
   id-token: write # npm Trusted Publishing (OIDC) + provenance
-  checks: read # the CI gate; an unlisted scope defaults to none
+  actions: read # the CI gate reads ci.yml's runs; an unlisted scope defaults to none
 
 env:
   PKG_NAME: '@cytoscape-web/api-types'

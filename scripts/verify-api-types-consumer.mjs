@@ -84,10 +84,19 @@ const main = () => {
     console.log(`fixture   ${scratch}`)
     console.log(`tarball   ${tarball}`)
 
-    execFileSync('npm', ['install', '--no-audit', '--no-fund', '--silent'], {
-      cwd: scratch,
-      stdio: 'inherit',
-    })
+    // --ignore-scripts: `npm install` would otherwise run lifecycle scripts
+    // from the tarball and from every dependency it pulls, as this account,
+    // during a release. Nothing here needs them — the fixture wants type
+    // declarations and the tsc binary, both of which ship prebuilt — so the
+    // capability is pure downside.
+    execFileSync(
+      'npm',
+      ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--silent'],
+      {
+        cwd: scratch,
+        stdio: 'inherit',
+      },
+    )
 
     // Resolve tsc from the fixture's own install, so the pinned version is the
     // one that runs.

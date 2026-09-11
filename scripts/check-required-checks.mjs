@@ -1,35 +1,43 @@
 #!/usr/bin/env node
-// Assert that the required CI checks succeeded for one commit.
+// Assert that this repository's CI succeeded for one commit.
 //
 // ci.yml runs on pushes and pull requests to master and development. A tag push
 // runs nothing, so without this the release workflow would happily publish a
 // commit whose CI never ran or failed.
 //
-// Three details decide whether this is a real gate or decoration:
+// It asks the Actions API for runs OF ci.yml at this SHA, rather than asking
+// the Checks API for check runs with matching display names. The distinction is
+// the point: a check run named "Lint" can be produced by any workflow, or by
+// any GitHub App with checks:write. Name-only matching accepts all of them and
+// calls it a green CI. Going through the workflow file binds the answer to the
+// jobs this repository actually defines.
 //
-//   - The check names are a FIXED LIST, not "whatever ran". Iterating over
-//     every check run for the SHA would include the release run itself, which
-//     is in_progress by definition, and the guard would deadlock.
-//   - The names are DISPLAY names, not job ids. ci.yml declares `lint:` with
-//     `name: Lint`; the Checks API reports `Lint`. Matching on job ids reports
-//     "no required check" against a perfectly green run.
+// Two details that decide whether this is a real gate or decoration:
+//
+//   - The job names are a FIXED LIST, not "whatever ran". Iterating over
+//     everything present would include the release run itself, which is
+//     in_progress by definition, and the guard would deadlock.
 //   - Missing and in_progress are both failures. A tag on a commit that never
 //     reached development is exactly what "missing" looks like.
-//   - A re-run APPENDS a check run with the same name, so "which one counts"
-//     has to be decided explicitly. The API returns runs newest-first —
-//     measured on this repository, where a re-triggered reviewer check came
-//     back at index 0 and its older completed run at index 1 — but relying on
-//     an undocumented order is how the first version of this file read the
-//     OLDEST run and would have blocked a release that a re-run had already
-//     fixed. Sort on started_at instead.
 //
-// Needs `checks: read` in the workflow's permissions block: a permissions block
-// sets every unlisted scope to none.
+// Re-runs need no special handling here: a re-run adds an ATTEMPT to the same
+// workflow run, and the jobs endpoint returns the latest attempt by default.
+// (The earlier Checks-API version had to sort runs by timestamp, and shipped
+// reading the oldest.)
+//
+// Needs `actions: read` in the workflow's permissions block: a permissions
+// block sets every unlisted scope to none.
 
 import { execFileSync } from 'node:child_process'
 
 // Must match the `name:` of each job in .github/workflows/ci.yml.
 const REQUIRED = ['Lint', 'Build', 'Unit Tests', 'API Types Package']
+const DEFAULT_WORKFLOW = 'ci.yml'
+
+// Overridable so tests can stand in a fake. This gate is only exercised for
+// real during a release, and a release-critical guard should not be first
+// exercised there.
+const GH = process.env.CYWEB_GH_CLI ?? 'gh'
 
 const fail = (message) => {
   console.error(`check-required-checks: ${message}`)
@@ -37,11 +45,15 @@ const fail = (message) => {
 }
 
 const parseArgs = (argv) => {
-  const options = { repo: process.env.GITHUB_REPOSITORY }
+  const options = {
+    repo: process.env.GITHUB_REPOSITORY,
+    workflow: DEFAULT_WORKFLOW,
+  }
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
     if (arg === '--sha') options.sha = argv[(i += 1)]
     else if (arg === '--repo') options.repo = argv[(i += 1)]
+    else if (arg === '--workflow') options.workflow = argv[(i += 1)]
     else fail(`unknown argument ${arg}`)
   }
   if (!options.sha) fail('--sha <commit> is required')
@@ -50,62 +62,80 @@ const parseArgs = (argv) => {
   return options
 }
 
-// Overridable so tests can stand in a fake. The real gate is exercised only on
-// a live run, and a release-critical guard should not be first exercised there.
-const GH = process.env.CYWEB_GH_CLI ?? 'gh'
-
-const fetchCheckRuns = (repo, sha) => {
-  // gh paginates; 100 per page is plenty for this repo's job count.
-  const raw = execFileSync(
-    GH,
-    [
-      'api',
-      '--paginate',
-      `repos/${repo}/commits/${sha}/check-runs?per_page=100`,
-      '--jq',
-      '.check_runs[] | {name, status, conclusion, started_at, id}',
-    ],
-    { encoding: 'utf8' },
-  )
+const ghJsonLines = (args, what) => {
+  let raw
+  try {
+    raw = execFileSync(GH, args, { encoding: 'utf8' })
+  } catch (error) {
+    fail(
+      `could not read ${what}\n  ${(error.stderr ?? error.message).toString().trim().split('\n')[0]}`,
+    )
+  }
   return raw
     .split('\n')
     .filter((line) => line.trim() !== '')
     .map((line) => JSON.parse(line))
 }
 
+/** The newest run of `workflow` at `sha`, or null. */
+const latestWorkflowRun = (repo, workflow, sha) => {
+  const runs = ghJsonLines(
+    [
+      'api',
+      '--paginate',
+      `repos/${repo}/actions/workflows/${workflow}/runs?head_sha=${sha}&per_page=100`,
+      '--jq',
+      '.workflow_runs[] | {id, created_at, status, conclusion, run_attempt}',
+    ],
+    `runs of ${workflow} for ${sha}`,
+  )
+  if (runs.length === 0) return null
+  // A push and a pull_request trigger can both produce a run for one SHA.
+  return runs.sort(
+    (a, b) =>
+      Date.parse(b.created_at ?? 0) - Date.parse(a.created_at ?? 0) ||
+      (b.id ?? 0) - (a.id ?? 0),
+  )[0]
+}
+
+const jobsOf = (repo, runId) =>
+  ghJsonLines(
+    [
+      'api',
+      '--paginate',
+      `repos/${repo}/actions/runs/${runId}/jobs?per_page=100`,
+      '--jq',
+      '.jobs[] | {name, status, conclusion}',
+    ],
+    `jobs of run ${runId}`,
+  )
+
 const main = () => {
   const options = parseArgs(process.argv.slice(2))
 
-  let runs
-  try {
-    runs = fetchCheckRuns(options.repo, options.sha)
-  } catch (error) {
-    fail(`could not read check runs for ${options.sha}\n  ${error.message}`)
+  const run = latestWorkflowRun(options.repo, options.workflow, options.sha)
+  if (run === null) {
+    fail(
+      `no run of ${options.workflow} for ${options.sha}\n` +
+        '  This usually means the tag is on a commit that never reached development.',
+    )
   }
+  console.log(
+    `  ${options.workflow} run ${run.id} (attempt ${run.run_attempt}) — ${run.status}/${run.conclusion}`,
+  )
 
+  const jobs = jobsOf(options.repo, run.id)
   const problems = []
   for (const name of REQUIRED) {
-    // The newest run wins, chosen explicitly rather than by array position:
-    // a re-run appends, and reading the wrong end blocks a release that a
-    // re-run already fixed.
-    const matching = runs
-      .filter((run) => run.name === name)
-      .sort((a, b) => {
-        const byTime =
-          Date.parse(b.started_at ?? 0) - Date.parse(a.started_at ?? 0)
-        return byTime !== 0 ? byTime : (b.id ?? 0) - (a.id ?? 0)
-      })
-    if (matching.length === 0) {
-      problems.push(`${name}: no run for this commit`)
-      continue
-    }
-    const latest = matching[0]
-    if (latest.status !== 'completed') {
+    const job = jobs.find((candidate) => candidate.name === name)
+    if (job === undefined) {
+      problems.push(`${name}: not present in this run`)
+    } else if (job.status !== 'completed') {
       problems.push(
-        `${name}: still ${latest.status} — re-run this release once CI finishes`,
+        `${name}: still ${job.status} — re-run this release once CI finishes`,
       )
-    } else if (latest.conclusion !== 'success') {
-      problems.push(`${name}: ${latest.conclusion}`)
+    } else if (job.conclusion !== 'success') {
+      problems.push(`${name}: ${job.conclusion}`)
     } else {
       console.log(`  ${name}: success`)
     }
@@ -113,14 +143,13 @@ const main = () => {
 
   if (problems.length > 0) {
     fail(
-      `required CI checks did not pass for ${options.sha}\n` +
-        problems.map((p) => `  ${p}`).join('\n') +
-        '\n  A missing check usually means the tag is on a commit that never reached development.',
+      `required CI jobs did not pass for ${options.sha}\n` +
+        problems.map((problem) => `  ${problem}`).join('\n'),
     )
   }
 
   console.log(
-    `all ${REQUIRED.length} required checks passed for ${options.sha}`,
+    `all ${REQUIRED.length} required jobs passed in ${options.workflow} for ${options.sha}`,
   )
 }
 

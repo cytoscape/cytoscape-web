@@ -53,23 +53,59 @@ const run = (
 }
 
 /**
- * A stand-in for the `gh` CLI that prints canned check-run lines.
+ * A stand-in for the `gh` CLI, branching on which endpoint is asked for.
  *
  * check-required-checks.mjs is the gate that decides whether a commit's CI
  * actually passed, and it was the one piece here with no coverage — which is
- * how it shipped reading the OLDEST run of each name. Faking the binary keeps
- * the real argv path under test; a --runs-file flag would not.
+ * how it shipped reading the OLDEST run of each check name. Faking the binary
+ * keeps the real argv path under test; a --runs-file flag would not.
  */
+interface WorkflowRun {
+  id: number
+  created_at: string
+  status: string
+  conclusion: string | null
+  run_attempt: number
+}
+
+interface Job {
+  name: string
+  status: string
+  conclusion: string | null
+}
+
 const withFakeGh = (
-  runs: CheckRun[],
+  runs: WorkflowRun[],
+  jobsByRunId: Record<number, Job[]>,
   body: (env: NodeJS.ProcessEnv) => void,
 ): void => {
   const dir = mkdtempSync(join(tmpdir(), 'fake-gh-'))
   const bin = join(dir, 'gh')
-  const payload = runs.map((run) => JSON.stringify(run)).join('\n')
+
+  // The payloads are serialized HERE and embedded already-escaped, rather than
+  // having the generated script build them. `gh --jq` emits one JSON object per
+  // line, and writing that newline through two levels of source would need
+  // escaping that is easy to get subtly wrong — the first attempt emitted a
+  // literal newline into the generated file and produced a script that ran but
+  // answered nothing.
+  const lines = (rows: object[]): string =>
+    rows.map((row) => JSON.stringify(row)).join('\n') +
+    (rows.length ? '\n' : '')
+  const jobPayloads = Object.fromEntries(
+    Object.entries(jobsByRunId).map(([id, jobs]) => [id, lines(jobs)]),
+  )
+
   writeFileSync(
     bin,
-    `#!/usr/bin/env node\nprocess.stdout.write(${JSON.stringify(payload ? `${payload}\n` : '')})\n`,
+    [
+      '#!/usr/bin/env node',
+      `const runs = ${JSON.stringify(lines(runs))}`,
+      `const jobs = ${JSON.stringify(jobPayloads)}`,
+      'const url = process.argv.find((a) => a.includes("actions/")) ?? ""',
+      'const m = /actions\\/runs\\/(\\d+)\\/jobs/.exec(url)',
+      'process.stdout.write(m ? (jobs[m[1]] ?? "") : runs)',
+      '',
+    ].join('\n'),
   )
   chmodSync(bin, 0o755)
   try {
@@ -80,21 +116,18 @@ const withFakeGh = (
 }
 
 const REQUIRED = ['Lint', 'Build', 'Unit Tests', 'API Types Package']
-interface CheckRun {
-  name: string
-  status: string
-  conclusion: string | null
-  started_at: string
-  id: number
-}
-
-const passing = (name: string, startedAt: string, id: number): CheckRun => ({
+const green = (name: string): Job => ({
   name,
   status: 'completed',
   conclusion: 'success',
-  started_at: startedAt,
-  id,
 })
+const RUN: WorkflowRun = {
+  id: 1,
+  created_at: '2026-09-10T01:00:00Z',
+  status: 'completed',
+  conclusion: 'success',
+  run_attempt: 1,
+}
 
 // Opt in with CYWEB_REGISTRY_TESTS=1. See the header for why these are off by
 // default.
@@ -275,43 +308,48 @@ describe('decide-registry-action', () => {
 })
 
 describe('check-required-checks', () => {
-  const allGreen = REQUIRED.map((name, i) =>
-    passing(name, '2026-09-10T01:00:00Z', 100 + i),
-  )
+  const allGreen = REQUIRED.map(green)
 
-  it('passes when every required check succeeded', () => {
-    withFakeGh(allGreen, (env) => {
+  it('passes when every required job succeeded', () => {
+    withFakeGh([RUN], { 1: allGreen }, (env) => {
       const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
       expect(result.status).toBe(0)
-      expect(result.stdout).toContain('all 4 required checks passed')
+      expect(result.stdout).toContain('all 4 required jobs passed')
     })
   })
 
-  it('fails and names a check that never ran', () => {
-    withFakeGh(allGreen.slice(0, 3), (env) => {
+  it('fails when ci.yml never ran for the commit', () => {
+    // The shape of a tag placed on a commit that never reached development.
+    withFakeGh([], {}, (env) => {
       const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
       expect(result.status).toBe(1)
-      expect(result.stderr).toContain(
-        'API Types Package: no run for this commit',
-      )
+      expect(result.stderr).toContain('no run of ci.yml')
       expect(result.stderr).toContain('never reached development')
     })
   })
 
-  it('fails on a failed check', () => {
-    const runs = [...allGreen]
-    runs[0] = { ...runs[0], conclusion: 'failure' }
-    withFakeGh(runs, (env) => {
+  it('fails and names a job missing from the run', () => {
+    withFakeGh([RUN], { 1: allGreen.slice(0, 3) }, (env) => {
+      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('API Types Package: not present')
+    })
+  })
+
+  it('fails on a failed job', () => {
+    const jobs = [...allGreen]
+    jobs[0] = { ...jobs[0], conclusion: 'failure' }
+    withFakeGh([RUN], { 1: jobs }, (env) => {
       const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('Lint: failure')
     })
   })
 
-  it('fails on a check still in progress rather than waiting', () => {
-    const runs = [...allGreen]
-    runs[1] = { ...runs[1], status: 'in_progress', conclusion: null }
-    withFakeGh(runs, (env) => {
+  it('fails on a job still in progress rather than waiting', () => {
+    const jobs = [...allGreen]
+    jobs[1] = { ...jobs[1], status: 'in_progress', conclusion: null }
+    withFakeGh([RUN], { 1: jobs }, (env) => {
       const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('still in_progress')
@@ -319,44 +357,43 @@ describe('check-required-checks', () => {
     })
   })
 
-  it('reads the NEWEST run when a check was re-run', () => {
-    // The API returns runs newest-first — measured on this repository. Reading
-    // the other end blocks a release that a re-run has already fixed, which is
-    // exactly what the first version of the script did.
-    const rerun = [
-      passing('Lint', '2026-09-10T02:00:00Z', 200), // newer, green
-      {
-        name: 'Lint',
-        status: 'completed',
-        conclusion: 'failure',
-        started_at: '2026-09-10T01:00:00Z',
-        id: 100,
-      },
+  it('uses the newest run when a SHA has more than one', () => {
+    // push and pull_request triggers can both produce a run for one commit.
+    const older: WorkflowRun = {
+      ...RUN,
+      id: 1,
+      created_at: '2026-09-10T01:00:00Z',
+    }
+    const newer: WorkflowRun = {
+      ...RUN,
+      id: 2,
+      created_at: '2026-09-10T02:00:00Z',
+    }
+    const failing = [
+      { ...green('Lint'), conclusion: 'failure' },
       ...allGreen.slice(1),
     ]
-    withFakeGh(rerun, (env) => {
+    // Oldest-first on purpose: the result must not depend on array position.
+    withFakeGh([older, newer], { 1: failing, 2: allGreen }, (env) => {
       const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
       expect(result.status).toBe(0)
+      expect(result.stdout).toContain('run 2')
     })
   })
 
-  it('does not trust array position — an out-of-order payload still works', () => {
-    // Same data, oldest first. Sorting on started_at must make this identical
-    // to the case above.
-    const rerun = [
-      {
-        name: 'Lint',
-        status: 'completed',
-        conclusion: 'failure',
-        started_at: '2026-09-10T01:00:00Z',
-        id: 100,
-      },
-      passing('Lint', '2026-09-10T02:00:00Z', 200),
-      ...allGreen.slice(1),
-    ]
-    withFakeGh(rerun, (env) => {
-      const result = run(CHECKS, ['--sha', 'abc', '--repo', 'o/r'], env)
-      expect(result.status).toBe(0)
+  it('ignores same-named jobs from a different workflow', () => {
+    // The reason this queries ci.yml's runs rather than matching check-run
+    // names: any workflow, or any app with checks:write, can publish a check
+    // called "Lint". Asking for runs of ci.yml never sees them — here, an
+    // unrelated workflow reports nothing for this SHA.
+    withFakeGh([], {}, (env) => {
+      const result = run(
+        CHECKS,
+        ['--sha', 'abc', '--repo', 'o/r', '--workflow', 'other.yml'],
+        env,
+      )
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('no run of other.yml')
     })
   })
 })
