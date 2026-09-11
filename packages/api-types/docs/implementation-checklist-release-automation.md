@@ -168,29 +168,29 @@ _Design: §Target design → The release workflow, §Guard order_
 
 ### 2a — Create `.github/workflows/release-api-types.yml`
 
-- [ ] Header comment stating that the **filename is load-bearing** (npm's Trusted Publisher configuration names `release-api-types.yml`; renaming breaks publishing) and that the workflow deliberately creates **no** GitHub Release, with the Zenodo webhook id and DOI as the reason
-- [ ] Triggers: `push: tags: ['api-types-v*']` and `workflow_dispatch` with a `dry_run` boolean (default `true`) and a `dist_tag` choice (`latest` / `beta` / `next`, default `latest`)
-- [ ] `permissions: contents: read` + `id-token: write` + `checks: read` — no write scope, since no GitHub Release is created. `checks: read` is required for the CI gate in 2b: a `permissions` block sets every unlisted scope to `none`
-- [ ] Resolve `dry_run` and `dist_tag` explicitly per trigger: on a tag push `inputs` is empty, so default them to `false` and `latest` rather than reading `inputs.*`
-- [ ] `concurrency`: separate groups for publish and rehearsal (so a dry run cannot displace a queued release), `cancel-in-progress: false`, **and `queue: max`** — without it only one run may be pending and a newly queued release cancels the one already waiting
-- [ ] `actions/checkout@v4` with `fetch-depth: 0`
-- [ ] `actions/setup-node@v4` **directly** with `node-version-file: .nvmrc` and `cache: npm`, no `registry-url`, followed by exactly one `npm ci` — do not layer `npm ci` on top of the composite action, which would install twice on a cache miss and reuse a lockfile-keyed cache on a hit
-- [ ] Read the version from `packages/api-types/package.json`; never derive it from the tag
+- [x] Header comment stating that the **filename is load-bearing** (npm's Trusted Publisher configuration names `release-api-types.yml`; renaming breaks publishing) and that the workflow deliberately creates **no** GitHub Release, with the Zenodo webhook id and DOI as the reason
+- [x] Triggers: `push: tags: ['api-types-v*']` and `workflow_dispatch` with a `dry_run` boolean (default `true`) and a `dist_tag` choice (`latest` / `beta` / `next`, default `latest`)
+- [x] `permissions: contents: read` + `id-token: write` + `checks: read` — no write scope, since no GitHub Release is created. `checks: read` is required for the CI gate in 2b: a `permissions` block sets every unlisted scope to `none`
+- [x] Resolve `dry_run` and `dist_tag` explicitly per trigger: on a tag push `inputs` is empty, so default them to `false` and `latest` rather than reading `inputs.*`
+- [x] `concurrency`: separate groups for publish and rehearsal (so a dry run cannot displace a queued release), `cancel-in-progress: false`, **and `queue: max`** — without it only one run may be pending and a newly queued release cancels the one already waiting
+- [x] `actions/checkout@v4` with `fetch-depth: 0`
+- [x] `actions/setup-node@v4` **directly** with `node-version-file: .nvmrc` and `cache: npm`, no `registry-url`, followed by exactly one `npm ci` — do not layer `npm ci` on top of the composite action, which would install twice on a cache miss and reuse a lockfile-keyed cache on a hit
+- [x] Read the version from `packages/api-types/package.json`; never derive it from the tag
 
 ### 2b — Guards (all before the build)
 
-- [ ] Refuse a non-dry-run publish unless `github.ref_type == 'tag'`
-- [ ] Tag name minus the `api-types-v` prefix equals the `package.json` version — **conditional on `github.ref_type == 'tag'`**, otherwise a branch rehearsal fails here and never reaches the guards it exists to exercise
-- [ ] `package-lock.json`'s `packages['packages/api-types'].version` equals the `package.json` version
-- [ ] `scripts/changelog-section.mjs --require-date` succeeds, writing the notes to a file for later steps
-- [ ] Required CI checks for **this exact SHA** succeeded — query the Checks API and refuse to publish otherwise. `ci.yml` runs on branch pushes and pull requests, not on tags, so nothing else connects a green CI to the commit being published
-- [ ] Require a **fixed, explicit list** of check names — `Lint`, `Build`, `Unit Tests` and `API Types Package`. These are the **display names**, not the job IDs: `ci.yml` declares `lint:` / `name: Lint`, `build:` / `name: Build`, `unit-tests:` / `name: Unit Tests`, and the Checks API reports the display name. Matching on the job IDs would report "no required check" against a perfectly green CI run
-- [ ] Give the new `api-types` job an explicit `name:` (Step 3a) and use that exact string here, so the two cannot drift
-- [ ] Do **not** iterate over every check run for the SHA: that set includes this release run itself, which is `in_progress` by definition and would deadlock the guard
-- [ ] A required check with **no run** for this SHA fails the guard — usually a tag on a commit that never reached `development`, which is exactly what this catches
-- [ ] A required check still `in_progress` also fails, with a message saying to re-run once CI finishes — do not block a release job on someone else's queue
-- [ ] **Registry probe only** at this stage: record whether the version exists and fail on any non-`E404` error. The publish/skip/stop decision needs the `.tgz` and therefore belongs after the build (see 2d)
-- [ ] npm CLI is ≥ 11.5.1, using the root `semver` runtime dependency to compare; upgrade in place if not
+- [x] Refuse a non-dry-run publish unless `github.ref_type == 'tag'`
+- [x] Tag name minus the `api-types-v` prefix equals the `package.json` version — **conditional on `github.ref_type == 'tag'`**, otherwise a branch rehearsal fails here and never reaches the guards it exists to exercise
+- [x] `package-lock.json`'s `packages['packages/api-types'].version` equals the `package.json` version
+- [x] `scripts/changelog-section.mjs --require-date` succeeds, writing the notes to a file for later steps
+- [x] Required CI checks for **this exact SHA** succeeded — query the Checks API and refuse to publish otherwise. `ci.yml` runs on branch pushes and pull requests, not on tags, so nothing else connects a green CI to the commit being published
+- [x] Require a **fixed, explicit list** of check names — `Lint`, `Build`, `Unit Tests` and `API Types Package`. These are the **display names**, not the job IDs: `ci.yml` declares `lint:` / `name: Lint`, `build:` / `name: Build`, `unit-tests:` / `name: Unit Tests`, and the Checks API reports the display name. Matching on the job IDs would report "no required check" against a perfectly green CI run
+- [x] Give the new `api-types` job an explicit `name:` (Step 3a) and use that exact string here, so the two cannot drift
+- [x] Do **not** iterate over every check run for the SHA: that set includes this release run itself, which is `in_progress` by definition and would deadlock the guard
+- [x] A required check with **no run** for this SHA fails the guard — usually a tag on a commit that never reached `development`, which is exactly what this catches
+- [x] A required check still `in_progress` also fails, with a message saying to re-run once CI finishes — do not block a release job on someone else's queue
+- [x] **Registry probe only** at this stage: record whether the version exists and fail on any non-`E404` error. The publish/skip/stop decision needs the `.tgz` and therefore belongs after the build (see 2d)
+- [x] npm CLI is ≥ 11.5.1, using the root `semver` runtime dependency to compare; upgrade in place if not
 
 ### 2c — Build once, verify, publish that artifact
 
@@ -199,17 +199,17 @@ build-then-verify-then-publish sequence rebuilds three times and publishes bytes
 that were never verified. Publishing a pre-built tarball does not re-run
 `prepack`, so one artifact flows through every step.
 
-- [ ] `npm run build:api-types`
-- [ ] `npm pack -w packages/api-types --ignore-scripts` → a real `.tgz`; every later step consumes **that file**. **`--ignore-scripts` is load-bearing**: a plain `npm pack` fires `prepack` and rebuilds, making this build twice rather than once (measured)
-- [ ] `npm run verify:api-types-pack -- <tgz>`
-- [ ] `npm run verify:api-types-consumer -- <tgz>` — the `skipLibCheck: false` compile gate, before the registry is touched
-- [ ] Publish with `npm publish <tgz> --tag <dist_tag>` — no `NODE_AUTH_TOKEN`, no `--access` (it is in `publishConfig`), no `--provenance` (automatic under OIDC)
-- [ ] A parallel `--dry-run` step for the rehearsal path, with a comment recording that **`npm publish --dry-run` does not validate credentials** — verified locally: it succeeds while `npm whoami` returns `E401`. A green rehearsal proves the guards, build and packaging, never the OIDC configuration
-- [ ] Post-publish: poll until the version is visible (the registry CDN lags a publish by seconds), then **assert** `dist.integrity` equals the local `.tgz`'s integrity — an equality check, not a logged value — and assert the dist-tag resolves to the version just published
-- [ ] Assert the provenance attestation **exists** and names this repository, this workflow and **this commit SHA**. Leaving provenance to a human's post-release spot check means a release with none, or with the wrong source, passes the automated gate
-- [ ] Write the release notes and the published metadata to `$GITHUB_STEP_SUMMARY`
-- [ ] Upload the `.tgz`, the release notes and the pack result as a workflow artifact with 90-day retention
-- [ ] Confirm the workflow contains **no** `gh release create` and no `contents: write`
+- [x] `npm run build:api-types`
+- [x] `npm pack -w packages/api-types --ignore-scripts` → a real `.tgz`; every later step consumes **that file**. **`--ignore-scripts` is load-bearing**: a plain `npm pack` fires `prepack` and rebuilds, making this build twice rather than once (measured)
+- [x] `npm run verify:api-types-pack -- <tgz>`
+- [x] `npm run verify:api-types-consumer -- <tgz>` — the `skipLibCheck: false` compile gate, before the registry is touched
+- [x] Publish with `npm publish <tgz> --tag <dist_tag>` — no `NODE_AUTH_TOKEN`, no `--access` (it is in `publishConfig`), no `--provenance` (automatic under OIDC)
+- [x] A parallel `--dry-run` step for the rehearsal path, with a comment recording that **`npm publish --dry-run` does not validate credentials** — verified locally: it succeeds while `npm whoami` returns `E401`. A green rehearsal proves the guards, build and packaging, never the OIDC configuration
+- [x] Post-publish: poll until the version is visible (the registry CDN lags a publish by seconds), then **assert** `dist.integrity` equals the local `.tgz`'s integrity — an equality check, not a logged value — and assert the dist-tag resolves to the version just published
+- [x] Assert the provenance attestation **exists** and names this repository, this workflow and **this commit SHA**. Leaving provenance to a human's post-release spot check means a release with none, or with the wrong source, passes the automated gate
+- [x] Write the release notes and the published metadata to `$GITHUB_STEP_SUMMARY`
+- [x] Upload the `.tgz`, the release notes and the pack result as a workflow artifact with 90-day retention
+- [x] Confirm the workflow contains **no** `gh release create` and no `contents: write`
 
 ### 2d — Registry-state decision and the resume path
 
@@ -222,33 +222,33 @@ it compares the registry against the artifact this run produced, which does not
 exist yet at guard time. 2b only probes for existence; the branching happens
 here.
 
-- [ ] Version absent → publish normally
-- [ ] Version present, `dist.integrity` matches this run's `.tgz`, **and** its provenance names this repository, this workflow **and this commit SHA** → skip the publish and resume at verification
-- [ ] Match the commit SHA, not just repository and workflow — otherwise a publish made from this same workflow at a **different commit** reads as "already done" and the run resumes onto someone else's artifact
-- [ ] Version present with different content, a different publisher, or provenance naming a different commit → **stop**; a human must investigate
-- [ ] The dist-tag already points at a newer release → **stop**; never roll `latest` back onto an older version
-- [ ] Treat only `E404` as "not published" — `npm view` also exits non-zero on network failure, auth error and registry outage, and those must fail the run rather than be read as permission to publish
-- [ ] Under `dry_run`, warn instead of failing when the version already exists
+- [x] Version absent → publish normally
+- [x] Version present, `dist.integrity` matches this run's `.tgz`, **and** its provenance names this repository, this workflow **and this commit SHA** → skip the publish and resume at verification
+- [x] Match the commit SHA, not just repository and workflow — otherwise a publish made from this same workflow at a **different commit** reads as "already done" and the run resumes onto someone else's artifact
+- [x] Version present with different content, a different publisher, or provenance naming a different commit → **stop**; a human must investigate
+- [x] The dist-tag already points at a newer release → **stop**; never roll `latest` back onto an older version
+- [x] Treat only `E404` as "not published" — `npm view` also exits non-zero on network failure, auth error and registry outage, and those must fail the run rather than be read as permission to publish
+- [x] Under `dry_run`, warn instead of failing when the version already exists
 
 #### Verification (Step 2)
 
-- [ ] `actionlint` (or `gh workflow view`) reports no syntax errors
-- [ ] Grep confirms the workflow contains neither `NODE_AUTH_TOKEN` nor `registry-url`
-- [ ] Grep confirms the workflow contains no `gh release create`
-- [ ] Grep confirms `queue: max` is present and `cancel-in-progress: true` is not (the combination is a validation error)
-- [ ] The tag-name guard carries an `if:` condition on `github.ref_type`
+- [x] `actionlint` (or `gh workflow view`) reports no syntax errors — clean once `queue` is ignored. actionlint 1.7.7 predates the feature (GitHub added it 2026-05-07) and reports it as an unexpected key; the workflow carries a comment saying so
+- [x] Grep confirms the workflow contains neither `NODE_AUTH_TOKEN` nor `registry-url` — both appear only inside the comment explaining why they are absent; neither is on a configuration line
+- [x] Grep confirms the workflow contains no `gh release create`
+- [x] Grep confirms `queue: max` is present and `cancel-in-progress: true` is not (the combination is a validation error)
+- [x] The tag-name guard carries an `if:` condition on `github.ref_type`
 
 Static greps prove the workflow _says_ the right things. The branches below are
 the ones that only run when something has already gone wrong, which is the worst
 time to discover they were never exercised. Rehearse each with `dry_run=true`,
 or against a scratch package on a fork:
 
-- [ ] **Resume after a post-publish failure** — with the version already on the registry and the `.tgz` matching, the run skips the publish and completes verification instead of refusing
-- [ ] **Integrity mismatch** — a registry entry whose `dist.integrity` differs from the local `.tgz` stops the run
-- [ ] **Provenance SHA mismatch** — a version published from this same workflow at a different commit stops the run rather than resuming onto it
-- [ ] **Missing required CI** — a SHA with no `Lint` / `Build` / `Unit Tests` / `API Types Package` check run fails the guard, and the message names which check was missing
-- [ ] **dist-tag rollback refusal** — with the dist-tag already pointing at a newer version, the run stops rather than moving it backwards
-- [ ] **Non-`E404` registry error** — a failed `npm view` that is not a 404 fails the run instead of being read as "not published"
+- [x] **Resume after a post-publish failure** — with the version already on the registry and the `.tgz` matching, the run skips the publish and completes verification instead of refusing — proven against `@cytoscape-web/app-runtime@0.4.0-next.1`, a real OIDC publish whose provenance repo/workflow/commit all match: `action=skip`
+- [x] **Integrity mismatch** — a registry entry whose `dist.integrity` differs from the local `.tgz` stops the run — proven against the published `1.0.0-beta.3`
+- [x] **Provenance SHA mismatch** — a version published from this same workflow at a different commit stops the run rather than resuming onto it — proven by holding repo and workflow fixed and changing only the SHA
+- [ ] **Missing required CI** — a SHA with no `Lint` / `Build` / `Unit Tests` / `API Types Package` check run fails the guard, and the message names which check was missing — **needs a live run**: the guard calls the Checks API, which has no offline equivalent. Exercised by Step 5's rehearsal
+- [x] **dist-tag rollback refusal** — with the dist-tag already pointing at a newer version, the run stops rather than moving it backwards — proven by asking it to publish `1.0.0-beta.2` while `latest` is `1.0.0-beta.3`
+- [ ] **Non-`E404` registry error** — a failed `npm view` that is not a 404 fails the run instead of being read as "not published" — **not yet exercised**: needs a reachable-but-failing registry, which is awkward to stage. The code path is small and reviewed; note it as untested rather than claiming otherwise
 
 ---
 

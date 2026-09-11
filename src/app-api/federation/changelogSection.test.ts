@@ -16,7 +16,10 @@ import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const SCRIPT = resolve(__dirname, '../../../scripts/changelog-section.mjs')
-const REAL_CHANGELOG = resolve(__dirname, '../../../packages/api-types/CHANGELOG.md')
+const REAL_CHANGELOG = resolve(
+  __dirname,
+  '../../../packages/api-types/CHANGELOG.md',
+)
 
 interface RunResult {
   status: number
@@ -103,23 +106,47 @@ describe('changelog-section CLI', () => {
   })
 
   it('exits 2 for an (unpublished) section under --require-date', () => {
-    const result = run(['--file', fixture, '--version', '2.0.0', '--require-date'])
+    const result = run([
+      '--file',
+      fixture,
+      '--version',
+      '2.0.0',
+      '--require-date',
+    ])
     expect(result.status).toBe(2)
     expect(result.stderr).toContain('is not dated')
   })
 
   it('exits 2 for a heading with no parenthetical at all', () => {
-    const result = run(['--file', fixture, '--version', '1.4.0', '--require-date'])
+    const result = run([
+      '--file',
+      fixture,
+      '--version',
+      '1.4.0',
+      '--require-date',
+    ])
     expect(result.status).toBe(2)
   })
 
   it('accepts a dated section under --require-date', () => {
-    const result = run(['--file', fixture, '--version', '1.5.0', '--require-date'])
+    const result = run([
+      '--file',
+      fixture,
+      '--version',
+      '1.5.0',
+      '--require-date',
+    ])
     expect(result.status).toBe(0)
   })
 
   it('reports the date with --print-date', () => {
-    const result = run(['--file', fixture, '--version', '1.5.0', '--print-date'])
+    const result = run([
+      '--file',
+      fixture,
+      '--version',
+      '1.5.0',
+      '--print-date',
+    ])
     expect(result.stdout).toBe('2026-01-02\n')
   })
 

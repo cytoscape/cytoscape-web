@@ -15,7 +15,14 @@
 // matter what the tarball contains.
 
 import { execFileSync } from 'node:child_process'
-import { cpSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+  cpSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
@@ -84,10 +91,14 @@ const main = () => {
 
     // Resolve tsc from the fixture's own install, so the pinned version is the
     // one that runs.
-    execFileSync(process.execPath, [join(scratch, 'node_modules/typescript/bin/tsc'), '--noEmit'], {
-      cwd: scratch,
-      stdio: 'inherit',
-    })
+    execFileSync(
+      process.execPath,
+      [join(scratch, 'node_modules/typescript/bin/tsc'), '--noEmit'],
+      {
+        cwd: scratch,
+        stdio: 'inherit',
+      },
+    )
 
     console.log('consumer type-check passed (skipLibCheck: false)')
   } catch (error) {

@@ -15,7 +15,14 @@
 
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
@@ -100,7 +107,8 @@ const main = async () => {
     if (missing.length > 0 || unexpected.length > 0) {
       const lines = ['tarball contents do not match the expected list']
       if (missing.length > 0) lines.push(`  missing:    ${missing.join(', ')}`)
-      if (unexpected.length > 0) lines.push(`  unexpected: ${unexpected.join(', ')}`)
+      if (unexpected.length > 0)
+        lines.push(`  unexpected: ${unexpected.join(', ')}`)
       lines.push(
         `  If this change is intentional, update EXPECTED in ${relative(process.cwd(), new URL(import.meta.url).pathname)}`,
         `  and the "files" array in ${PKG_DIR}/package.json together.`,
@@ -111,8 +119,12 @@ const main = async () => {
       fail(`expected ${EXPECTED.length} entries, found ${actual.length}`)
     }
 
-    const declared = JSON.parse(readFileSync(join(PKG_DIR, 'package.json'), 'utf8')).version
-    const packed = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version
+    const declared = JSON.parse(
+      readFileSync(join(PKG_DIR, 'package.json'), 'utf8'),
+    ).version
+    const packed = JSON.parse(
+      readFileSync(join(root, 'package.json'), 'utf8'),
+    ).version
     if (packed !== declared) {
       fail(`tarball says ${packed}, ${PKG_DIR}/package.json says ${declared}`)
     }
@@ -135,7 +147,9 @@ const main = async () => {
     const packedMf = readFileSync(join(root, 'dist/mf-declarations.d.ts'))
     const sourceMf = readFileSync(join(PKG_DIR, 'src/mf-declarations.d.ts'))
     if (!packedMf.equals(sourceMf)) {
-      fail('dist/mf-declarations.d.ts differs from src/mf-declarations.d.ts — postbuild did not copy the current file')
+      fail(
+        'dist/mf-declarations.d.ts differs from src/mf-declarations.d.ts — postbuild did not copy the current file',
+      )
     }
 
     const bytes = readFileSync(tarball)
@@ -146,7 +160,8 @@ const main = async () => {
       tarball,
     }
 
-    if (options.out) writeFileSync(options.out, `${JSON.stringify(result, null, 2)}\n`)
+    if (options.out)
+      writeFileSync(options.out, `${JSON.stringify(result, null, 2)}\n`)
     if (process.env.GITHUB_OUTPUT) {
       writeFileSync(
         process.env.GITHUB_OUTPUT,
@@ -155,7 +170,9 @@ const main = async () => {
       )
     }
 
-    console.log(`${JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).name}@${result.version}`)
+    console.log(
+      `${JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).name}@${result.version}`,
+    )
     console.log(`  entries   ${actual.length}`)
     console.log(`  shasum    ${result.shasum}`)
     console.log(`  integrity ${result.integrity}`)

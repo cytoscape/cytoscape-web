@@ -51,7 +51,8 @@ export const extractSection = (text, version) => {
   if (index === -1) return null
 
   const start = headings[index].line + 1
-  const end = index + 1 < headings.length ? headings[index + 1].line : lines.length
+  const end =
+    index + 1 < headings.length ? headings[index + 1].line : lines.length
   const body = lines.slice(start, end)
 
   while (body.length > 0 && body[0].trim() === '') body.shift()
