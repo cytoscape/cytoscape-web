@@ -111,6 +111,11 @@ five entries. The real count is **six**: it omits the package-root `index.d.ts`
 (123 bytes), which is listed in `files` and does exist. A check that has been
 wrong since it was written is a check nobody was really performing.
 
+(The count becomes **seven** with this release: the package declares
+`"license": "MIT"` but has never shipped the license text, and the `LICENSE`
+file is added alongside the rest of the metadata work. Machine-checking the
+list is what makes changing it safe.)
+
 ### 5. The package is a facade over app internals, and nothing guards the contract
 
 `packages/api-types/src/index.ts` does `export * from '../../../src/app-api/types'`.
@@ -826,7 +831,6 @@ source-compatible.
 
 ## Follow-up (out of scope for `1.0.0-beta.4`)
 
-- **`packages/api-types/LICENSE`** — the package declares `"license": "MIT"` but ships no license text. Adding the file plus a `files` entry changes the expected tarball entry count from 6 to 7, so it must land in the same commit as the verifier's expected-file list.
 - **`exports` field** — must not ride along with an already-heavily-breaking release. `cy-agent-bridge` consumes this package through the `types` array with `skipLibCheck: false`; adding `exports` changes resolution under `node16`/`nodenext`. Land it separately, gated on a cy-agent-bridge type-check. Revisit `"main": "dist/index.d.ts"` at the same time.
 - **`environment: npm-publish` approval gate** — a required reviewer before the publish step. The environment name must be set in both the workflow and the npm Trusted Publisher configuration, or the OIDC subject will not match.
 - **Release notes as a GitHub Discussion** — Discussions emit `discussion`, never `release`, so Zenodo is untouched and consumers get a subscribable feed. Needs `discussions: write`.

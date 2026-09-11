@@ -56,9 +56,21 @@ _Design: §Target design → Package metadata_
 
 ### 0b — Descriptive metadata
 
-- [ ] Add `homepage`, `bugs.url`, and `author`, copying the values from the root `package.json` so the two agree
+- [ ] `author`: copy from the root `package.json` — `{ "name": "The Cytoscape Consortium", "url": "https://cytoscape.org" }`
+- [ ] `homepage`: `https://github.com/cytoscape/cytoscape-web/tree/development/packages/api-types#readme` — **not** the root's value. The root points at `http://web.cytoscape.org`, the application's site, which tells a developer looking for this package nothing (and is `http://`)
+- [ ] `bugs.url`: `https://github.com/cytoscape/cytoscape-web/issues` — the root has no `bugs` field, so there is nothing to copy
 
-### 0c — Build safety net
+### 0c — Ship the license text
+
+`package.json` declares `"license": "MIT"` but the tarball carries no license
+text. Doing this now is free; doing it later means changing `files` here and the
+verifier's expected-file list in Step 1b in one coordinated commit.
+
+- [ ] Copy the root `LICENSE` (MIT, "Copyright (c) 2024 - 2026 The Cytoscape Consortium", 19 lines) to `packages/api-types/LICENSE`
+- [ ] Add `"LICENSE"` to the `files` array
+- [ ] **The tarball is now 7 entries, not 6.** Step 1b's expected list and Step 0's verification below must both say 7 from the start
+
+### 0d — Build safety net
 
 - [ ] Add `"prepack": "npm run build"` to `scripts` — makes it structurally impossible to pack a stale `dist/` (the failure mode described in design §Background 1)
 - [ ] Confirm `prepack` does **not** fire on a root `npm ci` (npm runs `prepare`, not `prepack`, for linked workspaces)
@@ -66,7 +78,7 @@ _Design: §Target design → Package metadata_
 #### Verification (Step 0)
 
 - [ ] `npm ci` at the repository root still succeeds and does not trigger a `tsup` build
-- [ ] `npm pack -w packages/api-types` produces a `.tgz` with `"version": "1.0.0-beta.4"` and 6 entries — note that from here on `prepack` fires on every pack, including `--dry-run`, so packing is no longer a read-only inspection
+- [ ] `npm pack -w packages/api-types` produces a `.tgz` with `"version": "1.0.0-beta.4"` and **7** entries (6 plus `LICENSE`) — note that from here on `prepack` fires on every pack, including `--dry-run`, so packing is no longer a read-only inspection
 - [ ] `node -p "require('./packages/api-types/package.json').publishConfig.access"` prints `public`
 
 ---
@@ -100,7 +112,7 @@ Operates on a **real `.tgz`**, never `--dry-run`: `prepack` runs on
 was meant to inspect, and the bytes verified would not be the bytes published.
 
 - [ ] Create the file; accept a path to an existing `.tgz` (packing it first only if not given), extract it to a temporary directory, and assert against the **extracted tree**
-- [ ] Assert the exact file list: `CHANGELOG.md`, `README.md`, `dist/index.d.ts`, `dist/mf-declarations.d.ts`, `index.d.ts`, `package.json` — report missing and unexpected entries separately, and make the failure message say to update the expected list if the change is intentional
+- [ ] Assert the exact file list: `CHANGELOG.md`, `LICENSE`, `README.md`, `dist/index.d.ts`, `dist/mf-declarations.d.ts`, `index.d.ts`, `package.json` — seven entries, including the `LICENSE` added in Step 0c. Report missing and unexpected entries separately, and make the failure message say to update the expected list if the change is intentional
 - [ ] Assert the entry count matches the expected list length and the packed version matches `package.json`
 - [ ] Assert `dist/index.d.ts` exceeds 10,000 bytes — an empty or stub declaration file is the characteristic `tsup` failure mode
 - [ ] Assert `dist/index.d.ts` line 1 is exactly `/// <reference path="./mf-declarations.d.ts" />` — proves the relative-path `postbuild` one-liner ran with the right cwd instead of silently no-opping
@@ -120,6 +132,8 @@ the publish — a broken `1.0.0-beta.4` cannot be replaced, only superseded.
 - [ ] `scripts/verify-api-types-consumer.mjs` **copies the fixture to a temporary directory outside the repository**, then installs the `.tgz` and the fixture's own declared dependencies there and runs `tsc --noEmit`
 - [ ] Do not compile the fixture in place. Measured from `test/fixtures/api-types-consumer/`, resolution walks up and finds `<repo>/node_modules/react`, `<repo>/node_modules/@types/react`, `<repo>/node_modules/typescript` — and, worst of all, `@cytoscape-web/api-types` resolves to `<repo>/packages/api-types/dist/index.d.ts` via the workspace symlink, so the fixture would type-check the local build no matter what the tarball contains
 - [ ] Declare every dependency the fixture needs in its own `package.json`, so a missing peer dependency fails here instead of being masked by the host's install
+- [ ] Pin `@types/react` to **18.x**, matching the host (`react@18.3.1`, `@types/react@^18.0.20`). The `cyweb/*` module declarations reference React types, so the fixture needs them; leaving the version open would install React 19 types and could fail a release over a difference no consumer of this host actually hits
+- [ ] Pin `typescript` explicitly too, for the same reason — the fixture is installed outside the repo and inherits nothing
 - [ ] Exclude the fixture from the root `tsconfig.json` and from `oxlint` if either would otherwise pick it up
 
 ### 1d — Register the scripts
@@ -257,7 +271,8 @@ _Design: §Background 2, §Target design → Closing the CI gap_
 - [ ] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types --ignore-scripts` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
 - [ ] Comment explaining that root `tsconfig.json` excludes `packages/`, so `lint:tsc` never sees this package and a declaration break would otherwise be invisible until release day
 - [ ] Comment noting the build, the pack and both verifiers must stay in the same job, because `packages/api-types/dist/` and the `.tgz` do not survive a job boundary
-- [ ] **Repository settings, not part of the PR:** after the PR merges and the job has run once under its final name, add `api-types` to the branch-protection required checks — so Step 2b's CI gate has something to require and the name it queries is known to exist
+- [ ] **Repository settings, not part of the PR:** after the PR merges and the job has run once under its final name, add **`API Types Package` only** to `development`'s branch-protection required checks. `required_status_checks` is currently empty, so this is the first check this repository requires; scoping it to the new job keeps the blast radius small and leaves the existing development flow intact
+- [ ] Do **not** add `Lint` / `Build` / `Unit Tests` at the same time — making them blocking is a separate policy decision that needs a view on their flakiness first. Step 2b still verifies all four at release time; that gate reads the Checks API directly and does not depend on branch protection
 
 ### 3b — `src/app-api/federation/apiTypesRelease.test.ts`
 
