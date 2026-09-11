@@ -1,14 +1,13 @@
 import ClearIcon from '@mui/icons-material/Clear'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import SettingsIcon from '@mui/icons-material/Settings'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
+  Alert,
   Box,
   Button,
   CircularProgress,
+  Collapse,
   DialogActions,
   DialogContent,
   IconButton,
@@ -60,6 +59,7 @@ export const AppSettingsDialog = ({
     useContext(AppConfigContext)
 
   const [tabIndex, setTabIndex] = useState(0)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [urlInput, setUrlInput] = useState('')
   const [urlError, setUrlError] = useState<string | undefined>()
   const [fileError, setFileError] = useState<string | undefined>()
@@ -287,20 +287,26 @@ export const AppSettingsDialog = ({
               </Box>
             </Box>
 
-            <Accordion
-              disableGutters
-              elevation={0}
-              sx={{
-                mt: 2,
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 1,
-                '&::before': { display: 'none' },
-              }}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle2">Manifest Source</Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0 }}>
+            {/* Issue #703: the manifest editor is a developer tool. It hides
+                behind the footer's Advanced button so first-time users only
+                see the catalog and Install from URL. */}
+            <Collapse in={advancedOpen} unmountOnExit>
+              <Box
+                data-testid="app-settings-advanced-section"
+                sx={{
+                  mt: 2,
+                  p: 1.5,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 1,
+                }}
+              >
+                <Alert severity="warning" sx={{ mb: 1.5 }}>
+                  For developers and advanced users only. A custom manifest
+                  replaces the App Store catalog — only use sources you trust.
+                </Alert>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Manifest Source
+                </Typography>
                 {!EXTERNAL_APPS_ENABLED && (
                   <Typography
                     variant="body2"
@@ -408,8 +414,8 @@ export const AppSettingsDialog = ({
                     {fileError}
                   </Typography>
                 )}
-              </AccordionDetails>
-            </Accordion>
+              </Box>
+            </Collapse>
           </Box>
         )}
 
@@ -417,6 +423,18 @@ export const AppSettingsDialog = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 1.5 }}>
+        {tabIndex === 0 && (
+          <Button
+            data-testid="app-settings-advanced-button"
+            variant="text"
+            color="inherit"
+            startIcon={<SettingsIcon />}
+            onClick={() => setAdvancedOpen((open) => !open)}
+            sx={{ mr: 'auto', color: 'text.secondary' }}
+          >
+            {advancedOpen ? 'Hide advanced' : 'Advanced'}
+          </Button>
+        )}
         <Button
           variant="outlined"
           disabled={!EXTERNAL_APPS_ENABLED || refreshing}
@@ -433,7 +451,11 @@ export const AppSettingsDialog = ({
         <Button
           data-testid="app-settings-dialog-close-button"
           variant="contained"
-          onClick={() => setOpenDialog(false)}
+          onClick={() => {
+            // Reopening starts hidden again: the section is opt-in each time.
+            setAdvancedOpen(false)
+            setOpenDialog(false)
+          }}
         >
           Close
         </Button>
