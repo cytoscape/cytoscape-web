@@ -272,8 +272,8 @@ _Design: §Background 2, §Target design → Closing the CI gap_
 - [x] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types --ignore-scripts` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
 - [x] Comment explaining that root `tsconfig.json` excludes `packages/`, so `lint:tsc` never sees this package and a declaration break would otherwise be invisible until release day
 - [x] Comment noting the build, the pack and both verifiers must stay in the same job, because `packages/api-types/dist/` and the `.tgz` do not survive a job boundary
-- [ ] **Repository settings, not part of the PR — not yet done:** after the PR merges and the job has run once under its final name, add **`API Types Package` only** to `development`'s branch-protection required checks. `required_status_checks` is currently empty, so this is the first check this repository requires; scoping it to the new job keeps the blast radius small and leaves the existing development flow intact
-- [ ] Do **not** add `Lint` / `Build` / `Unit Tests` at the same time — making them blocking is a separate policy decision that needs a view on their flakiness first. Step 2b still verifies all four at release time; that gate reads `ci.yml`'s runs directly and does not depend on branch protection
+- [x] **Repository settings, not part of the PR:** after the PR merges and the job has run once under its final name, add **`API Types Package` only** to `development`'s branch-protection required checks. `required_status_checks` was empty, so this is the first check this repository requires; scoping it to the new job keeps the blast radius small and leaves the existing development flow intact — done 2026-09-11 after #723 merged. Verified via the API: `contexts: ["API Types Package"]`, bound to `app_id: 15368` (`github-actions`), so a same-named check from another app does not satisfy it. `strict: true` was already set and is now live, meaning a PR must be up to date with `development` before merging; kept deliberately
+- [x] Do **not** add `Lint` / `Build` / `Unit Tests` at the same time — making them blocking is a separate policy decision that needs a view on their flakiness first. Step 2b still verifies all four at release time; that gate reads `ci.yml`'s runs directly and does not depend on branch protection — confirmed: only the one check is required
 
 ### 3b — `src/app-api/federation/apiTypesRelease.test.ts`
 
@@ -291,7 +291,7 @@ _Design: §Background 2, §Target design → Closing the CI gap_
 
 - [x] `npx vitest run apiTypesRelease` passes — 6 tests
 - [x] `npm run test:checks:quiet` passes — 335 files, 4259 tests
-- [ ] The pull request's CI run shows the new `api-types` job green — **pending**: the job has not run on GitHub yet. Its four steps were executed locally in order and all passed
+- [x] The pull request's CI run shows the new `api-types` job green — PR #723, every run; and on the merge commit `57894482` on `development` (run 34632780951, `API Types Package` success in 64s), which is the run the release workflow's CI gate now reads
 - [x] Temporarily editing `packages/api-types/package.json` to a mismatched version makes `apiTypesRelease` fail (revert afterwards) — and two more breakages were staged: an invalid parenthetical (`(TBD)`) and an out-of-order version heading each fail exactly their own assertion
 
 ---
