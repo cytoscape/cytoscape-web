@@ -266,32 +266,32 @@ _Design: §Background 2, §Target design → Closing the CI gap_
 
 ### 3a — `api-types` job in `ci.yml`
 
-- [ ] Add a **separate** `api-types` job (not appended to `build`) with a 10-minute timeout
-- [ ] Give the job an explicit `name: API Types Package` — the release workflow's CI gate (Step 2b) matches on the display name, so an unnamed job would be reported under its ID and the gate would miss it
-- [ ] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types --ignore-scripts` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
-- [ ] Comment explaining that root `tsconfig.json` excludes `packages/`, so `lint:tsc` never sees this package and a declaration break would otherwise be invisible until release day
-- [ ] Comment noting the build, the pack and both verifiers must stay in the same job, because `packages/api-types/dist/` and the `.tgz` do not survive a job boundary
-- [ ] **Repository settings, not part of the PR:** after the PR merges and the job has run once under its final name, add **`API Types Package` only** to `development`'s branch-protection required checks. `required_status_checks` is currently empty, so this is the first check this repository requires; scoping it to the new job keeps the blast radius small and leaves the existing development flow intact
+- [x] Add a **separate** `api-types` job (not appended to `build`) with a 10-minute timeout
+- [x] Give the job an explicit `name: API Types Package` — the release workflow's CI gate (Step 2b) matches on the display name, so an unnamed job would be reported under its ID and the gate would miss it
+- [x] Steps: checkout → `./.github/actions/setup-node-dependencies` → `npm run build:api-types` → `npm pack -w packages/api-types --ignore-scripts` → `npm run verify:api-types-pack -- <tgz>` → `npm run verify:api-types-consumer -- <tgz>`
+- [x] Comment explaining that root `tsconfig.json` excludes `packages/`, so `lint:tsc` never sees this package and a declaration break would otherwise be invisible until release day
+- [x] Comment noting the build, the pack and both verifiers must stay in the same job, because `packages/api-types/dist/` and the `.tgz` do not survive a job boundary
+- [ ] **Repository settings, not part of the PR — not yet done:** after the PR merges and the job has run once under its final name, add **`API Types Package` only** to `development`'s branch-protection required checks. `required_status_checks` is currently empty, so this is the first check this repository requires; scoping it to the new job keeps the blast radius small and leaves the existing development flow intact
 - [ ] Do **not** add `Lint` / `Build` / `Unit Tests` at the same time — making them blocking is a separate policy decision that needs a view on their flakiness first. Step 2b still verifies all four at release time; that gate reads the Checks API directly and does not depend on branch protection
 
 ### 3b — `src/app-api/federation/apiTypesRelease.test.ts`
 
-- [ ] Create the file next to `mfDeclarations.test.ts`, with `// @vitest-environment node` as the first line
-- [ ] Assert `packages/api-types/package.json` version equals `package-lock.json`'s workspace entry — the highest-value assertion, catching "bumped the package, forgot `npm install`"
-- [ ] Assert `CHANGELOG.md` has a `## <version>` heading for the current package version
-- [ ] Assert every heading's parenthetical is either `YYYY-MM-DD` or the literal `unpublished` — nothing else
-- [ ] Assert at most one `(unpublished)` section exists and, if present, it is the first
-- [ ] Assert version headings descend in strict semver order, using the root `semver` dependency
-- [ ] Assert `files` includes `dist` and the `types` path lives under a directory named in `files`
-- [ ] Reuse the parser exported from `scripts/changelog-section.mjs` so there is exactly one heading-parsing implementation
-- [ ] Do **not** require a date — `(unpublished)` is the legitimate working state on a pull request; the date requirement belongs only to the release workflow
+- [x] Create the file next to `mfDeclarations.test.ts`, with `// @vitest-environment node` as the first line
+- [x] Assert `packages/api-types/package.json` version equals `package-lock.json`'s workspace entry — the highest-value assertion, catching "bumped the package, forgot `npm install`"
+- [x] Assert `CHANGELOG.md` has a `## <version>` heading for the current package version
+- [x] Assert every heading's parenthetical is either `YYYY-MM-DD` or the literal `unpublished` — nothing else
+- [x] Assert at most one `(unpublished)` section exists and, if present, it is the first
+- [x] Assert version headings descend in strict semver order, using the root `semver` dependency
+- [x] Assert `files` includes `dist` and the `types` path lives under a directory named in `files`
+- [x] Reuse the parser exported from `scripts/changelog-section.mjs` so there is exactly one heading-parsing implementation
+- [x] Do **not** require a date — `(unpublished)` is the legitimate working state on a pull request; the date requirement belongs only to the release workflow
 
 #### Verification (Step 3)
 
-- [ ] `npx vitest run apiTypesRelease` passes
-- [ ] `npm run test:checks:quiet` passes
-- [ ] The pull request's CI run shows the new `api-types` job green
-- [ ] Temporarily editing `packages/api-types/package.json` to a mismatched version makes `apiTypesRelease` fail (revert afterwards)
+- [x] `npx vitest run apiTypesRelease` passes — 6 tests
+- [x] `npm run test:checks:quiet` passes — 335 files, 4259 tests
+- [ ] The pull request's CI run shows the new `api-types` job green — **pending**: the job has not run on GitHub yet. Its four steps were executed locally in order and all passed
+- [x] Temporarily editing `packages/api-types/package.json` to a mismatched version makes `apiTypesRelease` fail (revert afterwards) — and two more breakages were staged: an invalid parenthetical (`(TBD)`) and an out-of-order version heading each fail exactly their own assertion
 
 ---
 
