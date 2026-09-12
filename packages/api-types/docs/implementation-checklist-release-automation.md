@@ -573,27 +573,27 @@ registry, every problem found here becomes a `1.0.0-beta.5`.
   Cross-checking all 54 `callApi` strings against the beta.4 declarations instead: **4 methods no longer exist** (`selection.additiveUnselect` → `additiveDeselect`, `table.setColumnName` → `renameColumn`, `visualStyle.removeMapping` → `deleteMapping`, `workspace.getNetworkList` → `getNetworks`), **3 more keep their name but change signature** (`selection.additiveSelect` / `toggleSelected` now take `(networkId, nodeIds, edgeIds)` and the tool passes one merged `ids` array; `visualStyle.createContinuousMapping` now takes an options object and the tool passes six positionals), and **2 change return shape** (`layout.getAvailableLayouts` → `{ layouts }`, `viewport.getNodePositions` → `{ positions, missing }`), which the tools pass straight through to the MCP client. **Seven runtime breaks and two shape changes, none visible to `tsc`.** The claim that this repository's typecheck is "the de facto correctness test" holds for the _declarations compiling_ and for nothing else
 
 - [x] Install it into each example app and **measure** the fallout (fixing is tracked below), especially every app registering an `'apps-menu'` item: the component-to-data change is not source-compatible, so a pin bump alone is not enough — all four apps pass on beta.3; on beta.4: `hello-world` 1 error, `network-workflows` 2, `project-template` 2, `network-statistics` 0. Every `TS2353` is an `'apps-menu'` registration still passing `title:` and `component:` (`hello-world/src/HelloApp.tsx:64-68`, `network-workflows/src/NetworkWorkflowsApp.tsx:25,32`, `project-template/src/TemplateApp.tsx:56`), which beta.4 rejects with `APP9` at runtime as well. `project-template/src/contextMenus.ts:34` is the `additiveSelect` signature split (`TS2554: Expected 3 arguments, but got 2`). `network-statistics` genuinely passes: it consumes `cyweb/ApiTypes` with `skipLibCheck: false` and touches none of the changed surface
-- [ ] **Fix the fallout** — four `'apps-menu'` migrations (component → `label`/`onClick`, with any UI moved to `apis.dialog.open`) and one `additiveSelect` call in `cytoscape-web-app-examples`; four renames, three signature changes and two return-shape changes in `cy-agent-bridge/mcp-server`. Both are sibling-repository branches; neither can be CI-verified against the registry until beta.4 is published, so verify against the local tarball, publish, then bump the pins (8b)
+- [x] **Fix the fallout** — four `'apps-menu'` migrations (component → `label`/`onClick`, with any UI moved to `apis.dialog.open`) and one `additiveSelect` call in `cytoscape-web-app-examples`; four renames, three signature changes and two return-shape changes in `cy-agent-bridge/mcp-server`. Both are sibling-repository branches; neither can be CI-verified against the registry until beta.4 is published, so verify against the local tarball, publish, then bump the pins (8b) — landed after the publish, against the registry copy: `cytoscape-web-app-examples#15` (`e7f9757`, `c03c997`) and `cy-agent-bridge#1` (`31522d8`)
 - [x] Record which host commit or version beta.4 requires, and which deployments carry it. `apiVersion` is documented as being for future compatibility checking (`src/app-api/api_docs/Api.md:2766`) and enforces nothing today, so nothing stops an app built against beta.4 from loading into an older host — done in 7a-2 (CHANGELOG compatibility block and README migration notes)
 - [x] Fold that host-compatibility statement into the release notes — it is the first thing in the beta.4 CHANGELOG section, which is what the tag message and job summary are extracted from
 
 ### 8b — Bump the pins after the publish
 
-- [ ] `cy-agent-bridge/package.json:51` → `^1.0.0-beta.4`, updating the lockfile in the same commit
-- [ ] `cytoscape-web-app-examples/package.json:62` → `^1.0.0-beta.4`
-- [ ] `project-template/package.json:60` → `^1.0.0-beta.4`
-- [ ] `hello-world/package.json:42` → `^1.0.0-beta.4`
-- [ ] `network-statistics/package.json:40` → `^1.0.0-beta.4`
-- [ ] `network-workflows/package.json:42` → `^1.0.0-beta.4`
-- [ ] Land the app migrations rehearsed in 8a
-- [ ] **`create-cytoscape-app`** — decided 2026-09-11: it pins an **exact** version on purpose (`scaffold.ts:7-14`), so it does not float onto beta.4 and must be moved by hand. Bump `API_TYPES_VERSION` to `1.0.0-beta.4`, **and** migrate the `full` and `menu` templates, which still register `'apps-menu'` with `title:` / `component:` — otherwise every new scaffold would fail to type-check on its first build. Publish the scaffolder after that; it carries the pin
-- [ ] **`cy-agent-bridge/mcp-server`** — the seven runtime breaks and two shape changes from 8a: rename `additiveUnselect` → `additiveDeselect`, `setColumnName` → `renameColumn`, `removeMapping` → `deleteMapping`, `getNetworkList` → `getNetworks`; split the merged `ids` argument for `additiveSelect` / `additiveDeselect` / `toggleSelected`; move `createContinuousMapping` to the options object; and decide whether `cytoscape_get_layouts` / `cytoscape_get_positions` unwrap `{ layouts }` / `{ positions, missing }` or pass them through with a schema update. None of this is visible to `tsc`; re-run the `callApi`-string cross-check from 8a after the fix
+- [x] `cy-agent-bridge/package.json:51` → `^1.0.0-beta.4`, updating the lockfile in the same commit — `31522d8`
+- [x] `cytoscape-web-app-examples/package.json:62` → `^1.0.0-beta.4`
+- [x] `project-template/package.json:60` → `^1.0.0-beta.4`
+- [x] `hello-world/package.json:42` → `^1.0.0-beta.4`
+- [x] `network-statistics/package.json:40` → `^1.0.0-beta.4`
+- [x] `network-workflows/package.json:42` → `^1.0.0-beta.4` — all five in `e7f9757`, one lockfile
+- [x] Land the app migrations rehearsed in 8a — `cytoscape-web-app-examples#15`; review found six more places describing the old shape (a `registerAll` example, the scaffolder's generated `AGENTS.md`, two READMEs, the App Registry table, a file map), fixed in `c03c997`
+- [x] **`create-cytoscape-app`** — decided 2026-09-11: it pins an **exact** version on purpose (`scaffold.ts:7-14`), so it does not float onto beta.4 and must be moved by hand. Bump `API_TYPES_VERSION` to `1.0.0-beta.4`, **and** migrate the `full` and `menu` templates, which still register `'apps-menu'` with `title:` / `component:` — otherwise every new scaffold would fail to type-check on its first build. Publish the scaffolder after that; it carries the pin — done: `API_TYPES_VERSION = '1.0.0-beta.4'` and the template migration in #15, released as **`create-cytoscape-app@0.4.1`** (`cytoscape-web-app-examples#16`, run 34669008847, provenance from `e930ddd`, `latest` moved; `app-runtime` unchanged at `0.4.0`). A tag-less `npm create cytoscape-app` from a clean directory scaffolds a project pinned to beta.4 that type-checks, builds and passes `cyweb-app verify`. Found on the way and fixed in #17: the troubleshooting guide's `--prefer-online` remedy for a stale npx cache does not work — npm resolves the bare initializer as `create-cytoscape-app@*`, fetches the manifest, then accepts any cached version that satisfies `*`
+- [x] **`cy-agent-bridge/mcp-server`** — the seven runtime breaks and two shape changes from 8a: rename `additiveUnselect` → `additiveDeselect`, `setColumnName` → `renameColumn`, `removeMapping` → `deleteMapping`, `getNetworkList` → `getNetworks`; split the merged `ids` argument for `additiveSelect` / `additiveDeselect` / `toggleSelected`; move `createContinuousMapping` to the options object; and decide whether `cytoscape_get_layouts` / `cytoscape_get_positions` unwrap `{ layouts }` / `{ positions, missing }` or pass them through with a schema update. None of this is visible to `tsc`; re-run the `callApi`-string cross-check from 8a after the fix — done in `cy-agent-bridge#1`: the four renames and both signature changes (the three selection tools' input schemas split `ids` into `nodeIds` / `edgeIds`, matching `cytoscape_select`); the two return-shape changes are **passed through** unchanged, since the tools hand the host's data to the MCP client as-is and their descriptions name no shape. Cross-check re-run: all 54 dispatch strings resolve in the beta.4 declarations. Each repaired tool was also driven through the built `handleTool` against a local host on `development`
 
 #### Verification (Step 8)
 
-- [ ] `cy-agent-bridge` type-checks and builds against the published package
-- [ ] Every example app builds, and its menu items render and act correctly in the host at `localhost:5500`
-- [ ] Every consumer lockfile records `1.0.0-beta.4`, so `npm ci` resolves the new version rather than the old one
+- [x] `cy-agent-bridge` type-checks and builds against the published package — panel `typecheck` and `vite build`, `mcp-server` `tsc`, and the repository's CI on `4a07694`
+- [x] Every example app builds, and its menu items render and act correctly in the host at `localhost:5500` — `build` 4/4, `verify:federation` 28/28, and a Playwright pass against the host on `development`: all four apps enable without `APP9`, all four rows render, both `onClick` actions add a network (the host closes the dropdown itself), the CX2 action creates a 135-node network, and the Network Summary dialog opens through `apis.dialog.open` with the host's Close and the body's own
+- [x] Every consumer lockfile records `1.0.0-beta.4`, so `npm ci` resolves the new version rather than the old one — both lockfiles carry one `1.0.0-beta.4` entry and no `1.0.0-beta.3`
 
 ---
 
@@ -659,16 +659,16 @@ worse than where it is now.
 
 ## Verification
 
-- [ ] `npm run test:checks:quiet` passes
-- [ ] Build, pack, and both verifiers pass against a single `.tgz`
-- [ ] The `api-types` job is green on the pull request that adds it, and is a required check
-- [ ] A `dry_run=true` dispatch is fully green against the commit that will be tagged — remembering it does not exercise npm authentication
-- [ ] The published `dist.integrity` was asserted equal to the locally packed `.tgz`, not merely logged
-- [ ] `@cytoscape-web/api-types@1.0.0-beta.4` is on npm with `latest` pointing at it and a provenance attestation attached
-- [ ] `gh secret list` is still empty — no npm credential was introduced
-- [ ] The Zenodo DOI record gained no new version
-- [ ] All six downstream consumers pin `^1.0.0-beta.4`, record it in their lockfiles, and build
-- [ ] The published `CHANGELOG.md` states which host commit and which deployments implement this version
+- [x] `npm run test:checks:quiet` passes — on `cca44fc0`: lint clean, 336 files / 4294 tests
+- [x] Build, pack, and both verifiers pass against a single `.tgz` — the `api-types` CI job on every pull request since Step 3, and the release run itself (34660060586)
+- [x] The `api-types` job is green on the pull request that adds it, and is a required check — Step 3; the only required check on `development`
+- [ ] A `dry_run=true` dispatch is fully green against the commit that will be tagged — remembering it does not exercise npm authentication — **not done as written; waived.** The rehearsal was green on `f62224c6` (run 34656503916, Step 5b). The first tag push, on that commit, failed at the annotated-tag guard; #727 changed the guard, and the tag was moved to `0e95d2c1` and pushed without a second dry run. The real run there (34660060586) was green, which proves that path worked once, not that the gate was exercised. Left unchecked so the audit says what happened
+- [x] The published `dist.integrity` was asserted equal to the locally packed `.tgz`, not merely logged — the verify-registry step of run 34660060586 (`decide-registry-action.mjs`, integrity + repository + workflow + commit)
+- [x] `@cytoscape-web/api-types@1.0.0-beta.4` is on npm with `latest` pointing at it and a provenance attestation attached — Step 7c
+- [x] `gh secret list` is still empty — no npm credential was introduced — re-checked after the release
+- [x] The Zenodo DOI record gained no new version — read from Zenodo after the release: concept `10.5281/zenodo.14775458` resolves to record `20754265`, "Cytoscape Web 1.0.7", version index 7 and last, created 2026-06-19 — the June release, nothing since. Consistent with the GitHub side: no Release was created (latest `v1.0.7`) and webhook 527149929, `release` events only, shows no delivery
+- [x] All six downstream consumers pin `^1.0.0-beta.4`, record it in their lockfiles, and build — Step 8b
+- [x] The published `CHANGELOG.md` states which host commit and which deployments implement this version — Step 7a-2; whether the deployment it names is running that commit is Step 7d, still open
 
 Step 9 is deliberately excluded from this list — it is follow-up work, tracked
 here so it is not lost, and not a condition for releasing `1.0.0-beta.4`.
