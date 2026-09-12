@@ -377,9 +377,13 @@ step 4 before you tag anything.
 
    ```bash
    set -euo pipefail
-   VERSION=1.0.0-beta.4
    SHA=<MERGE_COMMIT_SHA>
    git fetch origin development
+   # Read the version from the commit being tagged — the workflow's tag guard
+   # compares the tag against exactly this value, so a literal here can only
+   # go stale.
+   VERSION="$(git show "$SHA:packages/api-types/package.json" \
+     | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"
    NOTES="$(mktemp)"
    git show "$SHA:packages/api-types/CHANGELOG.md" \
      | npm run --silent changelog:section -- \
@@ -425,9 +429,9 @@ step 4 before you tag anything.
    integrity, the dist-tag it resolves to, and the release notes. Independently:
 
    ```bash
-   git ls-remote --tags origin 'refs/tags/api-types-v1.0.0-beta.4*'
+   git ls-remote --tags origin "refs/tags/api-types-v$VERSION*"
    npm view @cytoscape-web/api-types dist-tags
-   npm view @cytoscape-web/api-types@1.0.0-beta.4 \
+   npm view "@cytoscape-web/api-types@$VERSION" \
      version dist.shasum dist.integrity
    ```
 
@@ -465,7 +469,7 @@ If the publish succeeded but a later step failed, **do not delete or move the
 tag**. Re-run the workflow against the existing tag:
 
 ```bash
-gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.4 -f dry_run=false
+gh workflow run release-api-types.yml --ref "api-types-v$VERSION" -f dry_run=false
 ```
 
 It compares the registry against the tarball it just built, including the
