@@ -452,9 +452,9 @@ the only signal.
 
 ### 7b — Merge and tag
 
-- [ ] Merge the release pull request into `development` and note the merge commit SHA
-- [ ] Complete Step 5b against that merge commit
-- [ ] Tag the **exact merge commit**, not a later `development` HEAD:
+- [x] Merge the release pull request into `development` and note the merge commit SHA — #726 as `f62224c6`; then, after the guard fix, #727 as `0e95d2c1`, which is the commit actually tagged
+- [x] Complete Step 5b against that merge commit — run 34656503916 on `f62224c6`; the guard fix in #727 did not touch the package, and its own CI (run 34659669837) was green before tagging
+- [x] Tag the **exact merge commit**, not a later `development` HEAD — `api-types-v1.0.0-beta.4` on `0e95d2c1`, annotated, 185-line message, three `###` headings verified before pushing:
 
   The canonical copy of this command is the runbook in
   `packages/api-types/README.md` §4; it ships in the tarball and is what a
@@ -492,7 +492,7 @@ the only signal.
   git push origin "refs/tags/api-types-v$VERSION"
   ```
 
-- [ ] `gh run watch` — the tag push fires the workflow automatically and publishes with `--tag latest`
+- [x] `gh run watch` — the tag push fires the workflow automatically and publishes with `--tag latest` — run 34660060586: all eight guards, build, pack, both verifiers, decision `publish`, **Publish to npm success**, Verify the registry success
 
 #### What happened on the first attempt (recorded, not a step)
 
@@ -523,13 +523,13 @@ publish path is ordered so that every guard fails before any upload.
 
 ### 7c — Verify the release
 
-- [ ] Job summary reports the expected version, shasum, integrity and provenance URL
-- [ ] `npm view @cytoscape-web/api-types dist-tags` shows `latest: 1.0.0-beta.4`
-- [ ] `npm view @cytoscape-web/api-types@1.0.0-beta.4 --json | jq '.dist.attestations'` is non-null
-- [ ] The npm package page shows a **Provenance** panel linking back to the workflow run and the tagged commit — the first release with one, since beta.3 was published by hand
-- [ ] `git ls-remote --tags origin 'refs/tags/api-types-v1.0.0-beta.4*'` resolves to the intended merge commit
-- [ ] **No GitHub Release was created** — `gh release list` is unchanged
-- [ ] **Zenodo did not fire** — `gh api repos/cytoscape/cytoscape-web/hooks/527149929/deliveries --jq '.[0].delivered_at'` shows no new delivery, and the DOI record's version list is unchanged
+- [x] Job summary reports the expected version, shasum, integrity and provenance URL — published 2026-09-12T00:00:20Z, integrity `sha512-9NLHfvSY…`
+- [x] `npm view @cytoscape-web/api-types dist-tags` shows `latest: 1.0.0-beta.4` — confirmed (`alpha` still on `0.1.0-alpha.3`, to be removed in 9c)
+- [x] `npm view @cytoscape-web/api-types@1.0.0-beta.4 --json | jq '.dist.attestations'` is non-null — and the SLSA predicate names `cytoscape/cytoscape-web`, `.github/workflows/release-api-types.yml`, ref `refs/tags/api-types-v1.0.0-beta.4`, commit `0e95d2c1`: exactly what `decide-registry-action.mjs` will need to resume a future partial failure
+- [x] The npm package page shows a **Provenance** panel linking back to the workflow run and the tagged commit — the first release with one, since beta.3 was published by hand
+- [x] `git ls-remote --tags origin 'refs/tags/api-types-v1.0.0-beta.4*'` resolves to the intended merge commit — peeled `^{}` → `0e95d2c1`
+- [x] **No GitHub Release was created** — `gh release list` is unchanged; latest is still `v1.0.7`
+- [x] **Zenodo did not fire** — no deliveries on hook 527149929, and no Release exists for it to have fired on
 
 ### 7d — Deploy `development` to dev1
 
@@ -545,7 +545,7 @@ is false.
 
 #### Verification (Step 7)
 
-- [ ] A clean `npm pack @cytoscape-web/api-types@1.0.0-beta.4` from a scratch directory yields a tarball whose `dist/index.d.ts` contains `applyVisualStyle`, `switchStyle`, `DialogApi` and `registerModal` — proving the stale-`dist` failure mode is closed
+- [x] A clean `npm pack @cytoscape-web/api-types@1.0.0-beta.4` from a scratch directory yields a tarball whose `dist/index.d.ts` contains `applyVisualStyle`, `switchStyle`, `DialogApi` and `registerModal` — proving the stale-`dist` failure mode is closed — 100,771 bytes; 7 / 2 / 4 / 2 occurrences; `LICENSE` present; CHANGELOG dated. The working tree this work started from had a 62,559-byte `dist/index.d.ts` with zero of them
 - [ ] The published compatibility statement is true when read: the build it names is reachable at the deployment it names, confirmed through Help → About rather than assumed
 
 ---
