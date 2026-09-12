@@ -159,12 +159,15 @@ const integrityOf = (pkg: string, version: string): string =>
 const decideArgs = (overrides: Record<string, string> = {}): string[] => {
   const base: Record<string, string> = {
     '--package': '@cytoscape-web/api-types',
-    '--version': '1.0.0-beta.4',
+    '--version': '0.0.0-never',
     '--integrity': 'sha512-placeholder',
     '--repository': 'cytoscape/cytoscape-web',
     '--workflow': '.github/workflows/release-api-types.yml',
     '--sha': '0'.repeat(40),
-    '--dist-tag': 'latest',
+    // A dist-tag that does not exist: the rollback guard runs first, and
+    // pointing at `latest` would make every beta.3 case below stop there —
+    // which is what happened the day after beta.4 shipped and `latest` moved.
+    '--dist-tag': 'cyweb-test-never',
     ...overrides,
   }
   return Object.entries(base).flatMap(([flag, value]) => [flag, value])
@@ -184,17 +187,14 @@ describe('decide-registry-action', () => {
   registryIt(
     'says publish when the version is absent',
     () => {
-      // 1.0.0-beta.4 is unpublished at the time of writing; once it ships this
-      // assertion becomes "skip or stop", so pin the expectation to the branch
-      // rather than the package.
+      // 0.0.0-never will not be published. The first version of this test
+      // used the then-unpublished 1.0.0-beta.4 with a fallback branch for
+      // "once it ships" — which meant that after it shipped, the test no
+      // longer exercised the absent case at all.
       const result = run(DECIDE, decideArgs())
-      if (result.stdout.includes('is not on the registry')) {
-        expect(result.status).toBe(0)
-        expect(result.stdout).toContain('action=publish')
-      } else {
-        // Already published: the run must not silently proceed.
-        expect(result.status).toBe(1)
-      }
+      expect(result.status).toBe(0)
+      expect(result.stdout).toContain('is not on the registry')
+      expect(result.stdout).toContain('action=publish')
     },
     NETWORK_TIMEOUT,
   )
@@ -237,7 +237,13 @@ describe('decide-registry-action', () => {
   registryIt(
     'refuses to roll a dist-tag backwards',
     () => {
-      const result = run(DECIDE, decideArgs({ '--version': '1.0.0-beta.2' }))
+      // This is the one test that is ABOUT the dist-tag, so it names `latest`
+      // explicitly. 1.0.0-beta.2 is older than anything latest will ever
+      // point at again.
+      const result = run(
+        DECIDE,
+        decideArgs({ '--version': '1.0.0-beta.2', '--dist-tag': 'latest' }),
+      )
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('Publishing would roll it backwards')
     },
