@@ -2,6 +2,11 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
+## 1.0.0-beta.5 (unpublished)
+
+_Nothing yet. Entries go here as the contract changes; the heading is dated
+by the release workflow's guard, not by hand._
+
 ## 1.0.0-beta.4 (2026-09-11)
 
 > **Host compatibility.** This release documents the App API as implemented by
