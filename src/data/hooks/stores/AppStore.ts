@@ -3,7 +3,8 @@ import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
-import { AppLoadState } from '../../../models/AppModel/AppLoadState'
+import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
+import { SettableAppLoadState } from '../../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { AppSource } from '../../../models/AppModel/InstalledApp'
@@ -73,6 +74,7 @@ export const useAppStore = create(
     catalogSources: {},
     manifestIds: [],
     loadStates: {},
+    loadErrors: {},
     manifestSource: undefined,
 
     restore: async (apps: CyApp[]) => {
@@ -292,14 +294,28 @@ export const useAppStore = create(
         state.catalog = newState.catalog
         state.catalogSources = newState.catalogSources
         state.manifestIds = newState.manifestIds
+        // A corrected bundle URL retires the failure recorded against the old
+        // one, so the row gets its Enable control back (#719).
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
         return state
       })
     },
 
-    setLoadState: (id: string, loadState: AppLoadState) => {
+    setLoadState: (id: string, loadState: SettableAppLoadState) => {
       set((state) => {
         const newState = AppStoreImpl.setLoadState(state, id, loadState)
         state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
+        return state
+      })
+    },
+
+    setLoadFailed: (id: string, failure: AppLoadFailure) => {
+      set((state) => {
+        const newState = AppStoreImpl.setLoadFailed(state, id, failure)
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
         return state
       })
     },
@@ -333,6 +349,7 @@ export const useAppStore = create(
         const newState = AppStoreImpl.removeApp(state, id)
         state.apps = newState.apps
         state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
         return state
       })
       deleteAppFromDb(id).catch((error) => {

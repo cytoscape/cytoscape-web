@@ -1,0 +1,432 @@
+name: Release api-types
+
+# Publishes @cytoscape-web/api-types to npm from a verified tag.
+#
+# THE FILENAME IS LOAD-BEARING. npm's Trusted Publisher configuration for this
+# package names `release-api-types.yml`. Renaming this file breaks publishing
+# until the npm-side configuration is updated to match.
+#
+# THIS WORKFLOW CREATES NO GITHUB RELEASE, deliberately. Repository webhook
+# 527149929 is a Zenodo receiver subscribed to the `release` event with no tag
+# filter, so any GitHub Release published here mints a new version of the
+# Cytoscape Web software DOI record (10.5281/zenodo.14775458). An api-types
+# release is not a release of the application and must not appear in that
+# citation record. Release notes live in the annotated tag, this run's job
+# summary, and the CHANGELOG.md shipped inside the tarball.
+#
+# Scoped to packages/api-types only. The previous .github/workflows/release.yml
+# was deleted in 3999e2ce because it ran the *application* `npm run build`,
+# which needs deployment-time paths. Nothing here touches the app build.
+#
+# There are no npm credentials in this repository. Publishing authority comes
+# from the Trusted Publisher configured on the package, bound to this repo and
+# this filename. See packages/api-types/docs/release-automation-design.md.
+
+on:
+  push:
+    tags:
+      - 'api-types-v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run every guard, build and pack, but do not publish'
+        type: boolean
+        default: true
+      dist_tag:
+        description: 'npm dist-tag (policy: the beta stream uses latest)'
+        type: choice
+        options: [latest, beta, next]
+        default: latest
+
+# One release at a time, and never cancel one in flight: npm versions are
+# immutable, so a publish cancelled mid-upload is unrecoverable.
+#
+# `queue: max` is required, not decoration. By default only one run may be
+# PENDING in a group and a newly queued run cancels the one already waiting, so
+# `cancel-in-progress: false` alone does not serialize releases.
+#
+# Rehearsals get their own group so a dry run can never displace a queued
+# release.
+#
+# actionlint <= 1.7.7 reports `queue` as an unexpected key. That is the linter
+# being older than the feature (GitHub added it 2026-05-07); the key is
+# documented, takes `single` (default) or `max`, and may not be combined with
+# `cancel-in-progress: true`.
+concurrency:
+  group: release-api-types-${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && 'rehearsal' || 'publish' }}
+  cancel-in-progress: false
+  queue: max
+
+permissions:
+  contents: read # checkout only — no GitHub Release is created
+  id-token: write # npm Trusted Publishing (OIDC) + provenance
+  actions: read # the CI gate reads ci.yml's runs; an unlisted scope defaults to none
+
+env:
+  PKG_NAME: '@cytoscape-web/api-types'
+  PKG_DIR: packages/api-types
+  TAG_PREFIX: api-types-v
+  WORKFLOW_PATH: .github/workflows/release-api-types.yml
+
+jobs:
+  release:
+    name: Publish @cytoscape-web/api-types
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history and tags for the guards below
+
+      # actions/setup-node directly, NOT ./.github/actions/setup-node-dependencies:
+      # that composite restores node_modules from a lockfile-keyed cache and
+      # skips npm ci, and layering npm ci on top would install twice on a miss.
+      # A publish deserves a clean, reproducible install.
+      #
+      # No `registry-url`, deliberately. Trusted Publishing never reads
+      # NODE_AUTH_TOKEN, and setting registry-url makes setup-node write
+      # `_authToken=${NODE_AUTH_TOKEN}` into .npmrc — an empty credential that
+      # has been reported to make npm skip the OIDC exchange entirely
+      # (actions/setup-node#1551). If a publish ever fails with 401, this is the
+      # first thing to revisit.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # ---------------------------------------------------------------- #
+      # Parameters                                                        #
+      # ---------------------------------------------------------------- #
+      - name: Resolve release parameters
+        id: params
+        env:
+          # workflow_dispatch accepts a TAG as its ref, so "dispatch" is two
+          # cases. github.ref_type is the discriminator, not github.event_name.
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./${PKG_DIR}/package.json').version")"
+
+          if [ "${{ github.event_name }}" = 'workflow_dispatch' ]; then
+            DRY_RUN="${INPUT_DRY_RUN}"
+            DIST_TAG="${INPUT_DIST_TAG}"
+          else
+            # `inputs` is empty on a tag push, so default explicitly rather
+            # than reading inputs.* and getting an empty string.
+            DRY_RUN='false'
+            DIST_TAG='latest'
+          fi
+
+          # A real publish requires a tag. A branch ref is rehearsal only, which
+          # is what stops an arbitrary un-tagged development HEAD reaching npm.
+          if [ "${{ github.ref_type }}" != 'tag' ] && [ "$DRY_RUN" != 'true' ]; then
+            echo "::error::Refusing to publish from a non-tag ref (${GITHUB_REF}). Re-run against a tag, or set dry_run=true."
+            exit 1
+          fi
+
+          {
+            echo "version=${VERSION}"
+            echo "dry_run=${DRY_RUN}"
+            echo "dist_tag=${DIST_TAG}"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Release parameters"
+            echo ''
+            echo '| field | value |'
+            echo '|---|---|'
+            echo "| package | \`${PKG_NAME}\` |"
+            echo "| version | \`${VERSION}\` |"
+            echo "| ref | \`${GITHUB_REF}\` (\`${{ github.ref_type }}\`) |"
+            echo "| commit | \`${GITHUB_SHA}\` |"
+            echo "| dist-tag | \`${DIST_TAG}\` |"
+            echo "| dry run | \`${DRY_RUN}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------- #
+      # Guards — every one is cheaper than an immutable mistake, and they  #
+      # all run BEFORE the build so a bad tag fails in seconds.            #
+      # ---------------------------------------------------------------- #
+      # Compares the WHOLE ref name against the one tag this version may be
+      # released under. Stripping the prefix instead does not enforce it:
+      # `${var#pattern}` returns the value unchanged when the prefix is absent,
+      # so a tag named plainly `1.0.0-beta.4` would have compared equal. The
+      # push trigger filters on api-types-v*, but a workflow_dispatch can name
+      # any tag as its ref, and that path reaches the publish.
+      - name: Guard — tag name matches package.json
+        if: github.ref_type == 'tag'
+        env:
+          VERSION: ${{ steps.params.outputs.version }}
+        run: |
+          set -euo pipefail
+          EXPECTED="${TAG_PREFIX}${VERSION}"
+          if [ "$GITHUB_REF_NAME" != "$EXPECTED" ]; then
+            echo "::error::This run is on tag ${GITHUB_REF_NAME}, but ${PKG_DIR}/package.json says ${VERSION}, which may only be released as ${EXPECTED}."
+            exit 1
+          fi
+          echo "  ${GITHUB_REF_NAME} is the expected tag for ${VERSION}"
+
+      # The tag-name guard above only checks spelling. ci.yml runs on master as
+      # well as development, so a tag placed on a master-only commit can carry
+      # all four required check names and satisfy every other guard — while
+      # master is, at the time of writing, 891 commits behind. Publishing from
+      # there would ship stale declarations under a new version number, which is
+      # the same class of mistake this whole workflow exists to prevent.
+      #
+      # Warns rather than fails under dry_run so a rehearsal from a feature
+      # branch still exercises the rest of the run.
+      - name: Guard — the commit is on development
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin development
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/development; then
+            echo "  ${GITHUB_SHA} is reachable from origin/development"
+          elif [ "${{ steps.params.outputs.dry_run }}" = 'true' ]; then
+            echo "::warning::${GITHUB_SHA} is not on origin/development (dry run — continuing)"
+          else
+            echo "::error::${GITHUB_SHA} is not reachable from origin/development. api-types is released from development; tag the merge commit there."
+            exit 1
+          fi
+
+      # The release notes live in the tag: `git show api-types-v<version>` is
+      # one of the three places they exist, since no GitHub Release is created.
+      # A lightweight tag has no message at all, and would pass every other
+      # guard here while silently losing them.
+      #
+      # Ask the REMOTE, not the checkout. actions/checkout fetches every tag and
+      # then re-fetches the one being built as `+<sha>:refs/tags/<name>`, which
+      # rewrites the local ref to point straight at the commit — so inside the
+      # job every tag looks lightweight and `git cat-file -t "$GITHUB_REF"`
+      # answers `commit` for a perfectly good annotated tag. The first real
+      # publish of this workflow stopped here for exactly that reason. On the
+      # remote an annotated tag lists twice: the tag object, and a peeled
+      # `<name>^{}` line naming the commit it points at.
+      - name: Guard — the tag is annotated
+        if: github.ref_type == 'tag'
+        run: |
+          set -euo pipefail
+          LISTING="$(git ls-remote --tags origin "refs/tags/${GITHUB_REF_NAME}*")"
+          PEELED="$(printf '%s\n' "$LISTING" | awk -v ref="refs/tags/${GITHUB_REF_NAME}^{}" '$2 == ref { print $1 }')"
+          if [ -z "$PEELED" ]; then
+            echo "::error::${GITHUB_REF_NAME} is a lightweight tag on the remote, so it carries no release notes. Re-create it with 'git tag -a --cleanup=whitespace ... -F notes.md'."
+            exit 1
+          fi
+          if [ "$PEELED" != "$GITHUB_SHA" ]; then
+            echo "::error::${GITHUB_REF_NAME} on the remote points at ${PEELED}, but this run is building ${GITHUB_SHA}."
+            exit 1
+          fi
+          echo "  ${GITHUB_REF_NAME} is annotated and points at ${GITHUB_SHA}"
+
+      - name: Guard — lockfile agrees with package.json
+        run: |
+          set -euo pipefail
+          LOCK_VERSION="$(node -p "require('./package-lock.json').packages['${PKG_DIR}'].version")"
+          if [ "$LOCK_VERSION" != "${{ steps.params.outputs.version }}" ]; then
+            echo "::error::package-lock.json records ${LOCK_VERSION} for ${PKG_DIR}; package.json says ${{ steps.params.outputs.version }}. Run 'npm install' and commit the lockfile."
+            exit 1
+          fi
+
+      # Provenance is validated by the REGISTRY against package.json's
+      # repository field, and `npm publish --dry-run` never contacts the
+      # registry — so a mismatch survives every local check and every rehearsal,
+      # then fails with a 422 after the upload has begun. The sibling
+      # repository burned a release this way. Checking costs a second.
+      - name: Guard — repository field provenance will be validated against
+        run: |
+          set -euo pipefail
+          expected="https://github.com/${{ github.repository }}"
+          url="$(node -p "require('./${PKG_DIR}/package.json').repository?.url ?? ''")"
+          normalized="${url#git+}"
+          normalized="${normalized%.git}"
+          if [ "$normalized" != "$expected" ]; then
+            echo "::error::${PKG_DIR}/package.json repository.url is '${url}', which normalizes to '${normalized}'. Provenance will reject anything that is not '${expected}'."
+            exit 1
+          fi
+          echo "  ${normalized}"
+
+      - name: Guard — CHANGELOG has a dated section
+        run: |
+          set -euo pipefail
+          node scripts/changelog-section.mjs \
+            --version "${{ steps.params.outputs.version }}" \
+            --require-date > "${RUNNER_TEMP}/release-notes.md"
+          echo "  $(wc -l < "${RUNNER_TEMP}/release-notes.md") lines of release notes"
+
+      # ci.yml runs on branch pushes and pull requests, never on tags, so
+      # nothing else connects a green CI result to the commit being published.
+      - name: Guard — required CI checks passed for this commit
+        run: node scripts/check-required-checks.mjs --sha "${GITHUB_SHA}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Guard — npm supports Trusted Publishing
+        run: |
+          set -euo pipefail
+          NPM_VERSION="$(npm --version)"
+          echo "  npm ${NPM_VERSION}"
+          if ! node -e "process.exit(require('semver').gte('${NPM_VERSION}', '11.5.1') ? 0 : 1)"; then
+            echo "  below the 11.5.1 OIDC minimum; upgrading"
+            npm install -g npm@latest
+            echo "  now npm $(npm --version)"
+          fi
+
+      # ---------------------------------------------------------------- #
+      # Build ONCE, then verify and publish that same artifact.           #
+      #                                                                   #
+      # prepack fires on `npm pack`, on `npm pack --dry-run` and on        #
+      # `npm publish`, so build-then-verify-then-publish would rebuild     #
+      # three times and upload bytes nothing verified. --ignore-scripts on #
+      # the pack, and publishing a pre-built tarball, keep it to one.      #
+      # ---------------------------------------------------------------- #
+      - name: Build the declaration bundle
+        run: npm run build:api-types
+
+      - name: Pack
+        id: pack
+        run: |
+          set -euo pipefail
+          FILE="$(npm pack -w "${PKG_DIR}" --ignore-scripts --json --silent | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
+          echo "tarball=$(realpath "$FILE")" >> "$GITHUB_OUTPUT"
+          echo "  ${FILE}"
+
+      - name: Verify tarball contents
+        id: verify
+        run: |
+          npm run --silent verify:api-types-pack -- \
+            "${{ steps.pack.outputs.tarball }}" --out "${RUNNER_TEMP}/pack-result.json"
+
+      # The size and substring checks above are sanity checks. Only a compiler
+      # settles whether the declarations actually work, and it has to run before
+      # the publish: a broken version cannot be replaced, only superseded.
+      - name: Type-check a consumer against the tarball
+        run: npm run --silent verify:api-types-consumer -- "${{ steps.pack.outputs.tarball }}"
+
+      # ---------------------------------------------------------------- #
+      # Registry decision — after the artifact exists, because it compares #
+      # the registry against THIS tarball.                                 #
+      # ---------------------------------------------------------------- #
+      - name: Decide publish / skip / stop
+        id: decide
+        run: |
+          set -euo pipefail
+          INTEGRITY="$(node -p "require('${RUNNER_TEMP}/pack-result.json').integrity")"
+          node scripts/decide-registry-action.mjs \
+            --package "${PKG_NAME}" \
+            --version "${{ steps.params.outputs.version }}" \
+            --integrity "${INTEGRITY}" \
+            --repository "${{ github.repository }}" \
+            --workflow "${WORKFLOW_PATH}" \
+            --sha "${GITHUB_SHA}" \
+            --dist-tag "${{ steps.params.outputs.dist_tag }}" \
+            ${{ steps.params.outputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      # ---------------------------------------------------------------- #
+      # Publish                                                           #
+      # ---------------------------------------------------------------- #
+      # --provenance is explicit rather than relying on it being automatic under
+      # OIDC: an explicit flag fails the publish if provenance cannot be
+      # generated, instead of quietly shipping a release without it.
+      #
+      # --access is not passed: publishConfig.access carries it, so it cannot be
+      # forgotten by a future edit to this file.
+      #
+      # --tag is REQUIRED here, not optional — npm refuses to publish a
+      # prerelease version without one.
+      #
+      # DIST_TAG reaches the shell through env, never inline in the script body.
+      - name: Publish to npm
+        if: steps.params.outputs.dry_run != 'true' && steps.decide.outputs.action == 'publish'
+        env:
+          DIST_TAG: ${{ steps.params.outputs.dist_tag }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: npm publish "$TARBALL" --provenance --tag "$DIST_TAG"
+
+      # `npm publish --dry-run` does NOT validate credentials — measured: it
+      # succeeds while `npm whoami` returns E401. A green rehearsal proves the
+      # guards, the build and the packaging. It cannot prove the trusted
+      # publisher is configured; only a real publish does that.
+      - name: Publish (dry run)
+        if: steps.params.outputs.dry_run == 'true'
+        env:
+          DIST_TAG: ${{ steps.params.outputs.dist_tag }}
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: npm publish "$TARBALL" --provenance --tag "$DIST_TAG" --dry-run
+
+      # ---------------------------------------------------------------- #
+      # Read back what the registry actually has — assertions, not logs.   #
+      # ---------------------------------------------------------------- #
+      - name: Verify the registry
+        if: steps.params.outputs.dry_run != 'true'
+        env:
+          VERSION: ${{ steps.params.outputs.version }}
+          DIST_TAG: ${{ steps.params.outputs.dist_tag }}
+        run: |
+          set -euo pipefail
+
+          # The registry CDN lags a publish by a few seconds.
+          for attempt in 1 2 3 4 5 6; do
+            if npm view "${PKG_NAME}@${VERSION}" version >/dev/null 2>&1; then break; fi
+            echo "  attempt ${attempt}: not visible yet, waiting 10s"
+            sleep 10
+          done
+
+          # Re-uses the decision script: at this point the published artifact
+          # must match this run's tarball, provenance and commit exactly — which
+          # is precisely the "skip" condition. Anything else exits non-zero.
+          INTEGRITY="$(node -p "require('${RUNNER_TEMP}/pack-result.json').integrity")"
+          node scripts/decide-registry-action.mjs \
+            --package "${PKG_NAME}" \
+            --version "${VERSION}" \
+            --integrity "${INTEGRITY}" \
+            --repository "${{ github.repository }}" \
+            --workflow "${WORKFLOW_PATH}" \
+            --sha "${GITHUB_SHA}" \
+            --dist-tag "${DIST_TAG}"
+
+          RESOLVED="$(npm view "${PKG_NAME}@${DIST_TAG}" version)"
+          if [ "$RESOLVED" != "$VERSION" ]; then
+            echo "::error::dist-tag ${DIST_TAG} resolves to ${RESOLVED}, expected ${VERSION}"
+            exit 1
+          fi
+
+          {
+            echo ''
+            echo '### Published'
+            echo ''
+            echo "- version: \`${VERSION}\`"
+            echo "- integrity: \`${INTEGRITY}\`"
+            echo "- dist-tag \`${DIST_TAG}\` resolves to \`${RESOLVED}\`"
+            echo "- https://www.npmjs.com/package/${PKG_NAME}/v/${VERSION}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ---------------------------------------------------------------- #
+      # Release notes — job summary and artifact, NOT a GitHub Release.    #
+      # ---------------------------------------------------------------- #
+      - name: Add the release notes to the job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -f "${RUNNER_TEMP}/release-notes.md" ]; then
+            {
+              echo ''
+              echo "## ${PKG_NAME} ${{ steps.params.outputs.version }} — release notes"
+              echo ''
+              cat "${RUNNER_TEMP}/release-notes.md"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the artifact and its provenance inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-types-${{ steps.params.outputs.version }}
+          path: |
+            ${{ steps.pack.outputs.tarball }}
+            ${{ runner.temp }}/release-notes.md
+            ${{ runner.temp }}/pack-result.json
+          if-no-files-found: warn
+          retention-days: 90

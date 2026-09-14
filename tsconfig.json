@@ -24,5 +24,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["node_modules", "dist", "scripts", "packages", "scratch"]
+  "exclude": ["node_modules", "dist", "scripts", "packages", "scratch", "test/fixtures/api-types-consumer"]
 }

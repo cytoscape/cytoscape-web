@@ -58,6 +58,9 @@
 
 ## Agent Workflow
 
+- [2026-09-06] Brainstorming: Do not commit brainstorming notes or exploratory design reports unless the user explicitly requests a commit. This overrides the automatic commit cadence below for brainstorming work.
+- [2026-09-07] Architecture reviews: Inventory existing host implementations and bridge contracts before proposing new integration layers. Verify where configuration thresholds are enforced before describing them as public API or rendering limits.
+
 - [2026-08-24] `modern-web-guidance retrieve` takes one or more guide IDs only (for example, `retrieve security`); it has no `--section all` positional form. Use the IDs returned verbatim by `search`, then retrieve them directly.
 - [2026-08-31] Sandbox validation: Node `child_process` cannot spawn `git` in this workspace (`spawnSync git EPERM`) even though direct Git tool commands work. Run Git reads directly and parse their captured output in the orchestration layer. Ruby and the standalone Node `yaml` package are unavailable; use the repository's Prettier YAML parser for config validation.
 

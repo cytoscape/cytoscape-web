@@ -44,6 +44,50 @@ jobs:
       - name: Verify Module Federation build output
         run: npm run verify:federation
 
+  # Nothing else in CI compiles packages/api-types. The root tsconfig.json
+  # excludes `packages`, so `lint:tsc` cannot see it, and `lint:oxlint` is
+  # scoped to src/. Since packages/api-types/src/index.ts re-exports
+  # ../../../src/app-api/types, the tsup declaration build walks the whole
+  # public type graph of this application — so a refactor in src/app-api/types/
+  # that breaks it would otherwise surface for the first time on release day.
+  #
+  # The NAME is load-bearing: the release workflow's CI gate
+  # (scripts/check-required-checks.mjs) matches on the display name reported by
+  # the Checks API, not on the job id.
+  api-types:
+    name: API Types Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Build the declaration bundle
+        run: npm run build:api-types
+
+      # --ignore-scripts: `prepack` would rebuild what was just built, and its
+      # tsup output on stdout breaks `npm pack --json` parsing.
+      - name: Pack
+        id: pack
+        run: |
+          set -euo pipefail
+          FILE="$(npm pack -w packages/api-types --ignore-scripts --json --silent | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
+          echo "tarball=$(realpath "$FILE")" >> "$GITHUB_OUTPUT"
+
+      # Everything below must stay in THIS job: packages/api-types/dist/ and the
+      # tarball do not survive a job boundary, and separate jobs would verify
+      # nothing — the same trap the Build job documents above.
+      - name: Verify tarball contents
+        run: npm run --silent verify:api-types-pack -- "${{ steps.pack.outputs.tarball }}"
+
+      # The size and filename checks above are sanity checks. Only a compiler
+      # settles whether the published declarations actually work for a consumer,
+      # and this is the last place it can be caught for free — after a release,
+      # a broken version can only be superseded.
+      - name: Type-check a consumer against the tarball
+        run: npm run --silent verify:api-types-consumer -- "${{ steps.pack.outputs.tarball }}"
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

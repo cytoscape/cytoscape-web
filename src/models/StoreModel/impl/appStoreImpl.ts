@@ -1,5 +1,6 @@
 import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
-import { AppLoadState } from '../../AppModel/AppLoadState'
+import { AppLoadFailure } from '../../AppModel/AppLoadFailure'
+import { AppLoadState, SettableAppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
@@ -53,6 +54,7 @@ export interface AppState {
   catalogSources: Record<string, AppSource>
   manifestIds: string[]
   loadStates: Record<string, AppLoadState>
+  loadErrors: Record<string, AppLoadFailure>
   manifestSource?: ManifestSource
 }
 
@@ -338,6 +340,15 @@ export const updateInputColumn = (
  * apart from `catalogSources` because a pinned install shadows the manifest
  * source tag on a collision (composeCatalog §8.1). When omitted it falls back
  * to the entries whose resolved source is `'manifest'`.
+ *
+ * A failure survives only while the new catalog still carries its id at the
+ * same URL; a changed URL and a dropped entry both retire it, along with its
+ * `'failed'` load state. Four of the five codes are not retryable, so the App
+ * Manager offers no control on such a row (#719): a refreshed manifest that
+ * fixes the bundle URL would otherwise leave the row dead for the session,
+ * even though `ensureRemoteRegistered` re-registers a scope whose URL changed,
+ * and a failure kept past a removal would resurrect on the id's return.
+ * `mount-failed` carries no URL and is retryable, so it is left alone.
  */
 export const setCatalog = (
   state: AppState,
@@ -351,10 +362,23 @@ export const setCatalog = (
     catalog[entry.id] = entry
     catalogSources[entry.id] = sources?.[entry.id] ?? 'manifest'
   }
+
+  const loadStates = { ...state.loadStates }
+  const loadErrors = { ...state.loadErrors }
+  for (const [id, failure] of Object.entries(state.loadErrors)) {
+    const failedUrl = 'url' in failure ? failure.url : undefined
+    if (failedUrl === undefined) continue
+    if (catalog[id]?.url === failedUrl) continue
+    delete loadErrors[id]
+    delete loadStates[id]
+  }
+
   return {
     ...state,
     catalog,
     catalogSources,
+    loadStates,
+    loadErrors,
     manifestIds:
       manifestIds ??
       Object.keys(catalogSources).filter(
@@ -364,18 +388,46 @@ export const setCatalog = (
 }
 
 /**
- * Set the runtime load state for a specific app
+ * Set the runtime load state for a specific app, discarding any failure
+ * recorded for it. A transition to 'loading', 'loaded' or 'unloaded' makes the
+ * previous reason stale. `'failed'` is not reachable here — `setLoadFailed` is
+ * the only way in, so the state and its reason are always written together.
  */
 export const setLoadState = (
   state: AppState,
   id: string,
-  loadState: AppLoadState,
+  loadState: SettableAppLoadState,
 ): AppState => {
+  const restLoadErrors = { ...state.loadErrors }
+  delete restLoadErrors[id]
   return {
     ...state,
     loadStates: {
       ...state.loadStates,
       [id]: loadState,
+    },
+    loadErrors: restLoadErrors,
+  }
+}
+
+/**
+ * Mark an app failed and record why, in one transition, so no failed app is
+ * ever left without a reason.
+ */
+export const setLoadFailed = (
+  state: AppState,
+  id: string,
+  failure: AppLoadFailure,
+): AppState => {
+  return {
+    ...state,
+    loadStates: {
+      ...state.loadStates,
+      [id]: 'failed',
+    },
+    loadErrors: {
+      ...state.loadErrors,
+      [id]: failure,
     },
   }
 }
@@ -394,16 +446,19 @@ export const setManifestSource = (
 }
 
 /**
- * Remove an app from apps and loadStates
+ * Remove an app from apps, loadStates and loadErrors
  */
 export const removeApp = (state: AppState, id: string): AppState => {
   const restApps = { ...state.apps }
   delete restApps[id]
   const restLoadStates = { ...state.loadStates }
   delete restLoadStates[id]
+  const restLoadErrors = { ...state.loadErrors }
+  delete restLoadErrors[id]
   return {
     ...state,
     apps: restApps,
     loadStates: restLoadStates,
+    loadErrors: restLoadErrors,
   }
 }

@@ -404,4 +404,80 @@ describe('useAppStore', () => {
       }
     })
   })
+  // #719: a failed app must always carry a reason, and the reason must not
+  // outlive the failure.
+  describe('load failures', () => {
+    const failure = {
+      code: 'id-mismatch',
+      url: 'https://apps.cytoscape.org/web/chrisapp/0.2.0/remoteEntry.js',
+      expected: 'chrisapp',
+      received: 'chrisApp',
+    } as const
+
+    beforeEach(() => {
+      act(() => {
+        useAppStore.setState({ loadStates: {}, loadErrors: {} })
+      })
+    })
+
+    it('setLoadFailed writes both the state and the reason', () => {
+      const { result } = renderHook(() => useAppStore())
+
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+      })
+
+      expect(result.current.loadStates['chrisapp']).toBe('failed')
+      expect(result.current.loadErrors['chrisapp']).toEqual(failure)
+    })
+
+    it('setLoadState clears the reason on the next transition', () => {
+      const { result } = renderHook(() => useAppStore())
+
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+      })
+      act(() => {
+        result.current.setLoadState('chrisapp', 'loading')
+      })
+
+      expect(result.current.loadStates['chrisapp']).toBe('loading')
+      expect(result.current.loadErrors['chrisapp']).toBeUndefined()
+    })
+
+    it('keeps failures for other apps when one transitions', () => {
+      const { result } = renderHook(() => useAppStore())
+
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+        result.current.setLoadFailed('other', {
+          code: 'no-app-config',
+          url: 'https://example.org/other/remoteEntry.js',
+        })
+      })
+      act(() => {
+        result.current.setLoadState('chrisapp', 'loaded')
+      })
+
+      expect(result.current.loadErrors['chrisapp']).toBeUndefined()
+      expect(result.current.loadErrors['other']?.code).toBe('no-app-config')
+    })
+
+    it('remove prunes the reason along with the load state', async () => {
+      const { result } = renderHook(() => useAppStore())
+
+      await act(async () => {
+        await result.current.add(createTestApp('chrisapp'))
+      })
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+      })
+      act(() => {
+        result.current.remove('chrisapp')
+      })
+
+      expect(result.current.loadStates['chrisapp']).toBeUndefined()
+      expect(result.current.loadErrors['chrisapp']).toBeUndefined()
+    })
+  })
 })

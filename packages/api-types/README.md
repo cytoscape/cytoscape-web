@@ -12,6 +12,10 @@ needing the host repository.
 npm install --save-dev @cytoscape-web/api-types
 ```
 
+The declarations reference React types, so `@types/react` (`^18 || ^19`) is a
+peer dependency. npm installs it for you — nothing extra is required, including
+for a consumer that does not otherwise use React.
+
 ## Setup
 
 Add the package to your `tsconfig.json`:
@@ -53,6 +57,68 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 
 Ambient module declarations for all `cyweb/*` Module Federation remotes are also bundled, so imports
 like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in TypeScript.
+
+## `1.0.0-beta.4` migration notes
+
+> **Host compatibility.** `1.0.0-beta.4` documents the App API as implemented
+> by the Cytoscape Web build tagged `api-types-v1.0.0-beta.4` on `development`.
+> **No released version of Cytoscape Web implements it yet.** It runs on
+> [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
+> `development` has been deployed there (done by hand, so it can lag);
+> production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
+> shows a deployment's build commit as a seven-character prefix — compare it
+> against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'` to know whether that
+> host has this API.
+
+`1.0.0-beta.4` is the most breaking prerelease so far. These are the changes
+that stop existing code from compiling or, for callers that reach the API by
+name, from working:
+
+- **`'apps-menu'` entries are plain data, not components.** `component`,
+  `closeOnAction`, `errorFallback` and `title` are gone from
+  `RegisterMenuItemOptions`; register with `label`, `onClick(apis)`, and
+  optionally `tooltip`, `icon` and `isEnabled(apis)`. Passing a `component`
+  fails with `APP9`. Move the old component's action into `onClick`; move any
+  form or other UI into `apis.dialog.open({ title, render })` called from it.
+  `'right-panel'` registrations are unchanged.
+- **Selection methods take separate id arrays.** `additiveSelect`,
+  `additiveDeselect` and `toggleSelected` are now
+  `(networkId, nodeIds, edgeIds)`. An old two-argument call does not silently
+  misbehave — the host spreads the missing `edgeIds`, which throws and comes
+  back as `APP3` `OPERATION_FAILED` (`edgeIds is not iterable`). Split the array
+  into nodes and edges. `additiveUnselect` is renamed `additiveDeselect`.
+- **Renames:** `VisualStyleApi.removeMapping` → `deleteMapping`;
+  `TableApi.setColumnName` → `renameColumn`; `WorkspaceApi.getNetworkList` →
+  `getNetworks`, which now returns `{ networks }`.
+- **`createContinuousMapping(networkId, vpName, options)`** replaces the
+  nine-argument positional form. See `CreateContinuousMappingOptions`.
+- **Collection getters return a named object.** `layout.getAvailableLayouts()`
+  → `{ layouts }`; `viewport.getNodePositions()` → `{ positions, missing }`
+  and takes an optional `nodeIds`; `element.getEdges()` → `{ edges, missing }`.
+- **`ResourceApi` introspection returns `ApiResult`.** `getSupportedSlots()`,
+  `getRegisteredResources()` and `getResourceVisibility()` used to return raw
+  values; they now return `ApiResult`, with the first two wrapping their values
+  as `{ slots }` and `{ resources }`. A caller treating the result as an array
+  or a visibility object will read `undefined`.
+- **Results carry more:** `deleteNodes` / `deleteEdges` gained `missing`;
+  `getConnectedEdges` entries include `id`; `generateNextNodeId` /
+  `generateNextEdgeId` return `ApiResult<{ nodeId }>` / `ApiResult<{ edgeId }>`
+  rather than a bare string.
+- `createNetworkFromEdgeList` / `createNetworkFromNodeList` now default
+  `addToWorkspace` to `true`.
+- `@types/react` is now a declared peer dependency (`^18 || ^19`). npm installs
+  it; nothing is required of you.
+
+**If you call the API by method name** — a bridge, an MCP server, anything that
+dispatches `window.CyWebApi` through a string path — TypeScript will not catch
+the renames or the signature changes above. Cross-check every method string
+against this list before upgrading.
+
+See the bundled [CHANGELOG](./CHANGELOG.md) for everything added in beta.4 —
+the Dialog API, whole-style `applyVisualStyle` / `getVisualStyle`, named-style
+`getStyles` / `switchStyle`, the `'modal-launcher'` and `'search-bar'` slots,
+`whenReady()`, `forNetwork()`, batch element creation, and the Visual Style
+read API.
 
 ## `1.0.0-beta.3` migration notes
 
@@ -250,65 +316,164 @@ The host implementation and this package are one public contract. Release them
 from the same `development` commit after the runtime behavior, exported types,
 tests, and documentation have been aligned.
 
+**Pushing the tag publishes the package.** There is no separate confirmation
+step and no manual `npm publish` any more — `.github/workflows/release-api-types.yml`
+runs on an `api-types-v*` tag push and goes all the way to the registry. Read
+step 4 before you tag anything.
+
 1. **Align the contract.** Update the framework-agnostic implementation and
    hook wrappers in `src/app-api/`, the public declarations in
    `src/app-api/types/`, and the exports in `packages/api-types/src/index.ts`.
    Update `mf-declarations.d.ts` when a `cyweb/*` exposure changes. Add or update
    tests, `src/app-api/api_docs/`, the App API specifications, and an ADR when a
    design decision changes. Document breaking changes and consumer migrations.
+
 2. **Prepare the release before merging.** Bump the version in this package and
-   the root lockfile, move the new `CHANGELOG.md` entry from `Unreleased` to its
-   release date, and update any version-specific notes in this README. These
-   changes belong in the same pull request as the API change.
-3. **Verify the bundle.** From the repository root, run:
+   the root lockfile, and give the `CHANGELOG.md` entry a release date — the
+   heading must read `## <version> (YYYY-MM-DD)`, not `(unpublished)`, or the
+   release workflow refuses to publish. State which host build implements the
+   release and where it is deployed; `apiVersion` does not yet carry that.
+   These changes belong in the same pull request as the API change.
+
+   A unit test (`src/app-api/federation/apiTypesRelease.test.ts`) already checks
+   that the version, the lockfile and the changelog agree, so a forgotten
+   `npm install` fails on the pull request rather than at release time.
+
+3. **Verify the bundle.** From the repository root:
 
    ```bash
    npm run lint
    npm run test:unit
    npm run build:api-types
-   cd packages/api-types
-   npm pack --dry-run
+   npm pack -w packages/api-types --ignore-scripts
+   npm run verify:api-types-pack -- <tarball>
+   npm run verify:api-types-consumer -- <tarball>
    ```
 
-   Confirm that the tarball contains `dist/index.d.ts`,
-   `dist/mf-declarations.d.ts`, `README.md`, `CHANGELOG.md`, and `package.json`.
+   `--ignore-scripts` on the pack is deliberate: `prepack` would rebuild what
+   was just built, and its output on stdout breaks `npm pack --json`.
 
-4. **Merge and tag the exact merge commit.** Merge the pull request into
-   `development`, fetch the updated branch, and identify that pull request's
-   merge commit. Do not tag a later `development` HEAD that includes unrelated
-   changes. The tag format is `api-types-v<version>`:
+   The same checks run on every pull request as the `API Types Package` job, so
+   this is a convenience rather than a gate.
+
+4. **Rehearse, then merge and tag the exact merge commit.** Merge the pull
+   request into `development`, fetch the updated branch, and identify that pull
+   request's merge commit. Do not tag a later `development` HEAD that includes
+   unrelated changes — and note that the workflow refuses to publish a commit
+   that is not reachable from `origin/development`.
+
+   Rehearse first. A dry run exercises every guard, the build, the packaging
+   and the consumer type-check without touching the registry:
 
    ```bash
+   gh workflow run release-api-types.yml --ref development -f dry_run=true
+   gh run watch
+   ```
+
+   Then tag. Extract the notes from the commit being tagged rather than the
+   working tree, and confirm the extraction before creating the tag — `npm run`
+   writes its banner to stdout, and the right-hand side of a pipe runs even when
+   the left-hand side fails:
+
+   ```bash
+   set -euo pipefail
+   SHA=<MERGE_COMMIT_SHA>
    git fetch origin development
-   git tag -a api-types-v1.0.0-beta.4 MERGE_COMMIT_SHA \
-     -m "Release @cytoscape-web/api-types 1.0.0-beta.4"
-   git push origin refs/tags/api-types-v1.0.0-beta.4
+   # Read the version from the commit being tagged — the workflow's tag guard
+   # compares the tag against exactly this value, so a literal here can only
+   # go stale.
+   VERSION="$(git show "$SHA:packages/api-types/package.json" \
+     | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"
+   NOTES="$(mktemp)"
+   git show "$SHA:packages/api-types/CHANGELOG.md" \
+     | npm run --silent changelog:section -- \
+         --version "$VERSION" --file /dev/stdin --require-date >| "$NOTES"
+   test -s "$NOTES"
+   git tag -a --cleanup=whitespace "api-types-v$VERSION" "$SHA" -F "$NOTES"
+   git push origin "refs/tags/api-types-v$VERSION"
    ```
 
-5. **Publish the tagged content.** Use a clean checkout of the tagged commit,
-   authenticate with npm, rebuild once, and publish from this directory. The
-   active beta stream currently uses the `latest` dist-tag; use another tag only
-   when the team has agreed to change that policy.
+   Three details in that block were each learned the hard way on the first
+   beta.4 attempt:
+   - **`mktemp`, not a fixed path.** A fixed `/tmp/notes.md` left over from an
+     earlier run passed `test -s` and went into the tag, so the tag carried
+     notes from a commit that was not the one being tagged.
+   - **`>|`, not `>`.** `mktemp` creates the file, so under `noclobber` a plain
+     `>` refuses to overwrite it. With `set -e` that aborts the script, which is
+     the good outcome; in an interactive shell without it, the stale-file
+     problem above is what you get instead. `>|` forces the write in both bash
+     and zsh.
+   - **`--cleanup=whitespace`.** `git tag -F` strips lines starting with `#` as
+     comments by default, which deletes every Markdown heading from the notes.
+     Verify with `git tag -l --format='%(contents)' api-types-v$VERSION` before
+     pushing; it should show `### Added` and friends.
+
+5. **The workflow publishes.** The tag push starts it; nothing else is needed.
+   It re-checks the tag against `package.json`, the lockfile, the changelog
+   date, the `repository` field provenance is validated against, that the
+   commit is on `development`, and that `ci.yml` passed for that exact commit.
+   Then it builds once, packs one tarball, verifies it, type-checks a consumer
+   against it, publishes **that** tarball, and reads the registry back.
+
+   The active beta stream uses the `latest` dist-tag. That is a decision with an
+   end: once `1.0.0` ships, `latest` means stable and prereleases move to
+   `next`. See `docs/release-automation-design.md` §Dist-tag policy.
+
+   **There are no npm credentials in this repository.** Publishing authority
+   comes from a Trusted Publisher configured on npmjs.com, bound to this
+   repository and to the workflow filename. **Renaming
+   `release-api-types.yml` breaks publishing** until that configuration is
+   updated to match. Check it with `npm trust list @cytoscape-web/api-types`.
+
+6. **Verify.** The workflow run's job summary is the primary record — version,
+   integrity, the dist-tag it resolves to, and the release notes. Independently:
 
    ```bash
-   npm whoami
-   npm run build
-   npm publish --access public --tag latest
-   ```
-
-6. **Verify both registries.** Confirm the remote tag target, published version,
-   dist-tag, and tarball checksum:
-
-   ```bash
-   git ls-remote --tags origin 'refs/tags/api-types-v1.0.0-beta.4*'
+   git ls-remote --tags origin "refs/tags/api-types-v$VERSION*"
    npm view @cytoscape-web/api-types dist-tags
-   npm view @cytoscape-web/api-types@1.0.0-beta.4 \
+   npm view "@cytoscape-web/api-types@$VERSION" \
      version dist.shasum dist.integrity
    ```
+
+   The npm package page should show a **Provenance** panel linking back to the
+   workflow run and the tagged commit.
+
+7. **Tell the consumers.** Six files across `cytoscape-web-app-examples` and
+   `cy-agent-bridge` pin this package. Their lockfiles hold the old version
+   until someone regenerates them, so the breakage arrives on the next
+   dependency refresh rather than immediately — which is a reprieve, not
+   safety. Rehearse the migration against a local tarball **before** releasing,
+   while the version number can still change.
+
+### Why there is no GitHub Release
+
+Releases here are tags, not GitHub Releases. Repository webhook `527149929` is
+a Zenodo receiver subscribed to the `release` event with no tag filter, so
+**any** GitHub Release published from this repository mints a new version of
+the Cytoscape Web software DOI record (10.5281/zenodo.14775458). An api-types
+release is not a release of the application and must not appear in that
+citation record.
+
+The notes live in the annotated tag (`git show api-types-v<version>`), in the
+workflow run's job summary, and in the `CHANGELOG.md` shipped inside the npm
+tarball. If a GitHub Release is ever genuinely required, deactivate hook
+`527149929` first and reactivate it immediately afterwards.
+
+### If something goes wrong
 
 npm versions are immutable. If the published bundle is wrong, prepare and
 release the next version; do not try to overwrite the existing version or move
 its Git tag to different content.
+
+If the publish succeeded but a later step failed, **do not delete or move the
+tag**. Re-run the workflow against the existing tag:
+
+```bash
+gh workflow run release-api-types.yml --ref "api-types-v$VERSION" -f dry_run=false
+```
+
+It compares the registry against the tarball it just built, including the
+provenance commit, and resumes at verification instead of refusing.
 
 ## Documentation
 
