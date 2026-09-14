@@ -44,9 +44,17 @@ const viewModelSubs: Array<{
   options?: any
 }> = []
 
+// The network:loaded bridge reads both stores' live state (tables and views
+// land in either order, so each store's callback checks the other). Tests
+// drive these objects directly.
+const { mockTableState, mockViewModelState } = vi.hoisted(() => ({
+  mockTableState: { tables: {} as Record<string, any> },
+  mockViewModelState: { viewModels: {} as Record<string, any[]> },
+}))
+
 vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
   useViewModelStore: {
-    getState: vi.fn(),
+    getState: vi.fn(() => mockViewModelState),
     subscribe: vi.fn((selectorOrCb: any, cb?: any, opts?: any) => {
       if (typeof cb === 'function') {
         viewModelSubs.push({
@@ -83,7 +91,7 @@ const tableSubs: Array<{
 
 vi.mock('../../data/hooks/stores/TableStore', () => ({
   useTableStore: {
-    getState: vi.fn(),
+    getState: vi.fn(() => mockTableState),
     subscribe: vi.fn((selectorOrCb: any, cb?: any) => {
       if (typeof cb === 'function') {
         tableSubs.push({ selector: selectorOrCb, callback: cb })
@@ -149,6 +157,32 @@ function triggerTableSub(curr: any, prev: any): void {
   tableSubs[0].callback(curr, prev)
 }
 
+/**
+ * Puts tables for a network in the store and fires the network:loaded
+ * table subscription, the way TableStore.add() does. Pass `undefined` to
+ * remove them (TableStore.delete()).
+ */
+function setTables(networkId: string, tables: any): void {
+  const prev = { ...mockTableState.tables }
+  if (tables === undefined) delete mockTableState.tables[networkId]
+  else mockTableState.tables[networkId] = tables
+  tableSubs[1].callback(mockTableState.tables, prev)
+}
+
+/** Same for the view model store (ViewModelStore.add() / delete()) */
+function setViews(networkId: string, views: any[] | undefined): void {
+  const prev = { ...mockViewModelState.viewModels }
+  if (views === undefined) delete mockViewModelState.viewModels[networkId]
+  else mockViewModelState.viewModels[networkId] = views
+  viewModelSubs[1].callback(mockViewModelState.viewModels, prev)
+}
+
+const emptyTables = () => ({
+  nodeTable: { id: 't1', columns: [], rows: new Map() },
+  edgeTable: { id: 't2', columns: [], rows: new Map() },
+})
+const oneView = () => [{ id: 'net1', selectedNodes: [], selectedEdges: [] }]
+
 function triggerNetworkSub(curr: any, prev: any): void {
   networkSubs[0].callback(curr, prev)
 }
@@ -178,6 +212,8 @@ beforeEach(() => {
   tableSubs.length = 0
   networkSubs.length = 0
   mockNetworks.clear()
+  mockTableState.tables = {}
+  mockViewModelState.viewModels = {}
   dispatchSpy = vi.spyOn(window, 'dispatchEvent')
   initEventBus()
 })
@@ -678,5 +714,92 @@ describe('data:changed', () => {
     triggerTableSub({ net1: table }, { net1: table })
 
     expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+})
+
+// ── network:loaded ────────────────────────────────────────────────────────────
+
+describe('network:loaded', () => {
+  it('dispatches once tables and then the view land (lazy load after reload)', () => {
+    setTables('net1', emptyTables())
+    // Tables alone are not enough: viewportApi / selection reads need a view.
+    expect(dispatchSpy).not.toHaveBeenCalled()
+
+    setViews('net1', oneView())
+
+    expect(dispatchedTypes()).toEqual(['network:loaded'])
+    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1' })
+  })
+
+  it('dispatches once the view and then the tables land (cross-tab order)', () => {
+    setViews('net1', oneView())
+    expect(dispatchSpy).not.toHaveBeenCalled()
+
+    setTables('net1', emptyTables())
+
+    expect(dispatchedTypes()).toEqual(['network:loaded'])
+    expect(dispatchedDetails()[0]).toEqual({ networkId: 'net1' })
+  })
+
+  it('does not fire data:changed for the first landing of the tables', () => {
+    setViews('net1', oneView())
+    const tables = emptyTables()
+    setTables('net1', tables)
+    // The data:changed subscription sees the same transition.
+    triggerTableSub({ net1: tables }, {})
+
+    expect(dispatchedTypes()).toEqual(['network:loaded'])
+  })
+
+  it('dispatches only once per network, not on later table edits', () => {
+    setTables('net1', emptyTables())
+    setViews('net1', oneView())
+    dispatchSpy.mockClear()
+
+    setTables('net1', emptyTables())
+    setViews('net1', oneView())
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
+  it('dispatches again when a deleted network is loaded again under the same id', () => {
+    setTables('net1', emptyTables())
+    setViews('net1', oneView())
+    setTables('net1', undefined)
+    setViews('net1', undefined)
+    dispatchSpy.mockClear()
+
+    setTables('net1', emptyTables())
+    setViews('net1', oneView())
+
+    expect(dispatchedTypes()).toEqual(['network:loaded'])
+  })
+
+  it('reports only the network that just landed when others are already loaded', () => {
+    setTables('net1', emptyTables())
+    setViews('net1', oneView())
+    dispatchSpy.mockClear()
+
+    setTables('net2', emptyTables())
+    setViews('net2', oneView())
+
+    expect(dispatchedDetails()).toEqual([{ networkId: 'net2' }])
+  })
+
+  it('does not dispatch on startup for networks hydrated before initEventBus ran', () => {
+    // A URL import during boot puts tables and views in the stores before
+    // publishWorkspace() calls initEventBus().
+    mockTableState.tables = { boot: emptyTables() }
+    mockViewModelState.viewModels = { boot: oneView() }
+    tableSubs.length = 0
+    viewModelSubs.length = 0
+    initEventBus()
+    expect(dispatchSpy).not.toHaveBeenCalled()
+
+    // A later, unrelated store change must not report it either.
+    setTables('net1', emptyTables())
+    setViews('net1', oneView())
+
+    expect(dispatchedDetails()).toEqual([{ networkId: 'net1' }])
   })
 })

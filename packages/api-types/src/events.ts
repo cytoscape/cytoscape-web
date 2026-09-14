@@ -44,6 +44,18 @@ export interface CyWebEvents {
    */
   'network:switched': { networkId: IdType; previousId: IdType }
 
+  /**
+   * Fired once a network's data is readable through the API: its node and
+   * edge tables and its view have all landed in the host's stores.
+   * Workspace networks are loaded lazily the first time they become current
+   * after a page reload, so `network:switched` can arrive before the tables
+   * exist and a `tableApi` / `elementApi` read made in that window fails
+   * with `APP1`. Read again on this event. For a brand-new network it
+   * arrives once alongside `network:created`. The first landing does not
+   * fire `data:changed`.
+   */
+  'network:loaded': { networkId: IdType }
+
   /** Fired when the selection state of the current network's view changes. */
   'selection:changed': {
     networkId: IdType

@@ -11,6 +11,7 @@ import { IdType } from '../../models/IdType'
 import { Network } from '../../models/NetworkModel'
 import { Table } from '../../models/TableModel'
 import { detectChangedRowIds } from '../../models/TableModel/impl/tableDiff'
+import { NetworkView } from '../../models/ViewModel'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { CyWebEvents } from './CyWebEvents'
 import { dispatchCyWebEvent } from './dispatchCyWebEvent'
@@ -84,6 +85,22 @@ function snapshotTopology(network: Network): TopologySnapshot {
     nodes: new Set(network.nodes.map((node) => node.id)),
     edges: new Set(network.edges.map((edge) => edge.id)),
   }
+}
+
+/**
+ * A network is loaded — readable through tableApi, elementApi and
+ * viewportApi — once both its tables and at least one view are in the
+ * stores. The two land in either order: WorkspaceEditor adds tables first,
+ * cross-tab hydration adds the view first.
+ */
+function isNetworkLoaded(
+  networkId: IdType,
+  tables: Record<IdType, unknown>,
+  viewModels: Record<IdType, NetworkView[] | undefined>,
+): boolean {
+  return (
+    tables[networkId] !== undefined && (viewModels[networkId]?.length ?? 0) > 0
+  )
 }
 
 // ── Public init function ──────────────────────────────────────────────────────
@@ -261,6 +278,8 @@ export function initEventBus(): void {
       for (const networkId of Object.keys(curr) as IdType[]) {
         const tables = curr[networkId]
         const prevTables = prev[networkId]
+        // First landing of this network's tables: that is a load, not an
+        // edit, and network:loaded (below) covers it.
         if (prevTables === undefined) continue
         const tableTypes = ['node', 'edge'] as const
         for (const tableType of tableTypes) {
@@ -285,4 +304,49 @@ export function initEventBus(): void {
       }
     },
   )
+
+  // --- network:loaded ---
+  // Workspace networks are loaded lazily: after a page reload only the
+  // summaries are in the stores, and a network's tables and view land the
+  // first time it becomes current (WorkspaceEditor.loadCurrentNetworkById).
+  // network:switched fires as soon as currentNetworkId changes, before that
+  // async load resolves, so an app that reads the tables on the switch gets
+  // APP1 and nothing else tells it to look again. This is that signal.
+  //
+  // "Loaded" means tables AND a view are present, in whichever order they
+  // arrive, so both stores are watched and each check reads the other store.
+  // The set is seeded with what is already in the stores at init so that
+  // nothing hydrated before initEventBus() ran (URL imports during boot)
+  // fires later just because another network's tables changed.
+  const loadedNetworks = new Set<IdType>()
+  const checkLoaded = (): void => {
+    const { tables } = useTableStore.getState()
+    const { viewModels } = useViewModelStore.getState()
+    const pending: IdType[] = []
+    for (const networkId of Object.keys(tables) as IdType[]) {
+      if (loadedNetworks.has(networkId)) continue
+      if (!isNetworkLoaded(networkId, tables, viewModels)) continue
+      loadedNetworks.add(networkId)
+      pending.push(networkId)
+    }
+    // A deleted network leaves the set so the same id loaded again (a
+    // cross-tab re-add, or an undone delete) fires again.
+    for (const networkId of loadedNetworks) {
+      if (tables[networkId] === undefined) loadedNetworks.delete(networkId)
+    }
+    // Bookkeeping before dispatch: a listener that loads or deletes a network
+    // re-enters this callback synchronously.
+    for (const networkId of pending) {
+      dispatchCyWebEvent('network:loaded', { networkId })
+    }
+  }
+  const seedTables = useTableStore.getState().tables
+  const seedViews = useViewModelStore.getState().viewModels
+  for (const networkId of Object.keys(seedTables) as IdType[]) {
+    if (isNetworkLoaded(networkId, seedTables, seedViews)) {
+      loadedNetworks.add(networkId)
+    }
+  }
+  useTableStore.subscribe((state) => state.tables, checkLoaded)
+  useViewModelStore.subscribe((state) => state.viewModels, checkLoaded)
 }
