@@ -37,6 +37,32 @@ describe('parseManifest', () => {
     expect(result[0].author).toBe('unknown')
   })
 
+  it('defaults author to "unknown" when it is an empty string', () => {
+    // The App Store serves "" for optional fields the developer left blank
+    // (apps-stage c3app). An empty string is present, so .optional() and
+    // .default() never fire and the whole entry was being skipped.
+    const data = [
+      {
+        id: 'c3app',
+        name: 'C3 App',
+        url: 'https://apps-stage.cytoscape.org/web/c3app/0.1.0/remoteEntry.js',
+        author: '',
+      },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].author).toBe('unknown')
+  })
+
+  it('defaults author to "unknown" when it is only whitespace', () => {
+    const data = [
+      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', author: '  ' },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].author).toBe('unknown')
+  })
+
   it('skips entry missing both id and name', () => {
     const data = [{ url: 'http://localhost:2222/remoteEntry.js' }]
     const result = parseManifest(data)
@@ -190,6 +216,91 @@ describe('parseManifest', () => {
         repository: 'not-a-url',
       },
     ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(0)
+  })
+
+  it('omits icon when it is an empty string', () => {
+    const data = [
+      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', icon: '' },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].icon).toBeUndefined()
+  })
+
+  it('omits repository when it is an empty string', () => {
+    const data = [
+      {
+        id: 'app1',
+        url: 'http://localhost:2222/remoteEntry.js',
+        repository: '',
+      },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].repository).toBeUndefined()
+  })
+
+  it('omits name when it is an empty string and id is present', () => {
+    const data = [
+      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', name: '' },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('app1')
+    expect(result[0].name).toBeUndefined()
+  })
+
+  it('omits name when it is only whitespace and id is present', () => {
+    const data = [
+      { id: 'app1', url: 'http://localhost:2222/remoteEntry.js', name: '  ' },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBeUndefined()
+  })
+
+  it('skips entry whose only identifier is a blank name', () => {
+    const data = [{ name: '', url: 'http://localhost:2222/remoteEntry.js' }]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(0)
+  })
+
+  it('accepts an entry blank across every optional string field', () => {
+    // The shape the App Store publishes for a developer who filled in only the
+    // required fields (apps-stage c3app).
+    const data = [
+      {
+        id: 'c3App',
+        name: 'C3 App',
+        version: '0.1.0',
+        url: 'https://apps-stage.cytoscape.org/web/c3app/0.1.0/remoteEntry.js',
+        author: '',
+        description: '',
+        license: '',
+        icon: '',
+        repository: '',
+        tags: [],
+      },
+    ]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('c3App')
+    expect(result[0].name).toBe('C3 App')
+    expect(result[0].author).toBe('unknown')
+    expect(result[0].icon).toBeUndefined()
+    expect(result[0].repository).toBeUndefined()
+  })
+
+  it('skips entry with an empty url', () => {
+    const data = [{ id: 'app1', url: '' }]
+    const result = parseManifest(data)
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips entry with a whitespace-only url', () => {
+    const data = [{ id: 'app1', url: '   ' }]
     const result = parseManifest(data)
     expect(result).toHaveLength(0)
   })
