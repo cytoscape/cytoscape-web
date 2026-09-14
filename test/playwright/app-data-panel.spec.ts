@@ -135,7 +135,7 @@ test.describe('app data survives a network switch and a reload', () => {
     await expect(
       page.locator('[data-testid="app-settings-dialog"]'),
     ).toBeVisible({ timeout: 15_000 })
-    await page.getByText('Manifest Source').click()
+    await page.getByTestId('app-settings-advanced-button').click()
     await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
     await page.getByRole('button', { name: 'Apply' }).click()
 

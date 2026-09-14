@@ -60,7 +60,7 @@ test.describe('network search bar', () => {
     await expect(
       page.locator('[data-testid="app-settings-dialog"]'),
     ).toBeVisible()
-    await page.getByText('Manifest Source').click()
+    await page.getByTestId('app-settings-advanced-button').click()
     await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
     await page.getByRole('button', { name: 'Apply' }).click()
     const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')

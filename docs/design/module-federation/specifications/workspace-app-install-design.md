@@ -668,10 +668,8 @@ Target layout of the Apps tab after this design (mock):
 │ ┌ Install from URL ────────────────────────────────────────────┐ │
 │ │ [ https://apps.cytoscape.org/…/manifest.json ]  [ Install ]  │ │
 │ └──────────────────────────────────────────────────────────────┘ │
-│ ┌──────────────────────────────────────────────────────────────┐ │
-│ │ Manifest Source                                            ▾ │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                           [ Refresh ]  [ Close ] │
+│                                                                  │
+│ ⚙ Advanced                                [ Refresh ]  [ Close ] │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -681,8 +679,10 @@ Differences from the current dialog:
   workspace-installed rows (§12.3–§12.5); manifest rows keep the toggle alone,
   exactly as today.
 - **Install from URL** is the new manual install entry point (§12.8), separate
-  from the **Manifest Source** accordion, which keeps its existing
-  catalog-source behavior unchanged.
+  from the **Manifest Source** editor, which keeps its existing catalog-source
+  behavior unchanged. Since #703 that editor is hidden behind the footer's
+  **Advanced** toggle: it expands inline below Install from URL, headed by a
+  warning that it is for developers and advanced users only.
 
 ### 12.1 Today
 

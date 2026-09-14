@@ -124,9 +124,9 @@ describe('AppSettingsDialog — localhost opt-in wiring', () => {
   it('passes the opt-in to the manifest URL check', async () => {
     renderDialog()
 
-    // The field lives in a collapsed accordion, so it is out of the
-    // accessibility tree until this is expanded.
-    fireEvent.click(screen.getByText('Manifest Source'))
+    // The field lives in the collapsed advanced section, so it is not in the
+    // DOM until this is expanded.
+    fireEvent.click(screen.getByTestId('app-settings-advanced-button'))
 
     fireEvent.change(screen.getByLabelText('Custom manifest URL'), {
       target: { value: 'http://localhost:6000/cyweb-app.json' },
@@ -139,5 +139,33 @@ describe('AppSettingsDialog — localhost opt-in wiring', () => {
         DEV1,
       ),
     )
+  })
+})
+
+// Issue #703: the manifest editor is a developer tool, so it hides behind the
+// footer's Advanced button and carries a warning when revealed.
+describe('AppSettingsDialog — advanced section', () => {
+  it('keeps the Manifest Source controls hidden until Advanced is opened', async () => {
+    renderDialog()
+
+    expect(screen.queryByLabelText('Custom manifest URL')).toBeNull()
+    expect(screen.queryByText('Manifest Source')).toBeNull()
+
+    const advanced = screen.getByTestId('app-settings-advanced-button')
+    expect(advanced.textContent).toMatch(/^advanced$/i)
+    fireEvent.click(advanced)
+
+    expect(screen.queryByLabelText('Custom manifest URL')).not.toBeNull()
+    expect(screen.queryByText('Manifest Source')).not.toBeNull()
+    expect(
+      screen.queryByText(/for developers and advanced users only/i),
+    ).not.toBeNull()
+    expect(advanced.textContent).toMatch(/^hide advanced$/i)
+
+    fireEvent.click(advanced)
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Custom manifest URL')).toBeNull(),
+    )
+    expect(advanced.textContent).toMatch(/^advanced$/i)
   })
 })

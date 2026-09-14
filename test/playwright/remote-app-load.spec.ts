@@ -44,8 +44,8 @@ test.describe('host loads a real federated remote', () => {
       page.locator('[data-testid="app-settings-dialog"]'),
     ).toBeVisible()
 
-    // Expand the "Manifest Source" section and point it at the fixture remote.
-    await page.getByText('Manifest Source').click()
+    // Open Advanced and point the Manifest Source at the fixture remote.
+    await page.getByTestId('app-settings-advanced-button').click()
     await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
     await page.getByRole('button', { name: 'Apply' }).click()
 
@@ -97,7 +97,7 @@ test.describe('host loads a real federated remote', () => {
     // Register the fixture remote and activate it.
     await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
     await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
-    await page.getByText('Manifest Source').click()
+    await page.getByTestId('app-settings-advanced-button').click()
     await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
     await page.getByRole('button', { name: 'Apply' }).click()
     const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
@@ -172,7 +172,7 @@ test.describe('host loads a real federated remote', () => {
     // Register the fixture remote and activate it.
     await page.locator('[data-testid="toolbar-apps-menu-menu-button"]').click()
     await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
-    await page.getByText('Manifest Source').click()
+    await page.getByTestId('app-settings-advanced-button').click()
     await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
     await page.getByRole('button', { name: 'Apply' }).click()
     const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
@@ -253,7 +253,7 @@ test.describe('host loads a real federated remote', () => {
       page.locator('[data-testid="app-settings-dialog"]'),
     ).toBeVisible()
 
-    await page.getByText('Manifest Source').click()
+    await page.getByTestId('app-settings-advanced-button').click()
     await page.getByLabel('Custom manifest URL').fill(BLOCKED_MANIFEST_URL)
     await page.getByRole('button', { name: 'Apply' }).click()
 
