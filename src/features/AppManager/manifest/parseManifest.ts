@@ -6,21 +6,43 @@ import { AppType } from '../../../models/AppModel/AppType'
 
 const JS_IDENTIFIER_PATTERN = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
 
+/**
+ * Treat a blank string as an absent value before `schema` sees it.
+ *
+ * The App Store serves `""` for optional fields the developer left blank, and
+ * `""` is *present*, so `.optional()` and `.default()` never fire and the
+ * inner `.min(1)` or `.url()` fails — taking the whole entry with it
+ * (`parseManifest` skips an entry that fails validation). Blank is what "no
+ * value" looks like on the wire, so it is normalized to absent rather than
+ * failing an app's only manifest entry over a cosmetic field.
+ *
+ * Normalizing on the way in keeps `.min(1)` and `.url()` meaning what they say
+ * for values that really are present: `icon: 'not-a-url'` is still rejected.
+ */
+const blankAsAbsent = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    schema,
+  )
+
 const AppManifestEntrySchema = z
   .object({
     id: z.string().regex(JS_IDENTIFIER_PATTERN).optional(),
-    name: z.string().min(1).optional(),
+    name: blankAsAbsent(z.string().min(1).optional()),
     // Optional hint from the App Store. Absent today, so payload classification
     // falls back to structure — see classifyInstallPayload.
     type: z.enum([AppType.Service, AppType.Client]).optional(),
+    // Not normalized: `url` is required and names the code to load, so a blank
+    // one is a broken entry, not a blank optional field.
     url: z.string().url(),
-    author: z.string().min(1).optional().default('unknown'),
+    author: blankAsAbsent(z.string().min(1).optional().default('unknown')),
     description: z.string().optional(),
     version: z.string().optional(),
     tags: z.array(z.string()).optional(),
-    icon: z.string().url().optional(),
+    icon: blankAsAbsent(z.string().url().optional()),
     license: z.string().optional(),
-    repository: z.string().url().optional(),
+    repository: blankAsAbsent(z.string().url().optional()),
     compatibleHostVersions: z.string().optional(),
     dependencies: z.array(z.string()).optional(),
   })
