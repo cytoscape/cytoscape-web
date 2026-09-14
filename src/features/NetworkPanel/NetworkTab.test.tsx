@@ -153,4 +153,22 @@ describe('NetworkTab click behavior', () => {
       expect(rendererClick).not.toHaveBeenCalled()
     })
   })
+
+  describe('CSS background color', () => {
+    it('applies bgColor to wrapper Box', () => {
+      render(
+        <NetworkTab
+          network={mockNetwork}
+          renderer={testRenderer}
+          isActive={true}
+          selected={true}
+          bgColor="#123456"
+        />,
+      )
+      const tabElement = screen.getByTestId('network-tab')
+      expect(window.getComputedStyle(tabElement).backgroundColor).toBe(
+        'rgb(18, 52, 86)',
+      )
+    })
+  })
 })

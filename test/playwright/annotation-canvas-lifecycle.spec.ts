@@ -22,6 +22,13 @@ const ANNOTATED_CX2 = path.resolve(
 const ANNOTATED_NETWORK_NAME =
   'WP5049 - Glycolysis in senescence - Homo sapiens'
 
+const MULTI_TYPE_ANNOTATED_CX2 = path.resolve(
+  __dirname,
+  '../fixtures/cx2/valid/annotated-multi-type.valid.cx2',
+)
+
+const MULTI_TYPE_NETWORK_NAME = 'Annotated Multi Type Network'
+
 const PLAIN_CX2 = path.resolve(
   __dirname,
   '../fixtures/cx2/valid/small-network.valid.cx2',
@@ -29,9 +36,9 @@ const PLAIN_CX2 = path.resolve(
 
 const PLAIN_NETWORK_NAME = 'Test Network 20 nodes'
 
-// Cytoscape's own three layers plus one annotation set: background (z-index
-// -2), bottom (-1) and top (1).
-const EXPECTED_CANVAS_COUNT = 6
+// Cytoscape's own three layers plus two annotation layers: bottom (-1) and top (1).
+// Background fill is handled via CSS on NetworkTab.
+const EXPECTED_CANVAS_COUNT = 5
 
 // The annotation layer the fixture's shape annotation is drawn on: its
 // `canvas=background` property puts it on the bottom annotation layer.
@@ -260,5 +267,30 @@ test.describe('Annotation canvas lifecycle', () => {
         { timeout: 30000 },
       )
       .toEqual([])
+  })
+
+  test('applies network background color as CSS without extra canvas layers', async ({
+    page,
+  }) => {
+    test.setTimeout(120000)
+
+    await gotoAndWaitReady(page)
+    await importNetworkFile(page, MULTI_TYPE_ANNOTATED_CX2)
+
+    await expect
+      .poll(() => getWorkspaceNetworkCount(page), { timeout: 30000 })
+      .toBe(1)
+    await waitForRenderedNetwork(page)
+
+    // Verify 5 canvas invariant on multi-type annotated network
+    expect(await countCanvases(page)).toBe(EXPECTED_CANVAS_COUNT)
+
+    // Verify network tab background color matches fixture's #FAFAFA
+    const networkTab = page.locator('[data-testid="network-tab"]').first()
+    await expect(networkTab).toBeVisible()
+    const bgColor = await networkTab.evaluate(
+      (el) => window.getComputedStyle(el).backgroundColor,
+    )
+    expect(bgColor).toBe('rgb(250, 250, 250)')
   })
 })

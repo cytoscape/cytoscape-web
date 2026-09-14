@@ -127,12 +127,9 @@ The core **`renderNetwork(forceFit = true)`** function is responsible for:
    - Mouseover/mouseout for hover highlighting
 
 9. **Annotations**
-   - Use `createAnnotationLayers` and `CX_ANNOTATIONS_KEY` to render CX annotations onto a canvas overlay
-   - The three canvases are created once per Cytoscape instance and held in `annotationLayersRef`.
-     `cyCanvas()` appends a new canvas on every call, so creating them per render left a frozen
-     copy behind each time (issue #675).
-   - Each render calls `setAnnotations`, `setBackgroundColor`, `attach` and `redraw`. `attach` is
-     idempotent and re-registers the redraw handlers that `cy.removeAllListeners()` dropped.
+   - Use `createAnnotationLayers` and `CX_ANNOTATIONS_KEY` to render CX annotations onto a canvas overlay.
+   - Two annotation canvases (bottom layer at `zIndex: -1` and top layer at `zIndex: 1`) are created once per Cytoscape instance and held in `annotationLayersRef`. Background fill is painted cleanly via CSS on the network container rather than on a canvas.
+   - Each render updates annotations via `setAnnotations`, `attach`, and `redraw`. Interaction listeners are managed in a separate persistent effect rather than dropped and re-registered in `renderNetwork()`.
 
 ### Selection & Display Modes
 

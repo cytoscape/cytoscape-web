@@ -26,6 +26,7 @@ export default defineConfig(async () => {
           'src/**/*.{test,spec}.{ts,tsx}',
           'src/**/*.d.ts',
           'src/**/__mocks__/**',
+          'src/**/__testUtils__/**',
         ],
         // text-summary for the terminal, html for local browsing
         // (coverage/index.html), lcov for CI tooling.
