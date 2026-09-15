@@ -13,6 +13,7 @@ import { IdType } from '../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { Network } from '../../models/NetworkModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { runEngineLayout } from '../ToolBar/LayoutMenu/runEngineLayout'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -122,9 +123,15 @@ export const ApplyLayoutButton = ({
 
   const handleClick = (): void => {
     if (network !== undefined && engine !== undefined) {
-      setIsRunning(true)
       setLayoutInfo(defaultLayout.displayName)
-      engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+      runEngineLayout({
+        engine,
+        algorithm: defaultLayout,
+        network,
+        networkId,
+        afterLayout,
+        setIsRunning,
+      })
     } else {
       logUi.warn(
         `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Engine or network not found`,

@@ -30,6 +30,11 @@ export { MAX_STYLES_PER_NETWORK } from '../../models/VisualStyleModel/VisualStyl
 // ── View model types ────────────────────────────────────────────
 export type { NetworkView } from '../../models/ViewModel/NetworkView'
 
+// ── Layout types ────────────────────────────────────────────────
+// The algorithm family an app declares on registerLayout(); also the
+// `type` reported by layout.getAvailableLayouts().
+export { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
+
 // ── CX2 types ───────────────────────────────────────────────────
 export type { Cx2 } from '../../models/CxModel/Cx2'
 

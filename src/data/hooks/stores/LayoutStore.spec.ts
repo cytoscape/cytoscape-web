@@ -100,6 +100,69 @@ describe('useLayoutStore', () => {
     })
   })
 
+  describe('app engines', () => {
+    const appAlgorithm = {
+      name: 'appX::row',
+      engineName: 'appX',
+      displayName: 'Row',
+      type: 'other' as const,
+      description: '',
+      parameters: { spacing: 10 },
+      editables: {
+        spacing: {
+          name: 'spacing',
+          type: 'integer' as const,
+          value: 10,
+          defaultValue: 10,
+        },
+      },
+    }
+    const apply = vi.fn()
+
+    it('upserts an app algorithm, lets it become preferred, and resets on removal', () => {
+      const { result } = renderHook(() => useLayoutStore())
+
+      act(() => {
+        result.current.upsertAppAlgorithm('appX', appAlgorithm, apply)
+      })
+      const engine = result.current.layoutEngines.find((e) => e.name === 'appX')
+      expect(engine?.appId).toBe('appX')
+      expect(engine?.algorithms['appX::row']).toBeDefined()
+
+      act(() => {
+        result.current.setPreferredLayout('appX', 'appX::row')
+      })
+      expect(result.current.preferredLayout.name).toBe('appX::row')
+
+      // Parameter edits go through the same action as core algorithms
+      act(() => {
+        result.current.setLayoutOption('appX', 'appX::row', 'spacing', 25)
+      })
+      expect(result.current.preferredLayout.parameters.spacing).toBe(25)
+
+      act(() => {
+        result.current.removeAppAlgorithm('appX', 'appX::row')
+      })
+      expect(
+        result.current.layoutEngines.find((e) => e.name === 'appX'),
+      ).toBeUndefined()
+      expect(result.current.preferredLayout.name).toBe('default')
+    })
+
+    it('removeAppEngine drops the whole engine', () => {
+      const { result } = renderHook(() => useLayoutStore())
+
+      act(() => {
+        result.current.upsertAppAlgorithm('appX', appAlgorithm, apply)
+        result.current.removeAppEngine('appX')
+      })
+
+      expect(
+        result.current.layoutEngines.find((e) => e.name === 'appX'),
+      ).toBeUndefined()
+    })
+  })
+
   describe('setLayoutOption', () => {
     it('should set a layout option', () => {
       const { result } = renderHook(() => useLayoutStore())

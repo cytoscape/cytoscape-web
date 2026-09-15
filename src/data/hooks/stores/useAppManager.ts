@@ -4,6 +4,7 @@ import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { createResourceApi } from '../../../app-api/core/resourceApi'
 import type { CyAppWithLifecycle } from '../../../app-api/types/AppContext'
 import type {
+  RegisterLayoutOptions,
   RegisterMenuItemOptions,
   RegisterModalOptions,
   RegisterNetworkSearchProviderOptions,
@@ -78,6 +79,8 @@ export function processDeclarativeResources(cyApp: CyApp): void {
       )
     } else if (entry.slot === 'modal-launcher') {
       resourceApi.registerModal(entry as RegisterModalOptions)
+    } else if (entry.slot === 'layout-algorithm') {
+      resourceApi.registerLayout(entry as RegisterLayoutOptions)
     } else {
       // Statically unreachable (the union is exhaustive), but declarations
       // can arrive from untyped JS apps with any slot string at runtime.

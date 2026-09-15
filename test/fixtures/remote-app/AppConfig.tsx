@@ -250,6 +250,29 @@ const TestRemoteApp = {
           maxWidth?: string | false
           fullWidth?: boolean
         }) => unknown
+        registerLayout: (opts: {
+          id: string
+          displayName: string
+          description?: string
+          type?: 'force' | 'geometric' | 'hierarchical' | 'other'
+          threshold?: number
+          parameters?: Record<
+            string,
+            {
+              type: 'string' | 'integer' | 'long' | 'double' | 'boolean'
+              defaultValue: string | number | boolean
+              description?: string
+            }
+          >
+          run: (context: {
+            networkId: string
+            nodes: ReadonlyArray<{ id: string }>
+            positions: Record<string, [number, number]>
+            parameters: Readonly<Record<string, unknown>>
+          }) =>
+            | Record<string, [number, number]>
+            | Promise<Record<string, [number, number]>>
+        }) => unknown
         openModal: (id: string) => unknown
       }
     }
@@ -319,6 +342,39 @@ const TestRemoteApp = {
       label: 'Open Fixture Modal',
       onClick: (apis) => {
         apis.resource.openModal('fixture-modal')
+      },
+    })
+
+    // (6) Register a layout algorithm — the 'layout-algorithm' contract
+    // (#734): the host adapts it into its own layout engine, so it shows up
+    // in the Layout menu's app block and in Layout Settings with `spacing`
+    // editable, and other code can run it as
+    // layout.applyLayout(id, { algorithmName: 'testRemoteApp::fixture-layout' }).
+    // The algorithm is trivial on purpose: every node on one row, `spacing`
+    // apart, starting from the leftmost/topmost current position.
+    context.apis.resource.registerLayout({
+      id: 'fixture-layout',
+      displayName: 'Fixture Row Layout',
+      description: 'Places the nodes on one row (E2E fixture).',
+      type: 'geometric',
+      parameters: {
+        spacing: {
+          type: 'integer',
+          defaultValue: 60,
+          description: 'Gap between neighbouring nodes',
+        },
+      },
+      run: ({ nodes, positions, parameters }) => {
+        const spacing = Number(parameters.spacing)
+        const xs = Object.values(positions).map((p) => p[0])
+        const ys = Object.values(positions).map((p) => p[1])
+        const x0 = xs.length > 0 ? Math.min(...xs) : 0
+        const y0 = ys.length > 0 ? Math.min(...ys) : 0
+        const result: Record<string, [number, number]> = {}
+        nodes.forEach((node, index) => {
+          result[node.id] = [x0 + index * spacing, y0]
+        })
+        return result
       },
     })
   },

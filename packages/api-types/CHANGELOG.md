@@ -4,8 +4,32 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ## 1.0.0-beta.5 (unpublished)
 
-_Nothing yet. Entries go here as the contract changes; the heading is dated
-by the release workflow's guard, not by hand._
+### Added
+
+- **`'layout-algorithm'` resource slot — `ResourceApi.registerLayout(options)`
+  and `unregisterLayout(id)`** (#734) — an app registers a layout algorithm
+  and the host runs it through its own layout engine, the way a Cytoscape
+  Desktop app's `CyLayoutAlgorithm` is run by the desktop layout manager. The
+  algorithm appears in the Layout menu (in an app block after the built-in
+  algorithms, sorted by label — there is no menu-gravity option), in
+  **Layout → Settings...** with every declared parameter editable, it can be
+  set as the default layout, and other apps or agents can run it with
+  `layout.applyLayout(networkId, { algorithmName })` using the qualified name
+  `<appId>::<id>` that `layout.getAvailableLayouts()` now reports. New types
+  `RegisterLayoutOptions`, `LayoutRunContext`, `LayoutPositions`,
+  `LayoutParameter`, `LayoutParameterType`, `LayoutParameterValue`; the
+  `LayoutAlgorithmType` const is exported; `LayoutAlgorithmInfo` gains
+  `appId?`. `run(context)` only computes positions (`{ nodeId: [x, y] }`,
+  sync or async) from the context's `nodes`, `edges`, current `positions`,
+  `selectedNodeIds`, current `parameters` and the app's `apis`; the host
+  owns the running flag, the undo entry and the viewport fit, and a throw or
+  rejection aborts the run without moving anything. Disabling the app removes
+  its algorithms; a default layout that pointed at one falls back to the
+  host's built-in default. `registerAll()` accepts
+  `{ slot: 'layout-algorithm', ... }` entries and `getSupportedSlots()` lists
+  the slot. Parameters are scalars only (`string`, `integer`, `long`,
+  `double`, `boolean`); list-valued parameters, per-node sizes in the run
+  context, and a `setPreferredLayout` API are left for later.
 
 ## 1.0.0-beta.4 (2026-09-11)
 

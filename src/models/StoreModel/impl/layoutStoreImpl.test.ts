@@ -1,11 +1,16 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
+import { LayoutAlgorithm } from '../../LayoutModel/LayoutAlgorithm'
+import { LayoutEngine } from '../../LayoutModel/LayoutEngine'
 import {
   LayoutState,
+  removeAppAlgorithm,
+  removeAppEngine,
   setIsRunning,
   setLayoutOption,
   setPreferredLayout,
+  upsertAppAlgorithm,
 } from './layoutStoreImpl'
 
 // Mock the layout selection module
@@ -134,6 +139,232 @@ describe('LayoutStoreImpl', () => {
       )
 
       expect(result).toBe(state) // Should return unchanged
+    })
+  })
+
+  // ── App engines ('layout-algorithm' resources) ──────────────────
+
+  const APP_ID = 'appX'
+  const appApply: LayoutEngine['apply'] = vi.fn()
+
+  const makeAppAlgorithm = (localId: string): LayoutAlgorithm => ({
+    name: `${APP_ID}::${localId}`,
+    engineName: APP_ID,
+    displayName: `App ${localId}`,
+    type: 'other',
+    description: '',
+    parameters: { spacing: 10 },
+    editables: {
+      spacing: {
+        name: 'spacing',
+        type: 'integer' as const,
+        value: 10,
+        defaultValue: 10,
+      },
+    },
+  })
+
+  const findEngine = (
+    state: LayoutState,
+    name: string,
+  ): LayoutEngine | undefined =>
+    state.layoutEngines.find((engine) => engine.name === name)
+
+  describe('upsertAppAlgorithm', () => {
+    it('creates one engine per app, named after the app id', () => {
+      const state = createDefaultState()
+
+      const result = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+
+      const engine = findEngine(result, APP_ID)
+      expect(engine).toBeDefined()
+      expect(engine?.appId).toBe(APP_ID)
+      expect(engine?.apply).toBe(appApply)
+      expect(engine?.defaultAlgorithmName).toBe(`${APP_ID}::one`)
+      expect(Object.keys(engine?.algorithms ?? {})).toEqual([`${APP_ID}::one`])
+      // Core engines are untouched and keep their order
+      expect(result.layoutEngines[0]).toBe(state.layoutEngines[0])
+    })
+
+    it('reuses the app engine for a second algorithm', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+
+      const result = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('two'),
+        appApply,
+      )
+
+      const appEngines = result.layoutEngines.filter(
+        (engine) => engine.appId === APP_ID,
+      )
+      expect(appEngines).toHaveLength(1)
+      expect(Object.keys(appEngines[0].algorithms).sort()).toEqual([
+        `${APP_ID}::one`,
+        `${APP_ID}::two`,
+      ])
+    })
+
+    it('replaces an algorithm registered under the same name', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      const replacement: LayoutAlgorithm = {
+        ...makeAppAlgorithm('one'),
+        displayName: 'Renamed',
+      }
+
+      const result = upsertAppAlgorithm(state, APP_ID, replacement, appApply)
+
+      const engine = findEngine(result, APP_ID)
+      expect(Object.keys(engine?.algorithms ?? {})).toHaveLength(1)
+      expect(engine?.algorithms[`${APP_ID}::one`].displayName).toBe('Renamed')
+    })
+
+    it('never mutates the engine array it is given', () => {
+      const state = createDefaultState()
+      const before = state.layoutEngines
+      const beforeLength = before.length
+
+      const result = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+
+      expect(result.layoutEngines).not.toBe(before)
+      expect(before).toHaveLength(beforeLength)
+      expect(state.layoutEngines).toBe(before)
+    })
+  })
+
+  describe('removeAppAlgorithm', () => {
+    it('removes the algorithm and drops the engine when it is empty', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('two'),
+        appApply,
+      )
+
+      let result = removeAppAlgorithm(state, APP_ID, `${APP_ID}::one`)
+      expect(Object.keys(findEngine(result, APP_ID)?.algorithms ?? {})).toEqual(
+        [`${APP_ID}::two`],
+      )
+
+      result = removeAppAlgorithm(result, APP_ID, `${APP_ID}::two`)
+      expect(findEngine(result, APP_ID)).toBeUndefined()
+      expect(result.layoutEngines).toHaveLength(
+        createDefaultState().layoutEngines.length,
+      )
+    })
+
+    it('falls back to the built-in default when the removed algorithm was preferred', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      state = setPreferredLayout(state, APP_ID, `${APP_ID}::one`)
+      expect(state.preferredLayout.name).toBe(`${APP_ID}::one`)
+
+      const result = removeAppAlgorithm(state, APP_ID, `${APP_ID}::one`)
+
+      expect(result.preferredLayout).toBe(defAlgorithm)
+    })
+
+    it('is a no-op for an unknown engine or algorithm', () => {
+      const state = createDefaultState()
+
+      expect(removeAppAlgorithm(state, 'nope', 'nope::x')).toBe(state)
+      expect(removeAppAlgorithm(state, 'cyjs', 'nope')).toBe(state)
+    })
+  })
+
+  describe('removeAppEngine', () => {
+    it('drops every algorithm of the app and resets a dangling preferred layout', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('two'),
+        appApply,
+      )
+      state = setPreferredLayout(state, APP_ID, `${APP_ID}::two`)
+
+      const result = removeAppEngine(state, APP_ID)
+
+      expect(findEngine(result, APP_ID)).toBeUndefined()
+      expect(result.preferredLayout).toBe(defAlgorithm)
+      expect(result.preferredHierarchicalLayout).toBe(defHierarchicalAlgorithm)
+    })
+
+    it('is a no-op when the app has no engine', () => {
+      const state = createDefaultState()
+      expect(removeAppEngine(state, 'nope')).toBe(state)
+    })
+  })
+
+  describe('setPreferredLayout with store-only engines', () => {
+    it('resolves an app algorithm that exists only in the store state', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+
+      const result = setPreferredLayout(state, APP_ID, `${APP_ID}::one`)
+
+      expect(result.preferredLayout.name).toBe(`${APP_ID}::one`)
+      expect(result.preferredLayout.engineName).toBe(APP_ID)
+    })
+  })
+
+  describe('setLayoutOption on the preferred layout', () => {
+    it('keeps preferredLayout pointing at the edited algorithm', () => {
+      let state = createDefaultState()
+      state = setPreferredLayout(state, 'cyjs', 'grid')
+
+      const result = setLayoutOption(state, 'cyjs', 'grid', 'spacing', 100)
+
+      expect(result.preferredLayout.parameters.spacing).toBe(100)
+      expect(result.preferredLayout).toBe(
+        result.layoutEngines.find((e) => e.name === 'cyjs')?.algorithms['grid'],
+      )
     })
   })
 

@@ -103,11 +103,17 @@ export { MAX_APP_DATA_VALUE_BYTES } from './AppDataTypes'
 
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
+  LayoutParameter,
+  LayoutParameterType,
+  LayoutParameterValue,
+  LayoutPositions,
+  LayoutRunContext,
   ModalHostProps,
   NetworkSearchOptionsHostProps,
   NetworkSearchQuery,
   PanelHostProps,
   RegisteredResourceInfo,
+  RegisterLayoutOptions,
   RegisterMenuItemOptions,
   RegisterModalOptions,
   RegisterNetworkSearchProviderOptions,
@@ -151,6 +157,7 @@ export type {
 } from './ElementTypes'
 export {
   ComponentType,
+  LayoutAlgorithmType,
   MAX_STYLES_PER_NETWORK,
   ValueTypeName,
   VisualPropertyName,

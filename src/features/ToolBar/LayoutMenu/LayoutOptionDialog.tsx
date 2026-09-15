@@ -22,6 +22,7 @@ import { Network } from '../../../models/NetworkModel'
 import { Property } from '../../../models/PropertyModel/Property'
 import { ValueType } from '../../../models/TableModel'
 import { LayoutSelector } from './LayoutSelector'
+import { runEngineLayout } from './runEngineLayout'
 import { ValueEditor } from './ValueEditor/ValueEditor'
 
 const DraggablePaper = (props: PaperProps): JSX.Element => {
@@ -38,6 +39,8 @@ const DraggablePaper = (props: PaperProps): JSX.Element => {
 interface LayoutOptionDialogProps {
   afterLayout: (positionMap: Map<IdType, [number, number]>) => void
   network: Network
+  /** The network being laid out; app engines need it for the run context. */
+  networkId: IdType
   open: boolean
   setOpen: (open: boolean) => void
   allDisabled: boolean
@@ -45,6 +48,7 @@ interface LayoutOptionDialogProps {
 
 export const LayoutOptionDialog = ({
   network,
+  networkId,
   afterLayout,
   open,
   setOpen,
@@ -74,37 +78,50 @@ export const LayoutOptionDialog = ({
     (state) => state.layoutEngines,
   )
 
-  const engine: LayoutEngine =
-    layoutEngines.find((e) => e.name === selected[0]) ?? layoutEngines[0]
+  // The selection is resolved against the store on every render: the
+  // selected algorithm can disappear while the dialog is open (an app that
+  // registered it was disabled), in which case the dialog shows the
+  // preferred layout instead of dereferencing a missing algorithm.
+  const requestedAlgorithm: LayoutAlgorithm | undefined = layoutEngines.find(
+    (e) => e.name === selected[0],
+  )?.algorithms[selected[1]]
+  const effectiveSelected: [string, string] =
+    requestedAlgorithm !== undefined
+      ? selected
+      : [preferredLayout.engineName, preferredLayout.name]
+  const [selectedEngineName, selectedAlgorithmName] = effectiveSelected
+
+  const engine: LayoutEngine | undefined =
+    layoutEngines.find((e) => e.name === selectedEngineName) ?? layoutEngines[0]
+  const algorithm: LayoutAlgorithm | undefined =
+    engine?.algorithms[selectedAlgorithmName]
 
   // Check if the current layout is the default layout
   const [isDefault, setIsDefault] = useState<boolean>(false)
+  const [disabled, setDisabled] = useState<boolean>(false)
 
   useEffect(() => {
-    if (
-      selected[0] === preferredLayout.engineName &&
-      selected[1] === preferredLayout.name
-    ) {
-      setIsDefault(true)
-    } else {
-      setIsDefault(false)
-    }
+    setIsDefault(
+      selectedEngineName === preferredLayout.engineName &&
+        selectedAlgorithmName === preferredLayout.name,
+    )
 
-    const algorithm = engine.algorithms[selected[1]]
-
-    if (algorithm?.threshold !== undefined) {
-      // Disable apply button if network is too large
-      const nodeCount: number = network.nodes?.length ?? 0
-      const edgeCount: number = network.edges?.length ?? 0
-
-      const total: number = nodeCount + edgeCount
-      if (total > algorithm.threshold) {
-        setDisabled(true)
-      }
-    } else {
-      setDisabled(false)
-    }
-  }, [selected, preferredLayout, network, engine.algorithms])
+    // Disable the apply button when the network is too large for the
+    // algorithm; re-enable it otherwise (a previous over-threshold selection
+    // must not leave the button stuck).
+    const nodeCount: number = network.nodes?.length ?? 0
+    const edgeCount: number = network.edges?.length ?? 0
+    const total: number = nodeCount + edgeCount
+    setDisabled(
+      algorithm?.threshold !== undefined && total > algorithm.threshold,
+    )
+  }, [
+    selectedEngineName,
+    selectedAlgorithmName,
+    preferredLayout,
+    network,
+    algorithm,
+  ])
 
   const setDefaultLayout: (engineName: string, algorithmName: string) => void =
     useLayoutStore((state) => state.setPreferredLayout)
@@ -120,39 +137,39 @@ export const LayoutOptionDialog = ({
     setOpen(false)
   }
 
-  const [disabled, setDisabled] = useState<boolean>(false)
-
   const handleApply = (): void => {
-    // Perform apply layout here
-
-    if (engine === undefined) {
+    if (engine === undefined || algorithm === undefined) {
       return
     }
-    const algorithm: LayoutAlgorithm | undefined =
-      engine.algorithms[selected[1]]
-
-    if (algorithm === undefined) {
-      return
-    }
-    setIsRunning(true)
-    engine.apply(network.nodes, network.edges, afterLayout, algorithm)
+    runEngineLayout({
+      engine,
+      algorithm,
+      network,
+      networkId,
+      afterLayout,
+      setIsRunning,
+    })
   }
 
   const handleDefaultChanged = (event: any): void => {
     const checked: boolean = event.target.checked
     if (checked) {
-      setDefaultLayout(selected[0], selected[1])
+      setDefaultLayout(selectedEngineName, selectedAlgorithmName)
       setIsDefault(true)
     }
   }
 
   const setValue = (optionName: string, value: ValueType): void => {
-    const engineName: string = selected[0]
-    const algorithmName: string = selected[1]
-    setLayoutOption(engineName, algorithmName, optionName, value)
+    setLayoutOption(
+      selectedEngineName,
+      selectedAlgorithmName,
+      optionName,
+      value,
+    )
   }
 
-  const { editables } = engine.algorithms[selected[1]]
+  const editables: Record<string, Property<ValueType>> = algorithm?.editables ??
+  {}
 
   return (
     <CyDialog
@@ -176,8 +193,8 @@ export const LayoutOptionDialog = ({
         <Grid container spacing={0} alignItems={'center'}>
           <Grid item md={12}>
             <LayoutSelector
-              selectedEngine={selected[0]}
-              selectedAlgorithm={selected[1]}
+              selectedEngine={selectedEngineName}
+              selectedAlgorithm={selectedAlgorithmName}
               setSelected={setSelectedAlgorithm}
             />
           </Grid>
@@ -198,26 +215,21 @@ export const LayoutOptionDialog = ({
         </Grid>
 
         <List dense>
-          {Object.keys(editables === undefined ? {} : editables).map(
-            (propName: string) => {
-              if (editables === undefined) {
-                return null
-              }
-              const property: Property<ValueType> = editables[propName]
-              return (
-                <ValueEditor
-                  key={property.name}
-                  optionName={property.name}
-                  description={property.description ?? property.name}
-                  valueType={property.type}
-                  value={property.value}
-                  setValue={(optionName: string, value: ValueType) =>
-                    setValue(optionName, value)
-                  }
-                />
-              )
-            },
-          )}
+          {Object.keys(editables).map((propName: string) => {
+            const property: Property<ValueType> = editables[propName]
+            return (
+              <ValueEditor
+                key={property.name}
+                optionName={property.name}
+                description={property.description ?? property.name}
+                valueType={property.type}
+                value={property.value}
+                setValue={(optionName: string, value: ValueType) =>
+                  setValue(optionName, value)
+                }
+              />
+            )
+          })}
         </List>
       </DialogContent>
       <DialogActions>

@@ -543,7 +543,9 @@ export const SubNetworkPanel = ({
     if (interactionNetworkId === undefined || interactionNetworkId === '') {
       setProcessingStage('Applying layout...')
 
-      // Make layout application async
+      // Make layout application async. A throwing or rejecting engine
+      // (an app engine rejects on any failure) must still settle the
+      // promise, or this pipeline would hang with isRunning stuck.
       const applyLayoutAsync = (): Promise<void> => {
         return new Promise((resolve) => {
           const afterLayout = (
@@ -553,15 +555,31 @@ export const SubNetworkPanel = ({
             setIsRunning(false)
             resolve()
           }
+          const onFailure = (error: unknown): void => {
+            logUi.error(
+              `[SubNetworkPanel]: Layout '${defaultLayout.displayName}' failed on ${network.id}:`,
+              error,
+            )
+            setIsRunning(false)
+            resolve()
+          }
 
           if (network !== undefined && engine !== undefined) {
             setIsRunning(true)
-            engine.apply(
-              network.nodes,
-              network.edges,
-              afterLayout,
-              defaultLayout,
-            )
+            try {
+              const result = engine.apply(
+                network.nodes,
+                network.edges,
+                afterLayout,
+                defaultLayout,
+                network.id,
+              )
+              if (result instanceof Promise) {
+                result.catch(onFailure)
+              }
+            } catch (error) {
+              onFailure(error)
+            }
           } else {
             resolve()
           }

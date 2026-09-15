@@ -29,7 +29,8 @@ src/app-api/
 │   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   ├── nodeGraphicsApi.ts      ← node-graphics render hook registry (NodeGraphicsStore)
-│   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal registry (AppResourceStore; modal open-state in ModalLauncherStore). 'apps-menu' entries are plain data (label/icon/onClick) — never a component
+│   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal/layout registry (AppResourceStore; modal open-state in ModalLauncherStore). 'apps-menu' entries are plain data (label/icon/onClick) — never a component
+│   ├── appLayoutEngine.ts      ← 'layout-algorithm' adapter: one synthetic LayoutEngine per app in LayoutStore, the shared `apply` that runs the app's `run`, the run registry, AppCleanupRegistry wiring
 │   ├── dialogApi.ts            ← per-app Dialog API: apis.dialog.open({ title, render }) (AppDialogStore; rendered by features/AppManager/AppDialogHost through the shared AppDialogShell)
 │   ├── appDataApi.ts           ← per-app key/value storage (AppDataStore + the cyAppData opaque aspect)
 │   ├── perAppApis.ts           ← buildPerAppApis(appId): the ONLY place AppContextApis is assembled
@@ -137,6 +138,21 @@ src/app-api/
     `string:data:image/png;base64,…`) is an unrecognised scheme and is discarded, and a
     remote host without an `Access-Control-Allow-Origin` header will not load under
     `crossOrigin: 'anonymous'` at all. See the STRING example in `api_docs/Api.md`.
+17. **App layouts are ordinary engines, adapted once** — `resource.registerLayout` (the
+    `'layout-algorithm'` slot, #734) never renders anything itself. `core/appLayoutEngine.ts`
+    turns the options into a `LayoutAlgorithm` (name qualified `<appId>::<id>`, `parameters`
+    and `editables` sharing keys so `setLayoutOption` updates both) inside ONE synthetic
+    `LayoutEngine` per app (`name === appId`, `appId` set) in `LayoutStore.layoutEngines`, so
+    the Layout menu, the Settings dialog, Apply Default Layout, the toolbar button and
+    `layout.applyLayout` reach it with no special case — the menu only uses `engine.appId`
+    to put app rows in their own block. The `run` functions live in the adapter's registry,
+    not in the store (Immer-frozen, snapshot-serialized). The shared `apply` needs the 5th
+    `networkId` argument every host call site now passes; it rejects on any failure and never
+    calls `afterLayout` then, so callers own the `isRunning` reset (`runEngineLayout` in
+    `features/ToolBar/LayoutMenu/` for the UI paths, `applyLayout` for the API). Cleanup is
+    the adapter's `registerAppCleanup` call plus the resource store's slot-agnostic
+    `removeAllByAppId`; a dangling `preferredLayout` falls back to `defAlgorithm`. Layout
+    events stay API-only (principle 10) — host UI paths do not dispatch them.
 
 ## Two-Layer Pattern
 

@@ -178,6 +178,36 @@ describe('getAvailableLayouts', () => {
       expect(result.data.layouts).toHaveLength(2)
     }
   })
+
+  it('reports appId only for app-registered engines, with the qualified name', () => {
+    const appEngine = {
+      name: 'mcode',
+      appId: 'mcode',
+      defaultAlgorithmName: 'mcode::cluster',
+      algorithms: {
+        'mcode::cluster': {
+          name: 'mcode::cluster',
+          engineName: 'mcode',
+          displayName: 'MCODE Cluster Layout',
+          type: 'other',
+          description: '',
+          parameters: {},
+        },
+      },
+      apply: vi.fn(),
+    }
+    mockLayoutState.layoutEngines = [...mockLayoutEngines, appEngine] as any[]
+    const result = layoutApi.getAvailableLayouts()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.layouts[0]).not.toHaveProperty('appId')
+      expect(result.data.layouts[1]).toMatchObject({
+        engineName: 'mcode',
+        algorithmName: 'mcode::cluster',
+        appId: 'mcode',
+      })
+    }
+  })
 })
 
 // ── applyLayout — validation errors ──────────────────────────────────────────
@@ -242,6 +272,13 @@ describe('applyLayout — happy path', () => {
   it('resolves with ok() after layout completes', async () => {
     const result = await layoutApi.applyLayout('net1')
     expect(result.success).toBe(true)
+  })
+
+  it('hands the network id to the engine as the fifth apply argument', async () => {
+    await layoutApi.applyLayout('net1')
+    const call = mockLayoutEngines[0].apply.mock.calls[0]
+    expect(call[3]).toBe(mockCircleAlgorithm)
+    expect(call[4]).toBe('net1')
   })
 
   it('updates node positions via ViewModelStore', async () => {

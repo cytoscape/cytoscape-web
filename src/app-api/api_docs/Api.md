@@ -1190,11 +1190,11 @@ if (read.success) {
 }
 ```
 
-| Error Code | Condition                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| `APP1`     | `networkId` has no visual style in memory                                                |
-| `APP9`     | `visualStyle` is not a visual style object (see below)                                   |
-| `APP14`    | the network already owns `MAX_STYLES_PER_NETWORK` (50) styles                            |
+| Error Code | Condition                                                     |
+| ---------- | ------------------------------------------------------------- |
+| `APP1`     | `networkId` has no visual style in memory                     |
+| `APP9`     | `visualStyle` is not a visual style object (see below)        |
+| `APP14`    | the network already owns `MAX_STYLES_PER_NETWORK` (50) styles |
 
 Nothing is applied when the call fails; every check runs before the store is
 touched.
@@ -1234,10 +1234,10 @@ event cannot dirty a clean network.
 Fires `style:switched`, then one `style:changed` per property that differs
 between the two styles.
 
-| Error Code | Condition                                            |
-| ---------- | ---------------------------------------------------- |
-| `APP1`     | `networkId` has no style set in memory               |
-| `APP15`    | the network owns no style with that `styleId`        |
+| Error Code | Condition                                     |
+| ---------- | --------------------------------------------- |
+| `APP1`     | `networkId` has no style set in memory        |
+| `APP15`    | the network owns no style with that `styleId` |
 
 All methods in this API return `APP1` if the visual style for `networkId` is not found.
 
@@ -1256,10 +1256,11 @@ import { useLayoutApi } from 'cyweb/LayoutApi'
 ```typescript
 interface LayoutAlgorithmInfo {
   engineName: string
-  algorithmName: string
+  algorithmName: string // what applyLayout takes; `<appId>::<id>` for an app algorithm
   displayName: string
   description: string
   type: string
+  appId?: string // set for algorithms an app registered ('layout-algorithm' slot)
 }
 
 interface ApplyLayoutOptions {
@@ -1295,7 +1296,9 @@ escape.
 
 #### `getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>`
 
-Returns all registered layout algorithms across all engines. There are no
+Returns all registered layout algorithms across all engines, including the
+ones apps registered through `resource.registerLayout` (those carry `appId`,
+and their `algorithmName` is the qualified `<appId>::<id>`). There are no
 validation failures to report — an empty engine registry yields
 `ok({ layouts: [] })` — but the call is still wrapped like every other, so an
 unexpected store error resolves to `fail(APP3)`. Handle both branches of the
@@ -1774,17 +1777,20 @@ type ResourceSlot =
   | 'apps-menu'
   | 'search-bar'
   | 'modal-launcher'
+  | 'layout-algorithm'
 
 // Discriminated by slot: 'right-panel' entries take RegisterPanelOptions;
 // 'apps-menu' entries take RegisterMenuItemOptions (plain data, no
 // `component`); 'search-bar' entries take
 // RegisterNetworkSearchProviderOptions (no `component`); 'modal-launcher'
-// entries take RegisterModalOptions.
+// entries take RegisterModalOptions; 'layout-algorithm' entries take
+// RegisterLayoutOptions (a `run` function, no `component`).
 type ResourceDeclaration =
   | ({ slot: 'right-panel' } & RegisterPanelOptions)
   | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
   | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
   | ({ slot: 'modal-launcher' } & RegisterModalOptions)
+  | ({ slot: 'layout-algorithm' } & RegisterLayoutOptions)
 
 interface RegisterPanelOptions {
   id: string
@@ -1852,6 +1858,41 @@ interface ModalHostProps {
   requestClose: () => void // closes this modal (same path as the host's Close "X")
 }
 
+// A layout algorithm the host runs through its own layout engine. No
+// component: `run` computes positions, the host owns everything around it.
+interface RegisterLayoutOptions {
+  id: string // slot-local; the algorithm's public name is `<appId>::<id>`
+  displayName: string // Layout menu row and Settings entry, required non-empty
+  description?: string // hover text
+  type?: 'force' | 'geometric' | 'hierarchical' | 'other' // default 'other'
+  threshold?: number // greyed out above this many nodes + edges
+  parameters?: Record<string, LayoutParameter> // editable in Layout Settings
+  run: (context: LayoutRunContext) => LayoutPositions | Promise<LayoutPositions>
+  isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per menu open
+}
+
+type LayoutParameterType = 'string' | 'integer' | 'long' | 'double' | 'boolean'
+type LayoutParameterValue = string | number | boolean
+
+interface LayoutParameter {
+  description?: string
+  type: LayoutParameterType
+  defaultValue: LayoutParameterValue // must match `type` (number for the numeric types)
+  range?: { min: number; max: number } | { values: LayoutParameterValue[] }
+}
+
+type LayoutPositions = Record<IdType, [number, number]> // node id → [x, y]
+
+interface LayoutRunContext {
+  readonly networkId: IdType // the network being laid out — not necessarily the current one
+  readonly nodes: readonly Node[]
+  readonly edges: readonly Edge[]
+  readonly positions: LayoutPositions // current position of every node with a view
+  readonly selectedNodeIds: readonly IdType[]
+  readonly parameters: Readonly<Record<string, ValueType>> // current values, keyed as declared
+  readonly apis: AppContextApis // the registering app's per-app API object
+}
+
 interface RegisteredResourceInfo {
   resourceId: string // identity triple: appId::slot::id
   slot: ResourceSlot
@@ -1877,7 +1918,7 @@ interface ResourceVisibilityResult {
 #### `getSupportedSlots(): ApiResult<{ slots: ResourceSlot[] }>`
 
 Returns the slots the host supports. Currently
-`['right-panel', 'apps-menu', 'search-bar', 'modal-launcher']`.
+`['right-panel', 'apps-menu', 'search-bar', 'modal-launcher', 'layout-algorithm']`.
 
 #### `registerPanel(options): ApiResult<{ resourceId: string }>`
 
@@ -1945,8 +1986,8 @@ apis.resource.registerMenuItem({
 })
 ```
 
-| Error Code | Condition                                                                                       |
-| ---------- | ----------------------------------------------------------------------------------------------- |
+| Error Code | Condition                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
 | `APP9`     | `id` or `label` empty, `onClick`/`isEnabled` not a function, `icon` not a valid URI, or a `component` |
 
 **Migrating a component-based menu item.** Replace `component` (and
@@ -1984,8 +2025,8 @@ component. A provider contributes:
   returned promise is pending the bar shows progress and blocks re-submit; a
   rejection is logged and surfaced to the user as an error message.
 
-| Error Code | Condition                                                         |
-| ---------- | ----------------------------------------------------------------- |
+| Error Code | Condition                                                                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP9`     | `id`/`name` empty, `onSubmit` not a function, `optionsComponent` not a valid React type, `icon` not http(s)/data:image/root-relative, `website` not http(s) |
 
 The `icon` follows the same rule as an `'apps-menu'` icon: **an SVG is painted
@@ -2031,7 +2072,7 @@ The host renders the component inside its own React tree, wrapped in its
 dialog shell (`CyDialog`), so the modal inherits the host theme, error
 isolation (`errorFallback` or the default plugin fallback), and a `Suspense`
 boundary with a loading spinner for `React.lazy` content. The component
-renders the dialog *contents* — `DialogTitle`, `DialogContent`,
+renders the dialog _contents_ — `DialogTitle`, `DialogContent`,
 `DialogActions` — and receives `ModalHostProps`.
 
 Dismissal follows the host's dialog policy
@@ -2049,14 +2090,93 @@ is still open and blanks it. Put close side effects on the buttons that
 close, and make reopening self-healing by (re)writing the payload before
 each `openModal(id)` call.
 
-| Error Code | Condition                                                                       |
-| ---------- | ------------------------------------------------------------------------------- |
+| Error Code | Condition                                                                      |
+| ---------- | ------------------------------------------------------------------------------ |
 | `APP9`     | `id` empty, `component` not a valid React type, invalid `maxWidth`/`fullWidth` |
 
 #### `unregisterModal(modalId): ApiResult`
 
 Removes a modal registration. If the modal is currently open, it is closed
 first. Returns `APP7` if it is not registered.
+
+#### `registerLayout(options): ApiResult<{ resourceId: string }>`
+
+Registers a layout algorithm in the `'layout-algorithm'` slot. Uses upsert
+semantics: re-registering the same `id` replaces the algorithm and resets its
+parameter values to the new defaults.
+
+The host adapts the registration into its own layout engine — one synthetic
+engine per app, named after the app id — so the algorithm behaves like a
+built-in one everywhere the host lists layouts:
+
+- **Layout menu** — a row in the app block, rendered after the core
+  algorithms and before "Layout Tools" with a divider on each side. Rows
+  are sorted by label (app id as the tiebreak); there is no `order` or
+  gravity option, so an app that registers several related layouts keeps
+  them together with a shared label prefix (`"MCODE Cluster Layout"`,
+  `"MCODE FD Layout"`). The row is greyed out above `threshold` nodes +
+  edges, when `isEnabled(apis)` returns `false`, and whenever the host
+  disables every layout (no network view, an HCX cell view).
+- **Layout → Settings...** — listed under `displayName`; every declared
+  `parameter` gets an editor there, and the current values are what `run`
+  receives. "Set as default" works for app algorithms too: Apply Default
+  Layout and the floating toolbar button then run it.
+- **Layout API** — `layout.getAvailableLayouts()` lists it with `appId` set
+  and `algorithmName` equal to the qualified name `<appId>::<id>`, which is
+  what `layout.applyLayout(networkId, { algorithmName })` takes. That is how
+  another app, or an agent on `window.CyWebApi`, runs it.
+
+**What the host does around `run`.** Every host path (menu row, Settings
+"Apply Layout", Apply Default Layout, the floating toolbar button, and
+`applyLayout`) sets the running flag, snapshots the current positions, calls
+`run` with a `LayoutRunContext`, writes the returned positions to the view
+model, records one undo entry, and fits the viewport. `run` computes
+positions and nothing else — do not write positions yourself from inside it.
+`layout:started` / `layout:completed` fire only on the `applyLayout` path, as
+for built-in algorithms.
+
+**The result.** An object keyed by node id with `[x, y]` pairs. Nodes left
+out keep their position; ids that are not nodes of the network, and values
+that are not finite `[x, y]` pairs, are dropped with a warning. `run` may be
+synchronous or return a Promise. A throw or a rejection aborts the run: the
+running flag is reset, no positions change, no undo entry is recorded, and
+the error is logged under the `api` debug namespace. If the app is disabled
+while `run` is pending, the result is discarded when it arrives.
+
+**Lifecycle.** Disabling or uninstalling the app removes its algorithms (and
+its engine); a preferred layout that pointed at one falls back to the host's
+built-in default. `unregisterAll()` removes them too.
+
+```typescript
+apis.resource.registerLayout({
+  id: 'cluster',
+  displayName: 'MCODE Cluster Layout',
+  description: 'Clusters as compact disks, members on rings by score',
+  type: 'other',
+  parameters: {
+    nodeSpacing: {
+      type: 'double',
+      defaultValue: 20,
+      description: 'Gap between nodes',
+    },
+    satellites: { type: 'boolean', defaultValue: true },
+  },
+  run: async ({ networkId, nodes, edges, positions, parameters, apis }) => {
+    const clusters = apis.appData.get(networkId, 'latest-result')
+    return layoutClusters(nodes, edges, positions, clusters, parameters)
+  },
+})
+```
+
+| Error Code | Condition                                                                                                                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `APP9`     | `id` or `displayName` empty; `run` or `isEnabled` not a function; `type` not one of the four families; `threshold` negative or not a number; a parameter whose `type` is not scalar, whose `defaultValue` does not match its `type`, or whose `range` is malformed |
+| `APP3`     | the host failed to register the algorithm (nothing is left registered)                                                                                                                                                                                             |
+
+#### `unregisterLayout(layoutId): ApiResult`
+
+Removes a layout algorithm. Returns `APP7` if it is not registered. If it
+was the default layout, the host falls back to its built-in default.
 
 #### `openModal(id): ApiResult`
 
@@ -2083,10 +2203,10 @@ async function runSearch(query: string) {
 }
 ```
 
-| Error Code | Condition                                    |
-| ---------- | -------------------------------------------- |
-| `APP7`     | No modal with this `id` is registered        |
-| `APP9`     | `id` empty or not a string                   |
+| Error Code | Condition                             |
+| ---------- | ------------------------------------- |
+| `APP7`     | No modal with this `id` is registered |
+| `APP9`     | `id` empty or not a string            |
 
 #### `closeModal(id): ApiResult`
 
@@ -2107,6 +2227,12 @@ partial failures.
 const result = apis.resource.registerAll([
   { slot: 'right-panel', id: 'Panel', component: MyPanel },
   { slot: 'apps-menu', id: 'Menu', label: 'My Action', onClick: runAction },
+  {
+    slot: 'layout-algorithm',
+    id: 'rows',
+    displayName: 'Row Layout',
+    run: layoutRows,
+  },
 ])
 if (result.success && result.data.errors.length > 0) {
   console.warn('Partial failures:', result.data.errors)
@@ -2532,7 +2658,7 @@ Also triggered by TableApi write methods.
 | `selectionApi.exclusiveSelect` / `additiveSelect` / `additiveDeselect` / `toggleSelected` / `clearSelection`               | `selection:changed`                                                                      |
 | `layoutApi.applyLayout`                                                                                                    | `layout:started`, `layout:completed`                                                     |
 | `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `deleteMapping`                            | `style:changed` (×per property)                                                          |
-| `visualStyleApi.applyVisualStyle` / `switchStyle`                                                                          | `style:switched`, then `style:changed` (×per property differing between the two styles) |
+| `visualStyleApi.applyVisualStyle` / `switchStyle`                                                                          | `style:switched`, then `style:changed` (×per property differing between the two styles)  |
 | `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `renameColumn` / `applyValueToElements` | `data:changed`                                                                           |
 | `contextMenuApi.addContextMenuItem` / `removeContextMenuItem`                                                              | _(no events — synchronous store mutation only)_                                          |
 
@@ -2673,8 +2799,8 @@ onClick: (apis) => {
 }
 ```
 
-| Error Code | Condition                                                                 |
-| ---------- | ------------------------------------------------------------------------- |
+| Error Code | Condition                                                                          |
+| ---------- | ---------------------------------------------------------------------------------- |
 | `APP9`     | `title` empty, `render` not a function, empty `id`, invalid `maxWidth`/`fullWidth` |
 
 #### `close(dialogId?): ApiResult`

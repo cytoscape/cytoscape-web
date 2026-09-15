@@ -12,6 +12,13 @@ import { useModalLauncherStore } from '../../data/hooks/stores/ModalLauncherStor
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { AppStatus } from '../../models/AppModel/AppStatus'
+import { AppCodes } from '../types/ApiResult'
+import type { RegisterLayoutOptions } from '../types/AppResourceTypes'
+import {
+  registerAppLayout,
+  unregisterAllAppLayouts,
+  unregisterAppLayout,
+} from './appLayoutEngine'
 import { createResourceApi } from './resourceApi'
 
 enableMapSet()
@@ -40,6 +47,12 @@ vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
 
 vi.mock('../../debug', () => ({
   logApp: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+vi.mock('./appLayoutEngine', () => ({
+  registerAppLayout: vi.fn(),
+  unregisterAppLayout: vi.fn(),
+  unregisterAllAppLayouts: vi.fn(),
 }))
 
 const DummyComponent = () => null
@@ -101,7 +114,7 @@ describe('createResourceApi', () => {
   // ── getSupportedSlots ───────────────────────────────────────────
 
   describe('getSupportedSlots', () => {
-    it('returns right-panel, apps-menu, search-bar and modal-launcher', () => {
+    it('returns right-panel, apps-menu, search-bar, modal-launcher and layout-algorithm', () => {
       const api = createResourceApi('app1')
       const result = api.getSupportedSlots()
       expect(result.success).toBe(true)
@@ -111,6 +124,7 @@ describe('createResourceApi', () => {
           'apps-menu',
           'search-bar',
           'modal-launcher',
+          'layout-algorithm',
         ])
       }
     })
@@ -1035,6 +1049,190 @@ describe('createResourceApi', () => {
 
   // ── registerAll ─────────────────────────────────────────────────
 
+  // ── registerLayout ──────────────────────────────────────────────
+
+  describe('registerLayout', () => {
+    const validLayout = (): RegisterLayoutOptions => ({
+      id: 'L1',
+      displayName: 'My Layout',
+      description: 'Puts nodes somewhere',
+      type: 'geometric',
+      threshold: 1000,
+      parameters: {
+        spacing: { type: 'integer', defaultValue: 50, description: 'Gap' },
+        label: { type: 'string', defaultValue: 'a' },
+        on: { type: 'boolean', defaultValue: true },
+        ratio: {
+          type: 'double',
+          defaultValue: 1.5,
+          range: { min: 0, max: 10 },
+        },
+        mode: {
+          type: 'string',
+          defaultValue: 'x',
+          range: { values: ['x', 'y'] },
+        },
+      },
+      run: () => ({}),
+      isEnabled: () => true,
+    })
+
+    it('returns ok with the qualified resourceId, stores a plain-data resource and hands the options to the adapter', () => {
+      const api = createResourceApi('app1')
+      const options = validLayout()
+      const result = api.registerLayout(options)
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.resourceId).toBe('app1::layout-algorithm::L1')
+      }
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'L1',
+          appId: 'app1',
+          slot: 'layout-algorithm',
+          title: 'My Layout',
+          description: 'Puts nodes somewhere',
+        }),
+      )
+      const stored = mockStore.upsertResource.mock.calls[0][0]
+      expect(stored).not.toHaveProperty('component')
+      expect(stored).not.toHaveProperty('run')
+      expect(registerAppLayout).toHaveBeenCalledWith('app1', options)
+    })
+
+    it('accepts the minimal registration', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerLayout({
+        id: 'L1',
+        displayName: 'My Layout',
+        run: () => ({}),
+      })
+      expect(result.success).toBe(true)
+      expect(registerAppLayout).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      ['non-object options', null],
+      ['missing id', { ...validLayout(), id: undefined }],
+      ['blank id', { ...validLayout(), id: '   ' }],
+      ['missing displayName', { ...validLayout(), displayName: undefined }],
+      ['blank displayName', { ...validLayout(), displayName: '' }],
+      ['non-function run', { ...validLayout(), run: 'nope' }],
+      ['non-string description', { ...validLayout(), description: 3 }],
+      ['unknown type', { ...validLayout(), type: 'radial' }],
+      ['negative threshold', { ...validLayout(), threshold: -1 }],
+      ['non-numeric threshold', { ...validLayout(), threshold: '10' }],
+      ['non-function isEnabled', { ...validLayout(), isEnabled: true }],
+      ['parameters not an object', { ...validLayout(), parameters: [] }],
+      [
+        'parameter with a list type',
+        {
+          ...validLayout(),
+          parameters: { p: { type: 'list_of_string', defaultValue: 'a' } },
+        },
+      ],
+      [
+        'parameter default not matching its type',
+        {
+          ...validLayout(),
+          parameters: { p: { type: 'integer', defaultValue: 'ten' } },
+        },
+      ],
+      [
+        'boolean parameter with a string default',
+        {
+          ...validLayout(),
+          parameters: { p: { type: 'boolean', defaultValue: 'true' } },
+        },
+      ],
+      [
+        'parameter without a default',
+        { ...validLayout(), parameters: { p: { type: 'integer' } } },
+      ],
+      [
+        'malformed range',
+        {
+          ...validLayout(),
+          parameters: {
+            p: { type: 'integer', defaultValue: 1, range: { min: 'a' } },
+          },
+        },
+      ],
+      [
+        'blank parameter name',
+        {
+          ...validLayout(),
+          parameters: { '': { type: 'integer', defaultValue: 1 } },
+        },
+      ],
+    ])('rejects %s with INVALID_INPUT', (_label, options) => {
+      const api = createResourceApi('app1')
+      const result = api.registerLayout(options as any)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+      expect(registerAppLayout).not.toHaveBeenCalled()
+    })
+
+    it('does not touch the store when the adapter throws', () => {
+      vi.mocked(registerAppLayout).mockImplementationOnce(() => {
+        throw new Error('adapter boom')
+      })
+      const api = createResourceApi('app1')
+      const result = api.registerLayout(validLayout())
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
+        expect(result.error.message).toContain('adapter boom')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── unregisterLayout ────────────────────────────────────────────
+
+  describe('unregisterLayout', () => {
+    it('returns RESOURCE_NOT_FOUND when not registered', () => {
+      const api = createResourceApi('app1')
+      const result = api.unregisterLayout('L1')
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP7')
+      }
+      expect(unregisterAppLayout).not.toHaveBeenCalled()
+    })
+
+    it('removes the resource and the adapter entry', () => {
+      mockStore.hasResource.mockReturnValue(true)
+      const api = createResourceApi('app1')
+      const result = api.unregisterLayout('L1')
+      expect(result.success).toBe(true)
+      expect(mockStore.hasResource).toHaveBeenCalledWith(
+        'app1',
+        'layout-algorithm',
+        'L1',
+      )
+      expect(mockStore.removeResource).toHaveBeenCalledWith(
+        'app1',
+        'layout-algorithm',
+        'L1',
+      )
+      expect(unregisterAppLayout).toHaveBeenCalledWith('app1', 'L1')
+    })
+  })
+
+  describe('unregisterAll and app layouts', () => {
+    it('also drops every app layout', () => {
+      const api = createResourceApi('app1')
+      const result = api.unregisterAll()
+      expect(result.success).toBe(true)
+      expect(unregisterAllAppLayouts).toHaveBeenCalledWith('app1')
+    })
+  })
+
   describe('registerAll', () => {
     it('registers multiple resources in one call', () => {
       const api = createResourceApi('app1')
@@ -1061,12 +1259,21 @@ describe('createResourceApi', () => {
           id: 'D1',
           component: DummyComponent,
         },
+        {
+          slot: 'layout-algorithm',
+          id: 'L1',
+          displayName: 'My Layout',
+          run: () => ({}),
+        },
       ])
 
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.registered).toHaveLength(4)
+        expect(result.data.registered).toHaveLength(5)
         expect(result.data.errors).toHaveLength(0)
+        expect(result.data.registered[4].resourceId).toBe(
+          'app1::layout-algorithm::L1',
+        )
         expect(result.data.registered[3].resourceId).toBe(
           'app1::modal-launcher::D1',
         )

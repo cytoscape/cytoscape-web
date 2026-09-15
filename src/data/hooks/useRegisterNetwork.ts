@@ -147,6 +147,7 @@ export const useRegisterNetwork = () => {
             network.edges,
             handleLayoutComplete,
             layoutEngine.algorithms[defaultLayout.algorithmName],
+            networkId,
           )
         }
       }

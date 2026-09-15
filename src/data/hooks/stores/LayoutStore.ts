@@ -12,6 +12,8 @@ import {
   defHierarchicalAlgorithm,
   LayoutEngines,
 } from '../../../models/LayoutModel/impl/layoutSelection'
+import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
+import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import * as LayoutStoreImpl from '../../../models/StoreModel/impl/layoutStoreImpl'
 import { LayoutStore } from '../../../models/StoreModel/LayoutStoreModel'
 import { ValueType } from '../../../models/TableModel'
@@ -60,6 +62,49 @@ export const useLayoutStore = create(
           propertyValue,
         )
         state.layoutEngines = newState.layoutEngines
+        state.preferredLayout = newState.preferredLayout
+        state.preferredHierarchicalLayout = newState.preferredHierarchicalLayout
+        return state
+      })
+    },
+
+    upsertAppAlgorithm(
+      appId: string,
+      algorithm: LayoutAlgorithm,
+      apply: LayoutEngine['apply'],
+    ) {
+      set((state) => {
+        const newState = LayoutStoreImpl.upsertAppAlgorithm(
+          state,
+          appId,
+          algorithm,
+          apply,
+        )
+        state.layoutEngines = newState.layoutEngines
+        return state
+      })
+    },
+
+    removeAppAlgorithm(appId: string, algorithmName: string) {
+      set((state) => {
+        const newState = LayoutStoreImpl.removeAppAlgorithm(
+          state,
+          appId,
+          algorithmName,
+        )
+        state.layoutEngines = newState.layoutEngines
+        state.preferredLayout = newState.preferredLayout
+        state.preferredHierarchicalLayout = newState.preferredHierarchicalLayout
+        return state
+      })
+    },
+
+    removeAppEngine(appId: string) {
+      set((state) => {
+        const newState = LayoutStoreImpl.removeAppEngine(state, appId)
+        state.layoutEngines = newState.layoutEngines
+        state.preferredLayout = newState.preferredLayout
+        state.preferredHierarchicalLayout = newState.preferredHierarchicalLayout
         return state
       })
     },

@@ -50,6 +50,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       layoutEngines: [cyjs, g6],
       preferredLayout: preferred,
       network,
+      networkId: 'net1',
       afterLayout,
       setIsRunning,
     })
@@ -62,6 +63,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       network.edges,
       afterLayout,
       preferred,
+      'net1',
     )
     expect(cyjs.apply).not.toHaveBeenCalled()
   })
@@ -75,6 +77,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       layoutEngines: [first],
       preferredLayout: preferred,
       network,
+      networkId: 'net1',
       afterLayout,
       setIsRunning,
     })
@@ -85,6 +88,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       network.edges,
       afterLayout,
       preferred,
+      'net1',
     )
   })
 
@@ -95,6 +99,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       layoutEngines: [engine],
       preferredLayout: makeAlgorithm('G6'),
       network: undefined,
+      networkId: 'net1',
       afterLayout,
       setIsRunning,
     })
@@ -111,6 +116,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       layoutEngines: [engine],
       preferredLayout: makeAlgorithm('G6'),
       network: {} as Network,
+      networkId: 'net1',
       afterLayout,
       setIsRunning,
     })

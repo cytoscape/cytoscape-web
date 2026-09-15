@@ -13,10 +13,13 @@ import { logApp } from '../../debug'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import type { RegisteredAppResource } from '../../models/AppModel/RegisteredAppResource'
 import type { ResourceSlot } from '../../models/AppModel/RegisteredAppResource'
+import { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
 import type { ApiError, ApiResult } from '../types/ApiResult'
 import { AppCodes, fail, ok } from '../types/ApiResult'
 import type {
+  LayoutParameter,
   RegisteredResourceInfo,
+  RegisterLayoutOptions,
   RegisterMenuItemOptions,
   RegisterModalOptions,
   RegisterNetworkSearchProviderOptions,
@@ -24,15 +27,132 @@ import type {
   ResourceApi,
   ResourceVisibilityResult,
 } from '../types/AppResourceTypes'
+import {
+  registerAppLayout,
+  unregisterAllAppLayouts,
+  unregisterAppLayout,
+} from './appLayoutEngine'
 
 const SUPPORTED_SLOTS: ResourceSlot[] = [
   'right-panel',
   'apps-menu',
   'search-bar',
   'modal-launcher',
+  'layout-algorithm',
 ]
 
 const MODAL_MAX_WIDTHS = ['xs', 'sm', 'md', 'lg', 'xl'] as const
+
+const LAYOUT_TYPES = new Set<string>(Object.values(LayoutAlgorithmType))
+const LAYOUT_PARAMETER_TYPES = new Set<string>([
+  'string',
+  'integer',
+  'long',
+  'double',
+  'boolean',
+])
+
+/**
+ * Validate one registerLayout() parameter. Returns the problem, or
+ * undefined when the parameter is well-formed. The default must already be
+ * of the declared type: the Settings editor and `run` both rely on it.
+ */
+function layoutParameterProblem(
+  name: string,
+  param: unknown,
+): string | undefined {
+  if (name.trim() === '') return 'parameter names must be non-empty'
+  if (typeof param !== 'object' || param === null) {
+    return `parameter '${name}' must be an object`
+  }
+  const { type, defaultValue, range, description } = param as Record<
+    string,
+    unknown
+  >
+  if (typeof type !== 'string' || !LAYOUT_PARAMETER_TYPES.has(type)) {
+    return `parameter '${name}': type must be one of ${[...LAYOUT_PARAMETER_TYPES].join(', ')}`
+  }
+  const expected =
+    type === 'boolean' ? 'boolean' : type === 'string' ? 'string' : 'number'
+  if (typeof defaultValue !== expected) {
+    return `parameter '${name}': defaultValue must be a ${expected} for type '${type}'`
+  }
+  if (description !== undefined && typeof description !== 'string') {
+    return `parameter '${name}': description must be a string`
+  }
+  if (range !== undefined) {
+    const r = range as Record<string, unknown>
+    const isNumeric =
+      typeof r === 'object' &&
+      r !== null &&
+      typeof r.min === 'number' &&
+      typeof r.max === 'number'
+    const isDiscrete =
+      typeof r === 'object' && r !== null && Array.isArray(r.values)
+    if (!isNumeric && !isDiscrete) {
+      return `parameter '${name}': range must be { min, max } or { values }`
+    }
+  }
+  return undefined
+}
+
+/**
+ * Validate registerLayout() options. Returns the problem, or undefined.
+ * typeof guards before any string method: entries can arrive from untyped
+ * JS apps with any shape, and a thrown TypeError would come back as
+ * OPERATION_FAILED instead of INVALID_INPUT.
+ */
+function layoutOptionsProblem(options: unknown): string | undefined {
+  if (typeof options !== 'object' || options === null) {
+    return 'options must be an object'
+  }
+  const o = options as Record<string, unknown>
+  if (typeof o.id !== 'string' || o.id.trim() === '') {
+    return 'id is required and must be non-empty'
+  }
+  if (typeof o.displayName !== 'string' || o.displayName.trim() === '') {
+    return 'displayName is required and must be non-empty'
+  }
+  if (typeof o.run !== 'function') {
+    return 'run is required and must be a function'
+  }
+  if (o.description !== undefined && typeof o.description !== 'string') {
+    return 'description must be a string'
+  }
+  if (o.type !== undefined) {
+    if (typeof o.type !== 'string' || !LAYOUT_TYPES.has(o.type)) {
+      return `type must be one of ${[...LAYOUT_TYPES].join(', ')}`
+    }
+  }
+  if (o.threshold !== undefined) {
+    if (
+      typeof o.threshold !== 'number' ||
+      !Number.isFinite(o.threshold) ||
+      o.threshold < 0
+    ) {
+      return 'threshold must be a non-negative number'
+    }
+  }
+  if (o.isEnabled !== undefined && typeof o.isEnabled !== 'function') {
+    return 'isEnabled must be a function'
+  }
+  if (o.parameters !== undefined) {
+    if (
+      typeof o.parameters !== 'object' ||
+      o.parameters === null ||
+      Array.isArray(o.parameters)
+    ) {
+      return 'parameters must be an object keyed by parameter name'
+    }
+    for (const [name, param] of Object.entries(
+      o.parameters as Record<string, LayoutParameter>,
+    )) {
+      const problem = layoutParameterProblem(name, param)
+      if (problem !== undefined) return problem
+    }
+  }
+  return undefined
+}
 
 /** True when the current network's view has at least one selected element. */
 function hasSelection(): boolean {
@@ -405,6 +525,46 @@ export const createResourceApi = (appId: string): ResourceApi => ({
     }
   },
 
+  registerLayout(options) {
+    try {
+      const problem = layoutOptionsProblem(options)
+      if (problem !== undefined) {
+        return fail(AppCodes.INVALID_INPUT, problem)
+      }
+
+      // The adapter first: it validates nothing further, but if it throws
+      // the resource must not be left registered without an engine entry.
+      registerAppLayout(appId, options)
+
+      // Plain data only — the run function and parameter descriptors live in
+      // appLayoutEngine / LayoutStore, never in the resource store.
+      useAppResourceStore.getState().upsertResource({
+        id: options.id,
+        appId,
+        slot: 'layout-algorithm',
+        title: options.displayName,
+        description: options.description,
+      })
+      return ok({ resourceId: `${appId}::layout-algorithm::${options.id}` })
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
+  unregisterLayout(layoutId) {
+    try {
+      const store = useAppResourceStore.getState()
+      if (!store.hasResource(appId, 'layout-algorithm', layoutId)) {
+        return fail(AppCodes.RESOURCE_NOT_FOUND, `Layout '${layoutId}'`)
+      }
+      store.removeResource(appId, 'layout-algorithm', layoutId)
+      unregisterAppLayout(appId, layoutId)
+      return ok()
+    } catch (e) {
+      return fail(AppCodes.OPERATION_FAILED, String(e))
+    }
+  },
+
   openModal(id) {
     try {
       if (typeof id !== 'string' || id.trim() === '') {
@@ -450,6 +610,8 @@ export const createResourceApi = (appId: string): ResourceApi => ({
       useAppResourceStore.getState().removeAllByAppId(appId)
       // Unregistered modals must not stay on screen.
       useModalLauncherStore.getState().closeAllByAppId(appId)
+      // Layout algorithms also live in LayoutStore; drop the app's engine.
+      unregisterAllAppLayouts(appId)
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))
@@ -478,6 +640,8 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         )
       } else if (entry.slot === 'modal-launcher') {
         result = this.registerModal(entry as RegisterModalOptions)
+      } else if (entry.slot === 'layout-algorithm') {
+        result = this.registerLayout(entry as RegisterLayoutOptions)
       } else {
         // Statically unreachable (the union is exhaustive), but entries can
         // arrive from untyped JS apps with any slot string at runtime.
