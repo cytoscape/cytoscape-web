@@ -160,6 +160,10 @@ test.describe('app-registered layout algorithm', () => {
     await expect(
       dialog.getByTestId('layout-value-editor-number-spacing'),
     ).toBeVisible()
+    // the parameter's displayName is the label (#736); the key stays the id
+    await expect(
+      dialog.getByText('Node Spacing', { exact: true }),
+    ).toBeVisible()
     const setDefault = dialog.getByTestId(
       'layout-option-dialog-set-default-checkbox',
     )

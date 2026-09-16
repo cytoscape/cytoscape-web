@@ -23,6 +23,7 @@ export const gForce: LayoutAlgorithm = {
   editables: {
     preventOverlap: {
       name: 'preventOverlap',
+      displayName: 'Prevent Overlap',
       description: 'Avoid overlapping nodes',
       type: ValueTypeName.Boolean,
       value: true,
@@ -30,6 +31,7 @@ export const gForce: LayoutAlgorithm = {
     },
     maxIteration: {
       name: 'maxIteration',
+      displayName: 'Max Iterations',
       description: 'Maximum number of iterations',
       type: ValueTypeName.Integer,
       value: 400,
@@ -37,6 +39,7 @@ export const gForce: LayoutAlgorithm = {
     },
     linkDistance: {
       name: 'linkDistance',
+      displayName: 'Link Distance',
       description: 'The edge length',
       type: ValueTypeName.Integer,
       value: 1,
@@ -44,6 +47,7 @@ export const gForce: LayoutAlgorithm = {
     },
     nodeStrength: {
       name: 'nodeStrength',
+      displayName: 'Node Strength',
       description: 'The strength of node force.',
       type: ValueTypeName.Integer,
       value: 1000,

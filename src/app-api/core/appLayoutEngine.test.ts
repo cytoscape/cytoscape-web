@@ -70,7 +70,12 @@ function makeOptions(
     description: 'Nodes on one row',
     type: 'geometric',
     parameters: {
-      spacing: { type: 'integer', defaultValue: 60, description: 'Gap' },
+      spacing: {
+        displayName: 'Spacing',
+        type: 'integer',
+        defaultValue: 60,
+        description: 'Gap',
+      },
       label: { type: 'string', defaultValue: 'x' },
     },
     run: vi.fn(
@@ -118,12 +123,16 @@ describe('appLayoutEngine', () => {
       expect(algorithm.parameters).toEqual({ spacing: 60, label: 'x' })
       expect(algorithm.editables?.spacing).toEqual({
         name: 'spacing',
+        displayName: 'Spacing',
         description: 'Gap',
         type: 'integer',
         value: 60,
         defaultValue: 60,
         range: undefined,
       })
+      // displayName is optional (#736): a parameter without one keeps only
+      // its key, which the Settings dialog then shows as the label
+      expect(algorithm.editables?.label?.displayName).toBeUndefined()
       // parameters and editables share keys — what setLayoutOption needs
       expect(Object.keys(algorithm.editables ?? {}).sort()).toEqual(
         Object.keys(algorithm.parameters).sort(),

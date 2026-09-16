@@ -31,6 +31,11 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   `double`, `boolean`); list-valued parameters, per-node sizes in the run
   context, and a `setPreferredLayout` API are left for later.
 
+- **`LayoutParameter.displayName`** (#736) — an optional human-readable
+  label for a `registerLayout()` parameter, shown in **Layout → Settings...**
+  instead of the record key. Non-breaking: a parameter without it is
+  labelled by its key, as before.
+
 ## 1.0.0-beta.4 (2026-09-11)
 
 > **Host compatibility.** This release documents the App API as implemented by

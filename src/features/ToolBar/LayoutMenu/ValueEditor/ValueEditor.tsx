@@ -11,6 +11,8 @@ import { StringEditor } from './StringEditor'
 
 interface ValueEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description: string
   valueType: ValueTypeName
   value: ValueType
@@ -29,6 +31,7 @@ const getTypeColor = (type: ValueTypeName): ValueTypeNameChipColor =>
 
 export const ValueEditor = ({
   optionName,
+  label,
   description,
   valueType,
   value,
@@ -48,6 +51,7 @@ export const ValueEditor = ({
     return (
       <ListEditor
         optionName={optionName}
+        label={label}
         description={description}
         valueType={valueType}
         value={value}
@@ -66,6 +70,7 @@ export const ValueEditor = ({
     return (
       <NumberEditor
         optionName={optionName}
+        label={label}
         description={description}
         value={value as number}
         valueType={valueType}
@@ -80,6 +85,7 @@ export const ValueEditor = ({
     return (
       <BooleanEditor
         optionName={optionName}
+        label={label}
         description={description}
         value={value as boolean}
         setValue={setValue}
@@ -92,6 +98,7 @@ export const ValueEditor = ({
     return (
       <StringEditor
         optionName={optionName}
+        label={label}
         description={description}
         value={value as string}
         setValue={setValue}

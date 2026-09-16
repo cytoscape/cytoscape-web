@@ -11,6 +11,8 @@ import { ChangeEvent, useState } from 'react'
 
 interface BooleanEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description: string
   value: boolean
   setValue: (optionName: string, value: boolean) => void
@@ -27,6 +29,7 @@ interface BooleanEditorProps {
 
 export const BooleanEditor = ({
   optionName,
+  label,
   description,
   value,
   setValue,
@@ -34,6 +37,7 @@ export const BooleanEditor = ({
   typeColor = 'secondary',
   tableLayout = false,
 }: BooleanEditorProps): JSX.Element => {
+  const displayLabel = label ?? optionName
   const [checked, setChecked] = useState<boolean>(value)
 
   const handleToggle = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -61,9 +65,9 @@ export const BooleanEditor = ({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
-            title={optionName}
+            title={displayLabel}
           >
-            {optionName}
+            {displayLabel}
           </Typography>
         </Box>
         <Box
@@ -144,7 +148,7 @@ export const BooleanEditor = ({
     >
       <ListItemText
         id={optionName}
-        primary={optionName}
+        primary={displayLabel}
         sx={{ flex: '1 1 auto', minWidth: 0 }}
       />
     </ListItem>

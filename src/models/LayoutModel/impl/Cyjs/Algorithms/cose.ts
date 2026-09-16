@@ -24,6 +24,7 @@ export const cose: LayoutAlgorithm = {
   editables: {
     nodeDimensionsIncludeLabels: {
       name: 'nodeDimensionsIncludeLabels',
+      displayName: 'Include Labels in Node Size',
       description:
         'Excludes the label when calculating node bounding boxes for the layout algorithm',
       type: ValueTypeName.Boolean,
@@ -32,6 +33,7 @@ export const cose: LayoutAlgorithm = {
     },
     numIter: {
       name: 'numIter',
+      displayName: 'Max Iterations',
       description: 'Maximum number of iterations to perform',
       type: ValueTypeName.Integer,
       value: 1000,
@@ -39,6 +41,7 @@ export const cose: LayoutAlgorithm = {
     },
     gravity: {
       name: 'gravity',
+      displayName: 'Gravity',
       description: 'Gravity force (constant)',
       type: ValueTypeName.Integer,
       value: 1,
@@ -46,6 +49,7 @@ export const cose: LayoutAlgorithm = {
     },
     initialTemp: {
       name: 'initialTemp',
+      displayName: 'Initial Temperature',
       description: 'Initial temperature (maximum node displacement)',
       type: ValueTypeName.Double,
       value: 1000,
@@ -53,6 +57,7 @@ export const cose: LayoutAlgorithm = {
     },
     coolingFactor: {
       name: 'coolingFactor',
+      displayName: 'Cooling Factor',
       description:
         'Cooling factor (how the temperature is reduced between consecutive iterations)',
       type: ValueTypeName.Double,
@@ -61,6 +66,7 @@ export const cose: LayoutAlgorithm = {
     },
     minTemp: {
       name: 'minTemp',
+      displayName: 'Min Temperature',
       description:
         'Lower temperature threshold (below this point the layout will end)',
       type: ValueTypeName.Double,

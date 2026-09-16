@@ -221,6 +221,7 @@ export const LayoutOptionDialog = ({
               <ValueEditor
                 key={property.name}
                 optionName={property.name}
+                label={property.displayName}
                 description={property.description ?? property.name}
                 valueType={property.type}
                 value={property.value}

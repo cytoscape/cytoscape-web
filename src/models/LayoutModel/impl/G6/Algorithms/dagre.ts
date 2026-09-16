@@ -19,6 +19,7 @@ export const dagre: LayoutAlgorithm = {
   editables: {
     nodesep: {
       name: 'nodesep',
+      displayName: 'Node Separation',
       description: 'The minimum distance between nodes',
       type: ValueTypeName.Integer,
       value: 8,
@@ -26,6 +27,7 @@ export const dagre: LayoutAlgorithm = {
     },
     ranksep: {
       name: 'ranksep',
+      displayName: 'Rank Separation',
       description: 'The minimum distance between ranks',
       type: ValueTypeName.Integer,
       value: 25,
@@ -33,6 +35,7 @@ export const dagre: LayoutAlgorithm = {
     },
     rankdir: {
       name: 'rankdir',
+      displayName: 'Rank Direction',
       description:
         'The layout direction. T:top; B:bottom; L:left; R:right. Valid values: TB, BT, LR, RL',
       type: ValueTypeName.String,
@@ -41,6 +44,7 @@ export const dagre: LayoutAlgorithm = {
     },
     align: {
       name: 'align',
+      displayName: 'Alignment',
       description:
         'The alignment of the nodes. U: upper; D: down; L: left; R: right. Valid values: UL, UR, DL, DR',
       type: ValueTypeName.String,

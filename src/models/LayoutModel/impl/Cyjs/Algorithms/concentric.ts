@@ -16,6 +16,7 @@ export const concentric: LayoutAlgorithm = {
   editables: {
     spacingFactor: {
       name: 'spacingFactor',
+      displayName: 'Spacing Factor',
       description:
         'Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up',
       type: ValueTypeName.Double,

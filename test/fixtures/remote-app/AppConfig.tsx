@@ -259,6 +259,7 @@ const TestRemoteApp = {
           parameters?: Record<
             string,
             {
+              displayName?: string
               type: 'string' | 'integer' | 'long' | 'double' | 'boolean'
               defaultValue: string | number | boolean
               description?: string
@@ -359,6 +360,7 @@ const TestRemoteApp = {
       type: 'geometric',
       parameters: {
         spacing: {
+          displayName: 'Node Spacing',
           type: 'integer',
           defaultValue: 60,
           description: 'Gap between neighbouring nodes',

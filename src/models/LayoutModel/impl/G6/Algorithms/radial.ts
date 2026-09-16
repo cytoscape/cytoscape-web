@@ -21,6 +21,7 @@ export const radial: LayoutAlgorithm = {
   editables: {
     unitRadius: {
       name: 'unitRadius',
+      displayName: 'Unit Radius',
       description: 'The radius of the circle',
       type: ValueTypeName.Integer,
       value: 100,
@@ -28,6 +29,7 @@ export const radial: LayoutAlgorithm = {
     },
     maxIteration: {
       name: 'maxIteration',
+      displayName: 'Max Iterations',
       description: 'Maximum number of iterations',
       type: ValueTypeName.Integer,
       value: 500,
@@ -35,6 +37,7 @@ export const radial: LayoutAlgorithm = {
     },
     nodeSize: {
       name: 'nodeSize',
+      displayName: 'Node Size',
       description: 'Size of nodes used to detect collisions',
       type: ValueTypeName.Integer,
       value: 30,

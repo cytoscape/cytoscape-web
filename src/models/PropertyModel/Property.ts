@@ -10,8 +10,13 @@ import { NumberRange } from './NumberRange'
  *
  */
 export interface Property<T extends ValueType | ValueType[]> {
-  // Unique, human-readable name of the property
+  // Unique identifier of the property. When the property lives in a keyed
+  // record (e.g. LayoutAlgorithm.editables) this must equal the record key:
+  // the editors hand it back and the store looks the property up by it.
   readonly name: string
+
+  // (Optional) Human-readable label shown in editors; falls back to `name`
+  readonly displayName?: string
 
   // (Optional) Long description of the property
   readonly description?: string

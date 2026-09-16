@@ -25,6 +25,7 @@ export const cosmos: LayoutAlgorithm = {
   editables: {
     linkSpring: {
       name: 'linkSpring',
+      displayName: 'Link Spring',
       description: 'The spring constant of the links',
       type: ValueTypeName.Double,
       value: 0.1,
@@ -32,6 +33,7 @@ export const cosmos: LayoutAlgorithm = {
     },
     linkDistance: {
       name: 'linkDistance',
+      displayName: 'Link Distance',
       description: 'The distance of the links',
       type: ValueTypeName.Double,
       value: 15,
@@ -39,6 +41,7 @@ export const cosmos: LayoutAlgorithm = {
     },
     repulsion: {
       name: 'repulsion',
+      displayName: 'Repulsion',
       description: 'The repulsion of the nodes',
       type: ValueTypeName.Double,
       value: 2.0,
@@ -46,6 +49,7 @@ export const cosmos: LayoutAlgorithm = {
     },
     gravity: {
       name: 'gravity',
+      displayName: 'Gravity',
       description: 'The gravity of the nodes',
       type: ValueTypeName.Double,
       value: 0.3,

@@ -266,6 +266,11 @@ export type LayoutParameterValue = string | number | boolean
  * the key `run` reads it back under.
  */
 export interface LayoutParameter {
+  /**
+   * Label in the Settings dialog. Optional; the record key is shown when it
+   * is absent.
+   */
+  displayName?: string
   /** Hover text in the Settings dialog. */
   description?: string
   type: LayoutParameterType

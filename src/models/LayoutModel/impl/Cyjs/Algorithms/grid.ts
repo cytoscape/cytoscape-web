@@ -17,6 +17,7 @@ export const grid: LayoutAlgorithm = {
   editables: {
     padding: {
       name: 'padding',
+      displayName: 'Padding',
       description: 'Padding around the nodes',
       type: ValueTypeName.Integer,
       value: 30,
@@ -24,6 +25,7 @@ export const grid: LayoutAlgorithm = {
     },
     condense: {
       name: 'condense',
+      displayName: 'Condense',
       description: 'uses minimal space on true',
       type: ValueTypeName.Boolean,
       value: false,

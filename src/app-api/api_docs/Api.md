@@ -1875,7 +1875,8 @@ type LayoutParameterType = 'string' | 'integer' | 'long' | 'double' | 'boolean'
 type LayoutParameterValue = string | number | boolean
 
 interface LayoutParameter {
-  description?: string
+  displayName?: string // label in Layout Settings; the record key when absent
+  description?: string // hover text
   type: LayoutParameterType
   defaultValue: LayoutParameterValue // must match `type` (number for the numeric types)
   range?: { min: number; max: number } | { values: LayoutParameterValue[] }

@@ -15,6 +15,7 @@ export const circle: LayoutAlgorithm = {
   editables: {
     radius: {
       name: 'radius',
+      displayName: 'Radius',
       description: 'Radius of the circle',
       type: ValueTypeName.Integer,
       value: 1000,
@@ -22,6 +23,7 @@ export const circle: LayoutAlgorithm = {
     },
     spacingFactor: {
       name: 'spacingFactor',
+      displayName: 'Spacing Factor',
       description: 'Spacing factor between nodes',
       type: ValueTypeName.Integer,
       value: 1,

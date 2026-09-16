@@ -63,6 +63,7 @@ export function buildAppLayoutAlgorithm(
     parameters[name] = param.defaultValue
     editables[name] = {
       name,
+      displayName: param.displayName,
       description: param.description,
       // LayoutParameterType is the scalar subset of ValueTypeName
       type: param.type as ValueTypeName,
