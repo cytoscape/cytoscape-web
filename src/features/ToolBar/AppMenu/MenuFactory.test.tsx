@@ -123,4 +123,28 @@ describe('createMenuItems', () => {
       createMenuItems({ 'http://a': makeApp('http://a', []) }, commandFn),
     ).toThrow('Menu path is empty')
   })
+  it('creates a nested menu starting with Import', () => {
+    const items = createMenuItems(
+      {
+        'http://data-import-app': makeApp('http://data-import-app', [
+          { name: 'Import', gravity: 1 },
+          { name: 'Cell Maps for AI (Cell Mapping Toolkit)', gravity: 1 },
+          { name: 'Network from Embedding', gravity: 1 },
+        ]),
+      },
+      commandFn,
+    )
+
+    expect(items).toHaveLength(1)
+
+    const importMenu = items[0]
+    expect(importMenu.label).toBe('Import')
+
+    const cellMapsMenu = (importMenu.items as any[])[0]
+    expect(cellMapsMenu.label).toBe('Cell Maps for AI (Cell Mapping Toolkit)')
+
+    const networkFromEmbedding = cellMapsMenu.items[0]
+    expect(networkFromEmbedding.label).toBe('Network from Embedding')
+    expect(isValidElement(networkFromEmbedding.template)).toBe(true)
+  })
 })
