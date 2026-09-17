@@ -11,6 +11,7 @@ import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
+import { isLLMConfigured } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
 
 export const LLMQueryResultPanel = (props: {
@@ -35,6 +36,8 @@ export const LLMQueryResultPanel = (props: {
     (state) => state.setActiveNetworkBrowserPanelIndex,
   )
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
+  const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)
@@ -62,12 +65,11 @@ export const LLMQueryResultPanel = (props: {
         severity: MessageSeverity.INFO,
       })
       const message = LLMTemplate.fn(localQueryValue)
-      const LLMResponse = await analyzeSubsystemGeneSet(
-        message,
-        LLMApiKey,
-        LLMModel,
-        false,
-      )
+      const LLMResponse = await analyzeSubsystemGeneSet(message, {
+        apiKey: LLMApiKey,
+        baseUrl: LLMBaseUrl,
+        model: LLMModel,
+      })
 
       setLLMResult(LLMResponse)
     } catch (e) {
@@ -82,14 +84,15 @@ export const LLMQueryResultPanel = (props: {
     setLoading(false)
   }
 
-  const disabled = loading || LLMApiKey === '' || localQueryValue === ''
+  const llmConfigured = isLLMConfigured(LLMProvider, LLMApiKey, LLMBaseUrl)
+  const disabled = loading || !llmConfigured || localQueryValue === ''
 
   const regenerateResponseButton = disabled ? (
     <Tooltip
       title={
         loading
           ? 'Loading LLM Response'
-          : 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
+          : 'Configure an LLM provider (OpenAI API key, or a local Ollama endpoint) in the Analysis -> LLM Query Options menu item to run LLM queries'
       }
     >
       <Box>

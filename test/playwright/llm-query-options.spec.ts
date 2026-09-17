@@ -31,14 +31,61 @@ test.describe('LLM Query Options Dialog', () => {
   test('dialog contains all expected fields', async ({ page }) => {
     await openDialog(page)
     await expect(
+      page.locator('[data-testid="llm-query-options-provider-select"]'),
+    ).toBeVisible()
+    await expect(
       page.locator('[data-testid="llm-query-options-model-select"]'),
     ).toBeVisible()
+    // OpenAI is the default provider and needs no endpoint field
+    await expect(
+      page.locator('[data-testid="llm-query-options-base-url-input"]'),
+    ).toHaveCount(0)
     await expect(
       page.locator('[data-testid="llm-query-options-api-key-input"]'),
     ).toBeVisible()
     await expect(
       page.locator('[data-testid="llm-query-options-template-select"]'),
     ).toBeVisible()
+  })
+
+  test('selecting Ollama shows the local endpoint and a typed model is kept', async ({
+    page,
+  }) => {
+    await openDialog(page)
+
+    await page
+      .locator('[data-testid="llm-query-options-provider-select"]')
+      .getByRole('combobox')
+      .click()
+    await page
+      .locator('[data-testid="llm-query-options-provider-ollama"]')
+      .click()
+
+    const baseUrl = page
+      .locator('[data-testid="llm-query-options-base-url-input"]')
+      .getByRole('textbox')
+    await expect(baseUrl).toHaveValue('http://localhost:11434/v1')
+    await expect(
+      page.locator('[data-testid="llm-query-options-refresh-models-button"]'),
+    ).toBeVisible()
+
+    const modelInput = page.locator(
+      '[data-testid="llm-query-options-model-input"]',
+    )
+    await modelInput.fill('qwen2.5:7b')
+    // Leave the field so any suggestion popup closes, as a user would
+    await modelInput.press('Tab')
+    await page
+      .locator('[data-testid="llm-query-options-confirm-button"]')
+      .click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-dialog"]'),
+    ).not.toBeVisible()
+
+    // Reopen: the dialog seeds its fields from the store
+    await openDialog(page)
+    await expect(modelInput).toHaveValue('qwen2.5:7b')
+    await expect(baseUrl).toHaveValue('http://localhost:11434/v1')
   })
 
   test('preview button toggles prompt template preview', async ({ page }) => {
