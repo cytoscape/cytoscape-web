@@ -4,8 +4,19 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ## 1.0.0-beta.5 (unpublished)
 
-_Nothing yet. Entries go here as the contract changes; the heading is dated
-by the release workflow's guard, not by hand._
+### Added
+
+- **`network:loaded` event** (`{ networkId }`) — fired once a network's node and
+  edge tables and its view have all landed in the host's stores, i.e. once
+  `tableApi` / `elementApi` / `viewportApi` reads for it succeed. Workspace
+  networks are loaded lazily the first time they become current after a page
+  reload, so `network:switched` can arrive before the data exists and a read
+  made on the switch fails with `APP1`; nothing told the app to look again.
+  Re-read on `network:loaded`. A brand-new network gets it once alongside
+  `network:created`; a network another tab added gets it too. Not fired on
+  startup for networks already present when the event bus initialised, and at
+  most once per network until it is deleted. The first landing of a network's
+  tables still does not fire `data:changed`.
 
 ## 1.0.0-beta.4 (2026-09-11)
 

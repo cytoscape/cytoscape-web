@@ -39,7 +39,7 @@ src/app-api/
 │   ├── scopedApi.ts            ← forNetwork(id?): network-scoped domains with networkId pre-bound
 │   └── index.ts                 ← Assembles CyWebApi object (incl. forNetwork); assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
-│   ├── CyWebEvents.ts           ← CyWebEvents interface (10 event types + detail shapes)
+│   ├── CyWebEvents.ts           ← CyWebEvents interface (11 event types + detail shapes)
 │   ├── dispatchCyWebEvent.ts    ← Generic dispatch helper — sole place new CustomEvent() is called
 │   └── initEventBus.ts          ← Zustand subscribeWithSelector → window.dispatchEvent
 ├── useElementApi.ts             ← React Hook: returns elementApi (thin wrapper)
@@ -87,7 +87,14 @@ src/app-api/
    are called in `src/boot/steps/publishWorkspace.ts:39,45`, immediately after
    `setWorkspace(workspace)` completes, so subscriptions are never active during the
    IndexedDB → store hydration transition and no spurious `network:created` /
-   `network:switched` events fire on startup.
+   `network:switched` events fire on startup. Subscriptions that keep their own
+   bookkeeping seed it from the stores at init for the same reason: `network:loaded`
+   records every network whose tables and view are already present (URL imports run
+   before `publishWorkspace`), so a later unrelated store change does not report them.
+   Note the workspace's networks are NOT loaded at this point — after a reload only
+   the summaries are hydrated, and each network's tables and view land the first time
+   it becomes current (`WorkspaceEditor.loadCurrentNetworkById`). That is why
+   `network:switched` can precede the data and why `network:loaded` exists.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
     fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
     promise resolution. Errors do NOT dispatch `layout:completed`.
@@ -209,7 +216,7 @@ All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/d
 
 ## Event Bus Pattern
 
-### `CyWebEvents` interface (9 types)
+### `CyWebEvents` interface (11 types)
 
 ```typescript
 // src/app-api/event-bus/CyWebEvents.ts
@@ -225,6 +232,11 @@ export interface CyWebEvents {
     removedEdgeIds: IdType[]
   }
   'network:switched': { networkId: IdType; previousId: IdType }
+  // Fired once a network's tables AND view are in the stores (readable via
+  // the API). Lazily loaded workspace networks get it after network:switched;
+  // new networks get it alongside network:created. Never for the first
+  // landing's data:changed.
+  'network:loaded': { networkId: IdType }
   'selection:changed': {
     networkId: IdType
     selectedNodes: IdType[]
@@ -233,6 +245,11 @@ export interface CyWebEvents {
   'layout:started': { networkId: IdType; algorithm: string }
   'layout:completed': { networkId: IdType; algorithm: string }
   'style:changed': { networkId: IdType; property: string }
+  'style:switched': {
+    networkId: IdType
+    styleId: IdType
+    previousStyleId: IdType
+  }
   'data:changed': {
     networkId: IdType
     tableType: 'node' | 'edge'
@@ -279,7 +296,10 @@ export function initEventBus(): void {
     },
   )
   // ... similarly for network:switched, selection:changed,
-  //     style:changed, data:changed
+  //     style:switched, style:changed, data:changed
+  // network:loaded watches BOTH TableStore.tables and ViewModelStore.viewModels
+  // (they land in either order) and keeps a Set of networks already reported,
+  // seeded from the stores at init.
   // layout:started and layout:completed are dispatched from core/layoutApi.ts, NOT here
 }
 ```
