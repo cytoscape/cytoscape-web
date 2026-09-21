@@ -19,14 +19,20 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { listLLMModels } from '../api/chatgpt'
 import { LLMModel } from '../model/LLMModel'
-import { getLLMProvider, LLMProviderId, providers } from '../model/LLMProvider'
+import {
+  getEndpointError,
+  getLLMProvider,
+  LLMProviderId,
+  providers,
+  selectApiKey,
+} from '../model/LLMProvider'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { useLLMQueryStore } from '../store'
 
@@ -44,12 +50,16 @@ export const LLMQueryOptionsDialog = (
   const addMessage = useMessageStore((state) => state.addMessage)
   const setLLMModel = useLLMQueryStore((state) => state.setLLMModel)
   const setLLMApiKey = useLLMQueryStore((state) => state.setLLMApiKey)
+  const setLLMCustomApiKey = useLLMQueryStore(
+    (state) => state.setLLMCustomApiKey,
+  )
   const setLLMProvider = useLLMQueryStore((state) => state.setLLMProvider)
   const setLLMBaseUrl = useLLMQueryStore((state) => state.setLLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
   const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMTemplate = useLLMQueryStore((state) => state.setLLMTemplate)
 
@@ -62,7 +72,32 @@ export const LLMQueryOptionsDialog = (
   const [fetchedModels, setFetchedModels] = useState<LLMModel[]>([])
   const [fetchingModels, setFetchingModels] = useState(false)
 
+  // Bumped whenever the provider or endpoint changes, so a model listing that
+  // was requested for the previous endpoint is dropped when it comes back.
+  const refreshRequestRef = useRef(0)
+  const invalidateRefresh = (): void => {
+    refreshRequestRef.current += 1
+    setFetchingModels(false)
+  }
+
   const provider = getLLMProvider(localProvider)
+  // Keys are provider-scoped: a key typed here belongs to the selected
+  // provider, a blank field keeps that provider's stored key, and Ollama is
+  // never sent one. The OpenAI key must not reach any other endpoint.
+  const typedApiKey = localLLMApiKey.trim()
+  const effectiveApiKey =
+    localProvider === 'ollama'
+      ? ''
+      : typedApiKey !== ''
+        ? typedApiKey
+        : selectApiKey(localProvider, {
+            openAiKey: LLMApiKey,
+            customKey: LLMCustomApiKey,
+          })
+  const endpointError =
+    localProvider === 'openai'
+      ? undefined
+      : getEndpointError(localBaseUrl, effectiveApiKey)
   const modelOptions = Array.from(
     new Set([...fetchedModels, ...provider.suggestedModels]),
   )
@@ -73,15 +108,29 @@ export const LLMQueryOptionsDialog = (
     setLocalBaseUrl(next.defaultBaseUrl)
     setLocalLLMModel(next.suggestedModels[0] ?? '')
     setFetchedModels([])
+    // A key typed for one provider must not be applied to another
+    setLocalLLMApiKey('')
+    invalidateRefresh()
+  }
+
+  const handleBaseUrlChange = (value: string): void => {
+    setLocalBaseUrl(value)
+    invalidateRefresh()
   }
 
   const handleRefreshModels = async (): Promise<void> => {
+    refreshRequestRef.current += 1
+    const requestId = refreshRequestRef.current
+    const isCurrent = (): boolean => requestId === refreshRequestRef.current
     setFetchingModels(true)
     try {
       const ids = await listLLMModels({
-        apiKey: localLLMApiKey !== '' ? localLLMApiKey : LLMApiKey,
+        apiKey: effectiveApiKey,
         baseUrl: localBaseUrl,
       })
+      if (!isCurrent()) {
+        return
+      }
       setFetchedModels(ids)
       if (ids.length > 0 && !ids.includes(localLLMModel)) {
         setLocalLLMModel(ids[0])
@@ -96,6 +145,9 @@ export const LLMQueryOptionsDialog = (
           ids.length === 0 ? MessageSeverity.WARNING : MessageSeverity.INFO,
       })
     } catch (e) {
+      if (!isCurrent()) {
+        return
+      }
       addMessage({
         message: `Could not list models from ${localBaseUrl}: ${
           e instanceof Error ? e.message : String(e)
@@ -126,11 +178,11 @@ export const LLMQueryOptionsDialog = (
   const apiKeyLabel = provider.requiresApiKey ? 'OpenAI API Key' : 'API Key'
   const apiKeyTooltip = provider.requiresApiKey
     ? 'You need to add an API key generated in your PAID account'
-    : 'Optional. Ollama ignores it; other endpoints may require one.'
+    : 'Optional. Sent only to this endpoint, never your OpenAI key.'
   const baseUrlHelp =
     localProvider === 'ollama'
       ? 'Ollama allows localhost origins by default. When this app is served from another host, start Ollama with OLLAMA_ORIGINS set to that origin.'
-      : 'Base URL of an OpenAI-compatible chat completions endpoint, e.g. http://host:8000/v1'
+      : 'Base URL of an OpenAI-compatible chat completions endpoint, e.g. https://host/v1'
 
   return (
     <CyDialog
@@ -171,9 +223,12 @@ export const LLMQueryOptionsDialog = (
               fullWidth
               label="Endpoint URL"
               value={localBaseUrl}
-              onChange={(e) => setLocalBaseUrl(e.target.value)}
+              error={endpointError !== undefined}
+              onChange={(e) => handleBaseUrlChange(e.target.value)}
             />
-            <FormHelperText>{baseUrlHelp}</FormHelperText>
+            <FormHelperText error={endpointError !== undefined}>
+              {endpointError ?? baseUrlHelp}
+            </FormHelperText>
           </FormControl>
         )}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
@@ -205,7 +260,11 @@ export const LLMQueryOptionsDialog = (
                   data-testid="llm-query-options-refresh-models-button"
                   aria-label="refresh models"
                   sx={{ ml: 1 }}
-                  disabled={fetchingModels || localBaseUrl.trim() === ''}
+                  disabled={
+                    fetchingModels ||
+                    localBaseUrl.trim() === '' ||
+                    endpointError !== undefined
+                  }
                   onClick={() => {
                     void handleRefreshModels()
                   }}
@@ -220,16 +279,18 @@ export const LLMQueryOptionsDialog = (
             </Tooltip>
           )}
         </Box>
-        <Tooltip title={apiKeyTooltip}>
-          <TextField
-            data-testid="llm-query-options-api-key-input"
-            size="small"
-            value={localLLMApiKey}
-            fullWidth
-            label={apiKeyLabel}
-            onChange={(e) => setLocalLLMApiKey(e.target.value)}
-          ></TextField>
-        </Tooltip>
+        {localProvider !== 'ollama' && (
+          <Tooltip title={apiKeyTooltip}>
+            <TextField
+              data-testid="llm-query-options-api-key-input"
+              size="small"
+              value={localLLMApiKey}
+              fullWidth
+              label={apiKeyLabel}
+              onChange={(e) => setLocalLLMApiKey(e.target.value)}
+            ></TextField>
+          </Tooltip>
+        )}
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
           <FormControl fullWidth>
@@ -306,14 +367,18 @@ export const LLMQueryOptionsDialog = (
         <Button
           data-testid="llm-query-options-confirm-button"
           variant="contained"
-          disabled={localLLMModel.trim() === ''}
+          disabled={localLLMModel.trim() === '' || endpointError !== undefined}
           onClick={() => {
             setLLMProvider(localProvider)
             setLLMBaseUrl(localBaseUrl.trim())
             setLLMModel(localLLMModel.trim())
             setLLMTemplate(localLLMTemplate)
-            if (localLLMApiKey !== '') {
-              setLLMApiKey(localLLMApiKey)
+            if (typedApiKey !== '') {
+              if (localProvider === 'openai') {
+                setLLMApiKey(typedApiKey)
+              } else if (localProvider === 'custom') {
+                setLLMCustomApiKey(typedApiKey)
+              }
             }
             handleClose()
           }}

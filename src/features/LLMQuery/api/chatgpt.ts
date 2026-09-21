@@ -1,7 +1,7 @@
 import { logApi } from '../../../debug'
 import testGPTResponse from '../model/gpt-4-0613-response.json'
 import { LLMModel } from '../model/LLMModel'
-import { resolveApiKey } from '../model/LLMProvider'
+import { getEndpointError, resolveApiKey } from '../model/LLMProvider'
 
 export interface LLMEndpoint {
   apiKey: string
@@ -15,6 +15,12 @@ export interface LLMRequestOptions extends LLMEndpoint {
 }
 
 const createClient = async (endpoint: LLMEndpoint) => {
+  // Checked before the client exists so a key can never leave over plain
+  // HTTP to a remote host.
+  const endpointError = getEndpointError(endpoint.baseUrl, endpoint.apiKey)
+  if (endpointError !== undefined) {
+    throw new Error(endpointError)
+  }
   const { default: OpenAI } = await import('openai')
   const baseUrl = endpoint.baseUrl.trim()
   return new OpenAI({
@@ -33,8 +39,8 @@ export const analyzeSubsystemGeneSet = async (
     return testGPTResponse.choices[0].message.content
   }
 
-  const openai = await createClient(options)
   try {
+    const openai = await createClient(options)
     const response = await openai.chat.completions.create({
       messages: [{ role: 'user', content: message }],
       model: options.model,
@@ -54,8 +60,8 @@ export const analyzeSubsystemGeneSet = async (
 export const listLLMModels = async (
   endpoint: LLMEndpoint,
 ): Promise<LLMModel[]> => {
-  const openai = await createClient(endpoint)
   try {
+    const openai = await createClient(endpoint)
     const ids: LLMModel[] = []
     for await (const model of openai.models.list()) {
       ids.push(model.id)

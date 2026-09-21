@@ -134,6 +134,20 @@ The LLMQuery feature consists of:
 - Not persisted to server for security
 - User must enter key each session (or use config)
 
+### API Key Scoping
+
+- Keys are scoped to the provider they were entered for (`selectApiKey`): the
+  OpenAI key (`LLMApiKey`, which may be seeded from `config.openAIAPIKey`) is
+  sent to OpenAI only, the custom endpoint has its own `LLMCustomApiKey`, and
+  Ollama is never sent a key, so the dialog hides the key field for it
+- A blank key never falls back to another provider's key; the dialog's model
+  refresh and both query callers all go through `selectApiKey`
+- `getEndpointError` refuses to send a real key over plain HTTP to a
+  non-loopback host. Plain HTTP stays allowed on loopback (a local Ollama) and
+  for keyless requests to a LAN host, where no credential is exposed. The
+  check runs in the API client before the SDK client is built, and the dialog
+  shows the same error on the endpoint field and disables Confirm
+
 ### Provider Gating
 
 - The run buttons are enabled when OpenAI has a key, or when any other provider

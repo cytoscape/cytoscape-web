@@ -57,8 +57,76 @@ export const isLLMConfigured = (
   baseUrl: string,
 ): boolean => {
   const provider = getLLMProvider(providerId)
-  return provider.requiresApiKey ? apiKey !== '' : baseUrl.trim() !== ''
+  return provider.requiresApiKey ? apiKey.trim() !== '' : baseUrl.trim() !== ''
 }
 
 export const resolveApiKey = (apiKey: string): string =>
-  apiKey === '' ? PLACEHOLDER_API_KEY : apiKey
+  apiKey.trim() === '' ? PLACEHOLDER_API_KEY : apiKey.trim()
+
+export interface LLMApiKeys {
+  readonly openAiKey: string
+  readonly customKey: string
+}
+
+/**
+ * The key that may be sent to a provider's endpoint. Keys are scoped to the
+ * provider they were entered for: the OpenAI key goes to OpenAI only, a custom
+ * endpoint gets only its own key, and Ollama is never sent one. A blank key
+ * never falls back to another provider's key.
+ */
+export const selectApiKey = (
+  providerId: LLMProviderId,
+  keys: LLMApiKeys,
+): string => {
+  switch (getLLMProvider(providerId).id) {
+    case 'openai':
+      return keys.openAiKey
+    case 'custom':
+      return keys.customKey
+    case 'ollama':
+      return ''
+  }
+}
+
+const isLoopbackHost = (hostname: string): boolean => {
+  const host = hostname.toLowerCase()
+  return (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host === '[::1]' ||
+    /^127(\.\d{1,3}){3}$/.test(host)
+  )
+}
+
+/**
+ * Why an endpoint must not be used, or undefined when it is fine. Plain HTTP
+ * is accepted on loopback hosts (a local Ollama) and for keyless requests,
+ * where no credential is exposed; a real API key is only ever sent over HTTPS
+ * or to loopback.
+ */
+export const getEndpointError = (
+  baseUrl: string,
+  apiKey: string,
+): string | undefined => {
+  const trimmed = baseUrl.trim()
+  if (trimmed === '') {
+    return undefined
+  }
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    return 'The endpoint URL is not a valid URL'
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return 'The endpoint URL must start with http:// or https://'
+  }
+  if (
+    url.protocol === 'http:' &&
+    !isLoopbackHost(url.hostname) &&
+    apiKey.trim() !== ''
+  ) {
+    return 'An API key is only sent over HTTPS or to localhost. Use an https:// endpoint, or remove the API key.'
+  }
+  return undefined
+}

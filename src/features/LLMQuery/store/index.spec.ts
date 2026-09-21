@@ -11,6 +11,7 @@ describe('LLMQueryStore', () => {
       state.setLLMProvider('openai')
       state.setLLMBaseUrl('')
       state.setLLMApiKey('')
+      state.setLLMCustomApiKey('')
     })
   })
 
@@ -33,5 +34,17 @@ describe('LLMQueryStore', () => {
     expect(result.current.LLMProvider).toBe('ollama')
     expect(result.current.LLMBaseUrl).toBe(OLLAMA_DEFAULT_BASE_URL)
     expect(result.current.LLMModel).toBe('llama3.1')
+  })
+
+  it('keeps the custom endpoint key separate from the OpenAI key', () => {
+    const { result } = renderHook(() => useLLMQueryStore())
+
+    act(() => {
+      result.current.setLLMApiKey('sk-openai')
+      result.current.setLLMCustomApiKey('custom-key')
+    })
+
+    expect(result.current.LLMApiKey).toBe('sk-openai')
+    expect(result.current.LLMCustomApiKey).toBe('custom-key')
   })
 })

@@ -63,6 +63,38 @@ describe('analyzeSubsystemGeneSet', () => {
   })
 })
 
+describe('endpoint safety', () => {
+  beforeEach(() => {
+    ctorSpy.mockReset()
+    createSpy.mockReset()
+  })
+
+  it('refuses to send a key over plain HTTP to a non-loopback host', async () => {
+    await expect(
+      analyzeSubsystemGeneSet('hi', {
+        apiKey: 'secret',
+        model: 'm',
+        baseUrl: 'http://llm.example.org/v1',
+      }),
+    ).rejects.toThrow(/https/i)
+
+    expect(ctorSpy).not.toHaveBeenCalled()
+    expect(createSpy).not.toHaveBeenCalled()
+  })
+
+  it('still sends the key to an HTTPS endpoint', async () => {
+    createSpy.mockResolvedValue({ choices: [{ message: { content: 'ok' } }] })
+
+    await analyzeSubsystemGeneSet('hi', {
+      apiKey: 'secret',
+      model: 'm',
+      baseUrl: 'https://llm.example.org/v1',
+    })
+
+    expect(ctorSpy.mock.calls[0][0].apiKey).toBe('secret')
+  })
+})
+
 describe('listLLMModels', () => {
   beforeEach(() => {
     ctorSpy.mockReset()

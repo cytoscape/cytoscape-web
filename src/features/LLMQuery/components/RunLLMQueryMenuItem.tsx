@@ -21,7 +21,7 @@ import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
 import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
-import { isLLMConfigured } from '../model/LLMProvider'
+import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
 import { HcxDisabledTooltip } from './HcxDisabledTooltip'
 
@@ -42,6 +42,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)
   const setGeneQuery = useLLMQueryStore((state) => state.setGeneQuery)
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
   const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
   const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
@@ -115,7 +116,12 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
     return []
   }
 
-  const llmConfigured = isLLMConfigured(LLMProvider, LLMApiKey, LLMBaseUrl)
+  // Keys are provider-scoped: the OpenAI key must never reach another endpoint
+  const providerApiKey = selectApiKey(LLMProvider, {
+    openAiKey: LLMApiKey,
+    customKey: LLMCustomApiKey,
+  })
+  const llmConfigured = isLLMConfigured(LLMProvider, providerApiKey, LLMBaseUrl)
   const disabled = !isHCX(summary) || loading || !llmConfigured
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
@@ -163,7 +169,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
     try {
       const message = LLMTemplate.fn(geneNames.join(', '))
       const LLMResponse = await analyzeSubsystemGeneSet(message, {
-        apiKey: LLMApiKey,
+        apiKey: providerApiKey,
         baseUrl: LLMBaseUrl,
         model: LLMModel,
       })

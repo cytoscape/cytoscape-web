@@ -11,7 +11,7 @@ import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
-import { isLLMConfigured } from '../model/LLMProvider'
+import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
 
 export const LLMQueryResultPanel = (props: {
@@ -36,6 +36,7 @@ export const LLMQueryResultPanel = (props: {
     (state) => state.setActiveNetworkBrowserPanelIndex,
   )
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
   const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
   const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
@@ -66,7 +67,7 @@ export const LLMQueryResultPanel = (props: {
       })
       const message = LLMTemplate.fn(localQueryValue)
       const LLMResponse = await analyzeSubsystemGeneSet(message, {
-        apiKey: LLMApiKey,
+        apiKey: providerApiKey,
         baseUrl: LLMBaseUrl,
         model: LLMModel,
       })
@@ -84,7 +85,12 @@ export const LLMQueryResultPanel = (props: {
     setLoading(false)
   }
 
-  const llmConfigured = isLLMConfigured(LLMProvider, LLMApiKey, LLMBaseUrl)
+  // Keys are provider-scoped: the OpenAI key must never reach another endpoint
+  const providerApiKey = selectApiKey(LLMProvider, {
+    openAiKey: LLMApiKey,
+    customKey: LLMCustomApiKey,
+  })
+  const llmConfigured = isLLMConfigured(LLMProvider, providerApiKey, LLMBaseUrl)
   const disabled = loading || !llmConfigured || localQueryValue === ''
 
   const regenerateResponseButton = disabled ? (
