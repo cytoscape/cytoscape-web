@@ -148,6 +148,15 @@ The LLMQuery feature consists of:
   check runs in the API client before the SDK client is built, and the dialog
   shows the same error on the endpoint field and disables Confirm
 
+### Dialog Form State
+
+- `AnalysisMenu` keeps `LLMQueryOptionsDialog` mounted and only toggles `open`,
+  so the exported component is a thin wrapper that re-keys the real dialog on
+  every open. The fields re-seed from the store each time, and edits abandoned
+  with Cancel are discarded; nothing reaches the store until Confirm
+- The dialog body stays one component on purpose: `dialogPolicy.test.ts` looks
+  for the Cancel control lexically inside the `<CyDialog>` block
+
 ### Provider Gating
 
 - The run buttons are enabled when OpenAI has a key, or when any other provider

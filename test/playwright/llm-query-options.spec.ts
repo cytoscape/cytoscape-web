@@ -88,6 +88,39 @@ test.describe('LLM Query Options Dialog', () => {
     await expect(baseUrl).toHaveValue('http://localhost:11434/v1')
   })
 
+  test('cancel discards unsaved edits: reopening shows the stored settings', async ({
+    page,
+  }) => {
+    await openDialog(page)
+
+    await page
+      .locator('[data-testid="llm-query-options-provider-select"]')
+      .getByRole('combobox')
+      .click()
+    await page
+      .locator('[data-testid="llm-query-options-provider-ollama"]')
+      .click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-base-url-input"]'),
+    ).toBeVisible()
+
+    await page
+      .locator('[data-testid="llm-query-options-cancel-button"]')
+      .click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-dialog"]'),
+    ).not.toBeVisible()
+
+    // The Analysis menu keeps the dialog mounted; the form must still re-seed
+    await openDialog(page)
+    await expect(
+      page.locator('[data-testid="llm-query-options-base-url-input"]'),
+    ).toHaveCount(0)
+    await expect(
+      page.locator('[data-testid="llm-query-options-model-input"]'),
+    ).toHaveValue('gpt-3.5-turbo')
+  })
+
   test('preview button toggles prompt template preview', async ({ page }) => {
     await openDialog(page)
 

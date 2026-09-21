@@ -183,4 +183,66 @@ describe('LLMQueryOptionsDialog', () => {
       'gpt-3.5-turbo',
     )
   })
+
+  it('discards unsaved edits on Cancel: reopening shows the stored settings', () => {
+    // AnalysisMenu keeps the dialog mounted and only toggles `open`
+    const { rerender } = render(
+      <LLMQueryOptionsDialog open={true} handleClose={() => {}} />,
+    )
+
+    selectProvider('custom')
+    fireEvent.change(
+      within(screen.getByTestId('llm-query-options-base-url-input')).getByRole(
+        'textbox',
+      ),
+      { target: { value: 'https://llm.example.org/v1' } },
+    )
+    fireEvent.change(screen.getByTestId('llm-query-options-model-input'), {
+      target: { value: 'unsaved-model' },
+    })
+    fireEvent.change(
+      within(screen.getByTestId('llm-query-options-api-key-input')).getByRole(
+        'textbox',
+      ),
+      { target: { value: 'unsaved-key' } },
+    )
+    fireEvent.click(screen.getByTestId('llm-query-options-preview-button'))
+
+    // Cancel, then reopen
+    rerender(<LLMQueryOptionsDialog open={false} handleClose={() => {}} />)
+    rerender(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+    expect(screen.queryByTestId('llm-query-options-base-url-input')).toBeNull()
+    expect(screen.getByTestId('llm-query-options-model-input')).toHaveProperty(
+      'value',
+      'gpt-3.5-turbo',
+    )
+    expect(
+      within(screen.getByTestId('llm-query-options-api-key-input')).getByRole(
+        'textbox',
+      ),
+    ).toHaveProperty('value', '')
+    expect(screen.getByLabelText('OpenAI API Key')).toBeTruthy()
+  })
+
+  it('reopening after Confirm shows the settings that were saved', () => {
+    const { rerender } = render(
+      <LLMQueryOptionsDialog open={true} handleClose={() => {}} />,
+    )
+
+    selectProvider('ollama')
+    fireEvent.click(screen.getByTestId('llm-query-options-confirm-button'))
+    rerender(<LLMQueryOptionsDialog open={false} handleClose={() => {}} />)
+    rerender(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+    expect(
+      within(screen.getByTestId('llm-query-options-base-url-input')).getByRole(
+        'textbox',
+      ),
+    ).toHaveProperty('value', OLLAMA_DEFAULT_BASE_URL)
+    expect(screen.getByTestId('llm-query-options-model-input')).toHaveProperty(
+      'value',
+      'llama3.1',
+    )
+  })
 })

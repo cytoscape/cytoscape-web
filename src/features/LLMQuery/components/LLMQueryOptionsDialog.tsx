@@ -46,6 +46,39 @@ export const LLMQueryOptionsDialog = (
 ): JSX.Element => {
   const { open, handleClose } = props
 
+  // The Analysis menu keeps this dialog mounted and only toggles `open`, so
+  // the dialog is re-created (by key) on every open: it re-seeds from the
+  // store, and edits abandoned with Cancel are discarded. The key is stable
+  // while closing, so the exit transition still plays. Adjusting state during render
+  // (rather than in an effect) means the first opened frame is already fresh.
+  const [wasOpen, setWasOpen] = useState(open)
+  const [formKey, setFormKey] = useState(0)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setFormKey(formKey + 1)
+    }
+  }
+
+  return (
+    <LLMQueryOptionsDialogContent
+      key={formKey}
+      open={open}
+      handleClose={handleClose}
+    />
+  )
+}
+
+/**
+ * The dialog itself. It owns every unsaved field; nothing reaches the store
+ * until Confirm. Kept as one component so the Cancel button stays inside the
+ * CyDialog block, where the dismissal policy test looks for it.
+ */
+const LLMQueryOptionsDialogContent = (
+  props: LLMQueryOptionsDialogProps,
+): JSX.Element => {
+  const { open, handleClose } = props
+
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
   const addMessage = useMessageStore((state) => state.addMessage)
   const setLLMModel = useLLMQueryStore((state) => state.setLLMModel)
