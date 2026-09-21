@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+import { OpaqueAspects } from '@/models/OpaqueAspectModel'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import {

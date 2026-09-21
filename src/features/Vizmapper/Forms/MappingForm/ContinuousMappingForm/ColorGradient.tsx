@@ -3,7 +3,7 @@ import { AxisBottom } from '@visx/axis'
 import { color } from 'd3-color'
 import { ScaleLinear } from 'd3-scale'
 import * as React from 'react'
-import { ContinuousMappingFunction, ValueType } from 'src/models'
+import { ContinuousMappingFunction, ValueType } from '@/models'
 
 import { getMapper } from '../../../../../models/VisualStyleModel/impl/mapperFactory'
 
