@@ -64,6 +64,7 @@ guards that narrow an `ApiResult<T>` to its success or failure branch (handy in
 | `cyweb/LayoutApi`      | `useLayoutApi()`      | `.layout`                | 1e    |
 | `cyweb/ExportApi`      | `useExportApi()`      | `.export`                | 1e    |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`   | `.workspace`             | 1f    |
+| `cyweb/PanelApi`       | `usePanelApi()`       | `.panel`                 | —     |
 | `cyweb/ScopedApi`      | `useScopedApi(id?)`   | `.forNetwork(id?)`       | 1g    |
 | `cyweb/AppDataApi`     | `useAppDataApi()`     | _(per-app only)_         | 3     |
 | `cyweb/EventBus`       | `useCyWebEvent()`     | _(window events)_        | 1g    |
@@ -1415,6 +1416,98 @@ Renames the workspace. The name is trimmed before being stored.
 | Error Code | Condition                      |
 | ---------- | ------------------------------ |
 | `APP9`     | `name` is empty after trimming |
+
+---
+
+## PanelApi (`cyweb/PanelApi`)
+
+Opens one of the workspace's collapsible panes — left, right or bottom — and
+selects a tab inside it. Use it to bring a result into view: an action started
+from the Apps menu can finish with its `'right-panel'` tab on screen even when
+the side panel was closed or showing another tab.
+
+```typescript
+import { usePanelApi } from 'cyweb/PanelApi'
+import type { OpenPanelResult, PanelApi, PanelId } from 'cyweb/ApiTypes'
+```
+
+Available as `context.apis.panel` in `mount()` and in an `'apps-menu'`
+`onClick(apis)`, as `usePanelApi()` in an app component, and as
+`window.CyWebApi.panel`. The first two are bound to the calling app, which
+only matters for [duplicate ids](#duplicate-tab-ids).
+
+### Types
+
+```typescript
+type PanelId = 'left' | 'right' | 'bottom'
+
+interface OpenPanelResult {
+  panel: PanelId // the pane that is now open
+  tabId?: string // the tab that is now selected; absent when only the pane was opened
+  appId?: string // the app that owns that tab; absent for a built-in tab
+}
+```
+
+| Pane       | Holds                                 | Tab ids                                                                                                                                         |
+| ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'left'`   | Workspace / Style (network browser)   | `'workspace'`, `'style'`, `'llm-query'` (only while the current network is a hierarchy)                                                         |
+| `'right'`  | Side panel — `'right-panel'` app tabs | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel`, a resource declaration, or a manifest panel component) |
+| `'bottom'` | Table browser                         | `'nodes'`, `'edges'`, `'network'`                                                                                                               |
+
+The built-in ids are exported as the `LeftPanelTabId`, `RightPanelTabId` and
+`BottomPanelTabId` constants from `cyweb/ApiTypes`.
+
+### Methods
+
+#### `open(panel, tabId?): ApiResult<OpenPanelResult>`
+
+Opens `panel` if it is closed and, when `tabId` is given, selects that tab.
+Omit `tabId` to only open the pane, leaving its selection alone. Only `panel`
+is searched — a tab with the same id in another pane is ignored — and a call
+never touches the other panes.
+
+A tab the pane is not showing right now does not match: an app tab whose app is
+disabled or whose `requires.network` is unmet, or `'llm-query'` on a network
+that is not a hierarchy.
+
+Selecting a tab does only that. In particular, selecting
+`'sub-network-viewer'` does not activate a network view the way a click on the
+tab does.
+
+| Error Code | Condition                                                                          |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `APP9`     | `panel` is not `'left'`, `'right'` or `'bottom'`; `tabId` is empty or not a string |
+| `APP7`     | `panel` shows no tab with that id. The pane is left as it was                      |
+
+### Duplicate tab ids
+
+A tab id is unique only within the app that registered it, so two tabs of one
+pane can share an id. `open` then selects the **calling app's own tab**;
+if the caller owns none of them, the **first one in tab order**. Built-in tabs
+come first in tab order. `window.CyWebApi.panel` has no calling app and always
+gets the first one. `OpenPanelResult.appId` reports which tab was selected.
+
+### Example
+
+```typescript
+// An 'apps-menu' item runs an analysis, then shows its results tab.
+{
+  slot: 'apps-menu',
+  id: 'analyze',
+  label: 'Analyze Network',
+  onClick: async (apis) => {
+    await runAnalysis(apis)
+    // `?.` keeps the app working on a host that predates the Panel API.
+    apis.panel?.open('right', 'NetworkAnalyzerPanel')
+  },
+},
+{
+  slot: 'right-panel',
+  id: 'NetworkAnalyzerPanel',
+  title: 'Network Analyzer',
+  component: lazy(() => import('./components/MainPanel')),
+},
+```
 
 ---
 
@@ -2825,7 +2918,7 @@ interface AppContext {
 
 ### `AppContextApis`
 
-Per-app API object. Adds `resource`, `appData` and `dialog`, and replaces two
+Per-app API object. Adds `resource`, `appData` and `dialog`, and replaces three
 shared domains with factories bound to the calling app:
 
 ```typescript
@@ -2835,6 +2928,7 @@ interface AppContextApis extends CyWebApiType {
   readonly nodeGraphics: NodeGraphicsApi // per-app, auto-cleaned on disable
   readonly appData: AppDataApi // per-app storage, survives disable
   readonly dialog: DialogApi // per-app dialogs, closed on disable
+  readonly panel: PanelApi // per-app only to prefer the app's own tab
 }
 ```
 
@@ -2967,7 +3061,7 @@ export const MyApp: CyAppWithLifecycle = {
 
 ## `window.CyWebApi`
 
-The global `window.CyWebApi` object assembles all 11 domain APIs into a single
+The global `window.CyWebApi` object assembles all 12 domain APIs into a single
 singleton. Available after the `cywebapi:ready` event.
 
 ```typescript
@@ -2983,6 +3077,7 @@ interface CyWebApiType {
   workspace: WorkspaceApi
   contextMenu: ContextMenuApi
   nodeGraphics: NodeGraphicsApi
+  panel: PanelApi
 }
 ```
 
@@ -2994,7 +3089,7 @@ window.addEventListener('cywebapi:ready', () => {
 ```
 
 `AppContext.apis` extends `window.CyWebApi` with a per-app `resource` field and
-per-app `contextMenu` and `nodeGraphics` factories. The 11 domain APIs (element,
+per-app `contextMenu`, `nodeGraphics` and `panel` factories. The 12 domain APIs (element,
 network, etc.) are shared; `resource` is exclusive to `AppContext.apis`.
 
 `contextMenu` and `nodeGraphics` exist on both, but not as the same object. On

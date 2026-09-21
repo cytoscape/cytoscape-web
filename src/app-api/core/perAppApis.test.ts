@@ -39,6 +39,14 @@ describe('buildPerAppApis', () => {
     expect(CyWebApi).not.toHaveProperty('dialog')
   })
 
+  it('overrides panel with a per-app instance', () => {
+    // Bound to the app so `open` can prefer its own tab among duplicate ids.
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.panel).toBeDefined()
+    expect(apis.panel).not.toBe(CyWebApi.panel)
+  })
+
   it('overrides contextMenu with a per-app instance', () => {
     const apis = buildPerAppApis('app-a')
 
@@ -55,6 +63,7 @@ describe('buildPerAppApis', () => {
     expect(a.nodeGraphics).not.toBe(b.nodeGraphics)
     expect(a.appData).not.toBe(b.appData)
     expect(a.dialog).not.toBe(b.dialog)
+    expect(a.panel).not.toBe(b.panel)
   })
 
   it('registers context menu items under the calling app', () => {

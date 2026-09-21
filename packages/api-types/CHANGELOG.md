@@ -36,6 +36,22 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   instead of the record key. Non-breaking: a parameter without it is
   labelled by its key, as before.
 
+- **`PanelApi` — `panel.open(panel, tabId?)`** (#740) — opens one of the
+  workspace's collapsible panes (`'left' | 'right' | 'bottom'`) and selects a
+  tab inside it, so an app can bring its `'right-panel'` tab into view when an
+  action finishes instead of leaving the result behind a closed side panel.
+  `tabId` is the id the tab was registered with, or a built-in id
+  (`LeftPanelTabId`, `RightPanelTabId`, `BottomPanelTabId`); omit it to only
+  open the pane. Only the named pane is searched. Tab ids are not unique
+  across apps: among duplicates the calling app's own tab wins, otherwise the
+  first in tab order. Fails with `APP7` — leaving the pane as it was — when
+  the pane shows no such tab, and `APP9` for an unknown pane or an empty
+  `tabId`. Available as `AppContext.apis.panel` (bound to the app),
+  `usePanelApi()` from the new `cyweb/PanelApi` module, and
+  `window.CyWebApi.panel`. New types `PanelApi`, `PanelId`,
+  `OpenPanelResult`. Non-breaking; on an older host `apis.panel` is
+  `undefined`, so call it as `apis.panel?.open(...)`.
+
 ## 1.0.0-beta.4 (2026-09-11)
 
 > **Host compatibility.** This release documents the App API as implemented by

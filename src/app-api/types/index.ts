@@ -132,6 +132,14 @@ export type {
   OpenDialogOptions,
 } from './AppDialogTypes'
 
+// ── Panel API types (open a collapsible pane, select a tab) ─────
+export type { OpenPanelResult, PanelApi, PanelId } from './PanelTypes'
+export {
+  BottomPanelTabId,
+  LeftPanelTabId,
+  RightPanelTabId,
+} from '../../models/UiModel/PanelTab'
+
 // ── CyWebApiType: assembles all 10 domain APIs (Phase 1g+1h) ─────
 export type { CyWebApiType } from '../core'
 

@@ -20,6 +20,7 @@ export const FEDERATION_EXPOSES = {
   './LayoutApi': './src/app-api/useLayoutApi.ts',
   './ExportApi': './src/app-api/useExportApi.ts',
   './WorkspaceApi': './src/app-api/useWorkspaceApi.ts',
+  './PanelApi': './src/app-api/usePanelApi.ts',
   './ScopedApi': './src/app-api/useScopedApi.ts',
   './AppDataApi': './src/app-api/useAppDataApi.ts',
   './AppIdContext': './src/app-api/AppIdContext.tsx',

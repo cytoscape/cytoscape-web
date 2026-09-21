@@ -22,6 +22,7 @@ const EXPECTED_EXPOSE_KEYS = [
   './LayoutApi',
   './ExportApi',
   './WorkspaceApi',
+  './PanelApi',
   './ScopedApi',
   './AppDataApi',
   './AppIdContext',

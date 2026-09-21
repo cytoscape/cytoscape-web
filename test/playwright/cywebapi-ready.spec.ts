@@ -18,6 +18,7 @@ const EXPECTED_API_KEYS = [
   'workspace',
   'contextMenu',
   'nodeGraphics',
+  'panel',
 ]
 
 test.describe('window.CyWebApi public surface', () => {

@@ -1,7 +1,8 @@
 import { Box, Tab, Tabs } from '@mui/material'
-import { SyntheticEvent, useEffect, useState } from 'react'
+import { SyntheticEvent, useEffect } from 'react'
 
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { useSidePanelStore } from '../../../data/hooks/stores/SidePanelStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
@@ -16,11 +17,16 @@ const TABS_HEIGHT = 40
  * Tab selection is tracked by resource identity (string) rather than
  * numeric index, so that adding/removing/hiding panels does not cause
  * the selected tab to silently shift to a different panel.
+ *
+ * The selection lives in SidePanelStore rather than in this component: the
+ * panel is unmounted while the right pane is closed, and the App API's
+ * `panel.open` selects a tab before opening the pane.
  */
 export const SidePanel = (): JSX.Element => {
   // Track selected tab by resource identity, not numeric index
-  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
-    null,
+  const selectedResourceId = useSidePanelStore((state) => state.selectedTabId)
+  const setSelectedResourceId = useSidePanelStore(
+    (state) => state.setSelectedTabId,
   )
 
   const currentNetworkId = useWorkspaceStore(
@@ -55,7 +61,7 @@ export const SidePanel = (): JSX.Element => {
     if (!currentEntry) {
       setSelectedResourceId(entries[0]?.resourceId ?? null)
     }
-  }, [entries, selectedResourceId])
+  }, [entries, selectedResourceId, setSelectedResourceId])
 
   // Helper to find the network ID to activate when clicking Sub Network Viewer tab
   const getNetworkIdToActivate = (): IdType | null => {

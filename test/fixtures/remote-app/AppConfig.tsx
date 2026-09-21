@@ -204,6 +204,9 @@ interface MountApis {
   resource: {
     openModal: (id: string) => unknown
   }
+  panel: {
+    open: (panel: 'left' | 'right' | 'bottom', tabId?: string) => unknown
+  }
 }
 
 const TestRemoteApp = {
@@ -343,6 +346,18 @@ const TestRemoteApp = {
       label: 'Open Fixture Modal',
       onClick: (apis) => {
         apis.resource.openModal('fixture-modal')
+      },
+    })
+
+    // (5b) A menu item that brings the app's own right-panel tab into view —
+    // the Panel API contract: an action started from the Apps menu ends with
+    // its results tab on screen, whether the side panel was closed or showing
+    // another tab. Driven by panel-api.spec.ts.
+    context.apis.resource.registerMenuItem({
+      id: 'show-appdata-panel',
+      label: 'Show App Data Panel',
+      onClick: (apis) => {
+        apis.panel.open('right', 'appdata')
       },
     })
 

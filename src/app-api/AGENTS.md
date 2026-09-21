@@ -32,6 +32,7 @@ src/app-api/
 │   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal/layout registry (AppResourceStore; modal open-state in ModalLauncherStore). 'apps-menu' entries are plain data (label/icon/onClick) — never a component
 │   ├── appLayoutEngine.ts      ← 'layout-algorithm' adapter: one synthetic LayoutEngine per app in LayoutStore, the shared `apply` that runs the app's `run`, the run registry, AppCleanupRegistry wiring
 │   ├── dialogApi.ts            ← per-app Dialog API: apis.dialog.open({ title, render }) (AppDialogStore; rendered by features/AppManager/AppDialogHost through the shared AppDialogShell)
+│   ├── panelApi.ts             ← panel.open(panel, tabId?): open a collapsible pane, select a tab (UiStateStore + SidePanelStore; tabs listed by models/UiModel/impl/panelTabs.ts)
 │   ├── appDataApi.ts           ← per-app key/value storage (AppDataStore + the cyAppData opaque aspect)
 │   ├── perAppApis.ts           ← buildPerAppApis(appId): the ONLY place AppContextApis is assembled
 │   ├── ready.ts                ← isReady / whenReadySignal / markReady
@@ -54,6 +55,7 @@ src/app-api/
 ├── useWorkspaceApi.ts           ← React Hook: returns workspaceApi (thin wrapper)
 ├── useScopedApi.ts              ← React Hook: forNetwork(id?) memoized per networkId
 ├── useAppDataApi.ts             ← React Hook: the calling app's appData, or null outside AppIdProvider
+├── usePanelApi.ts               ← React Hook: the calling app's panel API, or the anonymous one outside AppIdProvider
 ├── useCyWebEvent.ts             ← React Hook: window.addEventListener wrapper with cleanup
 ├── api_docs/
 │   └── Api.md                   ← Behavioral documentation
@@ -62,6 +64,7 @@ src/app-api/
 │   ├── AppContext.ts            ← AppContext, CyAppWithLifecycle
 │   ├── AppDataTypes.ts          ← AppDataApi, SetAppDataOptions, MAX_APP_DATA_VALUE_BYTES
 │   ├── ElementTypes.ts          ← Curated re-exports of public model types
+│   ├── PanelTypes.ts            ← PanelApi, PanelId, OpenPanelResult
 │   └── index.ts                 ← Barrel export
 └── index.ts                     ← Barrel export
 ```
@@ -153,6 +156,21 @@ src/app-api/
     the adapter's `registerAppCleanup` call plus the resource store's slot-agnostic
     `removeAllByAppId`; a dangling `preferredLayout` falls back to `defAlgorithm`. Layout
     events stay API-only (principle 10) — host UI paths do not dispatch them.
+
+18. **`panel.open` resolves tabs through the model the UI renders from** —
+    `core/panelApi.ts` never keeps its own idea of which tabs exist. The left and
+    bottom strips and the right pane's app tabs are listed by
+    `src/models/UiModel/impl/panelTabs.ts`, which `SidePanel/TabContents.tsx` also
+    renders from, so a tab the API selects is one the strip shows (a tab hidden by
+    `requires.network` or a disabled app does not match). The right pane's
+    selection lives in the non-persisted `SidePanelStore` because `SidePanel` is
+    unmounted while the pane is closed — the API selects first, then opens. The
+    domain is per-app (`createPanelApi(appId)` in `buildPerAppApis`) only for the
+    duplicate-id tie-break; it registers nothing and needs no cleanup. It imports
+    `isHCX` from `features/HierarchyViewer/utils/` — a pure predicate, the one
+    sanctioned `features/` import in `core/` — to know whether the left pane's
+    `'llm-query'` tab exists. A new built-in tab needs an id in
+    `models/UiModel/PanelTab.ts` (public contract) and an entry in `panelTabs.ts`.
 
 ## Two-Layer Pattern
 
