@@ -8,6 +8,7 @@ import {
 } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { listLLMModels } from '../api/chatgpt'
 import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
@@ -34,6 +35,7 @@ describe('LLMQueryOptionsDialog', () => {
       state.setLLMCustomApiKey('')
     })
     vi.mocked(listLLMModels).mockReset()
+    act(() => useMessageStore.getState().resetMessages())
   })
 
   it('hides the endpoint field for OpenAI', () => {
@@ -245,4 +247,58 @@ describe('LLMQueryOptionsDialog', () => {
       'llama3.1',
     )
   })
+
+  it('reports the result of a model listing while the dialog is open', async () => {
+    vi.mocked(listLLMModels).mockResolvedValue(['llama3.1'])
+    render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+    selectProvider('ollama')
+    fireEvent.click(
+      screen.getByTestId('llm-query-options-refresh-models-button'),
+    )
+
+    await waitFor(() =>
+      expect(useMessageStore.getState().messages.map((m) => m.message)).toEqual(
+        ['Found 1 model'],
+      ),
+    )
+  })
+
+  it.each([
+    ['success', (resolve: (ids: string[]) => void) => resolve(['llama3.1'])],
+    [
+      'failure',
+      (_resolve: (ids: string[]) => void, reject: (e: Error) => void) =>
+        reject(new Error('connection refused')),
+    ],
+  ])(
+    'shows no toast when a model listing ends in %s after the dialog closed',
+    async (_name, settle) => {
+      let resolveList: (ids: string[]) => void = () => {}
+      let rejectList: (e: Error) => void = () => {}
+      vi.mocked(listLLMModels).mockReturnValue(
+        new Promise<string[]>((resolve, reject) => {
+          resolveList = resolve
+          rejectList = reject
+        }),
+      )
+      const { rerender } = render(
+        <LLMQueryOptionsDialog open={true} handleClose={() => {}} />,
+      )
+
+      selectProvider('ollama')
+      fireEvent.click(
+        screen.getByTestId('llm-query-options-refresh-models-button'),
+      )
+      await waitFor(() => expect(listLLMModels).toHaveBeenCalled())
+
+      // The user cancels before the endpoint answers
+      rerender(<LLMQueryOptionsDialog open={false} handleClose={() => {}} />)
+      await act(async () => {
+        settle(resolveList, rejectList)
+      })
+
+      expect(useMessageStore.getState().messages).toEqual([])
+    },
+  )
 })

@@ -19,7 +19,7 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
@@ -105,13 +105,22 @@ const LLMQueryOptionsDialogContent = (
   const [fetchedModels, setFetchedModels] = useState<LLMModel[]>([])
   const [fetchingModels, setFetchingModels] = useState(false)
 
-  // Bumped whenever the provider or endpoint changes, so a model listing that
-  // was requested for the previous endpoint is dropped when it comes back.
+  // Bumped whenever the provider or endpoint changes, or the dialog closes, so
+  // a model listing requested earlier is dropped when it comes back.
   const refreshRequestRef = useRef(0)
   const invalidateRefresh = (): void => {
     refreshRequestRef.current += 1
     setFetchingModels(false)
   }
+
+  // Closing the dialog abandons a listing that is still in flight, so it
+  // cannot raise a toast about a dialog the user has already left. Keyed on
+  // `open` rather than on the buttons, so it holds for any close path.
+  useEffect(() => {
+    if (!open) {
+      refreshRequestRef.current += 1
+    }
+  }, [open])
 
   const provider = getLLMProvider(localProvider)
   // Keys are provider-scoped: a key typed here belongs to the selected

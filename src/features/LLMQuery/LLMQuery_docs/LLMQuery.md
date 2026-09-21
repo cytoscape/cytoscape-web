@@ -154,6 +154,8 @@ The LLMQuery feature consists of:
   so the exported component is a thin wrapper that re-keys the real dialog on
   every open. The fields re-seed from the store each time, and edits abandoned
   with Cancel are discarded; nothing reaches the store until Confirm
+- Closing the dialog also abandons a model listing that is still in flight, so
+  neither its result nor its status toast appears after the user has left
 - The dialog body stays one component on purpose: `dialogPolicy.test.ts` looks
   for the Cancel control lexically inside the `<CyDialog>` block
 
