@@ -18,13 +18,18 @@ import { registerAppCleanup } from '../../data/hooks/stores/AppCleanupRegistry'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { logApi } from '../../debug'
+import type { ParameterValue } from '../../models/AppModel/AppParameter'
+import {
+  coerceParameterValue,
+  parameterKeys,
+} from '../../models/AppModel/impl/parameters'
 import type { IdType } from '../../models/IdType'
-import type { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
+import type {
+  EditableParameter,
+  LayoutAlgorithm,
+} from '../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
 import type { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
-import type { Property } from '../../models/PropertyModel/Property'
-import type { ValueType } from '../../models/TableModel'
-import type { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import type { AppContextApis } from '../types/AppContext'
 import type {
   LayoutPositions,
@@ -49,29 +54,25 @@ export const qualifiedLayoutName = (appId: string, id: string): string =>
   `${appId}::${id}`
 
 /**
- * Build the internal algorithm record. `parameters` holds the current
- * values, `editables` the Settings-dialog descriptors; they share their keys,
- * which is what `layoutStoreImpl.setLayoutOption` requires to update both.
+ * Build the internal algorithm record. `editables` are the registered
+ * parameter definitions, in order, each given its key (`name`) from the key
+ * rule (`parameterKeys`: displayName, or the group path on a collision);
+ * `parameters` holds the live value under that same key, typed by the
+ * declaration (`coerceParameterValue`). `setLayoutOption` updates
+ * `parameters[name]`; the definitions never change.
  */
 export function buildAppLayoutAlgorithm(
   appId: string,
   options: RegisterLayoutOptions,
 ): LayoutAlgorithm {
-  const parameters: Record<string, ValueType> = {}
-  const editables: Record<string, Property<ValueType>> = {}
-  for (const [name, param] of Object.entries(options.parameters ?? {})) {
-    parameters[name] = param.defaultValue
-    editables[name] = {
-      name,
-      displayName: param.displayName,
-      description: param.description,
-      // LayoutParameterType is the scalar subset of ValueTypeName
-      type: param.type as ValueTypeName,
-      value: param.defaultValue,
-      defaultValue: param.defaultValue,
-      range: param.range,
-    }
-  }
+  const declared = options.parameters ?? []
+  const keys = parameterKeys(declared)
+  const parameters: Record<string, ParameterValue> = {}
+  const editables: EditableParameter[] = declared.map((param, index) => {
+    const name = keys[index]
+    parameters[name] = coerceParameterValue(param, param.defaultValue)
+    return { ...param, name }
+  })
 
   return {
     name: qualifiedLayoutName(appId, options.id),
@@ -81,7 +82,7 @@ export function buildAppLayoutAlgorithm(
     type: options.type ?? LayoutAlgorithmType.other,
     threshold: options.threshold,
     parameters,
-    editables: Object.keys(editables).length > 0 ? editables : undefined,
+    editables: editables.length > 0 ? editables : undefined,
   }
 }
 

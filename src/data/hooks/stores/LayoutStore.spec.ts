@@ -12,14 +12,16 @@ vi.mock('../../../models/LayoutModel/impl/layoutSelection', () => {
     type: 'geometric' as const,
     description: 'Grid layout',
     parameters: { spacing: 50 },
-    editables: {
-      spacing: {
+    editables: [
+      {
         name: 'spacing',
-        type: 'number' as const,
-        value: 50,
+        displayName: 'Spacing',
+        type: 'text' as const,
+        validationType: 'digits' as const,
+        defaultValue: 50,
         description: 'Spacing between nodes',
       },
-    },
+    ],
   }
 
   const mockLayoutEngine = {
@@ -108,14 +110,15 @@ describe('useLayoutStore', () => {
       type: 'other' as const,
       description: '',
       parameters: { spacing: 10 },
-      editables: {
-        spacing: {
+      editables: [
+        {
           name: 'spacing',
-          type: 'integer' as const,
-          value: 10,
+          displayName: 'Spacing',
+          type: 'text' as const,
+          validationType: 'digits' as const,
           defaultValue: 10,
         },
-      },
+      ],
     }
     const apply = vi.fn()
 
@@ -176,8 +179,8 @@ describe('useLayoutStore', () => {
       )?.algorithms['grid']
       // Check that the parameter was updated
       expect(algorithm?.parameters.spacing).toBe(100)
-      // Check that the editable was also updated
-      expect(algorithm?.editables?.spacing?.value).toBe(100)
+      // Editables are definitions only and stay as declared
+      expect(algorithm?.editables?.[0].defaultValue).toBe(50)
     })
 
     it('should handle non-existent engine gracefully', () => {

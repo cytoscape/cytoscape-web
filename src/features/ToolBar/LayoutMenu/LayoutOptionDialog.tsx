@@ -7,23 +7,23 @@ import {
   Divider,
   FormControlLabel,
   Grid,
-  List,
   Paper,
   PaperProps,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Draggable from 'react-draggable'
 
 import { CyDialog } from '@/components/CyDialog'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
+import { ParameterValue } from '../../../models/AppModel/AppParameter'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { EditableParameter } from '../../../models/LayoutModel/LayoutAlgorithm'
 import { Network } from '../../../models/NetworkModel'
-import { Property } from '../../../models/PropertyModel/Property'
 import { ValueType } from '../../../models/TableModel'
+import { ParameterForm, useParameterErrors } from '../../ParameterForm'
 import { LayoutSelector } from './LayoutSelector'
 import { runEngineLayout } from './runEngineLayout'
-import { ValueEditor } from './ValueEditor/ValueEditor'
 
 const DraggablePaper = (props: PaperProps): JSX.Element => {
   return (
@@ -35,6 +35,8 @@ const DraggablePaper = (props: PaperProps): JSX.Element => {
     </Draggable>
   )
 }
+
+const NO_EDITABLES: readonly EditableParameter[] = []
 
 interface LayoutOptionDialogProps {
   afterLayout: (positionMap: Map<IdType, [number, number]>) => void
@@ -98,7 +100,7 @@ export const LayoutOptionDialog = ({
 
   // Check if the current layout is the default layout
   const [isDefault, setIsDefault] = useState<boolean>(false)
-  const [disabled, setDisabled] = useState<boolean>(false)
+  const [overThreshold, setOverThreshold] = useState<boolean>(false)
 
   useEffect(() => {
     setIsDefault(
@@ -112,7 +114,7 @@ export const LayoutOptionDialog = ({
     const nodeCount: number = network.nodes?.length ?? 0
     const edgeCount: number = network.edges?.length ?? 0
     const total: number = nodeCount + edgeCount
-    setDisabled(
+    setOverThreshold(
       algorithm?.threshold !== undefined && total > algorithm.threshold,
     )
   }, [
@@ -132,6 +134,21 @@ export const LayoutOptionDialog = ({
     propertyName: string,
     propertyValue: T,
   ) => void = useLayoutStore((state) => state.setLayoutOption)
+
+  // Editables are the definitions (shared parameter spec, in order); the
+  // live values are `algorithm.parameters`, keyed by each editable's `name`
+  // (the engine's option name for built-in algorithms).
+  const editables: readonly EditableParameter[] =
+    algorithm?.editables ?? NO_EDITABLES
+  const editableKeys = useMemo(
+    () => editables.map((editable) => editable.name),
+    [editables],
+  )
+  const errors = useParameterErrors(editables, algorithm?.parameters ?? {}, {
+    keys: editableKeys,
+    networkId,
+  })
+  const hasErrors = Object.keys(errors).length > 0
 
   const handleClose = (): void => {
     setOpen(false)
@@ -159,17 +176,9 @@ export const LayoutOptionDialog = ({
     }
   }
 
-  const setValue = (optionName: string, value: ValueType): void => {
-    setLayoutOption(
-      selectedEngineName,
-      selectedAlgorithmName,
-      optionName,
-      value,
-    )
+  const setValue = (key: string, value: ParameterValue): void => {
+    setLayoutOption(selectedEngineName, selectedAlgorithmName, key, value)
   }
-
-  const editables: Record<string, Property<ValueType>> = algorithm?.editables ??
-  {}
 
   return (
     <CyDialog
@@ -187,7 +196,7 @@ export const LayoutOptionDialog = ({
           padding: 1,
           paddingTop: 0,
           marginTop: 0.5,
-          overflowY: 'clip',
+          overflowY: 'auto',
         }}
       >
         <Grid container spacing={0} alignItems={'center'}>
@@ -214,24 +223,17 @@ export const LayoutOptionDialog = ({
           </Grid>
         </Grid>
 
-        <List dense>
-          {Object.keys(editables).map((propName: string) => {
-            const property: Property<ValueType> = editables[propName]
-            return (
-              <ValueEditor
-                key={property.name}
-                optionName={property.name}
-                label={property.displayName}
-                description={property.description ?? property.name}
-                valueType={property.type}
-                value={property.value}
-                setValue={(optionName: string, value: ValueType) =>
-                  setValue(optionName, value)
-                }
-              />
-            )
-          })}
-        </List>
+        {algorithm !== undefined && editables.length > 0 ? (
+          <ParameterForm
+            key={`${selectedEngineName}::${selectedAlgorithmName}`}
+            parameters={editables}
+            keys={editableKeys}
+            values={algorithm.parameters}
+            onChange={setValue}
+            networkId={networkId}
+            testIdPrefix="layout-parameter"
+          />
+        ) : null}
       </DialogContent>
       <DialogActions>
         <Button
@@ -244,7 +246,7 @@ export const LayoutOptionDialog = ({
         <Button
           data-testid="layout-option-dialog-apply-button"
           variant="contained"
-          disabled={allDisabled || disabled}
+          disabled={allDisabled || overThreshold || hasErrors}
           onClick={handleApply}
         >
           Apply Layout

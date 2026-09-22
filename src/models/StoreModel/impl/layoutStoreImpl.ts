@@ -4,7 +4,6 @@ import {
 } from '../../LayoutModel/impl/layoutSelection'
 import { LayoutAlgorithm } from '../../LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutModel/LayoutEngine'
-import { Property } from '../../PropertyModel/Property'
 import { ValueType } from '../../TableModel'
 
 export interface LayoutState {
@@ -87,35 +86,21 @@ export const setLayoutOption = <T extends ValueType>(
     return state
   }
 
-  const { parameters } = algorithm
-  const prop: any = parameters[propertyName]
-
-  if (prop === undefined) {
+  // Only a declared, editable parameter that already exists in the engine
+  // record may change. The second guard matters: Cosmos declares editables
+  // whose values live under `parameters.simulation`, and the antv runner
+  // spreads every top-level key into the engine, so a stray key must never
+  // be created here.
+  const { parameters, editables } = algorithm
+  const isEditable = (editables ?? []).some((e) => e.name === propertyName)
+  if (!isEditable || parameters[propertyName] === undefined) {
     return state
   }
 
-  const { editables } = algorithm
-
-  if (editables === undefined) {
-    return state
-  }
-
-  const targetProp = editables[propertyName]
-
-  if (targetProp === undefined) {
-    return state
-  }
-
-  const newProp: Property<ValueType> = {
-    ...targetProp,
-    value: propertyValue,
-  }
-  const newEditables = { ...editables, [propertyName]: newProp }
   const newParams = { ...parameters, [propertyName]: propertyValue }
   const newAlgorithm = {
     ...algorithm,
     parameters: newParams,
-    editables: newEditables,
   }
   const newEngines = [...engines]
   newEngines[engineIndex] = {

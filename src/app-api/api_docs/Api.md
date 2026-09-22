@@ -1866,20 +1866,36 @@ interface RegisterLayoutOptions {
   description?: string // hover text
   type?: 'force' | 'geometric' | 'hierarchical' | 'other' // default 'other'
   threshold?: number // greyed out above this many nodes + edges
-  parameters?: Record<string, LayoutParameter> // editable in Layout Settings
+  parameters?: LayoutParameter[] // editable in Layout Settings, in this order
   run: (context: LayoutRunContext) => LayoutPositions | Promise<LayoutPositions>
   isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per menu open
 }
 
-type LayoutParameterType = 'string' | 'integer' | 'long' | 'double' | 'boolean'
-type LayoutParameterValue = string | number | boolean
+// The shared parameter spec (docs/specifications/APP_PARAMETERS_SPECIFICATION.md),
+// minus the two service-app-only host-filled types. A layout parameter must
+// declare a default.
+type ParameterValue = string | number | boolean
+type LayoutParameterUiType =
+  | 'text'
+  | 'dropDown'
+  | 'radio'
+  | 'checkBox'
+  | 'nodeColumn'
+  | 'edgeColumn'
 
-interface LayoutParameter {
-  displayName?: string // label in Layout Settings; the record key when absent
-  description?: string // hover text
-  type: LayoutParameterType
-  defaultValue: LayoutParameterValue // must match `type` (number for the numeric types)
-  range?: { min: number; max: number } | { values: LayoutParameterValue[] }
+type LayoutParameter = {
+  displayName: string // label in Layout Settings, and the parameter's key (see below)
+  description?: string | null // hover text
+  type: LayoutParameterUiType
+  defaultValue: ParameterValue // number for text+number/digits, boolean for checkBox, string otherwise
+  valueList?: string[] | null // dropDown, radio: the choices
+  validationType?: 'string' | 'number' | 'digits' | null // text only
+  columnTypeFilter?: string | null // nodeColumn, edgeColumn: a CX2 type or number | wholenumber | list | list_of_number | list_of_wholenumber
+  validationHelp?: string | null // text: the message shown when validation fails
+  validationRegex?: string | null // text + string
+  minValue?: number | null // text + number/digits
+  maxValue?: number | null
+  groups?: string[] | null // presentation nesting, outermost first
 }
 
 type LayoutPositions = Record<IdType, [number, number]> // node id → [x, y]
@@ -1890,7 +1906,7 @@ interface LayoutRunContext {
   readonly edges: readonly Edge[]
   readonly positions: LayoutPositions // current position of every node with a view
   readonly selectedNodeIds: readonly IdType[]
-  readonly parameters: Readonly<Record<string, ValueType>> // current values, keyed as declared
+  readonly parameters: Readonly<Record<string, ParameterValue>> // current values by key, typed by declaration
   readonly apis: AppContextApis // the registering app's per-app API object
 }
 
@@ -2119,9 +2135,9 @@ built-in one everywhere the host lists layouts:
   edges, when `isEnabled(apis)` returns `false`, and whenever the host
   disables every layout (no network view, an HCX cell view).
 - **Layout → Settings...** — listed under `displayName`; every declared
-  `parameter` gets an editor there, and the current values are what `run`
-  receives. "Set as default" works for app algorithms too: Apply Default
-  Layout and the floating toolbar button then run it.
+  parameter gets a control there (see "Parameters" below), and the current
+  values are what `run` receives. "Set as default" works for app algorithms
+  too: Apply Default Layout and the floating toolbar button then run it.
 - **Layout API** — `layout.getAvailableLayouts()` lists it with `appId` set
   and `algorithmName` equal to the qualified name `<appId>::<id>`, which is
   what `layout.applyLayout(networkId, { algorithmName })` takes. That is how
@@ -2148,31 +2164,83 @@ while `run` is pending, the result is discarded when it arrives.
 its engine); a preferred layout that pointed at one falls back to the host's
 built-in default. `unregisterAll()` removes them too.
 
+**Parameters.** `parameters` is an ordered array of the shared parameter spec
+(`docs/specifications/APP_PARAMETERS_SPECIFICATION.md`, the same one service
+apps use). The Settings dialog renders the fields in array order, nested
+into fieldsets by `groups` (outermost group first, like Cytoscape Desktop's
+`@Tunable(groups = ...)`; groups appear in the order they are first seen, and
+a group's fields stay together even when the array interleaves them). The
+six UI types are `text` (with `validationType` `string` / `number` /
+`digits`, `validationRegex`, `minValue` / `maxValue`, `validationHelp`),
+`dropDown` and `radio` (`valueList`), `checkBox`, and `nodeColumn` /
+`edgeColumn` (`columnTypeFilter`); a `defaultValue` is required and must be
+a number for `number` / `digits`, a boolean for `checkBox`, a string
+otherwise. Values are validated as declared before they are stored.
+
+- **Keys.** A parameter's key in `context.parameters` is its `displayName`.
+  When two parameters share a `displayName`, each of those is keyed by its
+  group path instead (`'Nodes/Gap'`, `'Clusters/Gap'`); two with the same
+  `displayName` and the same `groups` are rejected.
+- **Values.** Typed by the declaration: `checkBox` → boolean, `text` with
+  `number` → number, `digits` → integer, everything else → string.
+
 ```typescript
 apis.resource.registerLayout({
   id: 'cluster',
   displayName: 'MCODE Cluster Layout',
   description: 'Clusters as compact disks, members on rings by score',
   type: 'other',
-  parameters: {
-    nodeSpacing: {
-      type: 'double',
-      defaultValue: 20,
+  parameters: [
+    {
+      displayName: 'Node spacing',
       description: 'Gap between nodes',
+      type: 'text',
+      validationType: 'number',
+      defaultValue: 20,
+      minValue: 0,
+      groups: ['Spacing'],
     },
-    satellites: { type: 'boolean', defaultValue: true },
-  },
+    {
+      displayName: 'Cluster spacing',
+      type: 'text',
+      validationType: 'number',
+      defaultValue: 100,
+      minValue: 0,
+      groups: ['Spacing'],
+    },
+    {
+      displayName: 'Attach unclustered nodes',
+      type: 'checkBox',
+      defaultValue: true,
+    },
+    {
+      displayName: 'Cluster column',
+      description: 'A node column whose values are cluster ids (optional)',
+      type: 'nodeColumn',
+      columnTypeFilter: 'wholenumber',
+      defaultValue: '',
+    },
+  ],
   run: async ({ networkId, nodes, edges, positions, parameters, apis }) => {
-    const clusters = apis.appData.get(networkId, 'latest-result')
-    return layoutClusters(nodes, edges, positions, clusters, parameters)
+    const options = {
+      nodeSpacing: parameters['Node spacing'] as number,
+      clusterSpacing: parameters['Cluster spacing'] as number,
+      satellites: parameters['Attach unclustered nodes'] as boolean,
+    }
+    const column = parameters['Cluster column'] as string
+    const clusters =
+      column !== ''
+        ? clustersFromColumn(networkId, column, apis)
+        : apis.appData.get(networkId, 'latest-result')
+    return layoutClusters(nodes, edges, positions, clusters, options)
   },
 })
 ```
 
-| Error Code | Condition                                                                                                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `APP9`     | `id` or `displayName` empty; `run` or `isEnabled` not a function; `type` not one of the four families; `threshold` negative or not a number; a parameter whose `type` is not scalar, whose `defaultValue` does not match its `type`, or whose `range` is malformed |
-| `APP3`     | the host failed to register the algorithm (nothing is left registered)                                                                                                                                                                                             |
+| Error Code | Condition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP9`     | `id` or `displayName` empty; `run` or `isEnabled` not a function; `type` not one of the four families; `threshold` negative or not a number; `parameters` not an array (a record keyed by name is the pre-release shape and is named as such); a parameter with a blank `displayName`, an unknown or host-filled `type`, a missing or mistyped `defaultValue`, a `dropDown`/`radio` without a `valueList` or whose default is not in it, malformed `groups`, or `minValue > maxValue`; two parameters with the same `displayName` and `groups` |
+| `APP3`     | the host failed to register the algorithm (nothing is left registered)                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 #### `unregisterLayout(layoutId): ApiResult`
 

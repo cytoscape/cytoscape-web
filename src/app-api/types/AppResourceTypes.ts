@@ -4,10 +4,14 @@
 // Defines the slot model, host-injected props per slot, registration
 // options, and the public ResourceApi interface.
 
+import type {
+  AppParameter,
+  ParameterValue,
+} from '../../models/AppModel/AppParameter'
+import type { ParameterUiType } from '../../models/AppModel/ParameterUiType'
 import type { IdType } from '../../models/IdType'
 import type { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
 import type { Edge, Node } from '../../models/NetworkModel'
-import type { ValueType } from '../../models/TableModel/ValueType'
 import type { ApiError, ApiResult } from './ApiResult'
 import type { AppContextApis } from './AppContext'
 
@@ -244,43 +248,33 @@ export interface RegisterModalOptions {
 // ── Layout algorithm registration ───────────────────────────────
 
 /**
- * Value type of one editable layout parameter. These are the scalar
- * `ValueTypeName` values; list-valued parameters are not part of the
- * contract in this rollout.
+ * The UI types an app layout parameter may use: the shared `AppParameter`
+ * types minus the two service-app-only, host-filled ones (`ndexUUID`,
+ * `accessToken`), which a browser-side app never receives.
  */
-export type LayoutParameterType =
-  | 'string'
-  | 'integer'
-  | 'long'
-  | 'double'
-  | 'boolean'
-
-/** The scalar values a layout parameter can hold. */
-export type LayoutParameterValue = string | number | boolean
+export type LayoutParameterUiType = Exclude<
+  ParameterUiType,
+  'ndexUUID' | 'accessToken'
+>
 
 /**
- * One user-editable parameter of an app layout. The host renders it in the
- * Layout Settings dialog (Layout → Settings...), keeps the current value, and
- * passes the current values of every parameter to `run` as
- * `LayoutRunContext.parameters`. The record key is the parameter's name and
- * the key `run` reads it back under.
+ * One user-editable parameter of an app layout — the shared `AppParameter`
+ * spec (see docs/specifications/APP_PARAMETERS_SPECIFICATION.md) with a
+ * required `defaultValue`. Parameters are declared as an ordered array: the
+ * Layout Settings dialog (Layout → Settings...) renders them in that order,
+ * nested into fieldsets by `groups`, keeps the current values, and hands
+ * them to `run` as `LayoutRunContext.parameters`.
+ *
+ * Keys: a parameter's key is its `displayName`, or, when two parameters in
+ * the array share a `displayName`, its group path joined with '/'
+ * (`Spacing/Gap`). The value `run` receives is typed by the declaration:
+ * `checkBox` → boolean, `text` with `validationType: 'number'` → number,
+ * `'digits'` → integer, everything else → string.
  */
-export interface LayoutParameter {
-  /**
-   * Label in the Settings dialog. Optional; the record key is shown when it
-   * is absent.
-   */
-  displayName?: string
-  /** Hover text in the Settings dialog. */
-  description?: string
-  type: LayoutParameterType
-  /** Initial value; must match `type` (`number` for the numeric types). */
-  defaultValue: LayoutParameterValue
-  /**
-   * Optional constraint, kept for future editors: a numeric bound for the
-   * numeric types, or the set of admissible values.
-   */
-  range?: { min: number; max: number } | { values: LayoutParameterValue[] }
+export type LayoutParameter = Omit<AppParameter, 'type' | 'defaultValue'> & {
+  type: LayoutParameterUiType
+  /** Initial value; a number for `number`/`digits`, a boolean for `checkBox`, a string otherwise. */
+  defaultValue: ParameterValue
 }
 
 /** Node id → `[x, y]`. */
@@ -299,8 +293,13 @@ export interface LayoutRunContext {
   readonly positions: LayoutPositions
   /** Ids of the currently selected nodes (may be empty). */
   readonly selectedNodeIds: readonly IdType[]
-  /** Current value of every parameter declared at registration. */
-  readonly parameters: Readonly<Record<string, ValueType>>
+  /**
+   * Current value of every parameter declared at registration, keyed by the
+   * parameter key (its `displayName`, or its group path on a collision) and
+   * typed by the declaration: boolean for `checkBox`, number for `text` with
+   * `validationType` `number` / `digits`, string otherwise.
+   */
+  readonly parameters: Readonly<Record<string, ParameterValue>>
   /** The registering app's per-app API object. */
   readonly apis: AppContextApis
 }
@@ -333,8 +332,11 @@ export interface RegisterLayoutOptions {
    * plus edges, like the built-in thresholds.
    */
   threshold?: number
-  /** Editable parameters, keyed by name. */
-  parameters?: Record<string, LayoutParameter>
+  /**
+   * Editable parameters, in the order the Settings dialog shows them. Use a
+   * shared label prefix or `groups` to keep related ones together.
+   */
+  parameters?: LayoutParameter[]
   /**
    * Computes new positions. Nodes missing from the result keep their
    * position; ids that are not in the network are ignored. A throw or a

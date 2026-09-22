@@ -13,7 +13,7 @@ const makeAlgorithm = (engineName: string, name = 'gForce'): LayoutAlgorithm =>
     engineName,
     description: 'test',
     parameters: {},
-    editables: {},
+    editables: [],
     apply: vi.fn(),
   }) as unknown as LayoutAlgorithm
 

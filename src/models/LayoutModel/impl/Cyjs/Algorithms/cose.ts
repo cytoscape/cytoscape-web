@@ -1,4 +1,3 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm } from '../../..'
 import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
@@ -21,57 +20,56 @@ export const cose: LayoutAlgorithm = {
     initialTemp: 1000,
     minTemp: 1.0,
   },
-  editables: {
-    nodeDimensionsIncludeLabels: {
+  editables: [
+    {
       name: 'nodeDimensionsIncludeLabels',
       displayName: 'Include Labels in Node Size',
       description:
         'Excludes the label when calculating node bounding boxes for the layout algorithm',
-      type: ValueTypeName.Boolean,
-      value: false,
+      type: 'checkBox',
       defaultValue: false,
     },
-    numIter: {
+    {
       name: 'numIter',
       displayName: 'Max Iterations',
       description: 'Maximum number of iterations to perform',
-      type: ValueTypeName.Integer,
-      value: 1000,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 1000,
     },
-    gravity: {
+    {
       name: 'gravity',
       displayName: 'Gravity',
       description: 'Gravity force (constant)',
-      type: ValueTypeName.Integer,
-      value: 1,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 1,
     },
-    initialTemp: {
+    {
       name: 'initialTemp',
       displayName: 'Initial Temperature',
       description: 'Initial temperature (maximum node displacement)',
-      type: ValueTypeName.Double,
-      value: 1000,
+      type: 'text',
+      validationType: 'number',
       defaultValue: 1000,
     },
-    coolingFactor: {
+    {
       name: 'coolingFactor',
       displayName: 'Cooling Factor',
       description:
         'Cooling factor (how the temperature is reduced between consecutive iterations)',
-      type: ValueTypeName.Double,
-      value: 0.99,
+      type: 'text',
+      validationType: 'number',
       defaultValue: 0.99,
     },
-    minTemp: {
+    {
       name: 'minTemp',
       displayName: 'Min Temperature',
       description:
         'Lower temperature threshold (below this point the layout will end)',
-      type: ValueTypeName.Double,
-      value: 1.0,
+      type: 'text',
+      validationType: 'number',
       defaultValue: 1.0,
     },
-  },
+  ],
 }

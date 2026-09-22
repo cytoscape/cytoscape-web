@@ -7,6 +7,7 @@ The ServiceApps feature provides integration with external analysis services and
 ## Architecture
 
 The ServiceApps feature is primarily a hook-based system that manages:
+
 - Task submission to external services
 - Task status polling
 - Result retrieval and processing
@@ -15,12 +16,14 @@ The ServiceApps feature is primarily a hook-based system that manages:
 ## Component Structure
 
 ### Main Hook
+
 - **useRunTask**: Primary hook for running service tasks
   - Accepts service URL, algorithm name, parameters, and input data
   - Handles data preparation based on service input definitions
   - Submits tasks and processes results
 
 ### Supporting Hooks
+
 - **useSubmitAndProcessTask**: Manages task lifecycle
   - Submits tasks to service endpoints
   - Polls task status until completion
@@ -28,6 +31,7 @@ The ServiceApps feature is primarily a hook-based system that manages:
   - Cleans up tasks after completion
 
 ### Data Preparation
+
 - **createNetworkDataObj**: Prepares network data for submission
   - Supports CX2 format export
   - Handles data scoping (all, selected, dynamic)
@@ -41,6 +45,7 @@ The ServiceApps feature is primarily a hook-based system that manages:
 - **filterTable**: Filters table records based on selected nodes/edges
 
 ### API Layer
+
 - **api/index.ts**: HTTP client functions
   - `submitTask`: Submits task to service
   - `getTaskStatus`: Polls task status
@@ -48,11 +53,13 @@ The ServiceApps feature is primarily a hook-based system that manages:
   - `deleteTask`: Cleans up completed tasks
 
 ### Result Handling
+
 - **resultHandler/**: Action handlers for processing results
   - Different handlers for different result types
   - Can create new networks, update existing networks, or perform other actions
 
 ### Model Definitions
+
 - **model/index.ts**: Type definitions
   - `ServiceAlgorithm`: Algorithm metadata and parameters
   - `ServiceInputDefinition`: Input requirements (network, columns, format)
@@ -61,6 +68,7 @@ The ServiceApps feature is primarily a hook-based system that manages:
 ## Behavior
 
 ### Task Submission
+
 1. User selects an algorithm from available services
 2. System prepares input data based on algorithm requirements
 3. Data is formatted according to specified format (CX2, graph model, etc.)
@@ -68,12 +76,14 @@ The ServiceApps feature is primarily a hook-based system that manages:
 5. Task ID is stored for status tracking
 
 ### Status Polling
+
 - System polls task status at regular intervals (500ms)
 - Progress updates are displayed to user
 - Polling continues until task reaches 100% completion
 - Status includes progress percentage and message
 
 ### Result Processing
+
 - Once complete, final result is retrieved
 - Result is processed by appropriate action handler
 - Handlers can:
@@ -83,11 +93,13 @@ The ServiceApps feature is primarily a hook-based system that manages:
   - Trigger other actions
 
 ### Data Scoping
+
 - **All**: Entire network/table is sent
 - **Selected**: Only selected nodes/edges are sent
 - **Dynamic**: Uses current selection, falls back to all if nothing selected
 
 ### Input Formats
+
 - **CX2**: Full Cytoscape CX2 format with all metadata
 - **Graph Model**: Simplified graph structure
 - **Table**: Column-based data extraction
@@ -110,6 +122,23 @@ Routing is implemented by pure helpers in
 apps routed to it via the shared `useServiceAppMenu(root)` hook. To support a
 new root, add it to `RootMenu` and `SUPPORTED_ROOT_MENUS`, and wire the
 corresponding menu component to call `useServiceAppMenu`.
+
+### Parameters
+
+A service's `parameters` array follows the shared parameter spec
+(`docs/specifications/APP_PARAMETERS_SPECIFICATION.md`, model
+`src/models/AppModel/AppParameter.ts`; `ServiceAppParameter` is that spec
+with every value a string). The input dialog (`AppMenuItemDialog` in
+`features/ToolBar/AppMenu/MenuFactory.tsx`) renders them through the shared
+`ParameterForm` (`src/features/ParameterForm/`): fields in array order,
+`groups` as nested fieldsets, `validationType` / `minValue` / `maxValue` /
+`validationRegex` / `valueList` enforced with `validationHelp` as the message,
+and Submit disabled while a value is invalid. Edits go to
+`AppStore.updateServiceParameter(url, key, value)` as strings; `key` is the
+parameter's `displayName`, or its group path joined with `/` when two
+parameters share a label (`parameterKeys`), and `buildCustomParameters`
+sends the payload under the same keys. Definitions the form cannot render as
+declared are logged by `parseServiceMetadata`, never rejected.
 
 ### Auto-filled Parameters
 
@@ -141,21 +170,25 @@ resolve it in `resolveParameterValue`.
 ## Design Decisions
 
 ### Polling vs WebSockets
+
 - Uses polling for simplicity and compatibility
 - 500ms interval balances responsiveness with server load
 - Could be upgraded to WebSockets for better performance
 
 ### Data Format Support
+
 - CX2 format provides full network representation
 - Graph model provides lightweight alternative
 - Table format enables column-based analysis
 
 ### Action Handler System
+
 - Extensible system for handling different result types
 - Handlers are registered and invoked based on result type
 - Allows custom result processing without modifying core code
 
 ### Task Cleanup
+
 - Tasks are deleted after result retrieval
 - Prevents accumulation of completed tasks on server
 - Error handling ensures cleanup even on failures
@@ -168,4 +201,3 @@ resolve it in `resolveParameterValue`.
 - Support for streaming results
 - Custom result visualization components
 - Task scheduling and queuing
-

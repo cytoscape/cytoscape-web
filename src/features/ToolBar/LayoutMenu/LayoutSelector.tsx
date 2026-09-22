@@ -75,6 +75,13 @@ export const LayoutSelector = ({
     <FormControl fullWidth variant="standard" sx={{ margin: 0, marginTop: 1 }}>
       <Select
         data-testid="layout-selector-select"
+        // On the clickable display element: a dropDown parameter in the
+        // same dialog is also a combobox, so specs cannot pick by role.
+        SelectDisplayProps={
+          {
+            'data-testid': 'layout-selector-combobox',
+          } as React.HTMLAttributes<HTMLDivElement>
+        }
         labelId="default-layout"
         id="default-layout-select"
         value={encodeLayoutSelection(selectedEngine, selectedAlgorithm)}

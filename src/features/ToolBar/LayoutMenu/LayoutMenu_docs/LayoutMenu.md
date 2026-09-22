@@ -66,12 +66,13 @@ Core rows carry the test id `layout-menu-item-<engine>-<algorithm>`.
 ### Layout Option Editor
 
 - The "Settings..." entry (via `LayoutOptionDialog`) lets users edit algorithm parameters:
-  - `LayoutSelector` chooses engine + algorithm, app algorithms included.
-  - `ValueEditor` components expose per-option editors (string, number, boolean, list).
+  - `LayoutSelector` chooses engine + algorithm, app algorithms included (its clickable element carries `data-testid="layout-selector-combobox"`; a `dropDown` parameter is a combobox too, so specs must not pick by role).
+  - The algorithm's `editables` — an ordered array of the shared parameter spec (`docs/specifications/APP_PARAMETERS_SPECIFICATION.md`), each with a `name` that keys its live value in `algorithm.parameters` — render through the shared `ParameterForm` (`src/features/ParameterForm/`): fields in array order, `groups` as nested fieldsets, `text` / `dropDown` / `radio` / `checkBox` / column pickers, validation messages under the field. Test ids: `layout-parameter-field-<name>`, `layout-parameter-group-<path>`.
   - A "Set as default" checkbox makes the selection the preferred layout; app algorithms can be the default too, and `LayoutStore` falls back to the built-in default when the app is disabled.
 - The selection is resolved against the store on every render: if the selected algorithm disappears while the dialog is open (an app disabled), the dialog shows the preferred layout instead of dereferencing a missing algorithm.
-- The Apply button is disabled above the algorithm's `threshold` and re-enabled below it.
-- Options are stored per layout engine/algorithm (`setLayoutOption`, which also re-points `preferredLayout` when the edited algorithm is the default) and reused when layouts are run from the menu.
+- The Apply button is disabled above the algorithm's `threshold`, re-enabled below it, and disabled while a stored value fails validation (`useParameterErrors`).
+- A `text` field commits only a valid draft: `setLayoutOption(engine, algorithm, name, value)` receives a value typed by the declaration (number, boolean or string) and updates `parameters[name]` — editables never change. `setLayoutOption` refuses a key that is not a declared editable or not already in `parameters` (Cosmos keeps its values under `parameters.simulation`, a pre-existing gap), and re-points `preferredLayout` when the edited algorithm is the default, so Apply Default Layout runs the edited values.
+- `ValueEditor/*` is no longer used here; it stays for the node and edge creation dialogs.
 
 ### HCX / Hierarchy-Safe Behavior
 

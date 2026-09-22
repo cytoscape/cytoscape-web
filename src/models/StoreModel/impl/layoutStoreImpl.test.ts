@@ -22,14 +22,16 @@ vi.mock('../../LayoutModel/impl/layoutSelection', () => {
     type: 'geometric' as const,
     description: 'Grid layout',
     parameters: { spacing: 50 },
-    editables: {
-      spacing: {
+    editables: [
+      {
         name: 'spacing',
-        type: 'number' as const,
-        value: 50,
+        displayName: 'Spacing',
+        type: 'text' as const,
+        validationType: 'digits' as const,
+        defaultValue: 50,
         description: 'Spacing between nodes',
       },
-    },
+    ],
   }
 
   const mockLayoutEngine = {
@@ -123,8 +125,50 @@ describe('LayoutStoreImpl', () => {
       const algorithm = result.layoutEngines.find((e) => e.name === 'cyjs')
         ?.algorithms['grid']
       expect(algorithm?.parameters.spacing).toBe(100)
-      expect(algorithm?.editables?.spacing?.value).toBe(100)
+      // Editables are definitions only; the live value lives in parameters
+      expect(algorithm?.editables).toBe(
+        state.layoutEngines.find((e) => e.name === 'cyjs')?.algorithms['grid']
+          .editables,
+      )
       expect(result).not.toBe(state) // Immutability check
+    })
+
+    it('refuses a key that is not a declared editable, or not in parameters', () => {
+      const state = createDefaultState()
+
+      // 'grid' declares only `spacing`
+      expect(setLayoutOption(state, 'cyjs', 'grid', 'nope', 1)).toBe(state)
+
+      // an editable whose value is not a top-level parameter (Cosmos shape)
+      const cosmosLike = {
+        ...state.layoutEngines[0].algorithms['grid'],
+        name: 'nested',
+        parameters: { simulation: { gravity: 0.3 } },
+        editables: [
+          {
+            name: 'gravity',
+            displayName: 'Gravity',
+            type: 'text' as const,
+            validationType: 'number' as const,
+            defaultValue: 0.3,
+          },
+        ],
+      }
+      const withNested: LayoutState = {
+        ...state,
+        layoutEngines: [
+          {
+            ...state.layoutEngines[0],
+            algorithms: {
+              ...state.layoutEngines[0].algorithms,
+              nested: cosmosLike,
+            },
+          },
+        ],
+      }
+      expect(setLayoutOption(withNested, 'cyjs', 'nested', 'gravity', 1)).toBe(
+        withNested,
+      )
     })
 
     it('should handle non-existent engine gracefully', () => {
@@ -154,14 +198,15 @@ describe('LayoutStoreImpl', () => {
     type: 'other',
     description: '',
     parameters: { spacing: 10 },
-    editables: {
-      spacing: {
+    editables: [
+      {
         name: 'spacing',
-        type: 'integer' as const,
-        value: 10,
+        displayName: 'Spacing',
+        type: 'text' as const,
+        validationType: 'digits' as const,
         defaultValue: 10,
       },
-    },
+    ],
   })
 
   const findEngine = (

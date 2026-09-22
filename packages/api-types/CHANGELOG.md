@@ -17,24 +17,44 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   `layout.applyLayout(networkId, { algorithmName })` using the qualified name
   `<appId>::<id>` that `layout.getAvailableLayouts()` now reports. New types
   `RegisterLayoutOptions`, `LayoutRunContext`, `LayoutPositions`,
-  `LayoutParameter`, `LayoutParameterType`, `LayoutParameterValue`; the
-  `LayoutAlgorithmType` const is exported; `LayoutAlgorithmInfo` gains
-  `appId?`. `run(context)` only computes positions (`{ nodeId: [x, y] }`,
-  sync or async) from the context's `nodes`, `edges`, current `positions`,
-  `selectedNodeIds`, current `parameters` and the app's `apis`; the host
-  owns the running flag, the undo entry and the viewport fit, and a throw or
-  rejection aborts the run without moving anything. Disabling the app removes
-  its algorithms; a default layout that pointed at one falls back to the
-  host's built-in default. `registerAll()` accepts
+  `LayoutParameter`, `LayoutParameterUiType`; the `LayoutAlgorithmType` const
+  is exported; `LayoutAlgorithmInfo` gains `appId?`. `run(context)` only
+  computes positions (`{ nodeId: [x, y] }`, sync or async) from the
+  context's `nodes`, `edges`, current `positions`, `selectedNodeIds`,
+  current `parameters` and the app's `apis`; the host owns the running
+  flag, the undo entry and the viewport fit, and a throw or rejection aborts
+  the run without moving anything. Disabling the app removes its
+  algorithms; a default layout that pointed at one falls back to the host's
+  built-in default. `registerAll()` accepts
   `{ slot: 'layout-algorithm', ... }` entries and `getSupportedSlots()` lists
-  the slot. Parameters are scalars only (`string`, `integer`, `long`,
-  `double`, `boolean`); list-valued parameters, per-node sizes in the run
-  context, and a `setPreferredLayout` API are left for later.
+  the slot. Per-node sizes in the run context and a `setPreferredLayout`
+  API are left for later.
 
-- **`LayoutParameter.displayName`** (#736) — an optional human-readable
-  label for a `registerLayout()` parameter, shown in **Layout → Settings...**
-  instead of the record key. Non-breaking: a parameter without it is
-  labelled by its key, as before.
+- **One parameter spec for app layouts and service apps** (#734 follow-up) —
+  `RegisterLayoutOptions.parameters` is an **ordered array** of the same
+  JSON spec service apps declare (`AppParameter`:
+  `displayName`, `description`, `type`, `valueList`, `defaultValue`,
+  `validationType`, `columnTypeFilter`, `validationHelp`, `validationRegex`,
+  `minValue`, `maxValue`), plus a new `groups: string[]` that nests
+  parameters into fieldsets the way Cytoscape Desktop's
+  `@Tunable(groups = ...)` does. Fields render in array order; there is no
+  gravity field. The six UI types available to a layout are `text`,
+  `dropDown`, `radio`, `checkBox`, `nodeColumn` and `edgeColumn`
+  (`LayoutParameterUiType`); `ndexUUID` and `accessToken` stay service-app
+  only. A parameter's key in `context.parameters` is its `displayName`, or
+  its group path joined with `/` when two parameters share a label; values
+  are typed by the declaration (`checkBox` → boolean, `text` with
+  `validationType` `number` → number, `digits` → integer, otherwise string).
+  The host validates values as declared (regex, number / whole number,
+  `minValue` / `maxValue`, `valueList`) before storing them. Exported:
+  `AppParameter`, `ParameterValue`, `LayoutParameterUiType`, and the
+  `ParameterUiType`, `ValidationType`, `ColumnTypeFilter` consts. Spec:
+  `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`. **Breaking against
+  the unpublished beta.4 / #736 shape**: the record keyed by name, the value
+  types `'string' | 'integer' | 'long' | 'double' | 'boolean'`, and `range`
+  are gone (`LayoutParameterType` and `LayoutParameterValue` are removed);
+  `registerLayout` rejects that shape with `APP9` and a message naming the
+  array spec.
 
 ## 1.0.0-beta.4 (2026-09-11)
 

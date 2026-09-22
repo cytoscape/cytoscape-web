@@ -140,8 +140,9 @@ src/app-api/
     `crossOrigin: 'anonymous'` at all. See the STRING example in `api_docs/Api.md`.
 17. **App layouts are ordinary engines, adapted once** — `resource.registerLayout` (the
     `'layout-algorithm'` slot, #734) never renders anything itself. `core/appLayoutEngine.ts`
-    turns the options into a `LayoutAlgorithm` (name qualified `<appId>::<id>`, `parameters`
-    and `editables` sharing keys so `setLayoutOption` updates both) inside ONE synthetic
+    turns the options into a `LayoutAlgorithm` (name qualified `<appId>::<id>`; `editables`
+    are the declared parameters with a `name` from the key rule, `parameters[name]` the live
+    typed value `setLayoutOption` updates) inside ONE synthetic
     `LayoutEngine` per app (`name === appId`, `appId` set) in `LayoutStore.layoutEngines`, so
     the Layout menu, the Settings dialog, Apply Default Layout, the toolbar button and
     `layout.applyLayout` reach it with no special case — the menu only uses `engine.appId`
@@ -153,6 +154,18 @@ src/app-api/
     the adapter's `registerAppCleanup` call plus the resource store's slot-agnostic
     `removeAllByAppId`; a dangling `preferredLayout` falls back to `defAlgorithm`. Layout
     events stay API-only (principle 10) — host UI paths do not dispatch them.
+18. **One parameter spec, one form** — `RegisterLayoutOptions.parameters` is an ordered
+    `LayoutParameter[]` (the service-app `AppParameter` JSON spec minus the host-filled types,
+    `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`), never a keyed record and never
+    the internal `Property` model. Keys come from `parameterKeys` in
+    `models/AppModel/impl/parameters.ts` (displayName, or the group path when two labels
+    collide); values are typed by the declaration (`coerceParameterValue`); definition rules
+    are `parameterDefinitionProblem(..., { strict: true })` and shared with the service
+    metadata parser (non-strict, warn-only there). `features/ParameterForm/` renders every
+    consumer — built-in layouts, app layouts, service apps — so a new parameter capability
+    goes into the spec, the helpers and the form, not into a dialog. `registerLayout` rejects
+    the unpublished beta.4 record shape (`type: 'integer'`, `range`) by name so an app built
+    against it cannot register with silently wrong keys.
 
 ## Two-Layer Pattern
 

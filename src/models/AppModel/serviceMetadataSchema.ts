@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+import { logApp } from '../../debug'
+import {
+  duplicateParameterKeys,
+  parameterDefinitionProblem,
+} from './impl/parameters'
+
 import type { ServiceMetadata } from './ServiceMetadata'
 
 /**
@@ -44,9 +50,14 @@ const CyWebMenuItemSchema = z
   })
   .passthrough()
 
+// Only `displayName` is required; `groups` (presentation nesting, see
+// docs/specifications/APP_PARAMETERS_SPECIFICATION.md) is checked for shape
+// when present. Everything else passes through: services send `null` for
+// what does not apply, and stricter checks would reject apps that work.
 const ServiceAppParameterSchema = z
   .object({
     displayName: z.string(),
+    groups: z.array(z.string()).nullish(),
   })
   .passthrough()
 
@@ -77,9 +88,36 @@ export const parseServiceMetadata = (
   data: unknown,
 ): ServiceMetadata | undefined => {
   const result = ServiceMetadataSchema.safeParse(data)
-  return result.success
-    ? (result.data as unknown as ServiceMetadata)
-    : undefined
+  if (!result.success) {
+    return undefined
+  }
+  const metadata = result.data as unknown as ServiceMetadata
+  warnAboutParameterDefinitions(metadata)
+  return metadata
+}
+
+/**
+ * Report, without rejecting, parameter definitions the form cannot render
+ * as declared (an unknown type, a dropDown without values, ...) and
+ * parameters that share a displayName within the same groups (the key rule
+ * cannot tell them apart; the last one wins in the store). Services that
+ * work today keep working; the log says what to fix.
+ */
+const warnAboutParameterDefinitions = (metadata: ServiceMetadata): void => {
+  metadata.parameters.forEach((parameter, index) => {
+    const problem = parameterDefinitionProblem(parameter, index)
+    if (problem !== undefined) {
+      logApp.warn(
+        `[serviceMetadata]: "${metadata.name}": ${problem}; the parameter may not render as intended`,
+      )
+    }
+  })
+  const duplicates = duplicateParameterKeys(metadata.parameters)
+  if (duplicates.length > 0) {
+    logApp.warn(
+      `[serviceMetadata]: "${metadata.name}" declares parameters that share a displayName within the same groups (${duplicates.join(', ')}); only the last of each is editable`,
+    )
+  }
 }
 
 /**

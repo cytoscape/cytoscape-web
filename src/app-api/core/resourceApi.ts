@@ -13,6 +13,10 @@ import { logApp } from '../../debug'
 import { AppStatus } from '../../models/AppModel/AppStatus'
 import type { RegisteredAppResource } from '../../models/AppModel/RegisteredAppResource'
 import type { ResourceSlot } from '../../models/AppModel/RegisteredAppResource'
+import {
+  duplicateParameterKeys,
+  parameterDefinitionProblem,
+} from '../../models/AppModel/impl/parameters'
 import { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
 import type { ApiError, ApiResult } from '../types/ApiResult'
 import { AppCodes, fail, ok } from '../types/ApiResult'
@@ -44,7 +48,9 @@ const SUPPORTED_SLOTS: ResourceSlot[] = [
 const MODAL_MAX_WIDTHS = ['xs', 'sm', 'md', 'lg', 'xl'] as const
 
 const LAYOUT_TYPES = new Set<string>(Object.values(LayoutAlgorithmType))
-const LAYOUT_PARAMETER_TYPES = new Set<string>([
+
+/** The parameter `type` values of the unpublished beta.4 record spec. */
+const BETA4_PARAMETER_TYPES = new Set<string>([
   'string',
   'integer',
   'long',
@@ -52,46 +58,37 @@ const LAYOUT_PARAMETER_TYPES = new Set<string>([
   'boolean',
 ])
 
+const ARRAY_SPEC_HINT =
+  "parameters must be an array of the shared parameter spec ({ displayName, type: 'text' | 'dropDown' | 'radio' | 'checkBox' | 'nodeColumn' | 'edgeColumn', defaultValue, ... }); see docs/specifications/APP_PARAMETERS_SPECIFICATION.md"
+
 /**
- * Validate one registerLayout() parameter. Returns the problem, or
- * undefined when the parameter is well-formed. The default must already be
- * of the declared type: the Settings editor and `run` both rely on it.
+ * Validate registerLayout()'s `parameters`. Returns the problem, or
+ * undefined. A registration shaped like the unpublished beta.4 contract (a
+ * record keyed by name, `type: 'integer'`, a `range`) is named as such, so an
+ * app built against it cannot register with silently wrong keys.
  */
-function layoutParameterProblem(
-  name: string,
-  param: unknown,
-): string | undefined {
-  if (name.trim() === '') return 'parameter names must be non-empty'
-  if (typeof param !== 'object' || param === null) {
-    return `parameter '${name}' must be an object`
+function layoutParametersProblem(parameters: unknown): string | undefined {
+  if (!Array.isArray(parameters)) {
+    return typeof parameters === 'object' && parameters !== null
+      ? `parameters is a record keyed by name (the beta.4 shape); ${ARRAY_SPEC_HINT}`
+      : ARRAY_SPEC_HINT
   }
-  const { type, defaultValue, range, description } = param as Record<
-    string,
-    unknown
-  >
-  if (typeof type !== 'string' || !LAYOUT_PARAMETER_TYPES.has(type)) {
-    return `parameter '${name}': type must be one of ${[...LAYOUT_PARAMETER_TYPES].join(', ')}`
-  }
-  const expected =
-    type === 'boolean' ? 'boolean' : type === 'string' ? 'string' : 'number'
-  if (typeof defaultValue !== expected) {
-    return `parameter '${name}': defaultValue must be a ${expected} for type '${type}'`
-  }
-  if (description !== undefined && typeof description !== 'string') {
-    return `parameter '${name}': description must be a string`
-  }
-  if (range !== undefined) {
-    const r = range as Record<string, unknown>
-    const isNumeric =
-      typeof r === 'object' &&
-      r !== null &&
-      typeof r.min === 'number' &&
-      typeof r.max === 'number'
-    const isDiscrete =
-      typeof r === 'object' && r !== null && Array.isArray(r.values)
-    if (!isNumeric && !isDiscrete) {
-      return `parameter '${name}': range must be { min, max } or { values }`
+  for (const [index, param] of parameters.entries()) {
+    if (typeof param === 'object' && param !== null) {
+      const p = param as Record<string, unknown>
+      if (typeof p.type === 'string' && BETA4_PARAMETER_TYPES.has(p.type)) {
+        return `parameters[${index}]: type '${p.type}' is the beta.4 value type; ${ARRAY_SPEC_HINT}`
+      }
+      if ('range' in p) {
+        return `parameters[${index}]: 'range' is the beta.4 constraint; use minValue/maxValue or valueList — ${ARRAY_SPEC_HINT}`
+      }
     }
+    const problem = parameterDefinitionProblem(param, index, { strict: true })
+    if (problem !== undefined) return problem
+  }
+  const duplicates = duplicateParameterKeys(parameters as LayoutParameter[])
+  if (duplicates.length > 0) {
+    return `parameters share a displayName within the same groups: ${duplicates.join(', ')}`
   }
   return undefined
 }
@@ -137,19 +134,8 @@ function layoutOptionsProblem(options: unknown): string | undefined {
     return 'isEnabled must be a function'
   }
   if (o.parameters !== undefined) {
-    if (
-      typeof o.parameters !== 'object' ||
-      o.parameters === null ||
-      Array.isArray(o.parameters)
-    ) {
-      return 'parameters must be an object keyed by parameter name'
-    }
-    for (const [name, param] of Object.entries(
-      o.parameters as Record<string, LayoutParameter>,
-    )) {
-      const problem = layoutParameterProblem(name, param)
-      if (problem !== undefined) return problem
-    }
+    const problem = layoutParametersProblem(o.parameters)
+    if (problem !== undefined) return problem
   }
   return undefined
 }

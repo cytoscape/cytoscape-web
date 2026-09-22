@@ -35,6 +35,16 @@ export type { NetworkView } from '../../models/ViewModel/NetworkView'
 // `type` reported by layout.getAvailableLayouts().
 export { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
 
+// ── Parameter spec (shared by app layouts and service apps) ─────
+// See docs/specifications/APP_PARAMETERS_SPECIFICATION.md.
+export type {
+  AppParameter,
+  ParameterValue,
+} from '../../models/AppModel/AppParameter'
+export { ColumnTypeFilter } from '../../models/AppModel/ColumnTypeFilter'
+export { ParameterUiType } from '../../models/AppModel/ParameterUiType'
+export { ValidationType } from '../../models/AppModel/ValidationType'
+
 // ── CX2 types ───────────────────────────────────────────────────
 export type { Cx2 } from '../../models/CxModel/Cx2'
 

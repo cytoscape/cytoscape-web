@@ -13,6 +13,7 @@ import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
 import { parseServiceMetadata } from '../../../models/AppModel/serviceMetadataSchema'
 import { AppStore } from '../../../models/StoreModel/AppStoreModel'
+import { parameterKeys } from '../../../models/AppModel/impl/parameters'
 import * as AppStoreImpl from '../../../models/StoreModel/impl/appStoreImpl'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { resolveRootMenu } from '../../../models/AppModel/impl/menuRouting'
@@ -200,24 +201,23 @@ export const useAppStore = create(
       })
     },
 
-    updateServiceParameter(url: string, displayName: string, value: string) {
+    updateServiceParameter(url: string, key: string, value: string) {
       set((state) => {
         const serviceApp = state.serviceApps[url]
         if (serviceApp === undefined) {
           throw new Error(`Service not found for URL: ${url}`)
         }
 
-        const parameter = serviceApp.parameters.find(
-          (p) => p.displayName === displayName,
-        )
-        if (parameter === undefined) {
-          throw new Error(`Parameter not found for name: ${displayName}`)
+        // Addressed by the key rule (displayName, or the group path on a
+        // collision) — the key the ParameterForm reports.
+        if (!parameterKeys(serviceApp.parameters).includes(key)) {
+          throw new Error(`Parameter not found for key: ${key}`)
         }
 
         const newState = AppStoreImpl.updateServiceParameter(
           state,
           url,
-          displayName,
+          key,
           value,
         )
         state.serviceApps = newState.serviceApps

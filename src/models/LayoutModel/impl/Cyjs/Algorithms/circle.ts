@@ -1,4 +1,3 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const circle: LayoutAlgorithm = {
@@ -12,22 +11,22 @@ export const circle: LayoutAlgorithm = {
     radius: 1000,
     spacingFactor: 1,
   },
-  editables: {
-    radius: {
+  editables: [
+    {
       name: 'radius',
       displayName: 'Radius',
       description: 'Radius of the circle',
-      type: ValueTypeName.Integer,
-      value: 1000,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 1000,
     },
-    spacingFactor: {
+    {
       name: 'spacingFactor',
       displayName: 'Spacing Factor',
       description: 'Spacing factor between nodes',
-      type: ValueTypeName.Integer,
-      value: 1,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 1,
     },
-  },
+  ],
 }
