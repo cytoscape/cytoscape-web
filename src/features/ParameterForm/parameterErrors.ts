@@ -30,8 +30,15 @@ export const columnChoices = (
     param.type === ParameterUiType.EdgeColumn
       ? columns.edgeColumns
       : columns.nodeColumns
-  return source.filter((column) =>
-    columnTypeMatchesFilter(column.type, param.columnTypeFilter),
+  return (
+    source
+      .filter((column) =>
+        columnTypeMatchesFilter(column.type, param.columnTypeFilter),
+      )
+      // Alphabetical, case-insensitive, so "Zeta" does not sort before "alpha".
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+      )
   )
 }
 

@@ -157,6 +157,7 @@ describe('AppMenuItemDialog parameters', () => {
       screen.getByTestId('service-app-parameter-field-Weight column'),
     )
     expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      '(none)',
       'weight',
     ])
   })

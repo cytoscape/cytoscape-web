@@ -79,7 +79,9 @@ MUI reflecting it); `disabled` is applied per control.
 ### Column pickers
 
 `nodeColumn` / `edgeColumn` list the network's columns filtered by
-`columnTypeFilter` (`columnTypeMatchesFilter`). A stored value that is not a
+`columnTypeFilter` (`columnTypeMatchesFilter`), sorted alphabetically and
+case-insensitively. "(none)" is offered as a choice and shown when no column
+is selected, since "no column" is a valid answer (the value is `''`). A stored value that is not a
 column of the current network still renders, marked "(not in this
 network)", so MUI never sees an out-of-range value, and it is reported as an
 error; the same for a `dropDown` value that is no longer in `valueList`.

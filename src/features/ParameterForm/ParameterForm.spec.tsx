@@ -22,8 +22,10 @@ vi.mock('@/data/hooks/stores/TableStore', async () => {
           nodeTable: {
             columns: [
               { name: 'name', type: 'string' },
-              { name: 'degree', type: 'integer' },
+              { name: 'Zeta', type: 'string' },
               { name: 'score', type: 'double' },
+              { name: 'alpha', type: 'string' },
+              { name: 'degree', type: 'integer' },
             ],
           },
           edgeTable: {
@@ -201,6 +203,7 @@ describe('ParameterForm', () => {
     )
     fireEvent.mouseDown(screen.getByTestId('t-field-Weight column'))
     expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      '(none)',
       'degree',
       'score',
     ])
@@ -208,9 +211,50 @@ describe('ParameterForm', () => {
 
     fireEvent.mouseDown(screen.getByTestId('t-field-Edge column'))
     expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      '(none)',
       'interaction',
       'weight',
     ])
+  })
+
+  it('shows "(none)" for an unselected column, sorts columns case-insensitively, and can clear the choice', () => {
+    const onChange = vi.fn()
+    render(
+      <ParameterForm
+        parameters={[{ displayName: 'Col', type: 'nodeColumn' }]}
+        values={{ Col: 'name' }}
+        onChange={onChange}
+        networkId="net1"
+        testIdPrefix="t"
+      />,
+    )
+    const display = screen.getByTestId('t-field-Col')
+    expect(display.textContent).toBe('name')
+
+    fireEvent.mouseDown(display)
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      '(none)',
+      'alpha',
+      'degree',
+      'name',
+      'score',
+      'Zeta',
+    ])
+    fireEvent.click(screen.getByRole('option', { name: '(none)' }))
+    expect(onChange).toHaveBeenLastCalledWith('Col', '')
+  })
+
+  it('displays "(none)" when no column is selected', () => {
+    render(
+      <ParameterForm
+        parameters={[{ displayName: 'Col', type: 'nodeColumn' }]}
+        values={{}}
+        onChange={vi.fn()}
+        networkId="net1"
+        testIdPrefix="t"
+      />,
+    )
+    expect(screen.getByTestId('t-field-Col').textContent).toBe('(none)')
   })
 
   it('keeps a stale column visible, marked, and reports it as an error', () => {

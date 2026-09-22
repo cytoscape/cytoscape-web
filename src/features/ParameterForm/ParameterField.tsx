@@ -45,6 +45,8 @@ export interface ParameterFieldProps {
 }
 
 const NOT_IN_NETWORK = ' (not in this network)'
+/** What a column picker shows, and offers, when no column is selected. */
+const NO_COLUMN = '(none)'
 
 /** Label on the left, control on the right — the row every dialog uses. */
 const Row = ({
@@ -144,9 +146,16 @@ const ChoiceParameter = ({
   testIdPrefix,
   choices,
   staleSuffix,
+  emptyLabel,
 }: ParameterFieldProps & {
   choices: readonly string[]
   staleSuffix: string
+  /**
+   * When given, an empty value is a legitimate choice: it is offered as an
+   * option under this label and shown under it when nothing is selected
+   * (column pickers, where "no column" is a valid answer).
+   */
+  emptyLabel?: string
 }): JSX.Element => {
   const current = value === null || value === undefined ? '' : String(value)
   // A stored value that is not among the choices (a column of another
@@ -159,6 +168,16 @@ const ChoiceParameter = ({
         <Select
           value={current}
           displayEmpty
+          renderValue={
+            emptyLabel === undefined
+              ? undefined
+              : (selected: string) =>
+                  selected === '' ? (
+                    <em>{emptyLabel}</em>
+                  ) : (
+                    `${selected}${stale ? staleSuffix : ''}`
+                  )
+          }
           disabled={disabled}
           SelectDisplayProps={
             {
@@ -170,6 +189,11 @@ const ChoiceParameter = ({
             onChange(coerceParameterValue(param, e.target.value))
           }
         >
+          {emptyLabel !== undefined ? (
+            <MenuItem value="">
+              <em>{emptyLabel}</em>
+            </MenuItem>
+          ) : null}
           {stale ? (
             <MenuItem value={current}>
               {current}
@@ -290,6 +314,7 @@ export const ParameterField = (
           {...props}
           choices={columnChoices(param, columns).map((c: Column) => c.name)}
           staleSuffix={NOT_IN_NETWORK}
+          emptyLabel={NO_COLUMN}
         />
       )
     default:
