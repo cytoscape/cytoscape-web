@@ -326,6 +326,13 @@ export const parameterDefinitionProblem = (
   if (p.validationRegex != null && typeof p.validationRegex !== 'string') {
     return `${label}: validationRegex must be a string`
   }
+  if (
+    p.columnTypeFilter != null &&
+    typeof p.columnTypeFilter !== 'string' &&
+    !isStringArray(p.columnTypeFilter)
+  ) {
+    return `${label}: columnTypeFilter must be a string or an array of strings`
+  }
   if (p.validationHelp != null && typeof p.validationHelp !== 'string') {
     return `${label}: validationHelp must be a string`
   }

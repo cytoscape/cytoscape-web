@@ -107,7 +107,9 @@ Absent or `null` means `string`.
 - `list_of_number` — `list_of_long`, `list_of_integer` or `list_of_double`
 - `list_of_wholenumber` — `list_of_long` or `list_of_integer`
 
-Absent, `null` or empty offers every column.
+A **list** of the above offers a column when any entry matches:
+`["string", "long", "integer", "boolean"]` is "every column except doubles
+and lists". Absent, `null`, empty, or an empty list offers every column.
 
 ### `validationHelp`
 

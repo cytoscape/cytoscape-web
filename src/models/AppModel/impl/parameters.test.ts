@@ -427,6 +427,19 @@ describe('parameterDefinitionProblem', () => {
       { displayName: 'x', type: 'text', validationType: 'weird' },
       /validationType/,
     )
+    bad(
+      { displayName: 'x', type: 'nodeColumn', columnTypeFilter: 3 },
+      /columnTypeFilter/,
+    )
+    bad(
+      { displayName: 'x', type: 'nodeColumn', columnTypeFilter: ['string', 1] },
+      /columnTypeFilter/,
+    )
+    ok({
+      displayName: 'x',
+      type: 'nodeColumn',
+      columnTypeFilter: ['string', 'long', 'integer', 'boolean'],
+    })
   })
 
   it('in strict mode requires a typed default and forbids the host-filled types', () => {

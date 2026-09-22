@@ -44,6 +44,27 @@ describe('AppModel impl', () => {
       )
       expect(columnTypeMatchesFilter(ValueTypeName.String, null)).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Long, '')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.Long, [])).toBe(true)
+    })
+
+    it('matches when any filter of a list matches', () => {
+      const notDoubleOrList = ['string', 'long', 'integer', 'boolean']
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.String, notDoubleOrList),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Integer, notDoubleOrList),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Double, notDoubleOrList),
+      ).toBe(false)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.ListString, notDoubleOrList),
+      ).toBe(false)
+      // aliases work inside a list too
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Double, ['number', 'boolean']),
+      ).toBe(true)
     })
 
     it('matches a concrete cx2 datatype exactly', () => {

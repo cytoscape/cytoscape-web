@@ -48,8 +48,12 @@ export interface AppParameter {
    * numbers), both optionally bounded by `minValue` / `maxValue`.
    */
   validationType?: ValidationType | null
-  /** `nodeColumn` / `edgeColumn` only: which columns to offer. */
-  columnTypeFilter?: ColumnTypeFilter | null
+  /**
+   * `nodeColumn` / `edgeColumn` only: which columns to offer — one filter,
+   * or a list of filters of which any may match (`['string', 'long',
+   * 'integer', 'boolean']` for "everything but doubles and lists").
+   */
+  columnTypeFilter?: ColumnTypeFilter | ColumnTypeFilter[] | null
   /** `text` only: the message shown when validation fails. */
   validationHelp?: string | null
   /** `text` + `string` only: the value must match this regular expression. */

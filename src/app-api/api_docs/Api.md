@@ -1890,7 +1890,7 @@ type LayoutParameter = {
   defaultValue: ParameterValue // number for text+number/digits, boolean for checkBox, string otherwise
   valueList?: string[] | null // dropDown, radio: the choices
   validationType?: 'string' | 'number' | 'digits' | null // text only
-  columnTypeFilter?: string | null // nodeColumn, edgeColumn: a CX2 type or number | wholenumber | list | list_of_number | list_of_wholenumber
+  columnTypeFilter?: string | string[] | null // nodeColumn, edgeColumn: a CX2 type or number | wholenumber | list | list_of_number | list_of_wholenumber, or a list of those (any may match)
   validationHelp?: string | null // text: the message shown when validation fails
   validationRegex?: string | null // text + string
   minValue?: number | null // text + number/digits

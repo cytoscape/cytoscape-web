@@ -142,19 +142,26 @@ export const isNumberList = (vtn: ValueTypeName): boolean => {
 }
 
 /**
- * Whether a column's datatype satisfies a service-app column type filter.
+ * Whether a column's datatype satisfies a parameter's column type filter.
  *
  * The filter may be a concrete CX2 datatype (e.g. 'string', 'list_of_string'),
  * or one of the convenience aliases 'number' (any numeric), 'wholenumber'
- * (integer), 'list' (any list), 'list_of_number', 'list_of_wholenumber'. An
- * empty/absent filter matches every column.
+ * (integer), 'list' (any list), 'list_of_number', 'list_of_wholenumber' — or
+ * a list of those, of which any may match. An empty/absent filter matches
+ * every column.
  */
 export const columnTypeMatchesFilter = (
   columnType: ValueTypeName,
-  filter: string | undefined | null,
+  filter: string | readonly string[] | undefined | null,
 ): boolean => {
   if (filter === undefined || filter === null || filter === '') {
     return true
+  }
+  if (Array.isArray(filter)) {
+    return (
+      filter.length === 0 ||
+      filter.some((one) => columnTypeMatchesFilter(columnType, one))
+    )
   }
   switch (filter) {
     case 'list': {
