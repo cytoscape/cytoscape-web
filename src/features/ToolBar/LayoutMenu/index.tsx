@@ -136,14 +136,14 @@ export const LayoutMenu = (): JSX.Element => {
     setOpen(false)
   }
 
-  const onBeforeRun = useCallback((): void => {
+  const closeMenu = useCallback((): void => {
     setOpen(false)
   }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Layout menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
     RootMenu.Layout,
-    onBeforeRun,
+    closeMenu,
   )
 
   const handleOpenDialog = (open: boolean): void => {

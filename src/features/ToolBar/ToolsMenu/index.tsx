@@ -17,14 +17,14 @@ export const ToolsMenu = () => {
     setOpen(false)
   }
 
-  const onBeforeRun = useCallback((): void => {
+  const closeMenu = useCallback((): void => {
     setOpen(false)
   }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Tools menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
     RootMenu.Tools,
-    onBeforeRun,
+    closeMenu,
   )
 
   const menuItems = [

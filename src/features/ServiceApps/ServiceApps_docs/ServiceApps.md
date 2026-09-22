@@ -107,9 +107,13 @@ A service's metadata places its menu item via `cyWebMenuItem`:
 Routing is implemented by pure helpers in
 `src/models/AppModel/impl/menuRouting.ts` (`resolveRootMenu`,
 `filterServiceAppsByRoot`). Each top-level menu component hosts the service
-apps routed to it via the shared `useServiceAppMenu(root)` hook. To support a
-new root, add it to `RootMenu` and `SUPPORTED_ROOT_MENUS`, and wire the
-corresponding menu component to call `useServiceAppMenu`.
+apps routed to it via the shared `useServiceAppMenu(root, closeMenu)` hook. To
+support a new root, add it to `RootMenu` and `SUPPORTED_ROOT_MENUS`, and wire
+the corresponding menu component to call `useServiceAppMenu` and render the
+`dialogs` fragment it returns. That fragment holds the app's parameter dialog
+as well as the task and error dialogs, and it must sit outside the menu:
+`closeMenu` runs when a row opens the parameter dialog, which unmounts the row
+that was picked (#745).
 
 ### Auto-filled Parameters
 
