@@ -94,13 +94,31 @@ describe('AppModel impl', () => {
       expect(columnTypeMatchesFilter(ValueTypeName.String, 'list')).toBe(false)
     })
 
-    it('matches wholenumber only for integer columns', () => {
+    it('matches wholenumber for integer and long columns only', () => {
       expect(
         columnTypeMatchesFilter(ValueTypeName.Integer, 'wholenumber'),
       ).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Long, 'wholenumber')).toBe(
+        true,
+      )
+      expect(columnTypeMatchesFilter(ValueTypeName.Double, 'wholenumber')).toBe(
         false,
       )
+      expect(
+        columnTypeMatchesFilter(
+          ValueTypeName.ListInteger,
+          'list_of_wholenumber',
+        ),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.ListLong, 'list_of_wholenumber'),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(
+          ValueTypeName.ListDouble,
+          'list_of_wholenumber',
+        ),
+      ).toBe(false)
     })
   })
 

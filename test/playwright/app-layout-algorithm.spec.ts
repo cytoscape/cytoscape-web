@@ -144,7 +144,10 @@ test.describe('app-registered layout algorithm', () => {
         const [q0, q1] = Object.keys(positions)
           .sort()
           .map((id) => positions[id])
-        return Math.abs(q0[1] - q1[1]) < 1e-6 && Math.abs(q0[0] - q1[0]) === 60
+        return (
+          Math.abs(q0[1] - q1[1]) < 1e-6 &&
+          Math.abs(Math.abs(q0[0] - q1[0]) - 60) < 1e-6
+        )
       })
       .toBe(true)
 
@@ -182,7 +185,7 @@ test.describe('app-registered layout algorithm', () => {
         const [q0, q1] = Object.keys(positions)
           .sort()
           .map((id) => positions[id])
-        return Math.abs(q0[0] - q1[0]) === 120
+        return Math.abs(Math.abs(q0[0] - q1[0]) - 120) < 1e-6
       })
       .toBe(true)
     // ... and a checkBox parameter flips the order (the fixture reverses).
@@ -198,7 +201,7 @@ test.describe('app-registered layout algorithm', () => {
           .map((id) => positions[id])
         return q0[0] - q1[0] // sorted ids: first node now sits to the right
       })
-      .toBe(120)
+      .toBeCloseTo(120, 5)
     await reverse.click()
     await spacingInput.fill('60')
 
@@ -233,7 +236,10 @@ test.describe('app-registered layout algorithm', () => {
         const [q0, q1] = Object.keys(positions)
           .sort()
           .map((id) => positions[id])
-        return Math.abs(q0[1] - q1[1]) < 1e-6 && Math.abs(q0[0] - q1[0]) === 60
+        return (
+          Math.abs(q0[1] - q1[1]) < 1e-6 &&
+          Math.abs(Math.abs(q0[0] - q1[0]) - 60) < 1e-6
+        )
       })
       .toBe(true)
 

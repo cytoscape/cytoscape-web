@@ -267,8 +267,11 @@ export const updateServiceParameter = (
   // Parameters are addressed by the key rule (displayName, or the group
   // path when two parameters share a displayName) — the same key the form
   // reports and the run payload is sent under.
+  // Last match: when two parameters still share a key (same label, same
+  // groups) the form shows and the payload sends the last one's value, so
+  // an edit must land there too.
   const keys = parameterKeys(serviceApp.parameters)
-  const index = keys.indexOf(key)
+  const index = keys.lastIndexOf(key)
   if (index === -1) {
     return state
   }

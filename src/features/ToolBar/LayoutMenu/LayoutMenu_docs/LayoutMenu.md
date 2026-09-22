@@ -10,7 +10,7 @@ The `LayoutMenu` feature implements the **Layout** toolbar menu. It provides acc
   - `index.tsx` (`LayoutMenu`): Renders the **Layout** button, builds the list of layout algorithms, and launches layouts or the layout option editor.
 
 - **Supporting Components and Helpers**
-  - `LayoutOptionDialog.tsx`: Draggable dialog for editing layout parameters (per engine/algorithm) via `LayoutSelector` and `ValueEditor` components.
+  - `LayoutOptionDialog.tsx`: Draggable dialog for editing layout parameters (per engine/algorithm) via `LayoutSelector` and the shared `ParameterForm` (`src/features/ParameterForm/`).
   - `LayoutSelector.tsx`: `Select` control for choosing layout engine and algorithm. Its option value is the JSON-encoded `[engine, algorithm]` pair (`encodeLayoutSelection` / `decodeLayoutSelection`), never a joined string: engine and algorithm names are free text (`Cytoscape.js`, an app id, the qualified `<appId>::<id>` of an app algorithm).
   - `ValueEditor/*`: Editors for individual layout options (`StringEditor`, `NumberEditor`, `BooleanEditor`, `ListEditor`).
   - `runEngineLayout.ts`: The one way a host UI path invokes `engine.apply`. Sets `isRunning`, passes the network id, and contains a synchronous throw or a rejected promise (logged, `isRunning` reset) so a failing engine never leaves the running flag stuck. Used by the menu rows, the option dialog's Apply, `applyDefaultLayout.ts`, and the floating toolbar's `ApplyLayoutButton`.

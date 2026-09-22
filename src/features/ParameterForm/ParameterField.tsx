@@ -94,14 +94,20 @@ const TextParameter = ({
 }: ParameterFieldProps): JSX.Element => {
   const stored = value ?? param.defaultValue ?? ''
   const [draft, setDraft] = useState<string>(String(stored))
-  const lastCommitted = useRef<ParameterValue | null | undefined>(value)
+  // Compared as typed values: a service app stores the committed number back
+  // as a string ('1' for 1), and comparing '1' with 1 would reset a draft of
+  // '1.' on every keystroke.
+  const lastCommitted = useRef<ParameterValue>(
+    coerceParameterValue(param, value),
+  )
 
   useEffect(() => {
-    if (value !== lastCommitted.current) {
-      lastCommitted.current = value
+    const typed = coerceParameterValue(param, value)
+    if (!Object.is(typed, lastCommitted.current)) {
+      lastCommitted.current = typed
       setDraft(String(value ?? param.defaultValue ?? ''))
     }
-  }, [value, param.defaultValue])
+  }, [value, param])
 
   const draftError = validateParameterValue(param, draft)
   const message = draftError ?? error

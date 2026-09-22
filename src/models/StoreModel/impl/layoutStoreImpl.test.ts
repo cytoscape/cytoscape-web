@@ -282,6 +282,52 @@ describe('LayoutStoreImpl', () => {
       expect(engine?.algorithms[`${APP_ID}::one`].displayName).toBe('Renamed')
     })
 
+    it('re-points a preferred layout at the re-registered algorithm', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      state = setPreferredLayout(state, APP_ID, `${APP_ID}::one`)
+      state = {
+        ...state,
+        preferredHierarchicalLayout: state.preferredLayout,
+      }
+      const replacement: LayoutAlgorithm = {
+        ...makeAppAlgorithm('one'),
+        displayName: 'Renamed',
+      }
+
+      const result = upsertAppAlgorithm(state, APP_ID, replacement, appApply)
+
+      expect(result.preferredLayout).toBe(replacement)
+      expect(result.preferredHierarchicalLayout).toBe(replacement)
+    })
+
+    it('leaves a preferred layout alone when another algorithm is registered', () => {
+      let state = createDefaultState()
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      state = setPreferredLayout(state, APP_ID, `${APP_ID}::one`)
+      const preferred = state.preferredLayout
+
+      const result = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('two'),
+        appApply,
+      )
+
+      expect(result.preferredLayout).toBe(preferred)
+      expect(result.preferredHierarchicalLayout).toBe(defHierarchicalAlgorithm)
+    })
+
     it('never mutates the engine array it is given', () => {
       const state = createDefaultState()
       const before = state.layoutEngines
@@ -342,6 +388,36 @@ describe('LayoutStoreImpl', () => {
       const result = removeAppAlgorithm(state, APP_ID, `${APP_ID}::one`)
 
       expect(result.preferredLayout).toBe(defAlgorithm)
+    })
+
+    it('falls back to the live default object held by the store, not the constant', () => {
+      // The default carries the user's parameter edits in `layoutEngines`;
+      // Apply Default Layout must run that object, not the pristine constant.
+      const editedDefault: LayoutAlgorithm = {
+        ...defAlgorithm,
+        parameters: { spacing: 99 },
+      }
+      let state: LayoutState = {
+        ...createDefaultState(),
+        layoutEngines: [
+          {
+            name: defAlgorithm.engineName,
+            algorithms: { [defAlgorithm.name]: editedDefault },
+          } as unknown as LayoutEngine,
+        ],
+      }
+      state = upsertAppAlgorithm(
+        state,
+        APP_ID,
+        makeAppAlgorithm('one'),
+        appApply,
+      )
+      state = setPreferredLayout(state, APP_ID, `${APP_ID}::one`)
+
+      const result = removeAppAlgorithm(state, APP_ID, `${APP_ID}::one`)
+
+      expect(result.preferredLayout).toBe(editedDefault)
+      expect(result.preferredLayout).not.toBe(defAlgorithm)
     })
 
     it('is a no-op for an unknown engine or algorithm', () => {

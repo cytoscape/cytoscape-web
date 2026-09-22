@@ -146,7 +146,7 @@ export const isNumberList = (vtn: ValueTypeName): boolean => {
  *
  * The filter may be a concrete CX2 datatype (e.g. 'string', 'list_of_string'),
  * or one of the convenience aliases 'number' (any numeric), 'wholenumber'
- * (integer), 'list' (any list), 'list_of_number', 'list_of_wholenumber' — or
+ * (integer or long), 'list' (any list), 'list_of_number', 'list_of_wholenumber' — or
  * a list of those, of which any may match. An empty/absent filter matches
  * every column.
  */
@@ -171,13 +171,13 @@ export const columnTypeMatchesFilter = (
       return isNumber(columnType)
     }
     case 'wholenumber': {
-      return columnType === 'integer'
+      return columnType === 'integer' || columnType === 'long'
     }
     case 'list_of_number': {
       return isNumberList(columnType)
     }
     case 'list_of_wholenumber': {
-      return columnType === 'list_of_integer'
+      return columnType === 'list_of_integer' || columnType === 'list_of_long'
     }
     default: {
       return columnType === filter

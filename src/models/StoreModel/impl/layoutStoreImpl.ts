@@ -169,26 +169,49 @@ export const upsertAppAlgorithm = (
     }
   }
 
-  return { ...state, layoutEngines: engines }
+  // A re-registration (an app reloaded, or registerLayout called again)
+  // replaces the algorithm object; a preferred layout that pointed at the
+  // old one must follow, or Apply Default Layout keeps running stale
+  // definitions.
+  const matches = (preferred: LayoutAlgorithm): boolean =>
+    preferred.engineName === appId && preferred.name === algorithm.name
+
+  return {
+    ...state,
+    layoutEngines: engines,
+    preferredLayout: matches(state.preferredLayout)
+      ? algorithm
+      : state.preferredLayout,
+    preferredHierarchicalLayout: matches(state.preferredHierarchicalLayout)
+      ? algorithm
+      : state.preferredHierarchicalLayout,
+  }
 }
 
 /**
  * Point a dangling preferred layout back at the built-in default. `removed`
- * is the set of algorithm names that no longer exist.
+ * is the set of algorithm names that no longer exist. The fallback is the
+ * default's live object in `state.layoutEngines` (it carries the user's
+ * parameter edits and is what Apply Default Layout must run), not the static
+ * module constant; the constant is only the last resort.
  */
 const resetDanglingPreferred = (
   state: LayoutState,
   removed: Set<string>,
-): Pick<LayoutState, 'preferredLayout' | 'preferredHierarchicalLayout'> => ({
-  preferredLayout: removed.has(state.preferredLayout.name)
-    ? defAlgorithm
-    : state.preferredLayout,
-  preferredHierarchicalLayout: removed.has(
-    state.preferredHierarchicalLayout.name,
-  )
-    ? defHierarchicalAlgorithm
-    : state.preferredHierarchicalLayout,
-})
+): Pick<LayoutState, 'preferredLayout' | 'preferredHierarchicalLayout'> => {
+  const live = (fallback: LayoutAlgorithm): LayoutAlgorithm =>
+    findAlgorithm(state, fallback.engineName, fallback.name) ?? fallback
+  return {
+    preferredLayout: removed.has(state.preferredLayout.name)
+      ? live(defAlgorithm)
+      : state.preferredLayout,
+    preferredHierarchicalLayout: removed.has(
+      state.preferredHierarchicalLayout.name,
+    )
+      ? live(defHierarchicalAlgorithm)
+      : state.preferredHierarchicalLayout,
+  }
+}
 
 /**
  * Remove one app algorithm; the app's engine goes with it once empty.

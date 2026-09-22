@@ -6,6 +6,7 @@
 // rule for colliding labels, host-filled types hidden.
 
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useTableStore } from '@/data/hooks/stores/TableStore'
@@ -353,5 +354,37 @@ describe('ParameterForm', () => {
     )
     fireEvent.click(screen.getByRole('radio', { name: 'y' }))
     expect(onChange).toHaveBeenLastCalledWith('Pick', 'y')
+  })
+  it('keeps a draft that a string-valued store echoes back as a number', () => {
+    // A service app stores the committed number back as a string ('1' for
+    // the draft '1.0'). Compared as strings that would look like an outside
+    // change and reset the draft mid-typing; compared as typed values it is
+    // the same number and the draft survives.
+    const StringStoreForm = (): JSX.Element => {
+      const [values, setValues] = useState<Record<string, string>>({})
+      return (
+        <ParameterForm
+          parameters={[
+            text('Weight', { validationType: 'number', defaultValue: '0' }),
+          ]}
+          values={values}
+          onChange={(key, value) =>
+            setValues((prev) => ({ ...prev, [key]: String(value) }))
+          }
+          testIdPrefix="t"
+        />
+      )
+    }
+    render(<StringStoreForm />)
+    const input = screen.getByTestId('t-field-Weight') as HTMLInputElement
+
+    fireEvent.change(input, { target: { value: '1.0' } })
+    expect(input.value).toBe('1.0')
+
+    fireEvent.change(input, { target: { value: '1.' } })
+    expect(input.value).toBe('1.')
+
+    fireEvent.change(input, { target: { value: '1.5' } })
+    expect(input.value).toBe('1.5')
   })
 })
