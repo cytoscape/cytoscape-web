@@ -50,8 +50,12 @@ export const useServiceAppMenu = (
   const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
   const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
   const [notificationMessage, setNotificationMessage] = useState<string>('')
-  // The app whose parameter dialog is open, or null for none.
-  const [dialogApp, setDialogApp] = useState<ServiceApp | null>(null)
+  // The url of the app whose parameter dialog is open, or null for none.
+  // The url, not the record: `updateServiceParameter` replaces the record on
+  // every keystroke, so a held object would render stale parameter values.
+  const [dialogAppUrl, setDialogAppUrl] = useState<string | null>(null)
+  const dialogApp: ServiceApp | null =
+    dialogAppUrl === null ? null : (serviceApps[dialogAppUrl] ?? null)
 
   const handleRun = useCallback(
     async (url: string): Promise<void> => {
@@ -80,20 +84,20 @@ export const useServiceAppMenu = (
   const openAppDialog = useCallback(
     (app: ServiceApp): void => {
       closeMenu?.()
-      setDialogApp(app)
+      setDialogAppUrl(app.url)
     },
     [closeMenu],
   )
 
-  const closeAppDialog = useCallback((): void => setDialogApp(null), [])
+  const closeAppDialog = useCallback((): void => setDialogAppUrl(null), [])
 
   const runDialogApp = useCallback(async (): Promise<void> => {
-    if (dialogApp === null) {
+    if (dialogAppUrl === null) {
       return
     }
-    await handleRun(dialogApp.url)
-    logApp.info(`[useServiceAppMenu]: Task finished for url: ${dialogApp.url}`)
-  }, [dialogApp, handleRun])
+    await handleRun(dialogAppUrl)
+    logApp.info(`[useServiceAppMenu]: Task finished for url: ${dialogAppUrl}`)
+  }, [dialogAppUrl, handleRun])
 
   const appsForRoot = useMemo(
     () => filterServiceAppsByRoot(serviceApps, root),

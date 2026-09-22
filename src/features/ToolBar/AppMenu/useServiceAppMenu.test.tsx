@@ -28,6 +28,14 @@ const serviceApp = (url: string, name: string) =>
   ({
     url,
     name,
+    parameters: [
+      {
+        displayName: 'threshold',
+        type: 'text',
+        value: '',
+        defaultValue: '',
+      },
+    ],
     cyWebMenuItem: {
       root: RootMenu.Apps,
       path: [{ name, gravity: 0 }],
@@ -173,6 +181,22 @@ describe('useServiceAppMenu', () => {
       )
 
       expect(mockRun).toHaveBeenCalledWith('http://svc')
+    })
+
+    // `updateServiceParameter` replaces serviceApps[url] on every keystroke.
+    // The hook holds the url and reads the record back, so the dialog shows
+    // what the user just typed rather than the record it opened with.
+    it('shows parameter edits made while the dialog is open', () => {
+      const { result } = openDialog()
+
+      act(() => {
+        useAppStore
+          .getState()
+          .updateServiceParameter('http://svc', 'threshold', '0.75')
+      })
+
+      const { parameters } = getAppDialog(result.current.dialogs).props.app
+      expect(parameters[0].value).toBe('0.75')
     })
 
     it('drops the dialog when it closes', () => {
