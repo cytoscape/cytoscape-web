@@ -163,6 +163,53 @@ describe('hasImageCustomGraphics', () => {
     expect(hasImageCustomGraphics(cx as any)).toBe(true)
   })
 
+  it('detects bare base64 PNG bytes in a passthrough column', () => {
+    const cx = [
+      {
+        visualProperties: [
+          {
+            nodeMapping: {
+              NODE_CUSTOMGRAPHICS_1: {
+                type: 'PASSTHROUGH',
+                definition: { attribute: 'img' },
+              },
+            },
+          },
+        ],
+      },
+      {
+        nodes: [
+          {
+            id: 0,
+            v: {
+              img: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+            },
+          },
+        ],
+      },
+    ]
+    expect(hasImageCustomGraphics(cx as any)).toBe(true)
+  })
+
+  it('does NOT flag non-image base64 in a passthrough column', () => {
+    const cx = [
+      {
+        visualProperties: [
+          {
+            nodeMapping: {
+              NODE_CUSTOMGRAPHICS_1: {
+                type: 'PASSTHROUGH',
+                definition: { attribute: 'img' },
+              },
+            },
+          },
+        ],
+      },
+      { nodes: [{ id: 0, v: { img: 'aGVsbG8=' } }] },
+    ]
+    expect(hasImageCustomGraphics(cx as any)).toBe(false)
+  })
+
   it('does NOT flag pie/ring charts (Desktop renders those)', () => {
     const chartCg = {
       type: 'chart',
