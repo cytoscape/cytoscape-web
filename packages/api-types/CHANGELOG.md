@@ -46,7 +46,12 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   are typed by the declaration (`checkBox` → boolean, `text` with
   `validationType` `number` → number, `digits` → integer, otherwise string).
   The host validates values as declared (regex, number / whole number,
-  `minValue` / `maxValue`, `valueList`) before storing them. Exported:
+  `minValue` / `maxValue`, `valueList`) before storing them. A
+  `nodeColumn` / `edgeColumn` parameter's `columnTypeFilter` may be one
+  filter or a list of filters of which any may match
+  (`['string', 'long', 'integer', 'boolean']` for "every column except
+  doubles and lists"); the picker offers "(none)" and lists columns
+  alphabetically. Exported:
   `AppParameter`, `ParameterValue`, `LayoutParameterUiType`, and the
   `ParameterUiType`, `ValidationType`, `ColumnTypeFilter` consts. Spec:
   `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`. **Breaking against
