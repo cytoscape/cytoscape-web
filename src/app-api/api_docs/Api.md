@@ -792,6 +792,11 @@ rows. Prefer this over `getTable` when you only need the schema — on large
 tables `getTable` materializes every row. Edge tables include the `source`
 and `target` pseudo-columns, matching `getTable`'s output.
 
+Both reads report `APP1` while the network's tables are not in the stores,
+which is the case after a page reload until the network is first shown. That
+window overlaps `network:switched`; read again on `network:loaded` (see the
+Event Bus section).
+
 #### `getTable(networkId, tableType, options?): ApiResult<{ columns, rows }>`
 
 Returns all columns (with type metadata) and all rows for the given table.
@@ -2614,6 +2619,76 @@ detail: {
 Source: WorkspaceStore subscription (`workspace.currentNetworkId`).
 Also triggered by `WorkspaceApi.switchCurrentNetwork`.
 
+**Switching is not loading.** After a page reload the workspace holds only
+network summaries; a network's tables and view are loaded the first time it
+becomes current, and `network:switched` fires before that async load lands.
+A `tableApi` / `elementApi` / `viewportApi` read made in that window fails
+with `APP1`. Subscribe to `network:loaded` to read again.
+
+#### `network:loaded`
+
+Fired once a network's data is readable through the API: its node and edge
+tables and its view have all landed in the stores. Fires for a lazily loaded
+workspace network (the case above), for a network created through
+`networkApi` or the UI (once, alongside `network:created`), and for a network
+another tab added (cross-tab sync). It does not fire on startup for networks
+that were already in the stores when the event bus started, and it fires at
+most once per network until that network is deleted.
+
+```typescript
+detail: {
+  networkId: IdType
+}
+```
+
+Source: TableStore and ViewModelStore subscriptions (`tables` / `viewModels`
+selectors; either store's change completes the pair).
+
+The first landing of a network's tables is a load, not an edit: it fires
+`network:loaded` and **not** `data:changed`.
+
+The two events answer different questions, so a panel that shows the current
+network's data listens to both. `network:switched` says which network is
+current but may precede its data; `network:loaded` says the data is there but
+also fires for networks that are not current (created with
+`addToWorkspace: false` or `navigate: false`, or added by another tab), and
+never fires again for a network that is already loaded when the user switches
+back to it. Refresh on the switch, and on a load only when it is the current
+network's:
+
+```typescript
+const refresh = useCallback(
+  (networkId: string) => {
+    const result = tableApi.getColumns(networkId, 'node')
+    // APP1 here means the data has not landed yet; network:loaded follows.
+    setColumns(result.success ? result.data.columns : [])
+  },
+  [tableApi],
+)
+useCyWebEvent(
+  'network:switched',
+  useCallback((d) => refresh(d.networkId), [refresh]),
+)
+// The switch may have arrived before the data; this one always has it.
+// Ignore loads of networks that are not on screen.
+useCyWebEvent(
+  'network:loaded',
+  useCallback(
+    (d) => {
+      const current = workspaceApi.getCurrentNetworkId()
+      if (current.success && current.data.networkId === d.networkId) {
+        refresh(d.networkId)
+      }
+    },
+    [refresh, workspaceApi],
+  ),
+)
+```
+
+Read once on mount as well: either event may already have fired by the time
+the panel subscribes, and the network that is current at boot gets no
+`network:switched` at all — only its `network:loaded`.
+
 #### `selection:changed`
 
 Fired when the selection state of the current network's primary view changes.
@@ -2698,7 +2773,8 @@ Source: VisualStyleStore subscription (same callback as `style:changed`).
 Fired when table data or schema changes in a network's node or edge table.
 `rowIds` lists changed node/edge IDs. `addedColumns` and `removedColumns`
 describe schema changes; a rename produces one entry in each. Column operations
-may also populate `rowIds`.
+may also populate `rowIds`. Not fired when a network's tables first land in
+the stores (a load, not an edit) — that is `network:loaded`.
 
 ```typescript
 detail: {
@@ -2717,9 +2793,10 @@ Also triggered by TableApi write methods.
 
 | API Method / Store Mutation                                                                                                | Events Fired                                                                             |
 | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (addToWorkspace: true)                                | `network:created`, `network:switched`                                                    |
-| `networkApi.createNetworkFromCx2` (addToWorkspace: true)                                                                   | `network:created`                                                                        |
+| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (addToWorkspace: true)                                | `network:loaded`, `network:created`, `network:switched`                                  |
+| `networkApi.createNetworkFromCx2` (addToWorkspace: true)                                                                   | `network:loaded`, `network:created`                                                      |
 | `networkApi.createNetworkFromCx2` (navigate: true)                                                                         | `network:switched`                                                                       |
+| First switch to a workspace network after a page reload (lazy load)                                                        | `network:switched`, then `network:loaded` once the tables and view land                  |
 | `networkApi.deleteNetwork`                                                                                                 | `network:deleted`; `network:switched` only when deleting the current network             |
 | `networkApi.deleteAllNetworks`                                                                                             | `network:deleted` (×N)                                                                   |
 | `elementApi.createNode` / `createNodes` / `createEdge` / `createEdges` / `deleteNodes` / `deleteEdges`                     | `network:changed`; coordinated table/style/selection mutations may emit their own events |
