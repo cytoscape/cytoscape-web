@@ -140,6 +140,51 @@ parameters share a label (`parameterKeys`), and `buildCustomParameters`
 sends the payload under the same keys. Definitions the form cannot render as
 declared are logged by `parseServiceMetadata`, never rejected.
 
+#### Validation (what changed with the shared form)
+
+The metadata a service returns is parsed as leniently as before: the
+service's top-level `name` and each parameter's `displayName` are the only
+required fields, unknown fields pass through, `null` is accepted everywhere,
+and a malformed `groups` value is logged and treated as "no groups". The
+request payload is unchanged too: `parameters` is a string-to-string map,
+checkbox values travel as `"true"` / `"false"`, and an untouched default is
+sent verbatim.
+
+What the input dialog enforces did change. The rules the spec always
+declared are now applied (`validateParameterValue` in
+`src/models/AppModel/impl/parameters.ts`); before, only `validationRegex`
+was checked:
+
+- `text` with `validationType` `number` must parse as a number, `digits` as a
+  whole number; `minValue` / `maxValue` bound both. The message is
+  `validationHelp`, or a built-in default.
+- `text` with `validationType` `string` (or none) must match
+  `validationRegex` when one is given. A pattern the host refuses to run
+  (over 1000 characters, or unsafe under catastrophic backtracking) fails
+  validation; a pattern with a syntax error is ignored.
+- `dropDown` / `radio` values must be one of `valueList` when the list is
+  non-empty.
+- `nodeColumn` / `edgeColumn` values must name a column of the current
+  network. A stored value that does not (a default the network lacks, or a
+  choice made on another network) is shown marked "(not in this network)"
+  and reported.
+
+Consequences a service author will notice:
+
+- Submit is disabled while any stored value fails a rule, with the reason as
+  the button's tooltip. A default that breaks its own rule — an empty default
+  on a `number` field, a `dropDown` default missing from `valueList`, a
+  column default the network lacks — keeps Submit disabled until the user
+  picks a valid value. Such values used to be submitted as-is.
+- A `text` field stores only values that validate, so a half-typed number is
+  never sent.
+- `edgeColumn` pickers list the edge table's columns (they used to list the
+  node table's). Column names are sorted case-insensitively, and "(none)" is
+  offered so a column choice can be cleared to the empty string.
+- `dropDown` and `radio` controls display `defaultValue` when untouched,
+  which is what was already being sent.
+- `accessToken` and `ndexUUID` are unaffected.
+
 ### Auto-filled Parameters
 
 Some parameter `type` values are resolved automatically by the webapp at run
