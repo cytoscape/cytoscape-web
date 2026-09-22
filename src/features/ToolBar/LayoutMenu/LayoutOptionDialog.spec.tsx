@@ -55,7 +55,9 @@ vi.mock('@/data/hooks/stores/TableStore', async () => {
   return { useTableStore: create(() => ({ tables: {} })) }
 })
 
-vi.mock('./runEngineLayout', () => ({ runEngineLayout: vi.fn() }))
+vi.mock('../../../models/LayoutModel/impl/runEngineLayout', () => ({
+  runEngineLayout: vi.fn(),
+}))
 
 const circle: LayoutAlgorithm = {
   name: 'circle',

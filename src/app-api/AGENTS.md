@@ -157,7 +157,8 @@ src/app-api/
     not in the store (Immer-frozen, snapshot-serialized). The shared `apply` needs the 5th
     `networkId` argument every host call site now passes; it rejects on any failure and never
     calls `afterLayout` then, so callers own the `isRunning` reset (`runEngineLayout` in
-    `features/ToolBar/LayoutMenu/` for the UI paths, `applyLayout` for the API). Cleanup is
+    `models/LayoutModel/impl/` for every host path, the initial default layout of
+    `useRegisterNetwork` included, `applyLayout` for the API). Cleanup is
     the adapter's `registerAppCleanup` call plus the resource store's slot-agnostic
     `removeAllByAppId`; a dangling `preferredLayout` falls back to `defAlgorithm`. Layout
     events stay API-only (principle 10) — host UI paths do not dispatch them.

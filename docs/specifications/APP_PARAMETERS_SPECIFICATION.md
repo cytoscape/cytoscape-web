@@ -217,7 +217,8 @@ never reaches a stored value that other paths (Apply Default Layout,
 
 `parameterDefinitionProblem(param, index, { strict })`:
 
-- Structural rules, every consumer: `displayName` non-empty; `type` known;
+- Structural rules, every consumer: `displayName` non-empty and not
+  `__proto__` (it becomes a key of plain value records); `type` known;
   `valueList` a non-empty string array for `dropDown` / `radio`; `groups`
   an array of non-empty strings; `validationType` known; `validationRegex`
   a string; `minValue <= maxValue`.

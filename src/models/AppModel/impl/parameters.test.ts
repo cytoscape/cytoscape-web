@@ -403,6 +403,7 @@ describe('parameterDefinitionProblem', () => {
     bad(null, /object/)
     bad({ type: 'text' }, /displayName/)
     bad({ displayName: '  ', type: 'text' }, /displayName/)
+    bad({ displayName: '__proto__', type: 'text' }, /__proto__/)
     bad({ displayName: 'x', type: 'slider' }, /type/)
     bad({ displayName: 'x', type: 'dropDown' }, /valueList/)
     bad({ displayName: 'x', type: 'radio', valueList: [] }, /valueList/)

@@ -9,6 +9,7 @@ import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
+import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
 import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { useLayoutStore } from './stores/LayoutStore'
@@ -125,7 +126,6 @@ export const useRegisterNetwork = () => {
         if (layoutEngine !== undefined) {
           const summaryWithLayout = { ...summary, hasLayout: true }
 
-          setIsRunning(true)
           const handleLayoutComplete = (
             positionMap: Map<IdType, [number, number]>,
           ): void => {
@@ -142,13 +142,17 @@ export const useRegisterNetwork = () => {
             setNetworkModified(networkId, false)
           }
 
-          layoutEngine.apply(
-            network.nodes,
-            network.edges,
-            handleLayoutComplete,
-            layoutEngine.algorithms[defaultLayout.algorithmName],
+          // The shared runner: a synchronous throw or a rejected promise
+          // from `apply` is logged and resets `isRunning`, instead of
+          // leaving the running flag stuck for the session.
+          runEngineLayout({
+            engine: layoutEngine,
+            algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
+            network,
             networkId,
-          )
+            afterLayout: handleLayoutComplete,
+            setIsRunning,
+          })
         }
       }
     }

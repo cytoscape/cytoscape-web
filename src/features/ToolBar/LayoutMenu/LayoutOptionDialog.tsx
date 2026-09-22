@@ -23,7 +23,7 @@ import { Network } from '../../../models/NetworkModel'
 import { ValueType } from '../../../models/TableModel'
 import { ParameterForm, useParameterErrors } from '../../ParameterForm'
 import { LayoutSelector } from './LayoutSelector'
-import { runEngineLayout } from './runEngineLayout'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 
 const DraggablePaper = (props: PaperProps): JSX.Element => {
   return (

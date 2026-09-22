@@ -13,7 +13,7 @@ The `LayoutMenu` feature implements the **Layout** toolbar menu. It provides acc
   - `LayoutOptionDialog.tsx`: Draggable dialog for editing layout parameters (per engine/algorithm) via `LayoutSelector` and the shared `ParameterForm` (`src/features/ParameterForm/`).
   - `LayoutSelector.tsx`: `Select` control for choosing layout engine and algorithm. Its option value is the JSON-encoded `[engine, algorithm]` pair (`encodeLayoutSelection` / `decodeLayoutSelection`), never a joined string: engine and algorithm names are free text (`Cytoscape.js`, an app id, the qualified `<appId>::<id>` of an app algorithm).
   - `ValueEditor/*`: Editors for individual layout options (`StringEditor`, `NumberEditor`, `BooleanEditor`, `ListEditor`).
-  - `runEngineLayout.ts`: The one way a host UI path invokes `engine.apply`. Sets `isRunning`, passes the network id, and contains a synchronous throw or a rejected promise (logged, `isRunning` reset) so a failing engine never leaves the running flag stuck. Used by the menu rows, the option dialog's Apply, `applyDefaultLayout.ts`, and the floating toolbar's `ApplyLayoutButton`.
+  - `runEngineLayout` (`src/models/LayoutModel/impl/runEngineLayout.ts`): The one way a host path invokes `engine.apply`. Sets `isRunning`, passes the network id, and contains a synchronous throw or a rejected promise (logged, `isRunning` reset) so a failing engine never leaves the running flag stuck. Used by the menu rows, the option dialog's Apply, `applyDefaultLayout.ts`, the floating toolbar's `ApplyLayoutButton`, and the initial default layout in `useRegisterNetwork` (it lives under models so the data layer can import it).
   - `applyDefaultLayout.ts`: Runs the preferred (default) layout, shared with the floating toolbar.
 
 - **Stores & Models**

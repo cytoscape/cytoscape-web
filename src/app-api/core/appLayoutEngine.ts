@@ -151,9 +151,15 @@ export const appEngineApply: LayoutEngine['apply'] = async (
       )
     }
 
-    if (result === null || typeof result !== 'object') {
+    if (
+      result === null ||
+      typeof result !== 'object' ||
+      Array.isArray(result)
+    ) {
       throw new Error(
-        `Layout '${name}' must return an object of node positions, got ${typeof result}`,
+        `Layout '${name}' must return an object of node positions, got ${
+          Array.isArray(result) ? 'an array' : typeof result
+        }`,
       )
     }
     const known = new Set<IdType>(nodes.map((node) => node.id))
@@ -184,6 +190,20 @@ export function registerAppLayout(
   appId: string,
   options: RegisterLayoutOptions,
 ): void {
+  // The app's engine is named after the app id, and the host looks engines
+  // up by name (the Layout menu, the Settings dialog, `applyLayout`). An id
+  // equal to a built-in engine's name ('G6', 'Cytoscape.js', 'Cosmos')
+  // would shadow it, so it is refused.
+  const builtIn = useLayoutStore
+    .getState()
+    .layoutEngines.some(
+      (engine) => engine.appId === undefined && engine.name === appId,
+    )
+  if (builtIn) {
+    throw new Error(
+      `App id '${appId}' is the name of a built-in layout engine; it cannot register layout algorithms`,
+    )
+  }
   const algorithm = buildAppLayoutAlgorithm(appId, options)
   registry.set(algorithm.name, {
     appId,

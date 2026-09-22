@@ -2,9 +2,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { logUi } from '../../../debug'
-import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
-import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
-import { Network } from '../../../models/NetworkModel'
+import { Network } from '../../NetworkModel'
+import { LayoutAlgorithm } from '../LayoutAlgorithm'
+import { LayoutEngine } from '../LayoutEngine'
 import { runEngineLayout } from './runEngineLayout'
 
 vi.mock('../../../debug', () => ({

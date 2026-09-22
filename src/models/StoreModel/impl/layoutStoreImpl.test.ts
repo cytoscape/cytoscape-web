@@ -328,6 +328,31 @@ describe('LayoutStoreImpl', () => {
       expect(result.preferredHierarchicalLayout).toBe(defHierarchicalAlgorithm)
     })
 
+    it('never merges into a built-in engine whose name equals the app id', () => {
+      const state = createDefaultState()
+      const builtIn = state.layoutEngines[0]
+      const algorithm: LayoutAlgorithm = {
+        ...makeAppAlgorithm('one'),
+        name: `${builtIn.name}::one`,
+        engineName: builtIn.name,
+      }
+
+      const result = upsertAppAlgorithm(
+        state,
+        builtIn.name,
+        algorithm,
+        appApply,
+      )
+
+      expect(result.layoutEngines[0]).toBe(builtIn)
+      expect(result.layoutEngines).toHaveLength(state.layoutEngines.length + 1)
+      const synthetic = result.layoutEngines[result.layoutEngines.length - 1]
+      expect(synthetic.appId).toBe(builtIn.name)
+      expect(Object.keys(synthetic.algorithms)).toEqual([
+        `${builtIn.name}::one`,
+      ])
+    })
+
     it('never mutates the engine array it is given', () => {
       const state = createDefaultState()
       const before = state.layoutEngines
@@ -450,6 +475,15 @@ describe('LayoutStoreImpl', () => {
       expect(findEngine(result, APP_ID)).toBeUndefined()
       expect(result.preferredLayout).toBe(defAlgorithm)
       expect(result.preferredHierarchicalLayout).toBe(defHierarchicalAlgorithm)
+    })
+
+    it('never removes a built-in engine whose name equals the app id', () => {
+      const state = createDefaultState()
+      const builtIn = state.layoutEngines[0]
+      const algorithmName = Object.keys(builtIn.algorithms)[0]
+
+      expect(removeAppEngine(state, builtIn.name)).toBe(state)
+      expect(removeAppAlgorithm(state, builtIn.name, algorithmName)).toBe(state)
     })
 
     it('is a no-op when the app has no engine', () => {

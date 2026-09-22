@@ -134,7 +134,10 @@ export const setLayoutOption = <T extends ValueType>(
 // ── App engines ('layout-algorithm' resources) ──────────────────────────
 //
 // Each app that registers layout algorithms gets ONE synthetic engine, named
-// after the app id and carrying `appId`. Every impl here returns fresh arrays
+// after the app id and carrying `appId`. The impls find that engine by its
+// `appId`, never by name alone, so an app id that equals a built-in engine's
+// name can never be merged into, or remove, the built-in engine (the adapter
+// refuses such an id anyway). Every impl here returns fresh arrays
 // and objects: the initial `layoutEngines` is the module-level `LayoutEngines`
 // array, and Immer deep-freezes it after the first store write, so an
 // in-place push would throw.
@@ -149,7 +152,7 @@ export const upsertAppAlgorithm = (
   apply: LayoutEngine['apply'],
 ): LayoutState => {
   const engines = [...state.layoutEngines]
-  const engineIndex = engines.findIndex((engine) => engine.name === appId)
+  const engineIndex = engines.findIndex((engine) => engine.appId === appId)
 
   if (engineIndex === -1) {
     engines.push({
@@ -222,7 +225,7 @@ export const removeAppAlgorithm = (
   algorithmName: string,
 ): LayoutState => {
   const engineIndex = state.layoutEngines.findIndex(
-    (engine) => engine.name === appId,
+    (engine) => engine.appId === appId,
   )
   if (engineIndex === -1) {
     return state
@@ -254,7 +257,7 @@ export const removeAppEngine = (
   state: LayoutState,
   appId: string,
 ): LayoutState => {
-  const engine = state.layoutEngines.find((engine) => engine.name === appId)
+  const engine = state.layoutEngines.find((engine) => engine.appId === appId)
   if (engine === undefined) {
     return state
   }

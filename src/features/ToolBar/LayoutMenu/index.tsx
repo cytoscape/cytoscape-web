@@ -32,7 +32,7 @@ import { useMenuBarMenu } from '../MenuBar'
 import { ToolbarMenuItem } from '../menuItemModel'
 import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
-import { runEngineLayout } from './runEngineLayout'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 
 /**
  * One algorithm while the menu is being assembled and sorted. Deliberately

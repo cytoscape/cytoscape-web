@@ -298,6 +298,12 @@ export const parameterDefinitionProblem = (
   if (typeof p.displayName !== 'string' || p.displayName.trim() === '') {
     return `${at}: displayName is required and must be non-empty`
   }
+  // The displayName becomes a key of plain value records (`parameters`,
+  // the run payload); assigning `__proto__` on one invokes the prototype
+  // setter and the value silently disappears.
+  if (p.displayName === '__proto__') {
+    return `${at}: displayName '__proto__' is not allowed`
+  }
   const label = `parameter '${p.displayName}'`
   if (typeof p.type !== 'string' || !PARAMETER_UI_TYPES.has(p.type)) {
     return `${label}: type must be one of ${[...PARAMETER_UI_TYPES].join(', ')}`

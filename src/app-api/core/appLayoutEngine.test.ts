@@ -55,6 +55,7 @@ const edges = [{ id: 'e1', s: 'n1', t: 'n2' }]
 
 function makeLayoutStore() {
   return {
+    layoutEngines: [] as Array<{ name: string; appId?: string }>,
     upsertAppAlgorithm: vi.fn(),
     removeAppAlgorithm: vi.fn(),
     removeAppEngine: vi.fn(),
@@ -210,6 +211,19 @@ describe('appLayoutEngine', () => {
         appEngineApply,
       )
       expect(getAppLayoutMeta('appX::row')).toEqual({ appId: APP, id: 'row' })
+    })
+
+    it('refuses an app id that names a built-in engine', () => {
+      layoutStore.layoutEngines = [
+        { name: 'G6' },
+        { name: 'other', appId: 'other' },
+      ]
+      expect(() => registerAppLayout('G6', makeOptions())).toThrow(/built-in/)
+      expect(layoutStore.upsertAppAlgorithm).not.toHaveBeenCalled()
+      // Only a built-in engine's name is reserved: an app engine is found by
+      // appId and a re-registration under the same app id is the normal case.
+      registerAppLayout('other', makeOptions())
+      expect(layoutStore.upsertAppAlgorithm).toHaveBeenCalledTimes(1)
     })
 
     it('unregisterAppLayout removes one algorithm', () => {
@@ -407,6 +421,21 @@ describe('appLayoutEngine', () => {
           NET,
         ),
       ).rejects.toThrow(/positions/)
+    })
+
+    it('rejects an array result instead of treating it as an empty map', async () => {
+      registerAppLayout(APP, makeOptions({ run: () => [] as any }))
+      const afterLayout = vi.fn()
+      await expect(
+        appEngineApply(
+          nodes,
+          edges,
+          afterLayout,
+          buildAppLayoutAlgorithm(APP, makeOptions()),
+          NET,
+        ),
+      ).rejects.toThrow(/got an array/)
+      expect(afterLayout).not.toHaveBeenCalled()
     })
 
     it('discards the result when the algorithm was unregistered while running', async () => {

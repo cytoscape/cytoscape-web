@@ -2129,7 +2129,9 @@ parameter values to the new defaults.
 
 The host adapts the registration into its own layout engine — one synthetic
 engine per app, named after the app id — so the algorithm behaves like a
-built-in one everywhere the host lists layouts:
+built-in one everywhere the host lists layouts. (An app whose id equals a
+built-in engine's name — `G6`, `Cytoscape.js`, `Cosmos` — cannot register
+layouts: `registerLayout` fails with `OPERATION_FAILED`.)
 
 - **Layout menu** — a row in the app block, rendered after the core
   algorithms and before "Layout Tools" with a divider on each side. Rows

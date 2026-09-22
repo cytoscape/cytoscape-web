@@ -2,7 +2,7 @@ import { LayoutAlgorithm } from '../../../models'
 import { IdType } from '../../../models/IdType'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
-import { runEngineLayout } from './runEngineLayout'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 
 export interface ApplyDefaultLayoutParams {
   layoutEngines: LayoutEngine[]
