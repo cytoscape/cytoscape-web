@@ -98,6 +98,19 @@ describe('findValidRowsToJoin', () => {
     expect(result).toEqual([])
   })
 
+  it('is case-sensitive by default', () => {
+    const rows = [{ name: 'john' }, { name: 'JANE' }, { name: 'BoB' }]
+
+    const result = findValidRowsToJoin(
+      mixedCaseTable,
+      rows,
+      nameColumn,
+      mixedCaseTable.columns[0],
+    )
+
+    expect(result).toEqual([])
+  })
+
   it('returns an empty array when the table has no rows', () => {
     const table = {
       rows: new Map(),

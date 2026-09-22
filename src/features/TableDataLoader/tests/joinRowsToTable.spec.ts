@@ -128,6 +128,43 @@ describe('joinRowsToTable', () => {
     expect(sensitive.rows.get('1')).toEqual({ name: 'John' })
   })
 
+  it('is case-sensitive by default', () => {
+    const table: Table = {
+      id: 'test',
+      columns: [{ name: 'name', type: 'string' }],
+      rows: new Map([['1', { name: 'John' }]]),
+    }
+
+    const rows: ParsedRow[] = [{ key: 'john', score: 7 }]
+
+    const columns: ColumnAppendState[] = [
+      {
+        name: 'key',
+        dataType: 'string',
+        meaning: ColumnAppendType.Key,
+        rowsToJoin: [],
+        invalidValues: [],
+      },
+      {
+        name: 'score',
+        dataType: 'integer',
+        meaning: ColumnAppendType.Attribute,
+        rowsToJoin: [],
+        invalidValues: [],
+      },
+    ]
+
+    const networkKeyColumn: Column = { name: 'name', type: 'string' }
+
+    const result = joinRowsToTable(
+      table,
+      rows,
+      columns,
+      networkKeyColumn,
+    )
+
+    expect(result.rows.get('1')).toEqual({ name: 'John' })
+  })
   //   it('does not append rows if key column is missing', () => {
   //     const table: Table = {
   //       columns: [{ name: 'id', type: 'string' }],
