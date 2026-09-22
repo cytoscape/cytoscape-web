@@ -66,6 +66,25 @@ describe('parseServiceMetadata', () => {
     expect(parameters[0].groups).toBe('Advanced')
   })
 
+  it('drops a parameter named __proto__ and keeps the rest', () => {
+    // No plain record keyed by parameter key can hold that name (the value
+    // vanishes into the prototype setter), so the one parameter goes, not
+    // the service.
+    const metadata = parseServiceMetadata({
+      name: 'Service A',
+      parameters: [
+        { displayName: 'Mode', type: 'text' },
+        { displayName: '__proto__', type: 'text' },
+        { displayName: 'Ok', type: 'text' },
+      ],
+    })
+
+    expect(metadata?.parameters.map((p) => p.displayName)).toEqual([
+      'Mode',
+      'Ok',
+    ])
+  })
+
   it('rejects a missing or empty name', () => {
     expect(parseServiceMetadata({ parameters: [] })).toBeUndefined()
     expect(parseServiceMetadata({ name: '' })).toBeUndefined()

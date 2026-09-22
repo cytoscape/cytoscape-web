@@ -94,7 +94,24 @@ export const parseServiceMetadata = (
   }
   const metadata = result.data as unknown as ServiceMetadata
   warnAboutParameterDefinitions(metadata)
-  return metadata
+  return dropUnusableParameters(metadata)
+}
+
+/**
+ * A parameter whose displayName is `__proto__` cannot be carried by any of
+ * the plain records the host keys by parameter key (the dialog's values, the
+ * run payload built by `buildCustomParameters`): assigning that key invokes
+ * the prototype setter and the value silently disappears.
+ * `parameterDefinitionProblem` reports it (above); the lenient service path
+ * then drops that one parameter rather than the whole service.
+ */
+const dropUnusableParameters = (metadata: ServiceMetadata): ServiceMetadata => {
+  const usable = metadata.parameters.filter(
+    (parameter) => parameter.displayName !== '__proto__',
+  )
+  return usable.length === metadata.parameters.length
+    ? metadata
+    : { ...metadata, parameters: usable }
 }
 
 /**
