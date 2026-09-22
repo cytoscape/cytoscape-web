@@ -262,6 +262,20 @@ describe('MapperFactory', () => {
         expect(result).toEqual(mapping.defaultValue)
       })
 
+      it('should wrap bare base64 PNG bytes as a bitmap image', () => {
+        const raw =
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+        expect(mapper(raw)).toMatchObject({
+          type: 'image',
+          name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+          properties: { url: `data:image/png;base64,${raw}` },
+        })
+      })
+
+      it('should return default for valid base64 with no image magic', () => {
+        expect(mapper('aGVsbG8=')).toEqual(mapping.defaultValue)
+      })
+
       it('should parse valid pie JSON to pie chart', () => {
         const json = '{"cy_dataColumns":["a"],"cy_colors":["#f00"]}'
         expect(mapper(json)).toMatchObject({
