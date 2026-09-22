@@ -47,6 +47,25 @@ describe('parseServiceMetadata', () => {
     )
   })
 
+  it('keeps a parameter with a malformed groups value (warn-only, never a rejection)', () => {
+    // A service that already sent a `groups` field of the wrong shape must
+    // keep loading: the form treats it as "no groups" and the log says why.
+    const metadata = parseServiceMetadata({
+      name: 'Service A',
+      parameters: [
+        { displayName: 'Mode', type: 'text', groups: 'Advanced' },
+        { displayName: 'Ok', type: 'text', groups: ['Advanced'] },
+      ],
+    })
+
+    expect(metadata).toBeDefined()
+    const parameters = (metadata?.parameters ?? []) as unknown as Array<
+      Record<string, unknown>
+    >
+    expect(parameters).toHaveLength(2)
+    expect(parameters[0].groups).toBe('Advanced')
+  })
+
   it('rejects a missing or empty name', () => {
     expect(parseServiceMetadata({ parameters: [] })).toBeUndefined()
     expect(parseServiceMetadata({ name: '' })).toBeUndefined()

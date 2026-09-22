@@ -50,14 +50,15 @@ const CyWebMenuItemSchema = z
   })
   .passthrough()
 
-// Only `displayName` is required; `groups` (presentation nesting, see
-// docs/specifications/APP_PARAMETERS_SPECIFICATION.md) is checked for shape
-// when present. Everything else passes through: services send `null` for
-// what does not apply, and stricter checks would reject apps that work.
+// Only `displayName` is required. Everything else — including `groups`
+// (presentation nesting, docs/specifications/APP_PARAMETERS_SPECIFICATION.md)
+// — passes through unchecked: services send `null` for what does not apply,
+// and a stricter shape here would reject apps that work. Malformed fields
+// are reported by `warnAboutParameterDefinitions` below and rendered as
+// best the form can (a malformed `groups` is treated as no groups).
 const ServiceAppParameterSchema = z
   .object({
     displayName: z.string(),
-    groups: z.array(z.string()).nullish(),
   })
   .passthrough()
 

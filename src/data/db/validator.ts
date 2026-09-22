@@ -365,7 +365,7 @@ const ServiceAppParameterSchema = z.object({
   validationRegex: z.string(),
   minValue: z.number().optional(),
   maxValue: z.number().optional(),
-  groups: z.array(z.string()).nullish(),
+  groups: z.unknown().optional(),
 })
 
 const InputColumnSchema = z.object({
