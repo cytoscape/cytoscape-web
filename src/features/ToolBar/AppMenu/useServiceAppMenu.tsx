@@ -10,7 +10,7 @@ import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { createMenuItems } from './MenuFactory'
+import { AppMenuItemDialog, createMenuItems } from './MenuFactory'
 
 export interface ServiceAppMenu {
   // Menu items for the service apps that resolve to the requested root menu.
@@ -26,13 +26,20 @@ export interface ServiceAppMenu {
  *
  * Any top-level menu (Apps, Tools, ...) can call this hook with its own
  * RootMenu value to obtain the menu items for the service apps routed to it,
- * plus the task/notification dialogs those runs require. This keeps the run
- * machinery (task polling, error reporting) in one place instead of duplicating
- * it in every menu that can host a service app.
+ * plus the dialogs those apps require. This keeps the run machinery (task
+ * polling, error reporting) in one place instead of duplicating it in every
+ * menu that can host a service app.
+ *
+ * The parameter dialog is owned here rather than by the menu row that opens
+ * it. A row is unmounted the moment the menu closes, and the dialog went with
+ * it (#745); at this level it outlives the menu.
+ *
+ * @param closeMenu Closes the host menu. Called when a row opens the parameter
+ *   dialog, so no menu level is left painting over the form.
  */
 export const useServiceAppMenu = (
   root: RootMenu,
-  onBeforeRun?: () => void,
+  closeMenu?: () => void,
 ): ServiceAppMenu => {
   const run = useServiceTaskRunner()
   const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
@@ -43,10 +50,16 @@ export const useServiceAppMenu = (
   const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
   const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
   const [notificationMessage, setNotificationMessage] = useState<string>('')
+  // The url of the app whose parameter dialog is open, or null for none.
+  // The url, not the record: `updateServiceParameter` replaces the record on
+  // every keystroke, so a held object would render stale parameter values.
+  const [dialogAppUrl, setDialogAppUrl] = useState<string | null>(null)
+  const dialogApp: ServiceApp | null =
+    dialogAppUrl === null ? null : (serviceApps[dialogAppUrl] ?? null)
 
   const handleRun = useCallback(
     async (url: string): Promise<void> => {
-      onBeforeRun?.()
+      closeMenu?.()
 
       setOpenTaskDialog(true)
       try {
@@ -65,8 +78,26 @@ export const useServiceAppMenu = (
 
       setOpenTaskDialog(false)
     },
-    [run, clearCurrentTask, onBeforeRun],
+    [run, clearCurrentTask, closeMenu],
   )
+
+  const openAppDialog = useCallback(
+    (app: ServiceApp): void => {
+      closeMenu?.()
+      setDialogAppUrl(app.url)
+    },
+    [closeMenu],
+  )
+
+  const closeAppDialog = useCallback((): void => setDialogAppUrl(null), [])
+
+  const runDialogApp = useCallback(async (): Promise<void> => {
+    if (dialogAppUrl === null) {
+      return
+    }
+    await handleRun(dialogAppUrl)
+    logApp.info(`[useServiceAppMenu]: Task finished for url: ${dialogAppUrl}`)
+  }, [dialogAppUrl, handleRun])
 
   const appsForRoot = useMemo(
     () => filterServiceAppsByRoot(serviceApps, root),
@@ -74,8 +105,8 @@ export const useServiceAppMenu = (
   )
 
   const menuItems = useMemo(
-    () => createMenuItems(appsForRoot, handleRun),
-    [appsForRoot, handleRun],
+    () => createMenuItems(appsForRoot, openAppDialog),
+    [appsForRoot, openAppDialog],
   )
 
   const dialogs = (
@@ -88,6 +119,14 @@ export const useServiceAppMenu = (
         onConfirm={() => {}}
         message={`Error message from service: ${notificationMessage}`}
       />
+      {dialogApp !== null ? (
+        <AppMenuItemDialog
+          open={true}
+          app={dialogApp}
+          handleClose={closeAppDialog}
+          handleConfirm={runDialogApp}
+        />
+      ) : null}
     </>
   )
 

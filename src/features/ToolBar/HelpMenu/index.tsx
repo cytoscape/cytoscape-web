@@ -65,14 +65,14 @@ export const HelpMenu = () => {
     setOpenDialog(null)
   }
 
-  const onBeforeRun = useCallback((): void => {
+  const closeMenu = useCallback((): void => {
     setOpen(false)
   }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Help menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
     RootMenu.Help,
-    onBeforeRun,
+    closeMenu,
   )
 
   const menuItems = [

@@ -59,7 +59,13 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
     - Toggles the `OverlayPanel` containing the `TieredMenu`.
 
 - **Running a Service Task**
-  - Selecting a service menu item calls `handleRun(url)`:
+  - Selecting a service menu item calls `onSelectApp(app)`, supplied by
+    `useServiceAppMenu`. The row carries no dialog of its own: the hook closes
+    the host menu and records the picked app, then renders `AppMenuItemDialog`
+    in the `dialogs` fragment the menu component mounts outside the menu. A
+    menu row is unmounted the moment the menu closes, so a dialog kept inside
+    one was destroyed with it (#745).
+  - Submitting that dialog calls `handleRun(url)`:
     - Closes the menu and opens `TaskStatusDialog`.
     - Uses `run(url)` from `useServiceTaskRunner` to submit and monitor the task.
     - Shows a notification dialog if the service returns a non-complete status or throws.

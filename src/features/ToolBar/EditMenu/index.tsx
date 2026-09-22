@@ -23,14 +23,14 @@ export const EditMenu = () => {
     setOpen(false)
   }
 
-  const onBeforeRun = useCallback((): void => {
+  const closeMenu = useCallback((): void => {
     setOpen(false)
   }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Edit menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
     RootMenu.Edit,
-    onBeforeRun,
+    closeMenu,
   )
 
   const menuItems: MenuItem[] = [

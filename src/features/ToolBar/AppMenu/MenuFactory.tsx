@@ -13,14 +13,12 @@ import {
 } from '@mui/material'
 import { CyDialog } from '@/components/CyDialog'
 import { ToolbarMenuItem as NestedMenuItem } from '@/features/ToolBar/menuItemModel'
-import { useState } from 'react'
 import React from 'react'
 
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { logApp } from '../../../debug'
 import {
   columnTypeMatchesFilter,
   inputColumnFilterFn,
@@ -35,15 +33,22 @@ import { ServiceAppParameter } from '../../../models/AppModel/ServiceAppParamete
 import { IdType } from '../../../models/IdType'
 import { getDomain } from '../../../utils/urlUtil'
 
-interface AppMenuItemProps {
+/** Props of the parameter dialog. The host menu owns it, not the menu row. */
+export interface AppMenuItemDialogProps {
   handleClose: () => void
   handleConfirm: () => Promise<void>
   app: ServiceApp
   open: boolean
+}
+
+interface AppMenuItemProps {
+  /** Reports the picked app to the host menu, which opens the dialog. */
+  onSelect: () => void
+  app: ServiceApp
   showTooltip?: boolean
 }
 
-export const InputColumns = (props: AppMenuItemProps) => {
+export const InputColumns = (props: AppMenuItemDialogProps) => {
   const { app } = props
   const isNodeType = app.serviceInputDefinition?.type === 'node'
 
@@ -138,7 +143,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
   })
 }
 
-export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
+export const AppMenuItemDialog: React.FC<AppMenuItemDialogProps> = (props) => {
   const { handleClose, handleConfirm, app, open } = props
   const serviceInputDefinition = app.serviceInputDefinition
   const isNodeType = serviceInputDefinition?.type === 'node'
@@ -509,78 +514,54 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
   )
 }
 
-export const AppMenuItem: React.FC<{
-  handleClose: () => void
-  handleConfirm: () => Promise<void>
-  app: ServiceApp
-  showTooltip?: boolean
-}> = (props) => {
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
-
-  const { handleClose, app, showTooltip } = props
-  const handleOpenDialog = (): void => {
-    setOpenDialog(true)
-  }
-
-  const handleCloseDialog = (): void => {
-    setOpenDialog(false)
-    handleClose() // Call handleClose from props if needed
-  }
+/**
+ * One service app as a row in a menu. The row reports the pick and nothing
+ * else: the parameter dialog is rendered by the host menu (see
+ * `useServiceAppMenu`), so closing the menu no longer unmounts the form.
+ */
+export const AppMenuItem: React.FC<AppMenuItemProps> = (props) => {
+  const { onSelect, app, showTooltip } = props
 
   return (
-    <>
-      <Tooltip
-        title={
-          showTooltip ? (
-            <Box sx={{ maxWidth: '220px' }}>
-              <div>
-                <strong>Hosted at: </strong>
-                {getDomain(app.url)}
-              </div>
-              <div>
-                <strong>Version: </strong>
-                {app.version}
-              </div>
-              <div>
-                <strong>Author: </strong>
-                {app.author}
-              </div>
-            </Box>
-          ) : (
-            ''
-          )
-        }
-        arrow
-        placement="right"
-      >
-        <MenuItem onClick={() => handleOpenDialog()}>{app.name}</MenuItem>
-      </Tooltip>
-      <AppMenuItemDialog
-        handleConfirm={props.handleConfirm}
-        open={openDialog}
-        handleClose={handleCloseDialog}
-        app={app}
-      />
-    </>
+    <Tooltip
+      title={
+        showTooltip ? (
+          <Box sx={{ maxWidth: '220px' }}>
+            <div>
+              <strong>Hosted at: </strong>
+              {getDomain(app.url)}
+            </div>
+            <div>
+              <strong>Version: </strong>
+              {app.version}
+            </div>
+            <div>
+              <strong>Author: </strong>
+              {app.author}
+            </div>
+          </Box>
+        ) : (
+          ''
+        )
+      }
+      arrow
+      placement="right"
+    >
+      <MenuItem onClick={onSelect}>{app.name}</MenuItem>
+    </Tooltip>
   )
 }
 const path2menu = (
   app: ServiceApp,
   path: MenuPathElement[],
-  commandFn: (url: string) => Promise<void>,
+  onSelectApp: (app: ServiceApp) => void,
   existingMenuItems: Record<string, NestedMenuItem> = {},
 ): NestedMenuItem => {
-  const { url } = app
   if (path.length === 0) {
     throw new Error('Menu path is empty')
   }
 
-  const command = async (): Promise<void> => {
-    await commandFn(url)
-    logApp.info(
-      `[${path2menu.name}]:[${command.name}]: Task finished for url: ${url}`,
-    )
-  }
+  const onSelect = (): void => onSelectApp(app)
 
   // Case 1: Single menu item
   if (path.length === 1) {
@@ -589,9 +570,7 @@ const path2menu = (
       label: item.name,
       items: [],
     }
-    baseMenu.template = (
-      <AppMenuItem handleConfirm={command} handleClose={() => {}} app={app} />
-    )
+    baseMenu.template = <AppMenuItem onSelect={onSelect} app={app} />
     return baseMenu
   }
 
@@ -610,7 +589,7 @@ const path2menu = (
       label: itemName,
       items: [],
       template: isLastItem ? (
-        <AppMenuItem handleClose={() => {}} app={app} handleConfirm={command} />
+        <AppMenuItem onSelect={onSelect} app={app} />
       ) : undefined,
     }
     if (currentMenuItem.items === undefined) {
@@ -625,24 +604,17 @@ const path2menu = (
       if (isLastItem) {
         // add tooltip for the menu item to be added
         newMenuItem.template = (
-          <AppMenuItem
-            handleClose={() => {}}
-            app={app}
-            handleConfirm={command}
-            showTooltip={true}
-          />
+          <AppMenuItem onSelect={onSelect} app={app} showTooltip={true} />
         )
         // add tooltip for the existing duplicated menu item
         existingDupMenuItems.forEach((item) => {
           // Ensure item.template is a valid ReactElement before modifying it
           if (item.template && React.isValidElement(item.template)) {
-            const { app, handleConfirm } = item.template
-              .props as AppMenuItemProps
+            const existing = item.template.props as AppMenuItemProps
             item.template = (
               <AppMenuItem
-                handleClose={() => {}}
-                app={app}
-                handleConfirm={handleConfirm}
+                onSelect={existing.onSelect}
+                app={existing.app}
                 showTooltip={true}
               />
             )
@@ -672,7 +644,7 @@ const path2menu = (
 
 export const createMenuItems = (
   serviceApps: Record<string, ServiceApp>,
-  commandFn: (url: string) => Promise<void>,
+  onSelectApp: (app: ServiceApp) => void,
 ): NestedMenuItem[] => {
   const appIds: string[] = Object.keys(serviceApps)
 
@@ -690,7 +662,7 @@ export const createMenuItems = (
     const app: ServiceApp = serviceApps[appId]
     const { cyWebMenuItem } = app
     const { path } = cyWebMenuItem
-    const baseMenu = path2menu(app, path, commandFn, existingMenuItems)
+    const baseMenu = path2menu(app, path, onSelectApp, existingMenuItems)
     existingMenuItems[baseMenu.label as string] = baseMenu
   })
 

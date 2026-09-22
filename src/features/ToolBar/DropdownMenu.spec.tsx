@@ -1,3 +1,4 @@
+import { createTheme } from '@mui/material/styles'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -306,11 +307,86 @@ describe('DropdownMenu with a dialog owned by a template row', () => {
     expect(screen.getByRole('dialog')).toBeTruthy()
   })
 
+  it('leaves the dialog mounted when a click lands inside it', async () => {
+    const input = await openDialogFromMenu()
+
+    // A full pointer sequence, since ClickAwayListener acts on mousedown and
+    // the row's own handlers act on click.
+    fireEvent.mouseDown(input)
+    fireEvent.mouseUp(input)
+    fireEvent.click(input)
+    await act(async () => {})
+
+    expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
   it('closes the menu when the dialog closes and asks it to', async () => {
     await openDialogFromMenu()
 
     fireEvent.click(screen.getByText('Close'))
     await act(async () => {})
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+})
+
+describe('DropdownMenu stacking against dialogs', () => {
+  // #745: the submenu Popper sat at theme.zIndex.modal + 1 and painted over a
+  // service app's form. MUI's Dialog uses theme.zIndex.modal and src/theme.ts
+  // sets no override, so every menu level has to stay strictly under it.
+  const modalZIndex = createTheme().zIndex.modal
+
+  const NestedHarness = () => {
+    const [open, setOpen] = useState(false)
+    return (
+      <DropdownMenu
+        id="data"
+        label="Data"
+        menuItems={[
+          {
+            label: 'Import',
+            items: [{ label: 'From file', command: vi.fn() }],
+          },
+        ]}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    )
+  }
+
+  // Popper carries the z-index on its own root, above the level's
+  // role="menu"; `sx` emits an emotion class, so read the cascade.
+  const zIndexOf = (level: HTMLElement): number => {
+    for (
+      let node: HTMLElement | null = level;
+      node !== null;
+      node = node.parentElement
+    ) {
+      const zIndex = window.getComputedStyle(node).zIndex
+      if (zIndex !== '' && zIndex !== 'auto') {
+        return Number(zIndex)
+      }
+    }
+    throw new Error('no z-index on any ancestor of the menu level')
+  }
+
+  it('keeps every open menu level below a dialog', () => {
+    render(<NestedHarness />)
+    fireEvent.click(screen.getByTestId('toolbar-data-menu-button'))
+    fireEvent.click(screen.getByText('Import'))
+
+    const levels = screen.getAllByRole('menu')
+    expect(levels).toHaveLength(2)
+    levels.forEach((level) => {
+      expect(zIndexOf(level)).toBeLessThan(modalZIndex)
+    })
+  })
+
+  it('paints a submenu above the level that owns it', () => {
+    render(<NestedHarness />)
+    fireEvent.click(screen.getByTestId('toolbar-data-menu-button'))
+    fireEvent.click(screen.getByText('Import'))
+
+    const [topLevel, submenu] = screen.getAllByRole('menu')
+    expect(zIndexOf(submenu)).toBeGreaterThan(zIndexOf(topLevel))
   })
 })

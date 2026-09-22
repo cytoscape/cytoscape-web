@@ -53,14 +53,14 @@ export const DataMenu = () => {
     setOpen(false)
   }
 
-  const onBeforeRun = useCallback((): void => {
+  const closeMenu = useCallback((): void => {
     setOpen(false)
   }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Data menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
     RootMenu.Data,
-    onBeforeRun,
+    closeMenu,
   )
 
   // NDEx dialog state lives in a store: the network search bar's NDEx
