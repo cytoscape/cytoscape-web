@@ -41,6 +41,8 @@
 
 - [2026-09-23] `cy.resize()` clears the canvases synchronously (`matchCanvasSize` sets `canvas.width`) but Cytoscape.js redraws only on its next rAF, and ResizeObserver callbacks run AFTER that frame's rAF and before paint. Calling `cy.resize()` from a ResizeObserver therefore paints a blank canvas every drag step (flicker); follow it with a synchronous `cy.renderer().render()` (`forceRender()` only schedules a frame). See `useCenterAnchoredResize.ts`.
 
+- [2026-09-23] CyjsRenderer reuses ONE Cytoscape.js instance for every network, and `cy.removeAllListeners()` does not cancel a lodash-debounced call already scheduled. A debounced handler that reads the camera or elements from `cy` and writes under a closed-over network id must be flushed before `renderNetwork` swaps networks (and before destroy), or it saves the next network's state under the previous id — this is how a quick pan-then-switch restored the other network's viewport (`flushPendingViewportSave`, `viewport-network-switch.spec.ts`).
+
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).

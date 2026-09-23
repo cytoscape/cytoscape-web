@@ -8,6 +8,7 @@ import Cytoscape, {
   Position,
   SingularElementArgument,
 } from 'cytoscape'
+import type { DebouncedFunc } from 'lodash'
 import debounce from 'lodash/debounce'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 
@@ -128,8 +129,28 @@ const CyjsRenderer = ({
   // Avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
-  // Reference to viewport change handler for temporary removal during undo/redo
-  const viewportChangeHandlerRef = useRef<any>(null)
+  // The debounced viewport save of the network currently rendered. Kept so a
+  // save still pending when that network is replaced (or the renderer unmounts)
+  // can be flushed first — see flushPendingViewportSave.
+  const viewportChangeHandlerRef = useRef<DebouncedFunc<() => void> | null>(
+    null,
+  )
+
+  /**
+   * Run the pending viewport save now, while the instance still shows the
+   * network it belongs to.
+   *
+   * One Cytoscape.js instance renders every network, and the save reads the
+   * camera from it when it fires. `cy.removeAllListeners()` stops new viewport
+   * events but not a call the debounce already scheduled, which would otherwise
+   * fire after the next network is rendered and store that network's pan/zoom
+   * under the previous network's id — so switching back restored the wrong
+   * camera. Flushing (rather than cancelling) keeps the user's last pan/zoom.
+   */
+  const flushPendingViewportSave = (): void => {
+    viewportChangeHandlerRef.current?.flush()
+    viewportChangeHandlerRef.current = null
+  }
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -364,6 +385,9 @@ const CyjsRenderer = ({
 
     // Mark the view as not yet created to avoid unnecessary style updates during initialization
     isViewCreated.current = false
+
+    // Save the outgoing network's camera before the instance shows another one.
+    flushPendingViewportSave()
 
     // Remove all event listeners and elements from the Cytoscape instance
     cy.removeAllListeners()
@@ -1222,6 +1246,7 @@ const CyjsRenderer = ({
       setCy(cy)
 
       return () => {
+        flushPendingViewportSave()
         unregisterDebugTool()
         annotationLayersRef.current?.dispose()
         annotationLayersRef.current = null
@@ -1233,6 +1258,7 @@ const CyjsRenderer = ({
 
     return () => {
       // Reset the guard so a StrictMode remount recreates the instance.
+      flushPendingViewportSave()
       annotationLayersRef.current?.dispose()
       annotationLayersRef.current = null
       cyInstance.current?.destroy()
