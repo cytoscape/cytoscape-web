@@ -28,6 +28,7 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
+import type { ViewPort } from '../../../models/RendererModel/ViewPort'
 import type { ResolvedNodeGraphics } from '../../../models/StoreModel/NodeGraphicsStoreModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
@@ -54,6 +55,7 @@ import { registerCyExtensions } from './registerCyExtensions'
 import { useCenterAnchoredResize } from './useCenterAnchoredResize'
 import { useNodeGraphicsSync } from './useNodeGraphicsSync'
 import { isGraphVisible } from './viewportRecovery'
+import { panForCanvasSize } from './viewportRestore'
 
 registerCyExtensions()
 
@@ -803,9 +805,15 @@ const CyjsRenderer = ({
     const viewportChangeHandler = debounce((): void => {
       const zoom = cy.zoom()
       const pan = cy.pan()
-      const newViewport = {
+      // Record the canvas size with the pan, so a restore into a canvas that
+      // was resized meanwhile keeps the same center (see viewportRestore.ts).
+      // A hidden (0 x 0) canvas has no meaningful size to record.
+      const width = cy.width()
+      const height = cy.height()
+      const newViewport: ViewPort = {
         zoom,
         pan: { x: pan.x, y: pan.y },
+        ...(width > 0 && height > 0 ? { width, height } : {}),
       }
 
       // Update viewport in the renderer store
@@ -864,7 +872,7 @@ const CyjsRenderer = ({
     const savedViewport = getViewport('cyjs', id)
     if (savedViewport) {
       cy.zoom(savedViewport.zoom)
-      cy.pan(savedViewport.pan)
+      cy.pan(panForCanvasSize(savedViewport, cy.width(), cy.height()))
     } else if (forceFit) {
       cy.fit()
     }
