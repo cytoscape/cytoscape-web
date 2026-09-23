@@ -108,3 +108,60 @@ test.describe('Cell View availability for hierarchies (#630)', () => {
     expect(pageErrors).toEqual([])
   })
 })
+
+test.describe('Hierarchy network view tabs', () => {
+  // Regression: the box holding the Tree View / Cell View renderers is a flex
+  // item, and its default `min-height: auto` kept it from shrinking below the
+  // renderer's pixel-sized canvas. Growing the table panel shrank the pane but
+  // not the view, whose lower part then disappeared under the table.
+  test('the view shrinks with the pane when the table panel grows', async ({
+    page,
+  }) => {
+    await importNetworkFile(
+      page,
+      UNIFORM_INTERACTION_CYCLIC_HCX,
+      'Test Network 20 nodes',
+    )
+
+    const tabs = page.locator('[data-testid="network-tabs"]')
+    const renderer = tabs.locator('[data-testid="cyjs-renderer"]')
+    await expect(renderer).toBeVisible({ timeout: 15000 })
+
+    const bottomOf = async (
+      locator: ReturnType<Page['locator']>,
+    ): Promise<number> => {
+      const box = await locator.boundingBox()
+      expect(box).not.toBeNull()
+      return box!.y + box!.height
+    }
+    const heightOf = async (
+      locator: ReturnType<Page['locator']>,
+    ): Promise<number> => (await locator.boundingBox())!.height
+
+    const rendererHeightBefore = await heightOf(renderer)
+
+    // The table panel's divider: the horizontal allotment sash under the
+    // network pane. Drag it up to grow the table.
+    const tabsBox = (await tabs.boundingBox())!
+    const sashY = tabsBox.y + tabsBox.height + 2
+    const sashX = tabsBox.x + tabsBox.width / 2
+    const shrinkBy = 150
+    await page.mouse.move(sashX, sashY)
+    await page.mouse.down()
+    await page.mouse.move(sashX, sashY - shrinkBy, { steps: 10 })
+    await page.mouse.up()
+
+    // The pane itself shrank...
+    await expect
+      .poll(() => heightOf(tabs))
+      .toBeLessThan(tabsBox.height - shrinkBy / 2)
+
+    // ...and the view followed it rather than overflowing under the table.
+    await expect
+      .poll(async () => (await bottomOf(renderer)) - (await bottomOf(tabs)))
+      .toBeLessThanOrEqual(1)
+    expect(await heightOf(renderer)).toBeLessThan(
+      rendererHeightBefore - shrinkBy / 2,
+    )
+  })
+})

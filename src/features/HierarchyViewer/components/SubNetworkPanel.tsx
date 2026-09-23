@@ -750,9 +750,9 @@ export const SubNetworkPanel = ({
         boxSizing: 'border-box',
         height: '100%',
         width: '100%',
-        border:
+        border: (theme) =>
           activeNetworkView === queryNetwork.id
-            ? '3px solid orange'
+            ? `3px solid ${theme.palette.secondary.main}`
             : '3px solid transparent',
       }}
       onClick={handleClick}

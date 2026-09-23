@@ -45,12 +45,7 @@ export const NetworkTab = ({
         border: (theme) =>
           isActive
             ? `3px solid ${theme.palette.secondary.main}`
-            : '0px solid transparent',
-        // Adjust the hidden bottom border to be 4px
-        borderBottom: (theme) =>
-          isActive
-            ? `4px solid ${theme.palette.secondary.main}`
-            : '4px solid transparent',
+            : '3px solid transparent',
         // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
