@@ -892,6 +892,13 @@ const CyjsRenderer = ({
     // and only report correct values once the new stylesheet is installed.
     applyNodeGraphics(cy, nodeGraphicsRef.current)
 
+    // Both the restore and the fit compute with cy's cached canvas size, which
+    // can be stale here: a network switch that opens or closes the right panel
+    // (a hierarchy network does) resizes the container before Cytoscape.js's
+    // debounced resize or useCenterAnchoredResize has caught up. Refresh it so
+    // the first frame is already right instead of jumping a frame later.
+    cy.resize()
+
     // Restore saved viewport if available, otherwise fit the network if forceFit is true
     const savedViewport = getViewport('cyjs', id)
     if (savedViewport) {

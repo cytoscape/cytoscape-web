@@ -45,13 +45,80 @@ const renderNow = (cy: Core): void => {
   renderer?.render?.()
 }
 
+/** The size cy has cached — the one its pan is relative to — or null if 0. */
+const cachedSize = (cy: Core): Size | null => {
+  const width = cy.width()
+  const height = cy.height()
+  return width > 0 && height > 0 ? { width, height } : null
+}
+
+type Resize = () => Core
+
 /**
- * Re-centers the Cytoscape.js viewport whenever its container changes size.
+ * Makes every `cy.resize()` on this instance keep the center fixed, and returns
+ * a function that undoes it.
  *
- * A zero-sized measurement (the container is hidden, e.g. an inactive tab) is
- * ignored and the last visible size is kept, so the graph does not jump when
- * the container is shown again. The first visible measurement only records the
- * size; the initial fit / saved-viewport restore owns the starting position.
+ * Wrapping the method, rather than only reacting to this hook's own observer,
+ * is what makes it hold: Cytoscape.js also resizes itself — from its own
+ * debounced ResizeObserver, window `resize` and container-style
+ * MutationObserver — and whichever call comes first refreshes the cached size.
+ * One that refreshed it without panning left the pan relative to the old size
+ * with nothing left for this hook to correct, so the view drifted.
+ *
+ * The change is measured against the size cy had CACHED before the call, which
+ * is what the pan is relative to (`cy.fit()` and a saved-viewport restore both
+ * compute with it), and the new size is read back from cy afterwards, so both
+ * sides are Cytoscape.js's own measurement. While the container is hidden
+ * (0 x 0, e.g. an inactive tab) nothing is panned, and the last visible size is
+ * kept as the baseline for when it is shown again.
+ */
+const installCenterAnchoredResize = (cy: Core): (() => void) => {
+  const target = cy as Core & { resize: Resize }
+  const hadOwnResize = Object.prototype.hasOwnProperty.call(target, 'resize')
+  const nativeResize = target.resize
+  let lastVisible: Size | null = cachedSize(cy)
+
+  target.resize = function centerAnchoredResize(): Core {
+    if (cy.destroyed()) {
+      return nativeResize.call(cy)
+    }
+
+    const before = cachedSize(cy) ?? lastVisible
+    nativeResize.call(cy)
+    const after = cachedSize(cy)
+    if (after === null) {
+      return cy
+    }
+    lastVisible = after
+    if (before === null) {
+      return cy
+    }
+
+    const dx = (after.width - before.width) / 2
+    const dy = (after.height - before.height) / 2
+    if (dx !== 0 || dy !== 0) {
+      cy.panBy({ x: dx, y: dy })
+      renderNow(cy)
+    }
+    return cy
+  }
+
+  return () => {
+    if (hadOwnResize) {
+      target.resize = nativeResize
+    } else {
+      delete (target as Partial<typeof target>).resize
+    }
+  }
+}
+
+/**
+ * Keeps the Cytoscape.js viewport centered whenever its container changes size.
+ *
+ * Every `cy.resize()` on the instance keeps the center (see
+ * installCenterAnchoredResize). A ResizeObserver on the container calls it as
+ * soon as the size changes, rather than waiting for Cytoscape.js's own
+ * debounced (100 ms) resize, so the graph tracks a divider drag smoothly.
  *
  * @param cy - The Cytoscape.js instance, or null before it is created
  * @param containerRef - The element Cytoscape.js renders into
@@ -61,47 +128,26 @@ export const useCenterAnchoredResize = (
   containerRef: RefObject<HTMLElement | null>,
 ): void => {
   useEffect(() => {
-    const container = containerRef.current
-    if (
-      cy === null ||
-      container === null ||
-      typeof ResizeObserver === 'undefined'
-    ) {
+    if (cy === null) {
       return
     }
+    const uninstall = installCenterAnchoredResize(cy)
 
-    let previous: Size | null = null
+    const container = containerRef.current
+    if (container === null || typeof ResizeObserver === 'undefined') {
+      return uninstall
+    }
 
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[entries.length - 1]
-      if (entry === undefined || cy.destroyed()) {
-        return
+    const observer = new ResizeObserver(() => {
+      if (!cy.destroyed()) {
+        cy.resize()
       }
-      const { width, height } = entry.contentRect
-      if (width === 0 || height === 0) {
-        return
-      }
-
-      const last = previous
-      previous = { width, height }
-      if (last === null) {
-        return
-      }
-
-      const dx = (width - last.width) / 2
-      const dy = (height - last.height) / 2
-      if (dx === 0 && dy === 0) {
-        return
-      }
-
-      // Update the size now rather than waiting for Cytoscape.js's own
-      // debounced (100 ms) resize, so the graph tracks a divider drag smoothly.
-      cy.resize()
-      cy.panBy({ x: dx, y: dy })
-      renderNow(cy)
     })
-
     observer.observe(container)
-    return () => observer.disconnect()
+
+    return () => {
+      observer.disconnect()
+      uninstall()
+    }
   }, [cy, containerRef])
 }

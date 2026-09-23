@@ -43,6 +43,8 @@
 
 - [2026-09-23] CyjsRenderer reuses ONE Cytoscape.js instance for every network, and `cy.removeAllListeners()` does not cancel a lodash-debounced call already scheduled. A debounced handler that reads the camera or elements from `cy` and writes under a closed-over network id must be flushed before `renderNetwork` swaps networks (and before destroy), or it saves the next network's state under the previous id — this is how a quick pan-then-switch restored the other network's viewport (`flushPendingViewportSave`, `viewport-network-switch.spec.ts`).
 
+- [2026-09-23] Cytoscape.js calls `cy.resize()` on ITSELF (debounced 100 ms) from its own ResizeObserver, window `resize` and a container-`style` MutationObserver, and a debounce timer can run before the next rendering frame delivers our ResizeObserver callback. Any logic keyed to size changes must therefore hook `cy.resize` itself, not only observe the container — `useCenterAnchoredResize` wraps the instance's `resize` for that reason. Measure against `cy.width()/height()` (the size the pan is relative to), not an observer's previous reading. Also: while the Browser pane is hidden the page lays out at bogus sizes (a 30 px centre pane) and runs no ResizeObserver callbacks — discard measurements taken with `document.visibilityState === 'hidden'`.
+
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).
