@@ -33,8 +33,10 @@ export type ImageSourceResult =
 /**
  * Classify an external image source string against the shared policy.
  *
- * Accepts `http(s)://` URLs, `data:` URIs, and raw `<svg>` markup (promoted to
- * a `data:image/svg+xml` URI, because Cytoscape.js only takes a URL).
+ * Accepts `http(s)://` URLs, `data:` URIs, raw `<svg>` markup (promoted to
+ * a `data:image/svg+xml` URI, because Cytoscape.js only takes a URL), and
+ * bare base64 raster bytes with no `data:` prefix (sniffed by magic number
+ * and wrapped as a `data:` URI — see `sniffBase64RasterMime`).
  *
  * Rejects `blob:` (ephemeral — dead by the time the style reapplies) and
  * `file:` (unreadable from the page). Anything else is `unrecognized`.
@@ -84,7 +86,75 @@ export const normalizeImageSource = (value: unknown): ImageSourceResult => {
     return { kind: 'json', raw }
   }
 
+  // Bare base64 raster bytes with no `data:` prefix, e.g. pasted straight
+  // from a file. The mime comes from sniffed magic bytes so ordinary words
+  // can never match — the result is the canonical `data:` URI form, which is
+  // what every downstream consumer (mapper, renderer, CX2 export) expects.
+  const mime = sniffBase64RasterMime(raw)
+  if (mime !== undefined) {
+    return {
+      kind: 'url',
+      url: `data:${mime};base64,${raw.replace(/\s+/g, '')}`,
+    }
+  }
+
   return { kind: 'rejected', reason: 'unrecognized', raw }
+}
+
+/**
+ * Sniff bare base64 raster bytes (no `data:` prefix) by magic number.
+ *
+ * Returns the mime type when the input decodes to a recognizable raster
+ * (PNG, JPEG, GIF, WebP), `undefined` otherwise. Pure and never throws —
+ * it runs in the render path, so decode failures degrade to `undefined`.
+ */
+export const sniffBase64RasterMime = (raw: string): string | undefined => {
+  const compact = raw.replace(/\s+/g, '')
+  // Shorter than 4 chars cannot hold magic; length % 4 == 1 is never valid
+  // base64, even padding-tolerant.
+  if (compact.length < 4 || compact.length % 4 === 1) {
+    return undefined
+  }
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) {
+    return undefined
+  }
+  let binary: string
+  try {
+    binary = atob(compact)
+  } catch {
+    return undefined
+  }
+  const bytes = (start: number, length: number): number[] =>
+    Array.from({ length }, (_, i) => binary.charCodeAt(start + i))
+  const equals = (start: number, expected: number[]): boolean =>
+    binary.length >= start + expected.length &&
+    expected.every((v, i) => binary.charCodeAt(start + i) === v)
+
+  if (equals(0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
+    return 'image/png'
+  }
+  if (equals(0, [0xff, 0xd8, 0xff])) {
+    return 'image/jpeg'
+  }
+  const gifTag = bytes(0, 6)
+  if (
+    gifTag.length === 6 &&
+    gifTag[0] === 0x47 && // G
+    gifTag[1] === 0x49 && // I
+    gifTag[2] === 0x46 && // F
+    gifTag[3] === 0x38 && // 8
+    (gifTag[4] === 0x37 || gifTag[4] === 0x39) && // 7 or 9
+    gifTag[5] === 0x61 // a
+  ) {
+    return 'image/gif'
+  }
+  if (
+    equals(0, [0x52, 0x49, 0x46, 0x46]) &&
+    equals(8, [0x57, 0x45, 0x42, 0x50])
+  ) {
+    return 'image/webp' // RIFF....WEBP
+  }
+  return undefined
 }
 
 /** Human-readable reason, for a caller's warn message. */

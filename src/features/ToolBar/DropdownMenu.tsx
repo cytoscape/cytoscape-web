@@ -46,6 +46,16 @@ const MENU_OWNER_ATTR = 'data-menu-owner'
 const MENU_SHADOW = '0px 4px 12px rgba(0, 0, 0, 0.15)'
 
 /**
+ * Menu levels sit above the workspace panes and below every dialog. A MUI
+ * Dialog uses `theme.zIndex.modal` and `src/theme.ts` sets no override, so a
+ * level has to stay strictly under it: a submenu at `modal + 1` painted over
+ * the form a service app opened (#745). Submenus sit one step above the level
+ * that owns them.
+ */
+const MENU_LEVEL_Z_OFFSET = -2
+const SUBMENU_Z_OFFSET = -1
+
+/**
  * Rows of ONE level only: submenus are portals, so they are not descendants
  * of the level's container in the DOM. Template rows mark their disabled
  * state on the content inside the row, so filter those out too — otherwise
@@ -352,7 +362,7 @@ function MenuLevel({
                 openSubmenu?.index === index ? openSubmenu.anchorEl : null
               }
               placement="right-start"
-              sx={{ zIndex: theme.zIndex.modal + 1 }}
+              sx={{ zIndex: theme.zIndex.modal + SUBMENU_Z_OFFSET }}
             >
               <Box
                 sx={{
@@ -608,10 +618,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         open={isOpen}
         anchorEl={buttonRef.current}
         placement="bottom-start"
-        // Above the workspace panes, below dialogs (the theme's dialogs sit
-        // higher still, above a dialog-owning row's menu left mounted
-        // underneath); submenus sit one step higher.
-        sx={{ zIndex: theme.zIndex.modal }}
+        sx={{ zIndex: theme.zIndex.modal + MENU_LEVEL_Z_OFFSET }}
       >
         <ClickAwayListener onClickAway={close}>
           <Box

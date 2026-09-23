@@ -1,5 +1,6 @@
+import { fireEvent, render, screen } from '@testing-library/react'
 import { isValidElement } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { createMenuItems } from './MenuFactory'
@@ -17,13 +18,19 @@ const makeApp = (
     },
   }) as unknown as ServiceApp
 
-const commandFn = vi.fn().mockResolvedValue(undefined)
+// The callback a menu row reports its app to. The host menu opens the
+// parameter dialog; the row does not own it.
+const onSelectApp = vi.fn()
 
 describe('createMenuItems', () => {
+  beforeEach(() => {
+    onSelectApp.mockClear()
+  })
+
   it('creates a leaf item with a template for a single-element path', () => {
     const items = createMenuItems(
       { 'http://a': makeApp('http://a', [{ name: 'Run Analysis' }]) },
-      commandFn,
+      onSelectApp,
     )
 
     expect(items).toHaveLength(1)
@@ -41,7 +48,7 @@ describe('createMenuItems', () => {
           { name: 'Light', gravity: 1 },
         ]),
       },
-      commandFn,
+      onSelectApp,
     )
 
     expect(items.map((i) => i.label)).toEqual(['Light', 'Heavy'])
@@ -56,7 +63,7 @@ describe('createMenuItems', () => {
           { name: 'Run X' },
         ]),
       },
-      commandFn,
+      onSelectApp,
     )
 
     expect(items).toHaveLength(1)
@@ -84,7 +91,7 @@ describe('createMenuItems', () => {
           { name: 'Run Y' },
         ]),
       },
-      commandFn,
+      onSelectApp,
     )
 
     // One shared root and one shared intermediate node
@@ -106,7 +113,7 @@ describe('createMenuItems', () => {
           { name: 'Run Same' },
         ]),
       },
-      commandFn,
+      onSelectApp,
     )
 
     const leaves = (items[0].items as any[]).filter(
@@ -120,7 +127,7 @@ describe('createMenuItems', () => {
 
   it('throws for an app with an empty menu path', () => {
     expect(() =>
-      createMenuItems({ 'http://a': makeApp('http://a', []) }, commandFn),
+      createMenuItems({ 'http://a': makeApp('http://a', []) }, onSelectApp),
     ).toThrow('Menu path is empty')
   })
   it('creates a nested menu starting with Import', () => {
@@ -132,7 +139,7 @@ describe('createMenuItems', () => {
           { name: 'Network from Embedding', gravity: 1 },
         ]),
       },
-      commandFn,
+      onSelectApp,
     )
 
     expect(items).toHaveLength(1)
@@ -146,5 +153,53 @@ describe('createMenuItems', () => {
     const networkFromEmbedding = cellMapsMenu.items[0]
     expect(networkFromEmbedding.label).toBe('Network from Embedding')
     expect(isValidElement(networkFromEmbedding.template)).toBe(true)
+  })
+
+  // #745: the parameter dialog used to be a React child of the row. Closing
+  // the menu unmounted the row, and the form went with it. The row now only
+  // reports which app was picked.
+  it('reports the picked app to the caller and renders no dialog in the row', () => {
+    const app = makeApp('http://a', [
+      { name: 'Data' },
+      { name: 'Import' },
+      { name: 'Run X' },
+    ])
+    const items = createMenuItems({ 'http://a': app }, onSelectApp)
+    const runX = ((items[0].items as any[])[0] as any).items[0]
+
+    render(runX.template)
+    fireEvent.click(screen.getByText('http://a'))
+
+    expect(onSelectApp).toHaveBeenCalledWith(app)
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('reports the picked app from a single-element path too', () => {
+    const app = makeApp('http://a', [{ name: 'Run Analysis' }])
+    const items = createMenuItems({ 'http://a': app }, onSelectApp)
+
+    render(items[0].template as any)
+    fireEvent.click(screen.getByText('http://a'))
+
+    expect(onSelectApp).toHaveBeenCalledWith(app)
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('reports the picked app from a duplicate-labelled leaf', () => {
+    const x = makeApp('http://x', [{ name: 'Apps' }, { name: 'Run Same' }])
+    const y = makeApp('http://y', [{ name: 'Apps' }, { name: 'Run Same' }])
+    const items = createMenuItems({ 'http://x': x, 'http://y': y }, onSelectApp)
+
+    const leaves = (items[0].items as any[]).filter(
+      (i) => i.label === 'Run Same',
+    )
+    leaves.forEach((leaf, index) => {
+      const { unmount } = render(leaf.template)
+      fireEvent.click(screen.getByText(index === 0 ? 'http://x' : 'http://y'))
+      unmount()
+    })
+
+    expect(onSelectApp).toHaveBeenNthCalledWith(1, x)
+    expect(onSelectApp).toHaveBeenNthCalledWith(2, y)
   })
 })

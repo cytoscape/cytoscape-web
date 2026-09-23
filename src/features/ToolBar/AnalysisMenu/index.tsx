@@ -23,14 +23,14 @@ export const AnalysisMenu = () => {
     setOpen(false)
   }
 
-  const onBeforeRun = useCallback((): void => {
+  const closeMenu = useCallback((): void => {
     setOpen(false)
   }, [setOpen])
 
   // Service apps whose cyWebMenuItem.root resolves to the Analysis menu.
   const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
     RootMenu.Analysis,
-    onBeforeRun,
+    closeMenu,
   )
 
   const handleOpenDialog = (): void => {

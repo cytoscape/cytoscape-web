@@ -1,3 +1,4 @@
+import { sniffBase64RasterMime } from '../../VisualStyleModel/impl/imageSourceImpl'
 import { Cx2 } from '../Cx2'
 
 /**
@@ -123,7 +124,10 @@ export const hasImageCustomGraphics = (cx2: Cx2): boolean => {
     typeof value === 'string' &&
     (/^(https?:|data:|file:)/.test(value) ||
       value.trimStart().startsWith('<svg') ||
-      /\.(svg|png|jpe?g|gif|bmp)(\?|#|$)/i.test(value))
+      /\.(svg|png|jpe?g|gif|bmp)(\?|#|$)/i.test(value) ||
+      // Bare base64 raster bytes render in Web (wrapped as a data: URI at
+      // render time) but Desktop never fetches them — same "?" outcome.
+      sniffBase64RasterMime(value) !== undefined)
 
   return scanCustomGraphics(cx2, {
     isSlotMatch: isImageValue,
