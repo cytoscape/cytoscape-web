@@ -148,9 +148,13 @@ declared are logged by `parseServiceMetadata`, never rejected.
 
 The metadata a service returns is parsed as leniently as before: the
 service's top-level `name` and each parameter's `displayName` are the only
-required fields, unknown fields pass through, `null` is accepted everywhere,
-and a malformed `groups` value is logged and treated as "no groups". The
-one exception is a parameter whose `displayName` is `__proto__`: no plain
+required fields, unknown fields pass through, `null` is accepted for
+`description`, `author`, `citation`, `serviceInputDefinition` and for every
+parameter field other than `displayName`; an omitted `parameters` field
+defaults to an empty array, but `name`, a supplied `parameters` value and
+each parameter's `displayName` must not be `null`. A malformed `groups`
+value is logged and treated as "no groups". The one exception to leniency
+is a parameter whose `displayName` is `__proto__`: no plain
 record keyed by parameter name can hold it (the value vanishes into the
 prototype setter), so that parameter is logged and dropped while the rest of
 the service loads. The request payload is unchanged too: `parameters` is a string-to-string map,
