@@ -51,6 +51,7 @@ import {
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
+import { useCenterAnchoredResize } from './useCenterAnchoredResize'
 import { useNodeGraphicsSync } from './useNodeGraphicsSync'
 import { isGraphVisible } from './viewportRecovery'
 
@@ -105,7 +106,7 @@ const CyjsRenderer = ({
 
   // Cytoscape instance and container ref
   const [cy, setCy] = useState<any>(null)
-  const cyContainer = useRef(null)
+  const cyContainer = useRef<HTMLDivElement | null>(null)
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -301,6 +302,10 @@ const CyjsRenderer = ({
   // bypasses, never as element data — see nodeGraphicsApply.ts for why, and for
   // why they cannot reach CX2.
   const nodeGraphics = useNodeGraphicsSync(id)
+
+  // Keep the graph centered when a docked panel (or the window) resizes the
+  // canvas, as Cytoscape Desktop does — Cytoscape.js alone anchors top-left.
+  useCenterAnchoredResize(cy, cyContainer)
   const nodeGraphicsRef = useRef<
     Record<IdType, ResolvedNodeGraphics> | undefined
   >(nodeGraphics)
