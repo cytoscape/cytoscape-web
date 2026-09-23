@@ -73,7 +73,10 @@ const waitForRenderedNetwork = (page: Page, nodeCount: number) =>
  * settling after the elements appear, and the viewport save is debounced.
  */
 const waitForStableViewport = async (page: Page): Promise<Viewport> => {
-  let previous = JSON.stringify(await readViewport(page))
+  // expect.poll runs the callback once immediately and waits only between
+  // attempts, so the first attempt just records a baseline: every comparison
+  // then spans a full interval.
+  let previous: string | undefined
   await expect
     .poll(
       async () => {
