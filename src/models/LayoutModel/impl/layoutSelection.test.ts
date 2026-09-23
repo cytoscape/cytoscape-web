@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  parameterDefinitionProblem,
+  parameterValueType,
+} from '../../AppModel/impl/parameters'
 import { LayoutEngine } from '../LayoutEngine'
 import {
   defAlgorithm,
@@ -35,6 +39,54 @@ describe('layoutSelection', () => {
         expect(engine.name).toBeDefined()
         expect(typeof engine.name).toBe('string')
       })
+    })
+  })
+
+  describe('core algorithm editables', () => {
+    // Cosmos keeps its values under `parameters.simulation` (pre-existing gap,
+    // see cosmos.ts); every other core algorithm must declare editables whose
+    // live value is a top-level parameter of the declared type, equal to the
+    // advertised default.
+    const algorithms = LayoutEngines.filter(
+      (engine) => engine.name !== 'cosmos',
+    ).flatMap((engine) => Object.values(engine.algorithms))
+
+    it('are ordered arrays of the shared parameter spec', () => {
+      expect(algorithms.length).toBeGreaterThan(0)
+      for (const algorithm of algorithms) {
+        if (algorithm.editables === undefined) continue
+        expect(Array.isArray(algorithm.editables)).toBe(true)
+        for (const editable of algorithm.editables) {
+          expect(
+            parameterDefinitionProblem(editable, 0, { strict: true }),
+          ).toBeUndefined()
+        }
+      }
+    })
+
+    it('each name a live parameter whose value matches the default and type', () => {
+      for (const algorithm of algorithms) {
+        for (const editable of algorithm.editables ?? []) {
+          const live = algorithm.parameters[editable.name]
+          expect(live, `${algorithm.name}.${editable.name}`).toBeDefined()
+          expect(live).toBe(editable.defaultValue)
+          const expected = parameterValueType(editable)
+          const actual =
+            typeof live === 'boolean'
+              ? 'boolean'
+              : typeof live === 'number'
+                ? Number.isInteger(live)
+                  ? 'integer'
+                  : 'double'
+                : 'string'
+          // an integer literal is a valid double
+          expect(
+            actual === expected ||
+              (expected === 'double' && actual === 'integer'),
+            `${algorithm.name}.${editable.name}: ${actual} vs ${expected}`,
+          ).toBe(true)
+        }
+      }
     })
   })
 

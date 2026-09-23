@@ -47,6 +47,44 @@ describe('parseServiceMetadata', () => {
     )
   })
 
+  it('keeps a parameter with a malformed groups value (warn-only, never a rejection)', () => {
+    // A service that already sent a `groups` field of the wrong shape must
+    // keep loading: the form treats it as "no groups" and the log says why.
+    const metadata = parseServiceMetadata({
+      name: 'Service A',
+      parameters: [
+        { displayName: 'Mode', type: 'text', groups: 'Advanced' },
+        { displayName: 'Ok', type: 'text', groups: ['Advanced'] },
+      ],
+    })
+
+    expect(metadata).toBeDefined()
+    const parameters = (metadata?.parameters ?? []) as unknown as Array<
+      Record<string, unknown>
+    >
+    expect(parameters).toHaveLength(2)
+    expect(parameters[0].groups).toBe('Advanced')
+  })
+
+  it('drops a parameter named __proto__ and keeps the rest', () => {
+    // No plain record keyed by parameter key can hold that name (the value
+    // vanishes into the prototype setter), so the one parameter goes, not
+    // the service.
+    const metadata = parseServiceMetadata({
+      name: 'Service A',
+      parameters: [
+        { displayName: 'Mode', type: 'text' },
+        { displayName: '__proto__', type: 'text' },
+        { displayName: 'Ok', type: 'text' },
+      ],
+    })
+
+    expect(metadata?.parameters.map((p) => p.displayName)).toEqual([
+      'Mode',
+      'Ok',
+    ])
+  })
+
   it('rejects a missing or empty name', () => {
     expect(parseServiceMetadata({ parameters: [] })).toBeUndefined()
     expect(parseServiceMetadata({ name: '' })).toBeUndefined()

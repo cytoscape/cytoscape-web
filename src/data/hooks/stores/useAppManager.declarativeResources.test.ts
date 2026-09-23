@@ -38,6 +38,7 @@ function makeMockResourceApi() {
     registerMenuItem: vi.fn(() => ({ success: true })),
     registerNetworkSearchProvider: vi.fn(() => ({ success: true })),
     registerModal: vi.fn(() => ({ success: true })),
+    registerLayout: vi.fn(() => ({ success: true })),
   }
 }
 
@@ -71,10 +72,19 @@ describe('processDeclarativeResources', () => {
         { slot: 'apps-menu', id: 'M1', label: 'M1', onClick: () => {} },
         { slot: 'search-bar', id: 'S1', name: 'Search', onSubmit: vi.fn() },
         { slot: 'modal-launcher', id: 'D1', component: DummyComponent },
+        {
+          slot: 'layout-algorithm',
+          id: 'L1',
+          displayName: 'Layout',
+          run: () => ({}),
+        },
       ]),
     )
 
     expect(createResourceApi).toHaveBeenCalledWith('app1')
+    expect(mockApi.registerLayout).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'L1' }),
+    )
     expect(mockApi.registerPanel).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'P1' }),
     )

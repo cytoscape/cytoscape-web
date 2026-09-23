@@ -1,8 +1,13 @@
 import BuildIcon from '@mui/icons-material/Build'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import {
+  getAppLayoutMeta,
+  isAppLayoutEnabled,
+} from '../../../app-api/core/appLayoutEngine'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -27,6 +32,7 @@ import { useMenuBarMenu } from '../MenuBar'
 import { ToolbarMenuItem } from '../menuItemModel'
 import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 
 /**
  * One algorithm while the menu is being assembled and sorted. Deliberately
@@ -177,10 +183,68 @@ export const LayoutMenu = (): JSX.Element => {
     setLayoutCounter((prev) => prev + 1)
   }
 
+  const elementCount: number =
+    (target.nodes?.length ?? 0) + (target.edges?.length ?? 0)
+
+  /**
+   * Algorithms registered by apps ('layout-algorithm' resources), one row
+   * each, sorted by label (app id as the tiebreak) — no `order`/gravity
+   * option by design (#734). Memoized because the rows call each app's
+   * `isEnabled` snapshot, which should run when the menu opens, not on every
+   * render of the toolbar; the click handlers are attached in getMenuItems.
+   */
+  const appAlgorithmRows = useMemo(() => {
+    const rows: Array<{
+      key: string
+      testId: string
+      label: string
+      description: string
+      engine: LayoutEngine
+      algorithm: LayoutAlgorithm
+      disabled: boolean
+      appId: string
+    }> = []
+    layoutEngines.forEach((engine: LayoutEngine) => {
+      const appId = engine.appId
+      if (appId === undefined) {
+        return
+      }
+      // One per-app API object per app, and only while the menu is shown.
+      const apis = open ? buildPerAppApis(appId) : undefined
+      Object.values(engine.algorithms).forEach((algorithm: LayoutAlgorithm) => {
+        const overThreshold =
+          algorithm.threshold !== undefined &&
+          elementCount > algorithm.threshold
+        const enabled =
+          apis === undefined || isAppLayoutEnabled(algorithm.name, apis)
+        const localId = getAppLayoutMeta(algorithm.name)?.id ?? algorithm.name
+        rows.push({
+          key: `${engine.name}-${algorithm.name}`,
+          testId: `layout-menu-item-${appId}-${localId}`,
+          label: algorithm.displayName,
+          description: algorithm.description,
+          engine,
+          algorithm,
+          disabled: overThreshold || !enabled,
+          appId,
+        })
+      })
+    })
+    rows.sort(
+      (a, b) =>
+        a.label.localeCompare(b.label) || a.appId.localeCompare(b.appId),
+    )
+    return rows
+  }, [layoutEngines, open, elementCount])
+
   const getMenuItems = (): ToolbarMenuItem[] => {
     const layoutMenuItems: LayoutAlgorithmEntry[] = []
 
     layoutEngines.forEach((layoutEngine: LayoutEngine) => {
+      // App engines render in their own block below the core algorithms.
+      if (layoutEngine.appId !== undefined) {
+        return
+      }
       const engineName: string = layoutEngine.name
       const names: string[] = Object.keys(layoutEngine.algorithms)
 
@@ -194,8 +258,7 @@ export const LayoutMenu = (): JSX.Element => {
           disabled:
             algorithm.threshold === undefined
               ? false
-              : target.nodes?.length + target.edges?.length >
-                algorithm.threshold,
+              : elementCount > algorithm.threshold,
           onClick: () => {
             if (target === undefined) {
               return
@@ -203,15 +266,68 @@ export const LayoutMenu = (): JSX.Element => {
             const engine: LayoutEngine = layoutEngines.find(
               (engine) => engine.name === engineName,
             ) as LayoutEngine
-            const { nodes, edges } = target
-            setIsRunning(true)
-            engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
+            runEngineLayout({
+              engine,
+              algorithm: engine.algorithms[name],
+              network: target,
+              networkId: targetNetworkId,
+              afterLayout,
+              setIsRunning,
+            })
           },
         }
 
         layoutMenuItems.push(menuItem)
       })
     })
+
+    // The block of third-party entries: app algorithms first, then service
+    // apps routed to the Layout root. Rendered between the core algorithms
+    // and Layout Tools, with a divider on each side; absent when empty.
+    const disabledTooltip =
+      targetNetworkId === ''
+        ? 'Layouts are disabled since the network view is empty'
+        : 'Layouts cannot be applied to the current network view'
+    const appMenuItems: ToolbarMenuItem[] = appAlgorithmRows.map((row) =>
+      allDisabled
+        ? {
+            template: (
+              <DropdownMenuItem
+                key={row.key}
+                dataTestId={row.testId}
+                label={row.label}
+                tooltip={disabledTooltip}
+                disabled={true}
+              />
+            ),
+          }
+        : {
+            template: (
+              <DropdownMenuItem
+                key={row.key}
+                dataTestId={row.testId}
+                label={row.label}
+                tooltip={row.description}
+                disabled={row.disabled}
+                onClick={() => {
+                  handleClose()
+                  runEngineLayout({
+                    engine: row.engine,
+                    algorithm: row.algorithm,
+                    network: target,
+                    networkId: targetNetworkId,
+                    afterLayout,
+                    setIsRunning,
+                  })
+                }}
+              />
+            ),
+          },
+    )
+    const thirdPartyItems: ToolbarMenuItem[] = [
+      ...appMenuItems,
+      ...serviceMenuItems,
+    ]
 
     // Group by type and then sort each group alphabetically
     const typeGroups: Record<string, LayoutAlgorithmEntry[]> = {}
@@ -270,6 +386,7 @@ export const LayoutMenu = (): JSX.Element => {
                 layoutEngines,
                 preferredLayout,
                 network: target,
+                networkId: targetNetworkId,
                 afterLayout,
                 setIsRunning,
               })
@@ -292,6 +409,7 @@ export const LayoutMenu = (): JSX.Element => {
               template: (
                 <DropdownMenuItem
                   key={menuItem.key}
+                  dataTestId={`layout-menu-item-${menuItem.key}`}
                   label={menuItem.label}
                   tooltip={
                     targetNetworkId === ''
@@ -315,6 +433,7 @@ export const LayoutMenu = (): JSX.Element => {
               template: (
                 <DropdownMenuItem
                   key={menuItem.key}
+                  dataTestId={`layout-menu-item-${menuItem.key}`}
                   label={menuItem.label}
                   tooltip={menuItem.description}
                   disabled={menuItem.disabled}
@@ -329,9 +448,13 @@ export const LayoutMenu = (): JSX.Element => {
       {
         separator: true,
       },
+      ...(thirdPartyItems.length > 0
+        ? [...thirdPartyItems, { separator: true }]
+        : []),
       {
         template: (
           <DropdownMenuItem
+            dataTestId="layout-menu-layout-tools"
             label="Layout Tools"
             icon={<BuildIcon />}
             tooltip="Show the layout tools panel in the lower-left corner"
@@ -345,6 +468,7 @@ export const LayoutMenu = (): JSX.Element => {
       {
         template: (
           <DropdownMenuItem
+            dataTestId="layout-menu-settings"
             label="Settings..."
             icon={<SettingsIcon />}
             onClick={() => {
@@ -362,12 +486,7 @@ export const LayoutMenu = (): JSX.Element => {
       <DropdownMenu
         id="layout-menu"
         label="Layout"
-        menuItems={[
-          ...getMenuItems(),
-          ...(serviceMenuItems.length > 0
-            ? [{ separator: true }, ...serviceMenuItems]
-            : []),
-        ]}
+        menuItems={getMenuItems()}
         open={open}
         disabled={hasNoNetworks}
         disabledTooltip="Load or create a network first"
@@ -376,6 +495,7 @@ export const LayoutMenu = (): JSX.Element => {
       <LayoutOptionDialog
         afterLayout={afterLayout}
         network={target}
+        networkId={targetNetworkId}
         open={openDialog}
         setOpen={setOpenDialog}
         allDisabled={allDisabled}

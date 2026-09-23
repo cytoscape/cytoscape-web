@@ -1,10 +1,9 @@
-import safeRegex from 'safe-regex'
-
 import { Column, ValueTypeName } from '../../TableModel'
 import { ParameterUiType } from '../ParameterUiType'
 import { SelectedDataType } from '../SelectedDataType'
 import { ServiceAppParameter } from '../ServiceAppParameter'
 import { InputColumn, ServiceInputDefinition } from '../ServiceInputDefinition'
+import { parameterKeys } from './parameters'
 
 export {
   DEFAULT_ROOT_MENU,
@@ -76,16 +75,20 @@ export const resolveParameterValue = (
 }
 
 /**
- * Build the `parameters` map posted to a service app, keyed by displayName.
- * Auto-filled parameters (ndexUUID, ...) are resolved from the context.
+ * Build the `parameters` map posted to a service app, keyed by the
+ * parameter key rule (`parameterKeys`): displayName, or the group path
+ * joined with '/' when two parameters share a displayName. Auto-filled
+ * parameters (ndexUUID, ...) are resolved from the context.
  */
 export const buildCustomParameters = (
   parameters: ServiceAppParameter[] | undefined,
   ctx: AutoParameterContext,
 ): Record<string, string> => {
-  return (parameters ?? []).reduce(
-    (acc, parameter) => {
-      acc[parameter.displayName] = resolveParameterValue(parameter, ctx)
+  const list = parameters ?? []
+  const keys = parameterKeys(list)
+  return list.reduce(
+    (acc, parameter, index) => {
+      acc[keys[index]] = resolveParameterValue(parameter, ctx)
       return acc
     },
     {} as Record<string, string>,
@@ -139,19 +142,26 @@ export const isNumberList = (vtn: ValueTypeName): boolean => {
 }
 
 /**
- * Whether a column's datatype satisfies a service-app column type filter.
+ * Whether a column's datatype satisfies a parameter's column type filter.
  *
  * The filter may be a concrete CX2 datatype (e.g. 'string', 'list_of_string'),
  * or one of the convenience aliases 'number' (any numeric), 'wholenumber'
- * (integer), 'list' (any list), 'list_of_number', 'list_of_wholenumber'. An
- * empty/absent filter matches every column.
+ * (integer or long), 'list' (any list), 'list_of_number', 'list_of_wholenumber' — or
+ * a list of those, of which any may match. An empty/absent filter matches
+ * every column.
  */
 export const columnTypeMatchesFilter = (
   columnType: ValueTypeName,
-  filter: string | undefined | null,
+  filter: string | readonly string[] | undefined | null,
 ): boolean => {
   if (filter === undefined || filter === null || filter === '') {
     return true
+  }
+  if (Array.isArray(filter)) {
+    return (
+      filter.length === 0 ||
+      filter.some((one) => columnTypeMatchesFilter(columnType, one))
+    )
   }
   switch (filter) {
     case 'list': {
@@ -161,13 +171,13 @@ export const columnTypeMatchesFilter = (
       return isNumber(columnType)
     }
     case 'wholenumber': {
-      return columnType === 'integer'
+      return columnType === 'integer' || columnType === 'long'
     }
     case 'list_of_number': {
       return isNumberList(columnType)
     }
     case 'list_of_wholenumber': {
-      return columnType === 'list_of_integer'
+      return columnType === 'list_of_integer' || columnType === 'list_of_long'
     }
     default: {
       return columnType === filter
@@ -182,43 +192,5 @@ export const inputColumnFilterFn = (
   return columnTypeMatchesFilter(column.type, inputColumn.dataType)
 }
 
-const regexCache = new Map<string, RegExp>()
-const MAX_CACHE_SIZE = 100
-
-export const validateParameter = (parameter: ServiceAppParameter): boolean => {
-  if (parameter.type === ParameterUiType.Text) {
-    const value = parameter.value ?? parameter.defaultValue ?? ''
-    const { validationRegex } = parameter
-
-    if (
-      validationRegex !== undefined &&
-      validationRegex !== null &&
-      validationRegex.trim().length > 0
-    ) {
-      if (validationRegex.length > 1000) {
-        return false
-      }
-      try {
-        if (!safeRegex(validationRegex)) {
-          // Attempt to compile it. If it fails, it's just invalid syntax,
-          // and we should be lenient (return true).
-          // If it succeeds, then it's a valid but unsafe regex (return false).
-          new RegExp(validationRegex)
-          return false
-        }
-        let regex = regexCache.get(validationRegex)
-        if (regex === undefined) {
-          if (regexCache.size >= MAX_CACHE_SIZE) {
-            regexCache.clear()
-          }
-          regex = new RegExp(validationRegex)
-          regexCache.set(validationRegex, regex)
-        }
-        return regex.test(value)
-      } catch {
-        return true
-      }
-    }
-  }
-  return true
-}
+// Value validation (regex, number/digits, min/max, valueList) lives in
+// ./parameters.ts as `validateParameterValue`, shared with layout parameters.

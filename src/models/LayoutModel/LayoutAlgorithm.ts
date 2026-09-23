@@ -1,5 +1,16 @@
-import { Property } from '../PropertyModel/Property'
-import { ValueType } from '../TableModel'
+import { AppParameter } from '../AppModel/AppParameter'
+
+/**
+ * One user-editable parameter of a layout algorithm: the shared
+ * `AppParameter` spec (see docs/specifications/APP_PARAMETERS_SPECIFICATION.md)
+ * plus `name`, the key of the corresponding entry in
+ * `LayoutAlgorithm.parameters`, which holds the live value. For built-in
+ * algorithms `name` is the engine's option name (`radius`); for
+ * app-registered ones it is the key derived from `displayName` (see
+ * `parameterKeys`). Editables are definitions only and never change; values
+ * live in `parameters`.
+ */
+export type EditableParameter = AppParameter & { readonly name: string }
 
 export const LayoutAlgorithmType = {
   force: 'force',
@@ -33,6 +44,8 @@ export interface LayoutAlgorithm {
   // This object will be directly passed to the layout engine.
   parameters: Record<string, any>
 
-  // List of editable parameters as Property with detailed information
-  editables?: Record<string, Property<ValueType>>
+  // The user-editable parameters, in the order the Settings dialog shows
+  // them (nested into fieldsets by `groups`). Each one's `name` is the key
+  // of its live value in `parameters`.
+  editables?: EditableParameter[]
 }

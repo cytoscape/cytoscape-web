@@ -4,6 +4,14 @@
 // Defines the slot model, host-injected props per slot, registration
 // options, and the public ResourceApi interface.
 
+import type {
+  AppParameter,
+  ParameterValue,
+} from '../../models/AppModel/AppParameter'
+import type { ParameterUiType } from '../../models/AppModel/ParameterUiType'
+import type { IdType } from '../../models/IdType'
+import type { LayoutAlgorithmType } from '../../models/LayoutModel/LayoutAlgorithm'
+import type { Edge, Node } from '../../models/NetworkModel'
 import type { ApiError, ApiResult } from './ApiResult'
 import type { AppContextApis } from './AppContext'
 
@@ -13,10 +21,13 @@ import type { AppContextApis } from './AppContext'
  * Identifies a specific host-managed UI location that plugins can occupy.
  *
  * Current slots:
- *   'right-panel'    — tabbed side panel on the right
- *   'apps-menu'      — dropdown in the Apps toolbar button
- *   'search-bar'     — network search bar at the top of the Workspace tab
- *   'modal-launcher' — host-rendered modal dialogs, opened imperatively
+ *   'right-panel'      — tabbed side panel on the right
+ *   'apps-menu'        — dropdown in the Apps toolbar button
+ *   'search-bar'       — network search bar at the top of the Workspace tab
+ *   'modal-launcher'   — host-rendered modal dialogs, opened imperatively
+ *   'layout-algorithm' — a layout algorithm run by the host's layout engine:
+ *                        Layout menu row, Layout Settings entry, default-layout
+ *                        candidate, and `layout.applyLayout` target
  *
  * Reserved for future rollouts:
  *   'left-panel', 'bottom-panel', 'tools-menu', 'status-bar'
@@ -26,6 +37,7 @@ export type ResourceSlot =
   | 'apps-menu'
   | 'search-bar'
   | 'modal-launcher'
+  | 'layout-algorithm'
 
 // ── Per-slot host props ─────────────────────────────────────────
 
@@ -233,6 +245,113 @@ export interface RegisterModalOptions {
   }>
 }
 
+// ── Layout algorithm registration ───────────────────────────────
+
+/**
+ * The UI types an app layout parameter may use: the shared `AppParameter`
+ * types minus the two service-app-only, host-filled ones (`ndexUUID`,
+ * `accessToken`), which a browser-side app never receives.
+ */
+export type LayoutParameterUiType = Exclude<
+  ParameterUiType,
+  'ndexUUID' | 'accessToken'
+>
+
+/**
+ * One user-editable parameter of an app layout — the shared `AppParameter`
+ * spec (see docs/specifications/APP_PARAMETERS_SPECIFICATION.md) with a
+ * required `defaultValue`. Parameters are declared as an ordered array: the
+ * Layout Settings dialog (Layout → Settings...) renders them in that order,
+ * nested into fieldsets by `groups`, keeps the current values, and hands
+ * them to `run` as `LayoutRunContext.parameters`.
+ *
+ * Keys: a parameter's key is its `displayName`, or, when two parameters in
+ * the array share a `displayName`, its group path joined with '/'
+ * (`Spacing/Gap`). The value `run` receives is typed by the declaration:
+ * `checkBox` → boolean, `text` with `validationType: 'number'` → number,
+ * `'digits'` → integer, everything else → string.
+ */
+export type LayoutParameter = Omit<AppParameter, 'type' | 'defaultValue'> & {
+  type: LayoutParameterUiType
+  /** Initial value; a number for `number`/`digits`, a boolean for `checkBox`, a string otherwise. */
+  defaultValue: ParameterValue
+}
+
+/** Node id → `[x, y]`. */
+export type LayoutPositions = Record<IdType, [number, number]>
+
+/**
+ * Everything the host hands a registered layout when it runs. Positions,
+ * selection and parameter values are snapshots taken when the run starts.
+ */
+export interface LayoutRunContext {
+  /** The network being laid out — not necessarily the current network. */
+  readonly networkId: IdType
+  readonly nodes: readonly Node[]
+  readonly edges: readonly Edge[]
+  /** Current position of every node that has a view. */
+  readonly positions: LayoutPositions
+  /** Ids of the currently selected nodes (may be empty). */
+  readonly selectedNodeIds: readonly IdType[]
+  /**
+   * Current value of every parameter declared at registration, keyed by the
+   * parameter key (its `displayName`, or its group path on a collision) and
+   * typed by the declaration: boolean for `checkBox`, number for `text` with
+   * `validationType` `number` / `digits`, string otherwise.
+   */
+  readonly parameters: Readonly<Record<string, ParameterValue>>
+  /** The registering app's per-app API object. */
+  readonly apis: AppContextApis
+}
+
+/**
+ * Registers one layout algorithm in the 'layout-algorithm' slot.
+ *
+ * The host adapts the registration into its own layout engine, so the
+ * algorithm behaves like a built-in one: it appears in the Layout menu (in
+ * the app block after the core algorithms), in the Layout Settings dialog
+ * with its parameters editable, it can be set as the default layout, and
+ * other apps or agents can run it through
+ * `layout.applyLayout(networkId, { algorithmName })` using the qualified
+ * name `<appId>::<id>` reported by `layout.getAvailableLayouts()`.
+ *
+ * The host owns the run lifecycle around `run`: the running flag, the undo
+ * entry, the viewport fit. `run` only computes positions.
+ */
+export interface RegisterLayoutOptions {
+  /** Slot-local id; the qualified algorithm name is `<appId>::<id>`. */
+  id: string
+  /** Text shown in the Layout menu and the Settings dialog. Required. */
+  displayName: string
+  /** Hover text in the menu and the Settings dialog. */
+  description?: string
+  /** Family of the algorithm; defaults to 'other'. */
+  type?: LayoutAlgorithmType
+  /**
+   * Disabled in the menu when the network has more than this many nodes
+   * plus edges, like the built-in thresholds.
+   */
+  threshold?: number
+  /**
+   * Editable parameters, in the order the Settings dialog shows them. Use a
+   * shared label prefix or `groups` to keep related ones together.
+   */
+  parameters?: LayoutParameter[]
+  /**
+   * Computes new positions. Nodes missing from the result keep their
+   * position; ids that are not in the network are ignored. A throw or a
+   * rejection aborts the run: no positions change and no undo entry is
+   * recorded.
+   */
+  run: (context: LayoutRunContext) => LayoutPositions | Promise<LayoutPositions>
+  /**
+   * Optional extra enablement check the host calls when the Layout menu is
+   * shown — a plain function snapshot, like the 'apps-menu' one. A throwing
+   * `isEnabled` is logged and treated as `false`.
+   */
+  isEnabled?: (apis: AppContextApis) => boolean
+}
+
 /**
  * Entry for batch registration via registerAll(). Discriminated by `slot`,
  * since each slot has its own registration options ('apps-menu' and
@@ -243,6 +362,7 @@ export type RegisterResourceEntry =
   | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
   | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
   | ({ slot: 'modal-launcher' } & RegisterModalOptions)
+  | ({ slot: 'layout-algorithm' } & RegisterLayoutOptions)
 
 // ── Introspection types ─────────────────────────────────────────
 
@@ -342,6 +462,21 @@ export interface ResourceApi {
 
   /** Unregister a modal. If it is currently open, it is closed first. */
   unregisterModal(modalId: string): ApiResult
+
+  /**
+   * Register a layout algorithm in the 'layout-algorithm' slot. Uses upsert
+   * semantics: re-registering the same `id` replaces the algorithm and
+   * resets its parameter values to the new defaults.
+   */
+  registerLayout(
+    options: RegisterLayoutOptions,
+  ): ApiResult<{ resourceId: string }>
+
+  /**
+   * Unregister a layout algorithm. If it was the default layout, the host
+   * falls back to its built-in default.
+   */
+  unregisterLayout(layoutId: string): ApiResult
 
   /**
    * Open a registered 'modal-launcher' resource. Payload-less by design —

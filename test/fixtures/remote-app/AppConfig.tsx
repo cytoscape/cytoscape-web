@@ -250,6 +250,39 @@ const TestRemoteApp = {
           maxWidth?: string | false
           fullWidth?: boolean
         }) => unknown
+        registerLayout: (opts: {
+          id: string
+          displayName: string
+          description?: string
+          type?: 'force' | 'geometric' | 'hierarchical' | 'other'
+          threshold?: number
+          // The shared parameter spec (an ordered array; see
+          // docs/specifications/APP_PARAMETERS_SPECIFICATION.md).
+          parameters?: Array<{
+            displayName: string
+            type:
+              | 'text'
+              | 'dropDown'
+              | 'radio'
+              | 'checkBox'
+              | 'nodeColumn'
+              | 'edgeColumn'
+            defaultValue: string | number | boolean
+            validationType?: 'string' | 'number' | 'digits'
+            valueList?: string[]
+            description?: string
+            groups?: string[]
+          }>
+          run: (context: {
+            networkId: string
+            nodes: ReadonlyArray<{ id: string }>
+            positions: Record<string, [number, number]>
+            // keyed by displayName, typed by declaration
+            parameters: Readonly<Record<string, string | number | boolean>>
+          }) =>
+            | Record<string, [number, number]>
+            | Promise<Record<string, [number, number]>>
+        }) => unknown
         openModal: (id: string) => unknown
       }
     }
@@ -319,6 +352,51 @@ const TestRemoteApp = {
       label: 'Open Fixture Modal',
       onClick: (apis) => {
         apis.resource.openModal('fixture-modal')
+      },
+    })
+
+    // (6) Register a layout algorithm — the 'layout-algorithm' contract
+    // (#734): the host adapts it into its own layout engine, so it shows up
+    // in the Layout menu's app block and in Layout Settings with `spacing`
+    // editable, and other code can run it as
+    // layout.applyLayout(id, { algorithmName: 'testRemoteApp::fixture-layout' }).
+    // The algorithm is trivial on purpose: every node on one row, `spacing`
+    // apart, starting from the leftmost/topmost current position.
+    context.apis.resource.registerLayout({
+      id: 'fixture-layout',
+      displayName: 'Fixture Row Layout',
+      description: 'Places the nodes on one row (E2E fixture).',
+      type: 'geometric',
+      parameters: [
+        {
+          displayName: 'Node Spacing',
+          type: 'text',
+          validationType: 'digits',
+          defaultValue: 60,
+          description: 'Gap between neighbouring nodes',
+          groups: ['Spacing'],
+        },
+        {
+          displayName: 'Reverse',
+          type: 'checkBox',
+          defaultValue: false,
+          description: 'Place the nodes right to left',
+        },
+      ],
+      run: ({ nodes, positions, parameters }) => {
+        // Values arrive keyed by displayName and typed by declaration.
+        const spacing = Number(parameters['Node Spacing'])
+        const reverse = parameters.Reverse === true
+        const xs = Object.values(positions).map((p) => p[0])
+        const ys = Object.values(positions).map((p) => p[1])
+        const x0 = xs.length > 0 ? Math.min(...xs) : 0
+        const y0 = ys.length > 0 ? Math.min(...ys) : 0
+        const result: Record<string, [number, number]> = {}
+        const ordered = reverse ? [...nodes].reverse() : [...nodes]
+        ordered.forEach((node, index) => {
+          result[node.id] = [x0 + index * spacing, y0]
+        })
+        return result
       },
     })
   },

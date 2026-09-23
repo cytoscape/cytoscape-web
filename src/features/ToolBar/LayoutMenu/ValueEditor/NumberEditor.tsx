@@ -13,6 +13,8 @@ import { ValueTypeName } from '../../../../models/TableModel'
 
 interface NumberEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description: string
   value: number
   valueType?: ValueTypeName
@@ -31,6 +33,7 @@ interface NumberEditorProps {
 
 export const NumberEditor = ({
   optionName,
+  label,
   description,
   value,
   valueType,
@@ -40,6 +43,7 @@ export const NumberEditor = ({
   tableLayout = false,
   error = false,
 }: NumberEditorProps): JSX.Element => {
+  const displayLabel = label ?? optionName
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const parsed = event.target.valueAsNumber
     if (Number.isNaN(parsed)) return
@@ -69,9 +73,9 @@ export const NumberEditor = ({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
-            title={optionName}
+            title={displayLabel}
           >
-            {optionName}
+            {displayLabel}
           </Typography>
         </Box>
         <Box
@@ -163,7 +167,7 @@ export const NumberEditor = ({
     >
       <ListItemText
         id={optionName}
-        primary={optionName}
+        primary={displayLabel}
         sx={{ flex: '1 1 auto', minWidth: 0 }}
       />
     </ListItem>

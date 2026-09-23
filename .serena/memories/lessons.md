@@ -47,6 +47,7 @@
 
 ## Testing
 
+- [2026-09-22] An outlined MUI `TextField` renders its own `<legend>` (the notched outline), so `fieldset.locator('legend')` is a Playwright strict-mode violation once a text field sits inside a form fieldset — use `.first()` or the legend's text. Likewise `getByRole('combobox')` is ambiguous in any dialog that also renders a `dropDown` parameter; the Layout Settings selector carries `data-testid="layout-selector-combobox"` for that reason.
 - [2026-09-03] `vi.clearAllMocks()` clears calls, NOT implementations: a `mockImplementation(() => { throw ... })` set by one test leaks into every later test in the file, and a new `describe` block appended at the end of a long spec inherits it (cost an hour on `viewportApi.test.ts`). Reset the specific mock in the block's own `beforeEach`.
 - [2026-08-03] jsdom drops CSS values it cannot parse: `getComputedStyle` returns `auto` for `width: min(500px, calc(100% - 32px))` while `calc(100% - 32px)` resolves fine. Layout-assertion unit tests must stick to values jsdom's cssstyle understands, or assert in Playwright instead.
 - [2026-09-03] MUI Popover rows outlive the close by a tick: `DropdownMenu` closes with `transitionDuration={0}`, but the Popover still unmounts its children only after the exit transition settles, so a unit test asserting a menu row is gone right after `fireEvent.click` must `waitFor` it (see `AppMenu.spec.tsx`).
@@ -80,3 +81,4 @@
 - [2026-07-19] Store→DB async writes: Never pass Immer draft subtrees to async DB functions inside a producer — the proxies are revoked when the producer returns. Snapshot with `current(state)` first (see VisualStyleStore.add).
 - [2026-07-19] Mocked store modules: Tests that `vi.mock` a store module (e.g. exportApi.test.ts mocking VisualStyleStore) must be updated when the module gains new named exports, or importers crash with confusing "undefined is not iterable" errors.
 - [2026-07-19] Dexie schema: Row-shape changes need NO version bump/migration (normalize legacy rows on read); adding an object store only needs a version bump — Dexie ≥3 auto-diffs the declared schema. The migrations array machinery in migrations.ts is untested — avoid relying on it.
+- [2026-09-22] git stash in chained commands: never end a `... && git stash push ... ; git stash pop` chain with a bare `pop` — if an earlier step fails, the push is skipped and `pop` applies whatever stash@{0} the user left there (it did: 13 conflicted files from an unrelated stash). Name the stash (`-m`), and pop only after `git stash list | head -1` shows that name.

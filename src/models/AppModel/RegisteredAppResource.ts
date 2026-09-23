@@ -14,6 +14,7 @@ export type ResourceSlot =
   | 'apps-menu'
   | 'search-bar'
   | 'modal-launcher'
+  | 'layout-algorithm'
 
 /**
  * A registered app resource — the internal representation stored in

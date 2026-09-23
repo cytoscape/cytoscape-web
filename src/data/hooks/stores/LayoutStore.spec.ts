@@ -12,14 +12,16 @@ vi.mock('../../../models/LayoutModel/impl/layoutSelection', () => {
     type: 'geometric' as const,
     description: 'Grid layout',
     parameters: { spacing: 50 },
-    editables: {
-      spacing: {
+    editables: [
+      {
         name: 'spacing',
-        type: 'number' as const,
-        value: 50,
+        displayName: 'Spacing',
+        type: 'text' as const,
+        validationType: 'digits' as const,
+        defaultValue: 50,
         description: 'Spacing between nodes',
       },
-    },
+    ],
   }
 
   const mockLayoutEngine = {
@@ -100,6 +102,70 @@ describe('useLayoutStore', () => {
     })
   })
 
+  describe('app engines', () => {
+    const appAlgorithm = {
+      name: 'appX::row',
+      engineName: 'appX',
+      displayName: 'Row',
+      type: 'other' as const,
+      description: '',
+      parameters: { spacing: 10 },
+      editables: [
+        {
+          name: 'spacing',
+          displayName: 'Spacing',
+          type: 'text' as const,
+          validationType: 'digits' as const,
+          defaultValue: 10,
+        },
+      ],
+    }
+    const apply = vi.fn()
+
+    it('upserts an app algorithm, lets it become preferred, and resets on removal', () => {
+      const { result } = renderHook(() => useLayoutStore())
+
+      act(() => {
+        result.current.upsertAppAlgorithm('appX', appAlgorithm, apply)
+      })
+      const engine = result.current.layoutEngines.find((e) => e.name === 'appX')
+      expect(engine?.appId).toBe('appX')
+      expect(engine?.algorithms['appX::row']).toBeDefined()
+
+      act(() => {
+        result.current.setPreferredLayout('appX', 'appX::row')
+      })
+      expect(result.current.preferredLayout.name).toBe('appX::row')
+
+      // Parameter edits go through the same action as core algorithms
+      act(() => {
+        result.current.setLayoutOption('appX', 'appX::row', 'spacing', 25)
+      })
+      expect(result.current.preferredLayout.parameters.spacing).toBe(25)
+
+      act(() => {
+        result.current.removeAppAlgorithm('appX', 'appX::row')
+      })
+      expect(
+        result.current.layoutEngines.find((e) => e.name === 'appX'),
+      ).toBeUndefined()
+      expect(result.current.preferredLayout.name).toBe('default')
+    })
+
+    it('removeAppEngine drops the whole engine', () => {
+      const { result } = renderHook(() => useLayoutStore())
+
+      act(() => {
+        result.current.upsertAppAlgorithm('appX', appAlgorithm, apply)
+        result.current.removeAppEngine('appX')
+      })
+
+      expect(
+        result.current.layoutEngines.find((e) => e.name === 'appX'),
+      ).toBeUndefined()
+    })
+  })
+
   describe('setLayoutOption', () => {
     it('should set a layout option', () => {
       const { result } = renderHook(() => useLayoutStore())
@@ -113,8 +179,8 @@ describe('useLayoutStore', () => {
       )?.algorithms['grid']
       // Check that the parameter was updated
       expect(algorithm?.parameters.spacing).toBe(100)
-      // Check that the editable was also updated
-      expect(algorithm?.editables?.spacing?.value).toBe(100)
+      // Editables are definitions only and stay as declared
+      expect(algorithm?.editables?.[0].defaultValue).toBe(50)
     })
 
     it('should handle non-existent engine gracefully', () => {

@@ -309,6 +309,7 @@ const WorkSpaceEditor = (): JSX.Element => {
               network.edges,
               handleLayoutComplete,
               layoutEngine.algorithms[defaultLayout.algorithmName],
+              networkId,
             )
           }
         }

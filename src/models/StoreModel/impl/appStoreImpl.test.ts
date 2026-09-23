@@ -315,6 +315,28 @@ describe('AppStoreImpl', () => {
       expect(result).not.toBe(state) // Immutability check
     })
 
+    it('updates the last parameter when two share a key', () => {
+      // Same displayName and same groups collapse to one key; the form shows
+      // and the payload sends the last one's value, so the edit lands there.
+      const state = createDefaultState()
+      const url = 'https://example.com/service'
+      const serviceApp: ServiceApp = {
+        ...createTestServiceApp(url),
+        parameters: [
+          { displayName: 'dup', value: 'first' } as any,
+          { displayName: 'dup', value: 'second' } as any,
+        ],
+      }
+
+      let result = addService(state, serviceApp)
+      result = updateServiceParameter(result, url, 'dup', 'edited')
+
+      const values = result.serviceApps[url]?.parameters.map(
+        (p: any) => p.value,
+      )
+      expect(values).toEqual(['first', 'edited'])
+    })
+
     it('should handle non-existent service gracefully', () => {
       const state = createDefaultState()
 

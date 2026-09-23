@@ -6,6 +6,7 @@ import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
 import { AppSource } from '../../AppModel/InstalledApp'
 import { ManifestSource } from '../../AppModel/ManifestSource'
+import { parameterKeys } from '../../AppModel/impl/parameters'
 import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
 
@@ -255,7 +256,7 @@ export const clearCurrentTask = (state: AppState): AppState => {
 export const updateServiceParameter = (
   state: AppState,
   url: string,
-  displayName: string,
+  key: string,
   value: string,
 ): AppState => {
   const serviceApp = state.serviceApps[url]
@@ -263,15 +264,20 @@ export const updateServiceParameter = (
     return state
   }
 
-  const parameter = serviceApp.parameters.find(
-    (p) => p.displayName === displayName,
-  )
-  if (parameter === undefined) {
+  // Parameters are addressed by the key rule (displayName, or the group
+  // path when two parameters share a displayName) — the same key the form
+  // reports and the run payload is sent under.
+  // Last match: when two parameters still share a key (same label, same
+  // groups) the form shows and the payload sends the last one's value, so
+  // an edit must land there too.
+  const keys = parameterKeys(serviceApp.parameters)
+  const index = keys.lastIndexOf(key)
+  if (index === -1) {
     return state
   }
 
-  const newParameters = serviceApp.parameters.map((p) =>
-    p.displayName === displayName ? { ...p, value } : p,
+  const newParameters = serviceApp.parameters.map((p, i) =>
+    i === index ? { ...p, value } : p,
   )
 
   return {

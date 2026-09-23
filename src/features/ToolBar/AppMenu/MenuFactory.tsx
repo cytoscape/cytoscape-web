@@ -1,13 +1,8 @@
 import {
   Box,
   Button,
-  Checkbox,
-  FormControlLabel,
   MenuItem,
-  Radio,
-  RadioGroup,
   Select,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
@@ -20,18 +15,19 @@ import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import {
-  columnTypeMatchesFilter,
   inputColumnFilterFn,
   isAutoFilledParameter,
   shouldShowServiceDescription,
-  validateParameter,
 } from '../../../models/AppModel/impl'
+import { parameterKeys } from '../../../models/AppModel/impl/parameters'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
-import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppParameter } from '../../../models/AppModel/ServiceAppParameter'
 import { IdType } from '../../../models/IdType'
 import { getDomain } from '../../../utils/urlUtil'
+import { ParameterForm, useParameterErrors } from '../../ParameterForm'
+
+const NO_PARAMETERS: readonly ServiceAppParameter[] = []
 
 /** Props of the parameter dialog. The host menu owns it, not the menu row. */
 export interface AppMenuItemDialogProps {
@@ -63,7 +59,7 @@ export const InputColumns = (props: AppMenuItemDialogProps) => {
 
   const edgeColumns =
     useTableStore(
-      (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
+      (state) => state.tables?.[activeNetworkId]?.edgeTable?.columns,
     ) ?? []
 
   // Initialize column defaults once per dialog open (this component remounts
@@ -166,233 +162,25 @@ export const AppMenuItemDialog: React.FC<AppMenuItemDialogProps> = (props) => {
 
   const edgeColumns =
     useTableStore(
-      (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
+      (state) => state.tables?.[activeNetworkId]?.edgeTable?.columns,
     ) ?? []
 
-  const validationResults = React.useMemo(() => {
-    const results: Record<string, boolean> = {}
-    app.parameters?.forEach((p) => {
-      results[p.displayName] = validateParameter(p)
+  // The parameters render through the shared ParameterForm (array order,
+  // fieldsets from `groups`, host-filled types hidden). Values are the
+  // strings the service protocol uses; the form coerces for display and
+  // reports typed values, stringified back on the way to the store.
+  const parameters = app.parameters ?? NO_PARAMETERS
+  const parameterValues = React.useMemo(() => {
+    const keys = parameterKeys(parameters)
+    const values: Record<string, string | undefined> = {}
+    parameters.forEach((parameter, index) => {
+      values[keys[index]] = parameter.value ?? parameter.defaultValue
     })
-    return results
-  }, [app.parameters])
-
-  const renderParameter = (parameter: ServiceAppParameter) => {
-    switch (parameter.type) {
-      case ParameterUiType.Text: {
-        const value = parameter.value ?? parameter.defaultValue ?? ''
-        const isValid = validationResults[parameter.displayName] ?? true
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <TextField
-                error={!isValid}
-                helperText={!isValid ? parameter.validationHelp : ''}
-                size="small"
-                label={parameter.displayName}
-                value={value}
-                onChange={(e) =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    e.target.value,
-                  )
-                }
-              />
-            </Box>
-          </Tooltip>
-        )
-      }
-      case ParameterUiType.DropDown:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <Select
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value || ''}
-              >
-                {(parameter.valueList ?? []).map((value, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        value,
-                      )
-                    }
-                  >
-                    {value}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.Radio:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <RadioGroup
-                value={parameter.value || ''}
-                onChange={(e) =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    e.target.value,
-                  )
-                }
-              >
-                {(parameter.valueList ?? []).map((value, i) => (
-                  <FormControlLabel
-                    key={i}
-                    value={value}
-                    control={<Radio />}
-                    label={value}
-                  />
-                ))}
-              </RadioGroup>
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.CheckBox:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={
-                    (parameter.value ?? parameter.defaultValue) === 'true'
-                  }
-                  onChange={(e) =>
-                    updateServiceParameter(
-                      app.url,
-                      parameter.displayName,
-                      `${e.target.checked}`,
-                    )
-                  }
-                />
-              }
-              label={parameter.displayName}
-              labelPlacement="start"
-              sx={{
-                marginLeft: '0px !important',
-                display: 'flex',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}
-            />
-          </Tooltip>
-        )
-
-      case ParameterUiType.NodeColumn:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <Select
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value || ''}
-              >
-                {nodeColumns
-                  .filter((column) =>
-                    columnTypeMatchesFilter(
-                      column.type,
-                      parameter.columnTypeFilter,
-                    ),
-                  )
-                  .map((column, i) => (
-                    <MenuItem
-                      key={i}
-                      onClick={() =>
-                        updateServiceParameter(
-                          app.url,
-                          parameter.displayName,
-                          column.name,
-                        )
-                      }
-                    >
-                      {column.name}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.EdgeColumn:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <Select
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value || ''}
-              >
-                {edgeColumns
-                  .filter((column) =>
-                    columnTypeMatchesFilter(
-                      column.type,
-                      parameter.columnTypeFilter,
-                    ),
-                  )
-                  .map((column, i) => (
-                    <MenuItem
-                      key={i}
-                      onClick={() =>
-                        updateServiceParameter(
-                          app.url,
-                          parameter.displayName,
-                          column.name,
-                        )
-                      }
-                    >
-                      {column.name}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </Box>
-          </Tooltip>
-        )
-      default:
-        return null
-    }
-  }
+    return values
+  }, [parameters])
+  const parameterErrors = useParameterErrors(parameters, parameterValues, {
+    networkId: activeNetworkId,
+  })
 
   const handleSubmit = () => {
     handleConfirm()
@@ -421,9 +209,7 @@ export const AppMenuItemDialog: React.FC<AppMenuItemDialogProps> = (props) => {
     submitTooltip = "Unable to run service. There isn't an active network."
   }
 
-  const allParametersValid = Object.values(validationResults).every((v) => v)
-
-  if (!allParametersValid) {
+  if (Object.keys(parameterErrors).length > 0) {
     serviceCanBeRun = false
     submitTooltip = 'Please fix the validation errors in the parameters.'
   }
@@ -438,23 +224,26 @@ export const AppMenuItemDialog: React.FC<AppMenuItemDialogProps> = (props) => {
   ) : null
 
   // Auto-filled parameters (ndexUUID, accessToken, ...) are resolved at run
-  // time and never shown to the user.
-  const visibleParameters =
-    app.parameters?.filter(
-      (parameter) => !isAutoFilledParameter(parameter.type),
-    ) ?? []
+  // time; the form hides them, so the section only shows when a visible
+  // parameter exists.
+  const hasVisibleParameters = parameters.some(
+    (parameter) => !isAutoFilledParameter(parameter.type),
+  )
 
-  const parametersSection =
-    visibleParameters.length > 0 ? (
-      <Box sx={{ p: 3 }}>
-        <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
-        {visibleParameters.map((parameter: ServiceAppParameter) => (
-          <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
-            {renderParameter(parameter)}
-          </Box>
-        ))}
-      </Box>
-    ) : null
+  const parametersSection = hasVisibleParameters ? (
+    <Box sx={{ p: 3 }}>
+      <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
+      <ParameterForm
+        parameters={parameters}
+        values={parameterValues}
+        onChange={(key, value) =>
+          updateServiceParameter(app.url, key, String(value))
+        }
+        networkId={activeNetworkId}
+        testIdPrefix="service-app-parameter"
+      />
+    </Box>
+  ) : null
 
   const showDescription = shouldShowServiceDescription(
     app.description,

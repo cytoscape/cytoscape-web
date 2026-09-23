@@ -19,10 +19,16 @@ import { corePostEdit } from './undo'
 
 export interface LayoutAlgorithmInfo {
   engineName: string
+  /**
+   * The name to pass as `applyLayout`'s `algorithmName`. For an algorithm
+   * registered by an app it is the qualified `<appId>::<id>`.
+   */
   algorithmName: string
   displayName: string
   description: string
   type: string
+  /** Set when the algorithm was registered by an app ('layout-algorithm'). */
+  appId?: string
 }
 
 export interface ApplyLayoutOptions {
@@ -170,6 +176,7 @@ export const layoutApi: LayoutApi = {
               }
             },
             algorithm,
+            networkId,
           )
 
           // Async engines (lazily loaded) return a promise; a rejection there
@@ -218,6 +225,7 @@ export const layoutApi: LayoutApi = {
             displayName: algorithm.displayName,
             description: algorithm.description,
             type: algorithm.type,
+            ...(engine.appId !== undefined ? { appId: engine.appId } : {}),
           })
         }
       }

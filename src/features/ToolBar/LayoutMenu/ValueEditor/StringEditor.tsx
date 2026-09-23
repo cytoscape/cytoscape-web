@@ -11,6 +11,8 @@ import { ChangeEvent } from 'react'
 
 interface StringEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description?: string
   value: string
   setValue: (optionName: string, value: string) => void
@@ -28,6 +30,7 @@ interface StringEditorProps {
 
 export const StringEditor = ({
   optionName,
+  label,
   description,
   value,
   setValue,
@@ -36,6 +39,7 @@ export const StringEditor = ({
   tableLayout = false,
   error = false,
 }: StringEditorProps): JSX.Element => {
+  const displayLabel = label ?? optionName
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const newValue: any = event.target.value
     setValue(optionName, newValue as string)
@@ -60,9 +64,9 @@ export const StringEditor = ({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
-            title={optionName}
+            title={displayLabel}
           >
-            {optionName}
+            {displayLabel}
           </Typography>
         </Box>
         <Box
@@ -152,7 +156,7 @@ export const StringEditor = ({
     >
       <ListItemText
         id={optionName}
-        primary={optionName}
+        primary={displayLabel}
         sx={{ flex: '1 1 auto', minWidth: 0 }}
       />
     </ListItem>

@@ -15,7 +15,6 @@ import {
   resolveParameterValue,
   sendsNoData,
   shouldShowServiceDescription,
-  validateParameter,
 } from './index'
 
 const makeParam = (
@@ -45,6 +44,27 @@ describe('AppModel impl', () => {
       )
       expect(columnTypeMatchesFilter(ValueTypeName.String, null)).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Long, '')).toBe(true)
+      expect(columnTypeMatchesFilter(ValueTypeName.Long, [])).toBe(true)
+    })
+
+    it('matches when any filter of a list matches', () => {
+      const notDoubleOrList = ['string', 'long', 'integer', 'boolean']
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.String, notDoubleOrList),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Integer, notDoubleOrList),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Double, notDoubleOrList),
+      ).toBe(false)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.ListString, notDoubleOrList),
+      ).toBe(false)
+      // aliases work inside a list too
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.Double, ['number', 'boolean']),
+      ).toBe(true)
     })
 
     it('matches a concrete cx2 datatype exactly', () => {
@@ -74,13 +94,31 @@ describe('AppModel impl', () => {
       expect(columnTypeMatchesFilter(ValueTypeName.String, 'list')).toBe(false)
     })
 
-    it('matches wholenumber only for integer columns', () => {
+    it('matches wholenumber for integer and long columns only', () => {
       expect(
         columnTypeMatchesFilter(ValueTypeName.Integer, 'wholenumber'),
       ).toBe(true)
       expect(columnTypeMatchesFilter(ValueTypeName.Long, 'wholenumber')).toBe(
+        true,
+      )
+      expect(columnTypeMatchesFilter(ValueTypeName.Double, 'wholenumber')).toBe(
         false,
       )
+      expect(
+        columnTypeMatchesFilter(
+          ValueTypeName.ListInteger,
+          'list_of_wholenumber',
+        ),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(ValueTypeName.ListLong, 'list_of_wholenumber'),
+      ).toBe(true)
+      expect(
+        columnTypeMatchesFilter(
+          ValueTypeName.ListDouble,
+          'list_of_wholenumber',
+        ),
+      ).toBe(false)
     })
   })
 
@@ -214,89 +252,6 @@ describe('AppModel impl', () => {
       expect(shouldShowServiceDescription(undefined, undefined)).toBe(false)
       expect(shouldShowServiceDescription(null, undefined)).toBe(false)
       expect(shouldShowServiceDescription('   ', undefined)).toBe(false)
-    })
-  })
-
-  describe('validateParameter', () => {
-    it('should return true if no regex is provided', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'value',
-        validationRegex: '',
-      } as any
-      expect(validateParameter(parameter)).toBe(true)
-    })
-
-    it('should return true if value matches regex', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'value',
-        validationRegex: '^v.*e$',
-      } as any
-      expect(validateParameter(parameter)).toBe(true)
-    })
-
-    it('should return false if value does not match regex', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'wrong',
-        validationRegex: '^v.*e$',
-      } as any
-      expect(validateParameter(parameter)).toBe(false)
-    })
-
-    it('should use current value if provided', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'wrong',
-        value: 'value',
-        validationRegex: '^v.*e$',
-      } as any
-      expect(validateParameter(parameter)).toBe(true)
-    })
-
-    it('should handle invalid regex by returning true', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'value',
-        validationRegex: '[',
-      } as any
-      expect(validateParameter(parameter)).toBe(true)
-    })
-
-    it('should return true for non-text parameters', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.DropDown,
-        defaultValue: 'value',
-        validationRegex: 'nomatch',
-      } as any
-      expect(validateParameter(parameter)).toBe(true)
-    })
-    it('should return false if regex is longer than 1000 characters', () => {
-      const longRegex = 'a'.repeat(1001)
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'value',
-        validationRegex: longRegex,
-      } as any
-      expect(validateParameter(parameter)).toBe(false)
-    })
-
-    it('should return false if regex is unsafe (e.g. (a+)+)', () => {
-      const parameter: ServiceAppParameter = {
-        displayName: 'test',
-        type: ParameterUiType.Text,
-        defaultValue: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac',
-        validationRegex: '(a+)+$',
-      } as any
-      expect(validateParameter(parameter)).toBe(false)
     })
   })
 })

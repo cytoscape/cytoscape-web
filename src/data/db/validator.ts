@@ -360,11 +360,13 @@ const ServiceAppParameterSchema = z.object({
   defaultValue: z.string(),
   value: z.string().optional(),
   validationType: z.string(),
-  columnTypeFilter: z.string(),
+  // One filter or a list of filters; services send null for what does not apply.
+  columnTypeFilter: z.union([z.string(), z.array(z.string())]).nullish(),
   validationHelp: z.string(),
   validationRegex: z.string(),
-  minValue: z.number().optional(),
-  maxValue: z.number().optional(),
+  minValue: z.number().nullish(),
+  maxValue: z.number().nullish(),
+  groups: z.unknown().optional(),
 })
 
 const InputColumnSchema = z.object({

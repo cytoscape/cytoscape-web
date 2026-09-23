@@ -17,6 +17,8 @@ import { ListValueEditorDialog } from '../../../TableBrowser/ListValueEditorDial
 
 interface ListEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description: string
   valueType: ValueTypeName
   value: ValueType
@@ -54,6 +56,7 @@ const summarizeList = (value: ValueType): string => {
  */
 export const ListEditor = ({
   optionName,
+  label,
   description,
   valueType,
   value,
@@ -63,6 +66,7 @@ export const ListEditor = ({
   tableLayout = false,
   error = false,
 }: ListEditorProps): JSX.Element => {
+  const displayLabel = label ?? optionName
   const [open, setOpen] = useState(false)
   const summary = summarizeList(value)
 
@@ -93,7 +97,7 @@ export const ListEditor = ({
             <InputAdornment position="end">
               <IconButton
                 size="small"
-                aria-label={`edit list ${optionName}`}
+                aria-label={`edit list ${displayLabel}`}
                 onClick={() => setOpen(true)}
               >
                 <EditIcon fontSize="small" />
@@ -108,7 +112,7 @@ export const ListEditor = ({
   const dialog = (
     <ListValueEditorDialog
       open={open}
-      columnName={optionName}
+      columnName={displayLabel}
       listType={valueType}
       value={value}
       onCancel={() => setOpen(false)}
@@ -135,9 +139,9 @@ export const ListEditor = ({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
-            title={optionName}
+            title={displayLabel}
           >
-            {optionName}
+            {displayLabel}
           </Typography>
         </Box>
         <Box
@@ -186,7 +190,7 @@ export const ListEditor = ({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <ListItemText
           id={optionName}
-          primary={optionName}
+          primary={displayLabel}
           sx={{ m: 0, flex: '0 0 auto' }}
         />
         {typeLabel && (
