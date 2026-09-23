@@ -6,9 +6,13 @@
 export interface SidePanelState {
   /**
    * Selection key of the selected tab (see `rightPanelResourceId`), or null
-   * before anything was selected. It may name a tab that is not shown right
-   * now — the side panel falls back to its first tab for display and picks
-   * the selection up again if the tab comes back.
+   * before anything was selected.
+   *
+   * While the side panel is unmounted (right pane closed) it may name a tab
+   * that is not shown right now — `panel.open` selects before opening — and
+   * the panel picks it up on mount if the tab is available by then. While the
+   * panel is mounted, a selected tab that gets hidden or removed is replaced
+   * here by the panel's first tab (see the reset effect in `SidePanel`).
    */
   readonly selectedTabId: string | null
 }
