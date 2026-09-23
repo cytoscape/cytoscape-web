@@ -12,6 +12,7 @@ export { useElementApi } from './useElementApi' // Phase 1a
 export { useExportApi } from './useExportApi' // Phase 1e
 export { useLayoutApi } from './useLayoutApi' // Phase 1e
 export { useNetworkApi } from './useNetworkApi' // Phase 1b
+export { usePanelApi } from './usePanelApi' // Open a pane, select a tab
 export { useSelectionApi } from './useSelectionApi' // Phase 1c
 export { useTableApi } from './useTableApi' // Phase 1d
 export { useViewportApi } from './useViewportApi' // Phase 1c

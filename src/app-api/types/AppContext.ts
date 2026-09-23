@@ -7,6 +7,7 @@ import type { NodeGraphicsApi } from '../core/nodeGraphicsApi'
 import type { AppDataApi } from './AppDataTypes'
 import type { DialogApi } from './AppDialogTypes'
 import type { ResourceApi, ResourceDeclaration } from './AppResourceTypes'
+import type { PanelApi } from './PanelTypes'
 
 /**
  * Per-app API object passed to mount(). Extends CyWebApiType and adds
@@ -44,6 +45,13 @@ export interface AppContextApis extends CyWebApiType {
    * Dialogs are closed when the app is disabled.
    */
   readonly dialog: DialogApi
+  /**
+   * Per-app Panel API (factory-bound to this app's ID): open a collapsible
+   * pane and select a tab in it. Bound to the app only so that, when two apps
+   * registered the same tab id, `open` selects this app's own tab.
+   * Overrides the anonymous panel from CyWebApiType.
+   */
+  readonly panel: PanelApi
 }
 
 /**

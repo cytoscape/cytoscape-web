@@ -15,6 +15,8 @@ import type { NetworkApi } from './networkApi'
 import { networkApi } from './networkApi'
 import type { NodeGraphicsApi } from './nodeGraphicsApi'
 import { nodeGraphicsApi } from './nodeGraphicsApi'
+import type { PanelApi } from '../types/PanelTypes'
+import { panelApi } from './panelApi'
 import type { SelectionApi } from './selectionApi'
 import { selectionApi } from './selectionApi'
 import type { TableApi } from './tableApi'
@@ -44,6 +46,11 @@ export interface CyWebApiType {
    * is never exported to CX2 — Vizmapper custom graphics still are.
    */
   nodeGraphics: NodeGraphicsApi
+  /**
+   * Open one of the workspace's collapsible panes (left, right, bottom) and
+   * select a tab inside it.
+   */
+  panel: PanelApi
   /**
    * Return the network-scoped domains (element, table, selection,
    * viewport, visualStyle, export, plus `layout.applyLayout`) with
@@ -76,6 +83,7 @@ export const CyWebApi: CyWebApiType = {
   workspace: workspaceApi,
   contextMenu: contextMenuApi,
   nodeGraphics: nodeGraphicsApi,
+  panel: panelApi,
   forNetwork,
   isReady,
   whenReady: () => whenReadySignal().then(() => CyWebApi),

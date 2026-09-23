@@ -25,6 +25,7 @@
 //   export: ExportApi           (Phase 1e)
 //   workspace: WorkspaceApi     (Phase 1f)
 //   contextMenu: ContextMenuApi (Phase 1h)
+//   panel: PanelApi             (open a collapsible pane, select a tab)
 //
 // External apps should use feature detection to check for specific
 // APIs rather than relying on a version string:

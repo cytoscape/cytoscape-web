@@ -51,6 +51,10 @@ declare module 'cyweb/ExportApi' {
   export function useExportApi(): import('./index').ExportApi
 }
 
+declare module 'cyweb/PanelApi' {
+  export function usePanelApi(): import('./index').PanelApi
+}
+
 declare module 'cyweb/ScopedApi' {
   export function useScopedApi(
     networkId?: string,

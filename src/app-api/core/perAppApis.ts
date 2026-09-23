@@ -15,6 +15,7 @@ import { createAppDataApi } from './appDataApi'
 import { createContextMenuApi } from './contextMenuApi'
 import { createDialogApi } from './dialogApi'
 import { createNodeGraphicsApi } from './nodeGraphicsApi'
+import { createPanelApi } from './panelApi'
 import { createResourceApi } from './resourceApi'
 
 /**
@@ -24,6 +25,9 @@ import { createResourceApi } from './resourceApi'
  * whose registrations must be attributed to an app and cleaned up when that app
  * is disabled. Anything registered through these factories carries `appId` and
  * is removed by `AppCleanupRegistry` on deactivation.
+ *
+ * `panel` registers nothing, so it has nothing to clean up; it is per-app only
+ * so that `panel.open` can prefer the calling app's own tab when ids collide.
  *
  * `appData` is the one exception: it is per-app but deliberately NOT registered
  * for cleanup. Its entries are results the user paid compute for, and they must
@@ -38,5 +42,6 @@ export function buildPerAppApis(appId: string): AppContextApis {
     nodeGraphics: createNodeGraphicsApi(appId),
     appData: createAppDataApi(appId),
     dialog: createDialogApi(appId),
+    panel: createPanelApi(appId),
   }
 }

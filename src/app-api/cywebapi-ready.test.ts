@@ -25,6 +25,7 @@ const MOCK_API_DOMAINS = [
   'workspace',
   'contextMenu',
   'nodeGraphics',
+  'panel',
 ] as const
 
 describe('cywebapi:ready smoke test', () => {

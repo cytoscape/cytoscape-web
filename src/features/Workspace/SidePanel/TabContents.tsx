@@ -4,13 +4,11 @@ import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { appRegistry } from '../../../data/hooks/stores/useAppManager'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { CyApp } from '../../../models/AppModel'
 import {
-  ComponentType as AppComponentType,
-  CyApp,
-} from '../../../models/AppModel'
-import { AppStatus } from '../../../models/AppModel/AppStatus'
-import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
-import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
+  BUILTIN_SUB_NETWORK_RESOURCE_ID,
+  listRightPanelAppTabs,
+} from '../../../models/UiModel/impl/panelTabs'
 import { AppIdProvider } from '../.././../app-api/AppIdContext'
 import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import ExternalComponent from '../../AppManager/ExternalComponent'
@@ -24,10 +22,6 @@ const ViewerPanel = lazy(() =>
   })),
 )
 import { TabPanel } from './TabPanel'
-
-// ── Builtin panel identity ───────────────────────────────────────
-
-const BUILTIN_SUB_NETWORK_ID = '__builtin__::right-panel::sub-network-viewer'
 
 // ── Merged panel entry (manifest + runtime) ──────────────────────
 
@@ -53,81 +47,46 @@ export function usePanelEntries(): PanelEntry[] {
     (state) => state.workspace.currentNetworkId,
   )
 
-  // 1. Collect runtime resources for 'right-panel' slot
-  const runtimePanels: PanelEntry[] = runtimeResources
-    .filter((r: RegisteredAppResource) => {
-      if (r.slot !== 'right-panel') return false
-      // Must be active app
-      if (apps[r.appId]?.status !== AppStatus.Active) return false
-      // Evaluate requires.network
-      if (r.requires?.network && !currentNetworkId) return false
-      return true
-    })
-    .map(
-      (r: RegisteredAppResource): PanelEntry => ({
-        resourceId: `${r.appId}::right-panel::${r.id}`,
-        label: r.title ?? r.id,
-        component: r.component as React.ComponentType<any>,
-        appId: r.appId,
-        errorFallback: r.errorFallback,
-      }),
-    )
+  // Identity, visibility and order come from the model, which the App API's
+  // `panel.open` shares — so the tab it selects is one this strip shows.
+  const appPanels: PanelEntry[] = listRightPanelAppTabs(
+    apps,
+    runtimeResources,
+    currentNetworkId,
+  ).map((tab): PanelEntry => {
+    const { resource, manifest } = tab
+    if (resource !== undefined) {
+      return {
+        resourceId: tab.resourceId,
+        label: resource.title ?? resource.id,
+        component: resource.component as React.ComponentType<any>,
+        appId: tab.appId,
+        errorFallback: resource.errorFallback,
+      }
+    }
 
-  // Track runtime resourceIds for deduplication
-  const runtimeIds = new Set(runtimePanels.map((p) => p.resourceId))
+    // Manifest panel. Prefer the lazy component from appRegistry (survives
+    // DB restore).
+    const freshComponent = appRegistry
+      .get(tab.appId)
+      ?.components?.find((c) => c.id === tab.id)
+    const PanelComponent: any =
+      freshComponent?.component ??
+      manifest?.component ??
+      ExternalComponent(tab.appId, './' + tab.id)
 
-  // 2. Collect manifest panels from CyApp.components
-  const manifestPanels: PanelEntry[] = []
-  Object.keys(apps).forEach((appId: string) => {
-    const app: CyApp = apps[appId]
-    if (app.status !== AppStatus.Active) return
-
-    const components = app.components ?? []
-    components.forEach((component: ComponentMetadata) => {
-      if (component.type !== AppComponentType.Panel) return
-
-      // If a runtime resource with the same identity exists, skip manifest
-      const manifestResourceId = `${appId}::right-panel::${component.id}`
-      if (runtimeIds.has(manifestResourceId)) return
-
-      // Prefer the lazy component from appRegistry (survives DB restore)
-      const freshComponent = appRegistry
-        .get(appId)
-        ?.components?.find((c) => c.id === component.id)
-      const PanelComponent: any =
-        freshComponent?.component ??
-        component.component ??
-        ExternalComponent(appId, './' + component.id)
-
-      manifestPanels.push({
-        resourceId: manifestResourceId,
-        label: component.id,
-        component: PanelComponent,
-        appId,
-      })
-    })
+    return {
+      resourceId: tab.resourceId,
+      label: tab.id,
+      component: PanelComponent,
+      appId: tab.appId,
+    }
   })
 
-  // 3. Merge: runtime resources first (already ordered), then manifest
-  const appPanels = [...runtimePanels, ...manifestPanels]
-
-  // 4. Sort by order (ascending, undefined last), then by array position
-  appPanels.sort((a, b) => {
-    const rA = runtimeResources.find(
-      (r) => `${r.appId}::right-panel::${r.id}` === a.resourceId,
-    )
-    const rB = runtimeResources.find(
-      (r) => `${r.appId}::right-panel::${r.id}` === b.resourceId,
-    )
-    const orderA = rA?.order ?? Infinity
-    const orderB = rB?.order ?? Infinity
-    return orderA - orderB
-  })
-
-  // 5. Prepend built-in Sub Network Viewer
+  // Prepend built-in Sub Network Viewer
   return [
     {
-      resourceId: BUILTIN_SUB_NETWORK_ID,
+      resourceId: BUILTIN_SUB_NETWORK_RESOURCE_ID,
       label: 'Sub Network Viewer',
       component: ViewerPanel,
     },
