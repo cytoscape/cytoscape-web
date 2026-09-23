@@ -104,8 +104,7 @@ export { MAX_APP_DATA_VALUE_BYTES } from './AppDataTypes'
 // ── App Resource registration types (Phase 2) ───────────────────
 export type {
   LayoutParameter,
-  LayoutParameterType,
-  LayoutParameterValue,
+  LayoutParameterUiType,
   LayoutPositions,
   LayoutRunContext,
   ModalHostProps,
@@ -163,10 +162,14 @@ export type {
   ValueType,
   VisualStyle,
 } from './ElementTypes'
+export type { AppParameter, ParameterValue } from './ElementTypes'
 export {
+  ColumnTypeFilter,
   ComponentType,
   LayoutAlgorithmType,
   MAX_STYLES_PER_NETWORK,
+  ParameterUiType,
+  ValidationType,
   ValueTypeName,
   VisualPropertyName,
 } from './ElementTypes'

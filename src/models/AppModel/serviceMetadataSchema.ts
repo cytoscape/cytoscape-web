@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+import { logApp } from '../../debug'
+import {
+  duplicateParameterKeys,
+  parameterDefinitionProblem,
+} from './impl/parameters'
+
 import type { ServiceMetadata } from './ServiceMetadata'
 
 /**
@@ -44,6 +50,12 @@ const CyWebMenuItemSchema = z
   })
   .passthrough()
 
+// Only `displayName` is required. Everything else — including `groups`
+// (presentation nesting, docs/specifications/APP_PARAMETERS_SPECIFICATION.md)
+// — passes through unchecked: services send `null` for what does not apply,
+// and a stricter shape here would reject apps that work. Malformed fields
+// are reported by `warnAboutParameterDefinitions` below and rendered as
+// best the form can (a malformed `groups` is treated as no groups).
 const ServiceAppParameterSchema = z
   .object({
     displayName: z.string(),
@@ -77,9 +89,53 @@ export const parseServiceMetadata = (
   data: unknown,
 ): ServiceMetadata | undefined => {
   const result = ServiceMetadataSchema.safeParse(data)
-  return result.success
-    ? (result.data as unknown as ServiceMetadata)
-    : undefined
+  if (!result.success) {
+    return undefined
+  }
+  const metadata = result.data as unknown as ServiceMetadata
+  warnAboutParameterDefinitions(metadata)
+  return dropUnusableParameters(metadata)
+}
+
+/**
+ * A parameter whose displayName is `__proto__` cannot be carried by any of
+ * the plain records the host keys by parameter key (the dialog's values, the
+ * run payload built by `buildCustomParameters`): assigning that key invokes
+ * the prototype setter and the value silently disappears.
+ * `parameterDefinitionProblem` reports it (above); the lenient service path
+ * then drops that one parameter rather than the whole service.
+ */
+const dropUnusableParameters = (metadata: ServiceMetadata): ServiceMetadata => {
+  const usable = metadata.parameters.filter(
+    (parameter) => parameter.displayName !== '__proto__',
+  )
+  return usable.length === metadata.parameters.length
+    ? metadata
+    : { ...metadata, parameters: usable }
+}
+
+/**
+ * Report, without rejecting, parameter definitions the form cannot render
+ * as declared (an unknown type, a dropDown without values, ...) and
+ * parameters that share a displayName within the same groups (the key rule
+ * cannot tell them apart; the last one wins in the store). Services that
+ * work today keep working; the log says what to fix.
+ */
+const warnAboutParameterDefinitions = (metadata: ServiceMetadata): void => {
+  metadata.parameters.forEach((parameter, index) => {
+    const problem = parameterDefinitionProblem(parameter, index)
+    if (problem !== undefined) {
+      logApp.warn(
+        `[serviceMetadata]: "${metadata.name}": ${problem}; the parameter may not render as intended`,
+      )
+    }
+  })
+  const duplicates = duplicateParameterKeys(metadata.parameters)
+  if (duplicates.length > 0) {
+    logApp.warn(
+      `[serviceMetadata]: "${metadata.name}" declares parameters that share a displayName within the same groups (${duplicates.join(', ')}); only the last of each is editable`,
+    )
+  }
 }
 
 /**

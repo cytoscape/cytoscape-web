@@ -81,6 +81,8 @@ export const useLayoutStore = create(
           apply,
         )
         state.layoutEngines = newState.layoutEngines
+        state.preferredLayout = newState.preferredLayout
+        state.preferredHierarchicalLayout = newState.preferredHierarchicalLayout
         return state
       })
     },

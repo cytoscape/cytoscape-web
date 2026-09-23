@@ -13,7 +13,7 @@ import { IdType } from '../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { Network } from '../../models/NetworkModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { runEngineLayout } from '../ToolBar/LayoutMenu/runEngineLayout'
+import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType

@@ -112,14 +112,12 @@ export interface AppAction {
   clearCurrentTask: () => void
 
   /**
-   * Update the parameters for the service call
-   *
+   * Update one parameter value for the service call. `key` follows the
+   * parameter key rule (`parameterKeys`): the parameter's displayName, or
+   * its group path joined with '/' when two parameters share a displayName.
+   * Values stay strings, as the service protocol sends and receives them.
    */
-  updateServiceParameter: (
-    url: string,
-    displayName: string,
-    value: string,
-  ) => void
+  updateServiceParameter: (url: string, key: string, value: string) => void
 
   /**
    * Update the input column (selected column in the table)

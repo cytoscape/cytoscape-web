@@ -149,6 +149,52 @@ describe('useRegisterNetwork', () => {
     expect(useLayoutStore.getState().isRunning).toBe(false)
   })
 
+  it('resets isRunning when the default layout engine throws synchronously', () => {
+    const apply = vi.fn(() => {
+      throw new Error('engine boom')
+    })
+    act(() => {
+      useLayoutStore.setState({
+        layoutEngines: [{ ...G6Layout, apply }] as any,
+      })
+    })
+    const { result } = renderHook(() => useRegisterNetwork())
+
+    act(() => {
+      result.current(NET_ID, makeCyNetwork(), makeSummary({ hasLayout: false }))
+    })
+
+    expect(apply).toHaveBeenCalledTimes(1)
+    expect(useLayoutStore.getState().isRunning).toBe(false)
+    expect(useNetworkSummaryStore.getState().summaries[NET_ID].hasLayout).toBe(
+      false,
+    )
+  })
+
+  it('resets isRunning when the default layout engine rejects', async () => {
+    const apply = vi.fn(async () => {
+      throw new Error('engine boom')
+    })
+    act(() => {
+      useLayoutStore.setState({
+        layoutEngines: [{ ...G6Layout, apply }] as any,
+      })
+    })
+    const { result } = renderHook(() => useRegisterNetwork())
+
+    act(() => {
+      result.current(NET_ID, makeCyNetwork(), makeSummary({ hasLayout: false }))
+    })
+    expect(useLayoutStore.getState().isRunning).toBe(true)
+
+    await vi.waitFor(() => {
+      expect(useLayoutStore.getState().isRunning).toBe(false)
+    })
+    expect(useNetworkSummaryStore.getState().summaries[NET_ID].hasLayout).toBe(
+      false,
+    )
+  })
+
   it('flags an invalid HCX network with a warning message and a validation result', () => {
     const hcxSummary = makeSummary({
       properties: [

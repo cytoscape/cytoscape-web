@@ -14,13 +14,48 @@
 
 import type {
   ApiResult,
+  AppParameter,
   CyWebApiType,
   IdType,
+  LayoutParameter,
+  LayoutRunContext,
   NodeSpec,
+  RegisterLayoutOptions,
   VisualStyle,
 } from '@cytoscape-web/api-types'
 
 // ── 1. Ordinary type imports ──────────────────────────────────────────
+
+// The shared parameter spec ships: a layout registration is an ordered
+// array of it, minus the host-filled types, and `run` reads values by
+// displayName, typed by the declaration.
+const spacing: LayoutParameter = {
+  displayName: 'Node Spacing',
+  type: 'text',
+  validationType: 'digits',
+  defaultValue: 60,
+  groups: ['Spacing'],
+}
+const serviceStyle: AppParameter = {
+  displayName: 'Algorithm',
+  type: 'dropDown',
+  valueList: ['louvain', 'leiden'],
+  defaultValue: 'louvain',
+}
+export const rowLayout: RegisterLayoutOptions = {
+  id: 'row',
+  displayName: 'Row Layout',
+  parameters: [spacing],
+  run: ({ nodes, parameters }: LayoutRunContext) => {
+    const gap = parameters['Node Spacing'] as number
+    const result: Record<IdType, [number, number]> = {}
+    nodes.forEach((node, index) => {
+      result[node.id] = [index * gap, 0]
+    })
+    return result
+  },
+}
+export const serviceParameterLabel = (): string => serviceStyle.displayName
 
 // ApiResult is a discriminated union: narrowing on `success` must expose
 // `data` on one branch and `error` on the other.

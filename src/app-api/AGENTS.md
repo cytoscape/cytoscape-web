@@ -41,7 +41,7 @@ src/app-api/
 │   ├── scopedApi.ts            ← forNetwork(id?): network-scoped domains with networkId pre-bound
 │   └── index.ts                 ← Assembles CyWebApi object (incl. forNetwork); assigned to window.CyWebApi
 ├── event-bus/                   ← Typed event bus (Step 2, after Phase 1e)
-│   ├── CyWebEvents.ts           ← CyWebEvents interface (10 event types + detail shapes)
+│   ├── CyWebEvents.ts           ← CyWebEvents interface (11 event types + detail shapes)
 │   ├── dispatchCyWebEvent.ts    ← Generic dispatch helper — sole place new CustomEvent() is called
 │   └── initEventBus.ts          ← Zustand subscribeWithSelector → window.dispatchEvent
 ├── useElementApi.ts             ← React Hook: returns elementApi (thin wrapper)
@@ -91,7 +91,14 @@ src/app-api/
    are called in `src/boot/steps/publishWorkspace.ts:39,45`, immediately after
    `setWorkspace(workspace)` completes, so subscriptions are never active during the
    IndexedDB → store hydration transition and no spurious `network:created` /
-   `network:switched` events fire on startup.
+   `network:switched` events fire on startup. Subscriptions that keep their own
+   bookkeeping seed it from the stores at init for the same reason: `network:loaded`
+   records every network whose tables and view are already present (URL imports run
+   before `publishWorkspace`), so a later unrelated store change does not report them.
+   Note the workspace's networks are NOT loaded at this point — after a reload only
+   the summaries are hydrated, and each network's tables and view land the first time
+   it becomes current (`WorkspaceEditor.loadCurrentNetworkById`). That is why
+   `network:switched` can precede the data and why `network:loaded` exists.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
     fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
     promise resolution. Errors do NOT dispatch `layout:completed`.
@@ -143,8 +150,9 @@ src/app-api/
     `crossOrigin: 'anonymous'` at all. See the STRING example in `api_docs/Api.md`.
 17. **App layouts are ordinary engines, adapted once** — `resource.registerLayout` (the
     `'layout-algorithm'` slot, #734) never renders anything itself. `core/appLayoutEngine.ts`
-    turns the options into a `LayoutAlgorithm` (name qualified `<appId>::<id>`, `parameters`
-    and `editables` sharing keys so `setLayoutOption` updates both) inside ONE synthetic
+    turns the options into a `LayoutAlgorithm` (name qualified `<appId>::<id>`; `editables`
+    are the declared parameters with a `name` from the key rule, `parameters[name]` the live
+    typed value `setLayoutOption` updates) inside ONE synthetic
     `LayoutEngine` per app (`name === appId`, `appId` set) in `LayoutStore.layoutEngines`, so
     the Layout menu, the Settings dialog, Apply Default Layout, the toolbar button and
     `layout.applyLayout` reach it with no special case — the menu only uses `engine.appId`
@@ -152,10 +160,23 @@ src/app-api/
     not in the store (Immer-frozen, snapshot-serialized). The shared `apply` needs the 5th
     `networkId` argument every host call site now passes; it rejects on any failure and never
     calls `afterLayout` then, so callers own the `isRunning` reset (`runEngineLayout` in
-    `features/ToolBar/LayoutMenu/` for the UI paths, `applyLayout` for the API). Cleanup is
+    `models/LayoutModel/impl/` for every host path, the initial default layout of
+    `useRegisterNetwork` included, `applyLayout` for the API). Cleanup is
     the adapter's `registerAppCleanup` call plus the resource store's slot-agnostic
     `removeAllByAppId`; a dangling `preferredLayout` falls back to `defAlgorithm`. Layout
     events stay API-only (principle 10) — host UI paths do not dispatch them.
+18. **One parameter spec, one form** — `RegisterLayoutOptions.parameters` is an ordered
+    `LayoutParameter[]` (the service-app `AppParameter` JSON spec minus the host-filled types,
+    `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`), never a keyed record and never
+    the internal `Property` model. Keys come from `parameterKeys` in
+    `models/AppModel/impl/parameters.ts` (displayName, or the group path when two labels
+    collide); values are typed by the declaration (`coerceParameterValue`); definition rules
+    are `parameterDefinitionProblem(..., { strict: true })` and shared with the service
+    metadata parser (non-strict, warn-only there). `features/ParameterForm/` renders every
+    consumer — built-in layouts, app layouts, service apps — so a new parameter capability
+    goes into the spec, the helpers and the form, not into a dialog. `registerLayout` rejects
+    the unpublished beta.4 record shape (`type: 'integer'`, `range`) by name so an app built
+    against it cannot register with silently wrong keys.
 
 18. **`panel.open` resolves tabs through the model the UI renders from** —
     `core/panelApi.ts` never keeps its own idea of which tabs exist. The left and
@@ -243,7 +264,7 @@ All properties are `readonly`. No `Object.freeze()`. See [ADR 0001](../../docs/d
 
 ## Event Bus Pattern
 
-### `CyWebEvents` interface (9 types)
+### `CyWebEvents` interface (11 types)
 
 ```typescript
 // src/app-api/event-bus/CyWebEvents.ts
@@ -259,6 +280,11 @@ export interface CyWebEvents {
     removedEdgeIds: IdType[]
   }
   'network:switched': { networkId: IdType; previousId: IdType }
+  // Fired once a network's tables AND view are in the stores (readable via
+  // the API). Lazily loaded workspace networks get it after network:switched;
+  // new networks get it alongside network:created. Never for the first
+  // landing's data:changed.
+  'network:loaded': { networkId: IdType }
   'selection:changed': {
     networkId: IdType
     selectedNodes: IdType[]
@@ -267,6 +293,11 @@ export interface CyWebEvents {
   'layout:started': { networkId: IdType; algorithm: string }
   'layout:completed': { networkId: IdType; algorithm: string }
   'style:changed': { networkId: IdType; property: string }
+  'style:switched': {
+    networkId: IdType
+    styleId: IdType
+    previousStyleId: IdType
+  }
   'data:changed': {
     networkId: IdType
     tableType: 'node' | 'edge'
@@ -313,7 +344,10 @@ export function initEventBus(): void {
     },
   )
   // ... similarly for network:switched, selection:changed,
-  //     style:changed, data:changed
+  //     style:switched, style:changed, data:changed
+  // network:loaded watches BOTH TableStore.tables and ViewModelStore.viewModels
+  // (they land in either order) and keeps a Set of networks already reported,
+  // seeded from the stores at init.
   // layout:started and layout:completed are dispatched from core/layoutApi.ts, NOT here
 }
 ```

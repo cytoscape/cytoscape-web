@@ -55,6 +55,7 @@ const edges = [{ id: 'e1', s: 'n1', t: 'n2' }]
 
 function makeLayoutStore() {
   return {
+    layoutEngines: [] as Array<{ name: string; appId?: string }>,
     upsertAppAlgorithm: vi.fn(),
     removeAppAlgorithm: vi.fn(),
     removeAppEngine: vi.fn(),
@@ -69,15 +70,17 @@ function makeOptions(
     displayName: 'Row Layout',
     description: 'Nodes on one row',
     type: 'geometric',
-    parameters: {
-      spacing: {
+    parameters: [
+      {
         displayName: 'Spacing',
-        type: 'integer',
+        type: 'text',
+        validationType: 'digits',
         defaultValue: 60,
         description: 'Gap',
+        groups: ['Geometry'],
       },
-      label: { type: 'string', defaultValue: 'x' },
-    },
+      { displayName: 'Label', type: 'text', defaultValue: 'x' },
+    ],
     run: vi.fn(
       async (): Promise<LayoutPositions> => ({ n1: [0, 0], n2: [60, 0] }),
     ),
@@ -120,46 +123,72 @@ describe('appLayoutEngine', () => {
       expect(algorithm.displayName).toBe('Row Layout')
       expect(algorithm.description).toBe('Nodes on one row')
       expect(algorithm.type).toBe('geometric')
-      expect(algorithm.parameters).toEqual({ spacing: 60, label: 'x' })
-      expect(algorithm.editables?.spacing).toEqual({
-        name: 'spacing',
-        displayName: 'Spacing',
-        description: 'Gap',
-        type: 'integer',
-        value: 60,
-        defaultValue: 60,
-        range: undefined,
-      })
-      // displayName is optional (#736): a parameter without one keeps only
-      // its key, which the Settings dialog then shows as the label
-      expect(algorithm.editables?.label?.displayName).toBeUndefined()
+      // values keyed by the key rule (displayName), typed by declaration
+      expect(algorithm.parameters).toEqual({ Spacing: 60, Label: 'x' })
+      // editables are the definitions, in order, each with its key as `name`
+      expect(algorithm.editables).toEqual([
+        {
+          name: 'Spacing',
+          displayName: 'Spacing',
+          type: 'text',
+          validationType: 'digits',
+          defaultValue: 60,
+          description: 'Gap',
+          groups: ['Geometry'],
+        },
+        {
+          name: 'Label',
+          displayName: 'Label',
+          type: 'text',
+          defaultValue: 'x',
+        },
+      ])
       // parameters and editables share keys — what setLayoutOption needs
-      expect(Object.keys(algorithm.editables ?? {}).sort()).toEqual(
+      expect((algorithm.editables ?? []).map((e) => e.name).sort()).toEqual(
         Object.keys(algorithm.parameters).sort(),
       )
     })
 
-    it('defaults type to other, description to empty, and keeps threshold and range', () => {
+    it('group-qualifies colliding labels and coerces defaults', () => {
       const algorithm = buildAppLayoutAlgorithm(
         APP,
         makeOptions({
           type: undefined,
           description: undefined,
           threshold: 500,
-          parameters: {
-            gap: {
-              type: 'double',
+          parameters: [
+            {
+              displayName: 'Gap',
+              type: 'text',
+              validationType: 'number',
               defaultValue: 1.5,
-              range: { min: 0, max: 10 },
+              groups: ['Nodes'],
             },
-          },
+            {
+              displayName: 'Gap',
+              type: 'text',
+              validationType: 'digits',
+              defaultValue: 4,
+              groups: ['Clusters'],
+            },
+            { displayName: 'On', type: 'checkBox', defaultValue: true },
+          ],
         }),
       )
 
       expect(algorithm.type).toBe('other')
       expect(algorithm.description).toBe('')
       expect(algorithm.threshold).toBe(500)
-      expect(algorithm.editables?.gap.range).toEqual({ min: 0, max: 10 })
+      expect((algorithm.editables ?? []).map((e) => e.name)).toEqual([
+        'Nodes/Gap',
+        'Clusters/Gap',
+        'On',
+      ])
+      expect(algorithm.parameters).toEqual({
+        'Nodes/Gap': 1.5,
+        'Clusters/Gap': 4,
+        On: true,
+      })
     })
 
     it('has no editables when no parameters are declared', () => {
@@ -182,6 +211,19 @@ describe('appLayoutEngine', () => {
         appEngineApply,
       )
       expect(getAppLayoutMeta('appX::row')).toEqual({ appId: APP, id: 'row' })
+    })
+
+    it('refuses an app id that names a built-in engine', () => {
+      layoutStore.layoutEngines = [
+        { name: 'G6' },
+        { name: 'other', appId: 'other' },
+      ]
+      expect(() => registerAppLayout('G6', makeOptions())).toThrow(/built-in/)
+      expect(layoutStore.upsertAppAlgorithm).not.toHaveBeenCalled()
+      // Only a built-in engine's name is reserved: an app engine is found by
+      // appId and a re-registration under the same app id is the normal case.
+      registerAppLayout('other', makeOptions())
+      expect(layoutStore.upsertAppAlgorithm).toHaveBeenCalledTimes(1)
     })
 
     it('unregisterAppLayout removes one algorithm', () => {
@@ -268,7 +310,7 @@ describe('appLayoutEngine', () => {
       expect(ctx.edges).toBe(edges)
       expect(ctx.positions).toEqual({ n1: [1, 2], n2: [3, 4], n3: [5, 6] })
       expect(ctx.selectedNodeIds).toEqual(['n2'])
-      expect(ctx.parameters).toEqual({ spacing: 60, label: 'x' })
+      expect(ctx.parameters).toEqual({ Spacing: 60, Label: 'x' })
       expect(ctx.parameters).not.toBe(algorithm.parameters)
       expect(ctx.apis).toEqual({ boundTo: APP })
 
@@ -286,14 +328,14 @@ describe('appLayoutEngine', () => {
       registerAppLayout(APP, makeOptions({ run }))
       const edited = {
         ...buildAppLayoutAlgorithm(APP, makeOptions()),
-        parameters: { spacing: 99, label: 'y' },
+        parameters: { Spacing: 99, Label: 'y' },
       }
 
       await appEngineApply(nodes, edges, vi.fn(), edited, NET)
 
       expect(run.mock.calls[0][0].parameters).toEqual({
-        spacing: 99,
-        label: 'y',
+        Spacing: 99,
+        Label: 'y',
       })
     })
 
@@ -379,6 +421,21 @@ describe('appLayoutEngine', () => {
           NET,
         ),
       ).rejects.toThrow(/positions/)
+    })
+
+    it('rejects an array result instead of treating it as an empty map', async () => {
+      registerAppLayout(APP, makeOptions({ run: () => [] as any }))
+      const afterLayout = vi.fn()
+      await expect(
+        appEngineApply(
+          nodes,
+          edges,
+          afterLayout,
+          buildAppLayoutAlgorithm(APP, makeOptions()),
+          NET,
+        ),
+      ).rejects.toThrow(/got an array/)
+      expect(afterLayout).not.toHaveBeenCalled()
     })
 
     it('discards the result when the algorithm was unregistered while running', async () => {

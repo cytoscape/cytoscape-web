@@ -53,7 +53,7 @@ sequenceDiagram
 }
 ```
 
-- **URL validation**: Lightweight check — strings must start with `http://`, `https://`, or `data:`. Non-matching strings fall back to the VP's default value.
+- **URL validation**: Lightweight check — strings must start with `http://`, `https://`, or `data:`. Bare base64 raster bytes (no `data:` prefix) are sniffed by magic number and wrapped as a `data:` URI. Non-matching strings fall back to the VP's default value.
 - **Non-string values**: Passed through unchanged (supports existing CustomGraphicsType objects from bypasses/defaults).
 
 #### Model Types — `CustomGraphicsType.ts`

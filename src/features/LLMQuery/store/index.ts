@@ -3,13 +3,20 @@ import { immer } from 'zustand/middleware/immer'
 
 import config from '../../../assets/config.json'
 import { LLMModel, models } from '../model/LLMModel'
+import { LLMProviderId, providers } from '../model/LLMProvider'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 
 interface LLMQueryState {
   loading: boolean
   geneQuery: string
   LLMResult: string
+  // OpenAI key; sent to OpenAI only (see selectApiKey)
   LLMApiKey: string
+  // Key for the custom OpenAI-compatible endpoint; sent there only
+  LLMCustomApiKey: string
+  LLMProvider: LLMProviderId
+  // OpenAI-compatible endpoint; '' means the OpenAI default
+  LLMBaseUrl: string
   LLMModel: LLMModel
   LLMTemplate: LLMTemplate
 }
@@ -19,6 +26,9 @@ interface LLMQueryAction {
   setGeneQuery: (geneQuery: string) => void
   setLLMResult: (LLMResult: string) => void
   setLLMApiKey: (LLMApiKey: string) => void
+  setLLMCustomApiKey: (LLMCustomApiKey: string) => void
+  setLLMProvider: (LLMProvider: LLMProviderId) => void
+  setLLMBaseUrl: (LLMBaseUrl: string) => void
   setLLMModel: (LLMModel: LLMModel) => void
   setLLMTemplate: (LLMTemplate: LLMTemplate) => void
 }
@@ -34,6 +44,9 @@ export const useLLMQueryStore = create(
     geneQuery: '',
     LLMResult: '',
     LLMApiKey: config.openAIAPIKey,
+    LLMCustomApiKey: '',
+    LLMProvider: providers[0].id,
+    LLMBaseUrl: '',
     LLMModel: models[0],
     LLMTemplate: templates[0],
     setLoading: (loading: boolean) => {
@@ -54,6 +67,21 @@ export const useLLMQueryStore = create(
     setLLMApiKey: (LLMApiKey: string) => {
       set((state) => {
         state.LLMApiKey = LLMApiKey
+      })
+    },
+    setLLMCustomApiKey: (LLMCustomApiKey: string) => {
+      set((state) => {
+        state.LLMCustomApiKey = LLMCustomApiKey
+      })
+    },
+    setLLMProvider: (LLMProvider) => {
+      set((state) => {
+        state.LLMProvider = LLMProvider
+      })
+    },
+    setLLMBaseUrl: (LLMBaseUrl) => {
+      set((state) => {
+        state.LLMBaseUrl = LLMBaseUrl
       })
     },
     setLLMModel: (LLMModel) => {

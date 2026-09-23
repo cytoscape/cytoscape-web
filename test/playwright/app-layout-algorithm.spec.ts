@@ -144,7 +144,10 @@ test.describe('app-registered layout algorithm', () => {
         const [q0, q1] = Object.keys(positions)
           .sort()
           .map((id) => positions[id])
-        return Math.abs(q0[1] - q1[1]) < 1e-6 && Math.abs(q0[0] - q1[0]) === 60
+        return (
+          Math.abs(q0[1] - q1[1]) < 1e-6 &&
+          Math.abs(Math.abs(q0[0] - q1[0]) - 60) < 1e-6
+        )
       })
       .toBe(true)
 
@@ -155,15 +158,53 @@ test.describe('app-registered layout algorithm', () => {
     await page.getByTestId('layout-menu-settings').click()
     const dialog = page.getByTestId('layout-option-dialog')
     await expect(dialog).toBeVisible()
-    await dialog.getByRole('combobox').click()
+    // Not getByRole('combobox'): a dropDown parameter is a combobox too.
+    await dialog.getByTestId('layout-selector-combobox').click()
     await page.getByRole('option', { name: 'Fixture Row Layout' }).click()
-    await expect(
-      dialog.getByTestId('layout-value-editor-number-spacing'),
-    ).toBeVisible()
-    // the parameter's displayName is the label (#736); the key stays the id
+
+    // The parameters render through the shared ParameterForm: the "Spacing"
+    // group is a fieldset with a legend, its field is keyed by displayName.
+    const group = dialog.getByTestId('layout-parameter-group-Spacing')
+    await expect(group).toBeVisible()
+    // .first(): an outlined MUI TextField carries its own <legend>.
+    await expect(group.locator('legend').first()).toHaveText('Spacing')
+    const spacingInput = group.getByTestId(
+      'layout-parameter-field-Node Spacing',
+    )
+    await expect(spacingInput).toHaveValue('60')
     await expect(
       dialog.getByText('Node Spacing', { exact: true }),
     ).toBeVisible()
+
+    // Edit the parameter, apply from the dialog, and check the new spacing.
+    await spacingInput.fill('120')
+    await dialog.getByTestId('layout-option-dialog-apply-button').click()
+    await expect
+      .poll(async () => {
+        const { positions } = await readPositions(page)
+        const [q0, q1] = Object.keys(positions)
+          .sort()
+          .map((id) => positions[id])
+        return Math.abs(Math.abs(q0[0] - q1[0]) - 120) < 1e-6
+      })
+      .toBe(true)
+    // ... and a checkBox parameter flips the order (the fixture reverses).
+    const reverse = dialog.getByTestId('layout-parameter-field-Reverse')
+    await reverse.click()
+    await expect(reverse).toBeChecked()
+    await dialog.getByTestId('layout-option-dialog-apply-button').click()
+    await expect
+      .poll(async () => {
+        const { positions } = await readPositions(page)
+        const [q0, q1] = Object.keys(positions)
+          .sort()
+          .map((id) => positions[id])
+        return q0[0] - q1[0] // sorted ids: first node now sits to the right
+      })
+      .toBeCloseTo(120, 5)
+    await reverse.click()
+    await spacingInput.fill('60')
+
     const setDefault = dialog.getByTestId(
       'layout-option-dialog-set-default-checkbox',
     )
@@ -195,7 +236,10 @@ test.describe('app-registered layout algorithm', () => {
         const [q0, q1] = Object.keys(positions)
           .sort()
           .map((id) => positions[id])
-        return Math.abs(q0[1] - q1[1]) < 1e-6 && Math.abs(q0[0] - q1[0]) === 60
+        return (
+          Math.abs(q0[1] - q1[1]) < 1e-6 &&
+          Math.abs(Math.abs(q0[0] - q1[0]) - 60) < 1e-6
+        )
       })
       .toBe(true)
 

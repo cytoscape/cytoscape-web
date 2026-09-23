@@ -1058,21 +1058,38 @@ describe('createResourceApi', () => {
       description: 'Puts nodes somewhere',
       type: 'geometric',
       threshold: 1000,
-      parameters: {
-        spacing: { type: 'integer', defaultValue: 50, description: 'Gap' },
-        label: { type: 'string', defaultValue: 'a' },
-        on: { type: 'boolean', defaultValue: true },
-        ratio: {
-          type: 'double',
+      parameters: [
+        {
+          displayName: 'Spacing',
+          type: 'text',
+          validationType: 'digits',
+          defaultValue: 50,
+          description: 'Gap',
+          groups: ['Geometry'],
+        },
+        { displayName: 'Label', type: 'text', defaultValue: 'a' },
+        { displayName: 'On', type: 'checkBox', defaultValue: true },
+        {
+          displayName: 'Ratio',
+          type: 'text',
+          validationType: 'number',
           defaultValue: 1.5,
-          range: { min: 0, max: 10 },
+          minValue: 0,
+          maxValue: 10,
         },
-        mode: {
-          type: 'string',
+        {
+          displayName: 'Mode',
+          type: 'dropDown',
+          valueList: ['x', 'y'],
           defaultValue: 'x',
-          range: { values: ['x', 'y'] },
         },
-      },
+        {
+          displayName: 'Column',
+          type: 'nodeColumn',
+          columnTypeFilter: 'number',
+          defaultValue: '',
+        },
+      ],
       run: () => ({}),
       isEnabled: () => true,
     })
@@ -1124,46 +1141,124 @@ describe('createResourceApi', () => {
       ['negative threshold', { ...validLayout(), threshold: -1 }],
       ['non-numeric threshold', { ...validLayout(), threshold: '10' }],
       ['non-function isEnabled', { ...validLayout(), isEnabled: true }],
-      ['parameters not an object', { ...validLayout(), parameters: [] }],
       [
-        'parameter with a list type',
+        'parameters as a record (the beta.4 shape)',
         {
           ...validLayout(),
-          parameters: { p: { type: 'list_of_string', defaultValue: 'a' } },
+          parameters: { p: { type: 'text', defaultValue: 'a' } },
         },
       ],
       [
-        'parameter default not matching its type',
+        'a beta.4 value type',
         {
           ...validLayout(),
-          parameters: { p: { type: 'integer', defaultValue: 'ten' } },
+          parameters: [{ displayName: 'p', type: 'integer', defaultValue: 1 }],
         },
       ],
       [
-        'boolean parameter with a string default',
+        'a beta.4 range',
         {
           ...validLayout(),
-          parameters: { p: { type: 'boolean', defaultValue: 'true' } },
+          parameters: [
+            {
+              displayName: 'p',
+              type: 'text',
+              validationType: 'digits',
+              defaultValue: 1,
+              range: { min: 0, max: 1 },
+            },
+          ],
         },
       ],
       [
-        'parameter without a default',
-        { ...validLayout(), parameters: { p: { type: 'integer' } } },
-      ],
-      [
-        'malformed range',
+        'an unknown parameter type',
         {
           ...validLayout(),
-          parameters: {
-            p: { type: 'integer', defaultValue: 1, range: { min: 'a' } },
-          },
+          parameters: [{ displayName: 'p', type: 'slider', defaultValue: 1 }],
         },
       ],
       [
-        'blank parameter name',
+        'a host-filled parameter type',
         {
           ...validLayout(),
-          parameters: { '': { type: 'integer', defaultValue: 1 } },
+          parameters: [{ displayName: 'Token', type: 'accessToken' }],
+        },
+      ],
+      [
+        'a digits default that is a string',
+        {
+          ...validLayout(),
+          parameters: [
+            {
+              displayName: 'p',
+              type: 'text',
+              validationType: 'digits',
+              defaultValue: '10',
+            },
+          ],
+        },
+      ],
+      [
+        'a checkBox with a string default',
+        {
+          ...validLayout(),
+          parameters: [
+            { displayName: 'p', type: 'checkBox', defaultValue: 'true' },
+          ],
+        },
+      ],
+      [
+        'a parameter without a default',
+        {
+          ...validLayout(),
+          parameters: [
+            { displayName: 'p', type: 'text', validationType: 'digits' },
+          ],
+        },
+      ],
+      [
+        'a dropDown without a valueList',
+        {
+          ...validLayout(),
+          parameters: [
+            { displayName: 'p', type: 'dropDown', defaultValue: 'x' },
+          ],
+        },
+      ],
+      [
+        'a blank displayName',
+        {
+          ...validLayout(),
+          parameters: [{ displayName: ' ', type: 'text', defaultValue: 'x' }],
+        },
+      ],
+      [
+        'malformed groups',
+        {
+          ...validLayout(),
+          parameters: [
+            { displayName: 'p', type: 'text', defaultValue: 'x', groups: 'G' },
+          ],
+        },
+      ],
+      [
+        'two parameters with the same displayName and groups',
+        {
+          ...validLayout(),
+          parameters: [
+            {
+              displayName: 'Gap',
+              type: 'text',
+              defaultValue: 'x',
+              groups: ['A'],
+            },
+            {
+              displayName: 'Gap',
+              type: 'text',
+              defaultValue: 'y',
+              groups: ['A'],
+            },
+          ],
         },
       ],
     ])('rejects %s with INVALID_INPUT', (_label, options) => {

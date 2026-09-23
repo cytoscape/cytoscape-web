@@ -107,6 +107,54 @@ describe('normalizeImageSource', () => {
     })
   })
 
+  describe('bare base64 raster bytes', () => {
+    // No data: prefix — bytes pasted straight from a file. Magic is sniffed
+    // after decoding, so ordinary words can never match.
+    it.each([
+      ['PNG', 'iVBORw0KGgo=', 'data:image/png;base64,iVBORw0KGgo='],
+      ['JPEG', '/9j/', 'data:image/jpeg;base64,/9j/'],
+      ['GIF', 'R0lGODlh', 'data:image/gif;base64,R0lGODlh'],
+    ])('wraps bare %s base64 as a data URI', (_label, raw, url) => {
+      expect(normalizeImageSource(raw)).toEqual({ kind: 'url', url })
+    })
+
+    it('wraps bare WebP base64 as a data URI', () => {
+      const raw = btoa('RIFF\x00\x01\x00\x00WEBP')
+
+      expect(normalizeImageSource(raw)).toEqual({
+        kind: 'url',
+        url: `data:image/webp;base64,${raw}`,
+      })
+    })
+
+    it('wraps a full 1x1 PNG payload', () => {
+      const raw =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+
+      expect(normalizeImageSource(raw)).toEqual({
+        kind: 'url',
+        url: `data:image/png;base64,${raw}`,
+      })
+    })
+
+    it('strips MIME line breaks before sniffing', () => {
+      expect(normalizeImageSource('iVBOR\nw0KGgo=')).toEqual({
+        kind: 'url',
+        url: 'data:image/png;base64,iVBORw0KGgo=',
+      })
+    })
+
+    it.each([
+      ['plain words', 'not-a-url'],
+      ['valid base64 with no image magic', 'aGVsbG8='],
+      ['a truncated PNG signature', 'iVBORw=='],
+    ])('rejects %s as unrecognized', (_label, raw) => {
+      const result = normalizeImageSource(raw)
+
+      expect(result.kind === 'rejected' && result.reason).toBe('unrecognized')
+    })
+  })
+
   describe('values that cannot be coerced to a string', () => {
     // String(value) itself throws for these. The function is documented as
     // never throwing and runs in the render path, so each must come back as a

@@ -4,7 +4,6 @@ import {
 } from '../../LayoutModel/impl/layoutSelection'
 import { LayoutAlgorithm } from '../../LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutModel/LayoutEngine'
-import { Property } from '../../PropertyModel/Property'
 import { ValueType } from '../../TableModel'
 
 export interface LayoutState {
@@ -87,35 +86,21 @@ export const setLayoutOption = <T extends ValueType>(
     return state
   }
 
-  const { parameters } = algorithm
-  const prop: any = parameters[propertyName]
-
-  if (prop === undefined) {
+  // Only a declared, editable parameter that already exists in the engine
+  // record may change. The second guard matters: Cosmos declares editables
+  // whose values live under `parameters.simulation`, and the antv runner
+  // spreads every top-level key into the engine, so a stray key must never
+  // be created here.
+  const { parameters, editables } = algorithm
+  const isEditable = (editables ?? []).some((e) => e.name === propertyName)
+  if (!isEditable || parameters[propertyName] === undefined) {
     return state
   }
 
-  const { editables } = algorithm
-
-  if (editables === undefined) {
-    return state
-  }
-
-  const targetProp = editables[propertyName]
-
-  if (targetProp === undefined) {
-    return state
-  }
-
-  const newProp: Property<ValueType> = {
-    ...targetProp,
-    value: propertyValue,
-  }
-  const newEditables = { ...editables, [propertyName]: newProp }
   const newParams = { ...parameters, [propertyName]: propertyValue }
   const newAlgorithm = {
     ...algorithm,
     parameters: newParams,
-    editables: newEditables,
   }
   const newEngines = [...engines]
   newEngines[engineIndex] = {
@@ -149,7 +134,10 @@ export const setLayoutOption = <T extends ValueType>(
 // ── App engines ('layout-algorithm' resources) ──────────────────────────
 //
 // Each app that registers layout algorithms gets ONE synthetic engine, named
-// after the app id and carrying `appId`. Every impl here returns fresh arrays
+// after the app id and carrying `appId`. The impls find that engine by its
+// `appId`, never by name alone, so an app id that equals a built-in engine's
+// name can never be merged into, or remove, the built-in engine (the adapter
+// refuses such an id anyway). Every impl here returns fresh arrays
 // and objects: the initial `layoutEngines` is the module-level `LayoutEngines`
 // array, and Immer deep-freezes it after the first store write, so an
 // in-place push would throw.
@@ -164,7 +152,7 @@ export const upsertAppAlgorithm = (
   apply: LayoutEngine['apply'],
 ): LayoutState => {
   const engines = [...state.layoutEngines]
-  const engineIndex = engines.findIndex((engine) => engine.name === appId)
+  const engineIndex = engines.findIndex((engine) => engine.appId === appId)
 
   if (engineIndex === -1) {
     engines.push({
@@ -184,26 +172,49 @@ export const upsertAppAlgorithm = (
     }
   }
 
-  return { ...state, layoutEngines: engines }
+  // A re-registration (an app reloaded, or registerLayout called again)
+  // replaces the algorithm object; a preferred layout that pointed at the
+  // old one must follow, or Apply Default Layout keeps running stale
+  // definitions.
+  const matches = (preferred: LayoutAlgorithm): boolean =>
+    preferred.engineName === appId && preferred.name === algorithm.name
+
+  return {
+    ...state,
+    layoutEngines: engines,
+    preferredLayout: matches(state.preferredLayout)
+      ? algorithm
+      : state.preferredLayout,
+    preferredHierarchicalLayout: matches(state.preferredHierarchicalLayout)
+      ? algorithm
+      : state.preferredHierarchicalLayout,
+  }
 }
 
 /**
  * Point a dangling preferred layout back at the built-in default. `removed`
- * is the set of algorithm names that no longer exist.
+ * is the set of algorithm names that no longer exist. The fallback is the
+ * default's live object in `state.layoutEngines` (it carries the user's
+ * parameter edits and is what Apply Default Layout must run), not the static
+ * module constant; the constant is only the last resort.
  */
 const resetDanglingPreferred = (
   state: LayoutState,
   removed: Set<string>,
-): Pick<LayoutState, 'preferredLayout' | 'preferredHierarchicalLayout'> => ({
-  preferredLayout: removed.has(state.preferredLayout.name)
-    ? defAlgorithm
-    : state.preferredLayout,
-  preferredHierarchicalLayout: removed.has(
-    state.preferredHierarchicalLayout.name,
-  )
-    ? defHierarchicalAlgorithm
-    : state.preferredHierarchicalLayout,
-})
+): Pick<LayoutState, 'preferredLayout' | 'preferredHierarchicalLayout'> => {
+  const live = (fallback: LayoutAlgorithm): LayoutAlgorithm =>
+    findAlgorithm(state, fallback.engineName, fallback.name) ?? fallback
+  return {
+    preferredLayout: removed.has(state.preferredLayout.name)
+      ? live(defAlgorithm)
+      : state.preferredLayout,
+    preferredHierarchicalLayout: removed.has(
+      state.preferredHierarchicalLayout.name,
+    )
+      ? live(defHierarchicalAlgorithm)
+      : state.preferredHierarchicalLayout,
+  }
+}
 
 /**
  * Remove one app algorithm; the app's engine goes with it once empty.
@@ -214,7 +225,7 @@ export const removeAppAlgorithm = (
   algorithmName: string,
 ): LayoutState => {
   const engineIndex = state.layoutEngines.findIndex(
-    (engine) => engine.name === appId,
+    (engine) => engine.appId === appId,
   )
   if (engineIndex === -1) {
     return state
@@ -246,7 +257,7 @@ export const removeAppEngine = (
   state: LayoutState,
   appId: string,
 ): LayoutState => {
-  const engine = state.layoutEngines.find((engine) => engine.name === appId)
+  const engine = state.layoutEngines.find((engine) => engine.appId === appId)
   if (engine === undefined) {
     return state
   }

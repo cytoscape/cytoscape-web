@@ -793,6 +793,11 @@ rows. Prefer this over `getTable` when you only need the schema — on large
 tables `getTable` materializes every row. Edge tables include the `source`
 and `target` pseudo-columns, matching `getTable`'s output.
 
+Both reads report `APP1` while the network's tables are not in the stores,
+which is the case after a page reload until the network is first shown. That
+window overlaps `network:switched`; read again on `network:loaded` (see the
+Event Bus section).
+
 #### `getTable(networkId, tableType, options?): ApiResult<{ columns, rows }>`
 
 Returns all columns (with type metadata) and all rows for the given table.
@@ -1959,20 +1964,36 @@ interface RegisterLayoutOptions {
   description?: string // hover text
   type?: 'force' | 'geometric' | 'hierarchical' | 'other' // default 'other'
   threshold?: number // greyed out above this many nodes + edges
-  parameters?: Record<string, LayoutParameter> // editable in Layout Settings
+  parameters?: LayoutParameter[] // editable in Layout Settings, in this order
   run: (context: LayoutRunContext) => LayoutPositions | Promise<LayoutPositions>
   isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per menu open
 }
 
-type LayoutParameterType = 'string' | 'integer' | 'long' | 'double' | 'boolean'
-type LayoutParameterValue = string | number | boolean
+// The shared parameter spec (docs/specifications/APP_PARAMETERS_SPECIFICATION.md),
+// minus the two service-app-only host-filled types. A layout parameter must
+// declare a default.
+type ParameterValue = string | number | boolean
+type LayoutParameterUiType =
+  | 'text'
+  | 'dropDown'
+  | 'radio'
+  | 'checkBox'
+  | 'nodeColumn'
+  | 'edgeColumn'
 
-interface LayoutParameter {
-  displayName?: string // label in Layout Settings; the record key when absent
-  description?: string // hover text
-  type: LayoutParameterType
-  defaultValue: LayoutParameterValue // must match `type` (number for the numeric types)
-  range?: { min: number; max: number } | { values: LayoutParameterValue[] }
+type LayoutParameter = {
+  displayName: string // label in Layout Settings, and the parameter's key (see below)
+  description?: string | null // hover text
+  type: LayoutParameterUiType
+  defaultValue: ParameterValue // number for text+number/digits, boolean for checkBox, string otherwise
+  valueList?: string[] | null // dropDown, radio: the choices
+  validationType?: 'string' | 'number' | 'digits' | null // text only
+  columnTypeFilter?: string | string[] | null // nodeColumn, edgeColumn: a CX2 type or number | wholenumber | list | list_of_number | list_of_wholenumber, or a list of those (any may match)
+  validationHelp?: string | null // text: the message shown when validation fails
+  validationRegex?: string | null // text + string
+  minValue?: number | null // text + number/digits
+  maxValue?: number | null
+  groups?: string[] | null // presentation nesting, outermost first
 }
 
 type LayoutPositions = Record<IdType, [number, number]> // node id → [x, y]
@@ -1983,7 +2004,7 @@ interface LayoutRunContext {
   readonly edges: readonly Edge[]
   readonly positions: LayoutPositions // current position of every node with a view
   readonly selectedNodeIds: readonly IdType[]
-  readonly parameters: Readonly<Record<string, ValueType>> // current values, keyed as declared
+  readonly parameters: Readonly<Record<string, ParameterValue>> // current values by key, typed by declaration
   readonly apis: AppContextApis // the registering app's per-app API object
 }
 
@@ -2201,7 +2222,9 @@ parameter values to the new defaults.
 
 The host adapts the registration into its own layout engine — one synthetic
 engine per app, named after the app id — so the algorithm behaves like a
-built-in one everywhere the host lists layouts:
+built-in one everywhere the host lists layouts. (An app whose id equals a
+built-in engine's name — `G6`, `Cytoscape.js`, `Cosmos` — cannot register
+layouts: `registerLayout` fails with `OPERATION_FAILED`.)
 
 - **Layout menu** — a row in the app block, rendered after the core
   algorithms and before "Layout Tools" with a divider on each side. Rows
@@ -2212,9 +2235,9 @@ built-in one everywhere the host lists layouts:
   edges, when `isEnabled(apis)` returns `false`, and whenever the host
   disables every layout (no network view, an HCX cell view).
 - **Layout → Settings...** — listed under `displayName`; every declared
-  `parameter` gets an editor there, and the current values are what `run`
-  receives. "Set as default" works for app algorithms too: Apply Default
-  Layout and the floating toolbar button then run it.
+  parameter gets a control there (see "Parameters" below), and the current
+  values are what `run` receives. "Set as default" works for app algorithms
+  too: Apply Default Layout and the floating toolbar button then run it.
 - **Layout API** — `layout.getAvailableLayouts()` lists it with `appId` set
   and `algorithmName` equal to the qualified name `<appId>::<id>`, which is
   what `layout.applyLayout(networkId, { algorithmName })` takes. That is how
@@ -2241,31 +2264,83 @@ while `run` is pending, the result is discarded when it arrives.
 its engine); a preferred layout that pointed at one falls back to the host's
 built-in default. `unregisterAll()` removes them too.
 
+**Parameters.** `parameters` is an ordered array of the shared parameter spec
+(`docs/specifications/APP_PARAMETERS_SPECIFICATION.md`, the same one service
+apps use). The Settings dialog renders the fields in array order, nested
+into fieldsets by `groups` (outermost group first, like Cytoscape Desktop's
+`@Tunable(groups = ...)`; groups appear in the order they are first seen, and
+a group's fields stay together even when the array interleaves them). The
+six UI types are `text` (with `validationType` `string` / `number` /
+`digits`, `validationRegex`, `minValue` / `maxValue`, `validationHelp`),
+`dropDown` and `radio` (`valueList`), `checkBox`, and `nodeColumn` /
+`edgeColumn` (`columnTypeFilter`); a `defaultValue` is required and must be
+a number for `number` / `digits`, a boolean for `checkBox`, a string
+otherwise. Values are validated as declared before they are stored.
+
+- **Keys.** A parameter's key in `context.parameters` is its `displayName`.
+  When two parameters share a `displayName`, each of those is keyed by its
+  group path instead (`'Nodes/Gap'`, `'Clusters/Gap'`); two with the same
+  `displayName` and the same `groups` are rejected.
+- **Values.** Typed by the declaration: `checkBox` → boolean, `text` with
+  `number` → number, `digits` → integer, everything else → string.
+
 ```typescript
 apis.resource.registerLayout({
   id: 'cluster',
   displayName: 'MCODE Cluster Layout',
   description: 'Clusters as compact disks, members on rings by score',
   type: 'other',
-  parameters: {
-    nodeSpacing: {
-      type: 'double',
-      defaultValue: 20,
+  parameters: [
+    {
+      displayName: 'Node spacing',
       description: 'Gap between nodes',
+      type: 'text',
+      validationType: 'number',
+      defaultValue: 20,
+      minValue: 0,
+      groups: ['Spacing'],
     },
-    satellites: { type: 'boolean', defaultValue: true },
-  },
+    {
+      displayName: 'Cluster spacing',
+      type: 'text',
+      validationType: 'number',
+      defaultValue: 100,
+      minValue: 0,
+      groups: ['Spacing'],
+    },
+    {
+      displayName: 'Attach unclustered nodes',
+      type: 'checkBox',
+      defaultValue: true,
+    },
+    {
+      displayName: 'Cluster column',
+      description: 'A node column whose values are cluster ids (optional)',
+      type: 'nodeColumn',
+      columnTypeFilter: 'wholenumber',
+      defaultValue: '',
+    },
+  ],
   run: async ({ networkId, nodes, edges, positions, parameters, apis }) => {
-    const clusters = apis.appData.get(networkId, 'latest-result')
-    return layoutClusters(nodes, edges, positions, clusters, parameters)
+    const options = {
+      nodeSpacing: parameters['Node spacing'] as number,
+      clusterSpacing: parameters['Cluster spacing'] as number,
+      satellites: parameters['Attach unclustered nodes'] as boolean,
+    }
+    const column = parameters['Cluster column'] as string
+    const clusters =
+      column !== ''
+        ? clustersFromColumn(networkId, column, apis)
+        : apis.appData.get(networkId, 'latest-result')
+    return layoutClusters(nodes, edges, positions, clusters, options)
   },
 })
 ```
 
-| Error Code | Condition                                                                                                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `APP9`     | `id` or `displayName` empty; `run` or `isEnabled` not a function; `type` not one of the four families; `threshold` negative or not a number; a parameter whose `type` is not scalar, whose `defaultValue` does not match its `type`, or whose `range` is malformed |
-| `APP3`     | the host failed to register the algorithm (nothing is left registered)                                                                                                                                                                                             |
+| Error Code | Condition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP9`     | `id` or `displayName` empty; `run` or `isEnabled` not a function; `type` not one of the four families; `threshold` negative or not a number; `parameters` not an array (a record keyed by name is the pre-release shape and is named as such); a parameter with a blank `displayName`, an unknown or host-filled `type`, a missing or mistyped `defaultValue`, a `dropDown`/`radio` without a `valueList` or whose default is not in it, malformed `groups`, or `minValue > maxValue`; two parameters with the same `displayName` and `groups` |
+| `APP3`     | the host failed to register the algorithm (nothing is left registered)                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 #### `unregisterLayout(layoutId): ApiResult`
 
@@ -2639,6 +2714,76 @@ detail: {
 Source: WorkspaceStore subscription (`workspace.currentNetworkId`).
 Also triggered by `WorkspaceApi.switchCurrentNetwork`.
 
+**Switching is not loading.** After a page reload the workspace holds only
+network summaries; a network's tables and view are loaded the first time it
+becomes current, and `network:switched` fires before that async load lands.
+A `tableApi` / `elementApi` / `viewportApi` read made in that window fails
+with `APP1`. Subscribe to `network:loaded` to read again.
+
+#### `network:loaded`
+
+Fired once a network's data is readable through the API: its node and edge
+tables and its view have all landed in the stores. Fires for a lazily loaded
+workspace network (the case above), for a network created through
+`networkApi` or the UI (once, alongside `network:created`), and for a network
+another tab added (cross-tab sync). It does not fire on startup for networks
+that were already in the stores when the event bus started, and it fires at
+most once per network until that network is deleted.
+
+```typescript
+detail: {
+  networkId: IdType
+}
+```
+
+Source: TableStore and ViewModelStore subscriptions (`tables` / `viewModels`
+selectors; either store's change completes the pair).
+
+The first landing of a network's tables is a load, not an edit: it fires
+`network:loaded` and **not** `data:changed`.
+
+The two events answer different questions, so a panel that shows the current
+network's data listens to both. `network:switched` says which network is
+current but may precede its data; `network:loaded` says the data is there but
+also fires for networks that are not current (created with
+`addToWorkspace: false` or `navigate: false`, or added by another tab), and
+never fires again for a network that is already loaded when the user switches
+back to it. Refresh on the switch, and on a load only when it is the current
+network's:
+
+```typescript
+const refresh = useCallback(
+  (networkId: string) => {
+    const result = tableApi.getColumns(networkId, 'node')
+    // APP1 here means the data has not landed yet; network:loaded follows.
+    setColumns(result.success ? result.data.columns : [])
+  },
+  [tableApi],
+)
+useCyWebEvent(
+  'network:switched',
+  useCallback((d) => refresh(d.networkId), [refresh]),
+)
+// The switch may have arrived before the data; this one always has it.
+// Ignore loads of networks that are not on screen.
+useCyWebEvent(
+  'network:loaded',
+  useCallback(
+    (d) => {
+      const current = workspaceApi.getCurrentNetworkId()
+      if (current.success && current.data.networkId === d.networkId) {
+        refresh(d.networkId)
+      }
+    },
+    [refresh, workspaceApi],
+  ),
+)
+```
+
+Read once on mount as well: either event may already have fired by the time
+the panel subscribes, and the network that is current at boot gets no
+`network:switched` at all — only its `network:loaded`.
+
 #### `selection:changed`
 
 Fired when the selection state of the current network's primary view changes.
@@ -2723,7 +2868,8 @@ Source: VisualStyleStore subscription (same callback as `style:changed`).
 Fired when table data or schema changes in a network's node or edge table.
 `rowIds` lists changed node/edge IDs. `addedColumns` and `removedColumns`
 describe schema changes; a rename produces one entry in each. Column operations
-may also populate `rowIds`.
+may also populate `rowIds`. Not fired when a network's tables first land in
+the stores (a load, not an edit) — that is `network:loaded`.
 
 ```typescript
 detail: {
@@ -2742,9 +2888,10 @@ Also triggered by TableApi write methods.
 
 | API Method / Store Mutation                                                                                                | Events Fired                                                                             |
 | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (addToWorkspace: true)                                | `network:created`, `network:switched`                                                    |
-| `networkApi.createNetworkFromCx2` (addToWorkspace: true)                                                                   | `network:created`                                                                        |
+| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (addToWorkspace: true)                                | `network:loaded`, `network:created`, `network:switched`                                  |
+| `networkApi.createNetworkFromCx2` (addToWorkspace: true)                                                                   | `network:loaded`, `network:created`                                                      |
 | `networkApi.createNetworkFromCx2` (navigate: true)                                                                         | `network:switched`                                                                       |
+| First switch to a workspace network after a page reload (lazy load)                                                        | `network:switched`, then `network:loaded` once the tables and view land                  |
 | `networkApi.deleteNetwork`                                                                                                 | `network:deleted`; `network:switched` only when deleting the current network             |
 | `networkApi.deleteAllNetworks`                                                                                             | `network:deleted` (×N)                                                                   |
 | `elementApi.createNode` / `createNodes` / `createEdge` / `createEdges` / `deleteNodes` / `deleteEdges`                     | `network:changed`; coordinated table/style/selection mutations may emit their own events |

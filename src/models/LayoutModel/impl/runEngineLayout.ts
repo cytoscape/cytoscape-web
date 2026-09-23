@@ -1,8 +1,8 @@
 import { logUi } from '../../../debug'
-import { IdType } from '../../../models/IdType'
-import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
-import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
-import { Network } from '../../../models/NetworkModel'
+import { IdType } from '../../IdType'
+import { Network } from '../../NetworkModel'
+import { LayoutAlgorithm } from '../LayoutAlgorithm'
+import { LayoutEngine } from '../LayoutEngine'
 
 export interface RunEngineLayoutParams {
   engine: LayoutEngine

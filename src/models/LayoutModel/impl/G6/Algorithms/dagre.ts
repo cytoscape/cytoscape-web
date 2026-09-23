@@ -1,4 +1,3 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const dagre: LayoutAlgorithm = {
@@ -16,40 +15,39 @@ export const dagre: LayoutAlgorithm = {
     controlPoints: true,
   },
 
-  editables: {
-    nodesep: {
+  editables: [
+    {
       name: 'nodesep',
       displayName: 'Node Separation',
       description: 'The minimum distance between nodes',
-      type: ValueTypeName.Integer,
-      value: 8,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 8,
     },
-    ranksep: {
+    {
       name: 'ranksep',
       displayName: 'Rank Separation',
       description: 'The minimum distance between ranks',
-      type: ValueTypeName.Integer,
-      value: 25,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 25,
     },
-    rankdir: {
+    {
       name: 'rankdir',
       displayName: 'Rank Direction',
-      description:
-        'The layout direction. T:top; B:bottom; L:left; R:right. Valid values: TB, BT, LR, RL',
-      type: ValueTypeName.String,
-      value: 'TB',
+      description: 'The layout direction. T:top; B:bottom; L:left; R:right',
+      type: 'dropDown',
+      valueList: ['TB', 'BT', 'LR', 'RL'],
       defaultValue: 'TB',
     },
-    align: {
+    {
       name: 'align',
       displayName: 'Alignment',
       description:
-        'The alignment of the nodes. U: upper; D: down; L: left; R: right. Valid values: UL, UR, DL, DR',
-      type: ValueTypeName.String,
-      value: 'DR',
+        'The alignment of the nodes. U: upper; D: down; L: left; R: right',
+      type: 'dropDown',
+      valueList: ['UL', 'UR', 'DL', 'DR'],
       defaultValue: 'DR',
     },
-  },
+  ],
 }
