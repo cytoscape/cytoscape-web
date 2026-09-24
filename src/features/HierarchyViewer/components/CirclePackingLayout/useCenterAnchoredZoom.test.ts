@@ -195,6 +195,35 @@ describe('useCenterAnchoredZoom', () => {
     expect(view.transform()).toEqual(fitted)
   })
 
+  // A user's wheel/drag zoom is relative to the pointer, not to the SVG's size,
+  // so it must not consume a size change the resize notification has not
+  // reported yet (the gesture's listener would already see the new size).
+  it('keeps a pending resize across a user zoom gesture', () => {
+    const view = createSvgWithZoom(800, 600)
+    renderWith(view.svg, view.zoom)
+
+    view.setSize(600, 600)
+    const gesture = new d3Zoom.ZoomTransform(2, 10, 20)
+    // What d3 does for a wheel/drag: the event becomes the zoom event's
+    // sourceEvent. d3-zoom v3 takes it as a 4th argument, which its type
+    // definitions do not declare yet.
+    const transformWithEvent = view.zoom.transform as unknown as (
+      selection: typeof view.selection,
+      transform: d3Zoom.ZoomTransform,
+      point: undefined,
+      event: Event,
+    ) => void
+    transformWithEvent(
+      view.selection,
+      gesture,
+      undefined,
+      new MouseEvent('wheel'),
+    )
+    latestObserver().notify()
+
+    expect(view.transform()).toEqual(new d3Zoom.ZoomTransform(2, -90, 20))
+  })
+
   it('keeps the last visible size while the SVG is hidden', () => {
     const view = createSvgWithZoom(800, 600)
     renderWith(view.svg, view.zoom)

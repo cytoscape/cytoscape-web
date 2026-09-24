@@ -218,13 +218,17 @@ test.describe('Hierarchy network view tabs', () => {
     const before = await readCenter()
 
     await dragTableDividerUp(page, 150)
-    await expect
-      .poll(async () => (await readCenter()).height)
-      .toBeLessThan(before.height - 75)
 
-    const after = await readCenter()
-    expect(after.k).toBeCloseTo(before.k, 5)
-    expect(after.x).toBeCloseTo(before.x, 1)
-    expect(after.y).toBeCloseTo(before.y, 1)
+    // Check the size, zoom and center together, retrying: the SVG can report
+    // its new size before that frame's ResizeObserver callback has shifted the
+    // view, so a single read right after the size changes can see a
+    // half-applied state.
+    await expect(async () => {
+      const after = await readCenter()
+      expect(after.height).toBeLessThan(before.height - 75)
+      expect(after.k).toBeCloseTo(before.k, 5)
+      expect(after.x).toBeCloseTo(before.x, 1)
+      expect(after.y).toBeCloseTo(before.y, 1)
+    }).toPass({ timeout: 5000 })
   })
 })
