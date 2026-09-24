@@ -30,7 +30,16 @@ const importNetworkFile = async (
 ): Promise<void> => {
   await gotoAndWaitReady(page)
   expect(await getWorkspaceNetworkCount(page)).toBe(0)
+  await importAnotherNetworkFile(page, fixture, networkName, 1)
+}
 
+/** Import `fixture` into the current workspace, which then holds `count`. */
+const importAnotherNetworkFile = async (
+  page: Page,
+  fixture: string,
+  networkName: string,
+  count: number,
+): Promise<void> => {
   await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
   await page.getByRole('menuitem', { name: 'Import' }).click()
   const fromFileItem = page.getByRole('menuitem', {
@@ -48,7 +57,7 @@ const importNetworkFile = async (
 
   await expect
     .poll(() => getWorkspaceNetworkCount(page), { timeout: 15000 })
-    .toBe(1)
+    .toBe(count)
   await expect(page.getByText(networkName).first()).toBeVisible({
     timeout: 15000,
   })
@@ -108,6 +117,11 @@ test.describe('Cell View availability for hierarchies (#630)', () => {
     expect(pageErrors).toEqual([])
   })
 })
+
+const REGULAR_CX2 = path.resolve(
+  __dirname,
+  '../fixtures/cx2/valid/small-network.valid.cx2',
+)
 
 // A single-rooted tree with one interaction type: a hierarchy the Cell View
 // can draw (the other valid HCX fixtures mix interaction types).
@@ -226,5 +240,100 @@ test.describe('Hierarchy network view tabs', () => {
     expect(after.k).toBeCloseTo(before.k, 5)
     expect(after.x).toBeCloseTo(before.x, 1)
     expect(after.y).toBeCloseTo(before.y, 1)
+  })
+
+  // Regression: leaving a hierarchy for a regular network and coming back with
+  // the Cell View tab selected drew the circles off-center, partly outside the
+  // view. NetworkTabs measures the renderer box once on mount — on the way
+  // back, before the right panel has reopened — and the layout was rebuilt at
+  // that size after the view had been fitted. Changing the pane width between
+  // the visits makes the measured size differ, as it does with a slow load.
+  test('the Cell View is fitted after switching away and back', async ({
+    page,
+  }) => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+    await importAnotherNetworkFile(
+      page,
+      REGULAR_CX2,
+      'Test Network 20 nodes',
+      2,
+    )
+
+    const workspaceItem = (name: string) =>
+      page
+        .locator('[data-testid="workspace-editor-left-panel-open"]')
+        .getByText(name)
+        .first()
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+
+    /** Offset of the drawing's center from the SVG's center, in px. */
+    const offCenter = () =>
+      svg.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        const drawing = element
+          .querySelector('g.circle-packing-wrapper')
+          ?.getBoundingClientRect()
+        if (drawing === undefined || drawing.width === 0) return null
+        return Math.round(
+          Math.max(
+            Math.abs(drawing.x + drawing.width / 2 - (box.x + box.width / 2)),
+            Math.abs(drawing.y + drawing.height / 2 - (box.y + box.height / 2)),
+          ),
+        )
+      })
+
+    /** Poll until the drawing has stopped moving, then return its offset. */
+    const settledOffCenter = async (): Promise<number> => {
+      let previous: number | null | undefined
+      await expect
+        .poll(
+          async () => {
+            const current = await offCenter()
+            const stable = current !== null && current === previous
+            previous = current
+            return stable
+          },
+          { intervals: [500], timeout: 20_000 },
+        )
+        .toBe(true)
+      return previous as number
+    }
+
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    await cellViewTab.click()
+    await expect(svg).toBeVisible({ timeout: 15000 })
+    await settledOffCenter()
+
+    // On the regular network, narrow the left panel: the center pane gets
+    // wider, so the size measured on the way back differs from the first one.
+    await workspaceItem('Test Network 20 nodes').click()
+    await expect(cellViewTab).toHaveCount(0, { timeout: 15000 })
+    const pane = (await page
+      .locator('[data-testid="workspace-editor-center-pane"]')
+      .boundingBox())!
+    const sashX = pane.x - 3
+    const sashY = pane.y + pane.height / 2
+    await page.mouse.move(sashX, sashY)
+    await page.mouse.down()
+    await page.mouse.move(sashX - 150, sashY, { steps: 10 })
+    await page.mouse.up()
+    await expect
+      .poll(
+        async () =>
+          (await page
+            .locator('[data-testid="workspace-editor-center-pane"]')
+            .boundingBox())!.width,
+      )
+      .toBeGreaterThan(pane.width + 100)
+
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(svg).toBeVisible({ timeout: 15000 })
+
+    // The layout is rebuilt asynchronously after the switch; check the view
+    // once the drawing has settled.
+    await page.waitForTimeout(1500)
+    expect(await settledOffCenter()).toBeLessThanOrEqual(2)
   })
 })
