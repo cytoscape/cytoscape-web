@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate CX2 test fixtures for Cytoscape Web testing.
  *

@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate HCX (Hierarchical Cell eXchange) test fixtures for Cytoscape Web testing.
  *

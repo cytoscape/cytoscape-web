@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate a Mermaid diagram of application state structure
  *
@@ -7,7 +7,7 @@
  * instead of JSON blobs.
  *
  * Usage:
- *   npx ts-node scripts/generate-state-diagram/generate-state-diagram.ts <state-json-file>
+ *   npx tsx scripts/generate-state-diagram/generate-state-diagram.ts <state-json-file>
  */
 
 import * as fs from 'fs'
@@ -568,7 +568,7 @@ function main(): void {
 
   if (args.length === 0) {
     console.error(
-      'Usage: npx ts-node generate-state-diagram.ts <state-json-file>',
+      'Usage: npx tsx generate-state-diagram.ts <state-json-file>',
     )
     process.exit(1)
   }

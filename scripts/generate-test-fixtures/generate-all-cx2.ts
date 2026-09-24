@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate all CX2 and HCX test fixtures as specified in TEST_RESOURCES_COMPREHENSIVE.md
  *
