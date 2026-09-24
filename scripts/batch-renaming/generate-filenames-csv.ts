@@ -1,14 +1,14 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate a CSV file containing all filenames in a folder
  *
  * Usage:
- *   npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts [folder-path] [output-file]
+ *   npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts [folder-path] [output-file]
  *
  * Examples:
- *   npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features
- *   npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv
- *   npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features file-list.csv --no-recursive
+ *   npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features
+ *   npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv
+ *   npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features file-list.csv --no-recursive
  */
 
 import * as fs from 'fs'

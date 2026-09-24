@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate SIF (Simple Interaction Format) test fixtures for Cytoscape Web testing.
  *

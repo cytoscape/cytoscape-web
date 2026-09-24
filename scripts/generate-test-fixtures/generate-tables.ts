@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate table (CSV, TSV, TXT) test fixtures for Cytoscape Web testing.
  *
