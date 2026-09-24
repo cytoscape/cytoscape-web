@@ -8,6 +8,7 @@ import Cytoscape, {
   Position,
   SingularElementArgument,
 } from 'cytoscape'
+import type { DebouncedFunc } from 'lodash'
 import debounce from 'lodash/debounce'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 
@@ -28,6 +29,7 @@ import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
+import type { ViewPort } from '../../../models/RendererModel/ViewPort'
 import type { ResolvedNodeGraphics } from '../../../models/StoreModel/NodeGraphicsStoreModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
@@ -51,8 +53,10 @@ import {
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
+import { useCenterAnchoredResize } from './useCenterAnchoredResize'
 import { useNodeGraphicsSync } from './useNodeGraphicsSync'
 import { isGraphVisible } from './viewportRecovery'
+import { panForCanvasSize } from './viewportRestore'
 
 registerCyExtensions()
 
@@ -105,7 +109,7 @@ const CyjsRenderer = ({
 
   // Cytoscape instance and container ref
   const [cy, setCy] = useState<any>(null)
-  const cyContainer = useRef(null)
+  const cyContainer = useRef<HTMLDivElement | null>(null)
 
   // Avoid duplicate initialization of Cyjs
   const isInitialized = useRef(false)
@@ -125,8 +129,28 @@ const CyjsRenderer = ({
   // Avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
 
-  // Reference to viewport change handler for temporary removal during undo/redo
-  const viewportChangeHandlerRef = useRef<any>(null)
+  // The debounced viewport save of the network currently rendered. Kept so a
+  // save still pending when that network is replaced (or the renderer unmounts)
+  // can be flushed first — see flushPendingViewportSave.
+  const viewportChangeHandlerRef = useRef<DebouncedFunc<() => void> | null>(
+    null,
+  )
+
+  /**
+   * Run the pending viewport save now, while the instance still shows the
+   * network it belongs to.
+   *
+   * One Cytoscape.js instance renders every network, and the save reads the
+   * camera from it when it fires. `cy.removeAllListeners()` stops new viewport
+   * events but not a call the debounce already scheduled, which would otherwise
+   * fire after the next network is rendered and store that network's pan/zoom
+   * under the previous network's id — so switching back restored the wrong
+   * camera. Flushing (rather than cancelling) keeps the user's last pan/zoom.
+   */
+  const flushPendingViewportSave = (): void => {
+    viewportChangeHandlerRef.current?.flush()
+    viewportChangeHandlerRef.current = null
+  }
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -301,6 +325,10 @@ const CyjsRenderer = ({
   // bypasses, never as element data — see nodeGraphicsApply.ts for why, and for
   // why they cannot reach CX2.
   const nodeGraphics = useNodeGraphicsSync(id)
+
+  // Keep the graph centered when a docked panel (or the window) resizes the
+  // canvas, as Cytoscape Desktop does — Cytoscape.js alone anchors top-left.
+  useCenterAnchoredResize(cy, cyContainer)
   const nodeGraphicsRef = useRef<
     Record<IdType, ResolvedNodeGraphics> | undefined
   >(nodeGraphics)
@@ -357,6 +385,9 @@ const CyjsRenderer = ({
 
     // Mark the view as not yet created to avoid unnecessary style updates during initialization
     isViewCreated.current = false
+
+    // Save the outgoing network's camera before the instance shows another one.
+    flushPendingViewportSave()
 
     // Remove all event listeners and elements from the Cytoscape instance
     cy.removeAllListeners()
@@ -798,9 +829,15 @@ const CyjsRenderer = ({
     const viewportChangeHandler = debounce((): void => {
       const zoom = cy.zoom()
       const pan = cy.pan()
-      const newViewport = {
+      // Record the canvas size with the pan, so a restore into a canvas that
+      // was resized meanwhile keeps the same center (see viewportRestore.ts).
+      // A hidden (0 x 0) canvas has no meaningful size to record.
+      const width = cy.width()
+      const height = cy.height()
+      const newViewport: ViewPort = {
         zoom,
         pan: { x: pan.x, y: pan.y },
+        ...(width > 0 && height > 0 ? { width, height } : {}),
       }
 
       // Update viewport in the renderer store
@@ -855,11 +892,18 @@ const CyjsRenderer = ({
     // and only report correct values once the new stylesheet is installed.
     applyNodeGraphics(cy, nodeGraphicsRef.current)
 
+    // Both the restore and the fit compute with cy's cached canvas size, which
+    // can be stale here: a network switch that opens or closes the right panel
+    // (a hierarchy network does) resizes the container before Cytoscape.js's
+    // debounced resize or useCenterAnchoredResize has caught up. Refresh it so
+    // the first frame is already right instead of jumping a frame later.
+    cy.resize()
+
     // Restore saved viewport if available, otherwise fit the network if forceFit is true
     const savedViewport = getViewport('cyjs', id)
     if (savedViewport) {
       cy.zoom(savedViewport.zoom)
-      cy.pan(savedViewport.pan)
+      cy.pan(panForCanvasSize(savedViewport, cy.width(), cy.height()))
     } else if (forceFit) {
       cy.fit()
     }
@@ -1209,6 +1253,7 @@ const CyjsRenderer = ({
       setCy(cy)
 
       return () => {
+        flushPendingViewportSave()
         unregisterDebugTool()
         annotationLayersRef.current?.dispose()
         annotationLayersRef.current = null
@@ -1220,6 +1265,7 @@ const CyjsRenderer = ({
 
     return () => {
       // Reset the guard so a StrictMode remount recreates the instance.
+      flushPendingViewportSave()
       annotationLayersRef.current?.dispose()
       annotationLayersRef.current = null
       cyInstance.current?.destroy()

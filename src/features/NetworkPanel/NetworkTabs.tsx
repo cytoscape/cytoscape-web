@@ -76,6 +76,7 @@ export const NetworkTabs = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-start',
+          flexShrink: 0,
           p: 0,
           m: 0,
         }}
@@ -121,7 +122,11 @@ export const NetworkTabs = ({
           })}
         </Tabs>
       </Box>
-      <Box ref={boxRef} sx={{ flexGrow: 1, width: '100%' }}>
+      {/* minHeight 0: a flex item's default `min-height: auto` keeps it from
+          shrinking below its content, and the renderers' canvases are sized in
+          pixels — so the table panel growing would push the view out of the
+          pane instead of shrinking it. */}
+      <Box ref={boxRef} sx={{ flexGrow: 1, minHeight: 0, width: '100%' }}>
         {rendererList.map((renderer: Renderer, index: number) => {
           return (
             <NetworkTab

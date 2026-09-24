@@ -451,6 +451,13 @@ async function generateAllCx2(): Promise<void> {
       output: join(HCX_OUTPUT_DIR, 'valid', 'with-warnings.valid.cx2'),
       category: 'Valid HCX',
     },
+    {
+      name: 'HCX single-rooted tree (drawable Cell View)',
+      type: 'tree',
+      args: ['--nodes', '15', '--interaction-uuid', 'test-uuid-123'],
+      output: join(HCX_OUTPUT_DIR, 'valid', 'tree.valid.cx2'),
+      category: 'Valid HCX',
+    },
 
     // Invalid HCX Files
     {
