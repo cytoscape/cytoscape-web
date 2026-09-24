@@ -25,6 +25,7 @@ import {
 } from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { getHcxMetadata } from '../utils/hierarchyUtil'
+import { getSubNetworkId } from '../utils/subnetworkQueryUtil'
 import { CirclePackingPanel } from './CirclePackingLayout/CirclePackingPanel'
 import { DuplicateNodeSeparator } from './CirclePackingLayout/DataBuilderUtil'
 import FilterPanel from './FilterPanel/FilterPanel'
@@ -252,6 +253,13 @@ export const MainPanel = (): JSX.Element => {
     )
   }
 
+  // The store still names the previous subnetwork while the selected one loads
+  // or after its fetch fails. Show no properties until they match.
+  const propertyNetworkId: IdType =
+    currentSubNetworkId === getSubNetworkId(currentNetworkId, targetNode)
+      ? currentSubNetworkId
+      : ''
+
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
   const interactionNetworkHost: string = metadata?.interactionNetworkHost ?? ''
 
@@ -282,7 +290,7 @@ export const MainPanel = (): JSX.Element => {
           <Allotment.Pane>
             <Allotment>
               <Allotment.Pane preferredSize={'15%'} key={0}>
-                <PropertyPanel networkId={currentSubNetworkId} />
+                <PropertyPanel networkId={propertyNetworkId} />
               </Allotment.Pane>
               <Allotment.Pane key={1}>
                 <FilterPanel />

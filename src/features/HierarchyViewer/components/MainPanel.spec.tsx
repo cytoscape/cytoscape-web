@@ -218,4 +218,20 @@ describe('MainPanel property panel target', () => {
     const { networkId } = PropertyPanelMock.mock.lastCall![0]
     expect(networkId).toBe(SUBNETWORK_ID)
   })
+
+  // While a newly selected subsystem loads, or after its fetch fails, the
+  // store still names the previously shown subnetwork.
+  it('shows no properties while the store still names a previous subnetwork', () => {
+    setupStores({
+      edgeTable: edgeTableWith(['interacts']),
+      nodeTable: hierarchyNodeTable,
+      selectedNodes: [SUBSYSTEM_ID],
+      currentSubNetworkId: `${NETWORK_ID}_7`,
+    })
+
+    render(<MainPanel />)
+
+    const { networkId } = PropertyPanelMock.mock.lastCall![0]
+    expect(networkId).toBe('')
+  })
 })

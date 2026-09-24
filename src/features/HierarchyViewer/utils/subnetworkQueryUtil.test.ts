@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Network } from '../../../models/NetworkModel'
 import type { NetworkView } from '../../../models/ViewModel'
 import {
+  getSubNetworkId,
   isValidNetworkAndViews,
   NdexSubnetworkFetchError,
 } from './subnetworkQueryUtil'
@@ -67,5 +68,11 @@ describe('NdexSubnetworkFetchError', () => {
     expect(error.fetchMethod).toBe('interconnect')
     expect(error.cause).toBe(cause)
     expect(error).toBeInstanceOf(Error)
+  })
+})
+
+describe('getSubNetworkId', () => {
+  it('joins the hierarchy ID and the subsystem node ID', () => {
+    expect(getSubNetworkId('hier-uuid', '42')).toBe('hier-uuid_42')
   })
 })
