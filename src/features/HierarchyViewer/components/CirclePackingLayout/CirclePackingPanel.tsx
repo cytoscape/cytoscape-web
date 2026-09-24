@@ -52,6 +52,7 @@ import {
   getWordLines,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
+import { useCenterAnchoredZoom } from './useCenterAnchoredZoom'
 
 interface CirclePackingPanelProps {
   rendererId: string
@@ -614,6 +615,10 @@ export const CirclePackingPanel = ({
     zoomBehaviorRef.current = zoomBehavior
     d3Selection.select(svgRef.current).call(zoomBehaviorRef.current)
   }, [])
+
+  // Keep the center fixed when a panel resizes the view. Must follow onMount:
+  // it attaches to the zoom behavior created there.
+  useCenterAnchoredZoom(svgRef, zoomBehaviorRef)
 
   /**
    * Update selected leaf when hierarchy node names change

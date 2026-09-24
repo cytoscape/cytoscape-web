@@ -109,6 +109,26 @@ test.describe('Cell View availability for hierarchies (#630)', () => {
   })
 })
 
+// A single-rooted tree with one interaction type: a hierarchy the Cell View
+// can draw (the other valid HCX fixtures mix interaction types).
+const TREE_HCX = path.resolve(__dirname, '../fixtures/hcx/valid/tree.valid.cx2')
+
+/**
+ * Drag the table panel's divider — the horizontal allotment sash right under
+ * the network pane — up by `by` pixels, growing the table.
+ */
+const dragTableDividerUp = async (page: Page, by: number): Promise<void> => {
+  const tabsBox = (await page
+    .locator('[data-testid="network-tabs"]')
+    .boundingBox())!
+  const sashY = tabsBox.y + tabsBox.height + 2
+  const sashX = tabsBox.x + tabsBox.width / 2
+  await page.mouse.move(sashX, sashY)
+  await page.mouse.down()
+  await page.mouse.move(sashX, sashY - by, { steps: 10 })
+  await page.mouse.up()
+}
+
 test.describe('Hierarchy network view tabs', () => {
   // Regression: the box holding the Tree View / Cell View renderers is a flex
   // item, and its default `min-height: auto` kept it from shrinking below the
@@ -140,16 +160,9 @@ test.describe('Hierarchy network view tabs', () => {
 
     const rendererHeightBefore = await heightOf(renderer)
 
-    // The table panel's divider: the horizontal allotment sash under the
-    // network pane. Drag it up to grow the table.
     const tabsBox = (await tabs.boundingBox())!
-    const sashY = tabsBox.y + tabsBox.height + 2
-    const sashX = tabsBox.x + tabsBox.width / 2
     const shrinkBy = 150
-    await page.mouse.move(sashX, sashY)
-    await page.mouse.down()
-    await page.mouse.move(sashX, sashY - shrinkBy, { steps: 10 })
-    await page.mouse.up()
+    await dragTableDividerUp(page, shrinkBy)
 
     // The pane itself shrank...
     await expect
@@ -163,5 +176,55 @@ test.describe('Hierarchy network view tabs', () => {
     expect(await heightOf(renderer)).toBeLessThan(
       rendererHeightBefore - shrinkBy / 2,
     )
+  })
+
+  // #751: the Cell View keeps the point at its center fixed when a panel
+  // resizes it, like the Tree View does since #749. It used to stay anchored at
+  // the top-left, so growing the table panel cropped the bottom of the view.
+  test('the Cell View keeps its center when the table panel grows', async ({
+    page,
+  }) => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    await cellViewTab.click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg).toBeVisible({ timeout: 15000 })
+
+    /** The layout point at the center of the SVG, and the zoom level. */
+    const readCenter = () =>
+      svg.evaluate((element) => {
+        const { width, height } = element.getBoundingClientRect()
+        const t = (
+          element as unknown as { __zoom?: { k: number; x: number; y: number } }
+        ).__zoom ?? { k: 1, x: 0, y: 0 }
+        return {
+          height,
+          k: t.k,
+          x: (width / 2 - t.x) / t.k,
+          y: (height / 2 - t.y) / t.k,
+        }
+      })
+
+    // Zoom in first, so the check also covers a scale other than 1.
+    const svgBox = (await svg.boundingBox())!
+    await page.mouse.move(
+      svgBox.x + svgBox.width / 3,
+      svgBox.y + svgBox.height / 3,
+    )
+    await page.mouse.wheel(0, -300)
+    await expect.poll(async () => (await readCenter()).k).toBeGreaterThan(1)
+    const before = await readCenter()
+
+    await dragTableDividerUp(page, 150)
+    await expect
+      .poll(async () => (await readCenter()).height)
+      .toBeLessThan(before.height - 75)
+
+    const after = await readCenter()
+    expect(after.k).toBeCloseTo(before.k, 5)
+    expect(after.x).toBeCloseTo(before.x, 1)
+    expect(after.y).toBeCloseTo(before.y, 1)
   })
 })
