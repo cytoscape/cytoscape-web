@@ -105,6 +105,12 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.setRootNetworkHost,
   )
 
+  // ID the shown subnetwork is stored under (`<hierarchyId>_<subsystemNodeId>`).
+  // Empty until SubNetworkPanel has loaded it.
+  const currentSubNetworkId: IdType = useSubNetworkStore(
+    (state) => state.currentSubNetworkId,
+  )
+
   const checkDataType = useCallback((): void => {
     const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
 
@@ -276,7 +282,7 @@ export const MainPanel = (): JSX.Element => {
           <Allotment.Pane>
             <Allotment>
               <Allotment.Pane preferredSize={'15%'} key={0}>
-                <PropertyPanel networkId={targetNode} />
+                <PropertyPanel networkId={currentSubNetworkId} />
               </Allotment.Pane>
               <Allotment.Pane key={1}>
                 <FilterPanel />

@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -9,17 +10,26 @@ import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import type { Table } from '../../../models/TableModel'
-import { HcxMetaTag } from '../model/HcxMetaTag'
+import { HcxMetaTag, SubsystemTag } from '../model/HcxMetaTag'
 import { EDGE_INTERACTION_ATTR } from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { CP_RENDERER_ID, MainPanel } from './MainPanel'
 
-// Child panels are irrelevant here: MainPanel returns a MessagePanel while no
-// subsystem is selected. They are mocked only to keep their heavy imports out.
+const { PropertyPanelMock } = vi.hoisted(() => ({
+  PropertyPanelMock: vi.fn((_props: { networkId: string }) => null),
+}))
+
+// Child panels are mocked to keep their heavy imports out. PropertyPanel is a
+// spy so the tests can check which network it is pointed at.
+// Allotment measures its panes with ResizeObserver, which jsdom lacks.
+vi.mock('allotment', () => {
+  const Pass = ({ children }: { children?: ReactNode }) => <>{children}</>
+  return { Allotment: Object.assign(Pass, { Pane: Pass }) }
+})
 vi.mock('./SubNetworkPanel', () => ({ SubNetworkPanel: () => <div /> }))
 vi.mock('./FilterPanel/FilterPanel', () => ({ default: () => <div /> }))
 vi.mock('./PropertyPanel/PropertyPanel', () => ({
-  PropertyPanel: () => <div />,
+  PropertyPanel: PropertyPanelMock,
 }))
 vi.mock('./CirclePackingLayout/CirclePackingPanel', () => ({
   CirclePackingPanel: () => <div />,
@@ -64,14 +74,20 @@ const edgeTableWith = (interactions: string[]): Table =>
     ),
   }) as unknown as Table
 
-const nodeTable = { columns: [], rows: new Map() } as unknown as Table
+const emptyNodeTable = { columns: [], rows: new Map() } as unknown as Table
 
 const setupStores = ({
   edgeTable,
+  nodeTable = emptyNodeTable,
   cpRendererRegistered = false,
+  selectedNodes,
+  currentSubNetworkId = '',
 }: {
   edgeTable?: Table
+  nodeTable?: Table
   cpRendererRegistered?: boolean
+  selectedNodes?: string[]
+  currentSubNetworkId?: string
 }): void => {
   // Every state object is built once here: the real stores hand out stable
   // references, and rebuilding them per selector call would change tableRecord's
@@ -92,11 +108,16 @@ const setupStores = ({
     tables:
       edgeTable === undefined ? {} : { [NETWORK_ID]: { nodeTable, edgeTable } },
   }
-  const viewModelState = { getViewModel: () => undefined }
+  const viewModel =
+    selectedNodes === undefined
+      ? undefined
+      : { selectedNodes, selectedEdges: [] }
+  const viewModelState = { getViewModel: () => viewModel }
   const visualStyleState = { visualStyles: {} }
   const subNetworkState = {
     setRootNetworkId: vi.fn(),
     setRootNetworkHost: vi.fn(),
+    currentSubNetworkId,
   }
 
   ;(useWorkspaceStore as unknown as Mock).mockImplementation((selector) =>
@@ -165,5 +186,36 @@ describe('MainPanel Cell View registration (issue #630)', () => {
 
     expect(addRendererMock).not.toHaveBeenCalled()
     expect(deleteRendererMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('MainPanel property panel target', () => {
+  const SUBSYSTEM_ID = '42'
+  const SUBNETWORK_ID = `${NETWORK_ID}_${SUBSYSTEM_ID}`
+
+  const hierarchyNodeTable = {
+    columns: [],
+    rows: new Map([
+      [SUBSYSTEM_ID, { name: 'Subsystem 42', [SubsystemTag.members]: [1, 2] }],
+    ]),
+  } as unknown as Table
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('points the property panel at the shown subnetwork, not the hierarchy node', () => {
+    setupStores({
+      edgeTable: edgeTableWith(['interacts']),
+      nodeTable: hierarchyNodeTable,
+      selectedNodes: [SUBSYSTEM_ID],
+      currentSubNetworkId: SUBNETWORK_ID,
+    })
+
+    render(<MainPanel />)
+
+    expect(PropertyPanelMock).toHaveBeenCalled()
+    const { networkId } = PropertyPanelMock.mock.lastCall![0]
+    expect(networkId).toBe(SUBNETWORK_ID)
   })
 })
