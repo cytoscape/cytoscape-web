@@ -97,7 +97,6 @@ export const CirclePackingPanel = ({
   const hasInitialFitToSelectedLeaves = useRef(false) // Track if we've done initial fit to selected leaves
 
   // ===== LOCAL STATE =====
-  const [transform, setTransform] = useState(d3Zoom.zoomIdentity)
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
   const [networkSwitched, setNetworkSwitched] = useState<boolean>(false)
   const [expandAll, setExpandAll] = useState<boolean>(false)
@@ -400,6 +399,23 @@ export const CirclePackingPanel = ({
     // Primary view is not ready yet.
     if (primaryView === undefined) return
 
+    // Pack a rebuild into the size the current layout was built for: d3 pack
+    // centers the root at (width / 2, height / 2), so it can be read back.
+    // The geometry then stays identical and nothing moves on screen. Only a
+    // first build uses the measured size, which can be stale anyway: NetworkTabs
+    // measures once on mount, before a network switch has reopened the right
+    // panel, so a rebuild at that size came out shifted (#751 follow-up).
+    const existingRoot = circlePackingView?.hierarchy as
+      | d3Hierarchy.HierarchyCircularNode<D3TreeNode>
+      | undefined
+    const builtFor = (center: number | undefined, measured = 0): number =>
+      center !== undefined && center > 0 ? center * 2 : measured
+    const width = builtFor(existingRoot?.x, initialSize?.w)
+    const height = builtFor(existingRoot?.y, initialSize?.h)
+    // At 0 x 0 every circle collapses to a point. The visual-style effect runs
+    // on mount, before NetworkTabs has measured: wait for onInitialSizeChange.
+    if (width <= 0 || height <= 0) return
+
     let rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
       circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
 
@@ -427,8 +443,6 @@ export const CirclePackingPanel = ({
         })
 
         // Create a new Circle Packing view model
-        const width = initialSize?.w ?? 0
-        const height = initialSize?.h ?? 0
         const cpViewModel: CirclePackingView = createCirclePackingView(
           updatedView,
           rootNode,
@@ -453,6 +467,57 @@ export const CirclePackingPanel = ({
       })
   }
 
+  /**
+   * Fit the circle packing visualization to the viewport.
+   *
+   * The zoom state lives in d3 (on the SVG) only. It used to be mirrored in a
+   * React state that an effect re-applied after the render, which put back a
+   * stale transform over any change made in between, such as a resize shift.
+   *
+   * Uses only refs, so the copy registered as the renderer's `fit` function on
+   * first visibility stays valid. Does nothing
+   * while the SVG is hidden (0 x 0) or nothing is drawn yet: a scale computed
+   * from an empty box would be 0 or infinite.
+   */
+  const fitCircleToViewport = (): void => {
+    if (svgRef.current === null || zoomBehaviorRef.current === null) return
+
+    const { width: parentWidth, height: parentHeight } =
+      svgRef.current.getBoundingClientRect()
+    if (parentWidth === 0 || parentHeight === 0) return
+
+    const node = d3Selection
+      .select<SVGGElement, unknown>(`g.${CP_WRAPPER_CLASS}`)
+      .node()
+    if (node === null) return
+
+    const bbox = node.getBBox()
+    const wrapperWidth = bbox.width
+    const wrapperHeight = bbox.height
+    if (wrapperWidth === 0 || wrapperHeight === 0) return
+    const deltaX: number = bbox.x
+    const deltaY: number = bbox.y
+
+    const scaleX = parentWidth / wrapperWidth
+    const scaleY = parentHeight / wrapperHeight
+    const scale = Math.min(scaleX, scaleY) // Fit to the smaller dimension
+
+    const scaledWidth = wrapperWidth * scale
+    const scaledHeight = wrapperHeight * scale
+
+    const translateX = (parentWidth - scaledWidth) / 2 - deltaX * scale
+    const translateY = (parentHeight - scaledHeight) / 2 - deltaY * scale
+
+    const newTransform = d3Zoom.zoomIdentity
+      .translate(translateX, translateY)
+      .scale(scale)
+
+    zoomBehaviorRef.current.transform(
+      d3Selection.select<SVGSVGElement, unknown>(svgRef.current),
+      newTransform,
+    )
+  }
+
   // ===== EFFECTS ====
 
   /**
@@ -470,52 +535,6 @@ export const CirclePackingPanel = ({
        */
       const fitFunction = getRendererFunction(rendererId, 'fit')
 
-      /**
-       * Fit the circle packing visualization to the viewport
-       */
-      const fitCircleToViewport = () => {
-        if (svgRef.current === null) return
-
-        const { width, height } = svgRef.current.getBoundingClientRect()
-        const parentWidth = width
-        const parentHeight = height
-
-        const wrapper = d3Selection.select<SVGGElement, unknown>(
-          `g.${CP_WRAPPER_CLASS}`,
-        )
-        if (wrapper === null) return
-
-        const node = wrapper.node() as SVGGraphicsElement
-        if (node === null) return
-
-        const bbox = node.getBBox()
-        const wrapperWidth = bbox.width
-        const wrapperHeight = bbox.height
-        const deltaX: number = bbox.x
-        const deltaY: number = bbox.y
-
-        const scaleX = parentWidth / wrapperWidth
-        const scaleY = parentHeight / wrapperHeight
-        const scale = Math.min(scaleX, scaleY) // Fit to the smaller dimension
-
-        const scaledWidth = wrapperWidth * scale
-        const scaledHeight = wrapperHeight * scale
-
-        const translateX = (parentWidth - scaledWidth) / 2 - deltaX * scale
-        const translateY = (parentHeight - scaledHeight) / 2 - deltaY * scale
-
-        const newTransform = d3Zoom.zoomIdentity
-          .translate(translateX, translateY)
-          .scale(scale)
-
-        if (zoomBehaviorRef.current == null) return
-
-        setTransform(newTransform)
-        zoomBehaviorRef.current.transform(
-          d3Selection.select<SVGSVGElement, unknown>(svgRef.current),
-          newTransform,
-        )
-      }
       if (fitFunction === undefined) {
         setRendererFunction(rendererId, 'fit', fitCircleToViewport)
       }
@@ -532,22 +551,6 @@ export const CirclePackingPanel = ({
       setRendererFunction,
       initialSize,
     ],
-  )
-
-  /**
-   * Apply transform changes to the zoom behavior
-   */
-  useEffect(
-    function onTransformChange() {
-      if (zoomBehaviorRef.current !== null && svgRef.current !== null) {
-        const selection = d3Selection.select<SVGSVGElement, unknown>(
-          svgRef.current,
-        )
-        selection.call(zoomBehaviorRef.current.transform, d3Zoom.zoomIdentity)
-        zoomBehaviorRef.current.transform(selection, transform)
-      }
-    },
-    [transform],
   )
 
   // The d3 zoom handler below is installed once on mount, so calling
@@ -686,7 +689,6 @@ export const CirclePackingPanel = ({
                     const newTransform = d3Zoom.zoomIdentity
                       .translate(translateX, translateY)
                       .scale(scale)
-                    setTransform(newTransform)
                     if (zoomBehaviorRef.current !== null) {
                       zoomBehaviorRef.current.transform(
                         d3Selection.select<SVGSVGElement, unknown>(
@@ -890,6 +892,12 @@ export const CirclePackingPanel = ({
       if (networkId !== lastNetworkId || !wrapperExists) {
         // Network changed or wrapper missing → full redraw
         drawCirclePacking(rootNode)
+        // A fresh drawing starts at the identity transform, which only fits if
+        // the layout was built for the SVG's current size — and that size can
+        // be stale: NetworkTabs measures it once on mount, before a network
+        // switch has finished opening or closing the right panel. Fit it
+        // instead. (No-op while hidden; the visibility effect fits on show.)
+        fitCircleToViewport()
         setLastNetworkId(networkId)
         updatingNetworkIdRef.current = null
       } else {

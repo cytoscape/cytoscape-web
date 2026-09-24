@@ -45,6 +45,9 @@
 
 - [2026-09-23] Cytoscape.js calls `cy.resize()` on ITSELF (debounced 100 ms) from its own ResizeObserver, window `resize` and a container-`style` MutationObserver, and a debounce timer can run before the next rendering frame delivers our ResizeObserver callback. Any logic keyed to size changes must therefore hook `cy.resize` itself, not only observe the container — `useCenterAnchoredResize` wraps the instance's `resize` for that reason. Measure against `cy.width()/height()` (the size the pan is relative to), not an observer's previous reading. Also: while the Browser pane is hidden the page lays out at bogus sizes (a 30 px centre pane) and runs no ResizeObserver callbacks — discard measurements taken with `document.visibilityState === 'hidden'`.
 
+- [2026-09-24] Cell View (`CirclePackingPanel`) zoom state lives in d3 only (`svg.__zoom`). It used to be mirrored in a React `transform` state that an effect re-applied after render, which put a stale transform back over any change made in between; never reintroduce a React copy. A layout rebuild must reuse the size the existing layout was built for (root at `(w/2, h/2)` → `(2·root.x, 2·root.y)`): `NetworkTabs` measures `boxSize` once on mount, before a network switch has reopened the right panel, so the measured size is not reliable.
+- [2026-09-24] 'Without the fix' e2e comparisons against the dev server (`E2E_DEV=1`): after swapping a source file, confirm the served module changed (`curl -s localhost:5500/<path> | grep <marker>`) before running — Vite's watcher can lag, and both runs then test the same code.
+
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).
