@@ -38,9 +38,11 @@ const measure = (svg: SVGSVGElement): Size | null => {
  * The change is measured from the size the transform was last SET at, not from
  * the previous resize notification: every fit computes its transform from the
  * SVG's live size, so a fit that runs before the notification arrives has
- * already accounted for the change. Each zoom event (user zoom/pan, a fit, or
- * this hook's own translation) therefore resets the baseline. While the SVG is
- * hidden (the Tree View tab is selected) nothing moves, and the last visible
+ * already accounted for the change. Each programmatic zoom event (a fit, or
+ * this hook's own translation) therefore resets the baseline. A user's
+ * wheel/drag zoom does not: it is relative to the pointer, not to the size, and
+ * must not consume a size change that has not been reported yet. While the SVG
+ * is hidden (the Tree View tab is selected) nothing moves, and the last visible
  * size stays the baseline for when it is shown again.
  *
  * Must run after the zoom behavior is created and attached to the SVG.
@@ -65,8 +67,11 @@ export const useCenterAnchoredZoom = (
 
     let baseline: Size | null = measure(svg)
 
-    zoom.on(ZOOM_EVENT, () => {
-      baseline = measure(svg) ?? baseline
+    zoom.on(ZOOM_EVENT, (event: d3Zoom.D3ZoomEvent<SVGSVGElement, unknown>) => {
+      // Programmatic changes carry no source event; user gestures do.
+      if (event.sourceEvent == null) {
+        baseline = measure(svg) ?? baseline
+      }
     })
 
     const observer = new ResizeObserver(() => {

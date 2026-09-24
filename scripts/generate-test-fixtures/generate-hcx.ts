@@ -204,7 +204,8 @@ function generateValidHcx(options: GenerateHcxOptions): any[] {
 /**
  * Replace the edges of a valid HCX with a single-rooted binary tree whose edges
  * all share one interaction type: node k's parent is node (k - 1) / 2, and each
- * edge runs parent -> child. Every node gets a member list. Unlike the other valid HCX fixtures (random edges,
+ * edge runs parent -> child. Leaves get a gene each and parents the union of
+ * their children's. Unlike the other valid HCX fixtures (random edges,
  * several interaction types), this is a hierarchy the Cell View (circle
  * packing) can actually draw.
  */
@@ -216,14 +217,22 @@ function toTree(hcx: any[]): any[] {
     return tree
   }
 
-  // The Cell View needs a member list on every subsystem, leaves included;
-  // generateHcxMembers only gives one to the first half of the nodes.
-  nodes.forEach((node: any, index: number) => {
-    const members = node.v['HCX::members']
-    if (!Array.isArray(members) || members.length === 0) {
-      node.v['HCX::members'] = [nodes.length + index]
+  // Member lists as in real HCX data: each leaf subsystem gets a gene of its
+  // own, and each parent holds the union of its children's genes. (The Cell
+  // View needs a list on every subsystem; generateHcxMembers only gives random
+  // ones to the first half of the nodes.) A parent's index is always below its
+  // children's, so walking backwards sees every child before its parent.
+  const childMembers: number[][] = nodes.map(() => [])
+  for (let index = nodes.length - 1; index >= 0; index--) {
+    const members =
+      childMembers[index].length > 0
+        ? [...new Set(childMembers[index])].sort((a, b) => a - b)
+        : [nodes.length + index]
+    nodes[index].v['HCX::members'] = members
+    if (index > 0) {
+      childMembers[Math.floor((index - 1) / 2)].push(...members)
     }
-  })
+  }
 
   edgesAspect.edges = nodes.slice(1).map((node: any, index: number) => ({
     id: index,
