@@ -32,6 +32,7 @@ import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { createFilterFromAspect } from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
+import { resolveShownSubNetworkId } from '../utils/resolveShownSubNetworkId'
 import {
   fetchNdexSubnetworkByQuery,
   NdexSubnetworkFetchError,
@@ -312,16 +313,23 @@ export const SubNetworkPanel = ({
     setActiveNetworkView(queryNetworkId)
   }
 
+  // Only the subnetwork fetched for the selected subsystem counts as shown, not
+  // one left over while the next loads or after its fetch failed (#758).
+  const shownSubNetworkId: IdType = resolveShownSubNetworkId({
+    queryNetworkId,
+    fetchedNetworkId: data?.network.id,
+    hasError: error !== undefined && error !== null,
+    hasViewModel: getViewModel(queryNetworkId) !== undefined,
+  })
+
   useEffect(() => {
-    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
-    if (viewModel === undefined) {
-      return
+    if (shownSubNetworkId !== '') {
+      prevQueryNetworkIdRef.current = shownSubNetworkId
     }
-    prevQueryNetworkIdRef.current = queryNetworkId
     // Publish the shown subnetwork so the hierarchy-side share URL can capture
     // it even when the user hasn't clicked the subnetwork pane (CW-654).
-    setCurrentSubNetworkId(queryNetworkId)
-  }, [queryNetworkId, getViewModel, setCurrentSubNetworkId])
+    setCurrentSubNetworkId(shownSubNetworkId)
+  }, [shownSubNetworkId, setCurrentSubNetworkId])
 
   useEffect(() => {
     // Clear the shown subnetwork when the viewer unmounts so it can't leak into
