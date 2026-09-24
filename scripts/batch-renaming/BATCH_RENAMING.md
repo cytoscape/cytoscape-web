@@ -16,19 +16,19 @@ Use the `generate-filenames-csv.ts` script to create a CSV file containing all f
 
 ```bash
 # Basic usage - scan current directory, output to filenames.csv
-npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts
+npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts
 
 # Scan a specific folder
-npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features
+npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features
 
 # Specify output file
-npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv
+npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv
 
 # Non-recursive (only immediate children, no subdirectories)
-npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv --no-recursive
+npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv --no-recursive
 
 # Explicitly recursive (default behavior)
-npx ts-node --project scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv --recursive
+npx tsx --tsconfig scripts/batch-renaming/tsconfig.json scripts/batch-renaming/generate-filenames-csv.ts src/features output.csv --recursive
 ```
 
 **Output CSV Columns:**

@@ -1,7 +1,7 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to download NDEx networks as CX2 files
- * Usage: ts-node scripts/download-ndex-networks.ts <uuid1> <uuid2> ...
+ * Usage: tsx scripts/download-ndex-networks.ts <uuid1> <uuid2> ...
  */
 
 import { writeFileSync } from 'fs'
@@ -33,7 +33,7 @@ async function main() {
 
   if (uuids.length === 0) {
     console.error(
-      'Usage: ts-node scripts/download-ndex-networks.ts <uuid1> <uuid2> ...',
+      'Usage: tsx scripts/download-ndex-networks.ts <uuid1> <uuid2> ...',
     )
     process.exit(1)
   }

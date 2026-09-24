@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to build a dependency graph from all PascalCase model files
  *
@@ -7,8 +7,8 @@
  * depend on and are composed of one another.
  *
  * Usage:
- *   npm install -D ts-node ts-morph
- *   npx ts-node --compiler-options '{"module":"commonjs"}' scripts/generate-model-diagram/build-dependency-graph.ts
+ *   npm install -D tsx ts-morph
+ *   npx tsx scripts/generate-model-diagram/build-dependency-graph.ts
  */
 
 import { Project, ImportDeclaration, ExportedDeclarations } from 'ts-morph'

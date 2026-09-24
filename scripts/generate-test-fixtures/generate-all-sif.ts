@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate all SIF test fixtures as specified in generate-sif-spec.md
  *
