@@ -271,44 +271,64 @@ test.describe('Hierarchy network view tabs', () => {
     const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
     const svg = page.locator('[data-testid="circle-packing-svg"]')
 
-    /** Offset of the drawing's center from the SVG's center, in px. */
-    const offCenter = () =>
+    /**
+     * Where the drawing sits in the SVG, in px: how far its center is from the
+     * SVG's center, and how far it sticks out past any edge (0 when it fits).
+     * The stale layout was both shifted and drawn larger than the view.
+     */
+    const placement = () =>
       svg.evaluate((element) => {
         const box = element.getBoundingClientRect()
         const drawing = element
           .querySelector('g.circle-packing-wrapper')
           ?.getBoundingClientRect()
         if (drawing === undefined || drawing.width === 0) return null
-        return Math.round(
-          Math.max(
-            Math.abs(drawing.x + drawing.width / 2 - (box.x + box.width / 2)),
-            Math.abs(drawing.y + drawing.height / 2 - (box.y + box.height / 2)),
+        return {
+          offCenter: Math.round(
+            Math.max(
+              Math.abs(drawing.x + drawing.width / 2 - (box.x + box.width / 2)),
+              Math.abs(
+                drawing.y + drawing.height / 2 - (box.y + box.height / 2),
+              ),
+            ),
           ),
-        )
+          overflow: Math.round(
+            Math.max(
+              0,
+              box.left - drawing.left,
+              drawing.right - box.right,
+              box.top - drawing.top,
+              drawing.bottom - box.bottom,
+            ),
+          ),
+        }
       })
 
-    /** Poll until the drawing has stopped moving, then return its offset. */
-    const settledOffCenter = async (): Promise<number> => {
-      let previous: number | null | undefined
+    /** Poll until the drawing has stopped moving, then return its placement. */
+    const settledPlacement = async (): Promise<{
+      offCenter: number
+      overflow: number
+    }> => {
+      let previous = ''
       await expect
         .poll(
           async () => {
-            const current = await offCenter()
-            const stable = current !== null && current === previous
+            const current = JSON.stringify(await placement())
+            const stable = current !== 'null' && current === previous
             previous = current
             return stable
           },
           { intervals: [500], timeout: 20_000 },
         )
         .toBe(true)
-      return previous as number
+      return JSON.parse(previous)
     }
 
     await workspaceItem('Test Network 15 nodes').click()
     await expect(cellViewTab).toBeVisible({ timeout: 15000 })
     await cellViewTab.click()
     await expect(svg).toBeVisible({ timeout: 15000 })
-    await settledOffCenter()
+    await settledPlacement()
 
     // On the regular network, narrow the left panel: the center pane gets
     // wider, so the size measured on the way back differs from the first one.
@@ -338,6 +358,13 @@ test.describe('Hierarchy network view tabs', () => {
     // The layout is rebuilt asynchronously after the switch; check the view
     // once the drawing has settled.
     await page.waitForTimeout(1500)
-    expect(await settledOffCenter()).toBeLessThanOrEqual(2)
+    const { offCenter, overflow } = await settledPlacement()
+    // Soft, so a failure reports both symptoms.
+    expect
+      .soft(offCenter, 'drawing center off the view center')
+      .toBeLessThanOrEqual(2)
+    expect
+      .soft(overflow, 'drawing sticking out of the view')
+      .toBeLessThanOrEqual(2)
   })
 })
