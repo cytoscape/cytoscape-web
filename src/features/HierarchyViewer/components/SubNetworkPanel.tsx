@@ -319,6 +319,7 @@ export const SubNetworkPanel = ({
     queryNetworkId,
     fetchedNetworkId: data?.network.id,
     hasError: error !== undefined && error !== null,
+    isLoading: isFetching || isProcessing,
     hasViewModel: getViewModel(queryNetworkId) !== undefined,
   })
 

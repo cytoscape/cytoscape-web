@@ -13,6 +13,7 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: SUB_B,
         fetchedNetworkId: SUB_B,
         hasError: false,
+        isLoading: false,
         hasViewModel: true,
       }),
     ).toBe(SUB_B)
@@ -26,6 +27,7 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: SUB_A,
         fetchedNetworkId: undefined,
         hasError: false,
+        isLoading: false,
         hasViewModel: true,
       }),
     ).toBe('')
@@ -37,6 +39,7 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: SUB_A,
         fetchedNetworkId: SUB_B,
         hasError: false,
+        isLoading: false,
         hasViewModel: true,
       }),
     ).toBe('')
@@ -48,6 +51,7 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: SUB_A,
         fetchedNetworkId: undefined,
         hasError: true,
+        isLoading: false,
         hasViewModel: true,
       }),
     ).toBe('')
@@ -57,6 +61,21 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: SUB_B,
         fetchedNetworkId: SUB_B,
         hasError: true,
+        isLoading: false,
+        hasViewModel: true,
+      }),
+    ).toBe('')
+  })
+
+  it('returns nothing while the panel still shows progress', () => {
+    // updateNetworkView() sets queryNetworkId before processing ends, and a
+    // background refetch keeps the previous data while fetching.
+    expect(
+      resolveShownSubNetworkId({
+        queryNetworkId: SUB_B,
+        fetchedNetworkId: SUB_B,
+        hasError: false,
+        isLoading: true,
         hasViewModel: true,
       }),
     ).toBe('')
@@ -68,6 +87,7 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: SUB_B,
         fetchedNetworkId: SUB_B,
         hasError: false,
+        isLoading: false,
         hasViewModel: false,
       }),
     ).toBe('')
@@ -79,6 +99,7 @@ describe('resolveShownSubNetworkId (#758)', () => {
         queryNetworkId: '',
         fetchedNetworkId: undefined,
         hasError: false,
+        isLoading: false,
         hasViewModel: false,
       }),
     ).toBe('')
