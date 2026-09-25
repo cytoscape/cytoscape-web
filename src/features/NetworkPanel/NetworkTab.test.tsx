@@ -8,9 +8,13 @@ import { NetworkTab } from './NetworkTab'
 
 // Mock FloatingToolBar to allow testing click events
 const mockFloatingToolBarButtonClick = vi.fn()
+const mockFloatingToolBarProps = vi.fn()
 vi.mock('../FloatingToolBar/FloatingToolBar', () => ({
-  FloatingToolBar: () => (
-    <div data-testid="floating-toolbar">
+  FloatingToolBar: (props: unknown) => (
+    <div
+      data-testid="floating-toolbar"
+      ref={() => mockFloatingToolBarProps(props)}
+    >
       <button
         data-testid="floating-toolbar-button"
         onClick={mockFloatingToolBarButtonClick}
@@ -84,6 +88,16 @@ describe('NetworkTab click behavior', () => {
 
     expect(handleClick).toHaveBeenCalledTimes(2)
     expect(rendererClick).toHaveBeenCalledTimes(1)
+  })
+
+  // #762: the toolbar's fit button must act on this tab's network, not on
+  // whichever view happens to be active.
+  it('tells the FloatingToolBar which network its view shows', () => {
+    renderTab(false)
+
+    expect(mockFloatingToolBarProps).toHaveBeenCalledWith(
+      expect.objectContaining({ viewNetworkId: 'test-network' }),
+    )
   })
 
   describe('FloatingToolBar click behavior', () => {

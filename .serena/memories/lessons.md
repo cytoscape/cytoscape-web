@@ -48,6 +48,8 @@
 - [2026-09-24] Cell View (`CirclePackingPanel`) zoom state lives in d3 only (`svg.__zoom`). It used to be mirrored in a React `transform` state that an effect re-applied after render, which put a stale transform back over any change made in between; never reintroduce a React copy. A layout rebuild must reuse the size the existing layout was built for (root at `(w/2, h/2)` → `(2·root.x, 2·root.y)`): `NetworkTabs` measures `boxSize` once on mount, before a network switch has reopened the right panel, so the measured size is not reliable.
 - [2026-09-24] 'Without the fix' e2e comparisons against the dev server (`E2E_DEV=1`): after swapping a source file, confirm the served module changed (`curl -s localhost:5500/<path> | grep <marker>`) before running — Vite's watcher can lag, and both runs then test the same code.
 
+- [2026-09-25] Per-view actions must name their view's network: the Hierarchy Viewer's TREE VIEW and SUB NETWORK VIEWER share the `cyjs` renderer and register renderer functions per network id, so a toolbar button that resolves its network from `ui.activeNetworkView` acts on whichever view was clicked last, not the one it sits in (#762). Pass the view's own network down (`FloatingToolBar`'s `viewNetworkId`). The fallback to the active view is still right for the Share button, which relies on it on purpose (#758).
+
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).
