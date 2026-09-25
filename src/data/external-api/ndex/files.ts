@@ -49,7 +49,10 @@ export interface NdexFileSearchResult {
  * Searches for files (networks, folders, shortcuts) in NDEx using the v3 search API.
  *
  * @param searchString - Search query string
- * @param visibility - Visibility filter: 'PUBLIC' or 'PRIVATE'
+ * @param visibility - Visibility filter: 'PUBLIC' or 'PRIVATE'. Omit it to
+ *   get one relevance-ranked list of everything the caller may see: public
+ *   results, plus private and shared ones when a token is given.
+ *   (ndexbio/ndex-rest#211)
  * @param accessToken - Optional authentication token
  * @param accountName - Optional account name to filter by owner
  * @param start - Pagination start offset (defaults to 0)
@@ -59,7 +62,7 @@ export interface NdexFileSearchResult {
  */
 export const searchNdexFiles = async (
   searchString: string,
-  visibility: 'PUBLIC' | 'PRIVATE',
+  visibility: 'PUBLIC' | 'PRIVATE' | undefined,
   accessToken?: string,
   accountName?: string,
   start?: number,
@@ -69,9 +72,13 @@ export const searchNdexFiles = async (
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const params: any = {
     searchString: searchString.trim() ? searchString : '*',
-    visibility,
     start: start ?? 0,
     size: size ?? 500,
+  }
+  // ndex-client types `visibility` as required, but the server treats a
+  // missing one as "everything the caller may see".
+  if (visibility) {
+    params.visibility = visibility
   }
   if (accountName) {
     params.accountName = accountName
