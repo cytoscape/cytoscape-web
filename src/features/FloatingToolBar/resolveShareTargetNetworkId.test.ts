@@ -53,6 +53,30 @@ describe('resolveShareTargetNetworkId (CW-654)', () => {
     ).toBeUndefined()
   })
 
+  // #758: selecting another subsystem outside the hierarchy pane (e.g. from
+  // the table browser) leaves activeNetworkView on the previous subnetwork.
+  it('ignores an active subnetwork that is no longer shown', () => {
+    const PREVIOUS = 'hier-1_7'
+    // The newly selected subsystem is still loading or failed
+    expect(
+      resolveShareTargetNetworkId({
+        targetNetworkId: undefined,
+        activeNetworkView: PREVIOUS,
+        currentNetworkId: HIER,
+        shownSubNetworkId: '',
+      }),
+    ).toBeUndefined()
+    // The newly selected subsystem is shown
+    expect(
+      resolveShareTargetNetworkId({
+        targetNetworkId: undefined,
+        activeNetworkView: PREVIOUS,
+        currentNetworkId: HIER,
+        shownSubNetworkId: SUB,
+      }),
+    ).toBe(SUB)
+  })
+
   it('returns undefined for a plain network with no subnetwork shown', () => {
     expect(
       resolveShareTargetNetworkId({

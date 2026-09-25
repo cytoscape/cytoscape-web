@@ -22,7 +22,9 @@ export interface ResolveShareTargetParams {
  * two sides disagreed (CW-654).
  *
  * This adds a final fallback to the subnetwork currently shown in the viewer,
- * guarded so it only applies to a subnetwork of the current hierarchy.
+ * guarded so it only applies to a subnetwork of the current hierarchy. An
+ * active subnetwork of the current hierarchy that is no longer shown is
+ * skipped, so the URL never points at a previously selected subsystem (#758).
  */
 export const resolveShareTargetNetworkId = ({
   targetNetworkId,
@@ -35,7 +37,13 @@ export const resolveShareTargetNetworkId = ({
   }
 
   if (activeNetworkView !== '' && activeNetworkView !== currentNetworkId) {
-    return activeNetworkView
+    // A subnetwork of this hierarchy counts only while it is still the one
+    // shown: selecting another subsystem outside the hierarchy pane leaves
+    // activeNetworkView on the previous one (#758).
+    const isOwnSubnetwork = activeNetworkView.startsWith(`${currentNetworkId}_`)
+    if (!isOwnSubnetwork || activeNetworkView === shownSubNetworkId) {
+      return activeNetworkView
+    }
   }
 
   if (
