@@ -8,6 +8,11 @@ interface FloatingToolBarProps {
   // All actions to be performed on the target network if provided
   targetNetworkId?: string
 
+  // Network drawn in the view this toolbar sits in. Only the fit button uses
+  // it: unlike targetNetworkId it leaves the share and open-in-Cytoscape
+  // fallbacks to the active view untouched. Defaults to targetNetworkId.
+  viewNetworkId?: string
+
   // Label for the network to be used if the network has no summary
   networkLabel?: string
 
@@ -17,6 +22,7 @@ interface FloatingToolBarProps {
 
 export const FloatingToolBar = ({
   targetNetworkId,
+  viewNetworkId,
   networkLabel,
   rendererId,
 }: FloatingToolBarProps): JSX.Element => {
@@ -45,7 +51,10 @@ export const FloatingToolBar = ({
         disabled={isCirclePackingRenderer}
         rendererId={rendererId}
       />
-      <FitButton rendererId={rendererId} />
+      <FitButton
+        rendererId={rendererId}
+        targetNetworkId={viewNetworkId ?? targetNetworkId}
+      />
       <OpenInCytoscapeButton
         targetNetworkId={targetNetworkId}
         networkLabel={networkLabel}
