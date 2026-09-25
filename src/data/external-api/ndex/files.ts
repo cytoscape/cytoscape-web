@@ -7,6 +7,7 @@
  * @module api/ndex/files
  */
 
+import { logApi } from '../../../debug'
 import { getNdexClient } from './client'
 import { fetchNdexSummaries } from './networkSummary'
 
@@ -84,13 +85,26 @@ export const searchNdexFiles = async (
     params.accountName = accountName
   }
 
+  logApi.info('[searchNdexFiles]: request', {
+    ...params,
+    authenticated: accessToken !== undefined,
+  })
   const result = await ndexClient.files.searchFiles(params)
-  return {
-    files: ((result as any)?.files ?? (result as any)?.ResultList ?? [])
-      .filter((item: any) => item != null && typeof item === 'object')
-      .map(mapFileListItem),
-    numFound: (result as any)?.numFound ?? 0,
-  }
+  const files: NdexFileItem[] = (
+    (result as any)?.files ??
+    (result as any)?.ResultList ??
+    []
+  )
+    .filter((item: any) => item != null && typeof item === 'object')
+    .map(mapFileListItem)
+  const numFound: number = (result as any)?.numFound ?? 0
+  logApi.info('[searchNdexFiles]: response', {
+    numFound,
+    returned: files.length,
+    owners: [...new Set(files.map((file) => file.owner))],
+    visibilities: [...new Set(files.map((file) => file.visibility))],
+  })
+  return { files, numFound }
 }
 
 /**

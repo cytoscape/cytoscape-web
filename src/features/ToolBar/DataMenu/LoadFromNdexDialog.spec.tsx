@@ -24,6 +24,7 @@ vi.mock('@/data/external-api/ndex', () => ({
   fetchFolderInfo: vi.fn(async () => ({ name: 'folder' })),
   enrichShortcutsWithTargetSummaries: vi.fn(async (items: unknown[]) => items),
   getNetworkIdForFileItem: vi.fn((item: { uuid: string }) => item.uuid),
+  fetchNdexUserName: vi.fn(async () => 'me-on-ndex'),
 }))
 
 const renderDialog = (initialQuery?: string): void => {
@@ -158,7 +159,9 @@ describe('LoadFromNdexDialog search', () => {
     expect(screen.queryByTestId('load-from-ndex-tabs')).toBeNull()
     expect(screen.queryByText(/unlisted/i)).toBeNull()
   })
-  it('re-runs the search filtered to the owner when Only mine is checked', async () => {
+  // The Keycloak username (`tokenParsed.preferred_username`, 'me' here) is not
+  // the NDEx account name, so filtering on it returned nothing.
+  it('re-runs the search filtered to the NDEx account name when Only mine is checked', async () => {
     renderSignedIn('BRCA1')
     await waitFor(() => expect(searchNdexFiles).toHaveBeenCalledTimes(1))
 
@@ -169,7 +172,7 @@ describe('LoadFromNdexDialog search', () => {
       'BRCA1',
       undefined,
       'token',
-      'me',
+      'me-on-ndex',
       0,
       500,
       expect.anything(),

@@ -42,6 +42,7 @@ import {
   fetchFolderContents,
   fetchFolderInfo,
   fetchNdexSummaries,
+  fetchNdexUserName,
   getNetworkIdForFileItem,
   searchNdexFiles,
 } from '../../../data/external-api/ndex'
@@ -400,6 +401,10 @@ export const LoadFromNdexDialog = (
   // only while its id is current, so an older search that resolves late
   // cannot replace newer results or refill a closed dialog.
   const searchIdRef = useRef<number>(0)
+  // The signed-in user's NDEx account name, fetched on the first "Only mine"
+  // search. Identity cannot change while the page is loaded (sign-in and
+  // sign-out reload it), so one lookup serves the session.
+  const ndexUserNameRef = useRef<Promise<string> | null>(null)
 
   // Whether we're in folder browse mode (no search query) or search mode
   const isBrowseMode = lastSearchQuery === ''
@@ -565,8 +570,25 @@ export const LoadFromNdexDialog = (
     setLoading(true)
     try {
       const token = authenticated ? await getToken() : undefined
-      const userName = client?.tokenParsed?.preferred_username
-      const ownerFilter = mineOnly && authenticated ? userName : undefined
+      // NDEx filters on its own account name, which can differ from the
+      // Keycloak preferred_username.
+      let ownerFilter: string | undefined
+      if (mineOnly && token !== undefined) {
+        ndexUserNameRef.current ??= fetchNdexUserName(token, ndexBaseUrl)
+        try {
+          ownerFilter = await ndexUserNameRef.current
+        } catch (err) {
+          ndexUserNameRef.current = null
+          throw err
+        }
+      }
+      logUi.info('[LoadFromNdexDialog]: search', {
+        query: trimmedQuery,
+        searchId,
+        mineOnly,
+        authenticated,
+        ownerFilter,
+      })
 
       // No visibility filter: NDEx returns public results, plus private and
       // shared ones when the request carries a token (ndexbio/ndex-rest#211).
@@ -584,7 +606,13 @@ export const LoadFromNdexDialog = (
         token,
         ndexBaseUrl,
       )
-      if (!isCurrent()) return
+      if (!isCurrent()) {
+        logUi.info('[LoadFromNdexDialog]: dropped stale search response', {
+          searchId,
+          currentSearchId: searchIdRef.current,
+        })
+        return
+      }
       setSearchResults(enriched)
       setResultCount(result.numFound)
     } catch (err: any) {
@@ -905,6 +933,9 @@ export const LoadFromNdexDialog = (
                   checked={onlyMine}
                   size="small"
                   onChange={(_e, checked) => {
+                    logUi.info('[LoadFromNdexDialog]: Only mine changed', {
+                      checked,
+                    })
                     setOnlyMine(checked)
                     void executeSearch(lastSearchQuery, checked)
                   }}

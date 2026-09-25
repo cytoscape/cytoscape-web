@@ -48,6 +48,8 @@
 - [2026-09-24] Cell View (`CirclePackingPanel`) zoom state lives in d3 only (`svg.__zoom`). It used to be mirrored in a React `transform` state that an effect re-applied after render, which put a stale transform back over any change made in between; never reintroduce a React copy. A layout rebuild must reuse the size the existing layout was built for (root at `(w/2, h/2)` → `(2·root.x, 2·root.y)`): `NetworkTabs` measures `boxSize` once on mount, before a network switch has reopened the right panel, so the measured size is not reliable.
 - [2026-09-24] 'Without the fix' e2e comparisons against the dev server (`E2E_DEV=1`): after swapping a source file, confirm the served module changed (`curl -s localhost:5500/<path> | grep <marker>`) before running — Vite's watcher can lag, and both runs then test the same code.
 
+- [2026-09-25] Keycloak `tokenParsed.preferred_username` is NOT the NDEx account name. Keycloak sets it (often copied from the upstream IdP, e.g. a campus SSO login), and NDEx keeps its own `userName`. The Load from NDEx "Only mine" filter sent the Keycloak name as `accountName` and always got zero results (#760). Wherever NDEx expects an account name, use `fetchNdexUserName` (`src/data/external-api/ndex/user.ts`, ndex-client `user.getCurrentUser()`), never the token claim. Display-only use (`LoginPanel`) is fine.
+
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).
