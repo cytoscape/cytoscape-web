@@ -80,9 +80,7 @@ export const AttributeSelector = ({
       sx={{
         display: 'flex',
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'flex-start',
-        paddingBottom: '0.5em',
       }}
     >
       <Box sx={{ flex: 1 }}>
@@ -96,7 +94,7 @@ export const AttributeSelector = ({
             minWidth: '17em',
           }}
         >
-          <FormLabel sx={{ paddingRight: '0.5em' }}>Filter for:</FormLabel>
+          <FormLabel sx={{ mr: 2 }}>Filter for:</FormLabel>
           <RadioGroup row value={selectedType} onChange={handleTypeChange}>
             <FormControlLabel
               value={GraphObjectType.NODE}

@@ -7,6 +7,8 @@ import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'
 import { NetworkTab } from './NetworkTab'
 
+const TABS_HEIGHT = 40
+
 interface NetworkTabsProps {
   network: Network
   views: NetworkView[]
@@ -79,6 +81,8 @@ export const NetworkTabs = ({
           flexShrink: 0,
           p: 0,
           m: 0,
+          backgroundColor: (theme) => theme.palette.background.subtle,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <Tabs
@@ -86,13 +90,12 @@ export const NetworkTabs = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            '& button': {
-              height: '2.5em',
-              minHeight: '2.5em',
-            },
-            height: '2.5em',
-            minHeight: '2.5em',
+            justifyItems: 'center',
             flexGrow: 1,
+            minHeight: TABS_HEIGHT,
+            '& button': {
+              minHeight: TABS_HEIGHT,
+            },
           }}
           value={selected}
           onChange={handleChange}
