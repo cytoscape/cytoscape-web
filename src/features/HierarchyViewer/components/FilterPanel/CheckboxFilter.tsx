@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
-import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import {
   Filter,
@@ -51,11 +50,11 @@ export const CheckboxFilter = ({
   const [searchParams] = useSearchParams()
 
   const setBypassMap = useVisualStyleStore((state) => state.setBypassMap)
+  const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
 
   const visualStyleExists = useVisualStyleStore(
     (state) => state.visualStyles[targetNetworkId] !== undefined,
   )
-  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
   const discreteFilterDetails = filterConfig.discreteFilterDetails ?? []
   const name2label = new Map<string, string>()
@@ -68,6 +67,12 @@ export const CheckboxFilter = ({
 
   // Check if all options are selected
   const currentSelectedOptions = filterConfig.range as DiscreteRange<ValueType>
+
+  // The visual property the filter writes its bypass to
+  const vpName =
+    filterConfig.target === GraphObjectType.NODE
+      ? NodeVisualPropertyName.NodeVisibility
+      : EdgeVisualPropertyName.EdgeVisibility
 
   // Apply the filter to the table. Memoized so effects can depend on it:
   // its identity changes exactly when its inputs change — including
@@ -99,11 +104,6 @@ export const CheckboxFilter = ({
         visibilityBypassMap.set(id, VisibilityType.None)
       })
 
-      const vpName =
-        filterConfig.target === GraphObjectType.NODE
-          ? NodeVisualPropertyName.NodeVisibility
-          : EdgeVisualPropertyName.EdgeVisibility
-
       setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
       return []
     }
@@ -130,11 +130,6 @@ export const CheckboxFilter = ({
       visibilityBypassMap.set(id, VisibilityType.None)
     })
 
-    const vpName =
-      filterConfig.target === GraphObjectType.NODE
-        ? NodeVisualPropertyName.NodeVisibility
-        : EdgeVisualPropertyName.EdgeVisibility
-
     setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
   }, [
     visualStyleExists,
@@ -142,8 +137,19 @@ export const CheckboxFilter = ({
     table,
     attributeName,
     targetNetworkId,
+    vpName,
     setBypassMap,
   ])
+
+  // Remove the filter's visibility bypass so every element of the table is
+  // shown again. Only the table's own ids are touched, so visibility
+  // bypasses set elsewhere for other elements survive.
+  const removeFilter = useCallback(() => {
+    if (!visualStyleExists) {
+      return
+    }
+    deleteBypass(targetNetworkId, vpName, [...table.rows.keys()])
+  }, [visualStyleExists, table, targetNetworkId, vpName, deleteBypass])
 
   useEffect(() => {
     setAllOptions(getAllDiscreteValues(table.rows, attributeName))
@@ -210,22 +216,22 @@ export const CheckboxFilter = ({
    * Apply the filter when it is enabled, the target network changes, the
    * selected range changes, or applyFilter's inputs (table, config, a
    * late-loading visual style) change. This also covers the initial apply
-   * on mount.
+   * on mount. When disabled, remove the filter's bypass so the hidden
+   * elements are shown again; the stored range is kept and reapplied once
+   * the filter is enabled again.
    */
   useEffect(() => {
-    //Apply the filter from the existing filter store
     if (enableFilter) {
       applyFilter()
     } else {
-      // Select all nodes / edges
-      exclusiveSelect(targetNetworkId, [], [])
+      removeFilter()
     }
   }, [
     enableFilter,
     targetNetworkId,
     currentSelectedOptions.values,
     applyFilter,
-    exclusiveSelect,
+    removeFilter,
   ])
 
   const isAllSelected: boolean =
