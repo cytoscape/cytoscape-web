@@ -26,7 +26,7 @@ import {
  * Matching is case-insensitive. `z.object` copies only the declared keys into
  * a fresh object, so `__proto__` / `constructor` keys in the input never reach
  * the output. Attribute names that would resolve to inherited members of a
- * table row (`row['constructor']`) are rejected.
+ * table row (`row['constructor']`, `row['toString']`) are rejected.
  */
 
 const normalizedString = z
@@ -48,16 +48,16 @@ const WidgetTypeSchema = normalizedString.pipe(
     .transform((): FilterWidgetType => FilterWidgetType.CHECKBOX),
 )
 
-const RESERVED_ATTRIBUTE_NAMES: ReadonlySet<string> = new Set([
-  '__proto__',
-  'constructor',
-  'prototype',
-])
+// A table row is a plain object, so `row[name]` for a column the row lacks
+// falls through to Object.prototype (`toString`, `constructor`, ...) and hands
+// the filter a function. `__proto__` is covered by the `in` check.
+const isReservedAttributeName = (name: string): boolean =>
+  name in Object.prototype || name === 'prototype'
 
 const AttributeNameSchema = z
   .string()
   .min(1)
-  .refine((name: string) => !RESERVED_ATTRIBUTE_NAMES.has(name), {
+  .refine((name: string) => !isReservedAttributeName(name), {
     message: 'Reserved attribute name',
   })
 

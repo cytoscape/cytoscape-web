@@ -47,15 +47,15 @@ A real example is
 
 ### Entry fields
 
-| Field           | Required | Accepted values                                                 | Default         |
-| --------------- | -------- | --------------------------------------------------------------- | --------------- |
-| `appliesTo`     | yes      | `node`, `nodes`, `edge`, `edges`                                | —               |
-| `attributeName` | yes      | non-empty string except `__proto__`, `constructor`, `prototype` | —               |
-| `filter`        | yes      | array of filter items (below), may be empty                     | —               |
-| `widgetType`    | no       | `checkbox`, `checkboxes`                                        | `checkbox`      |
-| `filterMode`    | no       | `node`, `nodes`, `edge`, `edges`                                | `appliesTo`     |
-| `label`         | no       | string                                                          | `attributeName` |
-| `mappingSource` | no       | string                                                          | `''`            |
+| Field           | Required | Accepted values                                                                                                 | Default         |
+| --------------- | -------- | --------------------------------------------------------------------------------------------------------------- | --------------- |
+| `appliesTo`     | yes      | `node`, `nodes`, `edge`, `edges`                                                                                | —               |
+| `attributeName` | yes      | non-empty string, not an `Object.prototype` member (`__proto__`, `constructor`, `toString`, ...) or `prototype` | —               |
+| `filter`        | yes      | array of filter items (below), may be empty                                                                     | —               |
+| `widgetType`    | no       | `checkbox`, `checkboxes`                                                                                        | `checkbox`      |
+| `filterMode`    | no       | `node`, `nodes`, `edge`, `edges`                                                                                | `appliesTo`     |
+| `label`         | no       | string                                                                                                          | `attributeName` |
+| `mappingSource` | no       | string                                                                                                          | `''`            |
 
 `appliesTo`, `filterMode` and `widgetType` are matched case-insensitively and
 normalized to `GraphObjectType` (`node` / `edge`) and `FilterWidgetType.CHECKBOX`.
@@ -82,6 +82,8 @@ The aspect is external input (see `EXTERNAL_INPUT_VALIDATION_POLICY.md`), so
 it is validated before use. A bad filter must never take down the subnetwork
 view it belongs to:
 
+- The aspect is found by key presence, so a falsy value such as
+  `"filterWidgets": null` is validated (and warned about) too.
 - A value that is not an array produces no filters.
 - An entry that fails validation is dropped; the other entries are kept.
 - Each case logs a `logApi.warn` naming the entry index and the failing

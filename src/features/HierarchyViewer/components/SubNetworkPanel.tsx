@@ -13,7 +13,6 @@ import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { logApi, logUi } from '../../../debug'
-import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
 import { FilterConfig } from '../../../models/FilterModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
@@ -28,9 +27,11 @@ import { FloatingToolBar } from '../../FloatingToolBar'
 import { MessagePanel } from '../../Messages'
 import { CyjsRenderer } from '../../NetworkPanel/CyjsRenderer'
 import { CirclePackingView } from '../model/CirclePackingView'
-import { FILTER_ASPECT_TAG } from '../model/FilterAspects'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
-import { createFilterFromAspect } from '../utils/getFilterAspect'
+import {
+  createFilterFromAspect,
+  findFilterAspect,
+} from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
 import {
   resolveShownSubNetworkId,
@@ -641,12 +642,10 @@ export const SubNetworkPanel = ({
 
         // Check optional data
         if (otherAspects !== undefined && otherAspects.length > 0) {
-          const filterConfigAspect = otherAspects.find(
-            (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
-          )
+          const filterConfigAspect = findFilterAspect(otherAspects)
           if (filterConfigAspect !== undefined) {
             // Untrusted: createFilterFromAspect validates it (#767)
-            const filterAspects: unknown = filterConfigAspect[FILTER_ASPECT_TAG]
+            const filterAspects: unknown = filterConfigAspect.value
 
             const sourceNetworkId: IdType = network.id
             const filterConfigs: FilterConfig[] = createFilterFromAspect(

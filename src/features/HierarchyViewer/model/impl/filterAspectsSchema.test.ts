@@ -193,11 +193,15 @@ describe('parseFilterAspects', () => {
       expect(({} as Record<string, unknown>).polluted).toBe(undefined)
     })
 
-    it.each(['__proto__', 'constructor', 'prototype'])(
-      'rejects the attribute name "%s"',
-      (attributeName) => {
-        expect(parseFilterAspects([validEntry({ attributeName })])).toEqual([])
-      },
-    )
+    it.each([
+      '__proto__',
+      'constructor',
+      'prototype',
+      'toString',
+      'hasOwnProperty',
+      'valueOf',
+    ])('rejects the attribute name "%s"', (attributeName) => {
+      expect(parseFilterAspects([validEntry({ attributeName })])).toEqual([])
+    })
   })
 })

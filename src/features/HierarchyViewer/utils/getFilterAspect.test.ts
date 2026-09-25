@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import type { Table } from '../../../models/TableModel'
 import type { FilterAspects } from '../model/FilterAspects'
-import { createFilterFromAspect } from './getFilterAspect'
+import { createFilterFromAspect, findFilterAspect } from './getFilterAspect'
 
 const tableWith = (rows: Record<string, Record<string, unknown>>): Table =>
   ({ rows: new Map(Object.entries(rows)) }) as unknown as Table
@@ -114,5 +114,34 @@ describe('createFilterFromAspect', () => {
         edgeTable,
       ),
     ).toEqual([])
+  })
+})
+
+describe('findFilterAspect', () => {
+  it('returns the raw value of the filterWidgets aspect', () => {
+    const widgets = [{ attributeName: 'type' }]
+    expect(
+      findFilterAspect([{ other: [] }, { filterWidgets: widgets }])?.value,
+    ).toBe(widgets)
+  })
+
+  it.each([
+    ['null', null],
+    ['false', false],
+    ['0', 0],
+    ['an empty string', ''],
+  ])('finds a present but %s aspect', (_label, value) => {
+    const found = findFilterAspect([{ other: [] }, { filterWidgets: value }])
+    expect(found).toEqual({ value })
+  })
+
+  it('returns undefined when no aspect has the tag', () => {
+    expect(findFilterAspect([{ other: [] }])).toBeUndefined()
+    expect(findFilterAspect([])).toBeUndefined()
+  })
+
+  it('ignores an inherited filterWidgets key', () => {
+    const inherited = Object.create({ filterWidgets: [] }) as object
+    expect(findFilterAspect([inherited])).toBeUndefined()
   })
 })
