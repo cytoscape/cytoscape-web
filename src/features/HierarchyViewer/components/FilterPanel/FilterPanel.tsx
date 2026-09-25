@@ -1,4 +1,4 @@
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import SettingsIcon from '@mui/icons-material/Settings'
 import {
   Accordion,
@@ -6,6 +6,7 @@ import {
   AccordionSummary,
   Box,
   Container,
+  FormLabel,
   Switch,
   Typography,
 } from '@mui/material'
@@ -275,7 +276,6 @@ export const FilterPanel = () => {
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
-        padding: '0.5em',
       }}
     >
       <Grid item sx={{ flex: 1 }}>
@@ -283,8 +283,9 @@ export const FilterPanel = () => {
           disableGutters={true}
           sx={{
             boxShadow: 'none',
-            padding: 0,
-            margin: 0,
+            px: 1,
+            py: 0,
+            m: 0,
           }}
           expanded={showOptions}
           onChange={(event, isExpanded) => {
@@ -299,7 +300,7 @@ export const FilterPanel = () => {
           <AccordionSummary
             expandIcon={
               showOptions ? (
-                <ArrowDropDownIcon />
+                <ExpandLessIcon />
               ) : (
                 <SettingsIcon
                   color={isFilterEnabled ? 'inherit' : 'disabled'}
@@ -308,7 +309,7 @@ export const FilterPanel = () => {
             }
             aria-controls="filter-option-panel"
             id="filter-option-header"
-            sx={{ margin: 0, padding: 0 }}
+            sx={{ m: 0, p: 0 }}
           >
             <Grid
               item
@@ -317,11 +318,13 @@ export const FilterPanel = () => {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: 0,
-                margin: 0,
+                p: 0,
+                m: 0,
               }}
             >
-              <Typography>Visibility Toggle: {selectedFilter.label}</Typography>
+              <Typography>
+                <FormLabel component="span" sx={{ mr: 2 }}>Visibility Toggle:</FormLabel> {selectedFilter.label}
+              </Typography>
               <Switch
                 data-testid="filter-enable-switch"
                 checked={isFilterEnabled}

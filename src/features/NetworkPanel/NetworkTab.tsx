@@ -42,10 +42,11 @@ export const NetworkTab = ({
         height: '100%',
         width: '100%',
         backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
+        // Focus border (visible when active)
         border: (theme) =>
           isActive
-            ? `3px solid ${theme.palette.secondary.main}`
-            : '3px solid transparent',
+            ? `2px solid ${theme.palette.primary.main}`
+            : '2px solid transparent',
         // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
@@ -54,6 +55,11 @@ export const NetworkTab = ({
         sx={{
           height: '100%',
           width: '100%',
+          // Gap so the border color does not disappear on darker backgrounds
+          border: (theme) =>
+            isActive
+              ? `1px solid ${theme.palette.common.white}`
+              : '1px solid transparent',
         }}
         // First click on an inactive renderer should only activate this tab and
         // must not trigger renderer-level click handlers (e.g. CP background reset).

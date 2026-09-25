@@ -1,5 +1,4 @@
-import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { Box, Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -48,8 +47,6 @@ export const CheckboxFilter = ({
   table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
-  const theme = useTheme()
-  const disabledColor = theme.palette.action.disabled
 
   // Updating URL by range
   const [searchParams] = useSearchParams()
@@ -249,8 +246,9 @@ export const CheckboxFilter = ({
       <FormGroup>
         <FormControlLabel
           sx={{
-            borderTop: '1px solid #A0A0A0',
-            borderBottom: '1px solid #A0A0A0',
+            m: 0,
+            backgroundColor: (theme) => theme.palette.background.default,
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
           }}
           control={
             <Checkbox
@@ -263,36 +261,39 @@ export const CheckboxFilter = ({
               onChange={(e) => handleToggleAll(e.target.checked)}
             />
           }
-          label={isAllSelected ? 'Clear selection' : 'Select all'}
+          label={isAllSelected ? 'Deselect All' : 'Select All'}
         />
         {allOptions.map((option: string) => {
           const color: string = colorMap.get(option) as string
 
-          let checkboxStyle = {}
-          if (color !== undefined) {
-            checkboxStyle = {
-              color: !enableFilter ? disabledColor : color,
-              '&.Mui-checked': {
-                color: !enableFilter ? disabledColor : color,
-              },
-              '&.Mui-disabled': {
-                color: disabledColor,
-              },
-            }
-          }
           return (
             <FormControlLabel
               key={option}
+              sx={{ m: 0 }}
               control={
                 <Checkbox
                   data-testid={`checkbox-filter-option-${option}`}
                   disabled={!enableFilter}
-                  sx={checkboxStyle}
                   checked={currentSelectedOptions.values.includes(option)}
                   onChange={() => handleToggle(option)}
                 />
               }
-              label={name2label.get(option) ?? option}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box
+                    sx={{
+                      width: '1em',
+                      height: '1em',
+                      backgroundColor: color ?? 'transparent',
+                      border: (theme) =>
+                        `1px solid ${theme.palette.text.secondary}`,
+                      borderRadius: '50%',
+                      mr: 0.5,
+                    }}
+                  />
+                  {name2label.get(option) ?? option}
+                </Box>
+              }
             />
           )
         })}
