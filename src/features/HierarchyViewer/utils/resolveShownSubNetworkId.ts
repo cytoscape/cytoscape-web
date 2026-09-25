@@ -42,3 +42,53 @@ export const resolveShownSubNetworkId = ({
   }
   return queryNetworkId
 }
+
+export type SubNetworkPanelView =
+  | 'network'
+  | 'processing'
+  | 'loading'
+  | 'error'
+  | 'renderFailed'
+
+interface ResolveSubNetworkPanelViewParams {
+  isFetching: boolean
+  isProcessing: boolean
+  hasError: boolean
+  // Processing the fetched data ended without rendering it
+  renderFailed: boolean
+  // Result of resolveShownSubNetworkId
+  shownSubNetworkId: IdType
+}
+
+/**
+ * Decide what SubNetworkPanel renders.
+ *
+ * The subnetwork is rendered only once it is the one shown for the selected
+ * subsystem, so the panel's "Subsystem:" title never sits over a previous
+ * subsystem's subnetwork. Anything else still pending, including a query
+ * paused while the browser is offline, shows the loading message.
+ */
+export const resolveSubNetworkPanelView = ({
+  isFetching,
+  isProcessing,
+  hasError,
+  renderFailed,
+  shownSubNetworkId,
+}: ResolveSubNetworkPanelViewParams): SubNetworkPanelView => {
+  if (isProcessing) {
+    return 'processing'
+  }
+  if (isFetching) {
+    return 'loading'
+  }
+  if (hasError) {
+    return 'error'
+  }
+  if (renderFailed) {
+    return 'renderFailed'
+  }
+  if (shownSubNetworkId === '') {
+    return 'loading'
+  }
+  return 'network'
+}

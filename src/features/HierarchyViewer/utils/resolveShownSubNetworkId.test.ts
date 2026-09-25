@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
-import { resolveShownSubNetworkId } from './resolveShownSubNetworkId'
+import {
+  resolveShownSubNetworkId,
+  resolveSubNetworkPanelView,
+} from './resolveShownSubNetworkId'
 
 const SUB_A = 'hier-1_7'
 const SUB_B = 'hier-1_42'
@@ -103,5 +106,59 @@ describe('resolveShownSubNetworkId (#758)', () => {
         hasViewModel: false,
       }),
     ).toBe('')
+  })
+})
+
+describe('resolveSubNetworkPanelView', () => {
+  const idle = {
+    isFetching: false,
+    isProcessing: false,
+    hasError: false,
+    renderFailed: false,
+    shownSubNetworkId: SUB_B,
+  }
+
+  it('renders the subnetwork once it is the one shown', () => {
+    expect(resolveSubNetworkPanelView(idle)).toBe('network')
+  })
+
+  it('shows progress while fetched data is being rendered', () => {
+    expect(resolveSubNetworkPanelView({ ...idle, isProcessing: true })).toBe(
+      'processing',
+    )
+  })
+
+  it('shows loading while fetching', () => {
+    expect(resolveSubNetworkPanelView({ ...idle, isFetching: true })).toBe(
+      'loading',
+    )
+  })
+
+  // Offline, the query is paused: not fetching, no error, no data. The
+  // previous subnetwork must not be rendered under the new subsystem's title.
+  it('shows loading, not the previous subnetwork, when nothing is shown', () => {
+    expect(resolveSubNetworkPanelView({ ...idle, shownSubNetworkId: '' })).toBe(
+      'loading',
+    )
+  })
+
+  it('shows the fetch error', () => {
+    expect(
+      resolveSubNetworkPanelView({
+        ...idle,
+        hasError: true,
+        shownSubNetworkId: '',
+      }),
+    ).toBe('error')
+  })
+
+  it('reports a failed render instead of loading forever', () => {
+    expect(
+      resolveSubNetworkPanelView({
+        ...idle,
+        renderFailed: true,
+        shownSubNetworkId: '',
+      }),
+    ).toBe('renderFailed')
   })
 })
