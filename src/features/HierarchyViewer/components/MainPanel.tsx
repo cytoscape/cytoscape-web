@@ -11,6 +11,7 @@ import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
+import { FilterUrlParams } from '../../../models/FilterModel/FilterUrlParams'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
@@ -118,6 +119,18 @@ export const MainPanel = (): JSX.Element => {
   // properties and filter.
   const subNetworkHasFilter: boolean = useFilterStore(
     (state) => state.filterConfigs[currentSubNetworkId] !== undefined,
+  )
+
+  // The filter's on/off switch. Kept here, not in FilterPanel, because
+  // FilterPanel unmounts while a subsystem loads and for subsystems without a
+  // filter; its own state would reset to "on" on every remount. Seeded once
+  // from the URL (the app uses a browser router, so this matches
+  // useSearchParams).
+  const [isFilterEnabled, setIsFilterEnabled] = useState<boolean>(
+    () =>
+      new URLSearchParams(window.location.search).get(
+        FilterUrlParams.FILTER_ENABLED,
+      ) !== 'false',
   )
 
   const checkDataType = useCallback((): void => {
@@ -336,7 +349,11 @@ export const MainPanel = (): JSX.Element => {
                           `1px solid ${theme.palette.divider}`,
                       }}
                     >
-                      <FilterPanel networkId={propertyNetworkId} />
+                      <FilterPanel
+                        networkId={propertyNetworkId}
+                        enabled={isFilterEnabled}
+                        onEnabledChange={setIsFilterEnabled}
+                      />
                     </Box>
                   </Allotment.Pane>
                 </Allotment>

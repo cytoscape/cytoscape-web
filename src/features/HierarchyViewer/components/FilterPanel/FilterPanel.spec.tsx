@@ -79,7 +79,11 @@ describe('FilterPanel', () => {
 
     render(
       <MemoryRouter>
-        <FilterPanel networkId={targetNetworkId} />
+        <FilterPanel
+          networkId={targetNetworkId}
+          enabled={true}
+          onEnabledChange={() => {}}
+        />
       </MemoryRouter>,
     )
 

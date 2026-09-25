@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,7 +18,13 @@ import { CP_RENDERER_ID, MainPanel } from './MainPanel'
 
 const { PropertyPanelMock, FilterPanelMock } = vi.hoisted(() => ({
   PropertyPanelMock: vi.fn((_props: { networkId: string }) => null),
-  FilterPanelMock: vi.fn((_props: { networkId: string }) => null),
+  FilterPanelMock: vi.fn(
+    (_props: {
+      networkId: string
+      enabled: boolean
+      onEnabledChange: (enabled: boolean) => void
+    }) => null,
+  ),
 }))
 
 // Child panels are mocked to keep their heavy imports out. PropertyPanel and
@@ -331,5 +337,29 @@ describe('MainPanel property/filter layout', () => {
     render(<MainPanel />)
 
     expect(FilterPanelMock).not.toHaveBeenCalled()
+  })
+
+  // FilterPanel unmounts while a subsystem loads and for subsystems without a
+  // filter, so the on/off switch must live above it or it resets to "on".
+  it('keeps the filter switched off across a FilterPanel remount', () => {
+    setup(['n1'], [SUBNETWORK_ID])
+    const { rerender } = render(<MainPanel />)
+
+    act(() => {
+      FilterPanelMock.mock.lastCall![0].onEnabledChange(false)
+    })
+    expect(FilterPanelMock.mock.lastCall![0].enabled).toBe(false)
+
+    // A subsystem without a filter unmounts FilterPanel...
+    setup(['n1'], [])
+    rerender(<MainPanel />)
+    FilterPanelMock.mockClear()
+
+    // ...and returning to a filtered one mounts a new instance
+    setup(['n1'], [SUBNETWORK_ID])
+    rerender(<MainPanel />)
+
+    expect(FilterPanelMock).toHaveBeenCalled()
+    expect(FilterPanelMock.mock.lastCall![0].enabled).toBe(false)
   })
 })
