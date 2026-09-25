@@ -286,6 +286,7 @@ export const CheckboxFilter = ({
                       backgroundColor: color ?? 'transparent',
                       border: (theme) =>
                         `1px solid ${theme.palette.text.secondary}`,
+                      opacity: enableFilter ? 1.0 : 0.2,
                       borderRadius: '50%',
                       mr: 0.5,
                     }}
