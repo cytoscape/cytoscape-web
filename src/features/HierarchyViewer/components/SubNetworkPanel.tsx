@@ -130,6 +130,14 @@ export const SubNetworkPanel = ({
   // For converting node names to node ids
   const tables = useTableStore((state) => state.tables)
 
+  // Background color of the subnetwork, from its visual style
+  const queryNetworkStyle: VisualStyle | undefined = useVisualStyleStore(
+    (state) => state.visualStyles[queryNetworkId],
+  )
+  const bgColor = queryNetworkStyle?.networkBackgroundColor?.defaultValue as
+    | string
+    | undefined
+
   // Selected nodes in the sub network
   const selectedNodes: IdType[] = useSubNetworkStore(
     (state) => state.selectedNodes,
@@ -781,42 +789,81 @@ export const SubNetworkPanel = ({
   }
 
   const filterConfig: FilterConfig | undefined = filterConfigs[queryNetwork.id]
-
   const displayMode: DisplayMode =
     filterConfig?.displayMode ?? DisplayMode.SELECT
+  const isActive: boolean = activeNetworkView === queryNetwork.id
 
   return (
     <Box
       data-testid="subnetwork-panel"
       sx={{
-        boxSizing: 'border-box',
         height: '100%',
         width: '100%',
-        border: (theme) =>
-          activeNetworkView === queryNetwork.id
-            ? `3px solid ${theme.palette.secondary.main}`
-            : '3px solid transparent',
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        flexShrink: 0,
+        alignItems: 'flex-start',
+        p: 0,
+        m: 0,
       }}
-      onClick={handleClick}
     >
-      <Typography
+      <Box
         sx={{
-          position: 'absolute',
-          bottom: '0.5em',
-          left: '0.5em',
-          zIndex: 100,
-          backgroundColor: 'transparent',
+          boxSizing: 'border-box',
+          minHeight: 0,
+          flexGrow: 1,
+          width: '100%',
+          position: 'relative',
+          // Focus border (visible when active)
+          border: (theme) =>
+            isActive
+              ? `2px solid ${theme.palette.primary.main}`
+              : '2px solid transparent',
+          backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
         }}
-        variant={'subtitle1'}
       >
-        Subsystem: {subNetworkName}
-      </Typography>
-      <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
-      <FloatingToolBar
-        rendererId={DefaultRenderer.id}
-        targetNetworkId={queryNetworkId ?? undefined}
-        networkLabel={networkLabel}
-      />
+        <Box
+          sx={{
+            boxSizing: 'border-box',
+            height: '100%',
+            width: '100%',
+            // Gap so the border color does not disappear on darker backgrounds
+            border: (theme) =>
+              isActive
+                ? `1px solid ${theme.palette.common.white}`
+                : '1px solid transparent',
+          }}
+          onClick={handleClick}
+        >
+          <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
+          <FloatingToolBar
+            rendererId={DefaultRenderer.id}
+            targetNetworkId={queryNetworkId ?? undefined}
+            networkLabel={networkLabel}
+          />
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          width: '100%',
+          p: 1,
+          flexGrow: 0,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+          backgroundColor: (theme) => theme.palette.background.default,
+        }}
+      >
+        <Typography
+          variant="subtitle2"
+          sx={{
+            width: '100%',
+            textAlign: 'center',
+            color: (theme) => theme.palette.text.secondary,
+          }}
+        >
+          {subNetworkName}
+        </Typography>
+      </Box>
     </Box>
   )
 }

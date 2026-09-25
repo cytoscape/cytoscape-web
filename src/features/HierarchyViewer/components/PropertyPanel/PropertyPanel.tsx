@@ -1,12 +1,4 @@
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemText,
-  Theme,
-  Typography,
-  useTheme,
-} from '@mui/material'
+import { Box, List, ListItem, ListItemText, Typography } from '@mui/material'
 
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
@@ -21,7 +13,6 @@ interface PropertyPanelProps {
 export const PropertyPanel = ({
   networkId,
 }: PropertyPanelProps): JSX.Element => {
-  const theme: Theme = useTheme()
   const tables = useTableStore((state) => state.tables)
   const tablePair = tables[networkId]
 
@@ -36,13 +27,17 @@ export const PropertyPanel = ({
   if (selectedNodes === undefined || selectedNodes.length === 0) {
     if (selectedEdges === undefined || selectedEdges.length === 0) {
       return (
-        <MessagePanel message="Please select a node in the network above" />
+        <Box sx={{ width: '100%', height: '100%', textAlign: 'center' }}>
+          <MessagePanel message="Please select a node in the network above" />
+        </Box>
       )
     }
     return <></>
   } else if (selectedNodes.length > 1) {
     return (
-      <MessagePanel message="(Selected objects are displayed in the table browser)" />
+      <Box sx={{ width: '100%', height: '100%', textAlign: 'center' }}>
+        <MessagePanel message="Selected objects are displayed in the table browser" />
+      </Box>
     )
   }
 
@@ -61,24 +56,42 @@ export const PropertyPanel = ({
       data-testid="property-panel"
       sx={{
         width: '100%',
-        height: 'calc(100% - 48px)',
+        height: '100%',
         overflow: 'auto',
-        bgcolor: theme.palette.grey[50],
-        padding: theme.spacing(1),
       }}
     >
       <Typography
-        sx={{ background: 'white', padding: theme.spacing(1) }}
-        variant={'subtitle2'}
+        variant="subtitle2"
+        sx={{
+          width: '100%',
+          p: 1,
+          textAlign: 'center',
+          color: (theme) => theme.palette.text.secondary,
+          backgroundColor: (theme) => theme.palette.background.default,
+        }}
       >
         {name}
       </Typography>
       <List dense={true} sx={{ width: '100%' }}>
-        {keys.map((key) => (
-          <ListItem key={key}>
-            <ListItemText primary={row[key]} secondary={key} />
-          </ListItem>
-        ))}
+        {keys.map(
+          (key) =>
+            key !== 'name' && (
+              <ListItem key={key}>
+                <ListItemText
+                  primary={row[key]}
+                  secondary={key + ':'}
+                  // Flip the visual stack layout
+                  sx={{ display: 'flex', flexDirection: 'column-reverse' }}
+                  // Match the standard Material typography styles for an overline
+                  secondaryTypographyProps={{
+                    variant: 'overline',
+                    lineHeight: 'normal',
+                  }}
+                  primaryTypographyProps={{ variant: 'body1' }}
+                />
+              </ListItem>
+            ),
+        )}
       </List>
     </Box>
   )
