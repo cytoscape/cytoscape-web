@@ -57,6 +57,54 @@ describe('createFilterFromAspect', () => {
     })
   })
 
+  it('does not throw on a non-array aspect', () => {
+    expect(createFilterFromAspect('net-1', {}, nodeTable, edgeTable)).toEqual(
+      [],
+    )
+  })
+
+  it('reads a "nodes" filter from the node table', () => {
+    const configs = createFilterFromAspect(
+      'net-1',
+      [
+        {
+          widgetType: 'checkboxes',
+          appliesTo: 'nodes',
+          filterMode: 'nodes',
+          attributeName: 'category',
+          label: 'Node category',
+          filter: [],
+        },
+      ],
+      nodeTable,
+      edgeTable,
+    )
+
+    expect(configs).toHaveLength(1)
+    expect(configs[0]).toMatchObject({
+      target: GraphObjectType.NODE,
+      range: { values: ['drug', 'gene'] },
+    })
+  })
+
+  it('skips invalid entries and keeps the valid ones', () => {
+    const configs = createFilterFromAspect(
+      'net-1',
+      [
+        { invalid: 'structure' },
+        { appliesTo: 'edges', attributeName: 'type', filter: [] },
+      ],
+      nodeTable,
+      edgeTable,
+    )
+
+    expect(configs).toHaveLength(1)
+    expect(configs[0]).toMatchObject({
+      attributeName: 'type',
+      target: GraphObjectType.EDGE,
+    })
+  })
+
   it('returns an empty list for no aspects', () => {
     expect(
       createFilterFromAspect(

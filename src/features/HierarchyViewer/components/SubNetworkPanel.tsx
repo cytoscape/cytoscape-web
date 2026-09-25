@@ -28,7 +28,7 @@ import { FloatingToolBar } from '../../FloatingToolBar'
 import { MessagePanel } from '../../Messages'
 import { CyjsRenderer } from '../../NetworkPanel/CyjsRenderer'
 import { CirclePackingView } from '../model/CirclePackingView'
-import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
+import { FILTER_ASPECT_TAG } from '../model/FilterAspects'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { createFilterFromAspect } from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
@@ -637,8 +637,8 @@ export const SubNetworkPanel = ({
             (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
           )
           if (filterConfigAspect !== undefined) {
-            const filterAspects: FilterAspects =
-              filterConfigAspect[FILTER_ASPECT_TAG]
+            // Untrusted: createFilterFromAspect validates it (#767)
+            const filterAspects: unknown = filterConfigAspect[FILTER_ASPECT_TAG]
 
             const sourceNetworkId: IdType = network.id
             const filterConfigs: FilterConfig[] = createFilterFromAspect(
