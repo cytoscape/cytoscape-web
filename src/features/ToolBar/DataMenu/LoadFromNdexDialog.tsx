@@ -128,6 +128,9 @@ const countCellSx = {
 } as const
 const truncationNoticeSx = { textAlign: 'center', py: 2 } as const
 
+// Rows per NDEx search request. "Load more" fetches the next page.
+const SEARCH_PAGE_SIZE = 500
+
 export const NetworkSearchField = (props: {
   startSearch: (searchValue: string) => Promise<void>
   handleClose: () => void
@@ -397,6 +400,13 @@ export const LoadFromNdexDialog = (
   // and shared networks
   const [searchResults, setSearchResults] = useState<NdexFileItem[]>([])
   const [resultCount, setResultCount] = useState<number>(0)
+  // Offset of the next page, and the query and owner filter that produced
+  // the current results, so "Load more" continues the same search.
+  const [nextStart, setNextStart] = useState<number>(0)
+  const [loadingMore, setLoadingMore] = useState<boolean>(false)
+  const lastSearchRef = useRef<{ query: string; ownerFilter?: string }>({
+    query: '',
+  })
   // Bumped by every search and by closing the dialog. A response commits
   // only while its id is current, so an older search that resolves late
   // cannot replace newer results or refill a closed dialog.
@@ -568,6 +578,7 @@ export const LoadFromNdexDialog = (
     ])
 
     setLoading(true)
+    setLoadingMore(false)
     try {
       const token = authenticated ? await getToken() : undefined
       // NDEx filters on its own account name, which can differ from the
@@ -598,7 +609,7 @@ export const LoadFromNdexDialog = (
         token,
         ownerFilter,
         0,
-        500,
+        SEARCH_PAGE_SIZE,
         ndexBaseUrl,
       )
       const enriched = await enrichShortcutsWithTargetSummaries(
@@ -615,6 +626,8 @@ export const LoadFromNdexDialog = (
       }
       setSearchResults(enriched)
       setResultCount(result.numFound)
+      setNextStart(SEARCH_PAGE_SIZE)
+      lastSearchRef.current = { query, ownerFilter }
     } catch (err: any) {
       if (!isCurrent()) return
       setErrorMessage(err.message || 'Failed to search NDEx')
@@ -622,6 +635,49 @@ export const LoadFromNdexDialog = (
       if (isCurrent()) setLoading(false)
     }
   }
+
+  // Fetch the next page of the current search and append it. Public and
+  // private files share one ranking, so a user's private files can sit past
+  // the first page. A new search or closing the dialog drops the response.
+  const loadMoreResults = async (): Promise<void> => {
+    const searchId = searchIdRef.current
+    const isCurrent = (): boolean => searchId === searchIdRef.current
+    const { query, ownerFilter } = lastSearchRef.current
+    const start = nextStart
+    setLoadingMore(true)
+    try {
+      const token = authenticated ? await getToken() : undefined
+      const result = await searchNdexFiles(
+        query,
+        undefined,
+        token,
+        ownerFilter,
+        start,
+        SEARCH_PAGE_SIZE,
+        ndexBaseUrl,
+      )
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        result.files,
+        token,
+        ndexBaseUrl,
+      )
+      if (!isCurrent()) return
+      // The index can change between requests; skip rows already listed.
+      setSearchResults((prev) => {
+        const seen = new Set(prev.map((item) => item.uuid))
+        return [...prev, ...enriched.filter((item) => !seen.has(item.uuid))]
+      })
+      setResultCount(result.numFound)
+      setNextStart(start + SEARCH_PAGE_SIZE)
+    } catch (err: any) {
+      if (!isCurrent()) return
+      setErrorMessage(err.message || 'Failed to load more NDEx results')
+    } finally {
+      if (isCurrent()) setLoadingMore(false)
+    }
+  }
+
+  const hasMoreResults = currentFolderId === null && nextStart < resultCount
 
   // Handle folder click (works in both browse and search mode)
   const handleFolderClick = (folderId: string): void => {
@@ -637,6 +693,8 @@ export const LoadFromNdexDialog = (
     } else {
       searchIdRef.current++
       setLoading(false)
+      setLoadingMore(false)
+      setNextStart(0)
       setLastSearchQuery('')
       setSelectedNetworks([])
       setErrorMessage(undefined)
@@ -660,7 +718,10 @@ export const LoadFromNdexDialog = (
   const MAX_VISIBLE_ROWS = 500
 
   const renderNetworkRows = (): ReactElement[] => {
-    const visibleNetworks = networks.slice(0, MAX_VISIBLE_ROWS)
+    // Search results grow page by page through "Load more"; only a folder
+    // listing, which arrives whole, is capped.
+    const rowCap = currentFolderId !== null ? MAX_VISIBLE_ROWS : Infinity
+    const visibleNetworks = networks.slice(0, rowCap)
     const rows = visibleNetworks.map((network) => {
       const {
         uuid: rowKey,
@@ -775,7 +836,7 @@ export const LoadFromNdexDialog = (
       )
     })
 
-    if (networks.length > MAX_VISIBLE_ROWS) {
+    if (networks.length > rowCap) {
       rows.push(
         <TableRow key="__truncation_notice__">
           <TableCell colSpan={7} sx={truncationNoticeSx}>
@@ -891,6 +952,22 @@ export const LoadFromNdexDialog = (
               </TableRow>
             )}
             {renderNetworkRows()}
+            {hasMoreResults && (
+              <TableRow>
+                <TableCell colSpan={7} sx={truncationNoticeSx}>
+                  <Button
+                    data-testid="load-from-ndex-load-more"
+                    size="small"
+                    disabled={loadingMore}
+                    onClick={() => void loadMoreResults()}
+                  >
+                    {loadingMore
+                      ? 'Loading…'
+                      : `Load more (${displayItems.length} of ${resultCount})`}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>

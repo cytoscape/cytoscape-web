@@ -110,7 +110,11 @@ describe('LoadFromNdexDialog initialQuery', () => {
 
 describe('LoadFromNdexDialog search', () => {
   beforeEach(() => {
-    vi.mocked(searchNdexFiles).mockClear()
+    // mockReset, not mockClear: a test that fails early must not leave
+    // queued mockResolvedValueOnce values for the next one.
+    vi.mocked(searchNdexFiles)
+      .mockReset()
+      .mockResolvedValue({ files: [], numFound: 0 })
     useCredentialStore.setState({ getToken: vi.fn(async () => 'token') })
   })
 
@@ -219,5 +223,60 @@ describe('LoadFromNdexDialog search', () => {
 
     expect(screen.queryByText('Stale network')).toBeNull()
     expect(screen.getByText('My network')).toBeTruthy()
+  })
+  it('loads the next page of the same search and appends it', async () => {
+    const network = (uuid: string, name: string) => ({
+      uuid,
+      name,
+      type: 'NETWORK' as const,
+      modificationTime: 0,
+      visibility: 'PUBLIC',
+    })
+    vi.mocked(searchNdexFiles)
+      .mockResolvedValueOnce({
+        files: [network('n-1', 'First page network')],
+        numFound: 501,
+      })
+      .mockResolvedValueOnce({
+        files: [network('n-2', 'Second page network')],
+        numFound: 501,
+      })
+
+    renderSignedIn('BRCA1')
+    fireEvent.click(await screen.findByTestId('load-from-ndex-load-more'))
+
+    expect(await screen.findByText('Second page network')).toBeTruthy()
+    expect(screen.getByText('First page network')).toBeTruthy()
+    expect(vi.mocked(searchNdexFiles).mock.calls[1]).toEqual([
+      'BRCA1',
+      undefined,
+      'token',
+      undefined,
+      500,
+      500,
+      expect.anything(),
+    ])
+    // 500 + 1 of 501 fetched: nothing left to load
+    expect(screen.queryByTestId('load-from-ndex-load-more')).toBeNull()
+  })
+
+  it('hides Load more when the first page holds every result', async () => {
+    vi.mocked(searchNdexFiles).mockResolvedValueOnce({
+      files: [
+        {
+          uuid: 'n-1',
+          name: 'Only network',
+          type: 'NETWORK',
+          modificationTime: 0,
+          visibility: 'PUBLIC',
+        },
+      ],
+      numFound: 1,
+    })
+
+    renderSignedIn('BRCA1')
+
+    expect(await screen.findByText('Only network')).toBeTruthy()
+    expect(screen.queryByTestId('load-from-ndex-load-more')).toBeNull()
   })
 })
