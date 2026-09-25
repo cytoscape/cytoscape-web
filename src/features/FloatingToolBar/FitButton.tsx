@@ -51,8 +51,20 @@ export const FitButton = ({
       networkId,
     )
 
-    // If there are two or more renderers, the active window has higher priority.
-    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer
+    // setFunction also writes per-network functions to the renderer-wide slot,
+    // so for a renderer that registers per network (cyjs) that slot holds
+    // whichever view registered last. An explicit target must not fall back
+    // to it; renderers that register only renderer-wide (circlePacking) still
+    // do.
+    const registersPerNetwork = [
+      ...useRendererFunctionStore
+        .getState()
+        .rendererFunctionsByNetworkId.values(),
+    ].some((byRenderer) => byRenderer.get(rendererId)?.has(FIT_FUNCTION_NAME))
+    const fitFunction =
+      targetNetworkId !== undefined && registersPerNetwork
+        ? fitFunctionByNetworkId
+        : (fitFunctionByNetworkId ?? fitFunctionByRenderer)
     if (fitFunction !== undefined) {
       fitFunction()
     } else {

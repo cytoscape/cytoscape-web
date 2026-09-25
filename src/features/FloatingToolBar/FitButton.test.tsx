@@ -65,6 +65,19 @@ describe('FitButton', () => {
     expect(fitTree).not.toHaveBeenCalled()
   })
 
+  // setFunction also stores per-network functions in the renderer-wide slot,
+  // which therefore holds whichever view registered last. A target whose
+  // renderer has not registered yet must not fall back to it.
+  it('does not fit another view when its target has no function yet', () => {
+    setActiveNetworkView(SUB_ID)
+    render(<FitButton rendererId="cyjs" targetNetworkId="unregistered" />)
+
+    fireEvent.click(screen.getByTestId('fit-button'))
+
+    expect(fitTree).not.toHaveBeenCalled()
+    expect(fitSub).not.toHaveBeenCalled()
+  })
+
   it('uses the renderer-wide function when none is registered for the target', () => {
     const fitCirclePacking = vi.fn()
     useRendererFunctionStore
