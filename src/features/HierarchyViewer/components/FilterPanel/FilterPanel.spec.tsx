@@ -4,9 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { FilterPanel } from './FilterPanel'
 import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
 import { GraphObjectType } from '../../../../models/NetworkModel'
@@ -25,9 +23,7 @@ describe('FilterPanel', () => {
     // Reset stores
     useFilterStore.setState({ filterConfigs: {}, search: {} as any })
     useTableStore.setState({ tables: {} })
-    useUiStateStore.setState({ ui: { activeNetworkView: '' } as any })
     useVisualStyleStore.setState({ visualStyles: {} })
-    useWorkspaceStore.setState({ workspace: { currentNetworkId: '' } as any })
 
     // Clear mocks
     vi.clearAllMocks()
@@ -35,11 +31,6 @@ describe('FilterPanel', () => {
 
   it('does not infinitely loop when visual mapping has not changed', () => {
     const targetNetworkId = 'net1_sub1'
-
-    // Setup Zustand stores with initial state to trigger the condition
-    useUiStateStore.setState({
-      ui: { activeNetworkView: targetNetworkId } as any,
-    })
 
     const visualMappingForStore = {
       type: 'discrete',
@@ -88,7 +79,7 @@ describe('FilterPanel', () => {
 
     render(
       <MemoryRouter>
-        <FilterPanel />
+        <FilterPanel networkId={targetNetworkId} />
       </MemoryRouter>,
     )
 

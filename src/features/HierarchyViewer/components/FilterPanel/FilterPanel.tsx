@@ -17,9 +17,7 @@ import { useSearchParams } from 'react-router-dom'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
-import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { FilterConfig } from '../../../../models/FilterModel'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
 import { IdType } from '../../../../models/IdType'
@@ -47,7 +45,13 @@ const DEFAULT_EDGE_ATTR_NAME = 'interaction'
 
 import { isSubnetwork } from '../../utils/hierarchyUtil'
 
-export const FilterPanel = () => {
+interface FilterPanelProps {
+  // The subnetwork to filter. Passed in rather than read from the active view
+  // so the panel keeps showing when the user clicks into the tree view.
+  networkId: IdType
+}
+
+export const FilterPanel = ({ networkId }: FilterPanelProps) => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
@@ -63,21 +67,12 @@ export const FilterPanel = () => {
   // Pick style for color coding
   const styles = useVisualStyleStore((state) => state.visualStyles)
 
-  // Find the target network
-  const currentNetworkId: IdType = useWorkspaceStore(
-    (state) => state.workspace.currentNetworkId,
-  )
-  const activeNetworkId: IdType = useUiStateStore(
-    (state) => state.ui.activeNetworkView,
-  )
-
-  // Use the active network if it exists, otherwise use the current network for filtering
-  const targetNetworkId: IdType = activeNetworkId || currentNetworkId
+  const targetNetworkId: IdType = networkId
 
   // Hide the entire filter if it is not the main network
   const shouldApplyFilter: boolean = isSubnetwork(targetNetworkId)
 
-  const vs: VisualStyle = styles[activeNetworkId]
+  const vs: VisualStyle = styles[targetNetworkId]
 
   const selectedFilter: FilterConfig = filterConfigs[targetNetworkId]
 
@@ -323,7 +318,10 @@ export const FilterPanel = () => {
               }}
             >
               <Typography>
-                <FormLabel component="span" sx={{ mr: 2 }}>Visibility Toggle:</FormLabel> {selectedFilter.label}
+                <FormLabel component="span" sx={{ mr: 2 }}>
+                  Visibility Toggle:
+                </FormLabel>{' '}
+                {selectedFilter.label}
               </Typography>
               <Switch
                 data-testid="filter-enable-switch"

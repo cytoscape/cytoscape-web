@@ -47,7 +47,6 @@ export const CheckboxFilter = ({
   table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
-
   // Updating URL by range
   const [searchParams] = useSearchParams()
 

@@ -2,6 +2,7 @@ import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
@@ -15,19 +16,20 @@ import { EDGE_INTERACTION_ATTR } from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { CP_RENDERER_ID, MainPanel } from './MainPanel'
 
-const { PropertyPanelMock } = vi.hoisted(() => ({
+const { PropertyPanelMock, FilterPanelMock } = vi.hoisted(() => ({
   PropertyPanelMock: vi.fn((_props: { networkId: string }) => null),
+  FilterPanelMock: vi.fn((_props: { networkId: string }) => null),
 }))
 
-// Child panels are mocked to keep their heavy imports out. PropertyPanel is a
-// spy so the tests can check which network it is pointed at.
+// Child panels are mocked to keep their heavy imports out. PropertyPanel and
+// FilterPanel are spies so the tests can check whether and where they render.
 // Allotment measures its panes with ResizeObserver, which jsdom lacks.
 vi.mock('allotment', () => {
   const Pass = ({ children }: { children?: ReactNode }) => <>{children}</>
   return { Allotment: Object.assign(Pass, { Pane: Pass }) }
 })
 vi.mock('./SubNetworkPanel', () => ({ SubNetworkPanel: () => <div /> }))
-vi.mock('./FilterPanel/FilterPanel', () => ({ default: () => <div /> }))
+vi.mock('./FilterPanel/FilterPanel', () => ({ default: FilterPanelMock }))
 vi.mock('./PropertyPanel/PropertyPanel', () => ({
   PropertyPanel: PropertyPanelMock,
 }))
@@ -35,6 +37,7 @@ vi.mock('./CirclePackingLayout/CirclePackingPanel', () => ({
   CirclePackingPanel: () => <div />,
 }))
 
+vi.mock('../../../data/hooks/stores/FilterStore')
 vi.mock('../../../data/hooks/stores/NetworkSummaryStore')
 vi.mock('../../../data/hooks/stores/RendererStore')
 vi.mock('../../../data/hooks/stores/TableStore')
@@ -82,12 +85,18 @@ const setupStores = ({
   cpRendererRegistered = false,
   selectedNodes,
   currentSubNetworkId = '',
+  subNetworkSelectedNodes,
+  filteredNetworkIds = [],
 }: {
   edgeTable?: Table
   nodeTable?: Table
   cpRendererRegistered?: boolean
   selectedNodes?: string[]
   currentSubNetworkId?: string
+  // Selection inside the shown subnetwork; defaults to the hierarchy's
+  subNetworkSelectedNodes?: string[]
+  // Networks that have a filter config
+  filteredNetworkIds?: string[]
 }): void => {
   // Every state object is built once here: the real stores hand out stable
   // references, and rebuilding them per selector call would change tableRecord's
@@ -112,7 +121,19 @@ const setupStores = ({
     selectedNodes === undefined
       ? undefined
       : { selectedNodes, selectedEdges: [] }
-  const viewModelState = { getViewModel: () => viewModel }
+  const subNetworkViewModel =
+    subNetworkSelectedNodes === undefined
+      ? viewModel
+      : { selectedNodes: subNetworkSelectedNodes, selectedEdges: [] }
+  const viewModelState = {
+    getViewModel: (id: string) =>
+      id !== '' && id === currentSubNetworkId ? subNetworkViewModel : viewModel,
+  }
+  const filterState = {
+    filterConfigs: Object.fromEntries(
+      filteredNetworkIds.map((id) => [id, { name: id }]),
+    ),
+  }
   const visualStyleState = { visualStyles: {} }
   const subNetworkState = {
     setRootNetworkId: vi.fn(),
@@ -134,6 +155,9 @@ const setupStores = ({
   )
   ;(useViewModelStore as unknown as Mock).mockImplementation((selector) =>
     selector(viewModelState),
+  )
+  ;(useFilterStore as unknown as Mock).mockImplementation((selector) =>
+    selector(filterState),
   )
   ;(useVisualStyleStore as unknown as Mock).mockImplementation((selector) =>
     selector(visualStyleState),
@@ -233,5 +257,79 @@ describe('MainPanel property panel target', () => {
 
     const { networkId } = PropertyPanelMock.mock.lastCall![0]
     expect(networkId).toBe('')
+  })
+})
+
+// #766: the property/filter split exists only when the shown subnetwork has a
+// filter; otherwise PropertyPanel (or its message) takes the whole width.
+describe('MainPanel property/filter layout', () => {
+  const SUBSYSTEM_ID = '42'
+  const SUBNETWORK_ID = `${NETWORK_ID}_${SUBSYSTEM_ID}`
+
+  const hierarchyNodeTable = {
+    columns: [],
+    rows: new Map([
+      [SUBSYSTEM_ID, { name: 'Subsystem 42', [SubsystemTag.members]: [1, 2] }],
+    ]),
+  } as unknown as Table
+
+  const setup = (
+    subNetworkSelectedNodes: string[],
+    filteredNetworkIds: string[],
+    currentSubNetworkId = SUBNETWORK_ID,
+  ): void =>
+    setupStores({
+      edgeTable: edgeTableWith(['interacts']),
+      nodeTable: hierarchyNodeTable,
+      selectedNodes: [SUBSYSTEM_ID],
+      currentSubNetworkId,
+      subNetworkSelectedNodes,
+      filteredNetworkIds,
+    })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows the filter panel for the subnetwork when it has a filter', () => {
+    setup(['n1'], [SUBNETWORK_ID])
+
+    render(<MainPanel />)
+
+    expect(PropertyPanelMock).toHaveBeenCalled()
+    expect(FilterPanelMock).toHaveBeenCalled()
+    expect(FilterPanelMock.mock.lastCall![0].networkId).toBe(SUBNETWORK_ID)
+  })
+
+  it('shows only the property panel when the subnetwork has no filter', () => {
+    setup(['n1'], [])
+
+    render(<MainPanel />)
+
+    expect(PropertyPanelMock).toHaveBeenCalled()
+    expect(FilterPanelMock).not.toHaveBeenCalled()
+  })
+
+  // The filter's checkboxes hide elements, so it must stay reachable whatever
+  // the selection, or hidden elements could not be brought back.
+  it.each([
+    ['no node is', []],
+    ['several nodes are', ['n1', 'n2']],
+  ])('keeps the filter panel when %s selected', (_label, selected) => {
+    setup(selected, [SUBNETWORK_ID])
+
+    render(<MainPanel />)
+
+    expect(PropertyPanelMock).toHaveBeenCalled()
+    expect(FilterPanelMock).toHaveBeenCalled()
+  })
+
+  it('shows no filter panel while the store still names a previous subnetwork', () => {
+    const previous = `${NETWORK_ID}_7`
+    setup(['n1'], [previous], previous)
+
+    render(<MainPanel />)
+
+    expect(FilterPanelMock).not.toHaveBeenCalled()
   })
 })

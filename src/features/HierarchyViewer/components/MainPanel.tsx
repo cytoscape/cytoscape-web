@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Allotment } from 'allotment'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
@@ -110,6 +111,13 @@ export const MainPanel = (): JSX.Element => {
   // Empty until SubNetworkPanel has loaded it.
   const currentSubNetworkId: IdType = useSubNetworkStore(
     (state) => state.currentSubNetworkId,
+  )
+
+  // Whether the shown subnetwork has a filter (only those whose CX carries a
+  // `filterWidgets` aspect do). Decides whether the bottom pane splits into
+  // properties and filter.
+  const subNetworkHasFilter: boolean = useFilterStore(
+    (state) => state.filterConfigs[currentSubNetworkId] !== undefined,
   )
 
   const checkDataType = useCallback((): void => {
@@ -260,6 +268,12 @@ export const MainPanel = (): JSX.Element => {
       ? currentSubNetworkId
       : ''
 
+  // Split only when there is a filter; without one, the property panel and its
+  // messages take the full width. The filter stays regardless of selection:
+  // its checkboxes hide elements, and hiding it would strand them.
+  const showFilterPanel: boolean =
+    propertyNetworkId !== '' && subNetworkHasFilter
+
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
   const interactionNetworkHost: string = metadata?.interactionNetworkHost ?? ''
 
@@ -288,14 +302,48 @@ export const MainPanel = (): JSX.Element => {
             />
           </Allotment.Pane>
           <Allotment.Pane>
-            <Allotment>
-              <Allotment.Pane preferredSize={'15%'} key={0}>
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                borderTop: (theme) => `2px solid ${theme.palette.divider}`,
+                backgroundColor: (theme) => theme.palette.background.paper,
+              }}
+            >
+              {showFilterPanel ? (
+                <Allotment>
+                  <Allotment.Pane preferredSize={'40%'} key={0}>
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        borderRight: (theme) =>
+                          `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      <PropertyPanel networkId={propertyNetworkId} />
+                    </Box>
+                  </Allotment.Pane>
+                  <Allotment.Pane key={1}>
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        borderLeft: (theme) =>
+                          `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      <FilterPanel networkId={propertyNetworkId} />
+                    </Box>
+                  </Allotment.Pane>
+                </Allotment>
+              ) : (
                 <PropertyPanel networkId={propertyNetworkId} />
-              </Allotment.Pane>
-              <Allotment.Pane key={1}>
-                <FilterPanel />
-              </Allotment.Pane>
-            </Allotment>
+              )}
+            </Box>
           </Allotment.Pane>
         </Allotment>
       </Box>
