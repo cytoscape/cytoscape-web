@@ -50,6 +50,8 @@
 
 - [2026-09-25] Per-view actions must name their view's network: the Hierarchy Viewer's TREE VIEW and SUB NETWORK VIEWER share the `cyjs` renderer and register renderer functions per network id, so a toolbar button that resolves its network from `ui.activeNetworkView` acts on whichever view was clicked last, not the one it sits in (#762). Pass the view's own network down (`FloatingToolBar`'s `viewNetworkId`). The fallback to the active view is still right for the Share button, which relies on it on purpose (#758).
 
+- [2026-09-25] Find opaque aspects by key presence, not truthiness: `otherAspects.find((a) => a[TAG])` skips a present but falsy value (`"filterWidgets": null`, `false`, `0`, `""`), so the malformed aspect never reaches its validator and nothing is logged (#770 review). Use `Object.hasOwn(aspect, TAG)` and hand the raw value to validation, as `findFilterAspect` (`src/features/HierarchyViewer/utils/getFilterAspect.ts`) does.
+
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).
