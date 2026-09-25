@@ -27,7 +27,14 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  ReactElement,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
@@ -389,6 +396,10 @@ export const LoadFromNdexDialog = (
   // and shared networks
   const [searchResults, setSearchResults] = useState<NdexFileItem[]>([])
   const [resultCount, setResultCount] = useState<number>(0)
+  // Bumped by every search and by closing the dialog. A response commits
+  // only while its id is current, so an older search that resolves late
+  // cannot replace newer results or refill a closed dialog.
+  const searchIdRef = useRef<number>(0)
 
   // Whether we're in folder browse mode (no search query) or search mode
   const isBrowseMode = lastSearchQuery === ''
@@ -537,6 +548,8 @@ export const LoadFromNdexDialog = (
     query: string,
     mineOnly: boolean = onlyMine,
   ): Promise<void> => {
+    const searchId = ++searchIdRef.current
+    const isCurrent = (): boolean => searchId === searchIdRef.current
     const trimmedQuery = query.trim()
     setLastSearchQuery(trimmedQuery)
     setErrorMessage(undefined)
@@ -571,12 +584,14 @@ export const LoadFromNdexDialog = (
         token,
         ndexBaseUrl,
       )
+      if (!isCurrent()) return
       setSearchResults(enriched)
       setResultCount(result.numFound)
     } catch (err: any) {
+      if (!isCurrent()) return
       setErrorMessage(err.message || 'Failed to search NDEx')
     } finally {
-      setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }
 
@@ -592,6 +607,8 @@ export const LoadFromNdexDialog = (
     if (open) {
       void executeSearch(initialQuery ?? '')
     } else {
+      searchIdRef.current++
+      setLoading(false)
       setLastSearchQuery('')
       setSelectedNetworks([])
       setErrorMessage(undefined)

@@ -6,7 +6,7 @@
 // Also the search itself: one v3 search call with no visibility filter,
 // which NDEx answers with public and private results in one ranked list.
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -174,5 +174,47 @@ describe('LoadFromNdexDialog search', () => {
       500,
       expect.anything(),
     ])
+  })
+  it('keeps the newer results when an older search resolves last', async () => {
+    let resolveFirst: (value: any) => void = () => {}
+    vi.mocked(searchNdexFiles)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveFirst = resolve)),
+      )
+      .mockResolvedValueOnce({
+        files: [
+          {
+            uuid: 'mine-1',
+            name: 'My network',
+            type: 'NETWORK',
+            modificationTime: 0,
+            visibility: 'PRIVATE',
+          },
+        ],
+        numFound: 1,
+      })
+
+    renderSignedIn('BRCA1')
+    await waitFor(() => expect(searchNdexFiles).toHaveBeenCalledTimes(1))
+    fireEvent.click(screen.getByText('Only mine'))
+    expect(await screen.findByText('My network')).toBeTruthy()
+
+    await act(async () => {
+      resolveFirst({
+        files: [
+          {
+            uuid: 'stale-1',
+            name: 'Stale network',
+            type: 'NETWORK',
+            modificationTime: 0,
+            visibility: 'PUBLIC',
+          },
+        ],
+        numFound: 1,
+      })
+    })
+
+    expect(screen.queryByText('Stale network')).toBeNull()
+    expect(screen.getByText('My network')).toBeTruthy()
   })
 })
