@@ -33,6 +33,11 @@ import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { createFilterFromAspect } from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
 import {
+  resolveShownSubNetworkId,
+  resolveSubNetworkPanelView,
+  SubNetworkPanelView,
+} from '../utils/resolveShownSubNetworkId'
+import {
   fetchNdexSubnetworkByQuery,
   NdexSubnetworkFetchError,
 } from '../utils/subnetworkQueryUtil'
@@ -78,6 +83,8 @@ export const SubNetworkPanel = ({
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  // Processing the fetched data ended without rendering it
+  const [renderFailed, setRenderFailed] = useState<boolean>(false)
 
   // Tracking processing progress
   const [processingProgress, setProcessingProgress] = useState<number>(0)
@@ -299,7 +306,7 @@ export const SubNetworkPanel = ({
     },
     refetchOnReconnect: 'always',
   })
-  const { data, error, isFetching } = result
+  const { data, error, isFetching, isPaused } = result
 
   if (error !== undefined && error !== null) {
     logApi.error(`[${SubNetworkPanel.name}]: Failed to get network`, error)
@@ -312,16 +319,25 @@ export const SubNetworkPanel = ({
     setActiveNetworkView(queryNetworkId)
   }
 
+  // Only the subnetwork fetched for the selected subsystem counts as shown, not
+  // one left over while the next loads or after its fetch failed (#758).
+  const shownSubNetworkId: IdType = resolveShownSubNetworkId({
+    queryNetworkId,
+    fetchedNetworkId: data?.network.id,
+    hasError: error !== undefined && error !== null,
+    // Offline, the query is paused rather than failed (#758)
+    isLoading: isFetching || isProcessing || isPaused,
+    hasViewModel: getViewModel(queryNetworkId) !== undefined,
+  })
+
   useEffect(() => {
-    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
-    if (viewModel === undefined) {
-      return
+    if (shownSubNetworkId !== '') {
+      prevQueryNetworkIdRef.current = shownSubNetworkId
     }
-    prevQueryNetworkIdRef.current = queryNetworkId
     // Publish the shown subnetwork so the hierarchy-side share URL can capture
     // it even when the user hasn't clicked the subnetwork pane (CW-654).
-    setCurrentSubNetworkId(queryNetworkId)
-  }, [queryNetworkId, getViewModel, setCurrentSubNetworkId])
+    setCurrentSubNetworkId(shownSubNetworkId)
+  }, [shownSubNetworkId, setCurrentSubNetworkId])
 
   useEffect(() => {
     // Clear the shown subnetwork when the viewer unmounts so it can't leak into
@@ -605,6 +621,7 @@ export const SubNetworkPanel = ({
     const processData = async () => {
       try {
         setIsProcessing(true)
+        setRenderFailed(false)
         setProcessingProgress(0)
         setProcessingStage('Initializing...')
 
@@ -674,11 +691,19 @@ export const SubNetworkPanel = ({
         //   return
         // }
 
-        updateNetworkView()
+        if (updateNetworkView() === '') {
+          setRenderFailed(true)
+        }
 
         setProcessingProgress(100)
         setProcessingStage('Complete')
         await yieldToUI()
+      } catch (error) {
+        logUi.error(
+          `[${SubNetworkPanel.name}]: Failed to render the subnetwork`,
+          error,
+        )
+        setRenderFailed(true)
       } finally {
         setIsProcessing(false)
       }
@@ -694,7 +719,15 @@ export const SubNetworkPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per fetched data; other deps would re-run the pipeline
   }, [data])
 
-  if (isFetching || isProcessing) {
+  const view: SubNetworkPanelView = resolveSubNetworkPanelView({
+    isFetching,
+    isProcessing,
+    hasError: error !== undefined && error !== null,
+    renderFailed,
+    shownSubNetworkId,
+  })
+
+  if (view === 'processing' || view === 'loading') {
     return (
       <MessagePanel
         message={
@@ -702,13 +735,13 @@ export const SubNetworkPanel = ({
             ? `Rendering network: (${processingProgress}%)`
             : `Loading network data:`
         }
-        subMessage={isProcessing ? `${processingStage}` : `(${queryNetworkId})`}
+        subMessage={isProcessing ? `${processingStage}` : `(${subNetworkName})`}
         showProgress={isProcessing}
       />
     )
   }
 
-  if (error !== undefined && error !== null) {
+  if (view === 'error') {
     let errorMessage: string
     // Check if it's our custom error type, or if the error has a cause that is our custom error
     let ndexError: NdexSubnetworkFetchError | null = null
@@ -732,6 +765,15 @@ export const SubNetworkPanel = ({
       errorMessage = `The subsystem with id ${subsystemNodeId} could not be loaded from NDEx`
     }
     return <MessagePanel message={errorMessage} showProgress={false} />
+  }
+
+  if (view === 'renderFailed') {
+    return (
+      <MessagePanel
+        message={`The subsystem with id ${subsystemNodeId} could not be rendered`}
+        showProgress={false}
+      />
+    )
   }
 
   if (queryNetwork === undefined) {

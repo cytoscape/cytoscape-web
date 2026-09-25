@@ -9,6 +9,11 @@ import { IdType } from '../../models'
 
 interface FitButtonProps {
   rendererId: string
+  // Network drawn in this button's view. Views that share a renderer (the
+  // Hierarchy Viewer's TREE VIEW and SUB NETWORK VIEWER both use cyjs)
+  // register one fit function each, so without it the button would fit
+  // whichever view is active instead of its own (#762).
+  targetNetworkId?: IdType
   disabled?: boolean
 }
 
@@ -16,6 +21,7 @@ export const FIT_FUNCTION_NAME: string = 'fit'
 
 export const FitButton = ({
   rendererId,
+  targetNetworkId,
   disabled = false,
 }: FitButtonProps): JSX.Element => {
   const getRendererFunction = useRendererFunctionStore(
@@ -31,7 +37,8 @@ export const FitButton = ({
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkId: IdType = activeNetworkId ?? currentNetworkId
+  const networkId: IdType =
+    targetNetworkId ?? activeNetworkId ?? currentNetworkId
 
   const handleClick = (): void => {
     const fitFunctionByRenderer = getRendererFunction(
@@ -44,8 +51,20 @@ export const FitButton = ({
       networkId,
     )
 
-    // If there are two or more renderers, the active window has higher priority.
-    const fitFunction = fitFunctionByNetworkId ?? fitFunctionByRenderer
+    // setFunction also writes per-network functions to the renderer-wide slot,
+    // so for a renderer that registers per network (cyjs) that slot holds
+    // whichever view registered last. An explicit target must not fall back
+    // to it; renderers that register only renderer-wide (circlePacking) still
+    // do.
+    const registersPerNetwork = [
+      ...useRendererFunctionStore
+        .getState()
+        .rendererFunctionsByNetworkId.values(),
+    ].some((byRenderer) => byRenderer.get(rendererId)?.has(FIT_FUNCTION_NAME))
+    const fitFunction =
+      targetNetworkId !== undefined && registersPerNetwork
+        ? fitFunctionByNetworkId
+        : (fitFunctionByNetworkId ?? fitFunctionByRenderer)
     if (fitFunction !== undefined) {
       fitFunction()
     } else {

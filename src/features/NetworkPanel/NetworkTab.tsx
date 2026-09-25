@@ -101,7 +101,7 @@ export const NetworkTab = ({
       >
         {rendererComponent}
       </Box>
-      <FloatingToolBar rendererId={renderer.id} />
+      <FloatingToolBar rendererId={renderer.id} viewNetworkId={network.id} />
       <FloatingLayoutToolsPanel />
     </Box>
   )

@@ -34,6 +34,7 @@ import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
+import { toVerticalPaneSizes } from './splitPaneSizes'
 // Lazy load heavy TableDataLoader forms
 const CreateNetworkFromTableForm = lazy(() =>
   import(
@@ -416,7 +417,9 @@ const WorkSpaceEditor = (): JSX.Element => {
           onChange={(sizes: number[]) => {
             // sizes[0] = height of top pane (network list, network renderer, vizmapper)
             // sizes[1] = height of bottom pane (table browser)
-            const [topPaneHeight, bottomPaneHeight] = sizes
+            const paneSizes = toVerticalPaneSizes(sizes)
+            if (paneSizes === undefined) return
+            const [topPaneHeight, bottomPaneHeight] = paneSizes
             setAllotmentDimensions([topPaneHeight, bottomPaneHeight])
             setTableBrowserHeight(bottomPaneHeight)
           }}
