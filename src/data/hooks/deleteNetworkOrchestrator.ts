@@ -49,6 +49,8 @@ export const deleteNetworkFromAllStores = (
   useUndoStore.getState().deleteStack(networkId)
   useUiStateStore.getState().deleteNetworkUiState(networkId)
   useFilterStore.getState().deleteNetworkIndex(networkId)
+  // Filter configs are keyed by the network's subnetwork ids (#774)
+  useFilterStore.getState().deleteNetworkFilterConfigs(networkId)
 
   if (useUiStateStore.getState().ui.activeNetworkView === networkId) {
     useUiStateStore.getState().setActiveNetworkView('')
@@ -92,6 +94,7 @@ export const deleteAllNetworksFromAllStores = (): void => {
   useHcxValidatorStore.getState().deleteAllValidationResults()
   useUiStateStore.getState().deleteAllNetworkUiState()
   useFilterStore.getState().deleteAllNetworkIndexes()
+  useFilterStore.getState().deleteAllFilterConfigs()
 
   useWorkspaceStore.getState().deleteAllNetworks()
 }

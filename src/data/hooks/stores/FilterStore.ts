@@ -11,7 +11,13 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { DiscreteRange } from '../../../models/PropertyModel/DiscreteRange'
 import { NumberRange } from '../../../models/PropertyModel/NumberRange'
 import { ValueType } from '../../../models/TableModel'
-import { deleteFilterFromDb, putFilterToDb } from '../../db'
+import {
+  clearFiltersFromDb,
+  deleteFilterFromDb,
+  deleteFiltersFromDb,
+  deleteNetworkFiltersFromDb,
+  putFilterToDb,
+} from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
 
@@ -49,6 +55,13 @@ interface FilterAction {
     range: NumberRange | DiscreteRange<ValueType>,
   ) => void
   setFilterEnabled: (name: string, enabled: boolean) => void
+
+  // Restore the configs saved in the database at startup (#774). Keeps those
+  // owned by a network in the workspace and deletes the other rows.
+  hydrate: (configs: FilterConfig[], networkIds: IdType[]) => void
+  // Delete the configs of a network and its subnetworks (delete cascade)
+  deleteNetworkFilterConfigs: (networkId: IdType) => void
+  deleteAllFilterConfigs: () => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -244,6 +257,64 @@ export const useFilterStore = create(
         state.filterConfigs = newState.filterConfigs
         return state
       })
+    },
+    hydrate: (configs: FilterConfig[], networkIds: IdType[]) => {
+      const { owned, orphaned } = FilterStoreImpl.partitionFilterConfigsByOwner(
+        configs,
+        networkIds,
+      )
+      // The configs come from the database, so they are not written back
+      set((state) => {
+        owned.forEach((config) => {
+          state.filterConfigs[config.name] = config
+        })
+        return state
+      })
+      if (orphaned.length > 0) {
+        const names = orphaned.map((config) => config.name)
+        logStore.info(
+          `[${useFilterStore.name}]: Deleting filters without a network: ${names.join(', ')}`,
+        )
+        void deleteFiltersFromDb(names).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete orphaned filters from db`,
+            e,
+          )
+        })
+      }
+    },
+    deleteNetworkFilterConfigs: (networkId: IdType) => {
+      set((state) => {
+        const newState = FilterStoreImpl.deleteNetworkFilterConfigs(
+          state,
+          networkId,
+        )
+        state.filterConfigs = newState.filterConfigs
+        return state
+      })
+      // Deletes by prefix in the db too, so rows missing from the store go
+      if (!isHydrating()) {
+        void deleteNetworkFiltersFromDb(networkId).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete the filters of network ${networkId} from db`,
+            e,
+          )
+        })
+      }
+    },
+    deleteAllFilterConfigs: () => {
+      set((state) => {
+        state.filterConfigs = {}
+        return state
+      })
+      if (!isHydrating()) {
+        void clearFiltersFromDb().catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to clear filters from db`,
+            e,
+          )
+        })
+      }
     },
   })),
 )

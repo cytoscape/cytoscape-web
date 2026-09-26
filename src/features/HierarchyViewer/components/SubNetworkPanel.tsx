@@ -33,6 +33,7 @@ import {
   findFilterAspect,
 } from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
+import { registerFilterConfig } from '../utils/registerFilterConfig'
 import {
   resolveShownSubNetworkId,
   resolveSubNetworkPanelView,
@@ -82,7 +83,6 @@ export const SubNetworkPanel = ({
   interactionNetworkHost,
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
-  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   // Processing the fetched data ended without rendering it
   const [renderFailed, setRenderFailed] = useState<boolean>(false)
@@ -660,7 +660,7 @@ export const SubNetworkPanel = ({
             for (let i = 0; i < filterConfigs.length; i += batchSize) {
               const batch = filterConfigs.slice(i, i + batchSize)
               batch.forEach((filterConfig: FilterConfig) => {
-                addFilterConfig(filterConfig)
+                registerFilterConfig(filterConfig)
               })
 
               await yieldToUI()

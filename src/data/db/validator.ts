@@ -303,7 +303,15 @@ const DiscreteRangeSchema = z.object({
 })
 
 const FilterConfigSchema = z.object({
-  name: z.string(),
+  // The key FilterStore files the config under. Never '__proto__': hydration
+  // assigns configs into a plain object, where that name would replace the
+  // prototype instead of storing a value (#774).
+  name: z
+    .string()
+    .min(1)
+    .refine((name) => name !== '__proto__', {
+      message: 'name "__proto__" is reserved',
+    }),
   target: z.string(),
   attributeName: z.string(),
   label: z.string(),
@@ -314,6 +322,7 @@ const FilterConfigSchema = z.object({
   visualMapping: VisualMappingFunctionSchema.optional(),
   range: NumberRangeSchema.or(DiscreteRangeSchema),
   discreteFilterDetails: z.array(DiscreteFilterDetailsSchema).optional(),
+  enabled: z.boolean().optional(),
 })
 
 const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({

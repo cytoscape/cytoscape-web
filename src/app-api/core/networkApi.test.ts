@@ -143,6 +143,8 @@ const mockUiStateActions = {
 const mockFilterActions = {
   deleteNetworkIndex: vi.fn(),
   deleteAllNetworkIndexes: vi.fn(),
+  deleteNetworkFilterConfigs: vi.fn(),
+  deleteAllFilterConfigs: vi.fn(),
 }
 
 vi.mock('../../data/hooks/stores/FilterStore', () => ({
@@ -676,6 +678,9 @@ describe('networkApi', () => {
         mockWorkspaceActions.deleteNetworkModifiedStatus,
       ).toHaveBeenCalledWith('net1')
       expect(mockWorkspaceActions.deleteNetwork).toHaveBeenCalledWith('net1')
+      expect(mockFilterActions.deleteNetworkFilterConfigs).toHaveBeenCalledWith(
+        'net1',
+      )
     })
 
     it('purges per-network UI state (visualStyleOptions etc.)', () => {
@@ -791,6 +796,7 @@ describe('networkApi', () => {
         mockWorkspaceActions.deleteAllNetworkModifiedStatuses,
       ).toHaveBeenCalled()
       expect(mockHcxActions.deleteAllValidationResults).toHaveBeenCalled()
+      expect(mockFilterActions.deleteAllFilterConfigs).toHaveBeenCalled()
       expect(mockWorkspaceActions.deleteAllNetworks).toHaveBeenCalled()
     })
 

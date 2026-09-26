@@ -54,7 +54,10 @@ import {
   deleteAppFromDb,
   deleteAppSettingFromDb,
   deleteDb,
+  clearFiltersFromDb,
   deleteFilterFromDb,
+  deleteFiltersFromDb,
+  deleteNetworkFiltersFromDb,
   deleteNetworkAppDataFromDb,
   deleteNetworkFromDb,
   deleteNetworkSummaryFromDb,
@@ -76,6 +79,7 @@ import {
   getCyNetworkFromDb,
   getDatabaseVersion,
   getDb,
+  getAllFilterConfigsFromDb,
   getFilterFromDb,
   getNetworkFromDb,
   getNetworkSummariesFromDb,
@@ -873,6 +877,66 @@ describe('CyDB helper coverage', () => {
 
     await deleteFilterFromDb('filter-1')
     expect(await getFilterFromDb('filter-1')).toBeUndefined()
+  })
+
+  // #774: FilterStore is hydrated from these rows at startup
+  it('reads every filter configuration, dropping malformed rows', async () => {
+    await setupFreshDb()
+    const warn = vi.spyOn(logDb, 'warn').mockImplementation(() => {})
+
+    await putFilterToDb({
+      ...createFilterConfigModel('net1_1'),
+      enabled: false,
+    })
+    await putFilterToDb(createFilterConfigModel('net2_1'))
+    const db = await getDb()
+    await db.filters.put({ id: 'bad', name: 'bad', range: 'nope' })
+
+    const stored = await getAllFilterConfigsFromDb()
+
+    expect(stored.map((c) => c.name).sort()).toEqual(['net1_1', 'net2_1'])
+    const first = stored.find((c) => c.name === 'net1_1')!
+    expect(first.enabled).toBe(false)
+    expect(
+      (first.visualMapping as DiscreteMappingFunction).vpValueMap,
+    ).toBeInstanceOf(Map)
+    // The stored row's primary key does not leak into the config
+    expect(first).not.toHaveProperty('id')
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('deletes the filter configurations of a network and its subnetworks', async () => {
+    await setupFreshDb()
+    for (const name of ['net1', 'net1_1', 'net1_2', 'net10_1', 'net2_1']) {
+      await putFilterToDb(createFilterConfigModel(name))
+    }
+
+    await deleteNetworkFiltersFromDb('net1')
+
+    const names = (await getAllFilterConfigsFromDb()).map((c) => c.name)
+    expect(names.sort()).toEqual(['net10_1', 'net2_1'])
+  })
+
+  it('deletes filter configurations by name', async () => {
+    await setupFreshDb()
+    for (const name of ['net1_1', 'net1_2', 'net2_1']) {
+      await putFilterToDb(createFilterConfigModel(name))
+    }
+
+    await deleteFiltersFromDb(['net1_1', 'net2_1', 'missing'])
+
+    const names = (await getAllFilterConfigsFromDb()).map((c) => c.name)
+    expect(names).toEqual(['net1_2'])
+  })
+
+  it('clears every filter configuration', async () => {
+    await setupFreshDb()
+    await putFilterToDb(createFilterConfigModel('net1_1'))
+
+    await clearFiltersFromDb()
+
+    expect(await getAllFilterConfigsFromDb()).toEqual([])
   })
 
   it('persists custom app metadata', async () => {

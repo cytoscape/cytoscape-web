@@ -354,6 +354,31 @@ describe('db validator - FilterConfig', () => {
       validateFilterConfig({ ...validFilterConfig(), range: { foo: 'bar' } }),
     ).toThrow()
   })
+
+  // #774: rows are read back into FilterStore at startup
+  it('keeps the enabled flag', () => {
+    expect(
+      validateSerializedFilterConfig({
+        ...validFilterConfig(),
+        enabled: false,
+      }),
+    ).toMatchObject({ enabled: false })
+  })
+
+  it('rejects a non-boolean enabled flag', () => {
+    expect(() =>
+      validateSerializedFilterConfig({
+        ...validFilterConfig(),
+        enabled: 'false',
+      }),
+    ).toThrow()
+  })
+
+  it.each(['', '__proto__'])('rejects the name %j', (name) => {
+    expect(() =>
+      validateSerializedFilterConfig({ ...validFilterConfig(), name }),
+    ).toThrow()
+  })
 })
 
 describe('db validator - OpaqueAspects', () => {
