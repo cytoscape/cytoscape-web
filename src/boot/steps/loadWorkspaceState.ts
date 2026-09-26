@@ -1,7 +1,12 @@
 import cloneDeep from 'lodash/cloneDeep'
 
-import { getUiStateFromDb, getWorkspaceFromDb } from '@/data/db'
+import {
+  getAllFilterConfigsFromDb,
+  getUiStateFromDb,
+  getWorkspaceFromDb,
+} from '@/data/db'
 import { useAppDataStore } from '@/data/hooks/stores/AppDataStore'
+import { useFilterStore } from '@/data/hooks/stores/FilterStore'
 import {
   DEFAULT_UI_STATE,
   useUiStateStore,
@@ -78,16 +83,20 @@ export const loadWorkspaceState = async (
 ): Promise<WorkspaceDraft> => {
   const { search } = ctx
 
-  // The UI state read does not depend on either of the other two, so it
-  // overlaps them rather than adding a third round-trip to the boot path.
-  // App data is hydrated here, in the same overlapped read, because
-  // `appData.get()` is synchronous: every entry an app might ask for has to be
-  // in the store before the app API is marked ready in publishWorkspace().
-  const [workspace, dbUiState] = await Promise.all([
+  // These reads do not depend on each other, so they overlap rather than
+  // adding round-trips to the boot path.
+  // App data is hydrated here because `appData.get()` is synchronous: every
+  // entry an app might ask for has to be in the store before the app API is
+  // marked ready in publishWorkspace().
+  // Saved filter configs are restored once the workspace is read, because
+  // telling owned rows from orphans needs its network ids (#774).
+  const [workspace, dbUiState, , filterConfigs] = await Promise.all([
     getWorkspaceFromDb(),
     getUiStateFromDb(),
     useAppDataStore.getState().hydrate(),
+    getAllFilterConfigsFromDb(),
   ])
+  useFilterStore.getState().hydrate(filterConfigs, workspace.networkIds)
   const summaries = await ctx.loadNetworkSummaries(workspace.networkIds)
 
   useUiStateStore

@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { FilterConfig } from '../../../models/FilterModel/FilterConfig'
@@ -9,6 +9,12 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { DiscreteRange } from '../../../models/PropertyModel/DiscreteRange'
 import { NumberRange } from '../../../models/PropertyModel/NumberRange'
 import { ValueType } from '../../../models/TableModel'
+import {
+  clearFiltersFromDb,
+  deleteFiltersFromDb,
+  deleteNetworkFiltersFromDb,
+  putFilterToDb,
+} from '../../db'
 import { useFilterStore } from './FilterStore'
 
 // Mock the database operations
@@ -33,6 +39,10 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    putFilterToDb: vi.fn().mockResolvedValue(undefined),
+    deleteFiltersFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFiltersFromDb: vi.fn().mockResolvedValue(undefined),
+    clearFiltersFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -314,6 +324,91 @@ describe('useFilterStore', () => {
         ...filter,
         enabled: false,
       })
+    })
+  })
+
+  // #774: filter configs are restored at startup and removed with their network
+  describe('filter config lifecycle', () => {
+    const config = (name: string, enabled?: boolean): FilterConfig => ({
+      name,
+      target: GraphObjectType.EDGE,
+      attributeName: 'interaction',
+      label: 'Filter',
+      description: 'Test filter',
+      widgetType: 'checkbox',
+      displayMode: DisplayMode.SELECT,
+      range: { values: ['a'] },
+      ...(enabled === undefined ? {} : { enabled }),
+    })
+
+    beforeEach(() => {
+      useFilterStore.setState({ filterConfigs: {} })
+      vi.mocked(deleteFiltersFromDb).mockClear()
+      vi.mocked(deleteNetworkFiltersFromDb).mockClear()
+      vi.mocked(clearFiltersFromDb).mockClear()
+      vi.mocked(putFilterToDb).mockClear()
+    })
+
+    it('hydrate restores the configs owned by workspace networks', () => {
+      const owned = config('net1_1', false)
+
+      useFilterStore
+        .getState()
+        .hydrate([owned, config('gone_1'), config('checkboxFilter')], ['net1'])
+
+      expect(useFilterStore.getState().filterConfigs).toEqual({
+        net1_1: owned,
+      })
+    })
+
+    it('hydrate deletes orphaned rows and writes nothing back', () => {
+      useFilterStore
+        .getState()
+        .hydrate(
+          [config('net1_1'), config('gone_1'), config('checkboxFilter')],
+          ['net1'],
+        )
+
+      expect(putFilterToDb).not.toHaveBeenCalled()
+      expect(deleteFiltersFromDb).toHaveBeenCalledTimes(1)
+      expect(deleteFiltersFromDb).toHaveBeenCalledWith([
+        'gone_1',
+        'checkboxFilter',
+      ])
+    })
+
+    it('hydrate deletes nothing when every row has an owner', () => {
+      useFilterStore.getState().hydrate([config('net1_1')], ['net1'])
+
+      expect(deleteFiltersFromDb).not.toHaveBeenCalled()
+    })
+
+    it("deleteNetworkFilterConfigs removes the network's configs from the store and the db", () => {
+      useFilterStore.setState({
+        filterConfigs: {
+          net1_1: config('net1_1'),
+          net1_2: config('net1_2'),
+          net2_1: config('net2_1'),
+        },
+      })
+
+      useFilterStore.getState().deleteNetworkFilterConfigs('net1')
+
+      expect(Object.keys(useFilterStore.getState().filterConfigs)).toEqual([
+        'net2_1',
+      ])
+      expect(deleteNetworkFiltersFromDb).toHaveBeenCalledWith('net1')
+    })
+
+    it('deleteAllFilterConfigs empties the store and the db', () => {
+      useFilterStore.setState({
+        filterConfigs: { net1_1: config('net1_1') },
+      })
+
+      useFilterStore.getState().deleteAllFilterConfigs()
+
+      expect(useFilterStore.getState().filterConfigs).toEqual({})
+      expect(clearFiltersFromDb).toHaveBeenCalledTimes(1)
     })
   })
 })

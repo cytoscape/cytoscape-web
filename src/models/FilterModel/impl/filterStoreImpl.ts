@@ -194,6 +194,58 @@ export const deleteFilterConfig = <T>(
 }
 
 /**
+ * Whether a filter config belongs to a network. Configs are keyed by the id
+ * of the network they filter: a Hierarchy Viewer subnetwork's id is
+ * `<networkId>_<subsystemNodeId>`, so a network owns its own config and those
+ * of its subnetworks (#774).
+ */
+export const isFilterOwnedBy = (name: string, networkId: IdType): boolean =>
+  name === networkId || name.startsWith(`${networkId}_`)
+
+/**
+ * Delete the filter configs of a network and its subnetworks
+ */
+export const deleteNetworkFilterConfigs = <T>(
+  state: FilterState<T>,
+  networkId: IdType,
+): FilterState<T> => {
+  const names = Object.keys(state.filterConfigs).filter((name) =>
+    isFilterOwnedBy(name, networkId),
+  )
+  if (names.length === 0) {
+    return state
+  }
+
+  const restFilterConfigs = { ...state.filterConfigs }
+  names.forEach((name) => {
+    delete restFilterConfigs[name]
+  })
+  return {
+    ...state,
+    filterConfigs: restFilterConfigs,
+  }
+}
+
+/**
+ * Split stored filter configs into those owned by a network in the workspace
+ * and orphans (their network was deleted, or no network owns them).
+ */
+export const partitionFilterConfigsByOwner = (
+  configs: FilterConfig[],
+  networkIds: IdType[],
+): { owned: FilterConfig[]; orphaned: FilterConfig[] } => {
+  const owned: FilterConfig[] = []
+  const orphaned: FilterConfig[] = []
+  configs.forEach((config) => {
+    const hasOwner = networkIds.some((networkId) =>
+      isFilterOwnedBy(config.name, networkId),
+    )
+    ;(hasOwner ? owned : orphaned).push(config)
+  })
+  return { owned, orphaned }
+}
+
+/**
  * Update filter config
  */
 export const updateFilterConfig = <T>(

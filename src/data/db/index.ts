@@ -44,6 +44,7 @@ import {
   validateNetworkSummary,
   validateNetworkView,
   validateOpaqueAspectsDb,
+  validateSerializedFilterConfig,
   validateServiceApp,
   validateStoredUiState,
   validateTable,
@@ -1431,6 +1432,73 @@ export const getFilterFromDb = async (
 export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
   await db.transaction('rw', db.filters, async () => {
     await db.filters.delete(filterName)
+  })
+}
+
+/**
+ * Get every stored filter configuration, to hydrate FilterStore at startup
+ * (#774). Rows are validated: a malformed row is logged and dropped rather
+ * than failing the boot.
+ */
+export const getAllFilterConfigsFromDb = async (): Promise<FilterConfig[]> => {
+  try {
+    const rows = await db.filters.toArray()
+    const configs: FilterConfig[] = []
+    rows.forEach((row) => {
+      try {
+        // Parsing also strips the row's `id` key and anything unknown
+        configs.push(
+          deserializeFilterConfig(validateSerializedFilterConfig(row)),
+        )
+      } catch (e) {
+        logDb.warn(
+          '[getAllFilterConfigsFromDb] dropping malformed row:',
+          row,
+          e,
+        )
+      }
+    })
+    return configs
+  } catch (e) {
+    logDb.warn('[getAllFilterConfigsFromDb] Failed to read filters', e)
+    return []
+  }
+}
+
+/**
+ * Delete the filter configurations of a network and its subnetworks, whose
+ * ids are `<networkId>_<subsystemNodeId>`. Called by the delete cascade.
+ */
+export const deleteNetworkFiltersFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters
+      .where('id')
+      .equals(networkId)
+      .or('id')
+      .startsWith(`${networkId}_`)
+      .delete()
+  })
+}
+
+/**
+ * Delete filter configurations by name
+ */
+export const deleteFiltersFromDb = async (
+  filterNames: string[],
+): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.bulkDelete(filterNames)
+  })
+}
+
+/**
+ * Delete every filter configuration
+ */
+export const clearFiltersFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.clear()
   })
 }
 

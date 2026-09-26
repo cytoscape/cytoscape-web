@@ -12,8 +12,11 @@ import { SearchState } from '../SearchState'
 import {
   addFilterConfig,
   deleteFilterConfig,
+  deleteNetworkFilterConfigs,
   FilterState,
   getIndex,
+  isFilterOwnedBy,
+  partitionFilterConfigsByOwner,
   setConverter,
   setFilterEnabled,
   setIndex,
@@ -302,6 +305,68 @@ describe('FilterStoreImpl', () => {
       const result = setFilterEnabled(state, 'missing', false)
 
       expect(result).toBe(state)
+    })
+  })
+
+  // #774: filter configs are keyed by subnetwork id (`<networkId>_<nodeId>`)
+  describe('isFilterOwnedBy', () => {
+    it('matches the network itself and its subnetworks only', () => {
+      expect(isFilterOwnedBy('net1', 'net1')).toBe(true)
+      expect(isFilterOwnedBy('net1_42', 'net1')).toBe(true)
+      expect(isFilterOwnedBy('net10_42', 'net1')).toBe(false)
+      expect(isFilterOwnedBy('net1', 'net1_42')).toBe(false)
+      expect(isFilterOwnedBy('checkboxFilter', 'net1')).toBe(false)
+    })
+  })
+
+  describe('deleteNetworkFilterConfigs', () => {
+    it('removes the configs of the network and its subnetworks', () => {
+      let state = createDefaultState()
+      ;['net1', 'net1_1', 'net1_2', 'net10_1', 'net2_1'].forEach((name) => {
+        state = addFilterConfig(state, createTestFilterConfig(name))
+      })
+
+      const result = deleteNetworkFilterConfigs(state, 'net1')
+
+      expect(Object.keys(result.filterConfigs).sort()).toEqual([
+        'net10_1',
+        'net2_1',
+      ])
+      expect(Object.keys(state.filterConfigs)).toHaveLength(5)
+    })
+
+    it('returns the state unchanged when the network has no configs', () => {
+      const state = addFilterConfig(
+        createDefaultState(),
+        createTestFilterConfig('net2_1'),
+      )
+
+      expect(deleteNetworkFilterConfigs(state, 'net1')).toBe(state)
+    })
+  })
+
+  describe('partitionFilterConfigsByOwner', () => {
+    it('splits configs into those owned by a workspace network and orphans', () => {
+      const configs = ['net1_1', 'net2_7', 'gone_3', 'checkboxFilter'].map(
+        createTestFilterConfig,
+      )
+
+      const { owned, orphaned } = partitionFilterConfigsByOwner(configs, [
+        'net1',
+        'net2',
+      ])
+
+      expect(owned.map((c) => c.name)).toEqual(['net1_1', 'net2_7'])
+      expect(orphaned.map((c) => c.name)).toEqual(['gone_3', 'checkboxFilter'])
+    })
+
+    it('treats every config as orphaned in an empty workspace', () => {
+      const configs = [createTestFilterConfig('net1_1')]
+
+      const { owned, orphaned } = partitionFilterConfigsByOwner(configs, [])
+
+      expect(owned).toEqual([])
+      expect(orphaned).toEqual(configs)
     })
   })
 })
