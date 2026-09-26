@@ -127,6 +127,35 @@ describe('CheckboxFilter', () => {
     expect([...bypass.keys()]).toEqual(['other'])
   })
 
+  it('keeps visibility bypasses of elements outside its table when applied', () => {
+    useVisualStyleStore
+      .getState()
+      .setBypass(
+        networkId,
+        EdgeVisualPropertyName.EdgeVisibility,
+        ['other'],
+        VisibilityType.None,
+      )
+
+    renderFilter(true)
+
+    const bypass = edgeVisibilityBypass()
+    expect(bypass.get('other')).toBe(VisibilityType.None)
+    expect(bypass.get('e1')).toBe(VisibilityType.Element)
+    expect(bypass.get('e2')).toBe(VisibilityType.None)
+  })
+
+  it('clears the bypass an earlier mount wrote when it remounts disabled', () => {
+    // The panel unmounts when the subsystem changes, but the network's
+    // visual style (and its bypass) stays in the store.
+    renderFilter(true).unmount()
+    expect(edgeVisibilityBypass().size).toBe(3)
+
+    renderFilter(false)
+
+    expect(edgeVisibilityBypass().size).toBe(0)
+  })
+
   it('does not clear the selection when disabled', () => {
     const { rerender } = renderFilter(true)
     const calls: unknown[][] = []

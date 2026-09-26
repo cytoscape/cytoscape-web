@@ -90,44 +90,25 @@ export const CheckboxFilter = ({
     const basicFilter: Filter = getBasicFilter()
     basicFilter.applyDiscreteFilter(discreteRange, table, attributeName)
 
-    const idsToFilter: IdType[] = []
-    const idsToExclude: IdType[] = []
-
     const rangeSet = new Set<ValueType>(discreteRange.values)
 
-    if (rangeSet.size === 0) {
-      // No options checked - hide all items
-      const visibilityBypassMap = new Map<IdType, VisibilityType>()
-      const { rows } = table
-      const ids = [...rows.keys()]
-      ids.forEach((id) => {
-        visibilityBypassMap.set(id, VisibilityType.None)
-      })
-
-      setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
-      return []
-    }
-
-    const { rows } = table
-    const ids = [...rows.keys()]
-
-    ids.forEach((id: string) => {
-      const row = rows.get(id)
+    // Elements whose value is in the range stay visible, the rest are
+    // hidden (an empty range hides every row). The rows are merged into the
+    // existing bypass map rather than replacing it, so visibility bypasses
+    // of elements outside this table survive.
+    const visibilityBypassMap = new Map(
+      useVisualStyleStore.getState().visualStyles[targetNetworkId][
+        vpName
+      ].bypassMap,
+    )
+    table.rows.forEach((row, id) => {
       const value = row?.[attributeName]
-
-      if (value !== undefined && rangeSet.has(value)) {
-        idsToFilter.push(id)
-      } else {
-        idsToExclude.push(id)
-      }
-    })
-
-    const visibilityBypassMap = new Map<IdType, VisibilityType>()
-    idsToFilter.forEach((id) => {
-      visibilityBypassMap.set(id, VisibilityType.Element)
-    })
-    idsToExclude.forEach((id) => {
-      visibilityBypassMap.set(id, VisibilityType.None)
+      visibilityBypassMap.set(
+        id,
+        value !== undefined && rangeSet.has(value)
+          ? VisibilityType.Element
+          : VisibilityType.None,
+      )
     })
 
     setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
@@ -141,9 +122,12 @@ export const CheckboxFilter = ({
     setBypassMap,
   ])
 
-  // Remove the filter's visibility bypass so every element of the table is
-  // shown again. Only the table's own ids are touched, so visibility
-  // bypasses set elsewhere for other elements survive.
+  // Remove the filter's visibility bypass for the rows of its table, so
+  // every element it may have hidden is shown again. This deliberately does
+  // not depend on what this instance applied: the component remounts when
+  // the subsystem changes while the network's bypass stays in the store, so
+  // a filter mounted disabled must still clear what an earlier mount wrote.
+  // Bypasses of elements outside the table are left alone.
   const removeFilter = useCallback(() => {
     if (!visualStyleExists) {
       return
