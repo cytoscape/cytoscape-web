@@ -100,11 +100,14 @@ describe('FilterPanel', () => {
   describe('enabled state', () => {
     const networkId = 'net1_sub1'
 
-    const setupFilter = (enabled?: boolean): void => {
+    // Adds a filter config and edge table for `id`, keeping those of other
+    // subnetworks already set up
+    const setupFilter = (enabled?: boolean, id: string = networkId): void => {
       useFilterStore.setState({
         filterConfigs: {
-          [networkId]: {
-            name: networkId,
+          ...useFilterStore.getState().filterConfigs,
+          [id]: {
+            name: id,
             label: 'Interaction',
             description: 'Filter by interaction',
             attributeName: 'interaction',
@@ -118,7 +121,8 @@ describe('FilterPanel', () => {
       })
       useTableStore.setState({
         tables: {
-          [networkId]: {
+          ...useTableStore.getState().tables,
+          [id]: {
             nodeTable: { rows: new Map(), columns: [] } as any,
             edgeTable: {
               rows: new Map([['e1', { interaction: 'a' }]]),
@@ -129,10 +133,10 @@ describe('FilterPanel', () => {
       })
     }
 
-    const renderPanel = (url = '/') =>
+    const renderPanel = (url = '/', id: string = networkId) =>
       render(
         <MemoryRouter initialEntries={[url]}>
-          <FilterPanel networkId={networkId} />
+          <FilterPanel networkId={id} />
         </MemoryRouter>,
       )
 
@@ -177,6 +181,30 @@ describe('FilterPanel', () => {
 
       expect(switchInput().checked).toBe(false)
       expect(checkboxFilterEnabled()).toBe('false')
+    })
+
+    it('keeps the switch of each subnetwork separate', () => {
+      const otherId = 'net1_sub2'
+      setupFilter()
+      setupFilter(undefined, otherId)
+
+      const first = renderPanel()
+      fireEvent.click(switchInput())
+      first.unmount()
+
+      // Another subnetwork with no stored value uses its own fallback
+      const second = renderPanel('/', otherId)
+      expect(switchInput().checked).toBe(true)
+      expect(checkboxFilterEnabled()).toBe('true')
+      second.unmount()
+
+      // Returning to the first one finds it still switched off
+      renderPanel()
+      expect(switchInput().checked).toBe(false)
+      expect(checkboxFilterEnabled()).toBe('false')
+      const { filterConfigs } = useFilterStore.getState()
+      expect(filterConfigs[networkId].enabled).toBe(false)
+      expect(filterConfigs[otherId].enabled).toBeUndefined()
     })
 
     it('falls back to the filterEnabled URL parameter when nothing is stored', () => {
