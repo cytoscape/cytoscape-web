@@ -49,20 +49,13 @@ interface FilterPanelProps {
   // The subnetwork to filter. Passed in rather than read from the active view
   // so the panel keeps showing when the user clicks into the tree view.
   networkId: IdType
-  // Whether the filter is switched on. Owned by the parent so it survives
-  // this panel unmounting (see MainPanel).
-  enabled: boolean
-  onEnabledChange: (enabled: boolean) => void
 }
 
-export const FilterPanel = ({
-  networkId,
-  enabled: isFilterEnabled,
-  onEnabledChange: setIsFilterEnabled,
-}: FilterPanelProps) => {
+export const FilterPanel = ({ networkId }: FilterPanelProps) => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
   const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
+  const setFilterEnabled = useFilterStore((state) => state.setFilterEnabled)
 
   // Show or hide the advanced options
   const [showOptions, setShowOptions] = useState<boolean>(false)
@@ -81,6 +74,18 @@ export const FilterPanel = ({
   const vs: VisualStyle = styles[targetNetworkId]
 
   const selectedFilter: FilterConfig = filterConfigs[targetNetworkId]
+
+  // Whether the filter is switched on. Stored on the subnetwork's filter
+  // config rather than in component state, because this panel (and
+  // MainPanel) unmounts while a subsystem loads, for subsystems without a
+  // filter, and when another network is selected (#772). A config without a
+  // stored value falls back to the filterEnabled URL parameter, then on.
+  const isFilterEnabled: boolean =
+    selectedFilter?.enabled ??
+    searchParams.get(FilterUrlParams.FILTER_ENABLED) !== 'false'
+  const setIsFilterEnabled = (enabled: boolean): void => {
+    setFilterEnabled(targetNetworkId, enabled)
+  }
 
   // Get target table from the store
   const tablePair = useTableStore((state) => state.tables[targetNetworkId])
@@ -133,9 +138,7 @@ export const FilterPanel = ({
   }
 
   /**
-   * Register the default filter on mount. The enabled state is seeded from the
-   * URL by MainPanel, once: reading it here would snap the switch back to the
-   * (never-updated) URL value every time this panel remounts.
+   * Register the default filter on mount.
    */
   useEffect(() => {
     const visualMapping = getMapping(vs, targetAttrName)

@@ -52,6 +52,12 @@ export interface FilterConfig {
   // range is a NumberRange.
   range: NumberRange | DiscreteRange<ValueType>
 
+  // Whether the filter is switched on. Stored here, next to the range, so the
+  // state survives the filter UI unmounting (#772). Undefined means on:
+  // configs created from a filterWidgets aspect or saved before this field
+  // existed do not carry it.
+  enabled?: boolean
+
   /**
    * Properties for the individual values in the discrete filter.
    */

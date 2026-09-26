@@ -15,6 +15,7 @@ import {
   FilterState,
   getIndex,
   setConverter,
+  setFilterEnabled,
   setIndex,
   setIndexedColumns,
   setOptions,
@@ -275,6 +276,32 @@ describe('FilterStoreImpl', () => {
       expect(original.filterConfigs).toBe(originalFilterConfigs)
       expect(original.search.query).toBe('')
       expect(original.filterConfigs).toEqual({})
+    })
+  })
+
+  describe('setFilterEnabled', () => {
+    it('sets the enabled flag and keeps the rest of the config', () => {
+      const state = createDefaultState()
+      const filter = createTestFilterConfig('filter-1')
+
+      let result = addFilterConfig(state, filter)
+      result = setFilterEnabled(result, 'filter-1', false)
+
+      expect(result.filterConfigs['filter-1']).toEqual({
+        ...filter,
+        enabled: false,
+      })
+
+      result = setFilterEnabled(result, 'filter-1', true)
+      expect(result.filterConfigs['filter-1'].enabled).toBe(true)
+    })
+
+    it('returns the state unchanged for a non-existent filter', () => {
+      const state = createDefaultState()
+
+      const result = setFilterEnabled(state, 'missing', false)
+
+      expect(result).toBe(state)
     })
   })
 })

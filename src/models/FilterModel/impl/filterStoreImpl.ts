@@ -236,6 +236,31 @@ export const updateRange = <T>(
 }
 
 /**
+ * Switch a filter on or off
+ */
+export const setFilterEnabled = <T>(
+  state: FilterState<T>,
+  name: string,
+  enabled: boolean,
+): FilterState<T> => {
+  const filter = state.filterConfigs[name]
+  if (filter === undefined) {
+    return state
+  }
+
+  return {
+    ...state,
+    filterConfigs: {
+      ...state.filterConfigs,
+      [name]: {
+        ...filter,
+        enabled,
+      },
+    },
+  }
+}
+
+/**
  * Remove all per-network search state (index + indexed columns) for a
  * deleted network. Without this, indexes leaked in memory for the rest of
  * the session (REVIEW.md round-2 P2, cleaned via the delete orchestrator).
