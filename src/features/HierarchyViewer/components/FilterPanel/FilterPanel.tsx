@@ -277,7 +277,7 @@ export const FilterPanel = ({ networkId }: FilterPanelProps) => {
         flexDirection: 'column',
       }}
     >
-      <Grid item sx={{ flex: 1 }}>
+      <Grid item sx={{ flex: 1, borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
         <Accordion
           disableGutters={true}
           sx={{

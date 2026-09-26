@@ -255,7 +255,6 @@ export const CheckboxFilter = ({
           sx={{
             m: 0,
             backgroundColor: (theme) => theme.palette.background.default,
-            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
           }}
           control={
             <Checkbox
@@ -283,6 +282,7 @@ export const CheckboxFilter = ({
                   disabled={!enableFilter}
                   checked={currentSelectedOptions.values.includes(option)}
                   onChange={() => handleToggle(option)}
+                  sx={{ py: 0.75 }}
                 />
               }
               label={

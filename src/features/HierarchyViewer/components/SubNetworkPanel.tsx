@@ -848,7 +848,6 @@ export const SubNetworkPanel = ({
           width: '100%',
           p: 1,
           flexGrow: 0,
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
           backgroundColor: (theme) => theme.palette.background.default,
         }}
       >
