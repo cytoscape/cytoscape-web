@@ -290,4 +290,30 @@ describe('useFilterStore', () => {
       expect(result.current.filterConfigs['filter-1'].range).toEqual(newRange)
     })
   })
+
+  describe('setFilterEnabled', () => {
+    it('stores the enabled flag on the filter config', () => {
+      const { result } = renderHook(() => useFilterStore())
+      const filter: FilterConfig = {
+        name: 'filter-enabled-1',
+        target: GraphObjectType.EDGE,
+        attributeName: 'interaction',
+        label: 'Filter',
+        description: 'Test filter',
+        widgetType: 'checkbox',
+        displayMode: DisplayMode.SELECT,
+        range: { values: ['a'] },
+      }
+
+      act(() => {
+        result.current.addFilterConfig(filter)
+        result.current.setFilterEnabled('filter-enabled-1', false)
+      })
+
+      expect(result.current.filterConfigs['filter-enabled-1']).toEqual({
+        ...filter,
+        enabled: false,
+      })
+    })
+  })
 })

@@ -48,6 +48,7 @@ interface FilterAction {
     name: string,
     range: NumberRange | DiscreteRange<ValueType>,
   ) => void
+  setFilterEnabled: (name: string, enabled: boolean) => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -222,6 +223,23 @@ export const useFilterStore = create(
                 )
               })
           }
+        }
+        state.filterConfigs = newState.filterConfigs
+        return state
+      })
+    },
+    setFilterEnabled: (name: string, enabled: boolean) => {
+      set((state) => {
+        const newState = FilterStoreImpl.setFilterEnabled(state, name, enabled)
+        const newFilter = newState.filterConfigs[name]
+        if (newFilter && !isHydrating()) {
+          // Convert Immer proxy to plain object before saving
+          putFilterToDb(toPlainObject(newFilter)).catch((e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to update enabled state in db: ${name}`,
+              e,
+            )
+          })
         }
         state.filterConfigs = newState.filterConfigs
         return state
