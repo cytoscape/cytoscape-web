@@ -35,6 +35,13 @@ const isDiscreteRange = (
 ): range is DiscreteRange<ValueType> =>
   Array.isArray((range as DiscreteRange<ValueType>).values)
 
+// Comparable key for a discrete value: typed, so 7 and '7' stay distinct,
+// and by content for lists
+const valueKey = (value: ValueType): string =>
+  Array.isArray(value)
+    ? `list:${JSON.stringify(value)}`
+    : `${typeof value}:${String(value)}`
+
 /**
  * Restore the user's state from a filter config saved in an earlier session
  * onto the config just built from the subnetwork's filterWidgets aspect
@@ -62,10 +69,20 @@ export const restoreFilterState = (
 
   let { range } = fresh
   if (isDiscreteRange(fresh.range) && isDiscreteRange(saved.range)) {
-    const available = new Set<ValueType>(fresh.range.values)
-    range = {
-      values: saved.range.values.filter((value) => available.has(value)),
-    }
+    // Match by content, and keep the fresh value: a list-valued attribute's
+    // saved arrays are copies after the database round trip, while
+    // CheckboxFilter matches row values against the range by identity.
+    const available = new Map<string, ValueType>(
+      fresh.range.values.map((value) => [valueKey(value), value]),
+    )
+    const values: ValueType[] = []
+    saved.range.values.forEach((value) => {
+      const freshValue = available.get(valueKey(value))
+      if (freshValue !== undefined) {
+        values.push(freshValue)
+      }
+    })
+    range = { values }
   }
 
   return {

@@ -83,6 +83,39 @@ describe('restoreFilterState', () => {
     })
   })
 
+  it('matches list values by content and keeps the fresh objects', () => {
+    // CheckboxFilter matches row values by identity, so the restored range
+    // must hold the fresh config's arrays, not the copies read from the db
+    const binds = ['binds', 'weak']
+    const inhibits = ['inhibits']
+    const listFresh: FilterConfig = {
+      ...fresh,
+      range: { values: [binds, inhibits] },
+    }
+    const saved: FilterConfig = {
+      ...fresh,
+      range: { values: [['binds', 'weak'], ['gone']] },
+    }
+
+    const restored = restoreFilterState(listFresh, saved)
+
+    const values = (restored.range as { values: unknown[] }).values
+    expect(values).toHaveLength(1)
+    expect(values[0]).toBe(binds)
+  })
+
+  it('does not match values of different types', () => {
+    const numberFresh: FilterConfig = { ...fresh, range: { values: [7, 'x'] } }
+    const saved: FilterConfig = {
+      ...fresh,
+      range: { values: ['7', ['x']] },
+    }
+
+    expect(restoreFilterState(numberFresh, saved).range).toEqual({
+      values: [],
+    })
+  })
+
   it('keeps an empty saved selection', () => {
     const saved: FilterConfig = { ...fresh, range: { values: [] } }
 
