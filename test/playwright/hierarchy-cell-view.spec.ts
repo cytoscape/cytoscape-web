@@ -434,7 +434,11 @@ test.describe('Hierarchy network view tabs', () => {
     await expect(treeViewTab).toBeVisible({ timeout: 15000 })
     await treeViewTab.click()
     await expect(treeView).toBeVisible({ timeout: 15000 })
-    await treeView.evaluate((element) => (element as any)._cyreg.cy.fit())
+    await treeView.evaluate((element) => {
+      // No return value: cy.fit() returns the instance, which Playwright
+      // would try to serialize (it hangs WebKit).
+      ;(element as any)._cyreg.cy.fit()
+    })
     const before = await settledCamera()
 
     await cellViewTab.click()

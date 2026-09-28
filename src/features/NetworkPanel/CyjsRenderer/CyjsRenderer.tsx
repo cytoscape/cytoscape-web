@@ -366,6 +366,9 @@ const CyjsRenderer = ({
     if (
       network === undefined ||
       cy === null ||
+      // `cy` state can hold an instance the mount effect's cleanup already
+      // destroyed (React StrictMode re-runs effects before setCy lands).
+      cy.destroyed() ||
       (renderedId === id &&
         cy.nodes().length === networkView?.nodeViews.length &&
         cy.edges().length === networkView?.edgeViews.length)
@@ -1065,7 +1068,10 @@ const CyjsRenderer = ({
   useEffect(
     function onNodePositionAndNodeDeletion() {
       const viewModel = getViewModel(id)
-      if (viewModel === undefined || cy === null) {
+      // A destroyed instance (the `cy` state can still hold one right after the
+      // mount effect's cleanup) has no renderer: cy.fit() below would throw,
+      // and an error thrown in an effect takes down the whole renderer subtree.
+      if (viewModel === undefined || cy === null || cy.destroyed()) {
         return
       }
 
@@ -1353,7 +1359,12 @@ const CyjsRenderer = ({
           // fit function call.
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              cy.fit()
+              // The instance may have been destroyed since this function was
+              // registered or called (e.g. a layout completing after the view
+              // was remounted): fitting it would throw.
+              if (!cy.destroyed()) {
+                cy.fit()
+              }
             })
           })
         }
