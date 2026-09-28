@@ -8,6 +8,7 @@ import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { LLMQueryOptionsDialog } from '@/features/LLMQuery/components/LLMQueryOptionsDialog'
 import { LLMQueryOptionsMenuItem } from '@/features/LLMQuery/components/LLMQueryOptionsMenuItem'
 import { RunLLMQueryMenuItem } from '@/features/LLMQuery/components/RunLLMQueryMenuItem'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 import { useMenuBarMenu } from '../MenuBar'
@@ -42,7 +43,7 @@ export const AnalysisMenu = () => {
     setOpenDialog(false)
   }
 
-  const menuItems: MenuItem[] = [
+  const builtInItems: MenuItem[] = [
     {
       template: <RunLLMQueryMenuItem onClick={handleClose} />,
     },
@@ -52,10 +53,8 @@ export const AnalysisMenu = () => {
     {
       template: <LLMQueryOptionsMenuItem onClick={handleOpenDialog} />,
     },
-    ...(serviceMenuItems.length > 0
-      ? [{ separator: true }, ...serviceMenuItems]
-      : []),
   ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
   return (
     <>

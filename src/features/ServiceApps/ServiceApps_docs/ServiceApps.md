@@ -114,7 +114,11 @@ A service's metadata places its menu item via `cyWebMenuItem`:
   menu, and the user is shown a warning listing the valid roots when the app is
   added (see `invalidRootMessage`).
 - **`path`** — the nested sub-menu path under the root, each entry with a
-  `name` and a `gravity` (lower gravity sorts earlier).
+  `name` and a `gravity` (lower gravity sorts earlier). A path entry before
+  the last one whose `name` matches a built-in submenu at that level merges
+  into it; the last entry is the app's own row and never merges. So
+  `Data` + `Import > My App` adds "My App" to the existing Import submenu
+  (`appendServiceMenuItems`, #722). Names match exactly, case included.
 
 Routing is implemented by pure helpers in
 `src/models/AppModel/impl/menuRouting.ts` (`resolveRootMenu`,
