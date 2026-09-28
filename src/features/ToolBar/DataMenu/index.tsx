@@ -8,6 +8,7 @@ import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 import { useMenuBarMenu } from '../MenuBar'
@@ -175,7 +176,7 @@ export const DataMenu = () => {
     })
   }
 
-  const menuItems: MenuItem[] = [
+  const builtInItems: MenuItem[] = [
     {
       template: <LoadFromNdexMenuItem onClick={handleOpenNdexDialog} />,
     },
@@ -255,10 +256,8 @@ export const DataMenu = () => {
         />
       ),
     },
-    ...(serviceMenuItems.length > 0
-      ? [{ separator: true }, ...serviceMenuItems]
-      : []),
   ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
   return (
     <>

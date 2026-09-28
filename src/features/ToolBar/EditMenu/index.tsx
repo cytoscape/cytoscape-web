@@ -2,6 +2,7 @@ import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { useCallback } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { DropdownMenu } from '../DropdownMenu'
@@ -33,7 +34,7 @@ export const EditMenu = () => {
     closeMenu,
   )
 
-  const menuItems: MenuItem[] = [
+  const builtInItems: MenuItem[] = [
     {
       template: <CreateNodeMenuItem onClick={handleClose} />,
     },
@@ -55,10 +56,8 @@ export const EditMenu = () => {
     {
       template: <RedoMenuItem onClick={handleClose} />,
     },
-    ...(serviceMenuItems.length > 0
-      ? [{ separator: true }, ...serviceMenuItems]
-      : []),
   ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
   return (
     <>

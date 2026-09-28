@@ -2,6 +2,7 @@ import CodeIcon from '@mui/icons-material/Code'
 import { lazy, Suspense, useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
 import { useMenuBarMenu } from '../MenuBar'
@@ -75,7 +76,7 @@ export const HelpMenu = () => {
     closeMenu,
   )
 
-  const menuItems = [
+  const builtInItems = [
     {
       template: (
         <AboutCytoscapeWebMenuItem onClick={openDialogFromMenu('about')} />
@@ -132,10 +133,8 @@ export const HelpMenu = () => {
         <BugReportMenuItem onClick={openDialogFromMenu('bug-report')} />
       ),
     },
-    ...(serviceMenuItems.length > 0
-      ? [{ separator: true }, ...serviceMenuItems]
-      : []),
   ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
   return (
     <>
