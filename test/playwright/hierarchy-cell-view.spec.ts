@@ -100,18 +100,6 @@ test.describe('Cell View availability for hierarchies (#630)', () => {
       'Test Network 20 nodes',
     )
 
-    // The fixture is not valid HCX, so the app warns in a snackbar that covers
-    // the tab strip. Close it first: MUI pauses the snackbar's auto-hide while
-    // the pointer is over it, and a click waiting on the tab below keeps the
-    // pointer there, so the warning would never go away on its own.
-    const hcxWarning = page
-      .getByTestId('snackbar-message-list')
-      .getByRole('alert')
-      .filter({ hasText: 'not a valid HCX network' })
-    await expect(hcxWarning).toBeVisible({ timeout: 15000 })
-    await hcxWarning.getByRole('button', { name: 'Close', exact: true }).click()
-    await expect(hcxWarning).toBeHidden()
-
     // Every edge shares one interaction type, so the heuristic keeps Cell View.
     const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
     await expect(cellViewTab).toBeVisible({ timeout: 15000 })

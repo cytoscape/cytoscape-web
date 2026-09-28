@@ -66,4 +66,48 @@ describe('SnackbarMessageList persistent messages', () => {
     // Unmount before cleanup to avoid act warnings
     unmount()
   })
+
+  it('anchors bottom-center so it never covers the tab strips at the top of the view', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await act(async () => {
+      useMessageStore.getState().addMessage({
+        message: 'Placement message',
+        severity: MessageSeverity.WARNING,
+      })
+      vi.advanceTimersByTime(0)
+      await Promise.resolve()
+    })
+
+    const snackbar = screen.getByTestId('snackbar-message-list')
+    expect(
+      snackbar.classList.contains('MuiSnackbar-anchorOriginBottomCenter'),
+    ).toBe(true)
+    // The old placement pinned the snackbar under the app bar, right on top
+    // of the network view's tab strip (e.g. the Hierarchy Viewer's Cell View
+    // tab). MUI pauses auto-hide while hovered, so it swallowed tab clicks.
+    // jsdom resolves emotion's rules, so this read `64px` before the fix.
+    expect(getComputedStyle(snackbar).top).toBe('auto')
+
+    unmount()
+  })
+
+  it('renders a filled alert so bottom-anchored messages stand out in both themes', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await act(async () => {
+      useMessageStore.getState().addMessage({
+        message: 'Filled message',
+        severity: MessageSeverity.ERROR,
+      })
+      vi.advanceTimersByTime(0)
+      await Promise.resolve()
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert.classList.contains('MuiAlert-filled')).toBe(true)
+    expect(alert.classList.contains('MuiAlert-filledError')).toBe(true)
+
+    unmount()
+  })
 })
