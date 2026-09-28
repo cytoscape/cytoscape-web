@@ -26,10 +26,15 @@ import Button from '@mui/material/Button'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
-import { ReactElement, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  ReactElement,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
@@ -37,6 +42,7 @@ import {
   fetchFolderContents,
   fetchFolderInfo,
   fetchNdexSummaries,
+  fetchNdexUserName,
   getNetworkIdForFileItem,
   searchNdexFiles,
 } from '../../../data/external-api/ndex'
@@ -69,9 +75,6 @@ interface BreadcrumbItem {
   name: string
   id: string | null
 }
-
-// Tabs for the network browser
-type BrowseTab = 'public' | 'private'
 
 /**
  * Split file items into folders and networks.
@@ -124,6 +127,9 @@ const countCellSx = {
   whiteSpace: 'nowrap',
 } as const
 const truncationNoticeSx = { textAlign: 'center', py: 2 } as const
+
+// Rows per NDEx search request. "Load more" fetches the next page.
+const SEARCH_PAGE_SIZE = 500
 
 export const NetworkSearchField = (props: {
   startSearch: (searchValue: string) => Promise<void>
@@ -366,7 +372,6 @@ export const LoadFromNdexDialog = (
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
 
   // UI state
-  const [activeTab, setActiveTab] = useState<BrowseTab>('public')
   const [onlyMine, setOnlyMine] = useState<boolean>(false)
 
   const [lastSearchQuery, setLastSearchQuery] = useState<string>('')
@@ -382,8 +387,7 @@ export const LoadFromNdexDialog = (
   const { navigateToNetwork } = useUrlNavigation()
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
 
-  const rootName =
-    activeTab === 'private' ? 'Private Networks' : 'Latest Networks'
+  const rootName = 'Latest Networks'
 
   // Folder navigation state
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
@@ -392,11 +396,25 @@ export const LoadFromNdexDialog = (
   ])
   const [folderContents, setFolderContents] = useState<NdexFileItem[]>([])
 
-  // Search results state per tab
-  const [publicResults, setPublicResults] = useState<NdexFileItem[]>([])
-  const [publicCount, setPublicCount] = useState<number>(0)
-  const [privateResults, setPrivateResults] = useState<NdexFileItem[]>([])
-  const [privateCount, setPrivateCount] = useState<number>(0)
+  // Search results: one ranked list of public and, when signed in, private
+  // and shared networks
+  const [searchResults, setSearchResults] = useState<NdexFileItem[]>([])
+  const [resultCount, setResultCount] = useState<number>(0)
+  // Offset of the next page, and the query and owner filter that produced
+  // the current results, so "Load more" continues the same search.
+  const [nextStart, setNextStart] = useState<number>(0)
+  const [loadingMore, setLoadingMore] = useState<boolean>(false)
+  const lastSearchRef = useRef<{ query: string; ownerFilter?: string }>({
+    query: '',
+  })
+  // Bumped by every search and by closing the dialog. A response commits
+  // only while its id is current, so an older search that resolves late
+  // cannot replace newer results or refill a closed dialog.
+  const searchIdRef = useRef<number>(0)
+  // The signed-in user's NDEx account name, fetched on the first "Only mine"
+  // search. Identity cannot change while the page is loaded (sign-in and
+  // sign-out reload it), so one lookup serves the session.
+  const ndexUserNameRef = useRef<Promise<string> | null>(null)
 
   // Whether we're in folder browse mode (no search query) or search mode
   const isBrowseMode = lastSearchQuery === ''
@@ -406,15 +424,8 @@ export const LoadFromNdexDialog = (
     if (currentFolderId !== null) {
       return folderContents
     }
-    if (activeTab === 'public') return publicResults
-    return privateResults
-  }, [
-    activeTab,
-    folderContents,
-    publicResults,
-    privateResults,
-    currentFolderId,
-  ])
+    return searchResults
+  }, [folderContents, searchResults, currentFolderId])
 
   const { folders, networks } = useMemo(
     () => splitByType(displayItems),
@@ -516,7 +527,7 @@ export const LoadFromNdexDialog = (
     if (folderId === null) {
       setCurrentFolderId(null)
       setBreadcrumbPath((prev) => [prev[0]])
-      // Jump back to the cached search results for the current tab.
+      // Jump back to the cached search results.
       return
     }
 
@@ -546,89 +557,127 @@ export const LoadFromNdexDialog = (
     }
   }
 
-  // Execute search across all tabs
-  const executeSearch = async (query: string): Promise<void> => {
+  // Execute a search. `mineOnly` defaults to the checkbox state; the checkbox
+  // handler passes its new value because state has not updated yet.
+  const executeSearch = async (
+    query: string,
+    mineOnly: boolean = onlyMine,
+  ): Promise<void> => {
+    const searchId = ++searchIdRef.current
+    const isCurrent = (): boolean => searchId === searchIdRef.current
     const trimmedQuery = query.trim()
     setLastSearchQuery(trimmedQuery)
     setErrorMessage(undefined)
     setCurrentFolderId(null)
 
-    const tabRootName =
-      activeTab === 'private' ? 'Private Networks' : 'Latest Networks'
-
     setBreadcrumbPath([
       {
-        name: trimmedQuery ? `Search: "${trimmedQuery}"` : tabRootName,
+        name: trimmedQuery ? `Search: "${trimmedQuery}"` : rootName,
         id: null,
       },
     ])
 
     setLoading(true)
+    setLoadingMore(false)
     try {
       const token = authenticated ? await getToken() : undefined
-      const userName = client?.tokenParsed?.preferred_username
-      const ownerFilter = onlyMine && authenticated ? userName : undefined
+      // NDEx filters on its own account name, which can differ from the
+      // Keycloak preferred_username.
+      let ownerFilter: string | undefined
+      if (mineOnly && token !== undefined) {
+        ndexUserNameRef.current ??= fetchNdexUserName(token, ndexBaseUrl)
+        try {
+          ownerFilter = await ndexUserNameRef.current
+        } catch (err) {
+          ndexUserNameRef.current = null
+          throw err
+        }
+      }
+      logUi.info('[LoadFromNdexDialog]: search', {
+        query: trimmedQuery,
+        searchId,
+        mineOnly,
+        authenticated,
+        ownerFilter,
+      })
 
-      // Fire search requests in parallel
-      const promises: Promise<any>[] = []
-
-      // Public tab (always available)
-      promises.push(
-        searchNdexFiles(
-          query,
-          'PUBLIC',
-          token,
-          ownerFilter,
-          0,
-          500,
-          ndexBaseUrl,
-        ).then(async (result) => {
-          const enriched = await enrichShortcutsWithTargetSummaries(
-            result.files,
-            token,
-            ndexBaseUrl,
-          )
-          setPublicResults(enriched)
-          setPublicCount(result.numFound)
-        }),
+      // No visibility filter: NDEx returns public results, plus private and
+      // shared ones when the request carries a token (ndexbio/ndex-rest#211).
+      const result = await searchNdexFiles(
+        query,
+        undefined,
+        token,
+        ownerFilter,
+        0,
+        SEARCH_PAGE_SIZE,
+        ndexBaseUrl,
       )
-
-      // Private tab (authenticated only)
-      if (authenticated) {
-        promises.push(
-          searchNdexFiles(
-            query,
-            'PRIVATE',
-            token,
-            ownerFilter,
-            0,
-            500,
-            ndexBaseUrl,
-          ).then(async (result) => {
-            const enriched = await enrichShortcutsWithTargetSummaries(
-              result.files,
-              token,
-              ndexBaseUrl,
-            )
-            setPrivateResults(enriched)
-            setPrivateCount(result.numFound)
-          }),
-        )
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        result.files,
+        token,
+        ndexBaseUrl,
+      )
+      if (!isCurrent()) {
+        logUi.info('[LoadFromNdexDialog]: dropped stale search response', {
+          searchId,
+          currentSearchId: searchIdRef.current,
+        })
+        return
       }
-
-      const results = await Promise.allSettled(promises)
-      const rejected = results.filter(
-        (r) => r.status === 'rejected',
-      ) as PromiseRejectedResult[]
-      if (rejected.length > 0) {
-        setErrorMessage(rejected[0].reason?.message || 'Failed to search NDEx')
-      }
+      setSearchResults(enriched)
+      setResultCount(result.numFound)
+      setNextStart(SEARCH_PAGE_SIZE)
+      lastSearchRef.current = { query, ownerFilter }
     } catch (err: any) {
-      setErrorMessage(err.message)
+      if (!isCurrent()) return
+      setErrorMessage(err.message || 'Failed to search NDEx')
     } finally {
-      setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }
+
+  // Fetch the next page of the current search and append it. Public and
+  // private files share one ranking, so a user's private files can sit past
+  // the first page. A new search or closing the dialog drops the response.
+  const loadMoreResults = async (): Promise<void> => {
+    const searchId = searchIdRef.current
+    const isCurrent = (): boolean => searchId === searchIdRef.current
+    const { query, ownerFilter } = lastSearchRef.current
+    const start = nextStart
+    setLoadingMore(true)
+    try {
+      const token = authenticated ? await getToken() : undefined
+      const result = await searchNdexFiles(
+        query,
+        undefined,
+        token,
+        ownerFilter,
+        start,
+        SEARCH_PAGE_SIZE,
+        ndexBaseUrl,
+      )
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        result.files,
+        token,
+        ndexBaseUrl,
+      )
+      if (!isCurrent()) return
+      // The index can change between requests; skip rows already listed.
+      setSearchResults((prev) => {
+        const seen = new Set(prev.map((item) => item.uuid))
+        return [...prev, ...enriched.filter((item) => !seen.has(item.uuid))]
+      })
+      setResultCount(result.numFound)
+      setNextStart(start + SEARCH_PAGE_SIZE)
+    } catch (err: any) {
+      if (!isCurrent()) return
+      setErrorMessage(err.message || 'Failed to load more NDEx results')
+    } finally {
+      if (isCurrent()) setLoadingMore(false)
+    }
+  }
+
+  const hasMoreResults = currentFolderId === null && nextStart < resultCount
 
   // Handle folder click (works in both browse and search mode)
   const handleFolderClick = (folderId: string): void => {
@@ -642,29 +691,22 @@ export const LoadFromNdexDialog = (
     if (open) {
       void executeSearch(initialQuery ?? '')
     } else {
+      searchIdRef.current++
+      setLoading(false)
+      setLoadingMore(false)
+      setNextStart(0)
       setLastSearchQuery('')
       setSelectedNetworks([])
       setErrorMessage(undefined)
       setSuccessMessage(undefined)
       setCurrentFolderId(null)
       setBreadcrumbPath([{ name: 'Latest Networks', id: null }])
-      setPublicResults([])
-      setPrivateResults([])
-      setActiveTab('public')
+      setSearchResults([])
+      setResultCount(0)
       setOnlyMine(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on open/close transitions; executeSearch sets state every call
   }, [open])
-
-  // Re-fetch when "Only mine" filter changes.
-  // `open` and `lastSearchQuery` are guards/arguments, not triggers: adding
-  // them would double-fetch on dialog open and re-run every user search.
-  useEffect(() => {
-    if (open) {
-      void executeSearch(lastSearchQuery)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onlyMine toggle is the sole trigger
-  }, [onlyMine])
 
   const emptyMessage =
     currentFolderId !== null
@@ -676,7 +718,10 @@ export const LoadFromNdexDialog = (
   const MAX_VISIBLE_ROWS = 500
 
   const renderNetworkRows = (): ReactElement[] => {
-    const visibleNetworks = networks.slice(0, MAX_VISIBLE_ROWS)
+    // Search results grow page by page through "Load more"; only a folder
+    // listing, which arrives whole, is capped.
+    const rowCap = currentFolderId !== null ? MAX_VISIBLE_ROWS : Infinity
+    const visibleNetworks = networks.slice(0, rowCap)
     const rows = visibleNetworks.map((network) => {
       const {
         uuid: rowKey,
@@ -791,7 +836,7 @@ export const LoadFromNdexDialog = (
       )
     })
 
-    if (networks.length > MAX_VISIBLE_ROWS) {
+    if (networks.length > rowCap) {
       rows.push(
         <TableRow key="__truncation_notice__">
           <TableCell colSpan={7} sx={truncationNoticeSx}>
@@ -907,53 +952,27 @@ export const LoadFromNdexDialog = (
               </TableRow>
             )}
             {renderNetworkRows()}
+            {hasMoreResults && (
+              <TableRow>
+                <TableCell colSpan={7} sx={truncationNoticeSx}>
+                  <Button
+                    data-testid="load-from-ndex-load-more"
+                    size="small"
+                    disabled={loadingMore}
+                    onClick={() => void loadMoreResults()}
+                  >
+                    {loadingMore
+                      ? 'Loading…'
+                      : `Load more (${displayItems.length} of ${resultCount})`}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
     )
   }
-
-  const tabLabel = (label: string, count: number): ReactElement => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-      <Typography variant="body2">{label}</Typography>
-      {lastSearchQuery !== '' && (
-        <Chip label={count} size="small" variant="outlined" />
-      )}
-    </Box>
-  )
-
-  const privateTab = authenticated ? (
-    <Tooltip
-      arrow
-      placement="bottom"
-      title="Search for private or unlisted networks shared with you"
-    >
-      <Tab
-        label={tabLabel('Private & Unlisted', privateCount)}
-        sx={{ textTransform: 'none' }}
-      />
-    </Tooltip>
-  ) : (
-    <Tooltip
-      arrow
-      placement="right"
-      title="Login to NDEx to access private networks"
-    >
-      <Box>
-        <Tab
-          disabled
-          label={tabLabel('Private & Unlisted', 0)}
-          sx={{ textTransform: 'none' }}
-        />
-      </Box>
-    </Tooltip>
-  )
-
-  // Map tab index to BrowseTab
-  const availableTabs: BrowseTab[] = authenticated
-    ? ['public', 'private']
-    : ['public']
-  const currentTabIndex = availableTabs.indexOf(activeTab)
 
   return (
     <CyDialog
@@ -969,7 +988,7 @@ export const LoadFromNdexDialog = (
     >
       <DialogTitle>NDEx - Network Browser</DialogTitle>
       <DialogContent>
-        {/* Search bar above tabs */}
+        {/* Search bar */}
         <NetworkSearchField
           startSearch={executeSearch}
           handleClose={handleClose}
@@ -977,7 +996,7 @@ export const LoadFromNdexDialog = (
           initialValue={initialQuery ?? ''}
         />
 
-        {/* Only mine checkbox + Tabs */}
+        {/* Only mine checkbox */}
         {authenticated && (
           <Tooltip
             arrow
@@ -990,59 +1009,29 @@ export const LoadFromNdexDialog = (
                   data-testid="load-from-ndex-only-mine-checkbox"
                   checked={onlyMine}
                   size="small"
+                  onChange={(_e, checked) => {
+                    logUi.info('[LoadFromNdexDialog]: Only mine changed', {
+                      checked,
+                    })
+                    setOnlyMine(checked)
+                    void executeSearch(lastSearchQuery, checked)
+                  }}
                 />
               }
               label="Only mine"
-              onClick={(e) => {
-                e.stopPropagation()
-                setOnlyMine(!onlyMine)
-              }}
               sx={{ my: 1 }}
             />
           </Tooltip>
         )}
-        <Box
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <Tabs
-            data-testid="load-from-ndex-tabs"
-            value={currentTabIndex >= 0 ? currentTabIndex : 0}
-            onChange={(_e, val) => {
-              const newTab = availableTabs[val]
-              setActiveTab(newTab)
-              setCurrentFolderId(null)
-              const tabRootName =
-                newTab === 'private' ? 'Private Networks' : 'Latest Networks'
-              setBreadcrumbPath([
-                {
-                  name: lastSearchQuery
-                    ? `Search: "${lastSearchQuery}"`
-                    : tabRootName,
-                  id: null,
-                },
-              ])
-              setErrorMessage(undefined)
-            }}
+        {lastSearchQuery !== '' && (
+          <Box
+            data-testid="load-from-ndex-result-count"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}
           >
-            <Tooltip
-              arrow
-              placement="bottom"
-              title="Query public networks in NDEx"
-            >
-              <Tab
-                data-testid="load-from-ndex-public-tab"
-                label={tabLabel('Public', publicCount)}
-                sx={{ textTransform: 'none' }}
-              />
-            </Tooltip>
-            {authenticated && privateTab}
-          </Tabs>
-        </Box>
+            <Typography variant="body2">Results</Typography>
+            <Chip label={resultCount} size="small" variant="outlined" />
+          </Box>
+        )}
 
         {/* Breadcrumbs — always show if we have a path */}
         {breadcrumbPath.length > 0 && (

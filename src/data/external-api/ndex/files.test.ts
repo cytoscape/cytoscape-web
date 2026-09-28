@@ -76,6 +76,15 @@ describe('mapFileListItem (via searchNdexFiles / fetchFolderContents)', () => {
     expect(shortcut?.targetId).toBe(TARGET_NETWORK_UUID)
   })
 
+  it('omits the visibility param when no visibility is given', async () => {
+    searchFiles.mockResolvedValue({ files: [], numFound: 0 })
+
+    await searchNdexFiles('gal', undefined)
+
+    expect(searchFiles).toHaveBeenCalledTimes(1)
+    expect(searchFiles.mock.calls[0][0]).not.toHaveProperty('visibility')
+  })
+
   it('preserves targetId when browsing folder contents', async () => {
     getFolderList.mockResolvedValue([rawShortcutItem])
 

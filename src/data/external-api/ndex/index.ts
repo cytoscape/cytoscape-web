@@ -31,6 +31,9 @@ export {
   updateNdexWorkspace,
 } from './workspace'
 
+// User operations
+export { fetchNdexUserName } from './user'
+
 // Permission operations
 export { getNdexNetworkPermission, hasNdexEditPermission } from './permissions'
 

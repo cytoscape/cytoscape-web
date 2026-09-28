@@ -96,3 +96,11 @@ Use the new `searchFiles` API but display results as a flat list without folder 
 - NDEx3 search implementation: `ndex3/src/app/search/_components/SearchResultsPage.tsx`
 - NDEx3 file search hook: `ndex3/src/hooks/use-file-search.ts`
 - NDEx3 folder hook: `ndex3/src/hooks/use-folder.ts`
+
+## Amendment (2026-09-25): one search list, no tabs
+
+NDEx now serves one relevance-ranked list from `POST /v3/search/files` when `visibility` is omitted (ndexbio/ndex-rest#211). Signed in, the list holds public, private and shared files. Anonymous, it holds public files only.
+
+The dialog now sends one search with no `visibility` and shows one list (#760). This replaces the Public and Private tabs described above. The per-row visibility column tells public rows from private ones. "Only mine" still filters by `accountName`.
+
+Before this change, each tab ran its own search. Relevance scores from two searches are not comparable, so no ordering could interleave the two lists.
