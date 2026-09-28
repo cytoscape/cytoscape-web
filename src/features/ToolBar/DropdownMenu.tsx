@@ -632,7 +632,12 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
               // has settled the new focus target: Tab out of the menu, or a
               // click on something focusable elsewhere, closes it; moving
               // between rows, into a submenu or back to the trigger does not.
-              queueMicrotask(() => {
+              // A task, not a microtask: when a click moves focus the browser
+              // runs a microtask checkpoint between focusout and focusin, so
+              // a microtask decides before the new target's focus arrives —
+              // every click into a row-owned dialog's fields closed the menu
+              // and unmounted the dialog.
+              setTimeout(() => {
                 if (!isOpenRef.current) {
                   return
                 }
@@ -649,7 +654,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                   return
                 }
                 close()
-              })
+              }, 0)
             }}
             // Keep focus where it is while clicking around the menu: a click
             // on a separator or the padding would otherwise blur the menu and

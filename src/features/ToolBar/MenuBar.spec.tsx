@@ -239,7 +239,8 @@ describe('MenuBar', () => {
     const elsewhere = screen.getByTestId('elsewhere')
     await act(async () => {
       elsewhere.focus()
-      await Promise.resolve()
+      // The menu decides in a task, once the focus change has settled.
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
     expect(screen.queryByRole('menu')).toBeNull()
     expect(document.activeElement).toBe(elsewhere)

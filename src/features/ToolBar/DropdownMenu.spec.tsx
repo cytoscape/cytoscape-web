@@ -269,9 +269,11 @@ describe('DropdownMenu with a dialog owned by a template row', () => {
     render(<MenuHarness />)
     fireEvent.click(screen.getByTestId('toolbar-help-menu-button'))
     fireEvent.click(screen.getByText('About'))
-    // The menu decides whether focus left it in a microtask after the blur
-    // the dialog's focus trap causes; let that settle before asserting.
-    await act(async () => {})
+    // The menu decides whether focus left it in a task after the blur the
+    // dialog's focus trap causes; let that settle before asserting.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
     return screen.getByLabelText('Name')
   }
 
@@ -318,6 +320,31 @@ describe('DropdownMenu with a dialog owned by a template row', () => {
     await act(async () => {})
 
     expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  // A click that moves focus is dispatched by the browser, not by script:
+  // focusout and focusin each run as their own callback, with a microtask
+  // checkpoint in between. A focus change made by `.focus()` inside a
+  // handler (the focus trap's) fires both before any microtask runs, which
+  // is why the dialog opening never showed this. Data > Export > Network to
+  // Image closed on the first click into any of its fields, and on Confirm
+  // before the export could run.
+  const settle = async (): Promise<void> => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('keeps the dialog mounted when a click moves focus inside it', async () => {
+    const input = await openDialogFromMenu()
+
+    ;(document.activeElement as HTMLElement).blur()
+    await Promise.resolve()
+    input.focus()
+    await settle()
+
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(getMenu()).toBeTruthy()
   })
 
   it('closes the menu when the dialog closes and asks it to', async () => {
