@@ -86,7 +86,8 @@ describe('SnackbarMessageList persistent messages', () => {
     // The old placement pinned the snackbar under the app bar, right on top
     // of the network view's tab strip (e.g. the Hierarchy Viewer's Cell View
     // tab). MUI pauses auto-hide while hovered, so it swallowed tab clicks.
-    expect(getComputedStyle(snackbar).top).not.toBe('64px')
+    // jsdom resolves emotion's rules, so this read `64px` before the fix.
+    expect(getComputedStyle(snackbar).top).toBe('auto')
 
     unmount()
   })
