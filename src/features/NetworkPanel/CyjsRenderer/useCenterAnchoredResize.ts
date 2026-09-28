@@ -80,7 +80,8 @@ export const panReferenceSize = (cy: Core): Size | null =>
  * cached size is the reference.
  */
 export const setPanReferenceSize = (cy: Core, size: Size): void => {
-  if (cachedSize(cy) === null && size.width > 0 && size.height > 0) {
+  const usable = (value: number): boolean => Number.isFinite(value) && value > 0
+  if (cachedSize(cy) === null && usable(size.width) && usable(size.height)) {
     lastVisibleSizes.set(cy, { width: size.width, height: size.height })
   }
 }

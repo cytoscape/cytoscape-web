@@ -360,6 +360,22 @@ describe('useCenterAnchoredResize', () => {
       expect(panReferenceSize(asCore(cy))).toEqual({ width: 568, height: 534 })
     })
 
+    it.each([
+      ['infinite', Number.POSITIVE_INFINITY],
+      ['NaN', Number.NaN],
+      ['zero', 0],
+      ['negative', -10],
+    ])('ignores a %s size set while hidden', (_label, bad) => {
+      const cy = createCy({ width: 0, height: 0 })
+      renderWith(cy)
+
+      setPanReferenceSize(asCore(cy), { width: bad, height: 534 })
+      resizeTo(cy, 250, 493)
+
+      expect(panReferenceSize(asCore(cy))).toEqual({ width: 250, height: 493 })
+      expect(cy.panBy).not.toHaveBeenCalled()
+    })
+
     it('ignores a size set while visible: the cached size is the reference', () => {
       const cy = createCy({ width: 800, height: 600 })
       renderWith(cy)
