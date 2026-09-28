@@ -81,6 +81,11 @@ The Messages feature consists of:
 - At the bottom it covers table rows, or empty canvas when the table panel is
   collapsed; the floating toolbars sit in the bottom corners and onboarding
   tour tooltips open above the table, so neither collides with it.
+- Known overlap: until the user accepts or declines cookies, the full-width
+  consent banner (`CookieConsent.tsx`, fixed at the bottom) sits under the
+  snackbar, which can cover its text and links while a message is up. Every
+  bottom position overlaps it; this is accepted because the banner shows only
+  until the first choice and messages auto-hide.
 - High z-index ensures visibility
 
 ### Store-Based Management
