@@ -67,6 +67,8 @@
 
 ## Testing
 
+- [2026-09-28] A message snackbar that covers a click target never hides on its own during the click: `SnackbarMessageList` sits top-center at `top: 64px` over the network tab strip, MUI pauses `autoHideDuration` while the pointer is over it, and Playwright's actionability retries keep the pointer there — so the click times out after 60 s instead of waiting 5 s (Firefox flake in `hierarchy-cell-view.spec.ts`, invalid-HCX warning). Close the message through its Alert's Close button (scoped to `snackbar-message-list`, `exact: true`) and assert it hidden before clicking underneath; never `force` the click.
+
 - [2026-09-22] An outlined MUI `TextField` renders its own `<legend>` (the notched outline), so `fieldset.locator('legend')` is a Playwright strict-mode violation once a text field sits inside a form fieldset — use `.first()` or the legend's text. Likewise `getByRole('combobox')` is ambiguous in any dialog that also renders a `dropDown` parameter; the Layout Settings selector carries `data-testid="layout-selector-combobox"` for that reason.
 - [2026-09-03] `vi.clearAllMocks()` clears calls, NOT implementations: a `mockImplementation(() => { throw ... })` set by one test leaks into every later test in the file, and a new `describe` block appended at the end of a long spec inherits it (cost an hour on `viewportApi.test.ts`). Reset the specific mock in the block's own `beforeEach`.
 - [2026-08-03] jsdom drops CSS values it cannot parse: `getComputedStyle` returns `auto` for `width: min(500px, calc(100% - 32px))` while `calc(100% - 32px)` resolves fine. Layout-assertion unit tests must stick to values jsdom's cssstyle understands, or assert in Playwright instead.
