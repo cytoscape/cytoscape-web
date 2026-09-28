@@ -69,10 +69,18 @@ export const SnackbarMessageList = (): React.ReactElement => {
       open={open}
       onClose={handleSnackbarClose}
       autoHideDuration={autoHideDuration}
-      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      // Bottom-center, Material Design's default for web (MUI's own default,
+      // bottom-left, covers the floating layout tools when the table panel is
+      // collapsed). Anything at the top sits on the network view's tab strip
+      // (e.g. the Hierarchy Viewer's Cell View tab), and because MUI pauses
+      // auto-hide while the pointer is over it, a user reaching for that tab
+      // could not click it until they closed the message. Bottom-center lands
+      // on table rows (or on an empty canvas when the table is collapsed),
+      // clear of the floating toolbars in the bottom corners and of the
+      // onboarding tour, whose tooltips sit above it.
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       sx={{
         zIndex: 9999999,
-        top: '64px !important',
         '& .MuiPaper-root': {
           borderRadius: 2,
           boxShadow: 6,

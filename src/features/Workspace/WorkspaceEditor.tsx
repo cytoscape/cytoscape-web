@@ -6,7 +6,6 @@ import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
@@ -22,11 +21,9 @@ import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { HcxMetaTag } from '../HierarchyViewer/model/HcxMetaTag'
-import { validateHcx } from '../HierarchyViewer/model/impl/hcxValidators'
-import { useHcxValidatorStore } from '../HierarchyViewer/store/HcxValidatorStore'
 import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
+import { validateAndRecordHcx } from '../HierarchyViewer/utils/validateAndRecordHcx'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
 import { setTabNetworkId } from '@/data/tabState/tabNetwork'
@@ -55,7 +52,6 @@ import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
 import { CyNetwork } from '../../models'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
-import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 
@@ -137,10 +133,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.setCurrentNetworkId,
   )
 
-  const setValidationResult = useHcxValidatorStore(
-    (state) => state.setValidationResult,
-  )
-
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
     useWorkspaceStore((state) => state.setNetworkModified)
 
@@ -181,8 +173,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
     (state) => state.setIsRunning,
   )
-
-  const addMessage = useMessageStore((state) => state.addMessage)
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
@@ -244,26 +234,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       // Validate HCX networks if applicable
       if (isHCX(summary)) {
-        const hcxVersion =
-          summary.properties.find(
-            (p) => p.predicateString === HcxMetaTag.ndexSchema,
-          )?.value ?? ''
-        const validationResult = validateHcx(
-          hcxVersion as string,
-          summary,
-          nodeTable,
-          edgeTable,
-        )
-
-        if (!validationResult.isValid) {
-          const HCX_WARNING_DURATION_MS = 5000
-          addMessage({
-            message: `This network is not a valid HCX network.  Some features may not work properly.`,
-            duration: HCX_WARNING_DURATION_MS,
-            severity: MessageSeverity.WARNING,
-          })
-        }
-        setValidationResult(networkId, validationResult)
+        validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
       }
 
       // Apply default layout if network doesn't have one

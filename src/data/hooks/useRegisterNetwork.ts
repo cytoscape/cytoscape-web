@@ -1,19 +1,15 @@
 import { useContext } from 'react'
 
 import { AppConfigContext } from '../../AppConfigContext'
-import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
-import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
-import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
+import { validateAndRecordHcx } from '../../features/HierarchyViewer/utils/validateAndRecordHcx'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
-import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { useLayoutStore } from './stores/LayoutStore'
-import { useMessageStore } from './stores/MessageStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
@@ -40,11 +36,6 @@ export const useRegisterNetwork = () => {
   const setNetworkModified = useWorkspaceStore(
     (state) => state.setNetworkModified,
   )
-
-  const setValidationResult = useHcxValidatorStore(
-    (state) => state.setValidationResult,
-  )
-  const addMessage = useMessageStore((state) => state.addMessage)
 
   const layoutEngines = useLayoutStore((state) => state.layoutEngines)
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
@@ -87,26 +78,7 @@ export const useRegisterNetwork = () => {
 
     // Validate HCX networks if applicable
     if (isHCX(summary)) {
-      const hcxVersion =
-        summary.properties.find(
-          (p) => p.predicateString === HcxMetaTag.ndexSchema,
-        )?.value ?? ''
-      const validationResult = validateHcx(
-        hcxVersion as string,
-        summary,
-        nodeTable,
-        edgeTable,
-      )
-
-      if (!validationResult.isValid) {
-        const HCX_WARNING_DURATION_MS = 5000
-        addMessage({
-          message: `This network is not a valid HCX network.  Some features may not work properly.`,
-          duration: HCX_WARNING_DURATION_MS,
-          severity: MessageSeverity.WARNING,
-        })
-      }
-      setValidationResult(networkId, validationResult)
+      validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
     }
 
     // Apply default layout if network doesn't have one

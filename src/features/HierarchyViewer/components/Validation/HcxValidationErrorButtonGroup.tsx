@@ -10,14 +10,11 @@ import {
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../../models/IdType'
-import { MessageSeverity } from '../../../../models/MessageModel'
-import { HcxMetaTag } from '../../model/HcxMetaTag'
-import { validateHcx } from '../../model/impl/hcxValidators'
 import { useHcxValidatorStore } from '../../store/HcxValidatorStore'
+import { validateAndRecordHcx } from '../../utils/validateAndRecordHcx'
 import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
 
 export interface HcxValidationButtonGroupProps {
@@ -36,10 +33,6 @@ export const HcxValidationButtonGroup = (
     (state) => state.validationResults,
   )
   const validationResult = validationResults?.[id]
-  const setValidationResult = useHcxValidatorStore(
-    (state) => state.setValidationResult,
-  )
-  const addMessage = useMessageStore((state) => state.addMessage)
 
   const summary = useNetworkSummaryStore((state) => state.summaries[id])
   const table = useTableStore((state) => state.tables[id])
@@ -47,30 +40,18 @@ export const HcxValidationButtonGroup = (
   const edgeTable = table?.edgeTable
 
   const revalidateHcx = (): void => {
-    const version =
-      summary?.properties?.find(
-        (p) => p.predicateString === HcxMetaTag.ndexSchema,
-      )?.value ?? ''
-    const validationRes = validateHcx(
-      version as string,
+    const validationRes = validateAndRecordHcx(
+      id,
       summary,
       nodeTable,
       edgeTable,
     )
-
-    if (!validationRes.isValid) {
-      addMessage({
-        message: `This network is not a valid HCX network.  Some features may not work properly.`,
-        duration: 5000,
-        severity: MessageSeverity.WARNING,
-      })
-    } else {
+    if (validationRes.isValid) {
       setShowValidationSuccess(true)
       setTimeout(() => {
         setShowValidationSuccess(false)
       }, 4000)
     }
-    setValidationResult(id, validationRes)
   }
 
   if (validationResult === undefined) {
