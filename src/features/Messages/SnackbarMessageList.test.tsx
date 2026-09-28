@@ -90,4 +90,23 @@ describe('SnackbarMessageList persistent messages', () => {
 
     unmount()
   })
+
+  it('renders a filled alert so bottom-anchored messages stand out in both themes', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await act(async () => {
+      useMessageStore.getState().addMessage({
+        message: 'Filled message',
+        severity: MessageSeverity.ERROR,
+      })
+      vi.advanceTimersByTime(0)
+      await Promise.resolve()
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert.classList.contains('MuiAlert-filled')).toBe(true)
+    expect(alert.classList.contains('MuiAlert-filledError')).toBe(true)
+
+    unmount()
+  })
 })

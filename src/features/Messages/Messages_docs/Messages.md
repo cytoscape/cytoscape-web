@@ -19,6 +19,8 @@ The Messages feature consists of:
 - Renders messages as Material-UI Snackbars
 - Supports auto-hide with configurable duration
 - Displays at bottom-center of screen
+- Uses the filled `Alert` variant (solid severity color, contrast text) so it
+  stands out at the bottom of the screen in both light and dark mode
 - High z-index to appear above other content
 - Handles message queue and display order
 

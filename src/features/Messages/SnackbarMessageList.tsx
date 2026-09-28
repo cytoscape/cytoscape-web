@@ -87,7 +87,11 @@ export const SnackbarMessageList = (): React.ReactElement => {
         },
       }}
     >
+      {/* Filled: the default (standard) variant's pale tint is easy to miss at
+          the bottom of the screen, and in dark mode an error's dark-red tint
+          barely separates from the background. */}
       <Alert
+        variant="filled"
         severity={currentMessage?.severity ?? MessageSeverity.INFO}
         sx={{ width: '100%' }}
         onClose={handleAlertClose}
