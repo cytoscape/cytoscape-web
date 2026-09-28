@@ -367,4 +367,94 @@ test.describe('Hierarchy network view tabs', () => {
       .soft(overflow, 'drawing sticking out of the view')
       .toBeLessThanOrEqual(2)
   })
+
+  // Regression: fit the Tree View, show the Cell View, switch to a regular
+  // network and back, then show the Tree View again: it came back shifted.
+  // Coming back with the Cell View tab selected, the Tree View's viewport was
+  // restored into a hidden (0 x 0) canvas, so the pan could not be adjusted,
+  // and nothing recorded which size it belonged to for the first show.
+  test('the Tree View comes back as it was after switching away with the Cell View shown', async ({
+    page,
+  }) => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+    await importAnotherNetworkFile(
+      page,
+      REGULAR_CX2,
+      'Test Network 20 nodes',
+      2,
+    )
+
+    const workspaceItem = (name: string) =>
+      page
+        .locator('[data-testid="workspace-editor-left-panel-open"]')
+        .getByText(name)
+        .first()
+    const treeViewTab = page.getByRole('tab', { name: 'Tree View' })
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    const treeView = page.locator(
+      '[data-testid="network-tabs"] [data-testid="cyjs-renderer"]',
+    )
+
+    /**
+     * The Tree View's camera: the model point at the canvas center, and the
+     * zoom. Reached through the container, which Cytoscape.js registers
+     * itself on (window.debug.cy can be the side panel's instance).
+     */
+    const treeCamera = () =>
+      treeView.evaluate((element) => {
+        const cy = (element as any)._cyreg?.cy
+        if (cy === undefined || element.clientWidth === 0) return null
+        const pan = cy.pan()
+        const zoom = cy.zoom()
+        return {
+          x: Math.round(((element.clientWidth / 2 - pan.x) / zoom) * 10) / 10,
+          y: Math.round(((element.clientHeight / 2 - pan.y) / zoom) * 10) / 10,
+          zoom: Math.round(zoom * 1e4) / 1e4,
+        }
+      })
+
+    /** Poll until the camera has stopped moving, then return it. */
+    const settledCamera = async () => {
+      let previous = ''
+      await expect
+        .poll(
+          async () => {
+            const current = JSON.stringify(await treeCamera())
+            const stable = current !== 'null' && current === previous
+            previous = current
+            return stable
+          },
+          { intervals: [500], timeout: 20_000 },
+        )
+        .toBe(true)
+      return JSON.parse(previous)
+    }
+
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(treeViewTab).toBeVisible({ timeout: 15000 })
+    await treeViewTab.click()
+    await expect(treeView).toBeVisible({ timeout: 15000 })
+    await treeView.evaluate((element) => {
+      // No return value: cy.fit() returns the instance, which Playwright
+      // would try to serialize (it hangs WebKit).
+      ;(element as any)._cyreg.cy.fit()
+    })
+    const before = await settledCamera()
+
+    await cellViewTab.click()
+    await expect(
+      page.locator('[data-testid="circle-packing-svg"]'),
+    ).toBeVisible({ timeout: 15000 })
+
+    await workspaceItem('Test Network 20 nodes').click()
+    await expect(cellViewTab).toHaveCount(0, { timeout: 15000 })
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    // Let the hierarchy settle with the Tree View still hidden.
+    await page.waitForTimeout(1500)
+
+    await treeViewTab.click()
+    await expect(treeView).toBeVisible({ timeout: 15000 })
+    expect(await settledCamera()).toEqual(before)
+  })
 })

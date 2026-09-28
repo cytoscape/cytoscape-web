@@ -53,7 +53,11 @@ import {
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
-import { useCenterAnchoredResize } from './useCenterAnchoredResize'
+import {
+  panReferenceSize,
+  setPanReferenceSize,
+  useCenterAnchoredResize,
+} from './useCenterAnchoredResize'
 import { useNodeGraphicsSync } from './useNodeGraphicsSync'
 import { isGraphVisible } from './viewportRecovery'
 import { panForCanvasSize } from './viewportRestore'
@@ -362,6 +366,9 @@ const CyjsRenderer = ({
     if (
       network === undefined ||
       cy === null ||
+      // `cy` state can hold an instance the mount effect's cleanup already
+      // destroyed (React StrictMode re-runs effects before setCy lands).
+      cy.destroyed() ||
       (renderedId === id &&
         cy.nodes().length === networkView?.nodeViews.length &&
         cy.edges().length === networkView?.edgeViews.length)
@@ -829,15 +836,15 @@ const CyjsRenderer = ({
     const viewportChangeHandler = debounce((): void => {
       const zoom = cy.zoom()
       const pan = cy.pan()
-      // Record the canvas size with the pan, so a restore into a canvas that
-      // was resized meanwhile keeps the same center (see viewportRestore.ts).
-      // A hidden (0 x 0) canvas has no meaningful size to record.
-      const width = cy.width()
-      const height = cy.height()
+      // Record the canvas size the pan is relative to, so a restore into a
+      // canvas that was resized meanwhile keeps the same center (see
+      // viewportRestore.ts). While hidden (0 x 0, e.g. the Cell View tab is
+      // selected) that is still the last visible size, not 0 x 0.
+      const size = panReferenceSize(cy)
       const newViewport: ViewPort = {
         zoom,
         pan: { x: pan.x, y: pan.y },
-        ...(width > 0 && height > 0 ? { width, height } : {}),
+        ...(size !== null ? { width: size.width, height: size.height } : {}),
       }
 
       // Update viewport in the renderer store
@@ -904,6 +911,18 @@ const CyjsRenderer = ({
     if (savedViewport) {
       cy.zoom(savedViewport.zoom)
       cy.pan(panForCanvasSize(savedViewport, cy.width(), cy.height()))
+      // Restored into a hidden canvas, the pan cannot be adjusted yet and stays
+      // relative to the saved size: declare it, so the first show re-centers
+      // it (a hierarchy network re-opened with its Cell View tab selected).
+      if (
+        savedViewport.width !== undefined &&
+        savedViewport.height !== undefined
+      ) {
+        setPanReferenceSize(cy, {
+          width: savedViewport.width,
+          height: savedViewport.height,
+        })
+      }
     } else if (forceFit) {
       cy.fit()
     }
@@ -1049,7 +1068,10 @@ const CyjsRenderer = ({
   useEffect(
     function onNodePositionAndNodeDeletion() {
       const viewModel = getViewModel(id)
-      if (viewModel === undefined || cy === null) {
+      // A destroyed instance (the `cy` state can still hold one right after the
+      // mount effect's cleanup) has no renderer: cy.fit() below would throw,
+      // and an error thrown in an effect takes down the whole renderer subtree.
+      if (viewModel === undefined || cy === null || cy.destroyed()) {
         return
       }
 
@@ -1337,7 +1359,12 @@ const CyjsRenderer = ({
           // fit function call.
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              cy.fit()
+              // The instance may have been destroyed since this function was
+              // registered or called (e.g. a layout completing after the view
+              // was remounted): fitting it would throw.
+              if (!cy.destroyed()) {
+                cy.fit()
+              }
             })
           })
         }

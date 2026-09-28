@@ -2,7 +2,11 @@ import { renderHook } from '@testing-library/react'
 import type { Core } from 'cytoscape'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useCenterAnchoredResize } from './useCenterAnchoredResize'
+import {
+  panReferenceSize,
+  setPanReferenceSize,
+  useCenterAnchoredResize,
+} from './useCenterAnchoredResize'
 
 // ── ResizeObserver stub ───────────────────────────────────────────────────────
 // jsdom has no ResizeObserver; this one records its instances so a test can
@@ -306,5 +310,81 @@ describe('useCenterAnchoredResize', () => {
     expect(() =>
       renderWith(createCy({ width: 800, height: 600 })),
     ).not.toThrow()
+  })
+
+  describe('pan reference size', () => {
+    const asCore = (cy: FakeCy): Core => cy as unknown as Core
+
+    it('is the cached size while the container is visible', () => {
+      const cy = createCy({ width: 800, height: 600 })
+      renderWith(cy)
+
+      expect(panReferenceSize(asCore(cy))).toEqual({ width: 800, height: 600 })
+    })
+
+    it('is the last visible size while the container is hidden', () => {
+      const cy = createCy({ width: 800, height: 600 })
+      renderWith(cy)
+
+      resizeTo(cy, 0, 0)
+
+      expect(panReferenceSize(asCore(cy))).toEqual({ width: 800, height: 600 })
+    })
+
+    it('is unknown for an instance that has never been visible', () => {
+      const cy = createCy({ width: 0, height: 0 })
+      renderWith(cy)
+
+      expect(panReferenceSize(asCore(cy))).toBeNull()
+    })
+
+    // Regression: a network restored while its tab was hidden (Cell View
+    // selected) kept a pan that belonged to the saved size, but the instance
+    // had never been visible, so the first show did not re-center it.
+    it('re-centers from a size set while hidden when first shown', () => {
+      const cy = createCy({ width: 0, height: 0 })
+      renderWith(cy)
+
+      setPanReferenceSize(asCore(cy), { width: 568, height: 534 })
+      resizeTo(cy, 250, 493)
+
+      expect(cy.panBy).toHaveBeenCalledWith({ x: -159, y: -20.5 })
+    })
+
+    it('reports a size set while hidden until the container is shown', () => {
+      const cy = createCy({ width: 0, height: 0 })
+      renderWith(cy)
+
+      setPanReferenceSize(asCore(cy), { width: 568, height: 534 })
+
+      expect(panReferenceSize(asCore(cy))).toEqual({ width: 568, height: 534 })
+    })
+
+    it.each([
+      ['infinite', Number.POSITIVE_INFINITY],
+      ['NaN', Number.NaN],
+      ['zero', 0],
+      ['negative', -10],
+    ])('ignores a %s size set while hidden', (_label, bad) => {
+      const cy = createCy({ width: 0, height: 0 })
+      renderWith(cy)
+
+      setPanReferenceSize(asCore(cy), { width: bad, height: 534 })
+      resizeTo(cy, 250, 493)
+
+      expect(panReferenceSize(asCore(cy))).toEqual({ width: 250, height: 493 })
+      expect(cy.panBy).not.toHaveBeenCalled()
+    })
+
+    it('ignores a size set while visible: the cached size is the reference', () => {
+      const cy = createCy({ width: 800, height: 600 })
+      renderWith(cy)
+
+      setPanReferenceSize(asCore(cy), { width: 568, height: 534 })
+      resizeTo(cy, 700, 600)
+
+      expect(panReferenceSize(asCore(cy))).toEqual({ width: 700, height: 600 })
+      expect(cy.panBy).toHaveBeenCalledWith({ x: -50, y: 0 })
+    })
   })
 })

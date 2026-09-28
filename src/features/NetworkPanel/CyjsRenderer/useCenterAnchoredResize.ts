@@ -55,6 +55,38 @@ const cachedSize = (cy: Core): Size | null => {
 type Resize = () => Core
 
 /**
+ * Per instance: the last size the pan was relative to while the container was
+ * visible. It is the baseline while the container is hidden (0 x 0), when cy's
+ * cached size says nothing about the pan.
+ */
+const lastVisibleSizes = new WeakMap<Core, Size>()
+
+/**
+ * The canvas size the current pan is relative to: the size cy has cached, or
+ * — while the container is hidden — the last visible size. Null for an
+ * instance that has never been visible and was given no size.
+ *
+ * Record this with a saved viewport: a pan saved while hidden is still
+ * relative to that size, not to the hidden 0 x 0.
+ */
+export const panReferenceSize = (cy: Core): Size | null =>
+  cachedSize(cy) ?? lastVisibleSizes.get(cy) ?? null
+
+/**
+ * Declare the size a pan set while the container is hidden is relative to —
+ * e.g. a saved viewport restored into a hidden tab, which cannot be adjusted to
+ * a 0 x 0 canvas. When the container is first shown, the pan is shifted by
+ * half the difference like any other resize. Ignored while visible: then cy's
+ * cached size is the reference.
+ */
+export const setPanReferenceSize = (cy: Core, size: Size): void => {
+  const usable = (value: number): boolean => Number.isFinite(value) && value > 0
+  if (cachedSize(cy) === null && usable(size.width) && usable(size.height)) {
+    lastVisibleSizes.set(cy, { width: size.width, height: size.height })
+  }
+}
+
+/**
  * Makes every `cy.resize()` on this instance keep the center fixed, and returns
  * a function that undoes it.
  *
@@ -69,27 +101,31 @@ type Resize = () => Core
  * is what the pan is relative to (`cy.fit()` and a saved-viewport restore both
  * compute with it), and the new size is read back from cy afterwards, so both
  * sides are Cytoscape.js's own measurement. While the container is hidden
- * (0 x 0, e.g. an inactive tab) nothing is panned, and the last visible size is
- * kept as the baseline for when it is shown again.
+ * (0 x 0, e.g. an inactive tab) nothing is panned, and the last visible size —
+ * or one declared with setPanReferenceSize — is the baseline for when it is
+ * shown again.
  */
 const installCenterAnchoredResize = (cy: Core): (() => void) => {
   const target = cy as Core & { resize: Resize }
   const hadOwnResize = Object.prototype.hasOwnProperty.call(target, 'resize')
   const nativeResize = target.resize
-  let lastVisible: Size | null = cachedSize(cy)
+  const initial = cachedSize(cy)
+  if (initial !== null) {
+    lastVisibleSizes.set(cy, initial)
+  }
 
   target.resize = function centerAnchoredResize(): Core {
     if (cy.destroyed()) {
       return nativeResize.call(cy)
     }
 
-    const before = cachedSize(cy) ?? lastVisible
+    const before = panReferenceSize(cy)
     nativeResize.call(cy)
     const after = cachedSize(cy)
     if (after === null) {
       return cy
     }
-    lastVisible = after
+    lastVisibleSizes.set(cy, after)
     if (before === null) {
       return cy
     }
