@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { DropdownMenu } from '../DropdownMenu'
 import { useMenuBarMenu } from '../MenuBar'
 import { MergeNetwork } from './MergeNetwork'
+import { MergeNetworkDialogHost } from './MergeNetworkDialogHost'
 
 export const ToolsMenu = () => {
   const { open, setOpen } = useMenuBarMenu('tools-menu')
@@ -15,6 +16,14 @@ export const ToolsMenu = () => {
 
   const handleClose = (): void => {
     setOpen(false)
+  }
+
+  // The Merge Networks dialog, mounted only while open (see
+  // MergeNetworkDialogHost).
+  const [openMerge, setOpenMerge] = useState(false)
+  const handleOpenMerge = (): void => {
+    handleClose()
+    setOpenMerge(true)
   }
 
   const closeMenu = useCallback((): void => {
@@ -30,7 +39,7 @@ export const ToolsMenu = () => {
   const menuItems = [
     {
       label: 'Merge Networks',
-      template: <MergeNetwork onClick={handleClose} />,
+      template: <MergeNetwork onClick={handleOpenMerge} />,
     },
     ...serviceMenuItems,
   ]
@@ -46,6 +55,9 @@ export const ToolsMenu = () => {
         disabled={hasNoNetworks}
         disabledTooltip="Load or create a network first"
       />
+      {openMerge && (
+        <MergeNetworkDialogHost handleClose={() => setOpenMerge(false)} />
+      )}
       {dialogs}
     </>
   )
