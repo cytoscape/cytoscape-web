@@ -12,7 +12,7 @@ The AppManager feature consists of:
 - **ServiceListPanel**: Manages service endpoints
 - **TaskStatusDialog**: Shows progress for service app tasks
 - **DataStore**: Provides access to workspace and network stores for external apps
-- **ExternalComponent**: Loads a remote app's exposed module through the Module Federation runtime
+- **loader/remoteModuleLoader**: Loads a remote app's exposed module through the Module Federation runtime
 - **useDynamicImport**: Hook for dynamic component loading
 
 ## Component Structure
@@ -51,9 +51,9 @@ The AppManager feature consists of:
 - Circular progress indicator
 - Cancel button to close dialog
 
-### ExternalComponent.tsx
+### loader/remoteModuleLoader.ts
 - `loadModule(scope, module, url)`: registers the remote with the Module Federation runtime and loads one exposed module
-- Used by `loader/loadRemoteApp.ts` to load an app's `./AppConfig`, the only module the host loads from an app
+- Used by `loadRemoteApp.ts`, in the same folder, to load an app's `./AppConfig`, the only module the host loads from an app
 - Renders nothing: panels and dialogs come from the app's registered resources
 
 ### DataStore Provider

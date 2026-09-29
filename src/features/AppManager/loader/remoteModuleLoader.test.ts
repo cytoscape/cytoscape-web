@@ -5,7 +5,7 @@ import {
   __resetRemoteState,
   __setRuntime,
   loadModule,
-} from './ExternalComponent'
+} from './remoteModuleLoader'
 
 // A fake Module Federation runtime: registerRemotes records the remotes, and
 // loadRemote returns whatever the test queued for a given id.
@@ -24,7 +24,7 @@ function makeFakeRuntime(modules: Record<string, unknown>) {
   }
 }
 
-describe('ExternalComponent MF-runtime loader', () => {
+describe('remoteModuleLoader MF-runtime loader', () => {
   beforeEach(() => {
     __resetRemoteState()
   })

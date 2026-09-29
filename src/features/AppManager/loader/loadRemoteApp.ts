@@ -1,7 +1,7 @@
 import { logApp } from '../../../debug'
 import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { CyApp } from '../../../models/AppModel/CyApp'
-import { loadModule } from '../ExternalComponent'
+import { loadModule } from './remoteModuleLoader'
 
 /**
  * Outcome of a remote app load. The failure branch carries which of the three

@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { logApp } from '../../../debug'
 import { CyApp } from '../../../models/AppModel/CyApp'
-import { loadModule } from '../ExternalComponent'
+import { loadModule } from './remoteModuleLoader'
 import { loadRemoteApp } from './loadRemoteApp'
 
-vi.mock('../ExternalComponent', () => ({
+vi.mock('./remoteModuleLoader', () => ({
   loadModule: vi.fn(),
 }))
 

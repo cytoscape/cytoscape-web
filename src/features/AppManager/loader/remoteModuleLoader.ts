@@ -3,7 +3,7 @@ import {
   registerRemotes as mfRegisterRemotes,
 } from '@module-federation/runtime'
 
-import { logApp } from '../../debug'
+import { logApp } from '../../../debug'
 
 // scope -> currently-registered remoteEntry URL, so we only (re)register a
 // remote when its URL actually changes.
@@ -51,7 +51,7 @@ const ensureRemoteRegistered = (scope: string, url: string): void => {
   }
   if (registeredRemotes.has(scope)) {
     logApp.warn(
-      `[ExternalComponent]: Replacing remote entry for "${scope}" from ${registeredRemotes.get(
+      `[remoteModuleLoader]: Replacing remote entry for "${scope}" from ${registeredRemotes.get(
         scope,
       )} to ${url}`,
     )
