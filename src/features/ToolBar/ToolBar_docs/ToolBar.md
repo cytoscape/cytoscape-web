@@ -47,7 +47,8 @@ The ToolBar is organized into menu categories, each with its own submenu system.
 - Keyboard: ArrowDown/Enter/Space open a menu with focus on its first row; ArrowUp/Down, Home/End move within a level; ArrowRight opens a submenu or moves to the next menu; ArrowLeft closes a submenu or moves to the previous menu; Escape closes and returns focus to the trigger; Tab or a click elsewhere closes
 - Submenus open on hover and support nested structures
 - Menu items can be enabled/disabled based on context
-- Menu items trigger actions or open dialogs
+- Menu items trigger actions or open dialogs. A row never renders the dialog itself: the menu component owns it, and the row's click closes the menu before the dialog shows (#784; enforced by `menuRowDialogs.test.ts`). A dialog inside a row lives only as long as the menu stays open, and the menu has no reliable way to tell the dialog's clicks, focus changes and keys from ones outside it
+- Click-away is decided on mousedown, where the user pressed: a press inside the menu released outside fires its click on `<body>`. The focus-out check runs as a task, after the browser has settled the new focus target
 
 ### Search Functionality
 - Search box in toolbar

@@ -40,6 +40,7 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
    - Filters `apps` by `AppStatus.Active` and builds `componentList` of `[appId, componentId]` pairs.
    - For each pair, uses `ExternalComponent(appId, './' + componentId)` to create a React component, wrapped in a local `Suspense`, and passes `handleClose` so the app can close the menu after actions.
    - Entries whose id collides with a runtime resource are skipped (runtime wins).
+   - Such a component is a menu row, so it must not render a dialog of its own: the row, and anything it renders, unmounts when the menu closes, and `DropdownMenu` no longer tolerates dialogs inside rows (#784). A legacy entry that needs UI should become an `'apps-menu'` resource whose `onClick(apis)` calls `apis.dialog.open(...)`; a component that stays must call `handleClose()` and open its UI through the `apis` its app received in `mount(context)`.
 
 3. **Service Menu Items**
    - Uses `createMenuItems(serviceApps, handleRun)` to build items that run service tasks via `useServiceTaskRunner`.
