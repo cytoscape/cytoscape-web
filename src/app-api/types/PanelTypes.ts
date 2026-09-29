@@ -34,11 +34,12 @@ export interface PanelApi {
    * inside it. Omit `tabId` to only open the pane.
    *
    * `tabId` is the id the tab was registered with (`registerPanel({ id })` or
-   * a `'right-panel'` resource declaration), or one of the built-in ids in `LeftPanelTabId`, `RightPanelTabId` and
-   * `BottomPanelTabId`. Only `panel` is searched. Ids are not unique across
-   * apps: when several tabs of the pane share `tabId`, the calling app's own
-   * tab is selected, otherwise the first one in tab order — which is always
-   * what an anonymous `window.CyWebApi` caller gets.
+   * a `'right-panel'` resource declaration), or one of the built-in ids in
+   * `LeftPanelTabId`, `RightPanelTabId` and `BottomPanelTabId`. Only `panel`
+   * is searched. Ids are not unique across apps: when several tabs of the
+   * pane share `tabId`, the calling app's own tab is selected, otherwise the
+   * first one in tab order — which is always what an anonymous
+   * `window.CyWebApi` caller gets.
    *
    * A tab the pane is not showing right now (its app is disabled, its
    * `requires.network` is unmet, 'llm-query' on a non-hierarchy network) does
