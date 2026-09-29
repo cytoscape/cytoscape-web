@@ -55,8 +55,12 @@ describe('SnackbarMessageList persistent messages', () => {
 
     expect(screen.getByText('Persistent message')).toBeTruthy()
 
-    await act(async () => {
+    act(() => {
       fireEvent.click(screen.getByRole('alert'))
+    })
+    // Separate act: the exit transition's timer starts only once the close
+    // has rendered.
+    await act(async () => {
       vi.advanceTimersByTime(1000)
       await Promise.resolve()
     })
@@ -107,6 +111,134 @@ describe('SnackbarMessageList persistent messages', () => {
     const alert = screen.getByRole('alert')
     expect(alert.classList.contains('MuiAlert-filled')).toBe(true)
     expect(alert.classList.contains('MuiAlert-filledError')).toBe(true)
+
+    unmount()
+  })
+})
+
+describe('SnackbarMessageList queue', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    act(() => {
+      useMessageStore.setState((state) => {
+        state.messages = []
+      })
+    })
+  })
+
+  afterEach(() => {
+    act(() => {
+      useMessageStore.setState((state) => {
+        state.messages = []
+      })
+    })
+    vi.useRealTimers()
+  })
+
+  const addMessage = async (
+    message: string,
+    options: { persistent?: boolean } = {},
+  ): Promise<void> => {
+    await act(async () => {
+      useMessageStore.getState().addMessage({
+        message,
+        severity: MessageSeverity.ERROR,
+        duration: 3000,
+        ...options,
+      })
+      vi.advanceTimersByTime(0)
+      await Promise.resolve()
+    })
+  }
+
+  const advance = async (ms: number): Promise<void> => {
+    await act(async () => {
+      vi.advanceTimersByTime(ms)
+      await Promise.resolve()
+    })
+  }
+
+  // The Alert's Close "X", not the side panel's "Close panel" buttons.
+  const clickClose = (): void => {
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+  }
+
+  it('shows the next message after one closed with its X while the pointer left it', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await addMessage('Invalid file #1')
+    expect(screen.getByText('Invalid file #1')).toBeTruthy()
+
+    // The user clicks the X and moves on. MUI resumes its auto-hide timer when
+    // the pointer leaves the snackbar, which it still renders while it
+    // animates out, and that timer later reports a 'timeout' close.
+    const snackbar = screen.getByTestId('snackbar-message-list')
+    act(() => {
+      clickClose()
+    })
+    fireEvent.mouseLeave(snackbar)
+    await advance(5000)
+    expect(screen.queryByText('Invalid file #1')).toBeNull()
+
+    await addMessage('Invalid file #2')
+    expect(screen.getByText('Invalid file #2')).toBeTruthy()
+
+    unmount()
+  })
+
+  it('does not skip the queued message when a persistent one is closed with its X', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await addMessage('Persistent message', { persistent: true })
+    await addMessage('Queued message')
+    expect(screen.getByText('Persistent message')).toBeTruthy()
+
+    // The X's click also reaches the Alert's own click-to-dismiss handler.
+    act(() => {
+      clickClose()
+    })
+    await advance(1000)
+
+    expect(screen.queryByText('Persistent message')).toBeNull()
+    expect(screen.getByText('Queued message')).toBeTruthy()
+
+    unmount()
+  })
+
+  it('keeps a persistent message up when a stale auto-hide timer fires', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await addMessage('Invalid file #1')
+    const snackbar = screen.getByTestId('snackbar-message-list')
+    act(() => {
+      clickClose()
+    })
+    fireEvent.mouseLeave(snackbar)
+    await advance(300)
+
+    await addMessage('Persistent message', { persistent: true })
+    await advance(10000)
+
+    expect(screen.getByText('Persistent message')).toBeTruthy()
+
+    unmount()
+  })
+
+  it('keeps the closing message on screen while it animates out', async () => {
+    const { unmount } = render(<SnackbarMessageList />)
+
+    await addMessage('Invalid file #1')
+    act(() => {
+      clickClose()
+    })
+
+    // Mid exit transition: still the same message, not an empty info alert.
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toContain('Invalid file #1')
+    expect(alert.classList.contains('MuiAlert-filledError')).toBe(true)
+
+    await advance(1000)
+    expect(screen.queryByRole('alert')).toBeNull()
 
     unmount()
   })
