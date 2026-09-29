@@ -35,7 +35,7 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 
 | Export                                                 | Description                                                                                                  |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `CyWebApiType`                                         | Type of `window.CyWebApi` (10 domain API objects)                                                            |
+| `CyWebApiType`                                         | Type of `window.CyWebApi` (12 domain API objects)                                                            |
 | `ElementApi`                                           | Create/delete nodes and edges, return full mutation data, batch edge topology reads, graph traversal queries |
 | `NetworkApi`                                           | Create networks from edge lists, CX2, or node subsets; delete networks                                       |
 | `SelectionApi`                                         | Read and modify node/edge selection state                                                                    |
@@ -45,9 +45,10 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 | `LayoutApi`                                            | Run layout algorithms and list available layouts                                                             |
 | `ExportApi`                                            | Export networks to CX2                                                                                       |
 | `WorkspaceApi`                                         | Read, switch, and rename workspace state                                                                     |
+| `PanelApi`                                             | Open a workspace pane and select a tab in it                                                                 |
 | `ContextMenuApi`                                       | Register custom items in the network context menu                                                            |
 | `AppContextApis`                                       | Per-app API shape passed to `mount()` (extends `CyWebApiType`)                                               |
-| `ResourceApi`                                          | Register panels and menu items at runtime                                                                    |
+| `ResourceApi`                                          | Register panels, menu items, modals, search providers and layout algorithms at runtime                       |
 | `ResourceDeclaration`                                  | Declarative resource entry for `CyAppWithLifecycle.resources`                                                |
 | `ApiResult<T>`                                         | Discriminated union returned by fallible API functions                                                       |
 | `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` | Domain-grouped error code catalogs — each entry is `{ code, severity, message }`                             |
@@ -57,6 +58,54 @@ That's it. No imports needed — global augmentations for `window.CyWebApi` and 
 
 Ambient module declarations for all `cyweb/*` Module Federation remotes are also bundled, so imports
 like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in TypeScript.
+
+## `1.0.0-beta.5` migration notes
+
+> **Host compatibility.** `1.0.0-beta.5` documents the App API as implemented
+> by the Cytoscape Web build tagged `api-types-v1.0.0-beta.5` on `development`.
+> **No released version of Cytoscape Web implements it yet.** It runs on
+> [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
+> `development` has been deployed there (done by hand, so it can lag);
+> production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
+> shows a deployment's build commit as a seven-character prefix — compare it
+> against `git rev-parse --short=7 'api-types-v1.0.0-beta.5^{commit}'` to know whether that
+> host has this API.
+
+`1.0.0-beta.5` has one breaking change and three additions.
+
+- **`CyApp.components` is removed**, with the `ComponentMetadata` type and the
+  `ComponentType` const. It was the original way to contribute UI and has been
+  deprecated since `resources` arrived. Declare each entry in `resources`
+  instead (or register it in `mount()`):
+
+  | Removed entry                                  | Replacement                                       |
+  | ---------------------------------------------- | ------------------------------------------------- |
+  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }`   |
+  | `{ id, type: ComponentType.Menu, component }`  | `{ slot: 'apps-menu', id, label, onClick(apis) }` |
+
+  A menu entry is plain data, as it has been since beta.4: move the old
+  component's action into `onClick`, and any form or other UI into
+  `apis.dialog.open({ title, render })` called from it. A panel that the host
+  loaded by name from your Module Federation `exposes` needs no `exposes` entry
+  any more; only `./AppConfig` is loaded.
+
+  **TypeScript catches this only if you type your app object.** An app that
+  still exports `components` loads and mounts on a beta.5 host, its `resources`
+  and `mount()` unaffected, but the panels and menu items declared that way no
+  longer appear. The host logs a warning that names the app.
+
+- **`network:loaded` event.** Fired once a network's tables and view have
+  landed in the host's stores. `network:switched` can arrive before the data
+  exists, so a read made on the switch may fail with `APP1`; re-read on
+  `network:loaded`.
+- **`'layout-algorithm'` slot.** `apis.resource.registerLayout(options)`
+  registers a layout the host runs through its own layout engine, with its
+  parameters declared in the same `AppParameter` spec service apps use.
+- **`PanelApi`.** `apis.panel.open(panel, tabId?)` opens a workspace pane and
+  selects a tab in it. On an older host `apis.panel` is `undefined`, so call it
+  as `apis.panel?.open(...)`.
+
+See the bundled [CHANGELOG](./CHANGELOG.md) for the details of each.
 
 ## `1.0.0-beta.4` migration notes
 
@@ -270,7 +319,7 @@ function MyComponent() {
   const ctx = useAppContext()
   if (!ctx) return null
 
-  // ctx.apis has all 10 domain APIs + resource + contextMenu (per-app)
+  // ctx.apis has every domain API + resource + contextMenu (per-app)
   const resources = ctx.apis.resource.getRegisteredResources()
 }
 ```
@@ -306,6 +355,9 @@ window.addEventListener('cywebapi:ready', () => {
 | `cyweb/LayoutApi`      | `useLayoutApi()`                                          |
 | `cyweb/ExportApi`      | `useExportApi()`                                          |
 | `cyweb/WorkspaceApi`   | `useWorkspaceApi()`                                       |
+| `cyweb/PanelApi`       | `usePanelApi()`                                           |
+| `cyweb/AppDataApi`     | `useAppDataApi()` — per-app data, inside an app component |
+| `cyweb/ScopedApi`      | `useScopedApi(networkId?)` — the API bound to one network |
 | `cyweb/EventBus`       | `useCyWebEvent(type, handler)`                            |
 | `cyweb/AppIdContext`   | `useAppContext()` — per-app context for plugin components |
 | `cyweb/ApiTypes`       | Re-exports all types from this package                    |

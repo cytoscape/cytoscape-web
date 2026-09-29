@@ -2,7 +2,23 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
-## 1.0.0-beta.5 (unpublished)
+## 1.0.0-beta.5 (2026-09-29)
+
+> **Host compatibility.** This release documents the App API as implemented by
+> the Cytoscape Web build tagged `api-types-v1.0.0-beta.5` on the `development`
+> branch. **No released version of Cytoscape Web implements it yet** — the
+> `network:loaded` event, the `'layout-algorithm'` slot and `panel.open` exist
+> on `development` only, so an app can compile against methods a deployed host
+> does not have. The removal below works the other way round: a host older
+> than this build still renders `CyApp.components`, a host at or after it
+> ignores the field.
+>
+> Where it runs: [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape)
+> once `development` has been deployed there, which is done by hand and can lag.
+> Production (web.cytoscape.org) stays on the 1.0.x line until Cytoscape Web
+> 1.1.0. To check a given deployment, open **Help → About**: it shows the
+> build's commit as a seven-character prefix (plus a build date). Compare that
+> prefix against `git rev-parse --short=7 'api-types-v1.0.0-beta.5^{commit}'`.
 
 ### Added
 
@@ -105,10 +121,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   entries themselves are ignored. Migrate each entry to a declaration in
   `resources` (or a registration in `mount()`):
 
-  | Removed entry | Replacement |
-  | --- | --- |
-  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }` |
-  | `{ id, type: ComponentType.Menu, component }` | `{ slot: 'apps-menu', id, label, onClick(apis) }`, with any UI opened from `onClick` through `apis.dialog.open({ render })` |
+  | Removed entry                                  | Replacement                                                                                                                 |
+  | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }`                                                                             |
+  | `{ id, type: ComponentType.Menu, component }`  | `{ slot: 'apps-menu', id, label, onClick(apis) }`, with any UI opened from `onClick` through `apis.dialog.open({ render })` |
 
   A panel that was loaded by name from the app's own Module Federation
   `exposes` (an entry without `component`) needs no `exposes` entry any more:
