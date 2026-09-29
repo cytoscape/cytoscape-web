@@ -1,5 +1,5 @@
 import difference from 'lodash/difference'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   deleteNetworkFromDb,
@@ -142,12 +142,19 @@ export const useHierarchyViewerManager = (): void => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on summary change; renderers are fresh at trigger time
   }, [summary])
 
+  // The right panel follows `enablePopup` only when it changes: switching to
+  // a hierarchy opens the panel, switching away from one closes it. The value
+  // it mounts with is not a change. Acting on it closed the panel on every
+  // boot with a regular network (`enablePopup` starts false), undoing
+  // `?right=open` and a restored open panel some time after boot had opened
+  // it — a race e2e specs that need the panel kept losing.
+  const lastEnablePopupRef = useRef(uiState.enablePopup)
   useEffect(() => {
     const showPanel: boolean = uiState.enablePopup
-    if (showPanel) {
-      setPanelState(Panel.RIGHT, PanelState.OPEN)
-    } else {
-      setPanelState(Panel.RIGHT, PanelState.CLOSED)
+    if (showPanel === lastEnablePopupRef.current) {
+      return
     }
+    lastEnablePopupRef.current = showPanel
+    setPanelState(Panel.RIGHT, showPanel ? PanelState.OPEN : PanelState.CLOSED)
   }, [uiState.enablePopup, setPanelState])
 }
