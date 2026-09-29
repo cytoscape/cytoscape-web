@@ -620,7 +620,28 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         placement="bottom-start"
         sx={{ zIndex: theme.zIndex.modal + MENU_LEVEL_Z_OFFSET }}
       >
-        <ClickAwayListener onClickAway={close}>
+        {/*
+          Decide on mousedown, where the user pressed, not on click: when
+          press and release land on different elements the browser fires the
+          click on their nearest common ancestor, often body. A MUI Select in
+          a dialog a template row opened does exactly that (its option list
+          opens over the field on mousedown), and a click on body is outside
+          the menu's React tree, so the menu closed and unmounted the dialog.
+          The trigger toggles the menu in its own click handler; closing here
+          on its mousedown would let that click reopen it.
+        */}
+        <ClickAwayListener
+          mouseEvent="onMouseDown"
+          onClickAway={(event) => {
+            if (
+              event.target instanceof Node &&
+              buttonRef.current?.contains(event.target) === true
+            ) {
+              return
+            }
+            close()
+          }}
+        >
           <Box
             onFocus={() => {
               focusWithinRef.current = true

@@ -253,7 +253,22 @@ describe('MenuBar', () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
+    // The menu decides on mousedown, where the user pressed.
+    fireEvent.mouseDown(document.body)
+    fireEvent.mouseUp(document.body)
     fireEvent.click(document.body)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('closes when its own trigger is pressed again, without reopening', async () => {
+    renderMenuBar()
+    fireEvent.click(button('data'))
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    fireEvent.mouseDown(button('data'))
+    fireEvent.mouseUp(button('data'))
+    fireEvent.click(button('data'))
     expect(screen.queryByRole('menu')).toBeNull()
   })
 

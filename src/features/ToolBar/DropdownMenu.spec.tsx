@@ -347,6 +347,22 @@ describe('DropdownMenu with a dialog owned by a template row', () => {
     expect(getMenu()).toBeTruthy()
   })
 
+  // A MUI Select opens its option list on mousedown, over the field, so the
+  // mouseup lands on the list and the browser fires the click on the nearest
+  // common ancestor of the two: body, outside the menu's React tree. The
+  // export dialog's File Type select closed the menu, and the dialog, that way.
+  it('keeps the dialog mounted when press and release land on different elements', async () => {
+    const input = await openDialogFromMenu()
+
+    fireEvent.mouseDown(input)
+    fireEvent.mouseUp(document.body)
+    fireEvent.click(document.body)
+    await settle()
+
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(getMenu()).toBeTruthy()
+  })
+
   it('closes the menu when the dialog closes and asks it to', async () => {
     await openDialogFromMenu()
 
