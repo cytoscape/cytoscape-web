@@ -21,10 +21,17 @@ const FileUpload = lazy(() =>
     default: m.FileUpload,
   })),
 )
+// Lazy: keeps the export dialog out of the eager toolbar chunk, as the lazy
+// wrapper around its menu row used to. Mounted after first open only.
+const ExportImage = lazy(() =>
+  import('./ExportNetworkToImage/ExportImage').then((m) => ({
+    default: m.ExportImage,
+  })),
+)
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { DuplicateNetworkMenuItem } from './DuplicateNetworkMenuItem'
-import { ExportImageMenuItem } from './ExportNetworkToImage/DynamicExportImageMenuItem'
+import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImageMenuItem'
 import { UploadNetworkMenuItem } from './ImportNetworkFromFileMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
@@ -109,6 +116,16 @@ export const DataMenu = () => {
   const handleOpenFileUpload = (): void => {
     handleClose()
     openFileUploadAction()
+  }
+
+  // Export image dialog. `hasOpenedExportImage` is the mount latch for the
+  // lazy dialog, like `hasOpenedFileUpload`.
+  const [openExportImage, setOpenExportImage] = useState(false)
+  const [hasOpenedExportImage, setHasOpenedExportImage] = useState(false)
+  const handleOpenExportImage = (): void => {
+    handleClose()
+    setHasOpenedExportImage(true)
+    setOpenExportImage(true)
   }
 
   // Delete network handlers
@@ -227,7 +244,7 @@ export const DataMenu = () => {
       icon: <DownloadIcon sx={{ mr: 1 }} />,
       items: [
         {
-          template: <ExportImageMenuItem onClick={handleClose} />,
+          template: <ExportImageMenuItem onClick={handleOpenExportImage} />,
         },
       ],
     },
@@ -282,6 +299,14 @@ export const DataMenu = () => {
           <FileUpload
             show={openFileUpload}
             handleClose={handleCloseFileUpload}
+          />
+        </Suspense>
+      )}
+      {hasOpenedExportImage && (
+        <Suspense fallback={null}>
+          <ExportImage
+            open={openExportImage}
+            handleClose={() => setOpenExportImage(false)}
           />
         </Suspense>
       )}
