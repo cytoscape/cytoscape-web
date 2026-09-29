@@ -15,6 +15,7 @@ import type {
   Pair,
 } from '@/features/MergeNetworks/models/DataInterfaceForMerge'
 import { getNetTableFromSummary } from '@/features/MergeNetworks/utils/mergeNetworkUtil'
+import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
 
 // Lazy: MergeDialog is a 1000+ line component (plus chroma-js) that would
 // otherwise ship with the eager toolbar chunk.
@@ -80,14 +81,16 @@ export const MergeNetworkDialogHost = ({
   })
 
   return (
-    <Suspense fallback={null}>
-      <MergeDialog
-        open={true}
-        handleClose={handleClose}
-        uniqueName={uniqueName}
-        workSpaceNetworks={workSpaceNetworks}
-        networksLoaded={networksLoaded}
-      />
-    </Suspense>
+    <LazyDialogBoundary name="Merge Networks">
+      <Suspense fallback={null}>
+        <MergeDialog
+          open={true}
+          handleClose={handleClose}
+          uniqueName={uniqueName}
+          workSpaceNetworks={workSpaceNetworks}
+          networksLoaded={networksLoaded}
+        />
+      </Suspense>
+    </LazyDialogBoundary>
   )
 }

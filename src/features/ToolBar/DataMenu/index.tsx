@@ -12,6 +12,7 @@ import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
 import { CytoscapeDesktopPermissionDialog } from '../../CytoscapeDesktopPermissionDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
@@ -354,12 +355,17 @@ export const DataMenu = () => {
         handleClose={handleCloseWorkspaceDialog}
       />
       {hasOpenedFileUpload && (
-        <Suspense fallback={null}>
-          <FileUpload
-            show={openFileUpload}
-            handleClose={handleCloseFileUpload}
-          />
-        </Suspense>
+        <LazyDialogBoundary
+          name="Import Network from File"
+          open={openFileUpload}
+        >
+          <Suspense fallback={null}>
+            <FileUpload
+              show={openFileUpload}
+              handleClose={handleCloseFileUpload}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
       )}
       {openWorkspaceNaming && (
         <WorkspaceNamingDialog
@@ -375,12 +381,17 @@ export const DataMenu = () => {
         onCancel={desktopNotice.onCancel}
       />
       {hasOpenedExportImage && (
-        <Suspense fallback={null}>
-          <ExportImage
-            open={openExportImage}
-            handleClose={() => setOpenExportImage(false)}
-          />
-        </Suspense>
+        <LazyDialogBoundary
+          name="Export Network to Image"
+          open={openExportImage}
+        >
+          <Suspense fallback={null}>
+            <ExportImage
+              open={openExportImage}
+              handleClose={() => setOpenExportImage(false)}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
       )}
       <ConfirmationDialog
         title="Remove Current Network"
