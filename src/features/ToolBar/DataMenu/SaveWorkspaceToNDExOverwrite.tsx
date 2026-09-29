@@ -1,6 +1,5 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext } from 'react'
 
-import { AppConfigContext } from '../../../AppConfigContext'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
@@ -9,17 +8,24 @@ import { KeycloakContext } from '@/boot/keycloak'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
-import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
+interface SaveWorkspaceToNDExOverwriteMenuItemProps extends BaseMenuItemProps {
+  /** Close the menu and ask for a name: the workspace is not on NDEx yet. */
+  onSaveAs: () => void
+}
+
+/**
+ * Data > Save Workspace. A workspace already on NDEx is overwritten in the
+ * background once the menu has closed; a local one needs a name first, and
+ * the naming dialog belongs to the Data menu, not to this row (#784).
+ */
 export const SaveWorkspaceToNDExOverwriteMenuItem = (
-  props: BaseMenuItemProps,
+  props: SaveWorkspaceToNDExOverwriteMenuItemProps,
 ): React.ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
   const addMessage = useMessageStore((state) => state.addMessage)
-  const [openNamingDialog, setOpenNamingDialog] = useState<boolean>(false)
 
   const {
     apps,
@@ -73,20 +79,18 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
         severity: MessageSeverity.ERROR,
       })
     }
-    props.onClick()
   }
 
-  const handleSaveWorkspaceToNDEx = async (): Promise<void> => {
-    if (isRemoteWorkspace) {
-      await saveWorkspaceToNDEx()
-    } else {
-      setOpenNamingDialog(true)
+  const handleSaveWorkspaceToNDEx = (): void => {
+    if (!isRemoteWorkspace) {
+      props.onSaveAs()
+      return
     }
-  }
-
-  const onCloseWorkspaceNamingDialog = () => {
-    setOpenNamingDialog(false)
+    // Close the menu right away; the save continues in the background (this
+    // row unmounts with the menu, but the closure keeps what it captured) and
+    // reports a failure through the message snackbar.
     props.onClick()
+    void saveWorkspaceToNDEx()
   }
   const enabled = authenticated && allNetworkId.length > 0
 
@@ -100,21 +104,11 @@ export const SaveWorkspaceToNDExOverwriteMenuItem = (
   }
 
   return (
-    <>
-      <DropdownMenuItem
-        label="Save Workspace"
-        tooltip={tooltipTitle}
-        disabled={!enabled}
-        onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
-      />
-      {enabled && (
-        <WorkspaceNamingDialog
-          openDialog={openNamingDialog}
-          onClose={onCloseWorkspaceNamingDialog}
-          ndexBaseUrl={ndexBaseUrl}
-          getToken={getToken}
-        />
-      )}
-    </>
+    <DropdownMenuItem
+      label="Save Workspace"
+      tooltip={tooltipTitle}
+      disabled={!enabled}
+      onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
+    />
   )
 }

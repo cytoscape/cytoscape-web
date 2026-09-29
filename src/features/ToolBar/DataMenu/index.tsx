@@ -1,8 +1,10 @@
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
-import { lazy, Suspense, useCallback, useState } from 'react'
+import { lazy, Suspense, useCallback, useContext, useState } from 'react'
 
+import { AppConfigContext } from '../../../AppConfigContext'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useCytoscapeDesktopPermissionNotice } from '../../../data/hooks/useCytoscapeDesktopPermissionNotice'
 import { useOpenNetworkInCytoscapeFromStores } from '../../../data/hooks/useOpenInCytoscapeDesktop'
@@ -51,6 +53,7 @@ import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
+import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
 export const DataMenu = () => {
   const { open, setOpen } = useMenuBarMenu('data-menu')
@@ -144,6 +147,17 @@ export const DataMenu = () => {
     desktopNotice.run(() => {
       void openNetworkInCytoscape(currentNetworkId)
     })
+  }
+
+  // Save Workspace (As): the naming dialog, mounted only while open — it
+  // subscribes to the whole workspace, and a closed dialog must not re-render
+  // on every edit. Mounting per open also starts every open with an empty name.
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const getToken = useCredentialStore((state) => state.getToken)
+  const [openWorkspaceNaming, setOpenWorkspaceNaming] = useState(false)
+  const handleOpenWorkspaceNaming = (): void => {
+    handleClose()
+    setOpenWorkspaceNaming(true)
   }
 
   // Delete network handlers
@@ -256,10 +270,17 @@ export const DataMenu = () => {
       template: <DownloadNetworkMenuItem onClick={handleClose} />,
     },
     {
-      template: <SaveWorkspaceToNDExOverwriteMenuItem onClick={handleClose} />,
+      template: (
+        <SaveWorkspaceToNDExOverwriteMenuItem
+          onClick={handleClose}
+          onSaveAs={handleOpenWorkspaceNaming}
+        />
+      ),
     },
     {
-      template: <SaveWorkspaceToNDExMenuItem onClick={handleClose} />,
+      template: (
+        <SaveWorkspaceToNDExMenuItem onClick={handleOpenWorkspaceNaming} />
+      ),
     },
     {
       label: 'Export',
@@ -323,6 +344,14 @@ export const DataMenu = () => {
             handleClose={handleCloseFileUpload}
           />
         </Suspense>
+      )}
+      {openWorkspaceNaming && (
+        <WorkspaceNamingDialog
+          openDialog={true}
+          onClose={() => setOpenWorkspaceNaming(false)}
+          ndexBaseUrl={ndexBaseUrl}
+          getToken={getToken}
+        />
       )}
       <CytoscapeDesktopPermissionDialog
         open={desktopNotice.open}

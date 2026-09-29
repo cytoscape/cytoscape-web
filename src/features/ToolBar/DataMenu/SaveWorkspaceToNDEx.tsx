@@ -1,33 +1,19 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext } from 'react'
 
-import { AppConfigContext } from '../../../AppConfigContext'
-import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { KeycloakContext } from '@/boot/keycloak'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
-import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
+/**
+ * Data > Save Workspace As. The naming dialog belongs to the Data menu, not to
+ * this row (#784): `onClick` closes the menu and opens it.
+ */
 export const SaveWorkspaceToNDExMenuItem = (
   props: BaseMenuItemProps,
 ): React.ReactElement => {
-  const { ndexBaseUrl } = useContext(AppConfigContext)
   const client = useContext(KeycloakContext)
-  const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
-
-  const handleOpenDialog = (): void => {
-    setOpenDialog(true)
-  }
-  const handleSaveWorkspaceToNDEx = async (): Promise<void> => {
-    handleOpenDialog()
-  }
-  const handleCloseDialog = (): void => {
-    setOpenDialog(false)
-    props.onClick()
-  }
-
   const allNetworkId = useWorkspaceStore((state) => state.workspace.networkIds)
 
   const enabled = authenticated && allNetworkId.length > 0
@@ -38,21 +24,11 @@ export const SaveWorkspaceToNDExMenuItem = (
   }
 
   return (
-    <>
-      <DropdownMenuItem
-        label="Save Workspace As..."
-        tooltip={tooltipTitle}
-        disabled={!enabled}
-        onClick={enabled ? handleSaveWorkspaceToNDEx : () => {}}
-      />
-      {enabled && (
-        <WorkspaceNamingDialog
-          openDialog={openDialog}
-          onClose={handleCloseDialog}
-          ndexBaseUrl={ndexBaseUrl}
-          getToken={getToken}
-        />
-      )}
-    </>
+    <DropdownMenuItem
+      label="Save Workspace As..."
+      tooltip={tooltipTitle}
+      disabled={!enabled}
+      onClick={enabled ? props.onClick : () => {}}
+    />
   )
 }
