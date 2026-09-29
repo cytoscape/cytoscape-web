@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { createElement, type ReactNode } from 'react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AppConfigContext, defaultAppConfig } from '../../AppConfigContext'
@@ -44,7 +44,7 @@ const commands = {
   refreshCatalog: vi.fn(async () => undefined),
 } as unknown as Parameters<typeof AppManagerCommandsProvider>[0]['value']
 
-const renderDialog = (): { setOpen: (open: boolean) => void } => {
+const renderDialog = (): { reopen: () => void } => {
   const config = { ...defaultAppConfig, allowsLocalhostAppsOn: DEV1 }
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(
@@ -52,10 +52,18 @@ const renderDialog = (): { setOpen: (open: boolean) => void } => {
       { value: config },
       createElement(AppManagerCommandsProvider, { value: commands }, children),
     )
-  const dialog = (openDialog: boolean) =>
-    createElement(AppSettingsDialog, { openDialog, setOpenDialog: vi.fn() })
-  const { rerender } = render(dialog(true), { wrapper })
-  return { setOpen: (open) => rerender(dialog(open)) }
+  // Stateful, like the App menu: the dialog's own Close button closes it.
+  let setOpen: (open: boolean) => void = () => {}
+  const Host = () => {
+    const [open, setOpenState] = useState(true)
+    setOpen = setOpenState
+    return createElement(AppSettingsDialog, {
+      openDialog: open,
+      setOpenDialog: setOpenState,
+    })
+  }
+  render(createElement(Host), { wrapper })
+  return { reopen: () => act(() => setOpen(true)) }
 }
 
 describe('AppSettingsDialog — localhost opt-in wiring', () => {
@@ -177,7 +185,7 @@ describe('AppSettingsDialog — reopening', () => {
       ?.textContent ?? null
 
   it('starts every open on the Apps tab with empty fields', async () => {
-    const { setOpen } = renderDialog()
+    const { reopen } = renderDialog()
 
     fireEvent.change(screen.getByTestId('install-from-url-input'), {
       target: { value: 'https://example.org/app.json' },
@@ -191,8 +199,11 @@ describe('AppSettingsDialog — reopening', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Service Apps' }))
     expect(selectedTab()).toBe('Service Apps')
 
-    setOpen(false)
-    setOpen(true)
+    fireEvent.click(screen.getByTestId('app-settings-dialog-close-button'))
+    await waitFor(() =>
+      expect(screen.queryByTestId('app-settings-dialog')).toBeNull(),
+    )
+    reopen()
 
     expect(selectedTab()).toBe('Apps')
     expect(

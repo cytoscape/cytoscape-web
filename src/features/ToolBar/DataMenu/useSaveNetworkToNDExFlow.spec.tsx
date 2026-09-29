@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => {
     hcx,
     summaries,
     addMessage: vi.fn(),
+    getToken: vi.fn(),
     setNetworkModified: vi.fn(),
     saveNetworkOverwrite: vi.fn(),
     saveNetworkCopy: vi.fn(),
@@ -43,7 +44,7 @@ vi.mock('../../../data/external-api/ndex', async (importOriginal) => ({
   fetchNdexSummaries: vi.fn(),
 }))
 vi.mock('../../../data/hooks/stores/CredentialStore', () => ({
-  useCredentialStore: mocks.store({ getToken: async () => 'token' }),
+  useCredentialStore: mocks.store({ getToken: mocks.getToken }),
 }))
 vi.mock('../../../data/hooks/stores/MessageStore', () => ({
   useMessageStore: mocks.store({ addMessage: mocks.addMessage }),
@@ -103,6 +104,7 @@ const ndexIsNewer = () =>
 describe('useSaveNetworkToNDExFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.getToken.mockResolvedValue('token')
     mocks.hcx.validationResults = {}
     mocks.summaries.n1 = { isNdex: true, modificationTime: 100 }
     mocks.saveNetworkOverwrite.mockResolvedValue(undefined)
@@ -214,5 +216,64 @@ describe('useSaveNetworkToNDExFlow', () => {
       ),
     )
     expect(mocks.saveNetworkOverwrite).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed token refresh instead of dropping it', async () => {
+    mocks.getToken.mockRejectedValue(new Error('refresh failed'))
+    render(<Harness />)
+
+    act(() => flow.start())
+
+    await waitFor(() =>
+      expect(mocks.addMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('refresh failed'),
+          severity: 'error',
+        }),
+      ),
+    )
+    expect(mocks.saveNetworkOverwrite).not.toHaveBeenCalled()
+  })
+
+  it('closes the out-of-sync dialog before the copy runs, so it cannot run twice', async () => {
+    ndexIsNewer()
+    let finishSave: (uuid: string) => void = () => {}
+    mocks.saveNetworkCopy.mockReturnValue(
+      new Promise((resolve) => {
+        finishSave = resolve
+      }),
+    )
+    render(<Harness />)
+
+    act(() => flow.start())
+    await waitFor(() => expect(syncDialog()).not.toBeNull())
+    fireEvent.click(screen.getByTestId('save-to-ndex-copy-button'))
+
+    // Still saving, and the dialog (with both buttons) is already gone.
+    await waitFor(() => expect(syncDialog()).toBeNull())
+    expect(mocks.saveNetworkCopy).toHaveBeenCalledTimes(1)
+    await act(async () => finishSave('copy-uuid'))
+    expect(mocks.saveNetworkCopy).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an overwrite from the out-of-sync dialog that fails', async () => {
+    ndexIsNewer()
+    mocks.saveNetworkOverwrite.mockRejectedValue(new Error('NDEx said no'))
+    render(<Harness />)
+
+    act(() => flow.start())
+    await waitFor(() => expect(syncDialog()).not.toBeNull())
+    fireEvent.click(screen.getByTestId('save-to-ndex-overwrite-button'))
+
+    await waitFor(() =>
+      expect(mocks.addMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('NDEx said no'),
+          severity: 'error',
+        }),
+      ),
+    )
+    await waitFor(() => expect(syncDialog()).toBeNull())
+    expect(mocks.setNetworkModified).not.toHaveBeenCalled()
   })
 })

@@ -110,15 +110,24 @@ export const useSaveNetworkToNDExFlow = (): SaveNetworkToNDExFlow => {
       duration: 3000,
       severity: MessageSeverity.SUCCESS,
     })
-    setOutOfSyncNetworkId(null)
+  }
+
+  // Overwrite after the user chose it in the out-of-sync dialog.
+  const overwriteAfterConfirm = async (networkId: IdType): Promise<void> => {
+    try {
+      await overwriteNDExNetwork(networkId, await getToken())
+    } catch (e) {
+      logUi.error('[useSaveNetworkToNDExFlow]: Error overwriting network', e)
+      reportError('Error: Could not overwrite the current network to NDEx.', e)
+    }
   }
 
   const saveCopyToNDEx = async (
     networkId: IdType,
-    accessToken: string,
     deleteOriginal: boolean,
   ): Promise<void> => {
     try {
+      const accessToken = await getToken()
       const uuid = await saveNetworkCopy(
         accessToken,
         ...networkData(networkId),
@@ -138,19 +147,20 @@ export const useSaveNetworkToNDExFlow = (): SaveNetworkToNDExFlow => {
         e,
       )
     }
-    setOutOfSyncNetworkId(null)
   }
 
   const saveNetworkToNDEx = async (networkId: IdType): Promise<void> => {
-    const accessToken = await getToken()
     const summary = useNetworkSummaryStore.getState().summaries[networkId]
 
     if (summary?.isNdex === false) {
-      await saveCopyToNDEx(networkId, accessToken, true)
+      await saveCopyToNDEx(networkId, true)
       return
     }
 
     try {
+      // Token acquisition is inside every try, so a failed token refresh is
+      // reported instead of escaping as an unhandled rejection.
+      const accessToken = await getToken()
       const ndexSummaries = await fetchNdexSummaries(
         networkId,
         accessToken,
@@ -212,9 +222,14 @@ export const useSaveNetworkToNDExFlow = (): SaveNetworkToNDExFlow => {
             data-testid="save-to-ndex-overwrite-button"
             variant="outlined"
             color="error"
-            onClick={async () => {
-              if (outOfSyncNetworkId === null) return
-              await overwriteNDExNetwork(outOfSyncNetworkId, await getToken())
+            onClick={() => {
+              // Close before saving: an open dialog would let a second click
+              // start a second save while the first is still running.
+              const networkId = outOfSyncNetworkId
+              setOutOfSyncNetworkId(null)
+              if (networkId !== null) {
+                void overwriteAfterConfirm(networkId)
+              }
             }}
           >
             No, overwrite the network in NDEx
@@ -222,9 +237,14 @@ export const useSaveNetworkToNDExFlow = (): SaveNetworkToNDExFlow => {
           <Button
             data-testid="save-to-ndex-copy-button"
             variant="contained"
-            onClick={async () => {
-              if (outOfSyncNetworkId === null) return
-              await saveCopyToNDEx(outOfSyncNetworkId, await getToken(), false)
+            onClick={() => {
+              // Close first, for the same reason: every copy is a new network
+              // on NDEx, so a double click must not save twice.
+              const networkId = outOfSyncNetworkId
+              setOutOfSyncNetworkId(null)
+              if (networkId !== null) {
+                void saveCopyToNDEx(networkId, false)
+              }
             }}
           >
             Yes, create copy to NDEx

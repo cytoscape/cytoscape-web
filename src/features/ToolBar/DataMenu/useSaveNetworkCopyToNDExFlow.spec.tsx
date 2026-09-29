@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
     store,
     state,
     addMessage: vi.fn(),
+    getToken: vi.fn(),
     addSummary: vi.fn(),
     addNetworkIds: vi.fn(),
     setCurrentNetworkId: vi.fn(),
@@ -36,7 +37,7 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('../../../data/hooks/stores/CredentialStore', () => ({
-  useCredentialStore: mocks.store({ getToken: async () => 'token' }),
+  useCredentialStore: mocks.store({ getToken: mocks.getToken }),
 }))
 vi.mock('../../../data/hooks/stores/MessageStore', () => ({
   useMessageStore: mocks.store({ addMessage: mocks.addMessage }),
@@ -98,6 +99,7 @@ const hcxDialog = () => screen.queryByTestId('hcx-validation-save-dialog')
 describe('useSaveNetworkCopyToNDExFlow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.getToken.mockResolvedValue('token')
     mocks.state.validationResults = {}
     mocks.saveNetworkCopy.mockResolvedValue('copy-uuid')
     mocks.loadNetworkSummaries.mockResolvedValue({
@@ -174,5 +176,22 @@ describe('useSaveNetworkCopyToNDExFlow', () => {
       ),
     )
     expect(mocks.setCurrentNetworkId).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed token refresh instead of dropping it', async () => {
+    mocks.getToken.mockRejectedValue(new Error('refresh failed'))
+    render(<Harness />)
+
+    act(() => flow.start())
+
+    await waitFor(() =>
+      expect(mocks.addMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('refresh failed'),
+          severity: 'error',
+        }),
+      ),
+    )
+    expect(mocks.saveNetworkCopy).not.toHaveBeenCalled()
   })
 })

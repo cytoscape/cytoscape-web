@@ -50,9 +50,11 @@ export const useSaveNetworkCopyToNDExFlow = (): SaveNetworkCopyToNDExFlow => {
 
   const saveCopyToNDEx = async (networkId: IdType): Promise<void> => {
     const { addMessage } = useMessageStore.getState()
-    const accessToken = await useCredentialStore.getState().getToken()
 
     try {
+      // Inside the try: a failed token refresh is reported like any other
+      // failure instead of escaping as an unhandled rejection.
+      const accessToken = await useCredentialStore.getState().getToken()
       const table = useTableStore.getState().tables[networkId]
       const uuid = await saveNetworkCopy(
         accessToken,
