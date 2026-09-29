@@ -162,13 +162,6 @@ function MenuLevel({
       tabIndex={-1}
       {...{ [MENU_OWNER_ATTR]: ownerId }}
       onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
-        // A dialog a template row opened is a React descendant of the row
-        // but lives in its own portal outside the menu, so its keys bubble
-        // here too: Escape would close the menu (and unmount the dialog
-        // with it), the arrows would move focus back onto the rows.
-        if (!isInsideMenu(event.target as Element, ownerId)) {
-          return
-        }
         // Keydowns in a submenu bubble through its portal to every level
         // above, so each handled key stops here: the level above would
         // otherwise act on the same key (and move focus onto its own rows).
@@ -244,11 +237,7 @@ function MenuLevel({
               onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
                 if (
                   item.disabled === true ||
-                  (event.key !== 'Enter' && event.key !== ' ') ||
-                  // Typing in a dialog the template opened bubbles here too;
-                  // a Space or Enter there must not re-activate the row (or
-                  // lose its default in the dialog's input).
-                  !isInsideMenu(event.target as Element, ownerId)
+                  (event.key !== 'Enter' && event.key !== ' ')
                 ) {
                   return
                 }
@@ -321,9 +310,6 @@ function MenuLevel({
               activateRow(event.currentTarget)
             }}
             onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
-              if (!isInsideMenu(event.target as Element, ownerId)) {
-                return
-              }
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
                 activateRow(event.currentTarget, true)
@@ -623,12 +609,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         {/*
           Decide on mousedown, where the user pressed, not on click: when
           press and release land on different elements the browser fires the
-          click on their nearest common ancestor, often body. A MUI Select in
-          a dialog a template row opened does exactly that (its option list
-          opens over the field on mousedown), and a click on body is outside
-          the menu's React tree, so the menu closed and unmounted the dialog.
-          The trigger toggles the menu in its own click handler; closing here
-          on its mousedown would let that click reopen it.
+          click on their nearest common ancestor, often body, which is outside
+          the menu: a press inside the menu released outside it would close
+          the menu. The trigger toggles the menu in its own click handler;
+          closing here on its mousedown would let that click reopen it.
         */}
         <ClickAwayListener
           mouseEvent="onMouseDown"
@@ -654,19 +638,12 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
               // click on something focusable elsewhere, closes it; moving
               // between rows, into a submenu or back to the trigger does not.
               // A task, not a microtask: when a click moves focus the browser
-              // runs a microtask checkpoint between focusout and focusin, so
-              // a microtask decides before the new target's focus arrives —
-              // every click into a row-owned dialog's fields closed the menu
-              // and unmounted the dialog.
+              // runs a microtask checkpoint between focusout and focusin, so a
+              // microtask sees body as the active element. A press on the
+              // trigger would then close the menu here, and the click that
+              // follows would reopen it.
               setTimeout(() => {
                 if (!isOpenRef.current) {
-                  return
-                }
-                // A focus event arrived from inside the React tree after the
-                // blur: a dialog a template row opened has taken focus. It
-                // is not in the menu's DOM (it has its own portal), but it
-                // is the menu's, and closing now would unmount it.
-                if (focusWithinRef.current) {
                   return
                 }
                 const active = document.activeElement
@@ -681,11 +658,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
             // on a separator or the padding would otherwise blur the menu and
             // close it, and selecting text in a menu is never wanted.
             onMouseDown={(event: React.MouseEvent<HTMLElement>) => {
-              // Not for a dialog a template row opened: its inputs must be
-              // able to take focus on click.
-              if (isInsideMenu(event.target as Element, id)) {
-                event.preventDefault()
-              }
+              event.preventDefault()
             }}
             sx={{
               boxShadow: MENU_SHADOW,
